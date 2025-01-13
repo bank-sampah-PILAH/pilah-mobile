@@ -100,7 +100,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         );
                         return;
                       }
-                      context.pushReplacementNamed(LoginPage.route);
+                      context.goNamed(LoginPage.route);
                     },
                   );
                 },

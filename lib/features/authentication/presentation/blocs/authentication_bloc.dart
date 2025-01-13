@@ -1,5 +1,6 @@
 import 'package:boilerplate/features/authentication/presentation/blocs/states/post_login_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 
 import '../../domain/use_cases/authentication_use_cases.dart';
 import 'authentication_events.dart';
@@ -7,6 +8,7 @@ import 'authentication_states.dart';
 import 'events/login_refresh_events.dart';
 import 'events/post_login_events.dart';
 
+@Injectable()
 class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationStates> {
   final AuthenticationUseCases _useCases;
@@ -22,9 +24,7 @@ class AuthenticationBloc
     final response = await _useCases.postLogin(event.username, event.password);
     await response.fold(
       (l) {
-        emitter(
-          PostLoginErrorState(message: l.message ?? ''),
-        );
+        emitter(PostLoginErrorState(message: l.message ?? ''));
       },
       (r) async {
         await _useCases.saveToken(r.token, r.token);

@@ -1,6 +1,8 @@
 import 'package:boilerplate/core/constants/app_key.dart';
 import 'package:boilerplate/core/database/secure_database.dart';
+import 'package:injectable/injectable.dart';
 
+@LazySingleton()
 class NetworkUtils {
   final SecureDatabase _secureDatabase;
 

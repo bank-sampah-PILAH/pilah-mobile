@@ -3,7 +3,9 @@ import 'package:boilerplate/features/product/domain/model/product.dart';
 import 'package:boilerplate/features/product/domain/repository/product_repository.dart';
 import 'package:boilerplate/features/product/domain/use_cases/product_use_cases.dart';
 import 'package:dartz/dartz.dart';
+import 'package:injectable/injectable.dart';
 
+@LazySingleton(as: ProductUseCases)
 class ProductInteractor implements ProductUseCases {
   final ProductRepository _repository;
   ProductInteractor(this._repository);

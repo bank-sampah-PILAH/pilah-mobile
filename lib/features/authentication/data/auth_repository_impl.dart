@@ -1,14 +1,16 @@
 import 'package:boilerplate/core/client/api_call.dart';
 import 'package:boilerplate/core/client/network_exception.dart';
 import 'package:boilerplate/features/authentication/data/local/auth_local_data_sources.dart';
-import 'package:boilerplate/features/authentication/data/model/mapper/auth_mapper.dart';
-import 'package:boilerplate/features/authentication/data/model/request/post_login_request.dart';
-import 'package:boilerplate/features/authentication/data/model/request/save_token_request.dart';
+import 'package:boilerplate/features/authentication/data/remote/model/mapper/auth_mapper.dart';
+import 'package:boilerplate/features/authentication/data/remote/model/request/post_login_request.dart';
+import 'package:boilerplate/features/authentication/data/remote/model/request/save_token_request.dart';
 import 'package:boilerplate/features/authentication/data/remote/auth_remote_data_sources.dart';
 import 'package:boilerplate/features/authentication/domain/model/auth.dart';
 import 'package:boilerplate/features/authentication/domain/repository/auth_repository.dart';
 import 'package:dartz/dartz.dart';
+import 'package:injectable/injectable.dart';
 
+@LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSources _remoteDataSources;
   final AuthLocalDataSources _localDataSources;

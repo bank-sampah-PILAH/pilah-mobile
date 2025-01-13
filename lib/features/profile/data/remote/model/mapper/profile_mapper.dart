@@ -1,9 +1,10 @@
-import '../../../domain/model/onboarding_user.dart';
-import '../responses/onboarding_response.dart';
 
-class OnboardingMapper {
-  static OnboardingUser mapResponseToDomain(OnboardingResponse response) {
-    return OnboardingUser(
+import 'package:boilerplate/features/profile/domain/model/user.dart';
+import '../responses/user_response.dart';
+
+class ProfileMapper {
+  static User mapResponseToDomain(UserResponse response) {
+    return User(
       id: response.id,
       username: response.username,
       email: response.email,

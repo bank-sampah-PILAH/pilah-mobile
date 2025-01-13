@@ -1,12 +1,14 @@
 import 'package:boilerplate/core/client/network_service.dart';
 import 'package:boilerplate/core/constants/endpoints.dart';
+import 'package:injectable/injectable.dart';
 
-import '../model/responses/user_response.dart';
+import 'model/responses/user_response.dart';
 
 abstract class ProfileRemoteDataSources {
   Future<UserResponse> getUser();
 }
 
+@LazySingleton(as: ProfileRemoteDataSources)
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSources {
   final NetworkService networkService;
 

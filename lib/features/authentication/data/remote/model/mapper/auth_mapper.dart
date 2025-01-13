@@ -12,7 +12,7 @@ class AuthMapper {
       lastName: response.lastName,
       gender: response.gender,
       image: response.image,
-      token: response.token,
+      token: response.accessToken,
     );
   }
 }

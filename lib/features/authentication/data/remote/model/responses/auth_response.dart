@@ -13,7 +13,8 @@ class AuthResponse with _$AuthResponse {
     required String lastName,
     required String gender,
     required String image,
-    required String token,
+    required String accessToken,
+    required String refreshToken,
   }) = _AuthResponse;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>

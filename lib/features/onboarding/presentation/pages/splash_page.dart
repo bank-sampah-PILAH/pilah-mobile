@@ -14,32 +14,36 @@ import '../../../../design/constants/colors.dart';
 import '../../../../design/constants/text_style.dart';
 import '../../../../services/di.dart';
 
-class SplashPage extends StatefulWidget {
+class SplashPage extends StatelessWidget {
   const SplashPage({super.key});
 
   static const route = '/splash';
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+        create: (_) => di<OnboardingBloc>(), child: const SplashPageView());
+  }
 }
 
-class _SplashPageState extends State<SplashPage> {
+class SplashPageView extends StatefulWidget {
+  const SplashPageView({super.key});
+
+  @override
+  State<SplashPageView> createState() => _SplashPageViewState();
+}
+
+class _SplashPageViewState extends State<SplashPageView> {
   @override
   void initState() {
-    di<OnboardingBloc>().add(GetUserEvent());
     super.initState();
+    context.read<OnboardingBloc>().add(GetUserEvent());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocListener<OnboardingBloc, OnboardingStates>(
-        bloc: di<OnboardingBloc>(),
-        listenWhen: (prev, next) {
-          return next is OnboardingLoggedState ||
-              next is OnboardingNewState ||
-              next is OnboardingErrorState;
-        },
         listener: (context, state) {
           log(state.toString());
           if (state is OnboardingLoggedState) {

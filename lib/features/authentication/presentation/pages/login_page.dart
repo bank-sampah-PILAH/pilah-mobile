@@ -16,16 +16,26 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../services/di.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   static const route = '/login';
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+        create: (_) => di<AuthenticationBloc>(), child: const LoginPageView());
+  }
 }
 
-class _LoginPageState extends State<LoginPage> {
+class LoginPageView extends StatefulWidget {
+  const LoginPageView({super.key});
+
+  @override
+  State<LoginPageView> createState() => _LoginPageViewState();
+}
+
+class _LoginPageViewState extends State<LoginPageView> {
   late TextEditingController _nameController;
   late TextEditingController _passwordController;
 
@@ -62,11 +72,8 @@ class _LoginPageState extends State<LoginPage> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(
-              height: 64,
-            ),
+            const SizedBox(height: 64),
             BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-              bloc: di<AuthenticationBloc>(),
               buildWhen: (p, n) {
                 return n is PostLoginErrorState || n is PostLoginInitState;
               },
@@ -90,24 +97,20 @@ class _LoginPageState extends State<LoginPage> {
               label: 'Username',
               hint: 'Masukkan username',
               onChanged: (_) {
-                di<AuthenticationBloc>().add(LoginRefreshEvent());
+                context.read<AuthenticationBloc>().add(LoginRefreshEvent());
               },
             ),
-            const SizedBox(
-              height: 24,
-            ),
+            const SizedBox(height: 24),
             AppTextField(
               controller: _passwordController,
               obscureText: true,
               label: 'Password',
               hint: 'Masukkan password',
               onChanged: (_) {
-                di<AuthenticationBloc>().add(LoginRefreshEvent());
+                context.read<AuthenticationBloc>().add(LoginRefreshEvent());
               },
             ),
-            const SizedBox(
-              height: 16,
-            ),
+            const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,
               child: AppTextButton(
@@ -117,11 +120,9 @@ class _LoginPageState extends State<LoginPage> {
                 },
               ),
             ),
-            const SizedBox(
-              height: 24,
-            ),
+            const SizedBox(height: 24),
             BlocConsumer<AuthenticationBloc, AuthenticationStates>(
-              bloc: di<AuthenticationBloc>(),
+              bloc: context.read<AuthenticationBloc>(),
               listenWhen: (p, n) {
                 return n is PostLoginLoadingState ||
                     n is PostLoginSuccessState ||
@@ -143,19 +144,17 @@ class _LoginPageState extends State<LoginPage> {
                   text: 'Log in',
                   isLoading: state is PostLoginLoadingState,
                   onTap: () {
-                    di<AuthenticationBloc>().add(
-                      PostLoginEvent(
-                        username: _nameController.text,
-                        password: _passwordController.text,
-                      ),
-                    );
+                    context.read<AuthenticationBloc>().add(
+                          PostLoginEvent(
+                            username: _nameController.text,
+                            password: _passwordController.text,
+                          ),
+                        );
                   },
                 );
               },
             ),
-            const SizedBox(
-              height: 24,
-            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

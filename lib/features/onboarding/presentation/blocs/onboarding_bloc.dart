@@ -5,9 +5,11 @@ import 'package:boilerplate/features/onboarding/presentation/blocs/onboarding_ev
 import 'package:boilerplate/features/onboarding/presentation/blocs/onboarding_states.dart';
 import 'package:boilerplate/features/onboarding/presentation/blocs/states/onboarding_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 
 import '../../domain/use_cases/onboarding_use_cases.dart';
 
+@Injectable()
 class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingStates> {
   final OnboardingUseCases _useCases;
 

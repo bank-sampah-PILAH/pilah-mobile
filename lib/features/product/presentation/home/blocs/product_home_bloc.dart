@@ -3,9 +3,11 @@ import 'package:boilerplate/features/product/presentation/home/blocs/product_hom
 import 'package:boilerplate/features/product/presentation/home/blocs/product_home_states.dart';
 import 'package:boilerplate/features/product/presentation/home/blocs/states/get_home_product_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 
 import '../../../domain/use_cases/product_use_cases.dart';
 
+@Injectable()
 class ProductHomeBloc extends Bloc<ProductHomeEvent, ProductHomeStates> {
   final ProductUseCases _useCases;
 
@@ -20,12 +22,10 @@ class ProductHomeBloc extends Bloc<ProductHomeEvent, ProductHomeStates> {
     emitter(GetHomeProductLoadingState());
     final response = await _useCases.getProducts(6, 0);
     response.fold(
-          (l) {
-        emitter(
-          GetHomeProductErrorState(message: l.message ?? ''),
-        );
+      (l) {
+        emitter(GetHomeProductErrorState(message: l.message ?? ''));
       },
-          (r) {
+      (r) {
         emitter(GetHomeProductSuccessState(products: r));
       },
     );

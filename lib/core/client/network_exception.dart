@@ -31,9 +31,11 @@ class NetworkException implements Exception {
       case 408:
         return SendTimeOutException();
       case 413:
-        return RequestEntityTooLargeException(response: response, message: message);
+        return RequestEntityTooLargeException(
+            response: response, message: message);
       case 422:
-        return UnprocessableEntityException(response: response, message: message);
+        return UnprocessableEntityException(
+            response: response, message: message);
       case 500:
         return InternalServerErrorException();
       case 503:
@@ -48,8 +50,8 @@ class NetworkException implements Exception {
   }
 
   static NetworkException handleException(Exception e) {
-    if (e is DioException){
-      switch (e.type){
+    if (e is DioException) {
+      switch (e.type) {
         case DioExceptionType.badResponse:
           final err = NetworkException.handleBadResponse(e.response);
           Logger().e(err.toString());
@@ -68,9 +70,9 @@ class NetworkException implements Exception {
           return FetchDataException();
       }
     }
-    if(e is FormatException){
+    if (e is FormatException) {
       Logger().e('Error: Format from front end error');
-    } else if(e is SocketException){
+    } else if (e is SocketException) {
       Logger().e('Error: No Internet Connection');
     }
     return GeneralException(message: e.toString());
@@ -96,106 +98,89 @@ class InternalServerErrorException extends NetworkException {
 class ConflictException extends NetworkException {
   ConflictException({String? message, Response? response})
       : super(
-    message: message,
-    prefix: 'Conflict',
-    response: response,
-  );
+          message: message,
+          prefix: 'Conflict',
+          response: response,
+        );
 }
 
 class RequestEntityTooLargeException extends NetworkException {
   RequestEntityTooLargeException({String? message, Response? response})
       : super(
-    message: message,
-    prefix: 'Request Entity Too Large',
-    response: response,
-  );
+          message: message,
+          prefix: 'Request Entity Too Large',
+          response: response,
+        );
 }
 
 class FetchDataException extends NetworkException {
   FetchDataException({String? message, Response? response})
       : super(
-    message: message,
-    prefix: 'Error During Communication',
-    response: response,
-  );
+          message: message,
+          prefix: 'Error During Communication',
+          response: response,
+        );
 }
 
 class NotFoundException extends NetworkException {
   NotFoundException({String? message, Response? response})
       : super(
-    message: message,
-    prefix: 'Not Found',
-    response: response,
-  );
+          message: message,
+          prefix: 'Not Found',
+          response: response,
+        );
 }
 
 class UnprocessableEntityException extends NetworkException {
   UnprocessableEntityException({String? message, Response? response})
       : super(
-    message: message,
-    prefix: 'Invalid Request',
-    response: response,
-  );
+          message: message,
+          prefix: 'Invalid Request',
+          response: response,
+        );
 
   String? getErrorMessage() {
-    return response?.data != null && response?.data['message'] != null ? response!.data['message'] : null;
+    return response?.data != null && response?.data['message'] != null
+        ? response!.data['message']
+        : null;
   }
 }
 
 class BadRequestException extends NetworkException {
   BadRequestException({String? message, Response? response})
       : super(
-    message: message,
-    prefix: 'Invalid Request',
-    response: response,
-  );
+          message: message,
+          prefix: 'Invalid Request',
+          response: response,
+        );
 
   String? getErrorMessage() {
-    return response?.data != null && response?.data['message'] != null ? response!.data['message'] : null;
+    return response?.data != null && response?.data['message'] != null
+        ? response!.data['message']
+        : null;
   }
 }
 
 class UnauthorisedException extends NetworkException {
-  UnauthorisedException({String? message, Response? response})
-      : super(
-    message: message,
-    prefix: 'Unauthorised',
-    response: response,
-  );
+  UnauthorisedException({super.message, super.response})
+      : super(prefix: 'Unauthorised');
 }
 
 class InvalidInputException extends NetworkException {
-  InvalidInputException({String? message, Response? response})
-      : super(
-    message: message,
-    prefix: 'Invalid Input',
-    response: response,
-  );
+  InvalidInputException({super.message, super.response})
+      : super(prefix: 'Invalid Input');
 }
 
 class RequestCancelled extends NetworkException {
-  RequestCancelled({String? message, Response? response})
-      : super(
-    message: message,
-    prefix: 'Request Cancelled',
-    response: response,
-  );
+  RequestCancelled({super.message, super.response})
+      : super(prefix: 'Request Cancelled');
 }
 
 class BadCertificate extends NetworkException {
-  BadCertificate({String? message, Response? response})
-      : super(
-    message: message,
-    prefix: 'BadCertificate',
-    response: response,
-  );
+  BadCertificate({super.message, super.response})
+      : super(prefix: 'BadCertificate');
 }
 
-
 class GeneralException extends NetworkException {
-  GeneralException({String? message})
-      : super(
-    message: message,
-    prefix: 'General Exception',
-  );
+  GeneralException({super.message}) : super(prefix: 'General Exception');
 }

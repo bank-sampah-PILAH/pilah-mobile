@@ -1,9 +1,11 @@
 import 'package:boilerplate/core/client/network_service.dart';
 import 'package:boilerplate/core/constants/endpoints.dart';
-import 'package:boilerplate/features/product/data/model/request/get_list_product_request.dart';
-import 'package:boilerplate/features/product/data/model/responses/list_product_response.dart';
+import 'package:boilerplate/features/product/data/remote/model/request/get_list_product_request.dart';
+import 'package:boilerplate/features/product/data/remote/model/responses/list_product_response.dart';
+import 'package:injectable/injectable.dart';
 
-import '../model/responses/product_user_response.dart';
+import 'model/responses/product_user_response.dart';
+
 
 abstract class ProductRemoteDataSources {
   Future<ProductUserResponse> getUser();
@@ -11,6 +13,7 @@ abstract class ProductRemoteDataSources {
   Future<ListProductResponse> getProducts(GetListProductRequest request);
 }
 
+@LazySingleton(as: ProductRemoteDataSources)
 class ProductRemoteDataSourceImpl implements ProductRemoteDataSources {
   final NetworkService networkService;
 

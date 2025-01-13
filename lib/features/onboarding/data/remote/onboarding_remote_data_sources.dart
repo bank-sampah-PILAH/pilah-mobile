@@ -1,12 +1,14 @@
 import 'package:boilerplate/core/client/network_service.dart';
 import 'package:boilerplate/core/constants/endpoints.dart';
+import 'package:injectable/injectable.dart';
 
-import '../model/responses/onboarding_response.dart';
+import 'model/responses/onboarding_response.dart';
 
 abstract class OnboardingRemoteDataSources {
   Future<OnboardingResponse> getUser();
 }
 
+@LazySingleton(as: OnboardingRemoteDataSources)
 class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSources {
   final NetworkService networkService;
 

@@ -1,13 +1,15 @@
 import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/product/data/model/request/get_list_product_request.dart';
+import 'package:boilerplate/features/product/data/remote/model/mapper/product_mapper.dart';
+import 'package:boilerplate/features/product/data/remote/model/request/get_list_product_request.dart';
 import 'package:boilerplate/features/product/data/remote/product_remote_data_sources.dart';
 import 'package:boilerplate/features/product/domain/model/product.dart';
 import 'package:dartz/dartz.dart';
+import 'package:injectable/injectable.dart';
 
 import '../../../core/client/api_call.dart';
 import '../domain/repository/product_repository.dart';
-import 'model/mapper/product_mapper.dart';
 
+@LazySingleton(as: ProductRepository)
 class ProductRepositoryImpl implements ProductRepository {
   final ProductRemoteDataSources _dataSources;
 

@@ -1,4 +1,5 @@
 import 'package:boilerplate/services/secure_storage.dart';
+import 'package:injectable/injectable.dart';
 
 abstract class SecureDatabase {
   Future<void> write({
@@ -11,6 +12,7 @@ abstract class SecureDatabase {
   Future<String?> getString(String key);
 }
 
+@LazySingleton(as: SecureDatabase)
 class SecureDatabaseImpl implements SecureDatabase {
   final SecureStorage _storage;
 
