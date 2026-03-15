@@ -1,6 +1,67 @@
 // ignore_for_file: avoid_print
 part of '../spl_manager.dart';
 
+// ─── Per-feature spec parser ──────────────────────────────────────────────────
+//
+// Parses a feature spec string of the form:
+//   name[,storage=<provider>][,with-storage][,state=<solution>][,test][,shell]
+//
+// Per-feature keys override the global flags passed as defaults.
+// Examples:
+//   "orders"                           → no options
+//   "orders,storage=sqflite,state=cubit" → sqflite + cubit override
+//   "settings,test,shell"              → with tests, shell route
+//   "feed,with-storage"                → use global default backend
+
+({
+  String name,
+  String? storageOverride,
+  bool withStorage,
+  String? stateOverride,
+  bool withTest,
+  bool shellRoute,
+}) _parseFeatureSpec(
+  String spec, {
+  String? globalStorageOverride,
+  bool globalWithStorage = false,
+  String? globalState,
+  bool globalWithTest = false,
+  bool globalShellRoute = false,
+}) {
+  final parts = spec.split(',');
+  final name = parts[0];
+
+  String? storageOverride = globalStorageOverride;
+  bool withStorage        = globalWithStorage;
+  String? stateOverride   = globalState;
+  bool withTest           = globalWithTest;
+  bool shellRoute         = globalShellRoute;
+
+  for (final part in parts.skip(1)) {
+    if (part.startsWith('storage=')) {
+      storageOverride = part.substring(8);
+      withStorage     = true;
+    } else if (part == 'with-storage' || part == 'ws') {
+      withStorage = true;
+    } else if (part.startsWith('state=')) {
+      stateOverride = part.substring(6);
+    } else if (part == 'test') {
+      withTest = true;
+    } else if (part == 'shell') {
+      shellRoute = true;
+    }
+  }
+
+  return (
+    name:            name,
+    storageOverride: storageOverride,
+    withStorage:     withStorage,
+    stateOverride:   stateOverride,
+    withTest:        withTest,
+    shellRoute:      shellRoute,
+  );
+}
+
 // ─── Validation + Notes ───────────────────────────────────────────────────────
 
 void _validateStateChoice(String state) {
@@ -66,20 +127,36 @@ void _printHelp() {
 SPL Manager — Software Product Line CLI
 
 Variability:
-  Storage [XOR]     one backend for the whole app
+  Storage [OR]      multiple backends can coexist; each feature picks one
   State Mgmt [OR]   global default + per-feature override
 
 Commands:
   list
-  add <name>                              Scaffold a new feature (active)
-  add <name> --with-storage              Include local cache (AppStorage)
-  add <name> --with-test                 Generate unit + state mgmt tests
-  add <name> --shell-route               Register as shell (bottom nav) route
-  add <name> --state bloc|cubit|riverpod Override state mgmt for this feature
-  disable <name>                         Move to catalog — code kept, DI removed
-  enable <name>                          Restore from catalog — DI re-wired
-  remove <name> [--yes|-y]               Hard delete (active or catalog)
-  storage set <provider>                 Switch storage (XOR)
+  add <spec> [spec2 ...]
+    Scaffold one or more features. Each spec is:
+      <name>[,storage=<p>][,state=<s>][,test][,shell]
+
+    Inline examples:
+      add orders,storage=sqflite,state=cubit
+      add feed,test inventory,shell settings
+      add orders,storage=sqflite feed,with-storage settings
+
+    Global flags (apply to all features unless overridden inline):
+      --with-storage              Use default storage backend
+      --storage <provider>        Use a specific backend for all
+      --with-test                 Generate tests for all
+      --shell-route               Shell route for all
+      --state bloc|cubit|riverpod State mgmt for all
+
+    Available providers: flutter_secure_storage | sqflite | hive | shared_preferences
+
+  disable <name> [name2 ...]             Move to catalog — code kept, DI removed
+  enable <name> [name2 ...]              Restore from catalog — DI re-wired
+  remove <name> [name2 ...] [--yes|-y]   Hard delete
+                                         --yes required when cross-feature deps found
+  storage add <provider>                 Register a new storage backend
+  storage remove <provider>              Unregister a backend
+  storage default <provider>             Set default for --with-storage / ,with-storage
   storage list
   state set <bloc|cubit|riverpod>        Change default state mgmt
   state list

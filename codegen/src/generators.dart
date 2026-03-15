@@ -6,7 +6,7 @@ part of '../spl_manager.dart';
 void _generateFeatureFiles(
   String module,
   String className, {
-  bool withStorage = false,
+  String? storageProvider,
   String state = 'bloc',
 }) {
   final dirs = [
@@ -29,7 +29,7 @@ void _generateFeatureFiles(
   final files = <String, String>{
     // Data layer
     'lib/features/$module/data/local/${module}_local_data_sources.dart':
-        _tplLocalDataSources(module, className, withStorage: withStorage),
+        _tplLocalDataSources(module, className, storageProvider: storageProvider),
     'lib/features/$module/data/model/mapper/${module}_mapper.dart':
         _tplMapper(module, className),
     'lib/features/$module/data/model/responses/${module}_response.dart':
@@ -86,6 +86,31 @@ Map<String, String> _stateFiles(String module, String className, String state) {
             _tplBloc(module, className),
       };
   }
+}
+
+// ─── Cross-feature dependency check ──────────────────────────────────────────
+
+/// Scans active features and tests for any imports/references to [module].
+/// Returns a map of { filePath → [matching lines] } for all referencing files.
+Map<String, List<String>> _checkCrossFeatureDeps(String module) {
+  final pattern = 'features/$module/';
+  final results = <String, List<String>>{};
+
+  for (final root in ['lib/features', 'test/features']) {
+    final dir = Directory(root);
+    if (!dir.existsSync()) continue;
+    for (final entity in dir.listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      final normalized = entity.path.replaceAll('\\', '/');
+      // Skip the module's own files
+      if (normalized.contains('/$module/')) continue;
+      final lines = entity.readAsLinesSync();
+      final matches = lines.where((l) => l.contains(pattern)).map((l) => l.trim()).toList();
+      if (matches.isNotEmpty) results[normalized] = matches;
+    }
+  }
+
+  return results;
 }
 
 // ─── Route injection ──────────────────────────────────────────────────────────
