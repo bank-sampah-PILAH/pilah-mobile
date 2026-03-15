@@ -105,14 +105,41 @@ void _updateFeatureStatusInConfig(String name, String status) {
   File(path).writeAsStringSync(result.join('\n'));
 }
 
-void _updateStorageInConfig(String provider) {
+// ─── Storage config helpers ───────────────────────────────────────────────────
+
+void _addStorageToConfig(String provider) {
+  final providers = _getActiveProviders();
+  if (providers.contains(provider)) return;
+  providers.add(provider);
+  _setActiveStorageInConfig(providers);
+}
+
+void _removeStorageFromConfig(String provider) {
+  final providers = _getActiveProviders();
+  providers.remove(provider);
+  _setActiveStorageInConfig(providers);
+}
+
+void _setActiveStorageInConfig(List<String> providers) {
   const path = 'spl.yaml';
   File(path).writeAsStringSync(
     File(path).readAsStringSync().replaceFirst(
-      RegExp(r'local_backend:.*'),
-      'local_backend: $provider',
+      RegExp(r'active:.*'),
+      'active: ${providers.join(',')}',
     ),
   );
+}
+
+void _updateStorageDefaultInConfig(String provider) {
+  const path = 'spl.yaml';
+  var content = File(path).readAsStringSync();
+  // Handle new format (default:) and old format (local_backend:)
+  if (content.contains(RegExp(r'^\s*default:', multiLine: true))) {
+    content = content.replaceFirst(RegExp(r'default:.*'), 'default: $provider');
+  } else {
+    content = content.replaceFirst(RegExp(r'local_backend:.*'), 'default: $provider');
+  }
+  File(path).writeAsStringSync(content);
 }
 
 void _updateStateDefaultInConfig(String solution) {

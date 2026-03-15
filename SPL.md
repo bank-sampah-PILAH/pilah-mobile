@@ -12,11 +12,13 @@ The CLI source lives in `codegen/spl_manager.dart` and is split across `codegen/
 
 ```
 dart run codegen/spl_manager.dart list
-dart run codegen/spl_manager.dart add <name> [--with-storage] [--with-test] [--shell-route] [--state bloc|cubit|riverpod]
-dart run codegen/spl_manager.dart disable <name>             # deactivate, keep code
-dart run codegen/spl_manager.dart enable <name>              # restore from catalog
-dart run codegen/spl_manager.dart remove <name> [--yes|-y]  # hard delete
-dart run codegen/spl_manager.dart storage set <provider>
+dart run codegen/spl_manager.dart add <spec> [spec2 ...]
+dart run codegen/spl_manager.dart disable <name> [name2 ...]
+dart run codegen/spl_manager.dart enable <name> [name2 ...]
+dart run codegen/spl_manager.dart remove <name> [name2 ...] [--yes|-y]
+dart run codegen/spl_manager.dart storage add <provider>
+dart run codegen/spl_manager.dart storage remove <provider>
+dart run codegen/spl_manager.dart storage default <provider>
 dart run codegen/spl_manager.dart storage list
 dart run codegen/spl_manager.dart state set <bloc|cubit|riverpod>
 dart run codegen/spl_manager.dart state list
@@ -27,7 +29,7 @@ dart run codegen/spl_manager.dart fix
 
 ## Source of Truth: `spl.yaml`
 
-`spl.yaml` is the single source of truth for the product configuration. It tracks the active storage backend, the default state management solution, and all features.
+`spl.yaml` is the single source of truth for the product configuration. It tracks the active storage backends, the default state management solution, and all features.
 
 Do not edit `spl.yaml` by hand — use the CLI. The CLI updates this file, generates/deletes code, and re-wires DI automatically.
 
@@ -35,30 +37,33 @@ Do not edit `spl.yaml` by hand — use the CLI. The CLI updates this file, gener
 
 ## Variability Points
 
-This project has two variability points. They have different exclusivity rules.
+This project has two variability points. Both use OR semantics.
 
-### 1. Storage — XOR (exactly one active)
+### 1. Storage — OR (multiple backends can coexist)
 
-Controls the backend for `AppStorage`, the general-purpose local caching interface used by features that need to persist data locally (e.g., cached lists, user preferences).
+Controls the backend(s) for `AppStorage`, the general-purpose local caching interface. Multiple providers can be active simultaneously — each feature declares which one it uses via `@Named`.
 
 | Provider | Notes |
 |---|---|
 | `flutter_secure_storage` | Default. Encrypted key-value. No `init()` needed. |
 | `hive` | Fast binary key-value. Requires `hive_flutter` in `pubspec.yaml` and `AppStorage.init()` before `runApp()`. |
-| `sqflite` | SQLite. Requires `AppStorage.init()` before `runApp()`. |
+| `sqflite` | SQLite (relational). Best for structured/queryable data. Requires `AppStorage.init()` before `runApp()`. |
 | `shared_preferences` | Simple unencrypted key-value. Requires `shared_preferences` in `pubspec.yaml` and `AppStorage.init()` before `runApp()`. |
 
-**XOR means**: switching providers deletes the old implementation file and generates the new one. Only the active provider's impl file exists in `lib/core/storage/impl/`.
+Each active provider is registered as `@Named('provider_name')` in `StorageModule`. Features inject the named variant they need.
 
 ```
-dart run codegen/spl_manager.dart storage set hive
+dart run codegen/spl_manager.dart storage add sqflite
+dart run codegen/spl_manager.dart storage remove hive
+dart run codegen/spl_manager.dart storage default sqflite   # default for --with-storage
+dart run codegen/spl_manager.dart storage list
 ```
 
-This regenerates `lib/core/storage/impl/hive_storage_provider.dart`, rewrites `lib/core/storage/storage_module.dart` to wire the new impl, and runs `build_runner`.
+When a feature is added with `--storage sqflite` (or `,storage=sqflite` inline), the CLI auto-registers `sqflite` if not already active, generates the impl file, and wires `@Named('sqflite')` into the feature's local data source.
 
 ### 2. State Management — OR (global default + per-feature override)
 
-Controls the presentation layer pattern for features. Unlike storage, this is **not exclusive** — different features in the same app can use different state management solutions.
+Controls the presentation layer pattern for features. Different features in the same app can use different solutions.
 
 | Solution | Package | Files generated | Use when |
 |---|---|---|---|
@@ -74,6 +79,7 @@ dart run codegen/spl_manager.dart state set cubit
 Override per feature at creation time:
 ```
 dart run codegen/spl_manager.dart add orders --state riverpod
+dart run codegen/spl_manager.dart add orders,state=riverpod     # inline equivalent
 ```
 
 Bloc and cubit coexist with zero config (same `flutter_bloc` package). Riverpod requires:
@@ -108,24 +114,26 @@ The alternative backends (Hive, SQLite, SharedPreferences) write plaintext or we
 
 ```
 lib/core/storage/app_storage.dart
-lib/core/storage/impl/<active_provider>.dart   ← only one file exists at a time
-lib/core/storage/storage_module.dart           ← SPL-managed, do not edit manually
+lib/core/storage/impl/<provider>.dart   ← one file per active provider
+lib/core/storage/storage_module.dart    ← SPL-managed, do not edit manually
 ```
 
-Used by features that need to cache data locally — product lists, user preferences, onboarding state, etc. The backend is switchable via `storage set`. No security guarantee is assumed.
+Used by features that need to cache data locally — product lists, user preferences, onboarding state, etc. Multiple backends can be active at once; each feature picks its own. No security guarantee is assumed.
 
-Inject it in your local data source:
+Generated local data sources use `@Named` to inject the correct backend:
 ```dart
-@LazySingleton(as: MyLocalDataSources)
-class MyLocalDataSourcesImpl implements MyLocalDataSources {
+@LazySingleton(as: OrdersLocalDataSources)
+class OrdersLocalDataSourcesImpl implements OrdersLocalDataSources {
   final AppStorage _storage;
-  MyLocalDataSourcesImpl(this._storage);
+  const OrdersLocalDataSourcesImpl(@Named('sqflite') this._storage);
 }
 ```
 
 Add a feature with local storage pre-wired:
 ```
-dart run codegen/spl_manager.dart add orders --with-storage
+dart run codegen/spl_manager.dart add orders --with-storage       # uses default backend
+dart run codegen/spl_manager.dart add orders --storage sqflite    # specific backend
+dart run codegen/spl_manager.dart add orders,storage=sqflite      # inline equivalent
 ```
 
 ---
@@ -148,21 +156,56 @@ Features have three states:
 
 ### Adding a feature
 
+Each argument to `add` is a **feature spec**: a feature name optionally followed by comma-separated inline options.
+
 ```
-dart run codegen/spl_manager.dart add <name>
-dart run codegen/spl_manager.dart add <name> --with-storage       # include AppStorage local cache
-dart run codegen/spl_manager.dart add <name> --with-test          # generate unit + state mgmt tests
-dart run codegen/spl_manager.dart add <name> --shell-route        # register as shell (bottom nav) route
-dart run codegen/spl_manager.dart add <name> --state cubit
-dart run codegen/spl_manager.dart add <name> --with-storage --state riverpod
+<name>[,storage=<provider>][,state=<solution>][,test][,shell]
 ```
+
+Examples:
+```
+# Single feature, no options
+dart run codegen/spl_manager.dart add orders
+
+# Single feature with options inline
+dart run codegen/spl_manager.dart add orders,storage=sqflite,state=cubit,test
+
+# Multiple features, each with their own config
+dart run codegen/spl_manager.dart add orders,storage=sqflite,state=cubit feed,test settings,shell
+
+# Global flags apply to all features that don't override them inline
+dart run codegen/spl_manager.dart add orders inventory,storage=hive settings --state bloc --with-test
+# → orders:    bloc + test  (from global flags)
+# → inventory: hive + test  (storage from inline, test from global)
+# → settings:  bloc + test  (from global flags)
+```
+
+**Available inline keys:**
+
+| Key | Equivalent flag | Description |
+|---|---|---|
+| `storage=<provider>` | `--storage <provider>` | Use a specific backend |
+| `with-storage` or `ws` | `--with-storage` | Use the default backend |
+| `state=<solution>` | `--state <solution>` | State management override |
+| `test` | `--with-test` | Generate tests |
+| `shell` | `--shell-route` | Register as shell (bottom nav) route |
+
+**Global flags** (apply to all features unless overridden inline):
+
+| Flag | Description |
+|---|---|
+| `--with-storage` | Use default storage backend for all |
+| `--storage <provider>` | Use specific backend for all |
+| `--state <solution>` | State management for all |
+| `--with-test` | Generate tests for all |
+| `--shell-route` | Shell route for all |
 
 This scaffolds a full clean architecture feature:
 
 ```
 lib/features/<name>/
   data/
-    local/<name>_local_data_sources.dart        (only with --with-storage)
+    local/<name>_local_data_sources.dart        (only with storage option)
     model/
       mapper/<name>_mapper.dart
       responses/<name>_response.dart
@@ -183,27 +226,31 @@ lib/features/<name>/
       <name>_state.dart
       <name>_notifier.dart
 
-test/features/<name>/                           (only with --with-test)
+test/features/<name>/                           (only with test option)
   domain/<name>_interactor_test.dart
   presentation/<name>_bloc_test.dart | <name>_cubit_test.dart | <name>_notifier_test.dart
 ```
 
-The route is injected automatically into `lib/core/router/app_router_config.dart`. Use `--shell-route` to register it inside the `ShellRoute` (bottom nav); omit it for a top-level route.
+The route is injected automatically into `lib/core/router/app_router_config.dart`. Use `shell` (inline) or `--shell-route` (global) to register inside the `ShellRoute` (bottom nav); omit for a top-level route.
 
-DI is auto-wired — `build_runner` regenerates `lib/services/di.config.dart` automatically.
+DI is auto-wired — `build_runner` regenerates `lib/services/di.config.dart` automatically. When adding multiple features, `build_runner` runs once at the end.
 
 ### Disabling a feature
 
 ```
 dart run codegen/spl_manager.dart disable <name>
+dart run codegen/spl_manager.dart disable orders inventory settings   # multiple at once
 ```
 
 Moves `lib/features/<name>/` to `features_catalog/<name>/`, marks it `inactive` in `spl.yaml`, and regenerates DI. The code is fully preserved — nothing is deleted.
+
+If other features import the disabled feature, a warning is printed listing the affected files. The disable proceeds — fix the broken imports afterwards.
 
 ### Re-enabling a feature
 
 ```
 dart run codegen/spl_manager.dart enable <name>
+dart run codegen/spl_manager.dart enable orders inventory            # multiple at once
 ```
 
 Moves `features_catalog/<name>/` back to `lib/features/<name>/`, marks it `active` in `spl.yaml`, and re-wires DI. All original code is restored exactly as it was left.
@@ -212,10 +259,13 @@ Moves `features_catalog/<name>/` back to `lib/features/<name>/`, marks it `activ
 
 ```
 dart run codegen/spl_manager.dart remove <name>
-dart run codegen/spl_manager.dart remove <name> --yes
+dart run codegen/spl_manager.dart remove <name> --yes               # skip confirmation
+dart run codegen/spl_manager.dart remove orders inventory --yes     # multiple at once
 ```
 
-Permanently deletes the feature from wherever it lives (active or catalog) and removes it from `spl.yaml`. Irreversible. Add `--yes` (or `-y`) to skip the confirmation prompt.
+Permanently deletes the feature from wherever it lives (active or catalog), removes its route and tests, and removes it from `spl.yaml`. Irreversible.
+
+If other features import the feature being removed, the CLI **blocks** and lists the dependent files. Pass `--yes` to force the deletion anyway (you will need to fix the broken imports manually).
 
 ---
 
@@ -226,10 +276,7 @@ The four features included in this template (`authentication`, `onboarding`, `pr
 Keep them as reference — remove them when you no longer need the examples:
 
 ```
-dart run codegen/spl_manager.dart remove authentication --yes
-dart run codegen/spl_manager.dart remove onboarding --yes
-dart run codegen/spl_manager.dart remove product --yes
-dart run codegen/spl_manager.dart remove profile --yes
+dart run codegen/spl_manager.dart remove authentication onboarding product profile --yes
 ```
 
 ---
@@ -261,11 +308,11 @@ codegen/
 ├── spl_manager.dart        entry point — library declaration, import 'dart:io', main(), part directives
 └── src/
     ├── commands.dart        _cmdList, _cmdAdd, _cmdDisable, _cmdEnable, _cmdRemove, _cmdStorage*, _cmdState*, _cmdFix
-    ├── generators.dart      _generateFeatureFiles, _stateFiles, _injectRoute, _removeRoute, _removeTests, _generateTestFiles
-    ├── storage_manager.dart _getActiveProviderName, _implFileName, _deleteStorageImpl, _generateStorageImpl, _rewriteStorageModule
+    ├── generators.dart      _generateFeatureFiles, _stateFiles, _injectRoute, _removeRoute, _removeTests, _generateTestFiles, _checkCrossFeatureDeps
+    ├── storage_manager.dart _getDefaultProviderName, _getActiveProviders, _ensureStorageActive, _rewriteStorageModule, _implFileName, _deleteStorageImpl, _generateStorageImpl
     ├── templates.dart       all _tpl* functions — state mgmt, storage providers, data/domain layer, tests
     ├── spl_config.dart      spl.yaml read/write helpers, Mason integration (_checkMason, _tryMason*)
-    └── utils.dart           _validateStateChoice, _printNotes, _runBuildRunner, _toPascalCase, _printHelp, _die
+    └── utils.dart           _parseFeatureSpec, _validateStateChoice, _printNotes, _runBuildRunner, _toPascalCase, _printHelp, _die
 ```
 
 To extend the CLI — add a command, add a template — edit only the relevant part file.
@@ -274,7 +321,9 @@ To extend the CLI — add a command, add a template — edit only the relevant p
 
 ## DI Regeneration
 
-All generated code uses `@injectable` / `@lazySingleton` annotations. After any `add` or `remove` command, `build_runner` is run automatically to regenerate `lib/services/di.config.dart`.
+All generated code uses `@injectable` / `@lazySingleton` annotations. After any `add`, `disable`, `enable`, or `remove` command, `build_runner` is run automatically to regenerate `lib/services/di.config.dart`.
+
+When operating on multiple features at once, `build_runner` runs **once** at the end rather than after each feature.
 
 To run it manually:
 ```

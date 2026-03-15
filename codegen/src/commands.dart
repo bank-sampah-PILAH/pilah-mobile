@@ -7,11 +7,12 @@ Future<void> _cmdList() async {
   final config = _readSplConfig();
   _printHeader('SPL Configuration');
 
-  final storage = config['storage']?['local_backend'] ?? 'flutter_secure_storage';
-  final stateDefault = config['state_management']?['default'] ?? 'bloc';
+  final storageDefault   = _getDefaultProviderName();
+  final storageActive    = _getActiveProviders();
+  final stateDefault     = config['state_management']?['default'] ?? 'bloc';
 
   print('  App              : ${config['app']?['name'] ?? 'unknown'}');
-  print('  Storage [XOR]    : $storage');
+  print('  Storage [OR]     : ${storageActive.join(', ')} (default: $storageDefault)');
   print('  State Mgmt [OR]  : $stateDefault (default, per-feature override allowed)');
   print('');
 
@@ -62,9 +63,11 @@ Future<void> _cmdList() async {
 Future<void> _cmdAdd(
   String name, {
   bool withStorage = false,
+  String? storageOverride,
   bool withTest = false,
   bool shellRoute = false,
   String? stateOverride,
+  bool runDi = true,
 }) async {
   final module = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
   final className = _toPascalCase(module);
@@ -80,15 +83,27 @@ Future<void> _cmdAdd(
   }
 
   final config = _readSplConfig();
-  final globalStorageBackend = config['storage']?['local_backend'] ?? 'flutter_secure_storage';
   final globalStateDefault = config['state_management']?['default'] ?? 'bloc';
   final stateChoice = stateOverride ?? globalStateDefault;
-
   _validateStateChoice(stateChoice);
+
+  // Resolve effective storage provider
+  String? storageProvider;
+  if (storageOverride != null) {
+    _validateStorageProvider(storageOverride);
+    storageProvider = storageOverride;
+  } else if (withStorage) {
+    storageProvider = _getDefaultProviderName();
+  }
+
+  // Auto-register provider if not already active
+  if (storageProvider != null) {
+    await _ensureStorageActive(storageProvider);
+  }
 
   _printHeader('Adding feature: $module');
   print('  Class   : $className');
-  print('  Storage : ${withStorage ? globalStorageBackend : 'none'}');
+  print('  Storage : ${storageProvider ?? 'none'}');
   print('  State   : $stateChoice${stateOverride != null ? ' (override)' : ' (default)'}');
   print('  Route   : ${shellRoute ? 'shell (bottom nav)' : 'top-level'}');
   print('  Tests   : ${withTest ? 'yes (--with-test)' : 'no'}');
@@ -96,15 +111,15 @@ Future<void> _cmdAdd(
   print('');
 
   final usedMason = await _tryMasonFeature(module,
-      withStorage: withStorage, state: stateChoice);
+      withStorage: storageProvider != null, state: stateChoice);
   if (!usedMason) {
     _generateFeatureFiles(module, className,
-        withStorage: withStorage, state: stateChoice);
+        storageProvider: storageProvider, state: stateChoice);
   }
 
   _addFeatureToConfig(
     module,
-    storage: withStorage ? globalStorageBackend : 'none',
+    storage: storageProvider ?? 'none',
     state: stateChoice,
   );
 
@@ -114,16 +129,17 @@ Future<void> _cmdAdd(
 
   _printStateNotes(stateChoice);
 
-  print('\n  Wiring DI (build_runner)...');
-  await _runBuildRunner();
-
-  print('\n  ✓ Done! lib/features/$module/');
+  if (runDi) {
+    print('\n  Wiring DI (build_runner)...');
+    await _runBuildRunner();
+    print('\n  ✓ Done! lib/features/$module/');
+  }
 }
 
-Future<void> _cmdDisable(String name) async {
+Future<void> _cmdDisable(String name, {bool runDi = true}) async {
   final module = name.toLowerCase();
-  final activeDir   = 'lib/features/$module';
-  final catalogDir  = 'features_catalog/$module';
+  final activeDir  = 'lib/features/$module';
+  final catalogDir = 'features_catalog/$module';
 
   _printHeader('Disabling feature: $module');
 
@@ -134,6 +150,18 @@ Future<void> _cmdDisable(String name) async {
     _die('Feature "$module" not found.');
   }
 
+  // Cross-feature dependency check — warn only, don't block
+  final deps = _checkCrossFeatureDeps(module);
+  if (deps.isNotEmpty) {
+    print('  ⚠  Other features reference "$module":');
+    for (final entry in deps.entries) {
+      print('     ${entry.key}');
+      for (final line in entry.value) print('       $line');
+    }
+    print('  These references will break once "$module" is disabled. Fix them after.');
+    print('');
+  }
+
   Directory('features_catalog').createSync();
   Directory(activeDir).renameSync(catalogDir);
   print('  ○  Moved: $activeDir  →  $catalogDir');
@@ -141,16 +169,18 @@ Future<void> _cmdDisable(String name) async {
   _removeRoute(module);
   _updateFeatureStatusInConfig(module, 'inactive');
 
-  print('  Regenerating DI...');
-  await _runBuildRunner();
+  if (runDi) {
+    print('  Regenerating DI...');
+    await _runBuildRunner();
+  }
   print('\n  ✓ Feature "$module" disabled.');
   print('  → Restore with: dart run codegen/spl_manager.dart enable $module');
 }
 
-Future<void> _cmdEnable(String name) async {
+Future<void> _cmdEnable(String name, {bool runDi = true}) async {
   final module = name.toLowerCase();
-  final activeDir   = 'lib/features/$module';
-  final catalogDir  = 'features_catalog/$module';
+  final activeDir  = 'lib/features/$module';
+  final catalogDir = 'features_catalog/$module';
 
   _printHeader('Enabling feature: $module');
 
@@ -168,13 +198,19 @@ Future<void> _cmdEnable(String name) async {
 
   _updateFeatureStatusInConfig(module, 'active');
 
-  print('  Wiring DI (build_runner)...');
-  await _runBuildRunner();
-  print('\n  ✓ Feature "$module" enabled.');
-  print('  → Ensure route is registered in lib/core/router/app_router_config.dart');
+  if (runDi) {
+    print('  Wiring DI (build_runner)...');
+    await _runBuildRunner();
+    print('\n  ✓ Feature "$module" enabled.');
+    print('  → Ensure route is registered in lib/core/router/app_router_config.dart');
+  } else {
+    print('  ✓ Feature "$module" enabled.');
+    print('  → Ensure route is registered in lib/core/router/app_router_config.dart');
+  }
 }
 
-Future<void> _cmdRemove(String name, {bool force = false}) async {
+/// Returns true if the feature was active (DI regeneration needed).
+Future<bool> _cmdRemove(String name, {bool force = false, bool runDi = true}) async {
   final module = name.toLowerCase();
   final activeDir  = 'lib/features/$module';
   final catalogDir = 'features_catalog/$module';
@@ -188,6 +224,23 @@ Future<void> _cmdRemove(String name, {bool force = false}) async {
   _printHeader('Removing feature: $module');
   print('  Location: $location${inCatalog ? ' (disabled)' : ' (active)'}');
 
+  // Cross-feature dependency check — block if deps found and not forced
+  final deps = _checkCrossFeatureDeps(module);
+  if (deps.isNotEmpty) {
+    print('  ⚠  Other features reference "$module":');
+    for (final entry in deps.entries) {
+      print('     ${entry.key}');
+      for (final line in entry.value) print('       $line');
+    }
+    print('');
+    if (!force) {
+      _die('Cannot remove "$module" — other features depend on it.\n'
+          '  Fix the references first, or use --yes to force the deletion anyway.');
+    }
+    print('  Forcing removal despite cross-feature references.');
+    print('');
+  }
+
   if (!force) {
     stdout.write('  Permanently delete "$module"? [y/N] ');
     final confirm = stdin.readLineSync()?.toLowerCase();
@@ -200,56 +253,141 @@ Future<void> _cmdRemove(String name, {bool force = false}) async {
   _removeTests(module);
   _removeFeatureFromConfig(module);
 
-  if (inActive) {
+  if (inActive && runDi) {
     print('  Regenerating DI...');
     await _runBuildRunner();
   }
   print('\n  ✓ Feature "$module" permanently removed.');
+
+  return inActive;
 }
 
-Future<void> _cmdStorageSet(String provider) async {
-  const valid = ['flutter_secure_storage', 'sqflite', 'hive', 'shared_preferences'];
-  if (!valid.contains(provider)) {
-    _die('Unknown provider: "$provider"\nValid: ${valid.join(' | ')}');
+// ─── Storage commands ─────────────────────────────────────────────────────────
+
+Future<void> _cmdStorageAdd(String provider) async {
+  _validateStorageProvider(provider);
+
+  final activeProviders = _getActiveProviders();
+  if (activeProviders.contains(provider)) {
+    print('\n  Storage provider "$provider" is already active.');
+    exit(0);
   }
 
-  final current = _getActiveProviderName();
-  if (current == provider) { print('\n  Already using "$provider".'); exit(0); }
-
-  _printHeader('Switching storage [XOR]: $current → $provider');
-
-  _deleteStorageImpl(current);
+  _printHeader('Adding storage provider: $provider');
 
   final usedMason = await _tryMasonStorage(provider);
   if (!usedMason) _generateStorageImpl(provider);
 
-  _rewriteStorageModule(provider);
-  _updateStorageInConfig(provider);
+  final newProviders = [...activeProviders, provider];
+  _addStorageToConfig(provider);
+  _rewriteStorageModule(newProviders, _getDefaultProviderName());
 
   print('\n  Regenerating DI...');
   await _runBuildRunner();
-
-  print('\n  ✓ Storage → "$provider"');
+  print('\n  ✓ Storage provider "$provider" added.');
   _printStorageNotes(provider);
 }
 
+Future<void> _cmdStorageRemove(String provider) async {
+  _validateStorageProvider(provider);
+
+  final activeProviders = _getActiveProviders();
+  if (!activeProviders.contains(provider)) {
+    _die('Provider "$provider" is not active.');
+  }
+  if (activeProviders.length == 1) {
+    _die('Cannot remove the only active storage provider.');
+  }
+
+  // Check if any active features use this provider
+  final config = _readSplConfig();
+  final features = config['features'] as List<Map<String, String>>? ?? [];
+  final dependents = features
+      .where((f) => f['storage'] == provider && (f['status'] ?? 'active') == 'active')
+      .toList();
+
+  if (dependents.isNotEmpty) {
+    print('');
+    print('  ⚠  Active features use "$provider":');
+    for (final f in dependents) print('     ${f['name']}');
+    _die('\n  Cannot remove "$provider" — active features depend on it.\n'
+        '  Migrate those features to another backend first.');
+  }
+
+  _printHeader('Removing storage provider: $provider');
+
+  _deleteStorageImpl(provider);
+  _removeStorageFromConfig(provider);
+
+  final newProviders = activeProviders.where((p) => p != provider).toList();
+  var newDefault = _getDefaultProviderName();
+  if (newDefault == provider) {
+    newDefault = newProviders.first;
+    _updateStorageDefaultInConfig(newDefault);
+    print('  ⚠  Default storage changed to "$newDefault"');
+  }
+
+  _rewriteStorageModule(newProviders, newDefault);
+
+  print('\n  Regenerating DI...');
+  await _runBuildRunner();
+  print('\n  ✓ Storage provider "$provider" removed.');
+}
+
+void _cmdStorageDefault(String provider) {
+  _validateStorageProvider(provider);
+
+  final activeProviders = _getActiveProviders();
+  if (!activeProviders.contains(provider)) {
+    _die('Provider "$provider" is not active.\n'
+        '  Add it first: dart run codegen/spl_manager.dart storage add $provider');
+  }
+
+  _updateStorageDefaultInConfig(provider);
+  _printHeader('Storage default → $provider');
+  print('  New features using --with-storage will use: $provider');
+  print('  Existing features are unchanged.');
+}
+
 void _cmdStorageList() {
-  _printHeader('Storage Providers  [XOR — exactly one active]');
-  final current = _getActiveProviderName();
-  final providers = {
+  _printHeader('Storage Providers  [OR — multiple can be active simultaneously]');
+  final activeProviders = _getActiveProviders();
+  final defaultProvider = _getDefaultProviderName();
+
+  final config = _readSplConfig();
+  final features = config['features'] as List<Map<String, String>>? ?? [];
+
+  final descriptions = {
     'flutter_secure_storage': 'Encrypted key-value. Strings only. Best for sensitive data.',
     'sqflite':                'SQLite (relational). Best for structured/queryable data.',
     'hive':                   'NoSQL box store. Fast reads. Best for object graphs.',
     'shared_preferences':     'Simple key-value. Non-encrypted. Best for user settings.',
   };
-  for (final e in providers.entries) {
-    final active = e.key == current ? '  ◀ active' : '';
-    print('  ${e.key}$active');
-    print('      ${e.value}');
+
+  for (final entry in descriptions.entries) {
+    final p = entry.key;
+    final isActive  = activeProviders.contains(p);
+    final isDefault = p == defaultProvider;
+    final tags = [
+      if (isActive) 'active',
+      if (isDefault) 'default',
+    ];
+    final tagStr = tags.isEmpty ? '' : '  ◀ ${tags.join(', ')}';
+    print('  $p$tagStr');
+    print('      ${entry.value}');
+    if (isActive) {
+      final users = features.where((f) => f['storage'] == p).map((f) => f['name']).toList();
+      if (users.isNotEmpty) print('      Used by: ${users.join(', ')}');
+    }
     print('');
   }
-  print('  Switch (XOR): dart run codegen/spl_manager.dart storage set <provider>');
+
+  print('  dart run codegen/spl_manager.dart storage add <provider>');
+  print('  dart run codegen/spl_manager.dart storage remove <provider>');
+  print('  dart run codegen/spl_manager.dart storage default <provider>');
 }
+
+// ─── State commands ───────────────────────────────────────────────────────────
 
 void _cmdStateSet(String solution) {
   _validateStateChoice(solution);

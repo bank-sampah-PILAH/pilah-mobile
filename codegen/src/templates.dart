@@ -288,9 +288,11 @@ class SharedPrefsStorageProvider implements AppStorage {
 
 // ─── Data/Domain templates (shared across all state mgmt choices) ─────────────
 
+/// [storageProvider] — the named backend to inject (e.g. 'sqflite').
+/// Null means no local storage for this feature.
 String _tplLocalDataSources(String module, String className,
-    {bool withStorage = false}) {
-  if (!withStorage) {
+    {String? storageProvider}) {
+  if (storageProvider == null) {
     return '''import 'package:injectable/injectable.dart';
 
 abstract class ${className}LocalDataSources {}
@@ -313,7 +315,7 @@ abstract class ${className}LocalDataSources {
 @LazySingleton(as: ${className}LocalDataSources)
 class ${className}LocalDataSourcesImpl implements ${className}LocalDataSources {
   final AppStorage _storage;
-  const ${className}LocalDataSourcesImpl(this._storage);
+  const ${className}LocalDataSourcesImpl(@Named('$storageProvider') this._storage);
 
   @override
   Future<void> cache(String key, dynamic value) => _storage.put(key, value);

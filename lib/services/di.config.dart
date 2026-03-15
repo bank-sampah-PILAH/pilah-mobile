@@ -75,7 +75,6 @@ extension GetItInjectableX on _i174.GetIt {
       environmentFilter,
     );
     final storageModule = _$StorageModule();
-    gh.lazySingleton<_i812.AppStorage>(() => storageModule.appStorage);
     gh.lazySingleton<_i124.SecureDatabase>(
         () => const _i124.SecureDatabaseImpl());
     gh.lazySingleton<_i936.NetworkUtils>(
@@ -83,6 +82,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
       registerFor: {_dev},
+    );
+    gh.lazySingleton<_i812.AppStorage>(
+      () => storageModule.flutterSecureStorage,
+      instanceName: 'flutter_secure_storage',
     );
     gh.lazySingleton<_i1024.ProfileLocalDataSources>(
         () => _i1024.ProfileLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));

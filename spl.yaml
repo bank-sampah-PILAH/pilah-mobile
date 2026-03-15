@@ -7,11 +7,14 @@
 # Commands:
 #   list                              Show all features + active variants
 #   add <name> [opts]                 Scaffold a new feature
-#     --with-storage                  Include AppStorage-backed local cache
+#     --with-storage                  Include AppStorage-backed local cache (uses default)
+#     --storage <provider>            Use a specific storage backend
 #     --state bloc|cubit|riverpod     Override state management for this feature
 #   remove <name> [--yes|-y]          Delete a feature and rebuild DI
-#   storage set <provider>            Switch storage backend (exclusive/XOR)
-#   storage list                      Show available storage providers
+#   storage add <provider>            Register a storage backend
+#   storage remove <provider>         Unregister a storage backend
+#   storage default <provider>        Set default for --with-storage
+#   storage list                      Show active storage providers
 #   state set <bloc|cubit|riverpod>   Change global state management default
 #   state list                        Show state management options
 #   fix                               Run build_runner
@@ -21,14 +24,14 @@ app:
   name: boilerplate
   package: boilerplate
 
-# ── Storage variability (XOR — exactly one active) ───────────────────────────
+# ── Storage variability (OR — multiple backends can coexist) ─────────────────
 storage:
-  # Options: flutter_secure_storage | sqflite | hive | shared_preferences
-  # Only the active provider has an impl file in lib/core/storage/impl/
-  local_backend: flutter_secure_storage
+  # Available: flutter_secure_storage | sqflite | hive | shared_preferences
+  # Use: dart run codegen/spl_manager.dart storage add|remove|default|list
+  default: flutter_secure_storage
+  active: flutter_secure_storage
 
   # Always flutter_secure_storage — NOT a variability point
-  secure_backend: flutter_secure_storage
 
 # ── State management variability (OR — global default + per-feature override) ─
 state_management:
