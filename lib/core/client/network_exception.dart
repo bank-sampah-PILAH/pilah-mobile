@@ -96,47 +96,37 @@ class InternalServerErrorException extends NetworkException {
 }
 
 class ConflictException extends NetworkException {
-  ConflictException({String? message, Response? response})
+  ConflictException({super.message, super.response})
       : super(
-          message: message,
           prefix: 'Conflict',
-          response: response,
         );
 }
 
 class RequestEntityTooLargeException extends NetworkException {
-  RequestEntityTooLargeException({String? message, Response? response})
+  RequestEntityTooLargeException({super.message, super.response})
       : super(
-          message: message,
           prefix: 'Request Entity Too Large',
-          response: response,
         );
 }
 
 class FetchDataException extends NetworkException {
-  FetchDataException({String? message, Response? response})
+  FetchDataException({super.message, super.response})
       : super(
-          message: message,
           prefix: 'Error During Communication',
-          response: response,
         );
 }
 
 class NotFoundException extends NetworkException {
-  NotFoundException({String? message, Response? response})
+  NotFoundException({super.message, super.response})
       : super(
-          message: message,
           prefix: 'Not Found',
-          response: response,
         );
 }
 
 class UnprocessableEntityException extends NetworkException {
-  UnprocessableEntityException({String? message, Response? response})
+  UnprocessableEntityException({super.message, super.response})
       : super(
-          message: message,
           prefix: 'Invalid Request',
-          response: response,
         );
 
   String? getErrorMessage() {
@@ -147,11 +137,9 @@ class UnprocessableEntityException extends NetworkException {
 }
 
 class BadRequestException extends NetworkException {
-  BadRequestException({String? message, Response? response})
+  BadRequestException({super.message, super.response})
       : super(
-          message: message,
           prefix: 'Invalid Request',
-          response: response,
         );
 
   String? getErrorMessage() {

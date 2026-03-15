@@ -1,6 +1,3 @@
-import 'package:boilerplate/core/client/network_service.dart';
-import 'package:boilerplate/core/client/network_utils.dart';
-import 'package:boilerplate/core/constants/secrets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 

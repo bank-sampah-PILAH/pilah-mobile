@@ -14,7 +14,7 @@ class AppTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
 
   const AppTextField({
-    Key? key,
+    super.key,
     required this.controller,
     required this.hint,
     this.label,
@@ -22,7 +22,7 @@ class AppTextField extends StatefulWidget {
     this.obscureText = false,
     this.isError = false,
     this.inputFormatters,
-  }) : super(key: key);
+  });
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();

@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    - bricks/**           # Mason brick templates (Mustache syntax, not valid Dart)
+    - codegen/**          # CLI tools (print statements expected in dev tools)
+    - features_catalog/** # Inactive features (disabled via spl_manager, code preserved)
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

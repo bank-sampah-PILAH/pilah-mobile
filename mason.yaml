@@ -1,0 +1,14 @@
+bricks:
+  # Feature scaffold brick — used by spl_manager add <name>
+  feature:
+    path: bricks/feature
+
+  # Storage provider bricks — used by spl_manager storage set <provider>
+  storage_secure:
+    path: bricks/storage_secure
+  storage_sqflite:
+    path: bricks/storage_sqflite
+  storage_hive:
+    path: bricks/storage_hive
+  storage_prefs:
+    path: bricks/storage_prefs

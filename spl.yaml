@@ -1,0 +1,71 @@
+# ============================================================
+# Software Product Line Configuration
+# ============================================================
+# Manage this file via CLI:
+#   dart run codegen/spl_manager.dart <command>
+#
+# Commands:
+#   list                              Show all features + active variants
+#   add <name> [opts]                 Scaffold a new feature
+#     --with-storage                  Include AppStorage-backed local cache
+#     --state bloc|cubit|riverpod     Override state management for this feature
+#   remove <name> [--yes|-y]          Delete a feature and rebuild DI
+#   storage set <provider>            Switch storage backend (exclusive/XOR)
+#   storage list                      Show available storage providers
+#   state set <bloc|cubit|riverpod>   Change global state management default
+#   state list                        Show state management options
+#   fix                               Run build_runner
+# ============================================================
+
+app:
+  name: boilerplate
+  package: boilerplate
+
+# ── Storage variability (XOR — exactly one active) ───────────────────────────
+storage:
+  # Options: flutter_secure_storage | sqflite | hive | shared_preferences
+  # Only the active provider has an impl file in lib/core/storage/impl/
+  local_backend: flutter_secure_storage
+
+  # Always flutter_secure_storage — NOT a variability point
+  secure_backend: flutter_secure_storage
+
+# ── State management variability (OR — global default + per-feature override) ─
+state_management:
+  # Default for new features. Each feature can override with --state flag.
+  # Options: bloc | cubit | riverpod
+  # bloc    — flutter_bloc (Events + States + Bloc). Explicit, verbose, traceable.
+  # cubit   — flutter_bloc (States + Cubit). Simpler, fewer files, same package.
+  # riverpod — flutter_riverpod (Notifier + Provider). Different DI model.
+  default: bloc
+
+  # Note on exclusivity:
+  # Storage is XOR: one backend for the whole app.
+  # State management is NOT XOR: different features can use different solutions.
+  # Bloc and Cubit coexist freely (same package). Riverpod can coexist too
+  # but requires flutter_riverpod in pubspec.yaml.
+
+features:
+  - name: authentication
+    status: active
+    storage: flutter_secure_storage
+    state: bloc
+    description: Login/logout and token management (template example)
+
+  - name: onboarding
+    status: active
+    storage: none
+    state: bloc
+    description: Splash and onboarding flow (template example)
+
+  - name: product
+    status: active
+    storage: none
+    state: bloc
+    description: Product listing and search (template example)
+
+  - name: profile
+    status: active
+    storage: flutter_secure_storage
+    state: bloc
+    description: User profile management (template example)
