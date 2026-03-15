@@ -2,9 +2,11 @@ import 'package:boilerplate/core/client/network_exception.dart';
 import 'package:boilerplate/features/profile/domain/repository/profile_repository.dart';
 import 'package:boilerplate/features/profile/domain/use_cases/profile_use_cases.dart';
 import 'package:dartz/dartz.dart';
+import 'package:injectable/injectable.dart';
 
 import 'model/user.dart';
 
+@LazySingleton(as: ProfileUseCases)
 class ProfileInteractor implements ProfileUseCases {
   final ProfileRepository _repository;
 

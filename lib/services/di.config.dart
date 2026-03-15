@@ -54,7 +54,11 @@ import '../features/profile/data/local/profile_local_data_sources.dart'
 import '../features/profile/data/profile_repository_impl.dart' as _i1030;
 import '../features/profile/data/remote/profile_remote_data_sources.dart'
     as _i622;
+import '../features/profile/domain/profile_interactor.dart' as _i40;
 import '../features/profile/domain/repository/profile_repository.dart' as _i928;
+import '../features/profile/domain/use_cases/profile_use_cases.dart' as _i483;
+import '../features/profile/presentation/blocs/authentication_bloc.dart'
+    as _i957;
 
 const String _dev = 'dev';
 const String _prod = 'prod';
@@ -109,8 +113,12 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i174.ProductRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i438.OnboardingRemoteDataSources>(
         () => _i438.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i483.ProfileUseCases>(
+        () => _i40.ProfileInteractor(gh<_i928.ProfileRepository>()));
     gh.lazySingleton<_i128.ProductRepository>(() =>
         _i162.ProductRepositoryImpl(gh<_i174.ProductRemoteDataSources>()));
+    gh.factory<_i957.ProfileBloc>(
+        () => _i957.ProfileBloc(gh<_i483.ProfileUseCases>()));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
     gh.lazySingleton<_i998.OnboardingRepository>(() =>

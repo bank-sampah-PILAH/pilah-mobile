@@ -1,5 +1,6 @@
 import 'package:boilerplate/features/profile/presentation/blocs/states/get_user_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 
 import '../../domain/use_cases/profile_use_cases.dart';
 import 'events/get_user_event.dart';
@@ -7,6 +8,7 @@ import 'events/log_out_event.dart';
 import 'profile_events.dart';
 import 'profile_states.dart';
 
+@Injectable()
 class ProfileBloc extends Bloc<ProfileEvent, ProfileStates> {
   final ProfileUseCases _useCases;
 
