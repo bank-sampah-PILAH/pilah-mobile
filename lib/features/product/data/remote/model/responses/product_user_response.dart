@@ -4,7 +4,7 @@ part 'product_user_response.freezed.dart';
 part 'product_user_response.g.dart';
 
 @freezed
-class ProductUserResponse with _$ProductUserResponse {
+abstract class ProductUserResponse with _$ProductUserResponse {
   const factory ProductUserResponse({
     required int id,
     required String username,

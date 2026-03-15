@@ -4,7 +4,7 @@ part 'product_item_response.freezed.dart';
 part 'product_item_response.g.dart';
 
 @freezed
-class ProductItemResponse with _$ProductItemResponse {
+abstract class ProductItemResponse with _$ProductItemResponse {
   const factory ProductItemResponse({
     required int id,
     required String title,

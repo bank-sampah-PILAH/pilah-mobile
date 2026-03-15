@@ -5,7 +5,7 @@ part 'list_product_response.freezed.dart';
 part 'list_product_response.g.dart';
 
 @freezed
-class ListProductResponse with _$ListProductResponse {
+abstract class ListProductResponse with _$ListProductResponse {
   const factory ListProductResponse({
     required List<ProductItemResponse> products,
     required int total,

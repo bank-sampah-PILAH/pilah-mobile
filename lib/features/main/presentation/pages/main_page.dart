@@ -10,7 +10,7 @@ class MainPage extends StatelessWidget {
 
   static const route = '/main';
 
-  const MainPage({Key? key, required this.body}) : super(key: key);
+  const MainPage({super.key, required this.body});
 
   static const List<String> routes = [
     ProductHomePage.route,

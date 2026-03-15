@@ -4,7 +4,7 @@ part 'onboarding_response.freezed.dart';
 part 'onboarding_response.g.dart';
 
 @freezed
-class OnboardingResponse with _$OnboardingResponse {
+abstract class OnboardingResponse with _$OnboardingResponse {
   const factory OnboardingResponse({
     required int id,
     required String username,

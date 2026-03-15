@@ -1,6 +1,5 @@
 import 'package:boilerplate/core/constants/assets.dart';
 import 'package:flutter/material.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../../design/constants/colors.dart';
 import '../../../../../design/constants/text_style.dart';

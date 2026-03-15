@@ -9,11 +9,11 @@ class PrimaryButton extends StatelessWidget {
   final bool isLoading;
 
   const PrimaryButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onTap,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
