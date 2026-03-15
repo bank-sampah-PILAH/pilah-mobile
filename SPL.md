@@ -4,13 +4,15 @@ This project uses Software Product Line Engineering (SPLE) to manage variability
 
 All variability is managed through a single CLI tool and a single config file.
 
+The CLI source lives in `codegen/spl_manager.dart` and is split across `codegen/src/` using Dart's `part`/`part of` system — see [CLI Source Layout](#cli-source-layout).
+
 ---
 
 ## Quick Reference
 
 ```
 dart run codegen/spl_manager.dart list
-dart run codegen/spl_manager.dart add <name> [--with-storage] [--state bloc|cubit|riverpod]
+dart run codegen/spl_manager.dart add <name> [--with-storage] [--with-test] [--shell-route] [--state bloc|cubit|riverpod]
 dart run codegen/spl_manager.dart disable <name>             # deactivate, keep code
 dart run codegen/spl_manager.dart enable <name>              # restore from catalog
 dart run codegen/spl_manager.dart remove <name> [--yes|-y]  # hard delete
@@ -148,7 +150,9 @@ Features have three states:
 
 ```
 dart run codegen/spl_manager.dart add <name>
-dart run codegen/spl_manager.dart add <name> --with-storage
+dart run codegen/spl_manager.dart add <name> --with-storage       # include AppStorage local cache
+dart run codegen/spl_manager.dart add <name> --with-test          # generate unit + state mgmt tests
+dart run codegen/spl_manager.dart add <name> --shell-route        # register as shell (bottom nav) route
 dart run codegen/spl_manager.dart add <name> --state cubit
 dart run codegen/spl_manager.dart add <name> --with-storage --state riverpod
 ```
@@ -178,9 +182,13 @@ lib/features/<name>/
     providers/                                  (riverpod only)
       <name>_state.dart
       <name>_notifier.dart
+
+test/features/<name>/                           (only with --with-test)
+  domain/<name>_interactor_test.dart
+  presentation/<name>_bloc_test.dart | <name>_cubit_test.dart | <name>_notifier_test.dart
 ```
 
-After scaffolding, register the route manually in `lib/core/router/app_router_config.dart`.
+The route is injected automatically into `lib/core/router/app_router_config.dart`. Use `--shell-route` to register it inside the `ShellRoute` (bottom nav); omit it for a top-level route.
 
 DI is auto-wired — `build_runner` regenerates `lib/services/di.config.dart` automatically.
 
@@ -241,6 +249,26 @@ mason make feature --name orders
 ```
 
 Brick templates live in `bricks/`. They are excluded from Dart analysis (`analysis_options.yaml`) because they contain Mustache syntax (`{{name.pascalCase()}}`), not valid Dart.
+
+---
+
+## CLI Source Layout
+
+The CLI is split across multiple files using Dart's `part`/`part of` directives. All parts share a single library — `codegen/spl_manager.dart` — so every private function is accessible everywhere with no extra imports.
+
+```
+codegen/
+├── spl_manager.dart        entry point — library declaration, import 'dart:io', main(), part directives
+└── src/
+    ├── commands.dart        _cmdList, _cmdAdd, _cmdDisable, _cmdEnable, _cmdRemove, _cmdStorage*, _cmdState*, _cmdFix
+    ├── generators.dart      _generateFeatureFiles, _stateFiles, _injectRoute, _removeRoute, _removeTests, _generateTestFiles
+    ├── storage_manager.dart _getActiveProviderName, _implFileName, _deleteStorageImpl, _generateStorageImpl, _rewriteStorageModule
+    ├── templates.dart       all _tpl* functions — state mgmt, storage providers, data/domain layer, tests
+    ├── spl_config.dart      spl.yaml read/write helpers, Mason integration (_checkMason, _tryMason*)
+    └── utils.dart           _validateStateChoice, _printNotes, _runBuildRunner, _toPascalCase, _printHelp, _die
+```
+
+To extend the CLI — add a command, add a template — edit only the relevant part file.
 
 ---
 
