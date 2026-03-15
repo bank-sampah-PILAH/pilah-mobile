@@ -1,7 +1,6 @@
 # 👨‍💻 Flutter Boilerplate
 
-[![Generic badge](https://img.shields.io/badge/Flutter-v3.27.1-blue)](https://flutter.dev/docs)
-[![Generic badge](https://img.shields.io/badge/Dart-v3.6.0-blue)](https://dart.dev/guides)
+[![Generic badge](https://img.shields.io/badge/Flutter-v3.41.3-blue)](https://flutter.dev/docs)[![Generic badge](https://img.shields.io/badge/Dart-v3.11.1-blue)](https://dart.dev/guides)
 
 Flutter Template
 
@@ -16,7 +15,7 @@ Example how to run development app
 ```
 flutter clean
 flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
@@ -25,14 +24,14 @@ Example how to run production app
 ```
 flutter clean
 flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
 flutter build apk -t lib/main_production.dart
 ```
 
 ### ⚙️ Supported Flavor
 
-1. staging
-2. production
+1.  staging
+2.  production
 
 ### 🎯 Architecture & Pattern
 
@@ -80,8 +79,7 @@ mason get
 The SPL CLI (`spl_manager.dart`) uses Mason automatically when available. You can also invoke bricks directly:
 
 ```
-mason make feature --name \<name\>
-mason make feature --name \<name\> --with_storage true --state cubit
+mason make feature --name <name>mason make feature --name <name> --with_storage true --state cubit
 ```
 
 Bricks are excluded from Dart analysis (`analysis_options.yaml`) because they contain Mustache syntax (`{{name.pascalCase()}}`), not valid Dart.
@@ -100,8 +98,7 @@ snake_case for file and folder.
 
 ### :capital_abcd: Git flow
 
-Commit rules:
-(feat|fix|docs|style|refactor|perf|test|build|ci):\/\*
+Commit rules:(feat|fix|docs|style|refactor|perf|test|build|ci):/\*
 
 feat: A new feature
 
@@ -131,11 +128,10 @@ ci: refactor analysis job
 
 #### before push
 
-1. flutter analyze
-2. flutter test
+1.  flutter analyze
+2.  flutter test
 
-branch rules:
-(feature|hotfix|coldfix|service|integration|ui)\/\/\*
+branch rules:(feature|hotfix|coldfix|service|integration|ui)//\*
 
 ### How to contribute
 
