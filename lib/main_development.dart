@@ -11,6 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureDependencies(environment: AppKey.devEnv);
   
+  // Force rebuild
   await di.get<AppStorage>(instanceName: 'shared_preferences').init();
   await di<NetworkUtils>().init();
 
