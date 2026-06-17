@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # Software Product Line Configuration
 # ============================================================
 # Manage this file via CLI:
@@ -29,7 +29,7 @@ storage:
   # Available: flutter_secure_storage | sqflite | hive | shared_preferences
   # Use: dart run codegen/spl_manager.dart storage add|remove|default|list
   default: flutter_secure_storage
-  active: flutter_secure_storage
+  active: flutter_secure_storage,shared_preferences
 
   # Always flutter_secure_storage — NOT a variability point
 
