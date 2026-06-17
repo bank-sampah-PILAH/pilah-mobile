@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import '../../constants/colors.dart';
@@ -21,7 +21,7 @@ class PrimaryButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary.withOpacity(isLoading ? 0.5 : 1),
+          backgroundColor: AppColors.primary.withValues(alpha: isLoading ? 0.5 : 1.0),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12), // <-- Radius
           ),
