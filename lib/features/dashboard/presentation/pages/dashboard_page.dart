@@ -5,268 +5,275 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
+  static const route = '/dashboard';
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Bank Sampah BTH',
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.grey100,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Selamat datang, Ibu Sari ',
-                              style: AppTextStyle.title1.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Bank Sampah BTH',
+                          style: AppTextStyle.small.copyWith(
+                            color: Colors.grey[600],
                           ),
-                          const Text('👋', style: TextStyle(fontSize: 18)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.greenDark,
-                  child: Text(
-                    'IS',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Selamat datang, Ibu Sari ',
+                                style: AppTextStyle.title1.copyWith(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Text('👋', style: TextStyle(fontSize: 18)),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Total Kas Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.greenDark,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TOTAL KAS BULAN INI',
-                        style: AppTextStyle.extraSmall.copyWith(
-                          color: AppColors.greenLight,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Rp 12.450.000',
-                        style: AppTextStyle.headline1.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 28,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '↑ 18% dari bulan lalu',
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenLight,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.attach_money, // Using attach_money for '$'
+                  const SizedBox(width: 12),
+                  const CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.greenDark,
+                    child: Text(
+                      'IS',
+                      style: TextStyle(
                         color: Colors.white,
-                        size: 28,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Statistics Row
-            Row(
-              children: [
-                _buildStatCard(
-                  icon: Icons.group_outlined,
-                  iconColor: AppColors.greenDark,
-                  iconBgColor: AppColors.greenLight,
-                  value: '128',
-                  label: 'Nasabah Aktif',
+              const SizedBox(height: 24),
+              
+              // Total Kas Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.greenDark,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(width: 12),
-                _buildStatCard(
-                  icon: Icons.inventory_2_outlined,
-                  iconColor: AppColors.statOrange,
-                  iconBgColor: AppColors.statOrangeLight,
-                  value: '450 kg',
-                  label: 'Total Sampah',
+                child: Stack(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'TOTAL KAS BULAN INI',
+                          style: AppTextStyle.extraSmall.copyWith(
+                            color: AppColors.greenLight,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Rp 12.450.000',
+                          style: AppTextStyle.headline1.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 28,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '↑ 18% dari bulan lalu',
+                          style: AppTextStyle.small.copyWith(
+                            color: AppColors.greenLight,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.attach_money, // Using attach_money for '$'
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                _buildStatCard(
-                  icon: Icons.show_chart,
-                  iconColor: AppColors.statPurple,
-                  iconBgColor: AppColors.statPurpleLight,
-                  value: '45 Trx',
-                  label: 'Transaksi Bln Ini',
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+              ),
+              const SizedBox(height: 24),
+              
+              // Statistics Row
+              Row(
+                children: [
+                  _buildStatCard(
+                    icon: Icons.group_outlined,
+                    iconColor: AppColors.greenDark,
+                    iconBgColor: AppColors.greenLight,
+                    value: '128',
+                    label: 'Nasabah Aktif',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildStatCard(
+                    icon: Icons.inventory_2_outlined,
+                    iconColor: AppColors.statOrange,
+                    iconBgColor: AppColors.statOrangeLight,
+                    value: '450 kg',
+                    label: 'Total Sampah',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildStatCard(
+                    icon: Icons.show_chart,
+                    iconColor: AppColors.statPurple,
+                    iconBgColor: AppColors.statPurpleLight,
+                    value: '45 Trx',
+                    label: 'Transaksi Bln Ini',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-            // Action Buttons Row
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                    label: Text(
-                      'Setoran Baru',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.person_add_outlined, color: AppColors.greenDark, size: 20),
-                    label: Text(
-                      'Tambah\nNasabah',
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.black,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12), // slightly less padding since it's 2 lines
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      side: BorderSide(color: Colors.grey.shade300),
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-
-            // Recent Activity Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Aktivitas Terbaru',
-                  style: AppTextStyle.title1.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: Row(
-                    children: [
-                      Text(
-                        'Lihat Semua',
+              // Action Buttons Row
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                      label: Text(
+                        'Setoran Baru',
                         style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
+                          color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward, size: 16, color: AppColors.greenDark),
-                    ],
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.greenDark,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            
-            // List Items
-            _buildActivityItem(
-              avatarText: 'BS',
-              avatarColor: AppColors.greenLight,
-              avatarTextColor: AppColors.greenDark,
-              title: 'Budi Santoso',
-              subtitle: 'Plastik • 5.2 kg',
-              amount: '+Rp 15.600',
-              time: 'Hari ini, 09:45',
-            ),
-            const SizedBox(height: 12),
-            _buildActivityItem(
-              avatarText: 'SA',
-              avatarColor: AppColors.avatarYellow,
-              avatarTextColor: AppColors.avatarYellowText,
-              title: 'Siti Aminah',
-              subtitle: 'Kertas • 12.0 kg',
-              amount: '+Rp 24.000',
-              time: 'Kemarin, 14:20',
-            ),
-            const SizedBox(height: 12),
-            _buildActivityItem(
-              avatarText: 'AP',
-              avatarColor: AppColors.statPurpleLight,
-              avatarTextColor: AppColors.statPurple,
-              title: 'Agus Pratama',
-              subtitle: 'Logam • 2.5 kg',
-              amount: '+Rp 35.000',
-              time: 'Kemarin, 10:15',
-            ),
-          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.person_add_outlined, color: AppColors.greenDark, size: 20),
+                      label: Text(
+                        'Tambah\nNasabah',
+                        style: AppTextStyle.small.copyWith(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12), // slightly less padding since it's 2 lines
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // Recent Activity Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Aktivitas Terbaru',
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: Row(
+                      children: [
+                        Text(
+                          'Lihat Semua',
+                          style: AppTextStyle.small.copyWith(
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_forward, size: 16, color: AppColors.greenDark),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              
+              // List Items
+              _buildActivityItem(
+                avatarText: 'BS',
+                avatarColor: AppColors.greenLight,
+                avatarTextColor: AppColors.greenDark,
+                title: 'Budi Santoso',
+                subtitle: 'Plastik • 5.2 kg',
+                amount: '+Rp 15.600',
+                time: 'Hari ini, 09:45',
+              ),
+              const SizedBox(height: 12),
+              _buildActivityItem(
+                avatarText: 'SA',
+                avatarColor: AppColors.avatarYellow,
+                avatarTextColor: AppColors.avatarYellowText,
+                title: 'Siti Aminah',
+                subtitle: 'Kertas • 12.0 kg',
+                amount: '+Rp 24.000',
+                time: 'Kemarin, 14:20',
+              ),
+              const SizedBox(height: 12),
+              _buildActivityItem(
+                avatarText: 'AP',
+                avatarColor: AppColors.statPurpleLight,
+                avatarTextColor: AppColors.statPurple,
+                title: 'Agus Pratama',
+                subtitle: 'Logam • 2.5 kg',
+                amount: '+Rp 35.000',
+                time: 'Kemarin, 10:15',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -308,15 +315,18 @@ class DashboardPage extends StatelessWidget {
             Text(
               value,
               style: AppTextStyle.title1.copyWith(
+                color: Colors.black87,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: AppTextStyle.extraSmall.copyWith(
-                color: AppColors.grey100,
+                color: Colors.grey[600],
                 fontSize: 11,
               ),
               maxLines: 1,
@@ -370,14 +380,14 @@ class DashboardPage extends StatelessWidget {
                   title,
                   style: AppTextStyle.small.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.black,
+                    color: Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: AppTextStyle.extraSmall.copyWith(
-                    color: AppColors.grey100,
+                    color: Colors.grey[600],
                   ),
                 ),
               ],
@@ -397,7 +407,7 @@ class DashboardPage extends StatelessWidget {
               Text(
                 time,
                 style: AppTextStyle.extraSmall.copyWith(
-                  color: AppColors.grey100,
+                  color: Colors.grey[600],
                 ),
               ),
             ],
