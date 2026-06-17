@@ -1,43 +1,50 @@
-﻿import 'package:pilah_mobile/features/product/presentation/home/pages/product_home_page.dart';
-import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../../core/router/go.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class MainPage extends StatelessWidget {
-  final Widget body;
+  final StatefulNavigationShell navigationShell;
 
-  static const route = '/main';
-
-  const MainPage({super.key, required this.body});
-
-  static const List<String> routes = [
-    ProductHomePage.route,
-    ProfilePage.route,
-  ];
+  const MainPage({
+    super.key,
+    required this.navigationShell,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: body,
+      body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: routes.indexOf(
-          Go.getLocation(context),
-        ),
-        onTap: (index) => context.goNamed(routes[index]),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: AppColors.greenDark,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+        currentIndex: navigationShell.currentIndex,
+        onTap: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(
-              Icons.shopping_bag,
-            ),
-            label: 'Product',
+            icon: Icon(Icons.grid_view_rounded),
+            label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(
-              Icons.person,
-            ),
-            label: 'Profile',
+            icon: Icon(Icons.people_outline),
+            label: 'Nasabah',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_offer_outlined),
+            label: 'Harga',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insert_drive_file_outlined),
+            label: 'Laporan',
           )
         ],
       ),
