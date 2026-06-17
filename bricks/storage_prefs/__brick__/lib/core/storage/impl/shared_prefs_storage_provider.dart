@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
 import '../app_storage.dart';
 
 /// [AppStorage] backed by SharedPreferences (simple non-encrypted key-value).

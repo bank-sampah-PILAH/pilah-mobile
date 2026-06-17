@@ -1,4 +1,4 @@
-class Auth {
+﻿class Auth {
   final int id;
   final String username;
   final String email;

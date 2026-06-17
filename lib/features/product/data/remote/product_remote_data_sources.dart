@@ -1,7 +1,7 @@
-import 'package:boilerplate/core/client/network_service.dart';
-import 'package:boilerplate/core/constants/endpoints.dart';
-import 'package:boilerplate/features/product/data/remote/model/request/get_list_product_request.dart';
-import 'package:boilerplate/features/product/data/remote/model/responses/list_product_response.dart';
+﻿import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/constants/endpoints.dart';
+import 'package:pilah_mobile/features/product/data/remote/model/request/get_list_product_request.dart';
+import 'package:pilah_mobile/features/product/data/remote/model/responses/list_product_response.dart';
 import 'package:injectable/injectable.dart';
 
 import 'model/responses/product_user_response.dart';

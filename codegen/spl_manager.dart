@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print
+﻿// ignore_for_file: avoid_print
 /// SPL Manager — Software Product Line CLI for Flutter Clean Architecture
 ///
 /// Variability points:

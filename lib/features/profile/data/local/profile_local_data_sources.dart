@@ -1,5 +1,5 @@
-import 'package:boilerplate/core/constants/app_key.dart';
-import 'package:boilerplate/core/database/secure_database.dart';
+﻿import 'package:pilah_mobile/core/constants/app_key.dart';
+import 'package:pilah_mobile/core/database/secure_database.dart';
 import 'package:injectable/injectable.dart';
 
 abstract class ProfileLocalDataSources {

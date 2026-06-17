@@ -1,4 +1,4 @@
-class GetListProductRequest {
+﻿class GetListProductRequest {
   final int skip;
   final int limit;
 

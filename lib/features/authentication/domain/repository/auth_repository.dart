@@ -1,5 +1,5 @@
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/authentication/domain/model/auth.dart';
+﻿import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:dartz/dartz.dart';
 
 abstract class AuthRepository {

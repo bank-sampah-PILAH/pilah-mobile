@@ -1,5 +1,5 @@
-import 'package:boilerplate/features/product/presentation/home/pages/product_home_page.dart';
-import 'package:boilerplate/features/profile/presentation/pages/profile_page.dart';
+﻿import 'package:pilah_mobile/features/product/presentation/home/pages/product_home_page.dart';
+import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

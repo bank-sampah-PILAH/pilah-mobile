@@ -1,4 +1,4 @@
-import 'package:sqflite/sqflite.dart';
+﻿import 'package:sqflite/sqflite.dart';
 import '../app_storage.dart';
 
 /// [AppStorage] backed by sqflite (SQLite relational DB).

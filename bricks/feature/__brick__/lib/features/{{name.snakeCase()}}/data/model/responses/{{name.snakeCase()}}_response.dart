@@ -1,4 +1,4 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+﻿import 'package:freezed_annotation/freezed_annotation.dart';
 
 part '{{name.snakeCase()}}_response.freezed.dart';
 part '{{name.snakeCase()}}_response.g.dart';

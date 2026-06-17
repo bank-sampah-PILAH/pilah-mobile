@@ -1,5 +1,5 @@
-import 'package:boilerplate/app.dart';
-import 'package:boilerplate/services/di.dart';
+﻿import 'package:pilah_mobile/app.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
 
 import 'core/constants/app_key.dart';

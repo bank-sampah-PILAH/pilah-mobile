@@ -1,1 +1,1 @@
-abstract class ProductHomeEvent {}
+﻿abstract class ProductHomeEvent {}

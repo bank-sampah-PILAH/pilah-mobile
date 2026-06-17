@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 
 abstract class {{name.pascalCase()}}State extends Equatable {
   const {{name.pascalCase()}}State();

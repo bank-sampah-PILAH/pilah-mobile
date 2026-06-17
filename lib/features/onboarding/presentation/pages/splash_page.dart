@@ -1,11 +1,11 @@
-import 'dart:developer';
+﻿import 'dart:developer';
 
-import 'package:boilerplate/features/onboarding/presentation/blocs/events/get_user_event.dart';
-import 'package:boilerplate/features/onboarding/presentation/blocs/onboarding_bloc.dart';
-import 'package:boilerplate/features/onboarding/presentation/blocs/onboarding_states.dart';
-import 'package:boilerplate/features/onboarding/presentation/blocs/states/onboarding_states.dart';
-import 'package:boilerplate/features/onboarding/presentation/pages/onboarding_page.dart';
-import 'package:boilerplate/features/product/presentation/home/pages/product_home_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/events/get_user_event.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/onboarding_bloc.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/onboarding_states.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/states/onboarding_states.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:pilah_mobile/features/product/presentation/home/pages/product_home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';

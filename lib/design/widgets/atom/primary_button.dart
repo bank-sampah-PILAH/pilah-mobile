@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:boilerplate/design/constants/text_style.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import '../../constants/colors.dart';
 

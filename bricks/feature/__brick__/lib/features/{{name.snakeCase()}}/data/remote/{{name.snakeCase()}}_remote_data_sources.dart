@@ -1,4 +1,4 @@
-import 'package:boilerplate/core/client/network_service.dart';
+﻿import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:injectable/injectable.dart';
 
 import '../model/responses/{{name.snakeCase()}}_response.dart';

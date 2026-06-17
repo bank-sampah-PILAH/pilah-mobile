@@ -1,4 +1,4 @@
-class OnboardingUser {
+﻿class OnboardingUser {
   final int id;
   final String username;
   final String email;

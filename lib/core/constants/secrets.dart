@@ -1,4 +1,4 @@
-import 'package:envied/envied.dart';
+﻿import 'package:envied/envied.dart';
 
 part 'secrets.g.dart';
 

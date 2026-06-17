@@ -1,4 +1,4 @@
-import 'package:boilerplate/features/onboarding/domain/model/onboarding_user.dart';
+﻿import 'package:pilah_mobile/features/onboarding/domain/model/onboarding_user.dart';
 
 import '../responses/onboarding_response.dart';
 

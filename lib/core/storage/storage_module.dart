@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // SPL MANAGED FILE — DO NOT EDIT MANUALLY
 // Active providers: flutter_secure_storage
 // Default: flutter_secure_storage

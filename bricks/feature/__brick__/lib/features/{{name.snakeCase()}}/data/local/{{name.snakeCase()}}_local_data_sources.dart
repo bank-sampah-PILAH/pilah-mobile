@@ -1,4 +1,4 @@
-{{#with_storage}}import 'package:boilerplate/core/storage/app_storage.dart';
+﻿{{#with_storage}}import 'package:pilah_mobile/core/storage/app_storage.dart';
 {{/with_storage}}import 'package:injectable/injectable.dart';
 
 abstract class {{name.pascalCase()}}LocalDataSources {

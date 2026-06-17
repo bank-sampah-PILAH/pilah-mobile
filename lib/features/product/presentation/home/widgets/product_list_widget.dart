@@ -1,4 +1,4 @@
-import 'package:boilerplate/features/product/presentation/home/widgets/product_item_widget.dart';
+﻿import 'package:pilah_mobile/features/product/presentation/home/widgets/product_item_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:skeletonizer/skeletonizer.dart';

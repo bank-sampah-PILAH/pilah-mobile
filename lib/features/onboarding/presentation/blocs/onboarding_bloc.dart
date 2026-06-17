@@ -1,9 +1,9 @@
-import 'dart:io';
+﻿import 'dart:io';
 
-import 'package:boilerplate/features/onboarding/presentation/blocs/events/get_user_event.dart';
-import 'package:boilerplate/features/onboarding/presentation/blocs/onboarding_events.dart';
-import 'package:boilerplate/features/onboarding/presentation/blocs/onboarding_states.dart';
-import 'package:boilerplate/features/onboarding/presentation/blocs/states/onboarding_states.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/events/get_user_event.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/onboarding_events.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/onboarding_states.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/blocs/states/onboarding_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 

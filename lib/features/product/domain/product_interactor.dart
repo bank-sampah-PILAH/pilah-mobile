@@ -1,7 +1,7 @@
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/product/domain/model/product.dart';
-import 'package:boilerplate/features/product/domain/repository/product_repository.dart';
-import 'package:boilerplate/features/product/domain/use_cases/product_use_cases.dart';
+﻿import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/product/domain/model/product.dart';
+import 'package:pilah_mobile/features/product/domain/repository/product_repository.dart';
+import 'package:pilah_mobile/features/product/domain/use_cases/product_use_cases.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 

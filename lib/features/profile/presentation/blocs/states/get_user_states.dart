@@ -1,4 +1,4 @@
-import 'package:boilerplate/features/profile/domain/model/user.dart';
+﻿import 'package:pilah_mobile/features/profile/domain/model/user.dart';
 
 import '../profile_states.dart';
 

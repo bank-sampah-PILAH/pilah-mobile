@@ -1,1 +1,1 @@
-abstract class ProfileEvent {}
+﻿abstract class ProfileEvent {}

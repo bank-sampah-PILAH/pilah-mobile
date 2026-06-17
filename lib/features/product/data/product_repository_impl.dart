@@ -1,8 +1,8 @@
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/product/data/remote/model/mapper/product_mapper.dart';
-import 'package:boilerplate/features/product/data/remote/model/request/get_list_product_request.dart';
-import 'package:boilerplate/features/product/data/remote/product_remote_data_sources.dart';
-import 'package:boilerplate/features/product/domain/model/product.dart';
+﻿import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/product/data/remote/model/mapper/product_mapper.dart';
+import 'package:pilah_mobile/features/product/data/remote/model/request/get_list_product_request.dart';
+import 'package:pilah_mobile/features/product/data/remote/product_remote_data_sources.dart';
+import 'package:pilah_mobile/features/product/domain/model/product.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 

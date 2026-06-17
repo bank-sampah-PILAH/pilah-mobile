@@ -1,7 +1,7 @@
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/onboarding/domain/model/onboarding_user.dart';
-import 'package:boilerplate/features/onboarding/domain/repository/onboarding_repository.dart';
-import 'package:boilerplate/features/onboarding/domain/use_cases/onboarding_use_cases.dart';
+﻿import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/onboarding/domain/model/onboarding_user.dart';
+import 'package:pilah_mobile/features/onboarding/domain/repository/onboarding_repository.dart';
+import 'package:pilah_mobile/features/onboarding/domain/use_cases/onboarding_use_cases.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 

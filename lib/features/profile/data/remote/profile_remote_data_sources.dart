@@ -1,5 +1,5 @@
-import 'package:boilerplate/core/client/network_service.dart';
-import 'package:boilerplate/core/constants/endpoints.dart';
+﻿import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/constants/endpoints.dart';
 import 'package:injectable/injectable.dart';
 
 import 'model/responses/user_response.dart';
