@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/product/presentation/home/pages/product_home_page.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -151,7 +151,7 @@ class LoginPage extends StatelessWidget {
                       OutlinedButton(
                         onPressed: () {
                           // Dummy navigation for now
-                          context.goNamed(ProductHomePage.route);
+                          context.goNamed(DashboardPage.route);
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),

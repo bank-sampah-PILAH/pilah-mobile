@@ -1,5 +1,6 @@
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,6 +19,10 @@ class AppRouterConfig {
           path: ForgotPasswordPage.route,
           name: ForgotPasswordPage.route,
           builder: (context, state) => const ForgotPasswordPage()),
+      GoRoute(
+          path: DashboardPage.route,
+          name: DashboardPage.route,
+          builder: (context, state) => const DashboardPage()),
     ],
   );
 
