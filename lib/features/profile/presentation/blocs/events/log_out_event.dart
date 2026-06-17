@@ -1,3 +1,3 @@
-import '../profile_events.dart';
+﻿import '../profile_events.dart';
 
 class LogOutEvent implements ProfileEvent {}

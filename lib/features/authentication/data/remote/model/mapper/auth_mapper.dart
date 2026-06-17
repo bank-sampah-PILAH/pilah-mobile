@@ -1,4 +1,4 @@
-import 'package:boilerplate/features/authentication/domain/model/auth.dart';
+﻿import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 import '../responses/auth_response.dart';
 

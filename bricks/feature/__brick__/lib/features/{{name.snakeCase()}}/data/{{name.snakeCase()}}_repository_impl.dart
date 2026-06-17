@@ -1,5 +1,5 @@
-import 'package:boilerplate/core/client/api_call.dart';
-import 'package:boilerplate/core/client/network_exception.dart';
+﻿import 'package:pilah_mobile/core/client/api_call.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 

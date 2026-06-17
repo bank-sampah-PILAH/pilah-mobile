@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class {{name.pascalCase()}}Page extends StatelessWidget {
   static const route = '/{{name.snakeCase()}}';

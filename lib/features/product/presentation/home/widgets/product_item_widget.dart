@@ -1,4 +1,4 @@
-import 'package:boilerplate/core/constants/assets.dart';
+﻿import 'package:pilah_mobile/core/constants/assets.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../design/constants/colors.dart';

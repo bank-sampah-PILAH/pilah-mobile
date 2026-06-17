@@ -1,9 +1,9 @@
-import 'package:boilerplate/features/product/data/static/product_static_data_sources.dart';
-import 'package:boilerplate/features/product/presentation/home/blocs/event/get_home_product_event.dart';
-import 'package:boilerplate/features/product/presentation/home/blocs/product_home_bloc.dart';
-import 'package:boilerplate/features/product/presentation/home/widgets/product_category_item_widget.dart';
-import 'package:boilerplate/features/product/presentation/home/widgets/product_home_app_bar_widget.dart';
-import 'package:boilerplate/features/product/presentation/home/widgets/product_list_widget.dart';
+﻿import 'package:pilah_mobile/features/product/data/static/product_static_data_sources.dart';
+import 'package:pilah_mobile/features/product/presentation/home/blocs/event/get_home_product_event.dart';
+import 'package:pilah_mobile/features/product/presentation/home/blocs/product_home_bloc.dart';
+import 'package:pilah_mobile/features/product/presentation/home/widgets/product_category_item_widget.dart';
+import 'package:pilah_mobile/features/product/presentation/home/widgets/product_home_app_bar_widget.dart';
+import 'package:pilah_mobile/features/product/presentation/home/widgets/product_list_widget.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../services/di.dart';

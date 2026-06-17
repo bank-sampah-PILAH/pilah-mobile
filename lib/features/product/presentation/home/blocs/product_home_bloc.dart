@@ -1,7 +1,7 @@
-import 'package:boilerplate/features/product/presentation/home/blocs/event/get_home_product_event.dart';
-import 'package:boilerplate/features/product/presentation/home/blocs/product_home_event.dart';
-import 'package:boilerplate/features/product/presentation/home/blocs/product_home_states.dart';
-import 'package:boilerplate/features/product/presentation/home/blocs/states/get_home_product_states.dart';
+﻿import 'package:pilah_mobile/features/product/presentation/home/blocs/event/get_home_product_event.dart';
+import 'package:pilah_mobile/features/product/presentation/home/blocs/product_home_event.dart';
+import 'package:pilah_mobile/features/product/presentation/home/blocs/product_home_states.dart';
+import 'package:pilah_mobile/features/product/presentation/home/blocs/states/get_home_product_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 

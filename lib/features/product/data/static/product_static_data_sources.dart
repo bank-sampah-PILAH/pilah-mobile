@@ -1,4 +1,4 @@
-import 'package:boilerplate/features/product/domain/model/product_categories.dart';
+﻿import 'package:pilah_mobile/features/product/domain/model/product_categories.dart';
 import 'package:flutter/material.dart';
 
 class ProductStaticDataSources {

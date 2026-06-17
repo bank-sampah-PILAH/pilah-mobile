@@ -1,6 +1,6 @@
-
-import 'package:boilerplate/features/product/data/remote/model/responses/list_product_response.dart';
-import 'package:boilerplate/features/product/domain/model/product.dart';
+﻿
+import 'package:pilah_mobile/features/product/data/remote/model/responses/list_product_response.dart';
+import 'package:pilah_mobile/features/product/domain/model/product.dart';
 
 import '../responses/product_item_response.dart';
 

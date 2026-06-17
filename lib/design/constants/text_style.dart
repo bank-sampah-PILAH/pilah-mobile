@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:boilerplate/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class AppTextStyle {
   static TextStyle small = GoogleFonts.poppins(

@@ -1,4 +1,4 @@
-class PostLoginRequest {
+﻿class PostLoginRequest {
   final String username;
   final String password;
 

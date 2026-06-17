@@ -1,4 +1,4 @@
-/// Abstract interface for general-purpose local storage.
+﻿/// Abstract interface for general-purpose local storage.
 ///
 /// This is the SPL variability point for storage backends.
 /// Use `dart run codegen/spl_manager.dart storage set <provider>` to switch.

@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print
+﻿// ignore_for_file: avoid_print
 part of '../spl_manager.dart';
 
 // ─── Code templates — State Management ───────────────────────────────────────
@@ -303,7 +303,7 @@ class ${className}LocalDataSourcesImpl implements ${className}LocalDataSources {
 }
 ''';
   }
-  return '''import 'package:boilerplate/core/storage/app_storage.dart';
+  return '''import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:injectable/injectable.dart';
 
 abstract class ${className}LocalDataSources {
@@ -358,7 +358,7 @@ abstract class ${className}Response with _\$${className}Response {
 ''';
 
 String _tplRemoteDataSources(String module, String className) => '''
-import 'package:boilerplate/core/client/network_service.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:injectable/injectable.dart';
 
 import '../model/responses/${module}_response.dart';
@@ -381,8 +381,8 @@ class ${className}RemoteDataSourceImpl implements ${className}RemoteDataSources 
 ''';
 
 String _tplRepositoryImpl(String module, String className) => '''
-import 'package:boilerplate/core/client/api_call.dart';
-import 'package:boilerplate/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/api_call.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
@@ -417,7 +417,7 @@ class $className {
 ''';
 
 String _tplRepository(String module, String className) => '''
-import 'package:boilerplate/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:dartz/dartz.dart';
 
 import '../model/$module.dart';
@@ -428,7 +428,7 @@ abstract class ${className}Repository {
 ''';
 
 String _tplUseCases(String module, String className) => '''
-import 'package:boilerplate/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:dartz/dartz.dart';
 
 import '../model/$module.dart';
@@ -439,7 +439,7 @@ abstract class ${className}UseCases {
 ''';
 
 String _tplInteractor(String module, String className) => '''
-import 'package:boilerplate/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
@@ -478,10 +478,10 @@ class ${className}Page extends StatelessWidget {
 // ─── Test templates ───────────────────────────────────────────────────────────
 
 String _tplInteractorTest(String module, String className) => '''
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/$module/domain/${module}_interactor.dart';
-import 'package:boilerplate/features/$module/domain/model/$module.dart';
-import 'package:boilerplate/features/$module/domain/repository/${module}_repository.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/$module/domain/${module}_interactor.dart';
+import 'package:pilah_mobile/features/$module/domain/model/$module.dart';
+import 'package:pilah_mobile/features/$module/domain/repository/${module}_repository.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -522,12 +522,12 @@ void main() {
 
 String _tplBlocTest(String module, String className) => '''
 import 'package:bloc_test/bloc_test.dart';
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/$module/domain/model/$module.dart';
-import 'package:boilerplate/features/$module/domain/use_cases/${module}_use_cases.dart';
-import 'package:boilerplate/features/$module/presentation/blocs/${module}_bloc.dart';
-import 'package:boilerplate/features/$module/presentation/blocs/${module}_event.dart';
-import 'package:boilerplate/features/$module/presentation/blocs/${module}_state.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/$module/domain/model/$module.dart';
+import 'package:pilah_mobile/features/$module/domain/use_cases/${module}_use_cases.dart';
+import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_bloc.dart';
+import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_event.dart';
+import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_state.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -575,11 +575,11 @@ void main() {
 
 String _tplCubitTest(String module, String className) => '''
 import 'package:bloc_test/bloc_test.dart';
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/$module/domain/model/$module.dart';
-import 'package:boilerplate/features/$module/domain/use_cases/${module}_use_cases.dart';
-import 'package:boilerplate/features/$module/presentation/blocs/${module}_cubit.dart';
-import 'package:boilerplate/features/$module/presentation/blocs/${module}_state.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/$module/domain/model/$module.dart';
+import 'package:pilah_mobile/features/$module/domain/use_cases/${module}_use_cases.dart';
+import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_cubit.dart';
+import 'package:pilah_mobile/features/$module/presentation/blocs/${module}_state.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -626,11 +626,11 @@ void main() {
 ''';
 
 String _tplRiverpodTest(String module, String className) => '''
-import 'package:boilerplate/core/client/network_exception.dart';
-import 'package:boilerplate/features/$module/domain/model/$module.dart';
-import 'package:boilerplate/features/$module/domain/use_cases/${module}_use_cases.dart';
-import 'package:boilerplate/features/$module/presentation/providers/${module}_notifier.dart';
-import 'package:boilerplate/features/$module/presentation/providers/${module}_state.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/$module/domain/model/$module.dart';
+import 'package:pilah_mobile/features/$module/domain/use_cases/${module}_use_cases.dart';
+import 'package:pilah_mobile/features/$module/presentation/providers/${module}_notifier.dart';
+import 'package:pilah_mobile/features/$module/presentation/providers/${module}_state.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

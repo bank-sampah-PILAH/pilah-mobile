@@ -1,4 +1,4 @@
-import '../onboarding_states.dart';
+﻿import '../onboarding_states.dart';
 
 class OnboardingLoadingState extends OnboardingStates {
   @override

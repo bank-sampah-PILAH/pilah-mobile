@@ -1,10 +1,10 @@
-import 'package:boilerplate/features/authentication/presentation/pages/forgot_password_page.dart';
-import 'package:boilerplate/features/authentication/presentation/pages/login_page.dart';
-import 'package:boilerplate/features/main/presentation/pages/main_page.dart';
-import 'package:boilerplate/features/onboarding/presentation/pages/onboarding_page.dart';
-import 'package:boilerplate/features/onboarding/presentation/pages/splash_page.dart';
-import 'package:boilerplate/features/product/presentation/home/pages/product_home_page.dart';
-import 'package:boilerplate/features/profile/presentation/pages/profile_page.dart';
+﻿import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
+import 'package:pilah_mobile/features/product/presentation/home/pages/product_home_page.dart';
+import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

@@ -1,6 +1,6 @@
-import 'package:boilerplate/core/client/network_service.dart';
-import 'package:boilerplate/core/constants/endpoints.dart';
-import 'package:boilerplate/features/authentication/data/remote/model/request/post_login_request.dart';
+﻿import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/constants/endpoints.dart';
+import 'package:pilah_mobile/features/authentication/data/remote/model/request/post_login_request.dart';
 import 'package:injectable/injectable.dart';
 
 import 'model/responses/auth_response.dart';

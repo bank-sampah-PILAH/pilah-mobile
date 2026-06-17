@@ -1,1 +1,1 @@
-abstract class AuthenticationEvent {}
+﻿abstract class AuthenticationEvent {}

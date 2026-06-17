@@ -1,4 +1,4 @@
-import 'package:hive_flutter/hive_flutter.dart';
+﻿import 'package:hive_flutter/hive_flutter.dart';
 import '../app_storage.dart';
 
 /// [AppStorage] backed by Hive (fast NoSQL box store).

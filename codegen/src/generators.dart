@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print
+﻿// ignore_for_file: avoid_print
 part of '../spl_manager.dart';
 
 // ─── Feature file generation ──────────────────────────────────────────────────
@@ -125,7 +125,7 @@ void _injectRoute(String module, String className, {bool shellRoute = false}) {
 
   var content = File(routerPath).readAsStringSync();
   final pageImport =
-      "import 'package:boilerplate/features/$module/presentation/pages/${module}_page.dart';";
+      "import 'package:pilah_mobile/features/$module/presentation/pages/${module}_page.dart';";
 
   if (content.contains('${className}Page.route')) {
     print('  ~  Route for $className already exists — skipping.');
@@ -173,7 +173,7 @@ void _removeRoute(String module) {
 
   // Remove the import line
   content = content.replaceAll(
-    "import 'package:boilerplate/features/$module/presentation/pages/${module}_page.dart';\n",
+    "import 'package:pilah_mobile/features/$module/presentation/pages/${module}_page.dart';\n",
     '',
   );
 

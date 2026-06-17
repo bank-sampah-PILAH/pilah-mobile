@@ -1,4 +1,4 @@
-class SaveTokenRequest {
+﻿class SaveTokenRequest {
   final String accessToken;
   final String refreshToken;
 
