@@ -1,4 +1,4 @@
-# 👨‍💻 Flutter Boilerplate
+﻿# 👨‍💻 Flutter Pilah Mobile
 
 [![Generic badge](https://img.shields.io/badge/Flutter-v3.41.3-blue)](https://flutter.dev/docs)[![Generic badge](https://img.shields.io/badge/Dart-v3.11.1-blue)](https://dart.dev/guides)
 
@@ -88,7 +88,7 @@ Bricks are excluded from Dart analysis (`analysis_options.yaml`) because they co
 
 [DummyJson](https://dummyjson.com/docs/)
 
-This boilerplate use DummyJson for remote data sources
+This Pilah Mobile use DummyJson for remote data sources
 
 See [Auth](https://dummyjson.com/docs/auth) to obtain username and password to login in this app
 
