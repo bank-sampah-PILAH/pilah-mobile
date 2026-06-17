@@ -5,11 +5,13 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/login_pa
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
+import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
+
 class AppRouterConfig {
   static final _parentKey = GlobalKey<NavigatorState>();
   
   static final GoRouter _router = GoRouter(
-    initialLocation: DashboardPage.route,
+    initialLocation: LoginPage.route,
     navigatorKey: _parentKey,
     routes: <RouteBase>[
       GoRoute(
@@ -39,11 +41,9 @@ class AppRouterConfig {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/nasabah',
-                name: 'nasabah',
-                builder: (context, state) => const Scaffold(
-                  body: Center(child: Text('Nasabah Page')),
-                ),
+                path: NasabahPage.route,
+                name: NasabahPage.route,
+                builder: (context, state) => const NasabahPage(),
               ),
             ],
           ),
