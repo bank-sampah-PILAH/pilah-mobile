@@ -1,8 +1,8 @@
-﻿import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../app_storage.dart';
 
-/// [AppStorage] backed by FlutterSecureStorage.
-/// Managed by spl_manager. To switch: dart run codegen/spl_manager.dart storage set <provider>
+/// `[AppStorage]` backed by FlutterSecureStorage.
+/// Managed by spl_manager. To switch: dart run codegen/spl_manager.dart storage set `<provider>`
 class SecureStorageProvider implements AppStorage {
   final FlutterSecureStorage _storage;
   const SecureStorageProvider(this._storage);
