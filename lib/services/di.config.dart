@@ -1,5 +1,5 @@
-﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format width=80
+// GENERATED CODE - DO NOT MODIFY BY HAND
 
 // **************************************************************************
 // InjectableConfigGenerator
@@ -75,10 +75,6 @@ extension GetItInjectableX on _i174.GetIt {
       environmentFilter,
     );
     final storageModule = _$StorageModule();
-    gh.lazySingleton<_i124.SecureDatabase>(
-        () => const _i124.SecureDatabaseImpl());
-    gh.lazySingleton<_i936.NetworkUtils>(
-        () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
       registerFor: {_dev},
@@ -87,54 +83,62 @@ extension GetItInjectableX on _i174.GetIt {
       () => storageModule.flutterSecureStorage,
       instanceName: 'flutter_secure_storage',
     );
-    gh.lazySingleton<_i1024.ProfileLocalDataSources>(
-        () => _i1024.ProfileLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
+    gh.lazySingleton<_i812.AppStorage>(
+      () => storageModule.sharedPreferences,
+      instanceName: 'shared_preferences',
+    );
+    gh.lazySingleton<_i124.SecureDatabase>(
+        () => const _i124.SecureDatabaseImpl());
     gh.lazySingleton<_i981.AuthLocalDataSources>(
         () => _i981.AuthLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
     gh.factory<_i119.AppEnvironment>(
       () => _i119.ProdEnvironment(),
       registerFor: {_prod},
     );
+    gh.lazySingleton<_i936.NetworkUtils>(
+        () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
+    gh.lazySingleton<_i1024.ProfileLocalDataSources>(
+        () => _i1024.ProfileLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
     gh.lazySingleton<_i941.NetworkService>(() => _i941.NetworkService(
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
         ));
+    gh.lazySingleton<_i174.ProductRemoteDataSources>(
+        () => _i174.ProductRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i622.ProfileRemoteDataSources>(
         () => _i622.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i438.OnboardingRemoteDataSources>(
+        () => _i438.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i24.AuthRemoteDataSources>(
         () => _i24.AuthRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
+          gh<_i24.AuthRemoteDataSources>(),
+          gh<_i981.AuthLocalDataSources>(),
+        ));
+    gh.lazySingleton<_i998.OnboardingRepository>(() =>
+        _i255.OnboardingRepositoryImpl(
+            gh<_i438.OnboardingRemoteDataSources>()));
+    gh.lazySingleton<_i128.ProductRepository>(() =>
+        _i162.ProductRepositoryImpl(gh<_i174.ProductRemoteDataSources>()));
     gh.lazySingleton<_i928.ProfileRepository>(
         () => _i1030.ProfileRepositoryImpl(
               gh<_i622.ProfileRemoteDataSources>(),
               gh<_i1024.ProfileLocalDataSources>(),
             ));
-    gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
-          gh<_i24.AuthRemoteDataSources>(),
-          gh<_i981.AuthLocalDataSources>(),
-        ));
-    gh.lazySingleton<_i174.ProductRemoteDataSources>(
-        () => _i174.ProductRemoteDataSourceImpl(gh<_i941.NetworkService>()));
-    gh.lazySingleton<_i438.OnboardingRemoteDataSources>(
-        () => _i438.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
-    gh.lazySingleton<_i483.ProfileUseCases>(
-        () => _i40.ProfileInteractor(gh<_i928.ProfileRepository>()));
-    gh.lazySingleton<_i128.ProductRepository>(() =>
-        _i162.ProductRepositoryImpl(gh<_i174.ProductRemoteDataSources>()));
-    gh.factory<_i957.ProfileBloc>(
-        () => _i957.ProfileBloc(gh<_i483.ProfileUseCases>()));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
-    gh.lazySingleton<_i998.OnboardingRepository>(() =>
-        _i255.OnboardingRepositoryImpl(
-            gh<_i438.OnboardingRemoteDataSources>()));
+    gh.lazySingleton<_i483.ProfileUseCases>(
+        () => _i40.ProfileInteractor(gh<_i928.ProfileRepository>()));
     gh.lazySingleton<_i1022.OnboardingUseCases>(
         () => _i698.OnboardingInteractor(gh<_i998.OnboardingRepository>()));
-    gh.lazySingleton<_i60.ProductUseCases>(
-        () => _i283.ProductInteractor(gh<_i128.ProductRepository>()));
-    gh.factory<_i960.AuthenticationBloc>(
-        () => _i960.AuthenticationBloc(gh<_i521.AuthenticationUseCases>()));
     gh.factory<_i221.OnboardingBloc>(
         () => _i221.OnboardingBloc(gh<_i1022.OnboardingUseCases>()));
+    gh.factory<_i957.ProfileBloc>(
+        () => _i957.ProfileBloc(gh<_i483.ProfileUseCases>()));
+    gh.factory<_i960.AuthenticationBloc>(
+        () => _i960.AuthenticationBloc(gh<_i521.AuthenticationUseCases>()));
+    gh.lazySingleton<_i60.ProductUseCases>(
+        () => _i283.ProductInteractor(gh<_i128.ProductRepository>()));
     gh.factory<_i513.ProductHomeBloc>(
         () => _i513.ProductHomeBloc(gh<_i60.ProductUseCases>()));
     return this;
