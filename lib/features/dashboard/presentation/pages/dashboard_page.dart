@@ -54,9 +54,11 @@ class DashboardPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  InkWell(
-                    onTap: () => context.push(ProfilePage.route),
-                    borderRadius: BorderRadius.circular(24),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      context.push('/profile');
+                    },
                     child: const CircleAvatar(
                       radius: 24,
                       backgroundColor: AppColors.greenDark,
