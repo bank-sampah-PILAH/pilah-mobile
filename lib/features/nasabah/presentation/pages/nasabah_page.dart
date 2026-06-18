@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
 class NasabahPage extends StatelessWidget {
   const NasabahPage({super.key});
@@ -12,7 +13,14 @@ class NasabahPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => const TambahNasabahBottomSheet(),
+          );
+        },
         backgroundColor: AppColors.greenDark,
         elevation: 4,
         child: const Icon(Icons.add, color: Colors.white),
