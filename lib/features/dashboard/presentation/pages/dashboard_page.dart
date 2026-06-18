@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -52,15 +54,19 @@ class DashboardPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.greenDark,
-                    child: Text(
-                      'IS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                  InkWell(
+                    onTap: () => context.push(ProfilePage.route),
+                    borderRadius: BorderRadius.circular(24),
+                    child: const CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.greenDark,
+                      child: Text(
+                        'IS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
                     ),
                   ),
