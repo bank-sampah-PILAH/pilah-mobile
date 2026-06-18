@@ -4,6 +4,8 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
+import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
@@ -172,7 +174,7 @@ class DashboardPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => context.push(TransaksiBaruPage.route),
                       icon: const Icon(Icons.add, color: Colors.white, size: 20),
                       label: Text(
                         'Setoran Baru',
