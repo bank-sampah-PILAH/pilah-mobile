@@ -16,6 +16,7 @@ class NasabahPage extends StatelessWidget {
         onPressed: () {
           showModalBottomSheet(
             context: context,
+            useRootNavigator: true, // This hides the bottom navbar
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
             builder: (context) => const TambahNasabahBottomSheet(),
