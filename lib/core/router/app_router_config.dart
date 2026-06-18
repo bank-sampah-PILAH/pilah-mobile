@@ -10,6 +10,7 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 class AppRouterConfig {
   static final _parentKey = GlobalKey<NavigatorState>();
@@ -32,6 +33,11 @@ class AppRouterConfig {
         path: ProfilePage.route,
         name: ProfilePage.route,
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: TransaksiBaruPage.route,
+        name: TransaksiBaruPage.route,
+        builder: (context, state) => const TransaksiBaruPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
