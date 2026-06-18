@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -196,7 +197,23 @@ class DashboardPage extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        // 1. Switch to the Nasabah tab
+                        context.go('/nasabah');
+
+                        // 2. Show the bottom sheet with a slight delay to allow route transition
+                        Future.delayed(const Duration(milliseconds: 150), () {
+                          if (context.mounted) {
+                            showModalBottomSheet(
+                              context: context,
+                              useRootNavigator: true,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => const TambahNasabahBottomSheet(),
+                            );
+                          }
+                        });
+                      },
                       icon: const Icon(Icons.person_add_outlined, color: AppColors.greenDark, size: 20),
                       label: Text(
                         'Tambah\nNasabah',
