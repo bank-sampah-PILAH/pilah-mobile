@@ -9,6 +9,8 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
+import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+
 class AppRouterConfig {
   static final _parentKey = GlobalKey<NavigatorState>();
   
@@ -25,6 +27,11 @@ class AppRouterConfig {
         path: ForgotPasswordPage.route,
         name: ForgotPasswordPage.route,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        path: ProfilePage.route,
+        name: ProfilePage.route,
+        builder: (context, state) => const ProfilePage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
