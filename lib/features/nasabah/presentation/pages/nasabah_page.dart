@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 
 class NasabahPage extends StatelessWidget {
   const NasabahPage({super.key});
@@ -122,6 +123,7 @@ class NasabahPage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 80), // Padding for FAB
                   children: [
                     _buildNasabahCard(
+                      context: context,
                       initials: 'AR',
                       avatarColor: AppColors.greenLight,
                       textColor: AppColors.greenDark,
@@ -131,6 +133,7 @@ class NasabahPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildNasabahCard(
+                      context: context,
                       initials: 'BS',
                       avatarColor: AppColors.statPurpleLight,
                       textColor: AppColors.statPurple,
@@ -140,6 +143,7 @@ class NasabahPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildNasabahCard(
+                      context: context,
                       initials: 'CW',
                       avatarColor: AppColors.avatarYellow,
                       textColor: AppColors.avatarYellowText,
@@ -149,6 +153,7 @@ class NasabahPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildNasabahCard(
+                      context: context,
                       initials: 'EP',
                       avatarColor: const Color(0xFFE0F7FA), // cyanLight
                       textColor: const Color(0xFF00838F), // cyanDark
@@ -167,6 +172,7 @@ class NasabahPage extends StatelessWidget {
   }
 
   Widget _buildNasabahCard({
+    required BuildContext context,
     required String initials,
     required Color avatarColor,
     required Color textColor,
@@ -174,20 +180,31 @@ class NasabahPage extends StatelessWidget {
     required String phone,
     required String balance,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
+    return GestureDetector(
+      onTap: () {
+        // Hardcoded for all cards to show the same detail sheet for now
+        showModalBottomSheet(
+          context: context, // Note: Need BuildContext for showModalBottomSheet
+          useRootNavigator: true, 
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => const DetailNasabahBottomSheet(),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
         children: [
           Container(
             width: 50,
