@@ -4,13 +4,23 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 
-class NasabahPage extends StatelessWidget {
+class NasabahPage extends StatefulWidget {
   const NasabahPage({super.key});
 
   static const route = '/nasabah';
 
   @override
+  State<NasabahPage> createState() => _NasabahPageState();
+}
+
+class _NasabahPageState extends State<NasabahPage> {
+  bool isActiveTab = true;
+
+  @override
   Widget build(BuildContext context) {
+    // Emerald Eco System Design tokens
+    const Color emeraldPrimary = Color(0xFF006D44);
+
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
@@ -84,32 +94,46 @@ class NasabahPage extends StatelessWidget {
               // Filter Chips
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenDark,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Aktif',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isActiveTab = true;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isActiveTab ? emeraldPrimary : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Aktif',
+                        style: AppTextStyle.small.copyWith(
+                          color: isActiveTab ? Colors.white : Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Tidak Aktif',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w600,
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isActiveTab = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: !isActiveTab ? emeraldPrimary : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Tidak Aktif',
+                        style: AppTextStyle.small.copyWith(
+                          color: !isActiveTab ? Colors.white : Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -121,47 +145,9 @@ class NasabahPage extends StatelessWidget {
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.only(bottom: 80), // Padding for FAB
-                  children: [
-                    _buildNasabahCard(
-                      context: context,
-                      initials: 'AR',
-                      avatarColor: AppColors.greenLight,
-                      textColor: AppColors.greenDark,
-                      name: 'Ahmad Ridwan',
-                      phone: '0812-3456-7890',
-                      balance: 'Rp 450.000',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildNasabahCard(
-                      context: context,
-                      initials: 'BS',
-                      avatarColor: AppColors.statPurpleLight,
-                      textColor: AppColors.statPurple,
-                      name: 'Budi Santoso',
-                      phone: '0857-1122-3344',
-                      balance: 'Rp 125.500',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildNasabahCard(
-                      context: context,
-                      initials: 'CW',
-                      avatarColor: AppColors.avatarYellow,
-                      textColor: AppColors.avatarYellowText,
-                      name: 'Citra Wijaya',
-                      phone: '0896-9988-7766',
-                      balance: 'Rp 890.000',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildNasabahCard(
-                      context: context,
-                      initials: 'EP',
-                      avatarColor: const Color(0xFFE0F7FA), // cyanLight
-                      textColor: const Color(0xFF00838F), // cyanDark
-                      name: 'Eko Prasetyo',
-                      phone: '0813-5678-9012',
-                      balance: 'Rp 215.000',
-                    ),
-                  ],
+                  children: isActiveTab 
+                    ? _buildActiveCustomers()
+                    : _buildInactiveCustomers(),
                 ),
               ),
             ],
@@ -171,8 +157,83 @@ class NasabahPage extends StatelessWidget {
     );
   }
 
+  List<Widget> _buildActiveCustomers() {
+    return [
+      _buildNasabahCard(
+        context: context,
+        isActive: true,
+        initials: 'AR',
+        avatarColor: AppColors.greenLight,
+        textColor: AppColors.greenDark,
+        name: 'Ahmad Ridwan',
+        phone: '0812-3456-7890',
+        balance: 'Rp 450.000',
+      ),
+      const SizedBox(height: 12),
+      _buildNasabahCard(
+        context: context,
+        isActive: true,
+        initials: 'BS',
+        avatarColor: AppColors.statPurpleLight,
+        textColor: AppColors.statPurple,
+        name: 'Budi Santoso',
+        phone: '0857-1122-3344',
+        balance: 'Rp 125.500',
+      ),
+      const SizedBox(height: 12),
+      _buildNasabahCard(
+        context: context,
+        isActive: true,
+        initials: 'CW',
+        avatarColor: AppColors.avatarYellow,
+        textColor: AppColors.avatarYellowText,
+        name: 'Citra Wijaya',
+        phone: '0896-9988-7766',
+        balance: 'Rp 890.000',
+      ),
+      const SizedBox(height: 12),
+      _buildNasabahCard(
+        context: context,
+        isActive: true,
+        initials: 'EP',
+        avatarColor: const Color(0xFFE0F7FA), // cyanLight
+        textColor: const Color(0xFF00838F), // cyanDark
+        name: 'Eko Prasetyo',
+        phone: '0813-5678-9012',
+        balance: 'Rp 215.000',
+      ),
+    ];
+  }
+
+  List<Widget> _buildInactiveCustomers() {
+    return [
+      _buildNasabahCard(
+        context: context,
+        isActive: false,
+        initials: 'DP',
+        avatarColor: const Color(0xFFDCE2F7), // surface-variant
+        textColor: Colors.grey[500]!, // using grey for muted initials text
+        name: 'Dewi Putri',
+        phone: '0811-2223-4455',
+        balance: 'Rp 35.000',
+      ),
+      const SizedBox(height: 12),
+      _buildNasabahCard(
+        context: context,
+        isActive: false,
+        initials: 'FH',
+        avatarColor: const Color(0xFFDCE2F7), // surface-variant
+        textColor: Colors.grey[500]!, // using grey for muted initials text
+        name: 'Farida Hanum',
+        phone: '0878-4321-0987',
+        balance: 'Rp 75.000',
+      ),
+    ];
+  }
+
   Widget _buildNasabahCard({
     required BuildContext context,
+    required bool isActive,
     required String initials,
     required Color avatarColor,
     required Color textColor,
@@ -182,9 +243,8 @@ class NasabahPage extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        // Hardcoded for all cards to show the same detail sheet for now
         showModalBottomSheet(
-          context: context, // Note: Need BuildContext for showModalBottomSheet
+          context: context,
           useRootNavigator: true, 
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
@@ -205,70 +265,92 @@ class NasabahPage extends StatelessWidget {
           ],
         ),
         child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: avatarColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initials,
-              style: AppTextStyle.title1.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.bold,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: avatarColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initials,
+                style: AppTextStyle.title1.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        name,
+                        style: AppTextStyle.title1.copyWith(
+                          color: isActive ? Colors.black87 : Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (!isActive) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Nonaktif',
+                            style: AppTextStyle.extraSmall.copyWith(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    phone,
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  name,
+                  balance,
                   style: AppTextStyle.title1.copyWith(
-                    color: Colors.black87,
+                    color: isActive ? AppColors.greenDark : Colors.grey[500],
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  phone,
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[500],
+                  'saldo',
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: Colors.grey[400],
                   ),
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                balance,
-                style: AppTextStyle.title1.copyWith(
-                  color: AppColors.greenDark,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'saldo',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[400],
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }
