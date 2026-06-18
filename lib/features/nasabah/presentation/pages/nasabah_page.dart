@@ -268,6 +268,7 @@ class NasabahPage extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }
