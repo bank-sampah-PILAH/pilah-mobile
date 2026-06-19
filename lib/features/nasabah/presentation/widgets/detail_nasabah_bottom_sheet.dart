@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 
 class DetailNasabahBottomSheet extends StatelessWidget {
   final Map<String, dynamic> customerData;
@@ -178,7 +179,15 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => context.pop(),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => NasabahConfirmationDialog(
+                            isActivating: !isActive,
+                            customerName: name,
+                          ),
+                        );
+                      },
                       icon: Icon(isActive ? Icons.block : Icons.check, color: Colors.white, size: 18),
                       label: Text(
                         isActive ? 'Nonaktifkan' : 'Aktifkan',
