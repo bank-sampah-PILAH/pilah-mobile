@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -109,100 +110,13 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    InkWell(
-                      onTap: () async {
-                        final result = await showModalBottomSheet<Map<String, dynamic>>(
-                          context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const PilihNasabahBottomSheet(),
-                        );
-                        if (result != null) {
-                          setState(() {
-                            selectedCustomer = result;
-                          });
-                        }
+                    PilihNasabahSection(
+                      selectedCustomer: selectedCustomer,
+                      onCustomerSelected: (result) {
+                        setState(() {
+                          selectedCustomer = result;
+                        });
                       },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: selectedCustomer != null ? const Color(0xFF006D44) : Colors.grey[300]!, 
-                            width: 1.5
-                          ),
-                        ),
-                        child: selectedCustomer == null
-                            ? Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFF5F5F5), // grey[100]
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(Icons.person_outline, color: Colors.grey[500], size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Tap untuk pilih nasabah',
-                                      style: AppTextStyle.small.copyWith(
-                                        color: Colors.grey[500],
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: selectedCustomer!['avatarColor'],
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      selectedCustomer!['initials'],
-                                      style: AppTextStyle.title1.copyWith(
-                                        color: selectedCustomer!['textColor'],
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          selectedCustomer!['name'],
-                                          style: AppTextStyle.title1.copyWith(
-                                            color: Colors.black87,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          selectedCustomer!['id'],
-                                          style: AppTextStyle.small.copyWith(
-                                            color: Colors.grey[500],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(Icons.edit_outlined, color: Colors.grey[400]),
-                                ],
-                              ),
-                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -299,69 +213,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Summary Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Subtotal item',
-                                style: AppTextStyle.small.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                              Text(
-                                _formatCurrency(grandTotal),
-                                style: AppTextStyle.title1.copyWith(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Grand Total',
-                                style: AppTextStyle.title1.copyWith(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                _formatCurrency(grandTotal),
-                                style: AppTextStyle.headline1.copyWith(
-                                  color: AppColors.greenDark,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                    TransactionSummarySection(grandTotal: grandTotal),
                     const SizedBox(height: 24),
                   ],
                 ),
