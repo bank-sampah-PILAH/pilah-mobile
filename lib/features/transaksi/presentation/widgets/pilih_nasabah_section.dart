@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+
 class PilihNasabahSection extends StatelessWidget {
-  final Map<String, dynamic>? selectedCustomer;
-  final ValueChanged<Map<String, dynamic>> onCustomerSelected;
+  final NasabahEntity? selectedCustomer;
+  final ValueChanged<NasabahEntity> onCustomerSelected;
 
   const PilihNasabahSection({
     super.key,
@@ -16,7 +18,7 @@ class PilihNasabahSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () async {
-        final result = await showModalBottomSheet<Map<String, dynamic>>(
+        final result = await showModalBottomSheet<NasabahEntity>(
           context: context,
           useRootNavigator: true,
           isScrollControlled: true,
@@ -67,14 +69,14 @@ class PilihNasabahSection extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: selectedCustomer!['avatarColor'],
+                      color: selectedCustomer!.avatarColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      selectedCustomer!['initials'],
+                      selectedCustomer!.initials,
                       style: AppTextStyle.title1.copyWith(
-                        color: selectedCustomer!['textColor'],
+                        color: selectedCustomer!.textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -86,7 +88,7 @@ class PilihNasabahSection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          selectedCustomer!['name'],
+                          selectedCustomer!.name,
                           style: AppTextStyle.title1.copyWith(
                             color: Colors.black87,
                             fontWeight: FontWeight.bold,
@@ -94,7 +96,7 @@ class PilihNasabahSection extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          selectedCustomer!['id'],
+                          selectedCustomer!.id,
                           style: AppTextStyle.small.copyWith(
                             color: Colors.grey[500],
                           ),

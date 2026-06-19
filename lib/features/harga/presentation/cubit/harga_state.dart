@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 
 abstract class HargaState extends Equatable {
   const HargaState();
@@ -12,7 +13,7 @@ class HargaInitial extends HargaState {}
 class HargaLoading extends HargaState {}
 
 class HargaLoaded extends HargaState {
-  final List<Map<String, dynamic>> jenisSampahList;
+  final List<HargaEntity> jenisSampahList;
   final bool isActiveTab;
   final String searchQuery;
 
@@ -24,4 +25,13 @@ class HargaLoaded extends HargaState {
 
   @override
   List<Object?> get props => [jenisSampahList, isActiveTab, searchQuery];
+}
+
+class HargaError extends HargaState {
+  final String message;
+
+  const HargaError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

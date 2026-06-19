@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -250,13 +251,13 @@ class _HargaPageBody extends StatelessWidget {
   Widget _buildHargaCard({
     required BuildContext context,
     required HargaCubit hargaCubit,
-    required Map<String, dynamic> item,
+    required HargaEntity item,
   }) {
-    final icon = item['icon'] as IconData;
-    final title = item['name'] as String;
-    final subtitle = item['subtitle'] as String? ?? '';
-    final badgeText = item['badgeText'] as String? ?? 'Anorganik';
-    final price = item['priceFormatted'] as String? ?? 'Rp 0';
+    final icon = item.icon;
+    final title = item.name;
+    final subtitle = item.subtitle;
+    final badgeText = item.badgeText;
+    final price = item.priceFormatted;
 
     return GestureDetector(
       onTap: () {
@@ -267,13 +268,7 @@ class _HargaPageBody extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (_) => TambahJenisSampahBottomSheet(
             hargaCubit: hargaCubit,
-            initialData: {
-              'id': item['id'],
-              'title': title,
-              'subtitle': subtitle,
-              'badgeText': badgeText,
-              'price': price,
-            },
+            initialData: item,
           ),
         );
       },

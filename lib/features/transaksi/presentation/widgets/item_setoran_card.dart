@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
@@ -68,9 +69,9 @@ class ItemSetoranCard extends StatelessWidget {
                   ),
                   child: BlocBuilder<HargaCubit, HargaState>(
                     builder: (context, state) {
-                      List<Map<String, dynamic>> activeList = [];
+                      List<HargaEntity> activeList = [];
                       if (state is HargaLoaded) {
-                        activeList = state.jenisSampahList.where((t) => t['isActive'] == true).toList();
+                        activeList = state.jenisSampahList.where((t) => t.isActive == true).toList();
                       }
 
                       return DropdownButtonHideUnderline(
@@ -90,13 +91,13 @@ class ItemSetoranCard extends StatelessWidget {
                           icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
                           items: activeList.map((type) {
                             return DropdownMenuItem<String>(
-                              value: type['name'],
+                              value: type.name,
                               child: Row(
                                 children: [
-                                  Icon(type['icon'] as IconData, color: type['iconColor'] as Color, size: 20),
+                                  Icon(type.icon, color: type.iconColor, size: 20),
                                   const SizedBox(width: 8),
                                   Text(
-                                    type['name'] as String,
+                                    type.name,
                                     style: AppTextStyle.small.copyWith(
                                       color: Colors.black87,
                                       fontWeight: FontWeight.bold,
@@ -108,11 +109,11 @@ class ItemSetoranCard extends StatelessWidget {
                           }).toList(),
                           onChanged: (value) {
                             if (value != null) {
-                              final selected = activeList.firstWhere((t) => t['name'] == value);
+                              final selected = activeList.firstWhere((t) => t.name == value);
                               onChanged({
                                 ...itemData,
                                 'jenis': value,
-                                'harga': selected['price'],
+                                'harga': selected.price,
                               });
                             }
                           },
