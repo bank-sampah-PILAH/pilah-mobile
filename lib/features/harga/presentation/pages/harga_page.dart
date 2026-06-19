@@ -5,6 +5,8 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class HargaPage extends StatelessWidget {
   const HargaPage({super.key});
@@ -63,22 +65,11 @@ class _HargaPageBody extends StatelessWidget {
               const SizedBox(height: 16),
 
               // Search Bar
-              TextField(
+              CustomSearchField(
+                hintText: 'Cari jenis sampah...',
                 onChanged: (value) {
                   context.read<HargaCubit>().searchHarga(value);
                 },
-                decoration: InputDecoration(
-                  hintText: 'Cari jenis sampah...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                ),
               ),
               const SizedBox(height: 16),
 
@@ -333,19 +324,10 @@ class _HargaPageBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      badgeText,
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: Colors.blue[600],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  CustomStatusBadge(
+                    statusText: badgeText,
+                    backgroundColor: Colors.blue[50],
+                    textColor: Colors.blue[600],
                   ),
                 ],
               ),
