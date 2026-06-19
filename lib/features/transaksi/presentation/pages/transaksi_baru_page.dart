@@ -18,6 +18,14 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   Map<String, dynamic>? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
 
+  final List<Map<String, dynamic>> jenisSampahList = [
+    {'name': 'Plastik PET', 'price': 3500, 'icon': Icons.recycling, 'iconColor': Colors.green},
+    {'name': 'Kertas HVS', 'price': 2000, 'icon': Icons.description, 'iconColor': Colors.grey},
+    {'name': 'Kardus', 'price': 1500, 'icon': Icons.inventory_2, 'iconColor': Colors.brown},
+    {'name': 'Logam Besi', 'price': 4000, 'icon': Icons.settings, 'iconColor': Colors.blueGrey},
+    {'name': 'Aluminium', 'price': 8000, 'icon': Icons.ad_units, 'iconColor': Colors.redAccent},
+  ];
+
   void _addItem() {
     setState(() {
       setoranItems.add({'jenis': null, 'harga': 0, 'berat': 1});
@@ -264,6 +272,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                           return ItemSetoranCard(
                             index: entry.key,
                             itemData: entry.value,
+                            jenisSampahList: jenisSampahList,
                             onChanged: (updated) {
                               setState(() {
                                 setoranItems[entry.key] = updated;
