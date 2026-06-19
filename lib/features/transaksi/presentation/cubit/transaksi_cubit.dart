@@ -1,9 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
-import 'package:pilah_mobile/features/laporan/domain/entities/transaksi_entity.dart';
-import 'package:pilah_mobile/features/laporan/domain/use_cases/add_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/laporan/domain/use_cases/get_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
 @injectable
 class TransaksiCubit extends Cubit<TransaksiState> {

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:pilah_mobile/features/laporan/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 
 abstract class TransaksiState extends Equatable {
   const TransaksiState();

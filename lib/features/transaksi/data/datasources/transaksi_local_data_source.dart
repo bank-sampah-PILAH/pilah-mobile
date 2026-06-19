@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/features/laporan/data/models/transaksi_model.dart';
+import 'package:pilah_mobile/features/transaksi/data/models/transaksi_model.dart';
 
 abstract class TransaksiLocalDataSource {
   Future<List<TransaksiGroupModel>> getTransaksi();
