@@ -32,15 +32,6 @@ class _LaporanPageState extends State<LaporanPage> {
                   // Header
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
-                      ),
-                      const SizedBox(width: 16),
                       Text(
                         'Semua Transaksi',
                         style: AppTextStyle.headline1.copyWith(
