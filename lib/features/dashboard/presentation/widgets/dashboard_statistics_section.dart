@@ -17,7 +17,7 @@ class DashboardStatisticsSection extends StatelessWidget {
         int activeNasabah = 0;
         if (nasabahState is NasabahLoaded) {
           for (var nasabah in nasabahState.nasabahList) {
-            if (nasabah['isActive'] == true) {
+            if (nasabah.isActive == true) {
               activeNasabah++;
             }
           }

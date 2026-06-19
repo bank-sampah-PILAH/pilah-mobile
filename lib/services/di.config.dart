@@ -31,6 +31,18 @@ import '../features/authentication/domain/use_cases/authentication_use_cases.dar
     as _i521;
 import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
+import '../features/nasabah/data/datasources/nasabah_local_data_source.dart'
+    as _i469;
+import '../features/nasabah/data/repositories/nasabah_repository_impl.dart'
+    as _i1026;
+import '../features/nasabah/domain/repositories/nasabah_repository.dart'
+    as _i127;
+import '../features/nasabah/domain/use_cases/activate_nasabah_usecase.dart'
+    as _i449;
+import '../features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart'
+    as _i850;
+import '../features/nasabah/domain/use_cases/get_nasabah_usecase.dart' as _i789;
+import '../features/nasabah/presentation/cubit/nasabah_cubit.dart' as _i958;
 import '../features/onboarding/data/onboarding_repository_impl.dart' as _i255;
 import '../features/onboarding/data/remote/onboarding_remote_data_sources.dart'
     as _i438;
@@ -87,10 +99,14 @@ extension GetItInjectableX on _i174.GetIt {
       () => storageModule.sharedPreferences,
       instanceName: 'shared_preferences',
     );
+    gh.lazySingleton<_i469.NasabahLocalDataSource>(
+        () => _i469.NasabahLocalDataSourceImpl());
     gh.lazySingleton<_i124.SecureDatabase>(
         () => const _i124.SecureDatabaseImpl());
     gh.lazySingleton<_i981.AuthLocalDataSources>(
         () => _i981.AuthLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
+    gh.lazySingleton<_i127.NasabahRepository>(
+        () => _i1026.NasabahRepositoryImpl(gh<_i469.NasabahLocalDataSource>()));
     gh.factory<_i119.AppEnvironment>(
       () => _i119.ProdEnvironment(),
       registerFor: {_prod},
@@ -99,9 +115,20 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
     gh.lazySingleton<_i1024.ProfileLocalDataSources>(
         () => _i1024.ProfileLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
+    gh.lazySingleton<_i449.ActivateNasabahUseCase>(
+        () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i850.DeactivateNasabahUseCase>(
+        () => _i850.DeactivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i789.GetNasabahUseCase>(
+        () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i941.NetworkService>(() => _i941.NetworkService(
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
+        ));
+    gh.factory<_i958.NasabahCubit>(() => _i958.NasabahCubit(
+          gh<_i789.GetNasabahUseCase>(),
+          gh<_i449.ActivateNasabahUseCase>(),
+          gh<_i850.DeactivateNasabahUseCase>(),
         ));
     gh.lazySingleton<_i174.ProductRemoteDataSources>(
         () => _i174.ProductRemoteDataSourceImpl(gh<_i941.NetworkService>()));

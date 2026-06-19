@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
 abstract class NasabahState extends Equatable {
   const NasabahState();
@@ -12,7 +13,7 @@ class NasabahInitial extends NasabahState {}
 class NasabahLoading extends NasabahState {}
 
 class NasabahLoaded extends NasabahState {
-  final List<Map<String, dynamic>> nasabahList;
+  final List<NasabahEntity> nasabahList;
   final bool isActiveTab;
   final String searchQuery;
 
@@ -24,4 +25,13 @@ class NasabahLoaded extends NasabahState {
 
   @override
   List<Object?> get props => [nasabahList, isActiveTab, searchQuery];
+}
+
+class NasabahError extends NasabahState {
+  final String message;
+
+  const NasabahError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }
