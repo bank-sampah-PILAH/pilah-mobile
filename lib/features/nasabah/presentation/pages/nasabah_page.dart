@@ -172,6 +172,8 @@ class _NasabahPageBody extends StatelessWidget {
                             name: customer['name'],
                             phone: customer['phone'],
                             balance: customer['balance'],
+                            id: customer['id'],
+                            nasabahCubit: context.read<NasabahCubit>(),
                           );
                         },
                       );

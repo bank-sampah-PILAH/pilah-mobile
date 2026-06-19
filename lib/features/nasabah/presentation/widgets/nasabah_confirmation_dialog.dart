@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 
 class NasabahConfirmationDialog extends StatelessWidget {
   final bool isActivating;
   final String customerName;
+  final String customerId;
+  final NasabahCubit nasabahCubit;
 
   const NasabahConfirmationDialog({
     super.key,
     required this.isActivating,
     required this.customerName,
+    required this.customerId,
+    required this.nasabahCubit,
   });
 
   static const Color emeraldPrimary = Color(0xFF006D44);
@@ -110,6 +115,12 @@ class NasabahConfirmationDialog extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
+                      // Mutate the data via Cubit
+                      if (isActivating) {
+                        nasabahCubit.activateNasabah(customerId);
+                      } else {
+                        nasabahCubit.deactivateNasabah(customerId);
+                      }
                       context.pop(); // Pop Dialog
                       context.pop(); // Pop Bottom Sheet
                     },

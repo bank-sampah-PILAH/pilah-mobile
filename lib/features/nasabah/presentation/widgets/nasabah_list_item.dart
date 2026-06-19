@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 
 class NasabahListItem extends StatelessWidget {
@@ -11,6 +12,8 @@ class NasabahListItem extends StatelessWidget {
   final String name;
   final String phone;
   final String balance;
+  final String? id;
+  final NasabahCubit? nasabahCubit;
 
   const NasabahListItem({
     super.key,
@@ -21,6 +24,8 @@ class NasabahListItem extends StatelessWidget {
     required this.name,
     required this.phone,
     required this.balance,
+    this.id,
+    this.nasabahCubit,
   });
 
   @override
@@ -34,12 +39,14 @@ class NasabahListItem extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (context) => DetailNasabahBottomSheet(
             customerData: {
+              'id': id,
               'isActive': isActive,
               'initials': initials,
               'name': name,
               'phone': phone,
               'balance': balance,
             },
+            nasabahCubit: nasabahCubit,
           ),
         );
       },

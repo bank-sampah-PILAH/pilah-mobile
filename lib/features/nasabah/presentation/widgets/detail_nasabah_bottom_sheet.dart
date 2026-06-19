@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 
 class DetailNasabahBottomSheet extends StatelessWidget {
   final Map<String, dynamic> customerData;
+  final NasabahCubit? nasabahCubit;
 
   const DetailNasabahBottomSheet({
     super.key,
     required this.customerData,
+    this.nasabahCubit,
   });
 
   // Emerald Eco System Tokens
@@ -26,7 +29,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
     final String balance = customerData['balance'] ?? 'Rp 0';
     
     // Derived or mocked data
-    final String customerId = 'NAS-0891'; // Mocked for now
+    final String customerId = customerData['id'] ?? 'NAS-0891';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -182,9 +185,11 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                       onPressed: () {
                         showDialog(
                           context: context,
-                          builder: (context) => NasabahConfirmationDialog(
+                          builder: (dialogContext) => NasabahConfirmationDialog(
                             isActivating: !isActive,
                             customerName: name,
+                            customerId: customerId,
+                            nasabahCubit: nasabahCubit!,
                           ),
                         );
                       },
