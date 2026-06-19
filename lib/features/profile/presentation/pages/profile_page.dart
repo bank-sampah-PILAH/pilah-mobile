@@ -226,6 +226,8 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
+              _buildWhatsappTemplate(),
+              const SizedBox(height: 32),
               _buildInfoAplikasi(),
             ],
           ),
@@ -233,14 +235,7 @@ class ProfilePage extends StatelessWidget {
       ),
       Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [Colors.grey[50]!, Colors.transparent],
-            stops: const [0.65, 1.0],
-          ),
-        ),
+        color: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
