@@ -39,12 +39,21 @@ class DashboardActionButtons extends StatelessWidget {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const TambahNasabahBottomSheet(),
-              );
+              // 1. Trigger the route change to the Nasabah tab
+              context.go('/nasabah');
+              
+              // 2. Wait for the tab transition animation to complete before showing the modal
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (context.mounted) {
+                  showModalBottomSheet(
+                    context: context,
+                    useRootNavigator: true, 
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const TambahNasabahBottomSheet(),
+                  );
+                }
+              });
             },
             icon: const Icon(Icons.person_add_outlined, color: AppColors.greenDark, size: 20),
             label: Text(
