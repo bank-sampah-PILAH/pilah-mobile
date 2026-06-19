@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 
 class TransaksiBaruPage extends StatefulWidget {
   const TransaksiBaruPage({super.key});
@@ -15,6 +16,35 @@ class TransaksiBaruPage extends StatefulWidget {
 
 class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   Map<String, dynamic>? selectedCustomer;
+  List<Map<String, dynamic>> setoranItems = [];
+
+  void _addItem() {
+    setState(() {
+      setoranItems.add({'jenis': null, 'harga': 0, 'berat': 1});
+    });
+  }
+
+  String _formatCurrency(int value) {
+    String str = value.toString();
+    String result = '';
+    int count = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      result = str[i] + result;
+      count++;
+      if (count % 3 == 0 && i != 0) {
+        result = '.$result';
+      }
+    }
+    return 'Rp $result';
+  }
+
+  int get grandTotal {
+    return setoranItems.fold(0, (sum, item) {
+      final harga = item['harga'] as int? ?? 0;
+      final berat = item['berat'] as int? ?? 1;
+      return sum + (harga * berat);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +209,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                           ),
                         ),
                         Text(
-                          '0 item',
+                          '${setoranItems.length} item',
                           style: AppTextStyle.small.copyWith(
                             color: Colors.grey[500],
                           ),
@@ -188,51 +218,70 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Empty State Box
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey[300]!, width: 1.5),
-                        // Note: Using solid border for now as a fallback
+                    // Items or Empty State
+                    if (setoranItems.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(Icons.add, color: Colors.grey[400], size: 24),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Belum Ada Item Setoran',
+                              style: AppTextStyle.title1.copyWith(
+                                color: Colors.grey[500],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tap tombol di bawah untuk menambah item.',
+                              style: AppTextStyle.small.copyWith(
+                                color: Colors.grey[400],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Column(
+                        children: setoranItems.asMap().entries.map((entry) {
+                          return ItemSetoranCard(
+                            index: entry.key,
+                            itemData: entry.value,
+                            onChanged: (updated) {
+                              setState(() {
+                                setoranItems[entry.key] = updated;
+                              });
+                            },
+                            onDelete: () {
+                              setState(() {
+                                setoranItems.removeAt(entry.key);
+                              });
+                            },
+                          );
+                        }).toList(),
                       ),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(Icons.add, color: Colors.grey[400], size: 24),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Belum Ada Item Setoran',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tap tombol di bawah untuk menambah item.',
-                            style: AppTextStyle.small.copyWith(
-                              color: Colors.grey[400],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
                     const SizedBox(height: 16),
 
                     // Add Item Button
                     InkWell(
-                      onTap: () {},
+                      onTap: _addItem,
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
                         width: double.infinity,
@@ -287,7 +336,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                 ),
                               ),
                               Text(
-                                'Rp 0',
+                                _formatCurrency(grandTotal),
                                 style: AppTextStyle.title1.copyWith(
                                   color: Colors.black87,
                                   fontWeight: FontWeight.bold,
@@ -312,7 +361,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                 ),
                               ),
                               Text(
-                                'Rp 0',
+                                _formatCurrency(grandTotal),
                                 style: AppTextStyle.headline1.copyWith(
                                   color: AppColors.greenDark,
                                   fontWeight: FontWeight.bold,
@@ -336,7 +385,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: ElevatedButton.icon(
-            onPressed: null, // Disabled state
+            onPressed: selectedCustomer != null && setoranItems.isNotEmpty ? () {} : null,
             icon: const Icon(Icons.save_outlined, color: Colors.white),
             label: Text(
               'Simpan Transaksi',
@@ -347,6 +396,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
               ),
             ),
             style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.greenDark,
               disabledBackgroundColor: Colors.grey[300],
               disabledForegroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
