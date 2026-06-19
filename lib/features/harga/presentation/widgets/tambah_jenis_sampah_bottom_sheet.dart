@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 
 class TambahJenisSampahBottomSheet extends StatefulWidget {
   final Map<String, dynamic>? initialData;
+  final HargaCubit? hargaCubit;
 
-  const TambahJenisSampahBottomSheet({super.key, this.initialData});
+  const TambahJenisSampahBottomSheet({super.key, this.initialData, this.hargaCubit});
 
   @override
   State<TambahJenisSampahBottomSheet> createState() => _TambahJenisSampahBottomSheetState();
@@ -186,7 +188,34 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    if (widget.hargaCubit != null) {
+                      final priceString = _priceController.text;
+                      final priceInt = int.tryParse(priceString) ?? 0;
+                      
+                      if (isEditMode && widget.initialData?['id'] != null) {
+                        widget.hargaCubit!.updateJenisSampah({
+                          'id': widget.initialData!['id'],
+                          'name': _nameController.text,
+                          'subtitle': _descController.text,
+                          'price': priceInt,
+                          'priceFormatted': 'Rp ${_priceController.text}',
+                        });
+                      } else {
+                        widget.hargaCubit!.addJenisSampah({
+                          'name': _nameController.text,
+                          'subtitle': _descController.text,
+                          'price': priceInt,
+                          'priceFormatted': 'Rp ${_priceController.text}',
+                          'category': 'Plastik', // Mocked category
+                          'badgeText': 'Anorganik', // Mocked badge
+                          'icon': Icons.recycling, // Mocked icon
+                          'iconColor': Colors.green, // Mocked color
+                        });
+                      }
+                    }
+                    context.pop();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.greenDark,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -211,7 +240,12 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => context.pop(),
+                    onPressed: () => {
+                      if (widget.hargaCubit != null && widget.initialData?['id'] != null) {
+                        widget.hargaCubit!.deactivateJenisSampah(widget.initialData!['id']),
+                      },
+                      context.pop(),
+                    },
                     icon: const Icon(Icons.block, color: errorColor, size: 20),
                     label: Text(
                       'Nonaktifkan Jenis Sampah',
