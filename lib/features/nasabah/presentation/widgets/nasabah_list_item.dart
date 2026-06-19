@@ -96,8 +96,8 @@ class NasabahListItem extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
-                          overflow: TextOverflow.ellipsis,
                           maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (!isActive) ...[
