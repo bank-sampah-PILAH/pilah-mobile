@@ -7,7 +7,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cub
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 
-@injectable
+@lazySingleton
 class DashboardCubit extends Cubit<DashboardState> {
   final NasabahCubit nasabahCubit;
   final TransaksiCubit transaksiCubit;

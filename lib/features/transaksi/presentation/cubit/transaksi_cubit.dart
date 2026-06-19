@@ -5,7 +5,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_u
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
-@injectable
+@lazySingleton
 class TransaksiCubit extends Cubit<TransaksiState> {
   final GetTransaksiUseCase getTransaksiUseCase;
   final AddTransaksiUseCase addTransaksiUseCase;
