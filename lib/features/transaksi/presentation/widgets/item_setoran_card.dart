@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 class ItemSetoranCard extends StatelessWidget {
   final int index;
   final Map<String, dynamic> itemData;
+  final List<Map<String, dynamic>> jenisSampahList;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
 
@@ -12,6 +13,7 @@ class ItemSetoranCard extends StatelessWidget {
     super.key,
     required this.index,
     required this.itemData,
+    required this.jenisSampahList,
     required this.onChanged,
     required this.onDelete,
   });
@@ -19,13 +21,6 @@ class ItemSetoranCard extends StatelessWidget {
   static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color errorLight = Color(0xFFFEF2F2);
   static const Color errorColor = Color(0xFFDC2626);
-
-  // Mock list of trash types
-  static const List<Map<String, dynamic>> trashTypes = [
-    {'name': 'Plastik PET', 'price': 3500},
-    {'name': 'Kardus', 'price': 1500},
-    {'name': 'Besi', 'price': 4000},
-  ];
 
   String _formatCurrency(int value) {
     String str = value.toString();
@@ -86,15 +81,15 @@ class ItemSetoranCard extends StatelessWidget {
                         ],
                       ),
                       icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
-                      items: trashTypes.map((type) {
+                      items: jenisSampahList.map((type) {
                         return DropdownMenuItem<String>(
                           value: type['name'],
                           child: Row(
                             children: [
-                              const Icon(Icons.recycling, color: emeraldPrimary, size: 20),
+                              Icon(type['icon'] as IconData, color: type['iconColor'] as Color, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                type['name'],
+                                type['name'] as String,
                                 style: AppTextStyle.small.copyWith(
                                   color: Colors.black87,
                                   fontWeight: FontWeight.bold,
@@ -106,7 +101,7 @@ class ItemSetoranCard extends StatelessWidget {
                       }).toList(),
                       onChanged: (value) {
                         if (value != null) {
-                          final selected = trashTypes.firstWhere((t) => t['name'] == value);
+                          final selected = jenisSampahList.firstWhere((t) => t['name'] == value);
                           onChanged({
                             ...itemData,
                             'jenis': value,
