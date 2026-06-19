@@ -3,13 +3,22 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
-class HargaPage extends StatelessWidget {
+class HargaPage extends StatefulWidget {
   const HargaPage({super.key});
 
   static const route = '/harga';
 
   @override
+  State<HargaPage> createState() => _HargaPageState();
+}
+
+class _HargaPageState extends State<HargaPage> {
+  bool isActiveTab = true;
+
+  @override
   Widget build(BuildContext context) {
+    const Color emeraldPrimary = Color(0xFF006D44);
+    
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
@@ -64,32 +73,46 @@ class HargaPage extends StatelessWidget {
               // Filter Chips
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenDark,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Aktif',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isActiveTab = true;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isActiveTab ? emeraldPrimary : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Aktif',
+                        style: AppTextStyle.small.copyWith(
+                          color: isActiveTab ? Colors.white : Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Tidak Aktif',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w600,
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isActiveTab = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: !isActiveTab ? emeraldPrimary : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Tidak Aktif',
+                        style: AppTextStyle.small.copyWith(
+                          color: !isActiveTab ? Colors.white : Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -97,56 +120,101 @@ class HargaPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               
-              // List View
+              // List View / Empty State
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.only(bottom: 80), // Padding for FAB
-                  children: [
-                    _buildHargaCard(
-                      icon: Icons.recycling,
-                      title: 'Plastik PET',
-                      subtitle: 'Botol bening, kemasan',
-                      badgeText: 'Anorganik',
-                      price: 'Rp 3.500',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildHargaCard(
-                      icon: Icons.description,
-                      title: 'Kertas HVS',
-                      subtitle: 'Kertas dokumen, buku',
-                      badgeText: 'Anorganik',
-                      price: 'Rp 1.200',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildHargaCard(
-                      icon: Icons.inventory_2,
-                      title: 'Kardus',
-                      subtitle: 'Karton tebal, box',
-                      badgeText: 'Anorganik',
-                      price: 'Rp 1.500',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildHargaCard(
-                      icon: Icons.settings,
-                      title: 'Logam Besi',
-                      subtitle: 'Besi tua, kaleng',
-                      badgeText: 'Anorganik',
-                      price: 'Rp 4.000',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildHargaCard(
-                      icon: Icons.local_drink, // Placeholder for Aluminium can
-                      title: 'Aluminium',
-                      subtitle: 'Kaleng minuman, foil',
-                      badgeText: 'Anorganik',
-                      price: 'Rp 8.000',
-                    ),
-                  ],
-                ),
+                child: isActiveTab
+                  ? ListView(
+                      padding: const EdgeInsets.only(bottom: 80), // Padding for FAB
+                      children: _buildActivePrices(),
+                    )
+                  : _buildEmptyState(),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  List<Widget> _buildActivePrices() {
+    return [
+      _buildHargaCard(
+        icon: Icons.recycling,
+        title: 'Plastik PET',
+        subtitle: 'Botol bening, kemasan',
+        badgeText: 'Anorganik',
+        price: 'Rp 3.500',
+      ),
+      const SizedBox(height: 12),
+      _buildHargaCard(
+        icon: Icons.description,
+        title: 'Kertas HVS',
+        subtitle: 'Kertas dokumen, buku',
+        badgeText: 'Anorganik',
+        price: 'Rp 1.200',
+      ),
+      const SizedBox(height: 12),
+      _buildHargaCard(
+        icon: Icons.inventory_2,
+        title: 'Kardus',
+        subtitle: 'Karton tebal, box',
+        badgeText: 'Anorganik',
+        price: 'Rp 1.500',
+      ),
+      const SizedBox(height: 12),
+      _buildHargaCard(
+        icon: Icons.settings,
+        title: 'Logam Besi',
+        subtitle: 'Besi tua, kaleng',
+        badgeText: 'Anorganik',
+        price: 'Rp 4.000',
+      ),
+      const SizedBox(height: 12),
+      _buildHargaCard(
+        icon: Icons.local_drink, // Placeholder for Aluminium can
+        title: 'Aluminium',
+        subtitle: 'Kaleng minuman, foil',
+        badgeText: 'Anorganik',
+        price: 'Rp 8.000',
+      ),
+    ];
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey[100], // surface-container-low or f3f4f6
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Tidak Ada Jenis Nonaktif',
+            style: AppTextStyle.headline1.copyWith(
+              color: Colors.grey[600], // on-surface-variant
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Semua jenis sampah masih aktif.',
+            style: AppTextStyle.small.copyWith(
+              color: Colors.grey[400],
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
       ),
     );
   }
