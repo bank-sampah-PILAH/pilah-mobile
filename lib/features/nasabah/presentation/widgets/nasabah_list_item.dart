@@ -88,12 +88,16 @@ class NasabahListItem extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        name,
-                        style: AppTextStyle.title1.copyWith(
-                          color: isActive ? Colors.black87 : Colors.grey[600],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Flexible(
+                        child: Text(
+                          name,
+                          style: AppTextStyle.title1.copyWith(
+                            color: isActive ? Colors.black87 : Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ),
                       if (!isActive) ...[
