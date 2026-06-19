@@ -7,7 +7,7 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.d
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 
-@injectable
+@lazySingleton
 class HargaCubit extends Cubit<HargaState> {
   final GetHargaUseCase getHargaUseCase;
   final AddHargaUseCase addHargaUseCase;

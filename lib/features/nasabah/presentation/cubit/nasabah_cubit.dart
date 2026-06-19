@@ -6,7 +6,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasaba
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
-@injectable
+@lazySingleton
 class NasabahCubit extends Cubit<NasabahState> {
   final GetNasabahUseCase getNasabahUseCase;
   final ActivateNasabahUseCase activateNasabahUseCase;
