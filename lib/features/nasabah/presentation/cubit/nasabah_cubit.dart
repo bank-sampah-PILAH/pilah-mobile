@@ -58,7 +58,7 @@ class NasabahCubit extends Cubit<NasabahState> {
       final name = (customer['name'] as String).toLowerCase();
       final phone = (customer['phone'] as String).toLowerCase();
       return matchesTab && (name.contains(query) || phone.contains(query));
-    }).toList();
+    }).map((e) => Map<String, dynamic>.from(e)).toList();
 
     emit(NasabahLoaded(
       nasabahList: filtered,
@@ -67,3 +67,4 @@ class NasabahCubit extends Cubit<NasabahState> {
     ));
   }
 }
+
