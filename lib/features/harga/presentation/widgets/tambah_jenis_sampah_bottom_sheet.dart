@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 
 class TambahJenisSampahBottomSheet extends StatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -61,44 +64,8 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isEditMode ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah',
-                    style: AppTextStyle.headline1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => context.pop(),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.close, color: Colors.grey[600], size: 20),
-                    ),
-                  ),
-                ],
+              BottomSheetHeader(
+                title: isEditMode ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah',
               ),
               const SizedBox(height: 24),
 
@@ -185,84 +152,50 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
               const SizedBox(height: 32),
 
               // Primary Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (widget.hargaCubit != null) {
-                      final priceString = _priceController.text;
-                      final priceInt = int.tryParse(priceString) ?? 0;
-                      
-                      if (isEditMode && widget.initialData?['id'] != null) {
-                        widget.hargaCubit!.updateJenisSampah({
-                          'id': widget.initialData!['id'],
-                          'name': _nameController.text,
-                          'subtitle': _descController.text,
-                          'price': priceInt,
-                          'priceFormatted': 'Rp ${_priceController.text}',
-                        });
-                      } else {
-                        widget.hargaCubit!.addJenisSampah({
-                          'name': _nameController.text,
-                          'subtitle': _descController.text,
-                          'price': priceInt,
-                          'priceFormatted': 'Rp ${_priceController.text}',
-                          'category': 'Plastik', // Mocked category
-                          'badgeText': 'Anorganik', // Mocked badge
-                          'icon': Icons.recycling, // Mocked icon
-                          'iconColor': Colors.green, // Mocked color
-                        });
-                      }
+              CustomPrimaryButton(
+                title: isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+                onPressed: () {
+                  if (widget.hargaCubit != null) {
+                    final priceString = _priceController.text;
+                    final priceInt = int.tryParse(priceString) ?? 0;
+                    
+                    if (isEditMode && widget.initialData?['id'] != null) {
+                      widget.hargaCubit!.updateJenisSampah({
+                        'id': widget.initialData!['id'],
+                        'name': _nameController.text,
+                        'subtitle': _descController.text,
+                        'price': priceInt,
+                        'priceFormatted': 'Rp ${_priceController.text}',
+                      });
+                    } else {
+                      widget.hargaCubit!.addJenisSampah({
+                        'name': _nameController.text,
+                        'subtitle': _descController.text,
+                        'price': priceInt,
+                        'priceFormatted': 'Rp ${_priceController.text}',
+                        'category': 'Plastik', // Mocked category
+                        'badgeText': 'Anorganik', // Mocked badge
+                        'icon': Icons.recycling, // Mocked icon
+                        'iconColor': Colors.green, // Mocked color
+                      });
                     }
-                    context.pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.greenDark,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
-                    style: AppTextStyle.title1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
+                  }
+                  context.pop();
+                },
               ),
               
               if (isEditMode) ...[
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => {
-                      if (widget.hargaCubit != null && widget.initialData?['id'] != null) {
-                        widget.hargaCubit!.deactivateJenisSampah(widget.initialData!['id']),
-                      },
-                      context.pop(),
-                    },
-                    icon: const Icon(Icons.block, color: errorColor, size: 20),
-                    label: Text(
-                      'Nonaktifkan Jenis Sampah',
-                      style: AppTextStyle.title1.copyWith(
-                        color: errorColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: errorColor, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
+                CustomOutlinedButton(
+                  title: 'Nonaktifkan Jenis Sampah',
+                  borderColor: errorColor,
+                  textColor: errorColor,
+                  onPressed: () {
+                    if (widget.hargaCubit != null && widget.initialData?['id'] != null) {
+                      widget.hargaCubit!.deactivateJenisSampah(widget.initialData!['id']);
+                    }
+                    context.pop();
+                  },
                 ),
               ],
               const SizedBox(height: 16),

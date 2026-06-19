@@ -7,6 +7,8 @@ import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_cubit
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 
 class TransaksiBaruPage extends StatefulWidget {
   const TransaksiBaruPage({super.key});
@@ -288,33 +290,12 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                     const SizedBox(height: 16),
 
                     // Add Item Button
-                    InkWell(
-                      onTap: _addItem,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[300]!, width: 1.5),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.add, color: AppColors.greenDark, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Tambah Item Setoran',
-                              style: AppTextStyle.title1.copyWith(
-                                color: AppColors.greenDark,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    CustomOutlinedButton(
+                      title: 'Tambah Item Setoran',
+                      icon: Icons.add,
+                      borderColor: Colors.grey[300]!,
+                      textColor: AppColors.greenDark,
+                      onPressed: _addItem,
                     ),
                     const SizedBox(height: 24),
 
@@ -392,7 +373,9 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
+          child: CustomPrimaryButton(
+            title: 'Simpan Transaksi',
+            icon: Icons.save_outlined,
             onPressed: () {
               if (selectedCustomer == null || setoranItems.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -459,25 +442,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 });
               });
             },
-            icon: const Icon(Icons.save_outlined, color: Colors.white),
-            label: Text(
-              'Simpan Transaksi',
-              style: AppTextStyle.title1.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-              disabledBackgroundColor: Colors.grey[300],
-              disabledForegroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
           ),
         ),
       ),

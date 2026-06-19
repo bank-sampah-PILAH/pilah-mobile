@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 
 class DetailTransaksiBottomSheet extends StatefulWidget {
   final Map<String, dynamic> transactionData;
@@ -94,19 +94,10 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                       fontSize: 18,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: mintTint,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      'Selesai',
-                      style: AppTextStyle.small.copyWith(
-                        color: emeraldPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  CustomStatusBadge(
+                    statusText: 'Selesai',
+                    backgroundColor: mintTint,
+                    textColor: emeraldPrimary,
                   ),
                 ],
               ),
@@ -342,7 +333,7 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: emeraldPrimary.withOpacity(0.1),
+                        color: emeraldPrimary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.attach_money, color: emeraldPrimary),
@@ -377,7 +368,7 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: emeraldPrimary.withOpacity(0.3)),
+          border: Border.all(color: emeraldPrimary.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -421,7 +412,7 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: errorColor.withOpacity(0.3)),
+          border: Border.all(color: errorColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -468,25 +459,12 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                       strokeWidth: 2,
                     ),
                   )
-                : ElevatedButton.icon(
-                    onPressed: _retryWaNotification,
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 16),
-                    label: Text(
-                      'Coba Lagi',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: emeraldPrimary,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
+                : SizedBox(
+                    width: 120, // To constraint the CustomPrimaryButton if needed, or simply use it natively
+                    child: CustomPrimaryButton(
+                      title: 'Coba Lagi',
+                      icon: Icons.refresh,
+                      onPressed: _retryWaNotification,
                     ),
                   ),
           ],

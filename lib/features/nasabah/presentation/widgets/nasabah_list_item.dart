@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class NasabahListItem extends StatelessWidget {
   final bool isActive;
@@ -57,7 +58,7 @@ class NasabahListItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -102,20 +103,8 @@ class NasabahListItem extends StatelessWidget {
                       ),
                       if (!isActive) ...[
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Nonaktif',
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w600,
-                              fontSize: 10,
-                            ),
-                          ),
+                        CustomStatusBadge(
+                          isActive: false,
                         ),
                       ],
                     ],

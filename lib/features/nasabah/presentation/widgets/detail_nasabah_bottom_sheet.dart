@@ -4,6 +4,10 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 
 class DetailNasabahBottomSheet extends StatelessWidget {
   final Map<String, dynamic> customerData;
@@ -45,16 +49,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
+              BottomSheetHeader(title: ''),
 
               // Header Row
               Row(
@@ -100,19 +95,8 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isActive ? mintTint : Colors.red[50],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                isActive ? 'Aktif' : 'Nonaktif',
-                                style: AppTextStyle.extraSmall.copyWith(
-                                  color: isActive ? emeraldPrimary : Colors.red[400],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            CustomStatusBadge(
+                              isActive: isActive,
                             ),
                           ],
                         ),
@@ -150,7 +134,10 @@ class DetailNasabahBottomSheet extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: CustomOutlinedButton(
+                      title: 'Edit Data',
+                      borderColor: emeraldPrimary,
+                      textColor: emeraldPrimary,
                       onPressed: isActive ? () {
                         context.pop();
                         showModalBottomSheet(
@@ -161,27 +148,14 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                           builder: (context) => EditNasabahBottomSheet(customerData: customerData),
                         );
                       } : null,
-                      icon: Icon(Icons.edit_outlined, color: isActive ? emeraldPrimary : Colors.grey[400], size: 18),
-                      label: Text(
-                        'Edit Data',
-                        style: AppTextStyle.title1.copyWith(
-                          color: isActive ? emeraldPrimary : Colors.grey[400],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: isActive ? emeraldPrimary : Colors.grey[300]!, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
+                    child: CustomPrimaryButton(
+                      title: isActive ? 'Nonaktifkan' : 'Aktifkan',
+                      color: isActive ? errorColor : emeraldPrimary,
+                      icon: isActive ? Icons.block : Icons.check,
                       onPressed: () {
                         showDialog(
                           context: context,
@@ -193,23 +167,6 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                           ),
                         );
                       },
-                      icon: Icon(isActive ? Icons.block : Icons.check, color: Colors.white, size: 18),
-                      label: Text(
-                        isActive ? 'Nonaktifkan' : 'Aktifkan',
-                        style: AppTextStyle.title1.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isActive ? errorColor : emeraldPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                     ),
                   ),
                 ],

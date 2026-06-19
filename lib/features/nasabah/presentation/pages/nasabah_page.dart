@@ -6,7 +6,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_search_bar.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
 class NasabahPage extends StatelessWidget {
@@ -79,7 +79,8 @@ class _NasabahPageBody extends StatelessWidget {
               const SizedBox(height: 16),
               
               // Search Bar
-              NasabahSearchBar(
+              CustomSearchField(
+                hintText: 'Cari nama nasabah...',
                 onChanged: (value) {
                   context.read<NasabahCubit>().searchNasabah(value);
                 },

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 
 class PilihNasabahBottomSheet extends StatefulWidget {
   const PilihNasabahBottomSheet({super.key});
@@ -19,7 +20,6 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
 
   // Emerald Eco System Tokens
   static const Color emeraldPrimary = Color(0xFF006D44);
-  static const Color mintTint = Color(0xFFF0FDF4);
 
   @override
   void dispose() {
@@ -56,51 +56,17 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Header
-            Text(
-              'Pilih Nasabah',
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(height: 16),
+            BottomSheetHeader(title: 'Pilih Nasabah'),
 
             // Search Bar
-            TextField(
+            CustomSearchField(
+              hintText: 'Cari nama...',
               controller: _searchController,
               onChanged: (value) {
                 setState(() {
                   searchQuery = value;
                 });
               },
-              decoration: InputDecoration(
-                hintText: 'Cari nama...',
-                hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
-                prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                filled: true,
-                fillColor: Colors.grey[50],
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              style: AppTextStyle.small.copyWith(color: Colors.black87),
             ),
             const SizedBox(height: 16),
 

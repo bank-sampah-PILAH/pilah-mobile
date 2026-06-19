@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_cubit
 import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/features/laporan/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 import 'package:pilah_mobile/features/laporan/presentation/widgets/filter_tanggal_bottom_sheet.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 
 class LaporanPage extends StatelessWidget {
   const LaporanPage({super.key});
@@ -49,22 +50,11 @@ class _LaporanPageBody extends StatelessWidget {
                   const SizedBox(height: 16),
                   
                   // Search Bar
-                  TextField(
+                  CustomSearchField(
+                    hintText: 'Cari nama pelanggan...',
                     onChanged: (value) {
                       context.read<TransaksiCubit>().searchTransaksi(value);
                     },
-                    decoration: InputDecoration(
-                      hintText: 'Cari nama pelanggan...',
-                      hintStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
                   ),
                   const SizedBox(height: 16),
                   
