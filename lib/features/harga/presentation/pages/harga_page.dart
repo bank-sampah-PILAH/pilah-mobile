@@ -1,35 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
-class HargaPage extends StatefulWidget {
+class HargaPage extends StatelessWidget {
   const HargaPage({super.key});
 
   static const route = '/harga';
 
   @override
-  State<HargaPage> createState() => _HargaPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => HargaCubit()..loadHarga(),
+      child: const _HargaPageBody(),
+    );
+  }
 }
 
-class _HargaPageState extends State<HargaPage> {
-  bool isActiveTab = true;
-  String searchQuery = '';
+class _HargaPageBody extends StatelessWidget {
+  const _HargaPageBody();
+
+  static const Color emeraldPrimary = Color(0xFF006D44);
 
   @override
   Widget build(BuildContext context) {
-    const Color emeraldPrimary = Color(0xFF006D44);
-    
+    final hargaCubit = context.read<HargaCubit>();
+
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showModalBottomSheet(
             context: context,
-            useRootNavigator: true, 
+            useRootNavigator: true,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            builder: (context) => const TambahJenisSampahBottomSheet(),
+            builder: (_) => TambahJenisSampahBottomSheet(
+              hargaCubit: hargaCubit,
+            ),
           );
         },
         backgroundColor: AppColors.greenDark,
@@ -53,13 +64,11 @@ class _HargaPageState extends State<HargaPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Search Bar
               TextField(
                 onChanged: (value) {
-                  setState(() {
-                    searchQuery = value;
-                  });
+                  context.read<HargaCubit>().searchHarga(value);
                 },
                 decoration: InputDecoration(
                   hintText: 'Cari jenis sampah...',
@@ -75,99 +84,105 @@ class _HargaPageState extends State<HargaPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Filter Chips
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isActiveTab = true;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isActiveTab ? emeraldPrimary : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Aktif',
-                        style: AppTextStyle.small.copyWith(
-                          color: isActiveTab ? Colors.white : Colors.grey[600],
-                          fontWeight: FontWeight.w600,
+              BlocBuilder<HargaCubit, HargaState>(
+                buildWhen: (previous, current) {
+                  if (previous is HargaLoaded && current is HargaLoaded) {
+                    return previous.isActiveTab != current.isActiveTab;
+                  }
+                  return true;
+                },
+                builder: (context, state) {
+                  final isActiveTab = state is HargaLoaded ? state.isActiveTab : true;
+                  return Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.read<HargaCubit>().setActiveTab(true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isActiveTab ? emeraldPrimary : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Aktif',
+                            style: AppTextStyle.small.copyWith(
+                              color: isActiveTab ? Colors.white : Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isActiveTab = false;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: !isActiveTab ? emeraldPrimary : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Tidak Aktif',
-                        style: AppTextStyle.small.copyWith(
-                          color: !isActiveTab ? Colors.white : Colors.grey[600],
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => context.read<HargaCubit>().setActiveTab(false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: !isActiveTab ? emeraldPrimary : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Tidak Aktif',
+                            style: AppTextStyle.small.copyWith(
+                              color: !isActiveTab ? Colors.white : Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
-              
-              // List View / Empty State
+
+              // List View
               Expanded(
-                child: _buildBody(),
+                child: BlocBuilder<HargaCubit, HargaState>(
+                  builder: (context, state) {
+                    if (state is HargaLoading || state is HargaInitial) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.greenDark,
+                        ),
+                      );
+                    }
+
+                    if (state is HargaLoaded) {
+                      final items = state.jenisSampahList;
+
+                      if (items.isEmpty) {
+                        if (state.searchQuery.isNotEmpty) {
+                          return _buildSearchEmptyState();
+                        }
+                        return _buildEmptyState();
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: items.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return _buildHargaCard(
+                            context: context,
+                            hargaCubit: hargaCubit,
+                            item: item,
+                          );
+                        },
+                      );
+                    }
+
+                    return const SizedBox.shrink();
+                  },
+                ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildBody() {
-    final data = isActiveTab ? _activePricesData : [];
-    
-    final query = searchQuery.toLowerCase();
-    final filteredData = data.where((item) {
-      final title = (item['title'] as String).toLowerCase();
-      final subtitle = (item['subtitle'] as String).toLowerCase();
-      return title.contains(query) || subtitle.contains(query);
-    }).toList();
-
-    if (filteredData.isEmpty) {
-      if (searchQuery.isNotEmpty) {
-        return _buildSearchEmptyState();
-      }
-      return _buildEmptyState();
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: filteredData.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final item = filteredData[index];
-        return _buildHargaCard(
-          icon: item['icon'],
-          title: item['title'],
-          subtitle: item['subtitle'],
-          badgeText: item['badgeText'],
-          price: item['price'],
-        );
-      },
     );
   }
 
@@ -205,44 +220,6 @@ class _HargaPageState extends State<HargaPage> {
     );
   }
 
-  List<Map<String, dynamic>> get _activePricesData => [
-    {
-      'icon': Icons.recycling,
-      'title': 'Plastik PET',
-      'subtitle': 'Botol bening, kemasan',
-      'badgeText': 'Anorganik',
-      'price': 'Rp 3.500',
-    },
-    {
-      'icon': Icons.description,
-      'title': 'Kertas HVS',
-      'subtitle': 'Kertas dokumen, buku',
-      'badgeText': 'Anorganik',
-      'price': 'Rp 1.200',
-    },
-    {
-      'icon': Icons.inventory_2,
-      'title': 'Kardus',
-      'subtitle': 'Karton tebal, box',
-      'badgeText': 'Anorganik',
-      'price': 'Rp 1.500',
-    },
-    {
-      'icon': Icons.settings,
-      'title': 'Logam Besi',
-      'subtitle': 'Besi tua, kaleng',
-      'badgeText': 'Anorganik',
-      'price': 'Rp 4.000',
-    },
-    {
-      'icon': Icons.local_drink,
-      'title': 'Aluminium',
-      'subtitle': 'Kaleng minuman, foil',
-      'badgeText': 'Anorganik',
-      'price': 'Rp 8.000',
-    },
-  ];
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -251,7 +228,7 @@ class _HargaPageState extends State<HargaPage> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.grey[100], // surface-container-low or f3f4f6
+              color: Colors.grey[100],
               borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
@@ -264,7 +241,7 @@ class _HargaPageState extends State<HargaPage> {
           Text(
             'Tidak Ada Jenis Nonaktif',
             style: AppTextStyle.headline1.copyWith(
-              color: Colors.grey[600], // on-surface-variant
+              color: Colors.grey[600],
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -283,21 +260,27 @@ class _HargaPageState extends State<HargaPage> {
   }
 
   Widget _buildHargaCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String badgeText,
-    required String price,
+    required BuildContext context,
+    required HargaCubit hargaCubit,
+    required Map<String, dynamic> item,
   }) {
+    final icon = item['icon'] as IconData;
+    final title = item['name'] as String;
+    final subtitle = item['subtitle'] as String? ?? '';
+    final badgeText = item['badgeText'] as String? ?? 'Anorganik';
+    final price = item['priceFormatted'] as String? ?? 'Rp 0';
+
     return GestureDetector(
       onTap: () {
         showModalBottomSheet(
           context: context,
-          useRootNavigator: true, 
+          useRootNavigator: true,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => TambahJenisSampahBottomSheet(
+          builder: (_) => TambahJenisSampahBottomSheet(
+            hargaCubit: hargaCubit,
             initialData: {
+              'id': item['id'],
               'title': title,
               'subtitle': subtitle,
               'badgeText': badgeText,
