@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
-class DetailTransaksiBottomSheet extends StatelessWidget {
+class DetailTransaksiBottomSheet extends StatefulWidget {
   final Map<String, dynamic> transactionData;
 
   const DetailTransaksiBottomSheet({
@@ -11,22 +11,48 @@ class DetailTransaksiBottomSheet extends StatelessWidget {
     required this.transactionData,
   });
 
+  @override
+  State<DetailTransaksiBottomSheet> createState() => _DetailTransaksiBottomSheetState();
+}
+
+class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet> {
   // Emerald Eco System Tokens
   static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color mintTint = Color(0xFFF0FDF4); // or #ecfdf5 as requested
   static const Color errorColor = Color(0xFFDC2626); // red for failed WA
 
+  String currentWaStatus = '';
+  bool isLoadingWa = false;
+
+  @override
+  void initState() {
+    super.initState();
+    currentWaStatus = widget.transactionData['waStatus'] ?? 'sent';
+  }
+
+  Future<void> _retryWaNotification() async {
+    setState(() {
+      isLoadingWa = true;
+    });
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      setState(() {
+        isLoadingWa = false;
+        currentWaStatus = 'sent';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final String initials = transactionData['initials'] ?? 'NN';
-    final Color avatarColor = transactionData['avatarColor'] ?? Colors.grey[200]!;
-    final Color textColor = transactionData['textColor'] ?? Colors.grey[600]!;
-    final String name = transactionData['name'] ?? 'Unknown';
-    final String time = transactionData['time'] ?? 'Hari ini';
-    final String amount = transactionData['amount'] ?? 'Rp 0';
-    final String balance = transactionData['balance'] ?? 'Rp 141.100'; // Default fallback
-    final String waStatus = transactionData['waStatus'] ?? 'sent';
-    final List<Map<String, dynamic>> items = transactionData['items'] ?? [];
+    final String initials = widget.transactionData['initials'] ?? 'NN';
+    final Color avatarColor = widget.transactionData['avatarColor'] ?? Colors.grey[200]!;
+    final Color textColor = widget.transactionData['textColor'] ?? Colors.grey[600]!;
+    final String name = widget.transactionData['name'] ?? 'Unknown';
+    final String time = widget.transactionData['time'] ?? 'Hari ini';
+    final String amount = widget.transactionData['amount'] ?? 'Rp 0';
+    final String balance = widget.transactionData['balance'] ?? 'Rp 141.100'; // Default fallback
+    final List<Map<String, dynamic>> items = widget.transactionData['items'] ?? [];
 
     return Padding(
       padding: EdgeInsets.only(
@@ -336,7 +362,7 @@ class DetailTransaksiBottomSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              _buildWaStatusBox(waStatus, name),
+              _buildWaStatusBox(currentWaStatus, name),
             ],
           ),
         ),
@@ -413,7 +439,7 @@ class DetailTransaksiBottomSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Gagal Terkirim',
+                    'Gagal Kirim',
                     style: AppTextStyle.small.copyWith(
                       color: errorColor,
                       fontWeight: FontWeight.bold,
@@ -428,22 +454,41 @@ class DetailTransaksiBottomSheet extends StatelessWidget {
                 ],
               ),
             ),
-            TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.refresh, color: errorColor, size: 16),
-              label: Text(
-                'Coba Lagi',
-                style: AppTextStyle.small.copyWith(
-                  color: errorColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
+            isLoadingWa
+                ? Container(
+                    width: 32,
+                    height: 32,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: emeraldPrimary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: _retryWaNotification,
+                    icon: const Icon(Icons.refresh, color: Colors.white, size: 16),
+                    label: Text(
+                      'Coba Lagi',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: emeraldPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
           ],
         ),
       );
