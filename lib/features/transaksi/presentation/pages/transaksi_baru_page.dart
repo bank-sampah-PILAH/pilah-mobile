@@ -7,6 +7,8 @@ import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_cubit
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/laporan/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
@@ -21,7 +23,7 @@ class TransaksiBaruPage extends StatefulWidget {
 }
 
 class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
-  Map<String, dynamic>? selectedCustomer;
+  NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
 
   void _addItem() {
@@ -236,7 +238,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 return;
               }
 
-              final oldBalanceStr = selectedCustomer!['balance'] as String? ?? 'Rp 0';
+              final oldBalanceStr = selectedCustomer!.balance;
               final oldBalance = _parseBalance(oldBalanceStr);
               final newBalance = oldBalance + grandTotal;
 
@@ -244,33 +246,29 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
               final formattedItems = setoranItems.map((item) {
                 final harga = item['harga'] as int? ?? 0;
                 final berat = item['berat'] as int? ?? 1;
-                return {
-                  'jenis': item['jenis'] ?? 'Tidak Diketahui',
-                  'berat': '$berat kg',
-                  'harga': _formatCurrency(harga),
-                  'subtotal': _formatCurrency(harga * berat),
-                };
+                return ItemSetoranEntity(
+                  jenis: item['jenis'] ?? 'Tidak Diketahui',
+                  berat: '$berat kg',
+                  harga: _formatCurrency(harga),
+                  subtotal: _formatCurrency(harga * berat),
+                );
               }).toList();
 
-              // Create transaction map
-              final newTx = {
-                'initials': selectedCustomer!['initials'],
-                'avatarColor': selectedCustomer!['avatarColor'],
-                'textColor': selectedCustomer!['textColor'],
-                'name': selectedCustomer!['name'],
-                'subtitle': '${formattedItems.first['jenis']} • ${formattedItems.first['berat']}',
-                'amount': '+${_formatCurrency(grandTotal)}',
-                'isWaSuccess': true,
-                'time': 'Sekarang',
-                'balance': _formatCurrency(newBalance),
-                'items': formattedItems,
-              };
-
-              context.read<TransaksiCubit>().tambahTransaksi(
-                newTx,
-                selectedCustomer!['id'],
-                grandTotal,
+              // Create transaction entity
+              final newTx = TransaksiEntity(
+                initials: selectedCustomer!.initials,
+                avatarColor: selectedCustomer!.avatarColor,
+                textColor: selectedCustomer!.textColor,
+                name: selectedCustomer!.name,
+                subtitle: '${formattedItems.first.jenis} • ${formattedItems.first.berat}',
+                amount: '+${_formatCurrency(grandTotal)}',
+                isWaSuccess: true,
+                time: 'Sekarang',
+                balance: _formatCurrency(newBalance),
+                items: formattedItems,
               );
+
+              context.read<TransaksiCubit>().addTransaksi(newTx);
 
               showModalBottomSheet(
                 context: context,
@@ -280,7 +278,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) => TransaksiBerhasilBottomSheet(
-                  customerName: selectedCustomer!['name'] ?? 'Nasabah',
+                  customerName: selectedCustomer!.name,
                   totalSetoran: grandTotal,
                   newBalance: newBalance,
                   itemCount: setoranItems.length,

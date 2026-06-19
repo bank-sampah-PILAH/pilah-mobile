@@ -58,7 +58,7 @@ class TimeFilterChips extends StatelessWidget {
     final bool isSelected = activeFilter == label;
     return GestureDetector(
       onTap: () {
-        context.read<TransaksiCubit>().setFilter(label);
+        context.read<TransaksiCubit>().setActiveFilter(label);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

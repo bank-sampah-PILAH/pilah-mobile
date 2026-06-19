@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:pilah_mobile/features/laporan/domain/entities/transaksi_entity.dart';
 
 abstract class TransaksiState extends Equatable {
   const TransaksiState();
@@ -12,7 +13,7 @@ class TransaksiInitial extends TransaksiState {}
 class TransaksiLoading extends TransaksiState {}
 
 class TransaksiLoaded extends TransaksiState {
-  final List<Map<String, dynamic>> transaksiList;
+  final List<TransaksiGroupEntity> transaksiList;
   final String activeFilter;
   final String searchQuery;
 
@@ -24,4 +25,13 @@ class TransaksiLoaded extends TransaksiState {
 
   @override
   List<Object?> get props => [transaksiList, activeFilter, searchQuery];
+}
+
+class TransaksiError extends TransaksiState {
+  final String message;
+
+  const TransaksiError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/laporan/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/laporan/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 
 class TransactionListView extends StatelessWidget {
@@ -63,8 +64,8 @@ class TransactionListView extends StatelessWidget {
             itemCount: filteredGroups.length,
             itemBuilder: (context, index) {
               final group = filteredGroups[index];
-              final header = group['header'] as String;
-              final transactions = group['transactions'] as List<Map<String, dynamic>>;
+              final header = group.header;
+              final transactions = group.transactions;
               
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,16 +75,16 @@ class TransactionListView extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: _buildTransactionCard(
                       context: context,
-                      initials: t['initials'],
-                      avatarColor: t['avatarColor'],
-                      textColor: t['textColor'],
-                      name: t['name'],
-                      subtitle: t['subtitle'],
-                      amount: t['amount'],
-                      isWaSuccess: t['isWaSuccess'],
-                      time: t['time'],
-                      balance: t['balance'],
-                      items: t['items']?.cast<Map<String, dynamic>>() ?? [],
+                      initials: t.initials,
+                      avatarColor: t.avatarColor,
+                      textColor: t.textColor,
+                      name: t.name,
+                      subtitle: t.subtitle,
+                      amount: t.amount,
+                      isWaSuccess: t.isWaSuccess,
+                      time: t.time,
+                      balance: t.balance,
+                      items: t.items,
                     ),
                   )),
                   if (index < filteredGroups.length - 1)
@@ -123,7 +124,7 @@ class TransactionListView extends StatelessWidget {
     required String amount,
     required bool isWaSuccess,
     required String balance,
-    required List<Map<String, dynamic>> items,
+    required List<ItemSetoranEntity> items,
     String? time,
   }) {
     return GestureDetector(
@@ -143,7 +144,12 @@ class TransactionListView extends StatelessWidget {
               'amount': amount,
               'balance': balance,
               'waStatus': isWaSuccess ? 'sent' : 'failed',
-              'items': items,
+              'items': items.map((i) => {
+                'jenis': i.jenis,
+                'berat': i.berat,
+                'harga': i.harga,
+                'subtotal': i.subtotal,
+              }).toList(),
             },
           ),
         );

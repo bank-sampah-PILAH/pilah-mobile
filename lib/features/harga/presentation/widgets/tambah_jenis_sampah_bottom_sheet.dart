@@ -7,8 +7,11 @@ import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+
 class TambahJenisSampahBottomSheet extends StatefulWidget {
-  final Map<String, dynamic>? initialData;
+  final HargaEntity? initialData;
   final HargaCubit? hargaCubit;
 
   const TambahJenisSampahBottomSheet({super.key, this.initialData, this.hargaCubit});
@@ -25,13 +28,13 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.initialData?['title'] ?? '');
-    _descController = TextEditingController(text: widget.initialData?['subtitle'] ?? '');
+    _nameController = TextEditingController(text: widget.initialData?.name ?? '');
+    _descController = TextEditingController(text: widget.initialData?.subtitle ?? '');
     
     // Process price string "Rp 3.500" to "3500"
     String initialPrice = '';
-    if (widget.initialData?['price'] != null) {
-      initialPrice = widget.initialData!['price'].toString().replaceAll(RegExp(r'[^0-9]'), '');
+    if (widget.initialData != null) {
+      initialPrice = widget.initialData!.price.toString();
     }
     _priceController = TextEditingController(text: initialPrice);
   }
@@ -94,7 +97,7 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        widget.initialData?['badgeText'] ?? 'Anorganik',
+                        widget.initialData?.badgeText ?? 'Anorganik',
                         style: AppTextStyle.small.copyWith(
                           color: Colors.black87,
                         ),
@@ -158,26 +161,36 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                   if (widget.hargaCubit != null) {
                     final priceString = _priceController.text;
                     final priceInt = int.tryParse(priceString) ?? 0;
+                    final priceFormatted = 'Rp $_priceController.text';
                     
-                    if (isEditMode && widget.initialData?['id'] != null) {
-                      widget.hargaCubit!.updateJenisSampah({
-                        'id': widget.initialData!['id'],
-                        'name': _nameController.text,
-                        'subtitle': _descController.text,
-                        'price': priceInt,
-                        'priceFormatted': 'Rp ${_priceController.text}',
-                      });
+                    if (isEditMode) {
+                      final updatedHarga = HargaEntity(
+                        id: widget.initialData!.id,
+                        name: _nameController.text,
+                        price: priceInt,
+                        priceFormatted: priceFormatted,
+                        category: widget.initialData!.category,
+                        subtitle: _descController.text,
+                        badgeText: widget.initialData!.badgeText,
+                        icon: widget.initialData!.icon,
+                        iconColor: widget.initialData!.iconColor,
+                        isActive: widget.initialData!.isActive,
+                      );
+                      context.read<HargaCubit>().updateHarga(updatedHarga);
                     } else {
-                      widget.hargaCubit!.addJenisSampah({
-                        'name': _nameController.text,
-                        'subtitle': _descController.text,
-                        'price': priceInt,
-                        'priceFormatted': 'Rp ${_priceController.text}',
-                        'category': 'Plastik', // Mocked category
-                        'badgeText': 'Anorganik', // Mocked badge
-                        'icon': Icons.recycling, // Mocked icon
-                        'iconColor': Colors.green, // Mocked color
-                      });
+                      final newHarga = HargaEntity(
+                        id: 'JS${DateTime.now().millisecondsSinceEpoch}',
+                        name: _nameController.text,
+                        price: priceInt,
+                        priceFormatted: priceFormatted,
+                        category: 'Plastik', // Mocked category
+                        subtitle: _descController.text,
+                        badgeText: 'Anorganik', // Mocked badge
+                        icon: Icons.recycling, // Mocked icon
+                        iconColor: Colors.green, // Mocked color
+                        isActive: true,
+                      );
+                      context.read<HargaCubit>().addHarga(newHarga);
                     }
                   }
                   context.pop();
@@ -191,8 +204,8 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                   borderColor: errorColor,
                   textColor: errorColor,
                   onPressed: () {
-                    if (widget.hargaCubit != null && widget.initialData?['id'] != null) {
-                      widget.hargaCubit!.deactivateJenisSampah(widget.initialData!['id']);
+                    if (widget.initialData != null) {
+                      context.read<HargaCubit>().deactivateHarga(widget.initialData!.id);
                     }
                     context.pop();
                   },

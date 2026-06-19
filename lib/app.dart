@@ -21,10 +21,10 @@ class App extends StatelessWidget {
           create: (context) => di<NasabahCubit>()..loadNasabah(),
         ),
         BlocProvider<HargaCubit>(
-          create: (context) => HargaCubit()..loadHarga(),
+          create: (context) => di<HargaCubit>()..loadHarga(),
         ),
         BlocProvider<TransaksiCubit>(
-          create: (context) => TransaksiCubit()..loadTransaksi(),
+          create: (context) => di<TransaksiCubit>()..loadTransaksi(),
         ),
       ],
       child: MaterialApp.router(

@@ -30,12 +30,12 @@ class DashboardStatisticsSection extends StatelessWidget {
             
             if (transaksiState is TransaksiLoaded) {
               for (var group in transaksiState.transaksiList) {
-                var transactions = group['transactions'] as List<dynamic>;
+                var transactions = group.transactions;
                 totalTrx += transactions.length;
                 for (var trx in transactions) {
-                  var items = trx['items'] as List<dynamic>? ?? [];
+                  var items = trx.items;
                   for (var item in items) {
-                    String beratStr = item['berat']?.toString() ?? '0 kg';
+                    String beratStr = item.berat;
                     String clean = beratStr.replaceAll(RegExp(r'[^0-9]'), '');
                     totalBerat += int.tryParse(clean) ?? 0;
                   }
