@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 class NasabahSearchBar extends StatelessWidget {
-  const NasabahSearchBar({super.key});
+  final ValueChanged<String>? onChanged;
+
+  const NasabahSearchBar({super.key, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      onChanged: onChanged,
       decoration: InputDecoration(
         hintText: 'Cari nama atau nomor...',
         hintStyle: TextStyle(color: Colors.grey[400]),

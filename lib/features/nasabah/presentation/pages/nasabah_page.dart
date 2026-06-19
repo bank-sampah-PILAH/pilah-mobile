@@ -17,6 +17,7 @@ class NasabahPage extends StatefulWidget {
 
 class _NasabahPageState extends State<NasabahPage> {
   bool isActiveTab = true;
+  String searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +75,13 @@ class _NasabahPageState extends State<NasabahPage> {
               const SizedBox(height: 16),
               
               // Search Bar
-              const NasabahSearchBar(),
+              NasabahSearchBar(
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value;
+                  });
+                },
+              ),
               const SizedBox(height: 16),
               
               // Filter Chips
@@ -92,6 +99,7 @@ class _NasabahPageState extends State<NasabahPage> {
               Expanded(
                 child: NasabahListView(
                   isActiveTab: isActiveTab,
+                  searchQuery: searchQuery,
                 ),
               ),
             ],
