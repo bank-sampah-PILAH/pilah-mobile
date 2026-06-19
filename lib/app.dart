@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 
+import 'package:pilah_mobile/services/di.dart';
 import 'core/router/app_router_config.dart';
 
 class App extends StatelessWidget {
@@ -17,7 +18,7 @@ class App extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<NasabahCubit>(
-          create: (context) => NasabahCubit()..loadNasabah(),
+          create: (context) => di<NasabahCubit>()..loadNasabah(),
         ),
         BlocProvider<HargaCubit>(
           create: (context) => HargaCubit()..loadHarga(),

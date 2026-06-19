@@ -163,14 +163,14 @@ class _NasabahPageBody extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final customer = customers[index];
                           return NasabahListItem(
-                            isActive: customer['isActive'] ?? true,
-                            initials: customer['initials'],
-                            avatarColor: customer['avatarColor'],
-                            textColor: customer['textColor'],
-                            name: customer['name'],
-                            phone: customer['phone'],
-                            balance: customer['balance'],
-                            id: customer['id'],
+                            isActive: customer.isActive,
+                            initials: customer.initials,
+                            avatarColor: customer.avatarColor,
+                            textColor: customer.textColor,
+                            name: customer.name,
+                            phone: customer.phone,
+                            balance: customer.balance,
+                            id: customer.id,
                             nasabahCubit: context.read<NasabahCubit>(),
                           );
                         },

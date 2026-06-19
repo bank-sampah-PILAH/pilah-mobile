@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 
@@ -31,14 +32,14 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
   Widget build(BuildContext context) {
     // Filter customers
     final nasabahState = context.read<NasabahCubit>().state;
-    List<Map<String, dynamic>> activeCustomers = [];
+    List<NasabahEntity> activeCustomers = [];
     if (nasabahState is NasabahLoaded) {
-      activeCustomers = nasabahState.nasabahList.where((c) => c['isActive'] == true).toList();
+      activeCustomers = nasabahState.nasabahList.where((c) => c.isActive == true).toList();
     }
 
     final filteredCustomers = activeCustomers.where((customer) {
       final query = searchQuery.toLowerCase();
-      final nameMatches = (customer['name'] as String).toLowerCase().contains(query);
+      final nameMatches = customer.name.toLowerCase().contains(query);
       return nameMatches;
     }).toList();
 
@@ -89,14 +90,14 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: customer['avatarColor'],
+                              color: customer.avatarColor,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              customer['initials'],
+                              customer.initials,
                               style: AppTextStyle.title1.copyWith(
-                                color: customer['textColor'],
+                                color: customer.textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -108,7 +109,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  customer['name'],
+                                  customer.name,
                                   style: AppTextStyle.title1.copyWith(
                                     color: Colors.black87,
                                     fontWeight: FontWeight.bold,
@@ -117,7 +118,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${customer['id']} · ${customer['phone']}',
+                                  '${customer.id} · ${customer.phone}',
                                   style: AppTextStyle.small.copyWith(
                                     color: Colors.grey[500],
                                   ),
@@ -136,7 +137,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                customer['balance'],
+                                customer.balance,
                                 style: AppTextStyle.title1.copyWith(
                                   color: emeraldPrimary,
                                   fontWeight: FontWeight.bold,

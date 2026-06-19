@@ -34,8 +34,8 @@ class TotalKasCard extends StatelessWidget {
         int totalSaldo = 0;
         if (state is NasabahLoaded) {
           for (var nasabah in state.nasabahList) {
-            if (nasabah['isActive'] == true) {
-              totalSaldo += _parseBalance(nasabah['balance']?.toString() ?? 'Rp 0');
+            if (nasabah.isActive == true) {
+              totalSaldo += _parseBalance(nasabah.balance);
             }
           }
         }
