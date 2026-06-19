@@ -32,7 +32,15 @@ class NasabahListItem extends StatelessWidget {
           useRootNavigator: true,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => const DetailNasabahBottomSheet(),
+          builder: (context) => DetailNasabahBottomSheet(
+            customerData: {
+              'isActive': isActive,
+              'initials': initials,
+              'name': name,
+              'phone': phone,
+              'balance': balance,
+            },
+          ),
         );
       },
       child: Container(
