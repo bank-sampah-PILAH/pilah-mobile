@@ -460,4 +460,210 @@ class ProfilePage extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildWhatsappTemplate() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Title
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 16,
+              decoration: BoxDecoration(
+                color: AppColors.greenDark,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'TEMPLATE NOTIFIKASI WA',
+              style: AppTextStyle.extraSmall.copyWith(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // Container for WA settings
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Alert Info Bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.greenLight.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.chat_bubble_outline, color: AppColors.greenDark, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Pesan otomatis dikirim setelah transaksi',
+                        style: AppTextStyle.small.copyWith(
+                          color: AppColors.greenDark,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Label ISI PESAN
+              Text(
+                'ISI PESAN',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Text Field
+              TextField(
+                controller: TextEditingController(text: 'Halo [Nama], setoran sampahmu senilai [Total] sudah kami catat ya. Saldo tabunganmu sekarang adalah [Saldo].\nTerima kasih! 🌿'),
+                maxLines: 4,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.greenDark),
+                  ),
+                ),
+                style: AppTextStyle.small.copyWith(color: Colors.black87),
+              ),
+              const SizedBox(height: 24),
+              
+              // Variables Description
+              Text(
+                'Gunakan variabel berikut agar sistem mengisi otomatis:',
+                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+              ),
+              const SizedBox(height: 12),
+              
+              // Chips
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildVariableChip('[Nama]', true),
+                  _buildVariableChip('[Total]', true),
+                  _buildVariableChip('[Saldo]', true),
+                  _buildVariableChip('[Tanggal]', false),
+                  _buildVariableChip('[daftar_item]', false, isBlue: true),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Preview Box
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.greenLight.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PREVIEW PESAN',
+                      style: AppTextStyle.extraSmall.copyWith(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RichText(
+                      text: TextSpan(
+                        style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
+                        children: [
+                          const TextSpan(text: 'Halo '),
+                          TextSpan(
+                            text: 'Budi Santoso',
+                            style: AppTextStyle.small.copyWith(color: AppColors.greenDark, fontWeight: FontWeight.bold),
+                          ),
+                          const TextSpan(text: ', setoran sampahmu senilai '),
+                          TextSpan(
+                            text: 'Rp 15.600',
+                            style: AppTextStyle.small.copyWith(color: AppColors.greenDark, fontWeight: FontWeight.bold),
+                          ),
+                          const TextSpan(text: ' sudah kami catat ya. Saldo tabunganmu sekarang adalah '),
+                          TextSpan(
+                            text: 'Rp 141.100',
+                            style: AppTextStyle.small.copyWith(color: AppColors.greenDark, fontWeight: FontWeight.bold),
+                          ),
+                          const TextSpan(text: '.\nTerima kasih! 🌿'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVariableChip(String label, bool isSelected, {bool isBlue = false}) {
+    final bgColor = isBlue 
+        ? Colors.cyan[50] 
+        : isSelected 
+            ? AppColors.greenLight.withValues(alpha: 0.3) 
+            : Colors.transparent;
+    final textColor = isBlue
+        ? Colors.cyan[700]
+        : isSelected
+            ? AppColors.greenDark
+            : Colors.grey[600];
+    final borderColor = isBlue
+        ? Colors.transparent
+        : isSelected
+            ? AppColors.greenLight
+            : Colors.grey[300];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor!, width: 1),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyle.small.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
 }
