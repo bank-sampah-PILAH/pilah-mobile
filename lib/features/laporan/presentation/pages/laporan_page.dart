@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
-class LaporanPage extends StatelessWidget {
+class LaporanPage extends StatefulWidget {
   const LaporanPage({super.key});
 
   static const route = '/laporan';
+
+  @override
+  State<LaporanPage> createState() => _LaporanPageState();
+}
+
+class _LaporanPageState extends State<LaporanPage> {
+  String activeFilter = 'Hari Ini';
 
   @override
   Widget build(BuildContext context) {
@@ -63,11 +70,11 @@ class LaporanPage extends StatelessWidget {
                   // Filter Row
                   Row(
                     children: [
-                      _buildFilterChip('Hari Ini', isSelected: true),
+                      _buildFilterChip('Hari Ini'),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Minggu Ini', isSelected: false),
+                      _buildFilterChip('Minggu Ini'),
                       const SizedBox(width: 8),
-                      _buildFilterChip('Bulan Ini', isSelected: false),
+                      _buildFilterChip('Bulan Ini'),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.all(8),
@@ -158,18 +165,26 @@ class LaporanPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterChip(String label, {required bool isSelected}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.greenDark : Colors.grey[100],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyle.small.copyWith(
-          color: isSelected ? Colors.white : Colors.grey[600],
-          fontWeight: FontWeight.w600,
+  Widget _buildFilterChip(String label) {
+    final bool isSelected = activeFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          activeFilter = label;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.greenDark : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyle.small.copyWith(
+            color: isSelected ? Colors.white : Colors.grey[600],
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
