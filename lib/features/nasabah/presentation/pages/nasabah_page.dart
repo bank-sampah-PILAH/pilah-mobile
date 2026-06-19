@@ -16,10 +16,7 @@ class NasabahPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => NasabahCubit()..loadNasabah(),
-      child: const _NasabahPageBody(),
-    );
+    return const _NasabahPageBody();
   }
 }
 
