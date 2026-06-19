@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 
 class DetailNasabahBottomSheet extends StatelessWidget {
   final Map<String, dynamic> customerData;
@@ -146,7 +147,16 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: isActive ? () => context.pop() : null,
+                      onPressed: isActive ? () {
+                        context.pop();
+                        showModalBottomSheet(
+                          context: context,
+                          useRootNavigator: true, 
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => EditNasabahBottomSheet(customerData: customerData),
+                        );
+                      } : null,
                       icon: Icon(Icons.edit_outlined, color: isActive ? emeraldPrimary : Colors.grey[400], size: 18),
                       label: Text(
                         'Edit Data',
