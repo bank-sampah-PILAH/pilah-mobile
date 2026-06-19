@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/laporan/presentation/widgets/detail_transaksi_bottom_sheet.dart';
+import 'package:pilah_mobile/features/laporan/presentation/widgets/filter_tanggal_bottom_sheet.dart';
 
 class LaporanPage extends StatefulWidget {
   const LaporanPage({super.key});
@@ -77,13 +78,25 @@ class _LaporanPageState extends State<LaporanPage> {
                       const SizedBox(width: 8),
                       _buildFilterChip('Bulan Ini'),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
+                      InkWell(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            useRootNavigator: true, 
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => const FilterTanggalBottomSheet(),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.calendar_today_outlined, color: Colors.grey[600], size: 20),
                         ),
-                        child: Icon(Icons.calendar_today_outlined, color: Colors.grey[600], size: 20),
                       ),
                     ],
                   ),
