@@ -13,10 +13,7 @@ class HargaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => HargaCubit()..loadHarga(),
-      child: const _HargaPageBody(),
-    );
+    return const _HargaPageBody();
   }
 }
 
