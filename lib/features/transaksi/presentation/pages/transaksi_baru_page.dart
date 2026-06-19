@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
 
 class TransaksiBaruPage extends StatefulWidget {
   const TransaksiBaruPage({super.key});
@@ -52,6 +53,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       final berat = item['berat'] as int? ?? 1;
       return sum + (harga * berat);
     });
+  }
+
+  int _parseBalance(String balanceStr) {
+    final clean = balanceStr.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(clean) ?? 0;
   }
 
   @override
@@ -394,7 +400,26 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: ElevatedButton.icon(
-            onPressed: selectedCustomer != null && setoranItems.isNotEmpty ? () {} : null,
+            onPressed: selectedCustomer != null && setoranItems.isNotEmpty ? () {
+              final oldBalanceStr = selectedCustomer!['balance'] as String? ?? 'Rp 0';
+              final oldBalance = _parseBalance(oldBalanceStr);
+              final newBalance = oldBalance + grandTotal;
+
+              showModalBottomSheet(
+                context: context,
+                isDismissible: false,
+                enableDrag: false,
+                useRootNavigator: true,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => TransaksiBerhasilBottomSheet(
+                  customerName: selectedCustomer!['name'] ?? 'Nasabah',
+                  totalSetoran: grandTotal,
+                  newBalance: newBalance,
+                  itemCount: setoranItems.length,
+                ),
+              );
+            } : null,
             icon: const Icon(Icons.save_outlined, color: Colors.white),
             label: Text(
               'Simpan Transaksi',
