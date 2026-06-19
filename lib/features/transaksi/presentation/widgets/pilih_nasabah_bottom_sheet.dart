@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 class PilihNasabahBottomSheet extends StatefulWidget {
   const PilihNasabahBottomSheet({super.key});
@@ -18,46 +21,6 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
   static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color mintTint = Color(0xFFF0FDF4);
 
-  // Mock Active Customers
-  final List<Map<String, dynamic>> _mockCustomers = [
-    {
-      'id': 'NAS-0891',
-      'name': 'Ahmad Ridwan',
-      'phone': '0812-3456-7890',
-      'balance': 'Rp 450.000',
-      'initials': 'AR',
-      'avatarColor': const Color(0xFFD1FAE5), // mint tint
-      'textColor': const Color(0xFF006D44), // emerald primary
-    },
-    {
-      'id': 'NAS-0892',
-      'name': 'Budi Santoso',
-      'phone': '0857-1122-3344',
-      'balance': 'Rp 125.500',
-      'initials': 'BS',
-      'avatarColor': const Color(0xFFE0E7FF),
-      'textColor': const Color(0xFF4338CA),
-    },
-    {
-      'id': 'NAS-0893',
-      'name': 'Citra Wijaya',
-      'phone': '0896-9988-7766',
-      'balance': 'Rp 890.000',
-      'initials': 'CW',
-      'avatarColor': const Color(0xFFFEF3C7),
-      'textColor': const Color(0xFFB45309),
-    },
-    {
-      'id': 'NAS-0895',
-      'name': 'Eko Prasetyo',
-      'phone': '0813-5678-9012',
-      'balance': 'Rp 215.000',
-      'initials': 'EP',
-      'avatarColor': const Color(0xFFCFFAFE),
-      'textColor': const Color(0xFF0E7490),
-    },
-  ];
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -67,7 +30,13 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
   @override
   Widget build(BuildContext context) {
     // Filter customers
-    final filteredCustomers = _mockCustomers.where((customer) {
+    final nasabahState = context.read<NasabahCubit>().state;
+    List<Map<String, dynamic>> activeCustomers = [];
+    if (nasabahState is NasabahLoaded) {
+      activeCustomers = nasabahState.nasabahList.where((c) => c['isActive'] == true).toList();
+    }
+
+    final filteredCustomers = activeCustomers.where((customer) {
       final query = searchQuery.toLowerCase();
       final nameMatches = (customer['name'] as String).toLowerCase().contains(query);
       return nameMatches;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/laporan/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
@@ -18,14 +20,6 @@ class TransaksiBaruPage extends StatefulWidget {
 class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   Map<String, dynamic>? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
-
-  final List<Map<String, dynamic>> jenisSampahList = [
-    {'name': 'Plastik PET', 'price': 3500, 'icon': Icons.recycling, 'iconColor': Colors.green},
-    {'name': 'Kertas HVS', 'price': 2000, 'icon': Icons.description, 'iconColor': Colors.grey},
-    {'name': 'Kardus', 'price': 1500, 'icon': Icons.inventory_2, 'iconColor': Colors.brown},
-    {'name': 'Logam Besi', 'price': 4000, 'icon': Icons.settings, 'iconColor': Colors.blueGrey},
-    {'name': 'Aluminium', 'price': 8000, 'icon': Icons.ad_units, 'iconColor': Colors.redAccent},
-  ];
 
   void _addItem() {
     setState(() {
@@ -278,7 +272,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                           return ItemSetoranCard(
                             index: entry.key,
                             itemData: entry.value,
-                            jenisSampahList: jenisSampahList,
                             onChanged: (updated) {
                               setState(() {
                                 setoranItems[entry.key] = updated;
@@ -400,10 +393,49 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: ElevatedButton.icon(
-            onPressed: selectedCustomer != null && setoranItems.isNotEmpty ? () {
+            onPressed: () {
+              if (selectedCustomer == null || setoranItems.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Data nasabah dan item setoran harus diisi.')),
+                );
+                return;
+              }
+
               final oldBalanceStr = selectedCustomer!['balance'] as String? ?? 'Rp 0';
               final oldBalance = _parseBalance(oldBalanceStr);
               final newBalance = oldBalance + grandTotal;
+
+              // Extract items
+              final formattedItems = setoranItems.map((item) {
+                final harga = item['harga'] as int? ?? 0;
+                final berat = item['berat'] as int? ?? 1;
+                return {
+                  'jenis': item['jenis'] ?? 'Tidak Diketahui',
+                  'berat': '$berat kg',
+                  'harga': _formatCurrency(harga),
+                  'subtotal': _formatCurrency(harga * berat),
+                };
+              }).toList();
+
+              // Create transaction map
+              final newTx = {
+                'initials': selectedCustomer!['initials'],
+                'avatarColor': selectedCustomer!['avatarColor'],
+                'textColor': selectedCustomer!['textColor'],
+                'name': selectedCustomer!['name'],
+                'subtitle': '${formattedItems.first['jenis']} • ${formattedItems.first['berat']}',
+                'amount': '+${_formatCurrency(grandTotal)}',
+                'isWaSuccess': true,
+                'time': 'Sekarang',
+                'balance': _formatCurrency(newBalance),
+                'items': formattedItems,
+              };
+
+              context.read<TransaksiCubit>().tambahTransaksi(
+                newTx,
+                selectedCustomer!['id'],
+                grandTotal,
+              );
 
               showModalBottomSheet(
                 context: context,
@@ -418,8 +450,15 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                   newBalance: newBalance,
                   itemCount: setoranItems.length,
                 ),
-              );
-            } : null,
+              ).then((_) {
+                // Clear state
+                setState(() {
+                  selectedCustomer = null;
+                  setoranItems = [];
+                  _addItem();
+                });
+              });
+            },
             icon: const Icon(Icons.save_outlined, color: Colors.white),
             label: Text(
               'Simpan Transaksi',
