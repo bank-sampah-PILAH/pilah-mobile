@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:pilah_mobile/features/laporan/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 
 part 'transaksi_model.g.dart';
 

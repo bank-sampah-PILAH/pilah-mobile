@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/laporan/data/datasources/transaksi_local_data_source.dart';
-import 'package:pilah_mobile/features/laporan/data/models/transaksi_model.dart';
-import 'package:pilah_mobile/features/laporan/domain/entities/transaksi_entity.dart';
-import 'package:pilah_mobile/features/laporan/domain/repositories/transaksi_repository.dart';
+import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_local_data_source.dart';
+import 'package:pilah_mobile/features/transaksi/data/models/transaksi_model.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/repositories/transaksi_repository.dart';
 
 @LazySingleton(as: TransaksiRepository)
 class TransaksiRepositoryImpl implements TransaksiRepository {

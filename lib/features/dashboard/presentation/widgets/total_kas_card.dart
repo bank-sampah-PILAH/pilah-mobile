@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 
 class TotalKasCard extends StatelessWidget {
   const TotalKasCard({super.key});
 
-  int _parseBalance(String balanceStr) {
-    final clean = balanceStr.replaceAll(RegExp(r'[^0-9]'), '');
-    return int.tryParse(clean) ?? 0;
-  }
+
 
   String _formatCurrency(int value) {
     String str = value.toString();
@@ -29,17 +26,8 @@ class TotalKasCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NasabahCubit, NasabahState>(
+    return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (context, state) {
-        int totalSaldo = 0;
-        if (state is NasabahLoaded) {
-          for (var nasabah in state.nasabahList) {
-            if (nasabah.isActive == true) {
-              totalSaldo += _parseBalance(nasabah.balance);
-            }
-          }
-        }
-
         return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -62,7 +50,7 @@ class TotalKasCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                _formatCurrency(totalSaldo),
+                _formatCurrency(state.totalSaldoNasabah),
                 style: AppTextStyle.headline1.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
