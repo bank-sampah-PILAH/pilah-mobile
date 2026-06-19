@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
   final Map<String, dynamic> itemData;
-  final List<Map<String, dynamic>> jenisSampahList;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
 
@@ -13,7 +15,6 @@ class ItemSetoranCard extends StatelessWidget {
     super.key,
     required this.index,
     required this.itemData,
-    required this.jenisSampahList,
     required this.onChanged,
     required this.onDelete,
   });
@@ -66,50 +67,59 @@ class ItemSetoranCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.grey[200]!),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: selectedType,
-                      hint: Row(
-                        children: [
-                          const Icon(Icons.recycling, color: emeraldPrimary, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Pilih Jenis',
-                            style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-                          ),
-                        ],
-                      ),
-                      icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
-                      items: jenisSampahList.map((type) {
-                        return DropdownMenuItem<String>(
-                          value: type['name'],
-                          child: Row(
+                  child: BlocBuilder<HargaCubit, HargaState>(
+                    builder: (context, state) {
+                      List<Map<String, dynamic>> activeList = [];
+                      if (state is HargaLoaded) {
+                        activeList = state.jenisSampahList.where((t) => t['isActive'] == true).toList();
+                      }
+
+                      return DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: selectedType,
+                          hint: Row(
                             children: [
-                              Icon(type['icon'] as IconData, color: type['iconColor'] as Color, size: 20),
+                              const Icon(Icons.recycling, color: emeraldPrimary, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                type['name'] as String,
-                                style: AppTextStyle.small.copyWith(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                'Pilih Jenis',
+                                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
                               ),
                             ],
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          final selected = jenisSampahList.firstWhere((t) => t['name'] == value);
-                          onChanged({
-                            ...itemData,
-                            'jenis': value,
-                            'harga': selected['price'],
-                          });
-                        }
-                      },
-                    ),
+                          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
+                          items: activeList.map((type) {
+                            return DropdownMenuItem<String>(
+                              value: type['name'],
+                              child: Row(
+                                children: [
+                                  Icon(type['icon'] as IconData, color: type['iconColor'] as Color, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    type['name'] as String,
+                                    style: AppTextStyle.small.copyWith(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              final selected = activeList.firstWhere((t) => t['name'] == value);
+                              onChanged({
+                                ...itemData,
+                                'jenis': value,
+                                'harga': selected['price'],
+                              });
+                            }
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
