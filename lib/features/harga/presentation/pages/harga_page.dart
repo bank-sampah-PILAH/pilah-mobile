@@ -14,6 +14,7 @@ class HargaPage extends StatefulWidget {
 
 class _HargaPageState extends State<HargaPage> {
   bool isActiveTab = true;
+  String searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +56,11 @@ class _HargaPageState extends State<HargaPage> {
               
               // Search Bar
               TextField(
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value;
+                  });
+                },
                 decoration: InputDecoration(
                   hintText: 'Cari jenis sampah...',
                   hintStyle: TextStyle(color: Colors.grey[400]),
@@ -122,12 +128,7 @@ class _HargaPageState extends State<HargaPage> {
               
               // List View / Empty State
               Expanded(
-                child: isActiveTab
-                  ? ListView(
-                      padding: const EdgeInsets.only(bottom: 80), // Padding for FAB
-                      children: _buildActivePrices(),
-                    )
-                  : _buildEmptyState(),
+                child: _buildBody(),
               ),
             ],
           ),
@@ -136,49 +137,111 @@ class _HargaPageState extends State<HargaPage> {
     );
   }
 
-  List<Widget> _buildActivePrices() {
-    return [
-      _buildHargaCard(
-        icon: Icons.recycling,
-        title: 'Plastik PET',
-        subtitle: 'Botol bening, kemasan',
-        badgeText: 'Anorganik',
-        price: 'Rp 3.500',
-      ),
-      const SizedBox(height: 12),
-      _buildHargaCard(
-        icon: Icons.description,
-        title: 'Kertas HVS',
-        subtitle: 'Kertas dokumen, buku',
-        badgeText: 'Anorganik',
-        price: 'Rp 1.200',
-      ),
-      const SizedBox(height: 12),
-      _buildHargaCard(
-        icon: Icons.inventory_2,
-        title: 'Kardus',
-        subtitle: 'Karton tebal, box',
-        badgeText: 'Anorganik',
-        price: 'Rp 1.500',
-      ),
-      const SizedBox(height: 12),
-      _buildHargaCard(
-        icon: Icons.settings,
-        title: 'Logam Besi',
-        subtitle: 'Besi tua, kaleng',
-        badgeText: 'Anorganik',
-        price: 'Rp 4.000',
-      ),
-      const SizedBox(height: 12),
-      _buildHargaCard(
-        icon: Icons.local_drink, // Placeholder for Aluminium can
-        title: 'Aluminium',
-        subtitle: 'Kaleng minuman, foil',
-        badgeText: 'Anorganik',
-        price: 'Rp 8.000',
-      ),
-    ];
+  Widget _buildBody() {
+    final data = isActiveTab ? _activePricesData : [];
+    
+    final query = searchQuery.toLowerCase();
+    final filteredData = data.where((item) {
+      final title = (item['title'] as String).toLowerCase();
+      final subtitle = (item['subtitle'] as String).toLowerCase();
+      return title.contains(query) || subtitle.contains(query);
+    }).toList();
+
+    if (filteredData.isEmpty) {
+      if (searchQuery.isNotEmpty) {
+        return _buildSearchEmptyState();
+      }
+      return _buildEmptyState();
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: filteredData.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = filteredData[index];
+        return _buildHargaCard(
+          icon: item['icon'],
+          title: item['title'],
+          subtitle: item['subtitle'],
+          badgeText: item['badgeText'],
+          price: item['price'],
+        );
+      },
+    );
   }
+
+  Widget _buildSearchEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Jenis Sampah Tidak Ditemukan',
+            style: AppTextStyle.headline1.copyWith(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Coba kata kunci yang berbeda',
+            style: AppTextStyle.small.copyWith(
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> get _activePricesData => [
+    {
+      'icon': Icons.recycling,
+      'title': 'Plastik PET',
+      'subtitle': 'Botol bening, kemasan',
+      'badgeText': 'Anorganik',
+      'price': 'Rp 3.500',
+    },
+    {
+      'icon': Icons.description,
+      'title': 'Kertas HVS',
+      'subtitle': 'Kertas dokumen, buku',
+      'badgeText': 'Anorganik',
+      'price': 'Rp 1.200',
+    },
+    {
+      'icon': Icons.inventory_2,
+      'title': 'Kardus',
+      'subtitle': 'Karton tebal, box',
+      'badgeText': 'Anorganik',
+      'price': 'Rp 1.500',
+    },
+    {
+      'icon': Icons.settings,
+      'title': 'Logam Besi',
+      'subtitle': 'Besi tua, kaleng',
+      'badgeText': 'Anorganik',
+      'price': 'Rp 4.000',
+    },
+    {
+      'icon': Icons.local_drink,
+      'title': 'Aluminium',
+      'subtitle': 'Kaleng minuman, foil',
+      'badgeText': 'Anorganik',
+      'price': 'Rp 8.000',
+    },
+  ];
 
   Widget _buildEmptyState() {
     return Center(
