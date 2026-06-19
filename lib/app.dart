@@ -20,12 +20,15 @@ class App extends StatelessWidget {
       providers: [
         BlocProvider<NasabahCubit>(
           create: (context) => di<NasabahCubit>()..loadNasabah(),
+          lazy: false,
         ),
         BlocProvider<HargaCubit>(
           create: (context) => di<HargaCubit>()..loadHarga(),
+          lazy: false,
         ),
         BlocProvider<TransaksiCubit>(
           create: (context) => di<TransaksiCubit>()..loadTransaksi(),
+          lazy: false,
         ),
         BlocProvider<DashboardCubit>(
           create: (context) => di<DashboardCubit>(),
