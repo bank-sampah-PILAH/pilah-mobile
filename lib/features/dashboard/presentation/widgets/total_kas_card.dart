@@ -1,13 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 class TotalKasCard extends StatelessWidget {
   const TotalKasCard({super.key});
 
+  int _parseBalance(String balanceStr) {
+    final clean = balanceStr.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(clean) ?? 0;
+  }
+
+  String _formatCurrency(int value) {
+    String str = value.toString();
+    String result = '';
+    int count = 0;
+    for (int i = str.length - 1; i >= 0; i--) {
+      result = str[i] + result;
+      count++;
+      if (count % 3 == 0 && i != 0) {
+        result = '.$result';
+      }
+    }
+    return 'Rp $result';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return BlocBuilder<NasabahCubit, NasabahState>(
+      builder: (context, state) {
+        int totalSaldo = 0;
+        if (state is NasabahLoaded) {
+          for (var nasabah in state.nasabahList) {
+            if (nasabah['isActive'] == true) {
+              totalSaldo += _parseBalance(nasabah['balance']?.toString() ?? 'Rp 0');
+            }
+          }
+        }
+
+        return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -29,7 +62,7 @@ class TotalKasCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Rp 12.450.000',
+                _formatCurrency(totalSaldo),
                 style: AppTextStyle.headline1.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -64,6 +97,8 @@ class TotalKasCard extends StatelessWidget {
           ),
         ],
       ),
+        );
+      },
     );
   }
 }
