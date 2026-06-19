@@ -58,14 +58,14 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: isActive ? mintTint : Colors.grey[200],
+                      color: isActive ? mintTint : Colors.red[50],
                       borderRadius: BorderRadius.circular(16),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       initials,
                       style: AppTextStyle.headline1.copyWith(
-                        color: isActive ? emeraldPrimary : Colors.grey[600],
+                        color: isActive ? emeraldPrimary : Colors.red[400],
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
@@ -98,13 +98,13 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isActive ? mintTint : Colors.grey[100],
+                                color: isActive ? mintTint : Colors.red[50],
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
                                 isActive ? 'Aktif' : 'Nonaktif',
                                 style: AppTextStyle.extraSmall.copyWith(
-                                  color: isActive ? emeraldPrimary : Colors.grey[600],
+                                  color: isActive ? emeraldPrimary : Colors.red[400],
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -146,19 +146,19 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(Icons.edit_outlined, color: emeraldPrimary, size: 18),
+                      onPressed: isActive ? () => context.pop() : null,
+                      icon: Icon(Icons.edit_outlined, color: isActive ? emeraldPrimary : Colors.grey[400], size: 18),
                       label: Text(
                         'Edit Data',
                         style: AppTextStyle.title1.copyWith(
-                          color: emeraldPrimary,
+                          color: isActive ? emeraldPrimary : Colors.grey[400],
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: emeraldPrimary, width: 1.5),
+                        side: BorderSide(color: isActive ? emeraldPrimary : Colors.grey[300]!, width: 1.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -169,7 +169,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => context.pop(),
-                      icon: Icon(isActive ? Icons.block : Icons.check_circle_outline, color: Colors.white, size: 18),
+                      icon: Icon(isActive ? Icons.block : Icons.check, color: Colors.white, size: 18),
                       label: Text(
                         isActive ? 'Nonaktifkan' : 'Aktifkan',
                         style: AppTextStyle.title1.copyWith(
