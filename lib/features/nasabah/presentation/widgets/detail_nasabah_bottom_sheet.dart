@@ -3,7 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 class DetailNasabahBottomSheet extends StatelessWidget {
-  const DetailNasabahBottomSheet({super.key});
+  final Map<String, dynamic> customerData;
+
+  const DetailNasabahBottomSheet({
+    super.key,
+    required this.customerData,
+  });
 
   // Emerald Eco System Tokens
   static const Color emeraldPrimary = Color(0xFF006D44);
@@ -12,6 +17,15 @@ class DetailNasabahBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isActive = customerData['isActive'] ?? true;
+    final String initials = customerData['initials'] ?? 'NN';
+    final String name = customerData['name'] ?? 'Unknown';
+    final String phone = customerData['phone'] ?? '-';
+    final String balance = customerData['balance'] ?? 'Rp 0';
+    
+    // Derived or mocked data
+    final String customerId = 'NAS-0891'; // Mocked for now
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -44,14 +58,14 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: mintTint,
+                      color: isActive ? mintTint : Colors.grey[200],
                       borderRadius: BorderRadius.circular(16),
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      'AR',
+                      initials,
                       style: AppTextStyle.headline1.copyWith(
-                        color: emeraldPrimary,
+                        color: isActive ? emeraldPrimary : Colors.grey[600],
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
@@ -63,7 +77,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Ahmad Ridwan',
+                          name,
                           style: AppTextStyle.headline1.copyWith(
                             color: Colors.black87,
                             fontWeight: FontWeight.bold,
@@ -74,7 +88,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              'NAS-0891',
+                              customerId,
                               style: AppTextStyle.small.copyWith(
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.w500,
@@ -84,13 +98,13 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: mintTint,
+                                color: isActive ? mintTint : Colors.grey[100],
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'Aktif',
+                                isActive ? 'Aktif' : 'Nonaktif',
                                 style: AppTextStyle.extraSmall.copyWith(
-                                  color: emeraldPrimary,
+                                  color: isActive ? emeraldPrimary : Colors.grey[600],
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -113,9 +127,9 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _buildInfoRow('Nomor WA', '0812-3456-7890'),
+                    _buildInfoRow('Nomor WA', phone),
                     const Divider(color: Colors.white, height: 24, thickness: 1.5),
-                    _buildInfoRow('Saldo', 'Rp 450.000', valueColor: emeraldPrimary),
+                    _buildInfoRow('Saldo', balance, valueColor: emeraldPrimary),
                     const Divider(color: Colors.white, height: 24, thickness: 1.5),
                     _buildInfoRow('Tanggal Daftar', '📅 12 Mei 2026'),
                     const Divider(color: Colors.white, height: 24, thickness: 1.5),
@@ -155,9 +169,9 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => context.pop(),
-                      icon: const Icon(Icons.block, color: Colors.white, size: 18),
+                      icon: Icon(isActive ? Icons.block : Icons.check_circle_outline, color: Colors.white, size: 18),
                       label: Text(
-                        'Nonaktifkan',
+                        isActive ? 'Nonaktifkan' : 'Aktifkan',
                         style: AppTextStyle.title1.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -165,7 +179,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: errorColor,
+                        backgroundColor: isActive ? errorColor : emeraldPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
