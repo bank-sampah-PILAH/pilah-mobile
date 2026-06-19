@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/laporan/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 
 class LaporanPage extends StatefulWidget {
   const LaporanPage({super.key});
@@ -107,6 +108,10 @@ class _LaporanPageState extends State<LaporanPage> {
                       amount: '+Rp 15.600',
                       isWaSuccess: true,
                       time: '09:45',
+                      balance: 'Rp 141.100',
+                      items: [
+                        {'jenis': 'Plastik PET', 'berat': '5.2 kg', 'harga': 'Rp 3.000', 'subtotal': 'Rp 15.600'},
+                      ],
                     ),
                     const SizedBox(height: 12),
                     _buildTransactionCard(
@@ -118,6 +123,10 @@ class _LaporanPageState extends State<LaporanPage> {
                       amount: '+Rp 10.500',
                       isWaSuccess: false,
                       time: '08:30',
+                      balance: 'Rp 45.500',
+                      items: [
+                        {'jenis': 'Logam Besi', 'berat': '2.1 kg', 'harga': 'Rp 5.000', 'subtotal': 'Rp 10.500'},
+                      ],
                     ),
                     const SizedBox(height: 24),
                     _buildSectionHeader('KEMARIN'),
@@ -130,6 +139,10 @@ class _LaporanPageState extends State<LaporanPage> {
                       amount: '+Rp 24.000',
                       isWaSuccess: true,
                       time: null,
+                      balance: 'Rp 224.000',
+                      items: [
+                        {'jenis': 'Kertas HVS', 'berat': '12.0 kg', 'harga': 'Rp 2.000', 'subtotal': 'Rp 24.000'},
+                      ],
                     ),
                     const SizedBox(height: 12),
                     _buildTransactionCard(
@@ -141,6 +154,10 @@ class _LaporanPageState extends State<LaporanPage> {
                       amount: '+Rp 10.500',
                       isWaSuccess: true,
                       time: null,
+                      balance: 'Rp 50.500',
+                      items: [
+                        {'jenis': 'Plastik PET', 'berat': '3.5 kg', 'harga': 'Rp 3.000', 'subtotal': 'Rp 10.500'},
+                      ],
                     ),
                     const SizedBox(height: 24),
                     _buildSectionHeader('3 HARI LALU'),
@@ -153,6 +170,10 @@ class _LaporanPageState extends State<LaporanPage> {
                       amount: '+Rp 14.400',
                       isWaSuccess: false,
                       time: null,
+                      balance: 'Rp 104.400',
+                      items: [
+                        {'jenis': 'Aluminium', 'berat': '1.8 kg', 'harga': 'Rp 8.000', 'subtotal': 'Rp 14.400'},
+                      ],
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -212,22 +233,46 @@ class _LaporanPageState extends State<LaporanPage> {
     required String subtitle,
     required String amount,
     required bool isWaSuccess,
+    required String balance,
+    required List<Map<String, dynamic>> items,
     String? time,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          useRootNavigator: true, 
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => DetailTransaksiBottomSheet(
+            transactionData: {
+              'initials': initials,
+              'avatarColor': avatarColor,
+              'textColor': textColor,
+              'name': name,
+              'time': time ?? 'Hari ini',
+              'amount': amount,
+              'balance': balance,
+              'waStatus': isWaSuccess ? 'sent' : 'failed',
+              'items': items,
+            },
           ),
-        ],
-      ),
-      child: Row(
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
         children: [
           Container(
             width: 50,
