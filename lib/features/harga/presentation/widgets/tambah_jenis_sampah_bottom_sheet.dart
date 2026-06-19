@@ -3,11 +3,47 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
-class TambahJenisSampahBottomSheet extends StatelessWidget {
-  const TambahJenisSampahBottomSheet({super.key});
+class TambahJenisSampahBottomSheet extends StatefulWidget {
+  final Map<String, dynamic>? initialData;
+
+  const TambahJenisSampahBottomSheet({super.key, this.initialData});
+
+  @override
+  State<TambahJenisSampahBottomSheet> createState() => _TambahJenisSampahBottomSheetState();
+}
+
+class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSheet> {
+  late TextEditingController _nameController;
+  late TextEditingController _descController;
+  late TextEditingController _priceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialData?['title'] ?? '');
+    _descController = TextEditingController(text: widget.initialData?['subtitle'] ?? '');
+    
+    // Process price string "Rp 3.500" to "3500"
+    String initialPrice = '';
+    if (widget.initialData?['price'] != null) {
+      initialPrice = widget.initialData!['price'].toString().replaceAll(RegExp(r'[^0-9]'), '');
+    }
+    _priceController = TextEditingController(text: initialPrice);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bool isEditMode = widget.initialData != null;
+    const Color errorColor = Color(0xFFDC2626); // from colors.txt requested red/error
+    
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -41,7 +77,7 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Tambah Jenis Sampah',
+                    isEditMode ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah',
                     style: AppTextStyle.headline1.copyWith(
                       color: Colors.black87,
                       fontWeight: FontWeight.bold,
@@ -67,7 +103,10 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
               // Field 1: NAMA JENIS SAMPAH
               _buildLabel('NAMA JENIS SAMPAH'),
               const SizedBox(height: 8),
-              _buildTextField(hintText: 'Contoh: Plastik PET'),
+              _buildTextField(
+                controller: _nameController,
+                hintText: 'Contoh: Plastik PET',
+              ),
               const SizedBox(height: 20),
 
               // Field 2: KATEGORI
@@ -86,7 +125,7 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Anorganik',
+                        widget.initialData?['badgeText'] ?? 'Anorganik',
                         style: AppTextStyle.small.copyWith(
                           color: Colors.black87,
                         ),
@@ -101,13 +140,17 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
               // Field 3: DESKRIPSI (OPSIONAL)
               _buildLabel('DESKRIPSI (OPSIONAL)'),
               const SizedBox(height: 8),
-              _buildTextField(hintText: 'Contoh: Botol bening, kemasan plastik'),
+              _buildTextField(
+                controller: _descController,
+                hintText: 'Contoh: Botol bening, kemasan plastik',
+              ),
               const SizedBox(height: 20),
 
               // Field 4: HARGA BELI PER KG (RP)
               _buildLabel('HARGA BELI PER KG (RP)'),
               const SizedBox(height: 8),
               TextField(
+                controller: _priceController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   prefixText: 'Rp ',
@@ -139,7 +182,7 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Button
+              // Primary Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -153,7 +196,7 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
                     elevation: 0,
                   ),
                   child: Text(
-                    'Simpan Jenis Sampah',
+                    isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
                     style: AppTextStyle.title1.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -162,6 +205,32 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
                   ),
                 ),
               ),
+              
+              if (isEditMode) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(Icons.block, color: errorColor, size: 20),
+                    label: Text(
+                      'Nonaktifkan Jenis Sampah',
+                      style: AppTextStyle.title1.copyWith(
+                        color: errorColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: errorColor, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
             ],
           ),
@@ -181,8 +250,12 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField({required String hintText}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+  }) {
     return TextField(
+      controller: controller,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.grey[400]),
