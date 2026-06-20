@@ -7,6 +7,8 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.d
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
+import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
 class NasabahPage extends StatelessWidget {
@@ -112,10 +114,11 @@ class _NasabahPageBody extends StatelessWidget {
                 child: BlocBuilder<NasabahCubit, NasabahState>(
                   builder: (context, state) {
                     if (state is NasabahLoading || state is NasabahInitial) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.greenDark,
-                        ),
+                      return ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: 5,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) => const SkeletonListItem(),
                       );
                     }
 
@@ -123,36 +126,10 @@ class _NasabahPageBody extends StatelessWidget {
                       final customers = state.nasabahList;
 
                       if (customers.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Nasabah Tidak Ditemukan',
-                                style: AppTextStyle.headline1.copyWith(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Coba kata kunci yang berbeda',
-                                style: AppTextStyle.small.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
+                        return const EmptyView(
+                          title: 'Nasabah Tidak Ditemukan',
+                          subtitle: 'Coba kata kunci yang berbeda',
+                          icon: Icons.search_off,
                         );
                       }
 

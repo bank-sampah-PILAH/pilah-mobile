@@ -5,6 +5,8 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
+import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 
 class TransactionListView extends StatelessWidget {
@@ -15,10 +17,11 @@ class TransactionListView extends StatelessWidget {
     return BlocBuilder<TransaksiCubit, TransaksiState>(
       builder: (context, state) {
         if (state is TransaksiLoading || state is TransaksiInitial) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.greenDark,
-            ),
+          return ListView.separated(
+            padding: const EdgeInsets.only(bottom: 80),
+            itemCount: 5,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) => const SkeletonListItem(),
           );
         }
 
@@ -26,36 +29,10 @@ class TransactionListView extends StatelessWidget {
           final filteredGroups = state.transaksiList;
 
           if (filteredGroups.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Transaksi Tidak Ditemukan',
-                    style: AppTextStyle.headline1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Coba kata kunci atau nama pelanggan lain',
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
+            return const EmptyView(
+              title: 'Transaksi Tidak Ditemukan',
+              subtitle: 'Coba kata kunci atau nama pelanggan lain',
+              icon: Icons.search_off,
             );
           }
 

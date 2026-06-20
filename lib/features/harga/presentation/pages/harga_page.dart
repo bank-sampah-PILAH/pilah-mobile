@@ -8,6 +8,8 @@ import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
+import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 
 class HargaPage extends StatelessWidget {
   const HargaPage({super.key});
@@ -132,10 +134,11 @@ class _HargaPageBody extends StatelessWidget {
                 child: BlocBuilder<HargaCubit, HargaState>(
                   builder: (context, state) {
                     if (state is HargaLoading || state is HargaInitial) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.greenDark,
-                        ),
+                      return ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: 5,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) => const SkeletonListItem(),
                       );
                     }
 
@@ -144,9 +147,17 @@ class _HargaPageBody extends StatelessWidget {
 
                       if (items.isEmpty) {
                         if (state.searchQuery.isNotEmpty) {
-                          return _buildSearchEmptyState();
+                          return const EmptyView(
+                            title: 'Jenis Sampah Tidak Ditemukan',
+                            subtitle: 'Coba kata kunci yang berbeda',
+                            icon: Icons.search_off,
+                          );
                         }
-                        return _buildEmptyState();
+                        return const EmptyView(
+                          title: 'Tidak Ada Jenis Nonaktif',
+                          subtitle: 'Semua jenis sampah masih aktif.',
+                          icon: Icons.check_circle_outline,
+                        );
                       }
 
                       return ListView.separated(
@@ -175,78 +186,7 @@ class _HargaPageBody extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Jenis Sampah Tidak Ditemukan',
-            style: AppTextStyle.headline1.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coba kata kunci yang berbeda',
-            style: AppTextStyle.small.copyWith(
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Icon(
-              Icons.check_circle_outline,
-              size: 48,
-              color: Colors.grey[400],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Tidak Ada Jenis Nonaktif',
-            style: AppTextStyle.headline1.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Semua jenis sampah masih aktif.',
-            style: AppTextStyle.small.copyWith(
-              color: Colors.grey[400],
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildHargaCard({
     required BuildContext context,
