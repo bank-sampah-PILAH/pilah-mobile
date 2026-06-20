@@ -1,10 +1,10 @@
-﻿import 'package:dartz/dartz.dart';
+import 'package:dartz/dartz.dart';
 
 import '../../../../core/client/network_exception.dart';
 import '../model/auth.dart';
 
 abstract class AuthenticationUseCases {
-  Future<Either<NetworkException, Auth>> postLogin(
+  Future<Either<NetworkException, AuthEntity>> postLogin(
     String username,
     String password,
   );

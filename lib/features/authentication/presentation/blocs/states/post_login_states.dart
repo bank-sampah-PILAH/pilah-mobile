@@ -1,4 +1,4 @@
-﻿import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 
 import '../../../domain/model/auth.dart';
 
@@ -13,7 +13,7 @@ class PostLoginLoadingState extends AuthenticationStates {
 }
 
 class PostLoginSuccessState extends AuthenticationStates {
-  final Auth auth;
+  final AuthEntity auth;
 
   PostLoginSuccessState({required this.auth});
 

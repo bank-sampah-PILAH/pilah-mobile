@@ -1,21 +1,15 @@
-﻿class Auth {
-  final int id;
-  final String username;
+class AuthEntity {
+  final int? id;
+  final String name;
   final String email;
-  final String firstName;
-  final String lastName;
-  final String gender;
-  final String image;
+  final String photoUrl;
   final String token;
 
-  const Auth({
-    required this.id,
-    required this.username,
+  const AuthEntity({
+    this.id,
+    required this.name,
     required this.email,
-    required this.firstName,
-    required this.lastName,
-    required this.gender,
-    required this.image,
+    required this.photoUrl,
     required this.token,
   });
 }

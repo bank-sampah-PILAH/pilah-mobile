@@ -1,4 +1,4 @@
-﻿import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/repository/auth_repository.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
@@ -12,7 +12,7 @@ class AuthenticationInteractor implements AuthenticationUseCases {
   const AuthenticationInteractor(this._repository);
 
   @override
-  Future<Either<NetworkException, Auth>> postLogin(
+  Future<Either<NetworkException, AuthEntity>> postLogin(
     String username,
     String password,
   ) {

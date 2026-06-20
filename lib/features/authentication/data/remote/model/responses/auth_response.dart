@@ -1,4 +1,4 @@
-﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'auth_response.freezed.dart';
 part 'auth_response.g.dart';
@@ -15,6 +15,9 @@ abstract class AuthResponse with _$AuthResponse {
     required String image,
     required String accessToken,
     required String refreshToken,
+    // Google OAuth fields (nullable for backward compatibility with legacy login)
+    String? name,
+    String? photoUrl,
   }) = _AuthResponse;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>
