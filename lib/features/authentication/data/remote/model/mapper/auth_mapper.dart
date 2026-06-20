@@ -1,17 +1,14 @@
-﻿import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 import '../responses/auth_response.dart';
 
 class AuthMapper {
-  static Auth mapResponseToDomain(AuthResponse response) {
-    return Auth(
+  static AuthEntity mapResponseToDomain(AuthResponse response) {
+    return AuthEntity(
       id: response.id,
-      username: response.username,
+      name: response.name ?? '${response.firstName} ${response.lastName}'.trim(),
       email: response.email,
-      firstName: response.firstName,
-      lastName: response.lastName,
-      gender: response.gender,
-      image: response.image,
+      photoUrl: response.photoUrl ?? response.image,
       token: response.accessToken,
     );
   }

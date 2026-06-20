@@ -29,6 +29,8 @@ import '../features/authentication/domain/repository/auth_repository.dart'
     as _i888;
 import '../features/authentication/domain/use_cases/authentication_use_cases.dart'
     as _i521;
+import '../features/authentication/domain/use_cases/login_with_google_usecase.dart'
+    as _i934;
 import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
 import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
@@ -217,10 +219,14 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i698.OnboardingInteractor(gh<_i998.OnboardingRepository>()));
     gh.factory<_i221.OnboardingBloc>(
         () => _i221.OnboardingBloc(gh<_i1022.OnboardingUseCases>()));
+    gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
+        () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
+    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
+          gh<_i521.AuthenticationUseCases>(),
+          gh<_i934.LoginWithGoogleUseCase>(),
+        ));
     gh.factory<_i957.ProfileBloc>(
         () => _i957.ProfileBloc(gh<_i483.ProfileUseCases>()));
-    gh.factory<_i960.AuthenticationBloc>(
-        () => _i960.AuthenticationBloc(gh<_i521.AuthenticationUseCases>()));
     gh.lazySingleton<_i60.ProductUseCases>(
         () => _i283.ProductInteractor(gh<_i128.ProductRepository>()));
     gh.factory<_i513.ProductHomeBloc>(

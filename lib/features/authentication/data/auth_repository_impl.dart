@@ -1,4 +1,4 @@
-﻿import 'package:pilah_mobile/core/client/api_call.dart';
+import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_sources.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/model/mapper/auth_mapper.dart';
@@ -21,15 +21,36 @@ class AuthRepositoryImpl implements AuthRepository {
   );
 
   @override
-  Future<Either<NetworkException, Auth>> postLogin(
+  Future<Either<NetworkException, AuthEntity>> postLogin(
     String username,
     String password,
   ) async {
     final request = PostLoginRequest(username: username, password: password);
-    return apiCall<Auth>(
+    return apiCall<AuthEntity>(
       func: _remoteDataSources.postLogin(request),
       mapper: (value) => AuthMapper.mapResponseToDomain(value),
     );
+  }
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> loginWithGoogle(
+      String idToken) async {
+    try {
+      final response = await _remoteDataSources.loginWithGoogle(idToken);
+      final entity = AuthMapper.mapResponseToDomain(response);
+
+      // Save the JWT token to secure local storage
+      await _localDataSources.saveToken(
+        SaveTokenRequest(
+          accessToken: entity.token,
+          refreshToken: response.refreshToken,
+        ),
+      );
+
+      return Right(entity);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
   }
 
   @override

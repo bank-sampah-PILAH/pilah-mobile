@@ -5,20 +5,26 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
+import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_refresh_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
 
 class MockAuthenticationUseCases extends Mock implements AuthenticationUseCases {}
+class MockLoginWithGoogleUseCase extends Mock implements LoginWithGoogleUseCase {}
 
 void main() {
   late AuthenticationBloc bloc;
   late MockAuthenticationUseCases mockUseCases;
+  late MockLoginWithGoogleUseCase mockLoginWithGoogle;
 
   setUp(() {
     mockUseCases = MockAuthenticationUseCases();
-    bloc = AuthenticationBloc(mockUseCases);
+    mockLoginWithGoogle = MockLoginWithGoogleUseCase();
+    bloc = AuthenticationBloc(mockUseCases, mockLoginWithGoogle);
   });
 
   tearDown(() {
@@ -28,19 +34,16 @@ void main() {
   group('AuthenticationBloc', () {
     const tUsername = 'test_user';
     const tPassword = 'password123';
-    final tAuth = Auth(
+    final tAuth = AuthEntity(
       id: 1,
-      username: tUsername,
+      name: 'Test User',
       email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
-      gender: 'male',
-      image: '',
+      photoUrl: '',
       token: 'access_token',
     );
 
-    test('initial state should be PostLoginInitState', () {
-      expect(bloc.state, isA<PostLoginInitState>());
+    test('initial state should be AuthenticationInitial', () {
+      expect(bloc.state, isA<AuthenticationInitial>());
     });
 
     blocTest<AuthenticationBloc, dynamic>(
@@ -93,8 +96,46 @@ void main() {
       seed: () => PostLoginErrorState(message: 'Error'),
       act: (bloc) => bloc.add(LoginRefreshEvent()),
       expect: () => [
-        isA<PostLoginInitState>(),
+        isA<AuthenticationInitial>(),
       ],
     );
+
+    group('Google Login', () {
+      const tIdToken = 'mock_google_id_token';
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'emits [Loading, Authenticated] when Google login is successful',
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken))
+              .thenAnswer((_) async => Right(tAuth));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(idToken: tIdToken)),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<Authenticated>(),
+        ],
+        verify: (_) {
+          verify(() => mockLoginWithGoogle.execute(tIdToken)).called(1);
+        },
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'emits [Loading, Failure] when Google login fails',
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken))
+              .thenAnswer((_) async => Left(GeneralException(message: 'Google login failed')));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(idToken: tIdToken)),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<AuthenticationFailure>(),
+        ],
+        verify: (_) {
+          verify(() => mockLoginWithGoogle.execute(tIdToken)).called(1);
+        },
+      );
+    });
   });
 }
