@@ -1,90 +1,123 @@
-﻿import 'dart:developer';
-
-import 'package:pilah_mobile/features/onboarding/presentation/blocs/events/get_user_event.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/blocs/onboarding_bloc.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/blocs/onboarding_states.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/blocs/states/onboarding_states.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
-import 'package:pilah_mobile/features/product/presentation/home/pages/product_home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 
-import '../../../../design/constants/colors.dart';
-import '../../../../design/constants/text_style.dart';
-import '../../../../services/di.dart';
-
-class SplashPage extends StatelessWidget {
+class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
   static const route = '/splash';
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-        create: (_) => di<OnboardingBloc>(), child: const SplashPageView());
-  }
+  State<SplashPage> createState() => _SplashPageState();
 }
 
-class SplashPageView extends StatefulWidget {
-  const SplashPageView({super.key});
+class _SplashPageState extends State<SplashPage> {
+  bool _isVisible = false;
 
-  @override
-  State<SplashPageView> createState() => _SplashPageViewState();
-}
-
-class _SplashPageViewState extends State<SplashPageView> {
   @override
   void initState() {
     super.initState();
-    context.read<OnboardingBloc>().add(GetUserEvent());
+    // Trigger fade-in animation shortly after render
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          _isVisible = true;
+        });
+      }
+    });
+
+    // Navigate to Login Page after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        context.go('/login');
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocListener<OnboardingBloc, OnboardingStates>(
-        listener: (context, state) {
-          log(state.toString());
-          if (state is OnboardingLoggedState) {
-            context.goNamed(ProductHomePage.route);
-          }
-          if (state is OnboardingNewState) {
-            context.goNamed(OnboardingPage.route);
-          }
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.shopping_bag,
-                  color: Colors.white,
-                  size: 100,
+      backgroundColor: AppColors.greenDark,
+      body: AnimatedOpacity(
+        opacity: _isVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOut,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Center content
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Icon
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // PILAH text
+                    Text(
+                      'PILAH',
+                      style: AppTextStyle.headline1.copyWith(
+                        color: Colors.white,
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Tagline
+                    Text(
+                      'Sistem Manajemen Bank Sampah',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            Text(
-              'Flutter Shop',
-              style:
-                  AppTextStyle.headline1.copyWith(color: AppColors.secondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(
-              height: 24,
-            ),
-          ],
+              // Bottom content
+              Positioned(
+                bottom: 32,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Bank Sampah BTH, Depok',
+                      style: AppTextStyle.extraSmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
