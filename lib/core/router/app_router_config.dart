@@ -12,13 +12,20 @@ import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.da
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
+import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
+
 class AppRouterConfig {
   static final _parentKey = GlobalKey<NavigatorState>();
   
   static final GoRouter _router = GoRouter(
-    initialLocation: LoginPage.route,
+    initialLocation: SplashPage.route,
     navigatorKey: _parentKey,
     routes: <RouteBase>[
+      GoRoute(
+        path: SplashPage.route,
+        name: SplashPage.route,
+        builder: (context, state) => const SplashPage(),
+      ),
       GoRoute(
         path: LoginPage.route,
         name: LoginPage.route,
