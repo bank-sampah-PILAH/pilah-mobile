@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
 
 class LoginButton extends StatelessWidget {
-  const LoginButton({super.key});
+  final bool isLoading;
+
+  const LoginButton({super.key, this.isLoading = false});
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.greenDark,
+        ),
+      );
+    }
+
     return OutlinedButton(
       onPressed: () {
-        // Dummy navigation for now
-        context.goNamed(DashboardPage.route);
+        context.read<AuthenticationBloc>().add(
+          LoginWithGoogleRequested(idToken: 'dummy_token_123'),
+        );
       },
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
