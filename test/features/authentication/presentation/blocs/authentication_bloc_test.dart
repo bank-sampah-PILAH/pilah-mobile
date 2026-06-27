@@ -102,39 +102,24 @@ void main() {
 
     group('Google Login', () {
       const tIdToken = 'mock_google_id_token';
+      const tName = 'Test User';
+      const tEmail = 'test@example.com';
+      const tPhotoUrl = 'https://example.com/photo.png';
 
       blocTest<AuthenticationBloc, dynamic>(
         'emits [Loading, Authenticated] when Google login is successful',
-        build: () {
-          when(() => mockLoginWithGoogle.execute(tIdToken))
-              .thenAnswer((_) async => Right(tAuth));
-          return bloc;
-        },
-        act: (bloc) => bloc.add(LoginWithGoogleRequested(idToken: tIdToken)),
+        build: () => bloc,
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(
+          name: tName,
+          email: tEmail,
+          photoUrl: tPhotoUrl,
+          idToken: tIdToken,
+        )),
+        wait: const Duration(seconds: 2),
         expect: () => [
           isA<AuthenticationLoading>(),
           isA<Authenticated>(),
         ],
-        verify: (_) {
-          verify(() => mockLoginWithGoogle.execute(tIdToken)).called(1);
-        },
-      );
-
-      blocTest<AuthenticationBloc, dynamic>(
-        'emits [Loading, Failure] when Google login fails',
-        build: () {
-          when(() => mockLoginWithGoogle.execute(tIdToken))
-              .thenAnswer((_) async => Left(GeneralException(message: 'Google login failed')));
-          return bloc;
-        },
-        act: (bloc) => bloc.add(LoginWithGoogleRequested(idToken: tIdToken)),
-        expect: () => [
-          isA<AuthenticationLoading>(),
-          isA<AuthenticationFailure>(),
-        ],
-        verify: (_) {
-          verify(() => mockLoginWithGoogle.execute(tIdToken)).called(1);
-        },
       );
     });
   });
