@@ -2,6 +2,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/states/p
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../domain/model/auth.dart';
 import '../../domain/use_cases/authentication_use_cases.dart';
 import '../../domain/use_cases/login_with_google_usecase.dart';
 import 'authentication_events.dart';
@@ -14,6 +15,7 @@ import 'events/post_login_events.dart';
 class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationStates> {
   final AuthenticationUseCases _useCases;
+  // ignore: unused_field - Will be re-enabled when backend API is ready
   final LoginWithGoogleUseCase _loginWithGoogleUseCase;
 
   AuthenticationBloc(this._useCases, this._loginWithGoogleUseCase)
@@ -53,23 +55,18 @@ class AuthenticationBloc
   ) async {
     emitter(AuthenticationLoading());
 
-    final result = await _loginWithGoogleUseCase.execute(event.idToken);
+    // Simulate network delay (no backend yet)
+    await Future.delayed(const Duration(seconds: 1));
 
-    result.fold(
-      (failure) {
-        emitter(AuthenticationFailure(
-          message: failure.message ?? 'Google login failed',
-        ));
-      },
-      (authEntity) {
-        if (authEntity != null) {
-          emitter(Authenticated(authEntity: authEntity));
-        } else {
-          emitter(AuthenticationFailure(
-            message: 'Google login returned no data',
-          ));
-        }
-      },
-    );
+    // Mock a successful authentication using the real Google profile data
+    emitter(Authenticated(
+      authEntity: AuthEntity(
+        id: 1,
+        name: event.name,
+        email: event.email,
+        photoUrl: event.photoUrl,
+        token: event.idToken,
+      ),
+    ));
   }
 }

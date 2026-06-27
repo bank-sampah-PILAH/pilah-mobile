@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -9,6 +12,39 @@ class LoginButton extends StatelessWidget {
   final bool isLoading;
 
   const LoginButton({super.key, this.isLoading = false});
+
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    try {
+      final googleUser = await GoogleSignIn.instance.authenticate();
+
+      final googleAuth = googleUser.authentication;
+      final idToken = googleAuth.idToken ?? '';
+
+      log('Google Sign-In success: ${googleUser.displayName}');
+
+      if (!context.mounted) return;
+
+      context.read<AuthenticationBloc>().add(
+        LoginWithGoogleRequested(
+          name: googleUser.displayName ?? 'Unknown',
+          email: googleUser.email,
+          photoUrl: googleUser.photoUrl ?? '',
+          idToken: idToken,
+        ),
+      );
+    } catch (error) {
+      log('Google Sign-In error: $error');
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login gagal: ${error.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,11 +57,7 @@ class LoginButton extends StatelessWidget {
     }
 
     return OutlinedButton(
-      onPressed: () {
-        context.read<AuthenticationBloc>().add(
-          LoginWithGoogleRequested(idToken: 'dummy_token_123'),
-        );
-      },
+      onPressed: () => _handleGoogleSignIn(context),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
