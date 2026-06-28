@@ -20,7 +20,9 @@ Future<void> main() async {
   await Firebase.initializeApp();
 
   // Initialize Google Sign-In (required for v7+)
-  await GoogleSignIn.instance.initialize();
+  await GoogleSignIn.instance.initialize(
+    serverClientId: '479665432419-p295afmlkcv1jloeameh33t6ib9gb5nt.apps.googleusercontent.com',
+  );
 
   runApp(const App());
 }
