@@ -12,7 +12,20 @@
           "package_name": "com.example.pilah_mobile"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "479665432419-ggrbhdmna8qsqr5bojqeulmut8a4b5pk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pilah_mobile",
+            "certificate_hash": "ef06dcfb0e65284fca6b63325218aca0c0d6f1f2"
+          }
+        },
+        {
+          "client_id": "479665432419-p295afmlkcv1jloeameh33t6ib9gb5nt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAIkik0xylAqNPoj_T29eGsFnzTOLGPkqE"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "479665432419-p295afmlkcv1jloeameh33t6ib9gb5nt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
