@@ -63,6 +63,7 @@ dependencies:
   skeletonizer: ^2.1.3
   supabase_flutter: ^2.9.0
   google_sign_in: ^7.2.0
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -91,6 +92,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/
     - assets/images/
 
