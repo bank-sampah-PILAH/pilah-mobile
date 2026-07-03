@@ -4,6 +4,7 @@ class AuthEntity {
   final String email;
   final String photoUrl;
   final String token;
+  final String? nextStep;
 
   const AuthEntity({
     this.id,
@@ -11,5 +12,6 @@ class AuthEntity {
     required this.email,
     required this.photoUrl,
     required this.token,
+    this.nextStep,
   });
 }

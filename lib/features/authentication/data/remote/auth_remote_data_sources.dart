@@ -46,6 +46,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
       refreshToken: 'mock_refresh_token',
       name: 'Google User',
       photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
+      nextStep: 'complete_profile', // Simulated next_step from backend
     );
   }
 }
