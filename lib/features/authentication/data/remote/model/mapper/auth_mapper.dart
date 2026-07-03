@@ -10,6 +10,7 @@ class AuthMapper {
       email: response.email,
       photoUrl: response.photoUrl ?? response.image,
       token: response.accessToken,
+      nextStep: response.nextStep,
     );
   }
 }

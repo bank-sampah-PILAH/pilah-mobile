@@ -18,6 +18,7 @@ abstract class AuthResponse with _$AuthResponse {
     // Google OAuth fields (nullable for backward compatibility with legacy login)
     String? name,
     String? photoUrl,
+    @JsonKey(name: 'next_step') String? nextStep,
   }) = _AuthResponse;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) =>
