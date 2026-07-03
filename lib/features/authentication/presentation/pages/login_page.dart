@@ -21,7 +21,7 @@ class LoginPage extends StatelessWidget {
       body: BlocConsumer<AuthenticationBloc, AuthenticationStates>(
         listener: (context, state) {
           if (state is Authenticated) {
-            context.go('/dashboard');
+            context.go('/complete-profile');
           } else if (state is AuthenticationFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
