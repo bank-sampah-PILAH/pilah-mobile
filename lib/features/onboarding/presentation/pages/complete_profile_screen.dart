@@ -1,0 +1,492 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+
+class CompleteProfileScreen extends StatefulWidget {
+  const CompleteProfileScreen({super.key});
+
+  static const route = '/complete-profile';
+
+  @override
+  State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
+}
+
+class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _nameController = TextEditingController();
+  final _dobController = TextEditingController();
+  final _phoneController = TextEditingController();
+  String? _gender;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _dobController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  void _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.greenDark, // header background color
+              onPrimary: Colors.white, // header text color
+              onSurface: Colors.black, // body text color
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dobController.text =
+            "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+      });
+    }
+  }
+
+  Future<void> _onSaveAndContinue() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Simulate network delay for UI testing
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        context.go('/register-bank-sampah');
+      }
+    }
+  }
+
+  Widget _buildFormField({
+    required String label,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+            children: const [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB), // Light gray background
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 1. Header Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.only(
+                  top: 70, left: 24, right: 24, bottom: 40),
+              decoration: const BoxDecoration(
+                color: AppColors.greenDark,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Lengkapi Profil Anda',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Data ini digunakan untuk verifikasi akun Anda.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 2. Stepper Section
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Step 1
+                  Column(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: AppColors.greenDark,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Text(
+                            '1',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Profil Diri',
+                        style: TextStyle(
+                          color: AppColors.greenDark,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Connector Line
+                  Container(
+                    width: 100,
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    color: Colors.grey.shade300,
+                  ),
+
+                  // Step 2
+                  Column(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '2',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Data Bank Sampah',
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // 3. Form Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Field 1: Nama Lengkap
+                      _buildFormField(
+                        label: 'NAMA LENGKAP',
+                        child: TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            hintText: 'Contoh: Siti Rahayu',
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().length < 3) {
+                              return 'Nama minimal 3 karakter';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      // Field 2: Jenis Kelamin
+                      _buildFormField(
+                        label: 'JENIS KELAMIN',
+                        child: DropdownButtonFormField<String>(
+                          value: _gender,
+                          hint: Text(
+                            'Pilih jenis kelamin',
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'Laki-laki', child: Text('♂ Laki-laki')),
+                            DropdownMenuItem(
+                                value: 'Perempuan', child: Text('♀ Perempuan')),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _gender = val;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                          ),
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Jenis kelamin wajib dipilih';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      // Field 3: Tanggal Lahir
+                      _buildFormField(
+                        label: 'TANGGAL LAHIR',
+                        child: TextFormField(
+                          controller: _dobController,
+                          readOnly: true,
+                          onTap: _selectDate,
+                          decoration: InputDecoration(
+                            hintText: 'dd/mm/yyyy',
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                            suffixIcon:
+                                const Icon(Icons.calendar_today_outlined, color: Colors.black87),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Tanggal lahir wajib diisi';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      // Field 4: Nomor HP
+                      _buildFormField(
+                        label: 'NOMOR HP / WHATSAPP',
+                        child: TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            hintText: 'Contoh: 0812-3456-7890',
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Nomor HP wajib diisi';
+                            }
+                            // Basic phone validation (digits only, min 9 chars)
+                            if (!RegExp(r'^[0-9+]+$').hasMatch(value.trim()) ||
+                                value.trim().length < 9) {
+                              return 'Format nomor HP tidak valid';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+
+            // 4. Action Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _onSaveAndContinue,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.greenDark,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Simpan Profil & Lanjut',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+
+            // 5. Footer Text
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
