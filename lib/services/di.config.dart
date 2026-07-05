@@ -138,8 +138,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i112.HargaLocalDataSourceImpl());
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i430.TransaksiLocalDataSource>()));
-    gh.lazySingleton<_i981.AuthLocalDataSources>(
-        () => _i981.AuthLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
     gh.lazySingleton<_i127.NasabahRepository>(
         () => _i1026.NasabahRepositoryImpl(gh<_i469.NasabahLocalDataSource>()));
     gh.factory<_i119.AppEnvironment>(
@@ -164,6 +162,11 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i839.AddTransaksiUseCase>(),
         ));
+    gh.lazySingleton<_i981.AuthLocalDataSources>(
+        () => _i981.AuthLocalDataSourcesImpl(
+              gh<_i124.SecureDatabase>(),
+              gh<_i936.NetworkUtils>(),
+            ));
     gh.lazySingleton<_i941.NetworkService>(() => _i941.NetworkService(
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),

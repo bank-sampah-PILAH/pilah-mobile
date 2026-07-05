@@ -25,28 +25,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
 
   @override
   Future<AuthResponse> loginWithGoogle(String idToken) async {
-    // TODO: Replace with actual API call once backend is ready.
-    // e.g.: final response = await networkService.post(
-    //   Endpoints.loginWithGoogle,
-    //   data: {'idToken': idToken},
-    // );
-    // return AuthResponse.fromJson(response.data);
-
-    // Mock implementation for UI testing
-    await Future.delayed(const Duration(seconds: 2));
-    return const AuthResponse(
-      id: 1,
-      username: 'google_user',
-      email: 'user@gmail.com',
-      firstName: 'Google',
-      lastName: 'User',
-      gender: '',
-      image: 'https://lh3.googleusercontent.com/a/default-user',
-      accessToken: 'mock_jwt_token_from_backend',
-      refreshToken: 'mock_refresh_token',
-      name: 'Google User',
-      photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
-      nextStep: 'complete_profile', // Simulated next_step from backend
+    final response = await networkService.post(
+      Endpoints.loginWithGoogle,
+      data: {'id_token': idToken},
     );
+    return AuthResponse.fromJson(response.data);
   }
 }
