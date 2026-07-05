@@ -1,11 +1,6 @@
-// import 'package:envied/envied.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// part 'secrets.g.dart';
-
-// @Envied(name: 'Secret', path: '.env')
 abstract class Secret {
-  // @EnviedField(varName: 'BASE_URL_DEV')
-  static const String baseUrlDev = '';
-  // @EnviedField(varName: 'BASE_URL_PROD')
-  static const String baseUrlProd = '';
+  static String get baseUrlDev => dotenv.env['BASE_URL_DEV'] ?? '';
+  static String get baseUrlProd => dotenv.env['BASE_URL_PROD'] ?? '';
 }
