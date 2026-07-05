@@ -29,6 +29,6 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
 
   @override
   Future<void> deactivateHarga(String id) async {
-    await networkService.patch('/api/v1/jenis-sampah/$id/status/', data: {'is_active': false});
+    await networkService.patch('/api/v1/jenis-sampah/$id/status', data: {'is_active': false});
   }
 }
