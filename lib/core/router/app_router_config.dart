@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_bar
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_approval_screen.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
 
 class AppRouterConfig {
@@ -52,7 +53,10 @@ class AppRouterConfig {
       GoRoute(
         path: CompleteProfileScreen.route,
         name: CompleteProfileScreen.route,
-        builder: (context, state) => const CompleteProfileScreen(),
+        builder: (context, state) {
+          final isInviteMode = state.extra as bool? ?? false;
+          return CompleteProfileScreen(isInviteMode: isInviteMode);
+        },
       ),
       GoRoute(
         path: RegisterBankSampahScreen.route,
@@ -63,6 +67,11 @@ class AppRouterConfig {
         path: PendingApprovalScreen.route,
         name: PendingApprovalScreen.route,
         builder: (context, state) => const PendingApprovalScreen(),
+      ),
+      GoRoute(
+        path: SuperAdminDashboardScreen.route,
+        name: SuperAdminDashboardScreen.route,
+        builder: (context, state) => const SuperAdminDashboardScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
