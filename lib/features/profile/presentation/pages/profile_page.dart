@@ -4,10 +4,32 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   static const route = '/profile';
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,14 +38,10 @@ class ProfilePage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-              // Header
-              Row(
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
@@ -56,81 +74,372 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 16),
 
-              // User Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.greenDark,
-                  borderRadius: BorderRadius.circular(20),
+            // Tab Bar
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey[200]!, width: 1),
                 ),
-                child: Row(
+              ),
+              child: TabBar(
+                controller: _tabController,
+                labelColor: AppColors.greenDark,
+                unselectedLabelColor: Colors.grey[400],
+                labelStyle: AppTextStyle.small.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                unselectedLabelStyle: AppTextStyle.small.copyWith(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 14,
+                ),
+                indicatorColor: AppColors.greenDark,
+                indicatorWeight: 3,
+                tabs: const [
+                  Tab(text: 'Pengaturan Umum'),
+                  Tab(text: 'Manajemen Tim'),
+                ],
+              ),
+            ),
+
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildPengaturanUmumTab(),
+                  _buildManajemenTimTab(),
+                ],
+              ),
+            ),
+
+            // Bottom Buttons (only visible on Pengaturan Umum tab)
+            if (_tabController.index == 0)
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.transparent,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircleAvatar(
-                      radius: 30,
-                      backgroundColor: AppColors.greenLight,
-                      child: Text(
-                        'IS',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+                        label: Text(
+                          'Simpan Pengaturan',
+                          style: AppTextStyle.title1.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.greenDark,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Ibu Sari',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          context.go(LoginPage.route);
+                        },
+                        icon: Icon(Icons.logout, color: Colors.red[600], size: 20),
+                        label: Text(
+                          'Keluar dari Aplikasi',
+                          style: AppTextStyle.title1.copyWith(
+                            color: Colors.red[600],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'sari@banksampahbth.id',
-                            style: AppTextStyle.small.copyWith(
-                              color: Colors.white70,
-                            ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Pengelola',
-                              style: AppTextStyle.extraSmall.copyWith(
-                                color: AppColors.greenDark,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
+                          side: BorderSide(color: Colors.red[200]!),
+                          backgroundColor: Colors.white,
+                        ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.edit_square, color: Colors.white, size: 20),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
 
-              // Section Title
+  // ── Tab 1: Pengaturan Umum ──────────────────────────────────────────
+
+  Widget _buildPengaturanUmumTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // User Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.greenDark,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.greenLight,
+                  child: Text(
+                    'IS',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ibu Sari',
+                        style: AppTextStyle.title1.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'sari@banksampahbth.id',
+                        style: AppTextStyle.small.copyWith(
+                          color: Colors.white70,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Pengelola',
+                          style: AppTextStyle.extraSmall.copyWith(
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.edit_square, color: Colors.white, size: 20),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Section Title
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: AppColors.greenDark,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'PROFIL BANK SAMPAH',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Form Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Home Icon
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenLight.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.greenLight, width: 2),
+                        ),
+                        child: const Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: AppColors.greenDark,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Field 1
+                _buildFormField(
+                  label: 'NAMA BANK SAMPAH',
+                  value: 'Bank Sampah BTH',
+                  isFocused: true,
+                ),
+                const SizedBox(height: 16),
+                
+                // Field 2
+                _buildFormField(
+                  label: 'ALAMAT BANK SAMPAH',
+                  value: 'Kel. Kukusan, Beji, Depok',
+                ),
+                const SizedBox(height: 16),
+                
+                // Field 3
+                _buildFormField(
+                  label: 'NOMOR HP PENANGGUNG JAWAB',
+                  value: '0812-3456-7890',
+                  prefixIcon: Icons.phone,
+                  iconColor: Colors.pink[400],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          _buildWhatsappTemplate(),
+        ],
+      ),
+    );
+  }
+
+  // ── Tab 2: Manajemen Tim ────────────────────────────────────────────
+
+  Widget _buildManajemenTimTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Invite Banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.greenDark,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Undang Pengelola Baru',
+                  style: AppTextStyle.title1.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Bagikan link agar pengelola lain bisa bergabung ke Bank Sampah BTH.',
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Link undangan disalin ke clipboard!'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
+                    label: Text(
+                      'Salin Link Undangan',
+                      style: AppTextStyle.small.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.greenDark,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          // Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Row(
                 children: [
                   Container(
@@ -143,7 +452,7 @@ class ProfilePage extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'PROFIL BANK SAMPAH',
+                    'PENGELOLA TERGABUNG',
                     style: AppTextStyle.extraSmall.copyWith(
                       color: Colors.grey[600],
                       fontWeight: FontWeight.bold,
@@ -152,264 +461,162 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Form Card
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: AppColors.greenLight,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  children: [
-                    // Home Icon
-                    Center(
-                      child: Stack(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: AppColors.greenLight.withValues(alpha: 0.3),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.greenLight, width: 2),
-                            ),
-                            child: const Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: AppColors.greenDark,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.edit, color: Colors.white, size: 14),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Field 1
-                    _buildFormField(
-                      label: 'NAMA BANK SAMPAH',
-                      value: 'Bank Sampah BTH',
-                      isFocused: true, // green border
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Field 2
-                    _buildFormField(
-                      label: 'ALAMAT BANK SAMPAH',
-                      value: 'Kel. Kukusan, Beji, Depok',
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Field 3
-                    _buildFormField(
-                      label: 'NOMOR HP PENANGGUNG JAWAB',
-                      value: '0812-3456-7890',
-                      prefixIcon: Icons.phone,
-                      iconColor: Colors.pink[400],
-                    ),
-                  ],
+                child: Text(
+                  '3 aktif',
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: AppColors.greenDark,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(height: 32),
-              _buildWhatsappTemplate(),
-              const SizedBox(height: 32),
-              _buildInfoAplikasi(),
             ],
           ),
-        ),
-      ),
-      Container(
-        padding: const EdgeInsets.all(16),
-        color: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.save_outlined, color: Colors.white, size: 20),
-                label: Text(
-                  'Simpan Pengaturan',
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+          const SizedBox(height: 16),
+
+          // Member List Card
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.greenDark,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-              ),
+              ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  context.go(LoginPage.route);
-                },
-                icon: Icon(Icons.logout, color: Colors.red[600], size: 20),
-                label: Text(
-                  'Keluar dari Aplikasi',
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.red[600],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+            child: Column(
+              children: [
+                _buildMemberRow(
+                  initials: 'AF',
+                  name: 'Ahmad Fadil',
+                  email: 'ahmad.fadil@banksampahibth.id',
+                  avatarColor: AppColors.greenDark,
+                  isCurrentUser: true,
                 ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  side: BorderSide(color: Colors.red[200]!),
-                  backgroundColor: Colors.white,
+                Divider(color: Colors.grey[100], height: 1, thickness: 1, indent: 16, endIndent: 16),
+                _buildMemberRow(
+                  initials: 'RP',
+                  name: 'Rina Puspita',
+                  email: 'rina.puspita@banksampahibth.id',
+                  avatarColor: const Color(0xFF7C3AED),
+                  isCurrentUser: false,
                 ),
-              ),
+                Divider(color: Colors.grey[100], height: 1, thickness: 1, indent: 16, endIndent: 16),
+                _buildMemberRow(
+                  initials: 'DS',
+                  name: 'Dimas Saputra',
+                  email: 'dimas.saputra@banksampahibth.id',
+                  avatarColor: const Color(0xFFD4A843),
+                  isCurrentUser: false,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    ],
-  ),
-),
     );
   }
 
-  Widget _buildInfoAplikasi() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
+  Widget _buildMemberRow({
+    required String initials,
+    required String name,
+    required String email,
+    required Color avatarColor,
+    required bool isCurrentUser,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
         children: [
-          // Row 1
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: avatarColor,
+            child: Text(
+              initials,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.access_time, color: Color(0xFF7C3AED), size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Versi Aplikasi',
-                        style: AppTextStyle.title1.copyWith(
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: AppTextStyle.small.copyWith(
                           color: Colors.black87,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'PILAH v1.0.0',
-                        style: AppTextStyle.small.copyWith(
-                          color: Colors.grey[500],
+                    ),
+                    if (isCurrentUser) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenDark,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Anda',
+                          style: AppTextStyle.extraSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.greenLight,
-                    borderRadius: BorderRadius.circular(16),
+                const SizedBox(height: 2),
+                Text(
+                  email,
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: Colors.grey[500],
                   ),
-                  child: Text(
-                    'Terbaru',
-                    style: AppTextStyle.small.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Divider(color: Colors.grey[100], height: 1, thickness: 1),
-          // Row 2
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD97706).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.description_outlined, color: Color(0xFFD97706), size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Dokumentasi PRD',
-                        style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Fasilkom UI · 2026',
-                        style: AppTextStyle.small.copyWith(
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: Colors.grey[400]),
-              ],
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.greenLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'Pengelola',
+              style: AppTextStyle.extraSmall.copyWith(
+                color: AppColors.greenDark,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+  // ── Shared Helpers ──────────────────────────────────────────────────
 
   Widget _buildFormField({
     required String label,
