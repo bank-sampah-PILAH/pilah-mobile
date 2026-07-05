@@ -2,7 +2,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/states/p
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../domain/model/auth.dart';
 import '../../domain/use_cases/authentication_use_cases.dart';
 import '../../domain/use_cases/login_with_google_usecase.dart';
 import 'authentication_events.dart';
@@ -55,18 +54,19 @@ class AuthenticationBloc
   ) async {
     emitter(AuthenticationLoading());
 
-    // Simulate network delay (no backend yet)
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Mock a successful authentication using the real Google profile data
-    emitter(Authenticated(
-      authEntity: AuthEntity(
-        id: 1,
-        name: event.name,
-        email: event.email,
-        photoUrl: event.photoUrl,
-        token: event.idToken,
-      ),
-    ));
+    final response = await _loginWithGoogleUseCase.execute(event.idToken);
+    
+    response.fold(
+      (failure) {
+        emitter(AuthenticationFailure(message: failure.message ?? 'Unknown error occurred'));
+      },
+      (entity) {
+        if (entity != null) {
+          emitter(Authenticated(authEntity: entity));
+        } else {
+          emitter(AuthenticationFailure(message: 'Invalid response from server'));
+        }
+      },
+    );
   }
 }
