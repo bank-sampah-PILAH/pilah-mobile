@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
-  const CompleteProfileScreen({super.key});
+  final bool isInviteMode;
+
+  const CompleteProfileScreen({super.key, this.isInviteMode = false});
 
   static const route = '/complete-profile';
 
@@ -12,6 +14,7 @@ class CompleteProfileScreen extends StatefulWidget {
 }
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
+  bool get _isInviteMode => widget.isInviteMode;
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -69,7 +72,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         setState(() {
           _isLoading = false;
         });
-        context.go('/register-bank-sampah');
+        if (_isInviteMode) {
+          context.go('/dashboard');
+        } else {
+          context.go('/register-bank-sampah');
+        }
       }
     }
   }
@@ -142,96 +149,98 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               ),
             ),
 
-            // 2. Stepper Section
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Step 1
-                  Column(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          color: AppColors.greenDark,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '1',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+            // 2. Stepper Section (hidden in invite mode)
+            if (!_isInviteMode) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Step 1
+                    Column(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            color: AppColors.greenDark,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '1',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Profil Diri',
-                        style: TextStyle(
-                          color: AppColors.greenDark,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Profil Diri',
+                          style: TextStyle(
+                            color: AppColors.greenDark,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
-                  // Connector Line
-                  Container(
-                    width: 100,
-                    height: 2,
-                    margin: const EdgeInsets.only(bottom: 24),
-                    color: Colors.grey.shade300,
-                  ),
+                    // Connector Line
+                    Container(
+                      width: 100,
+                      height: 2,
+                      margin: const EdgeInsets.only(bottom: 24),
+                      color: Colors.grey.shade300,
+                    ),
 
-                  // Step 2
-                  Column(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '2',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.bold,
+                    // Step 2
+                    Column(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '2',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Data Bank Sampah',
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 8),
+                        Text(
+                          'Data Bank Sampah',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
 
             const SizedBox(height: 24),
 
@@ -451,19 +460,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Simpan Profil & Lanjut',
-                              style: TextStyle(
+                              _isInviteMode ? 'Simpan & Bergabung' : 'Simpan Profil & Lanjut',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
                           ],
                         ),
                 ),
