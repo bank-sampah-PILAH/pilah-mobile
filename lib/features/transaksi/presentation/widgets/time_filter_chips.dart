@@ -19,15 +19,14 @@ class TimeFilterChips extends StatelessWidget {
         return true;
       },
       builder: (context, state) {
-        final activeFilter = state is TransaksiLoaded ? state.activeFilter : 'Hari Ini';
+        final activeFilter = state is TransaksiLoaded ? state.activeFilter : 'Bulan Ini';
         return Row(
           children: [
-            _buildFilterChip(context, 'Hari Ini', activeFilter),
-            const SizedBox(width: 8),
-            _buildFilterChip(context, 'Minggu Ini', activeFilter),
-            const SizedBox(width: 8),
             _buildFilterChip(context, 'Bulan Ini', activeFilter),
+            const SizedBox(width: 6),
+            _buildFilterChip(context, 'Bulan Lalu', activeFilter),
             const Spacer(),
+            // Calendar Button
             InkWell(
               onTap: () {
                 showModalBottomSheet(
@@ -38,14 +37,58 @@ class TimeFilterChips extends StatelessWidget {
                   builder: (context) => const FilterTanggalBottomSheet(),
                 );
               },
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.calendar_today_outlined, color: Colors.grey[600], size: 20),
+                child: const Icon(
+                  Icons.calendar_today_outlined,
+                  color: Color(0xFF6B7280),
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Export XLS Button
+            InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Simulasi: Mengunduh laporan XLS...'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.download_rounded,
+                      color: Color(0xFF374151),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'XLS',
+                      style: AppTextStyle.small.copyWith(
+                        color: const Color(0xFF374151),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -63,14 +106,14 @@ class TimeFilterChips extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.greenDark : Colors.grey[100],
+          color: isSelected ? AppColors.greenDark : const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: AppTextStyle.small.copyWith(
-            color: isSelected ? Colors.white : Colors.grey[600],
-            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : const Color(0xFF6B7280),
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
