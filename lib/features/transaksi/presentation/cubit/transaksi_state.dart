@@ -19,7 +19,7 @@ class TransaksiLoaded extends TransaksiState {
 
   const TransaksiLoaded({
     required this.transaksiList,
-    this.activeFilter = 'Hari Ini',
+    this.activeFilter = 'Bulan Ini',
     this.searchQuery = '',
   });
 
