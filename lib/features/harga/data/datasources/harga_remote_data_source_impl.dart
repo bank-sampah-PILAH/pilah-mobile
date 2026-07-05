@@ -12,7 +12,8 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
   @override
   Future<List<HargaModel>> getHarga() async {
     final response = await networkService.get('/api/v1/jenis-sampah');
-    final List<dynamic> data = response.data;
+    final Map<String, dynamic> responseData = response.data;
+    final List<dynamic> data = responseData['results'];
     return data.map((json) => HargaModel.fromJson(json)).toList();
   }
 
@@ -28,6 +29,6 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
 
   @override
   Future<void> deactivateHarga(String id) async {
-    await networkService.patch('/api/v1/jenis-sampah/$id', data: {'is_active': false});
+    await networkService.patch('/api/v1/jenis-sampah/$id/status/', data: {'is_active': false});
   }
 }
