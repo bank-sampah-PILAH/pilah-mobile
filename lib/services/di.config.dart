@@ -36,6 +36,10 @@ import '../features/authentication/presentation/blocs/authentication_bloc.dart'
 import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
 import '../features/harga/data/datasources/harga_local_data_source.dart'
     as _i112;
+import '../features/harga/data/datasources/harga_remote_data_source.dart'
+    as _i960;
+import '../features/harga/data/datasources/harga_remote_data_source_impl.dart'
+    as _i74;
 import '../features/harga/data/repositories/harga_repository_impl.dart'
     as _i922;
 import '../features/harga/domain/repositories/harga_repository.dart' as _i40;
@@ -136,8 +140,6 @@ extension GetItInjectableX on _i174.GetIt {
         _i1041.TransaksiRepositoryImpl(gh<_i430.TransaksiLocalDataSource>()));
     gh.lazySingleton<_i981.AuthLocalDataSources>(
         () => _i981.AuthLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
-    gh.lazySingleton<_i40.HargaRepository>(
-        () => _i922.HargaRepositoryImpl(gh<_i112.HargaLocalDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(
         () => _i1026.NasabahRepositoryImpl(gh<_i469.NasabahLocalDataSource>()));
     gh.factory<_i119.AppEnvironment>(
@@ -162,14 +164,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i839.AddTransaksiUseCase>(),
         ));
-    gh.lazySingleton<_i948.AddHargaUseCase>(
-        () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i989.DeactivateHargaUseCase>(
-        () => _i989.DeactivateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i1009.GetHargaUseCase>(
-        () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i240.UpdateHargaUseCase>(
-        () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i941.NetworkService>(() => _i941.NetworkService(
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
@@ -187,16 +181,14 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i438.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i24.AuthRemoteDataSources>(
         () => _i24.AuthRemoteDataSourceImpl(gh<_i941.NetworkService>()));
-    gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
-          gh<_i1009.GetHargaUseCase>(),
-          gh<_i948.AddHargaUseCase>(),
-          gh<_i240.UpdateHargaUseCase>(),
-          gh<_i989.DeactivateHargaUseCase>(),
-        ));
+    gh.lazySingleton<_i960.HargaRemoteDataSource>(
+        () => _i74.HargaRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
           gh<_i24.AuthRemoteDataSources>(),
           gh<_i981.AuthLocalDataSources>(),
         ));
+    gh.lazySingleton<_i40.HargaRepository>(
+        () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i998.OnboardingRepository>(() =>
         _i255.OnboardingRepositoryImpl(
             gh<_i438.OnboardingRemoteDataSources>()));
@@ -229,8 +221,22 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i957.ProfileBloc(gh<_i483.ProfileUseCases>()));
     gh.lazySingleton<_i60.ProductUseCases>(
         () => _i283.ProductInteractor(gh<_i128.ProductRepository>()));
+    gh.lazySingleton<_i948.AddHargaUseCase>(
+        () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i989.DeactivateHargaUseCase>(
+        () => _i989.DeactivateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i1009.GetHargaUseCase>(
+        () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i240.UpdateHargaUseCase>(
+        () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.factory<_i513.ProductHomeBloc>(
         () => _i513.ProductHomeBloc(gh<_i60.ProductUseCases>()));
+    gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
+          gh<_i1009.GetHargaUseCase>(),
+          gh<_i948.AddHargaUseCase>(),
+          gh<_i240.UpdateHargaUseCase>(),
+          gh<_i989.DeactivateHargaUseCase>(),
+        ));
     return this;
   }
 }
