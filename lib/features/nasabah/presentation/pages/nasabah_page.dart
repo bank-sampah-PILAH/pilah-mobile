@@ -55,7 +55,7 @@ class _NasabahPageBody extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Nasabah',
+                    'Daftar Nasabah',
                     style: AppTextStyle.headline1.copyWith(
                       color: Colors.black87,
                       fontWeight: FontWeight.bold,
