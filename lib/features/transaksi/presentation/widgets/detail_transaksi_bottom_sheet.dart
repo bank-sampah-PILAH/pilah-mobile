@@ -308,7 +308,6 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,14 +328,6 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                           ),
                         ),
                       ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: emeraldPrimary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.attach_money, color: emeraldPrimary),
                     ),
                   ],
                 ),

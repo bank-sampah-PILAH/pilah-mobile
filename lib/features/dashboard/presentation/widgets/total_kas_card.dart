@@ -35,9 +35,7 @@ class TotalKasCard extends StatelessWidget {
         color: AppColors.greenDark,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Stack(
-        children: [
-          Column(
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -67,24 +65,6 @@ class TotalKasCard extends StatelessWidget {
               ),
             ],
           ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.attach_money,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          ),
-        ],
-      ),
         );
       },
     );
