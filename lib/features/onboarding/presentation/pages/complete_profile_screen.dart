@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
@@ -395,10 +396,32 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
-                            hintText: 'Contoh: 0812-3456-7890',
+                            hintText: '812-3456-7890',
                             hintStyle: TextStyle(
                               color: Colors.grey.shade400,
                               fontWeight: FontWeight.normal,
+                            ),
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '+62',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    height: 24,
+                                    width: 1,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ],
+                              ),
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -413,16 +436,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 16),
+                                horizontal: 0, vertical: 16),
                           ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Nomor HP wajib diisi';
                             }
-                            // Basic phone validation (digits only, min 9 chars)
-                            if (!RegExp(r'^[0-9+]+$').hasMatch(value.trim()) ||
-                                value.trim().length < 9) {
-                              return 'Format nomor HP tidak valid';
+                            final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
+                            if (!regex.hasMatch(value)) {
+                              return 'Format nomor tidak valid.';
                             }
                             return null;
                           },
