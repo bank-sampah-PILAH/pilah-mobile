@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
 class EditNasabahBottomSheet extends StatefulWidget {
   final Map<String, dynamic> customerData;
@@ -224,6 +225,11 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    AppNotification.showSuccess(
+                      context,
+                      title: 'Berhasil',
+                      message: 'Data nasabah berhasil diperbarui.',
+                    );
                     context.pop();
                   },
                   style: ElevatedButton.styleFrom(

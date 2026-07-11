@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
@@ -194,6 +195,13 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                       context.read<HargaCubit>().addHarga(newHarga);
                     }
                   }
+                  AppNotification.showSuccess(
+                    context,
+                    title: 'Berhasil',
+                    message: isEditMode 
+                      ? 'Jenis sampah berhasil diperbarui.' 
+                      : 'Jenis sampah baru berhasil ditambahkan.',
+                  );
                   context.pop();
                 },
               ),

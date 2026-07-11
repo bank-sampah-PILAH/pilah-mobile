@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 
@@ -130,6 +131,15 @@ class HargaConfirmationDialog extends StatelessWidget {
                       } else {
                         hargaCubit.deactivateHarga(hargaData.id);
                       }
+
+                      AppNotification.showSuccess(
+                        context,
+                        title: isActivating ? 'Jenis Sampah Aktif' : 'Jenis Sampah Nonaktif',
+                        message: isActivating
+                            ? '${hargaData.name} akan kembali muncul di daftar transaksi.'
+                            : '${hargaData.name} telah disembunyikan dari transaksi.',
+                      );
+                      
                       context.pop(); // close dialog
                       context.pop(); // close bottom sheet
                     },
