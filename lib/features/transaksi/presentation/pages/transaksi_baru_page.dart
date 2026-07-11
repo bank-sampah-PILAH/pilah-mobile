@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -199,6 +200,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                               setState(() {
                                 setoranItems.removeAt(entry.key);
                               });
+                              AppNotification.showSuccess(
+                                context,
+                                title: 'Item Dihapus',
+                                message: 'Item setoran berhasil dihapus.',
+                              );
                             },
                           );
                         }).toList(),
@@ -232,8 +238,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
             icon: Icons.save_outlined,
             onPressed: () {
               if (selectedCustomer == null || setoranItems.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Data nasabah dan item setoran harus diisi.')),
+                AppNotification.showError(
+                  context,
+                  title: 'Gagal Menyimpan',
+                  message: 'Data nasabah dan item setoran harus diisi.',
                 );
                 return;
               }
@@ -277,6 +285,12 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
               final currentTotalSetoran = grandTotal;
               final currentNewBalance = newBalance;
               final currentItemCount = setoranItems.length;
+
+              AppNotification.showSuccess(
+                context,
+                title: 'Transaksi Berhasil',
+                message: 'Transaksi sebesar ${_formatCurrency(grandTotal)} berhasil disimpan.',
+              );
 
               showModalBottomSheet(
                 context: context,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 
 class NasabahConfirmationDialog extends StatelessWidget {
@@ -121,6 +122,15 @@ class NasabahConfirmationDialog extends StatelessWidget {
                       } else {
                         nasabahCubit.deactivateNasabah(customerId);
                       }
+                      
+                      AppNotification.showSuccess(
+                        context,
+                        title: isActivating ? 'Nasabah Aktif' : 'Nasabah Nonaktif',
+                        message: isActivating
+                            ? '$customerName berhasil diaktifkan kembali.'
+                            : '$customerName telah dinonaktifkan.',
+                      );
+                      
                       context.pop(); // Pop Dialog
                       context.pop(); // Pop Bottom Sheet
                     },

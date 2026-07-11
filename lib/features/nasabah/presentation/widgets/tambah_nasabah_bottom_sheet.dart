@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
 class TambahNasabahBottomSheet extends StatelessWidget {
   const TambahNasabahBottomSheet({super.key});
@@ -191,7 +192,14 @@ class TambahNasabahBottomSheet extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    AppNotification.showSuccess(
+                      context,
+                      title: 'Berhasil',
+                      message: 'Nasabah baru berhasil ditambahkan.',
+                    );
+                    context.pop();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.greenDark,
                     padding: const EdgeInsets.symmetric(vertical: 16),
