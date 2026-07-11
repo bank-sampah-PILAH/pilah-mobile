@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -99,48 +100,66 @@ class TambahNasabahBottomSheet extends StatelessWidget {
               // Field 2: NOMOR WHATSAPP
               _buildLabel('NOMOR WHATSAPP'),
               const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          bottomLeft: Radius.circular(12),
-                        ),
-                        border: Border(
-                          right: BorderSide(color: Colors.grey[300]!),
-                        ),
-                      ),
-                      child: Text(
-                        '+62',
-                        style: AppTextStyle.small.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
+              TextFormField(
+                keyboardType: TextInputType.phone,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nomor wajib diisi';
+                  }
+                  final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
+                  if (!regex.hasMatch(value)) {
+                    return 'Format nomor tidak valid.';
+                  }
+                  return null;
+                },
+                decoration: InputDecoration(
+                  hintText: '812-3456-7890',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  filled: true,
+                  fillColor: Colors.white,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  prefixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: TextField(
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                            hintText: '812-3456-7890',
-                            hintStyle: TextStyle(color: Colors.grey[400]),
-                            border: InputBorder.none,
+                        child: Text(
+                          '+62',
+                          style: AppTextStyle.small.copyWith(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      Container(
+                        height: 24,
+                        width: 1,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
                 ),
               ),
               const SizedBox(height: 20),
