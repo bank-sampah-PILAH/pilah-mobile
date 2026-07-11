@@ -132,21 +132,21 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     if (_activeTab == 'Menunggu') {
       return ListView(
         padding: const EdgeInsets.all(20),
-        children: const [
+        children: [
           PendingBankCard(
             bankName: 'Bank Sampah Mekar Jaya',
             regId: 'REG-001',
             picName: 'Siti Rahayu',
             address: 'Jl. Cempaka No.12, Kukusan, Beji, Depok',
-            date: 'Diajukan: 20 Jun 2026',
+            submittedAt: DateTime.now().subtract(const Duration(days: 5)),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           PendingBankCard(
             bankName: 'Bank Sampah Bersih Bersama',
             regId: 'REG-002',
             picName: 'Hendra Gunawan',
             address: 'Jl. Anggrek Blok B3, Sawangan, Depok',
-            date: 'Diajukan: 21 Jun 2026',
+            submittedAt: DateTime.now().subtract(const Duration(days: 4)),
           ),
         ],
       );
@@ -219,7 +219,7 @@ class PendingBankCard extends StatelessWidget {
   final String regId;
   final String picName;
   final String address;
-  final String date;
+  final DateTime submittedAt;
 
   const PendingBankCard({
     super.key,
@@ -227,8 +227,23 @@ class PendingBankCard extends StatelessWidget {
     required this.regId,
     required this.picName,
     required this.address,
-    required this.date,
+    required this.submittedAt,
   });
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    return 'Diajukan: ${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  int _calculateWaitingDays(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final submissionDate = DateTime(date.year, date.month, date.day);
+    return today.difference(submissionDate).inDays;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -316,8 +331,9 @@ class PendingBankCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     _buildInfoRow(Icons.location_on_outlined, address),
                     const SizedBox(height: 6),
-                    _buildInfoRow(Icons.calendar_today_outlined, date),
-                    
+                    _buildInfoRow(Icons.calendar_today_outlined, _formatDate(submittedAt)),
+                    const SizedBox(height: 6),
+                    _buildInfoRow(Icons.access_time_outlined, 'Menunggu: ${_calculateWaitingDays(submittedAt)} hari', isBold: true),
                     const SizedBox(height: 16),
                     
                     // Action Buttons Row
@@ -392,18 +408,19 @@ class PendingBankCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
+  Widget _buildInfoRow(IconData icon, String text, {bool isBold = false}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade500),
+        Icon(icon, size: 16, color: isBold ? Colors.black87 : Colors.grey.shade500),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey.shade600,
+              color: isBold ? Colors.black87 : Colors.grey.shade600,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ),
