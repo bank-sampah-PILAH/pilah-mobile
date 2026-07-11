@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
@@ -163,9 +164,23 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     ),
                     Container(width: 1, height: 48, color: Colors.grey[300]),
                     Expanded(
-                      child: TextField(
+                      child: TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Nomor wajib diisi';
+                          }
+                          final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
+                          if (!regex.hasMatch(value)) {
+                            return 'Format nomor tidak valid.';
+                          }
+                          return null;
+                        },
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
