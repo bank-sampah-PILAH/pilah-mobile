@@ -270,20 +270,34 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
               context.read<TransaksiCubit>().addTransaksi(newTx);
 
+              // Dismiss keyboard to prevent brief layout overflow errors when bottom sheet appears
+              FocusManager.instance.primaryFocus?.unfocus();
+
+              final customerName = selectedCustomer!.name;
+              final currentTotalSetoran = grandTotal;
+              final currentNewBalance = newBalance;
+              final currentItemCount = setoranItems.length;
+
               showModalBottomSheet(
                 context: context,
-                isDismissible: false,
-                enableDrag: false,
+                isDismissible: true,
+                enableDrag: true,
                 useRootNavigator: true,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) => TransaksiBerhasilBottomSheet(
-                  customerName: selectedCustomer!.name,
-                  totalSetoran: grandTotal,
-                  newBalance: newBalance,
-                  itemCount: setoranItems.length,
+                  customerName: customerName,
+                  totalSetoran: currentTotalSetoran,
+                  newBalance: currentNewBalance,
+                  itemCount: currentItemCount,
                 ),
               ).then((_) {
+                if (!mounted) return;
+                
+                // If the page is already popping (e.g. going to dashboard), don't rebuild
+                final route = ModalRoute.of(context);
+                if (route != null && !route.isCurrent) return;
+
                 // Clear state
                 setState(() {
                   selectedCustomer = null;
