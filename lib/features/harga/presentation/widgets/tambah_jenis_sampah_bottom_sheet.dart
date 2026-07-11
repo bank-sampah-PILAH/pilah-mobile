@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
@@ -161,7 +162,7 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                   if (widget.hargaCubit != null) {
                     final priceString = _priceController.text;
                     final priceInt = int.tryParse(priceString) ?? 0;
-                    final priceFormatted = 'Rp $_priceController.text';
+                    final priceFormatted = 'Rp ${_priceController.text}';
                     
                     if (isEditMode) {
                       final updatedHarga = HargaEntity(
@@ -197,17 +198,21 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                 },
               ),
               
-              if (isEditMode) ...[
+              if (isEditMode && widget.initialData != null) ...[
                 const SizedBox(height: 12),
                 CustomOutlinedButton(
-                  title: 'Nonaktifkan Jenis Sampah',
-                  borderColor: errorColor,
-                  textColor: errorColor,
+                  title: widget.initialData!.isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
+                  borderColor: widget.initialData!.isActive ? errorColor : AppColors.greenDark,
+                  textColor: widget.initialData!.isActive ? errorColor : AppColors.greenDark,
                   onPressed: () {
-                    if (widget.initialData != null) {
-                      context.read<HargaCubit>().deactivateHarga(widget.initialData!.id);
-                    }
-                    context.pop();
+                    showDialog(
+                      context: context,
+                      builder: (context) => HargaConfirmationDialog(
+                        isActivating: !widget.initialData!.isActive,
+                        hargaData: widget.initialData!,
+                        hargaCubit: context.read<HargaCubit>(),
+                      ),
+                    );
                   },
                 ),
               ],
