@@ -169,23 +169,17 @@ class ItemSetoranCard extends StatelessWidget {
                     ),
                     Expanded(
                       child: TextFormField(
-                        initialValue: harga > 0 ? harga.toString() : '',
-                        keyboardType: TextInputType.number,
+                        key: ValueKey(harga),
+                        initialValue: harga > 0 ? _formatCurrency(harga).replaceAll('Rp ', '') : '',
+                        readOnly: true,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.only(bottom: 12),
                         ),
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.black87,
+                          color: Colors.grey.shade700,
                           fontWeight: FontWeight.bold,
                         ),
-                        onChanged: (val) {
-                          final newHarga = int.tryParse(val) ?? 0;
-                          onChanged({
-                            ...itemData,
-                            'harga': newHarga,
-                          });
-                        },
                       ),
                     ),
                   ],
