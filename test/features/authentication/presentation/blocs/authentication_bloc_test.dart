@@ -35,7 +35,7 @@ void main() {
     const tUsername = 'test_user';
     const tPassword = 'password123';
     final tAuth = AuthEntity(
-      id: 1,
+      id: '1',
       name: 'Test User',
       email: 'test@example.com',
       photoUrl: '',
