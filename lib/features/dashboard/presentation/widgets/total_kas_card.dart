@@ -57,7 +57,7 @@ class TotalKasCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '↑ 18% dari bulan lalu',
+                'Total saldo nasabah aktif',
                 style: AppTextStyle.small.copyWith(
                   color: AppColors.greenLight,
                   fontSize: 12,

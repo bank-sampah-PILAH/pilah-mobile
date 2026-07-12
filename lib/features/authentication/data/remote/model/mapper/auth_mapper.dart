@@ -11,6 +11,7 @@ class AuthMapper {
       photoUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(response.user.name)}', // Fallback photo since Django doesn't store it
       token: response.accessToken,
       nextStep: response.nextStep,
+      bankSampahNama: response.user.bankSampahNama,
     );
   }
 }
