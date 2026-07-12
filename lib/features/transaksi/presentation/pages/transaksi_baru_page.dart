@@ -26,6 +26,7 @@ class TransaksiBaruPage extends StatefulWidget {
 class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
+  String? _errorMessage;
 
   void _addItem() {
     setState(() {
@@ -233,20 +234,38 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: CustomPrimaryButton(
-            title: 'Simpan Transaksi',
-            icon: Icons.save_outlined,
-            onPressed: () {
-              if (selectedCustomer == null || setoranItems.isEmpty) {
-                AppNotification.showError(
-                  context,
-                  title: 'Gagal Menyimpan',
-                  message: 'Data nasabah dan item setoran harus diisi.',
-                );
-                return;
-              }
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: Colors.red.shade600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              CustomPrimaryButton(
+                title: 'Simpan Transaksi',
+                icon: Icons.save_outlined,
+                onPressed: () {
+                  if (selectedCustomer == null || setoranItems.isEmpty || setoranItems.any((item) => item['jenis'] == null)) {
+                    setState(() {
+                      _errorMessage = 'Data nasabah dan setidaknya 1 item setoran harus diisi lengkap.';
+                    });
+                    return;
+                  }
+                  
+                  setState(() {
+                    _errorMessage = null;
+                  });
 
-              final oldBalanceStr = selectedCustomer!.balance;
+                  final oldBalanceStr = selectedCustomer!.balance;
               final oldBalance = _parseBalance(oldBalanceStr);
               final newBalance = oldBalance + grandTotal;
 
@@ -311,6 +330,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 setState(() {
                   selectedCustomer = null;
                   setoranItems = [];
+                  _errorMessage = null;
                   _addItem();
                 });
               });
