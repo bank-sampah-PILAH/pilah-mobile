@@ -52,6 +52,7 @@ class TransactionListView extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: _buildTransactionCard(
                       context: context,
+                      id: t.id,
                       initials: t.initials,
                       avatarColor: t.avatarColor,
                       textColor: t.textColor,
@@ -93,6 +94,7 @@ class TransactionListView extends StatelessWidget {
 
   Widget _buildTransactionCard({
     required BuildContext context,
+    required String id,
     required String initials,
     required Color avatarColor,
     required Color textColor,
@@ -113,6 +115,7 @@ class TransactionListView extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (context) => DetailTransaksiBottomSheet(
             transactionData: {
+              'id': id,
               'initials': initials,
               'avatarColor': avatarColor,
               'textColor': textColor,
