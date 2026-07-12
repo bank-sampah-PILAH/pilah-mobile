@@ -51,6 +51,7 @@ class HargaModel extends HargaEntity {
 
     return HargaModel(
       id: json['id'] as String? ?? '',
+      kodeSampah: json['kode'] as String? ?? '',
       name: json['nama_sampah'] as String? ?? '',
       price: price,
       priceFormatted: 'Rp $price',
