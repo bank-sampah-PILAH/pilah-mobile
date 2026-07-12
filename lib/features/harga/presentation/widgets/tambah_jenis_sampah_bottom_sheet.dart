@@ -256,6 +256,7 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
           isActive: widget.initialData!.isActive,
         );
         cubit.updateHarga(updatedHarga);
+        context.pop();
         AppNotification.showSuccess(context, title: 'Berhasil', message: 'Jenis sampah berhasil diperbarui.');
       } else {
         final newHarga = HargaEntity(
@@ -272,10 +273,9 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
           isActive: true,
         );
         cubit.addHarga(newHarga);
+        context.pop();
         AppNotification.showSuccess(context, title: 'Berhasil', message: 'Jenis sampah baru berhasil ditambahkan.');
       }
-      
-      context.pop();
     }
   }
 

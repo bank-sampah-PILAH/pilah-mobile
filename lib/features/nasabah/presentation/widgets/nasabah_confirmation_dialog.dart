@@ -123,6 +123,9 @@ class NasabahConfirmationDialog extends StatelessWidget {
                         nasabahCubit.deactivateNasabah(customerId);
                       }
                       
+                      context.pop(); // Pop Dialog
+                      context.pop(); // Pop Bottom Sheet
+                      
                       AppNotification.showSuccess(
                         context,
                         title: isActivating ? 'Nasabah Aktif' : 'Nasabah Nonaktif',
@@ -130,9 +133,6 @@ class NasabahConfirmationDialog extends StatelessWidget {
                             ? '$customerName berhasil diaktifkan kembali.'
                             : '$customerName telah dinonaktifkan.',
                       );
-                      
-                      context.pop(); // Pop Dialog
-                      context.pop(); // Pop Bottom Sheet
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isActivating ? emeraldPrimary : errorColor,
