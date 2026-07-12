@@ -63,19 +63,24 @@ class _NasabahPageBody extends StatelessWidget {
                       fontSize: 24,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenLight,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '4 aktif',
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.greenDark,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  BlocBuilder<NasabahCubit, NasabahState>(
+                    builder: (context, state) {
+                      final activeCount = context.read<NasabahCubit>().activeCount;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$activeCount aktif',
+                          style: AppTextStyle.small.copyWith(
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -149,6 +154,11 @@ class _NasabahPageBody extends StatelessWidget {
                             phone: customer.phone,
                             balance: customer.balance,
                             id: customer.id,
+                            idNasabah: customer.idNasabah,
+                            jenisKelamin: customer.jenisKelamin,
+                            tanggalLahir: customer.tanggalLahir,
+                            tanggalDaftar: customer.tanggalDaftar,
+                            address: customer.address,
                             nasabahCubit: context.read<NasabahCubit>(),
                           );
                         },

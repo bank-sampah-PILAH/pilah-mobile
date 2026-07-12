@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
-class DetailNasabahBottomSheet extends StatelessWidget {
+class DetailNasabahBottomSheet extends StatefulWidget {
   final Map<String, dynamic> customerData;
   final NasabahCubit? nasabahCubit;
 
@@ -22,22 +23,37 @@ class DetailNasabahBottomSheet extends StatelessWidget {
   static const Color errorColor = Color(0xFFBA1A1A);
 
   @override
+  State<DetailNasabahBottomSheet> createState() => _DetailNasabahBottomSheetState();
+}
+
+class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
+  Future<NasabahRingkasan?>? _ringkasanFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final id = widget.customerData['id']?.toString();
+    if (id != null && id.isNotEmpty && widget.nasabahCubit != null) {
+      _ringkasanFuture = widget.nasabahCubit!.fetchRingkasan(id);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final customerData = widget.customerData;
     final bool isActive = customerData['isActive'] ?? true;
     final String initials = customerData['initials'] ?? 'NN';
     final String name = customerData['name'] ?? 'Unknown';
     final String phone = customerData['phone'] ?? '-';
     final String balance = customerData['balance'] ?? 'Rp 0';
-    
-    // New fields
+
     final String idNasabah = customerData['idNasabah'] ?? 'NAS-0000';
     final String jenisKelamin = customerData['jenisKelamin'] ?? '-';
     final String tanggalLahir = customerData['tanggalLahir'] ?? '-';
     final String address = customerData['address'] ?? '-';
-    
-    // Mocked fields that don't exist yet in entity
-    final String tanggalDaftar = '3 Jan 2025';
-    final String ringkasanTrx = 'Total: 15 Trx | 120 kg';
+    final String tanggalDaftar = (customerData['tanggalDaftar'] as String?)?.isNotEmpty == true
+        ? customerData['tanggalDaftar']
+        : '-';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -74,14 +90,14 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: isActive ? mintTint : Colors.red[50],
+                      color: isActive ? DetailNasabahBottomSheet.mintTint : Colors.red[50],
                       borderRadius: BorderRadius.circular(16),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       initials,
                       style: AppTextStyle.headline1.copyWith(
-                        color: isActive ? emeraldPrimary : Colors.red[400],
+                        color: isActive ? DetailNasabahBottomSheet.emeraldPrimary : Colors.red[400],
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
                       ),
@@ -138,9 +154,9 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                       jenisKelamin,
                       isBold: true,
                       icon: Icon(
-                        jenisKelamin.toLowerCase() == 'perempuan' 
-                          ? Icons.female 
-                          : Icons.male,
+                        jenisKelamin.toLowerCase() == 'perempuan'
+                            ? Icons.female
+                            : Icons.male,
                         size: 16,
                         color: Colors.grey[600],
                       ),
@@ -154,7 +170,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                       'Saldo',
                       balance,
                       isBold: true,
-                      valueColor: emeraldPrimary,
+                      valueColor: DetailNasabahBottomSheet.emeraldPrimary,
                     ),
                     const SizedBox(height: 16),
                     _buildInfoRow(
@@ -164,13 +180,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                       icon: Icon(Icons.calendar_month, size: 16, color: Colors.indigo[300]),
                     ),
                     const SizedBox(height: 16),
-                    _buildInfoRow(
-                      'Ringkasan Trx',
-                      ringkasanTrx,
-                      isBold: true,
-                      valueColor: AppColors.statPurple,
-                      icon: Icon(Icons.bar_chart, size: 16, color: AppColors.statPurple),
-                    ),
+                    _buildRingkasanRow(),
                     const SizedBox(height: 20),
                     Text(
                       'Alamat',
@@ -211,8 +221,8 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit Data'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: emeraldPrimary,
-                        side: const BorderSide(color: emeraldPrimary),
+                        foregroundColor: DetailNasabahBottomSheet.emeraldPrimary,
+                        side: const BorderSide(color: DetailNasabahBottomSheet.emeraldPrimary),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -228,22 +238,22 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        if (nasabahCubit == null) return;
-                        
+                        if (widget.nasabahCubit == null) return;
+
                         showDialog(
                           context: context,
                           builder: (context) => NasabahConfirmationDialog(
                             isActivating: !isActive,
                             customerName: name,
                             customerId: customerData['id'] ?? idNasabah,
-                            nasabahCubit: nasabahCubit!,
+                            nasabahCubit: widget.nasabahCubit!,
                           ),
                         );
                       },
                       icon: Icon(isActive ? Icons.block : Icons.check_circle_outline, size: 18, color: Colors.white),
                       label: Text(isActive ? 'Nonaktifkan' : 'Aktifkan'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isActive ? errorColor : emeraldPrimary,
+                        backgroundColor: isActive ? DetailNasabahBottomSheet.errorColor : DetailNasabahBottomSheet.emeraldPrimary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -263,6 +273,32 @@ class DetailNasabahBottomSheet extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRingkasanRow() {
+    return FutureBuilder<NasabahRingkasan?>(
+      future: _ringkasanFuture,
+      builder: (context, snapshot) {
+        String value;
+        if (_ringkasanFuture == null) {
+          value = '-';
+        } else if (snapshot.connectionState == ConnectionState.waiting) {
+          value = 'Memuat...';
+        } else if (snapshot.hasData && snapshot.data != null) {
+          final r = snapshot.data!;
+          value = '${r.jumlahTransaksi} Trx | ${r.totalKg} kg';
+        } else {
+          value = '-';
+        }
+        return _buildInfoRow(
+          'Ringkasan Trx',
+          value,
+          isBold: true,
+          valueColor: AppColors.statPurple,
+          icon: Icon(Icons.bar_chart, size: 16, color: AppColors.statPurple),
+        );
+      },
     );
   }
 
