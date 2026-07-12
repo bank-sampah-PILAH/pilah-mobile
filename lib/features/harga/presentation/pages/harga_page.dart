@@ -22,10 +22,21 @@ class HargaPage extends StatelessWidget {
   }
 }
 
-class _HargaPageBody extends StatelessWidget {
+class _HargaPageBody extends StatefulWidget {
   const _HargaPageBody();
 
+  @override
+  State<_HargaPageBody> createState() => _HargaPageBodyState();
+}
+
+class _HargaPageBodyState extends State<_HargaPageBody> {
   static const Color emeraldPrimary = Color(0xFF006D44);
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<HargaCubit>().loadHarga();
+  }
 
   @override
   Widget build(BuildContext context) {
