@@ -27,6 +27,7 @@ class HargaRepositoryImpl implements HargaRepository {
     try {
       final model = HargaModel(
         id: harga.id,
+        kodeSampah: harga.kodeSampah,
         name: harga.name,
         price: harga.price,
         priceFormatted: harga.priceFormatted,
@@ -49,6 +50,7 @@ class HargaRepositoryImpl implements HargaRepository {
     try {
       final model = HargaModel(
         id: harga.id,
+        kodeSampah: harga.kodeSampah,
         name: harga.name,
         price: harga.price,
         priceFormatted: harga.priceFormatted,

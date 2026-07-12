@@ -8,6 +8,7 @@ part 'harga_model.g.dart';
 class HargaModel extends HargaEntity {
   HargaModel({
     required super.id,
+    required super.kodeSampah,
     required super.name,
     required super.price,
     required super.priceFormatted,
