@@ -26,6 +26,7 @@ class TransaksiBaruPage extends StatefulWidget {
 class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
+  bool _hasSubmitted = false;
   String? _errorMessage;
 
   void _addItem() {
@@ -113,14 +114,16 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                         letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     PilihNasabahSection(
                       selectedCustomer: selectedCustomer,
-                      onCustomerSelected: (result) {
+                      onCustomerSelected: (customer) {
                         setState(() {
-                          selectedCustomer = result;
+                          selectedCustomer = customer;
                         });
                       },
+                      hasError: _hasSubmitted && selectedCustomer == null,
+                      errorText: 'Nasabah harus dipilih',
                     ),
                     const SizedBox(height: 24),
 
@@ -188,18 +191,20 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                       )
                     else
                       Column(
-                        children: setoranItems.asMap().entries.map((entry) {
+                        children: List.generate(setoranItems.length, (index) {
                           return ItemSetoranCard(
-                            index: entry.key,
-                            itemData: entry.value,
-                            onChanged: (updated) {
+                            index: index,
+                            itemData: setoranItems[index],
+                            hasError: _hasSubmitted && setoranItems[index]['jenis'] == null,
+                            errorText: 'Pilih jenis sampah',
+                            onChanged: (updatedItem) {
                               setState(() {
-                                setoranItems[entry.key] = updated;
+                                setoranItems[index] = updatedItem;
                               });
                             },
                             onDelete: () {
                               setState(() {
-                                setoranItems.removeAt(entry.key);
+                                setoranItems.removeAt(index);
                               });
                               AppNotification.showSuccess(
                                 context,
@@ -254,9 +259,13 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 title: 'Simpan Transaksi',
                 icon: Icons.save_outlined,
                 onPressed: () {
+                  setState(() {
+                    _hasSubmitted = true;
+                  });
+                  
                   if (selectedCustomer == null || setoranItems.isEmpty || setoranItems.any((item) => item['jenis'] == null)) {
                     setState(() {
-                      _errorMessage = 'Data nasabah dan setidaknya 1 item setoran harus diisi lengkap.';
+                      _errorMessage = 'Silakan lengkapi data yang ditandai merah.';
                     });
                     return;
                   }
@@ -331,13 +340,16 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                   selectedCustomer = null;
                   setoranItems = [];
                   _errorMessage = null;
+                  _hasSubmitted = false;
                   _addItem();
                 });
               });
             },
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
