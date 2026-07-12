@@ -10,6 +10,8 @@ class ItemSetoranCard extends StatelessWidget {
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
+  final bool hasError;
+  final String? errorText;
 
   const ItemSetoranCard({
     super.key,
@@ -17,6 +19,8 @@ class ItemSetoranCard extends StatelessWidget {
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
+    this.hasError = false,
+    this.errorText,
   });
 
   static const Color emeraldPrimary = Color(0xFF006D44);
@@ -65,7 +69,7 @@ class ItemSetoranCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(color: hasError ? errorColor : Colors.grey[200]!),
                   ),
                   child: BlocBuilder<HargaCubit, HargaState>(
                     builder: (context, state) {
@@ -139,6 +143,13 @@ class ItemSetoranCard extends StatelessWidget {
               ),
             ],
           ),
+          if (hasError && errorText != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              errorText!,
+              style: AppTextStyle.small.copyWith(color: errorColor, fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Row 2: Harga
