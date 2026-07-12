@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 
 class DetailTransaksiBottomSheet extends StatefulWidget {
   final Map<String, dynamic> transactionData;
@@ -23,11 +26,27 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
 
   String currentWaStatus = '';
   bool isLoadingWa = false;
+  TransaksiDetailEntity? _detail;
+  bool _isLoadingDetail = false;
 
   @override
   void initState() {
     super.initState();
     currentWaStatus = widget.transactionData['waStatus'] ?? 'sent';
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    final id = widget.transactionData['id']?.toString();
+    if (id == null || id.isEmpty) return;
+    setState(() => _isLoadingDetail = true);
+    final detail = await context.read<TransaksiCubit>().fetchTransaksiDetail(id);
+    if (!mounted) return;
+    setState(() {
+      _detail = detail;
+      _isLoadingDetail = false;
+      if (detail != null) currentWaStatus = detail.waStatus;
+    });
   }
 
   Future<void> _retryWaNotification() async {
@@ -50,9 +69,21 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
     final Color textColor = widget.transactionData['textColor'] ?? Colors.grey[600]!;
     final String name = widget.transactionData['name'] ?? 'Unknown';
     final String time = widget.transactionData['time'] ?? 'Hari ini';
-    final String amount = widget.transactionData['amount'] ?? 'Rp 0';
-    final String balance = widget.transactionData['balance'] ?? 'Rp 141.100'; // Default fallback
-    final List<Map<String, dynamic>> items = widget.transactionData['items'] ?? [];
+    final String amount = _detail?.amountFormatted ?? widget.transactionData['amount'] ?? 'Rp 0';
+    final String balance = _detail?.balanceFormatted ??
+        ((widget.transactionData['balance'] as String?)?.isNotEmpty == true
+            ? widget.transactionData['balance']
+            : '-');
+    final List<Map<String, dynamic>> items = _detail != null
+        ? _detail!.items
+            .map((i) => {
+                  'jenis': i.jenis,
+                  'berat': i.berat,
+                  'harga': i.harga,
+                  'subtotal': i.subtotal,
+                })
+            .toList()
+        : ((widget.transactionData['items'] as List?)?.cast<Map<String, dynamic>>() ?? []);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -223,7 +254,20 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                     const SizedBox(height: 12),
                     const Divider(height: 1, color: Color(0xFFE5E7EB)),
                     const SizedBox(height: 12),
-                    
+
+                    // Loading indicator while fetching the item breakdown
+                    if (_isLoadingDetail && items.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Center(
+                          child: SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+
                     // Table Items
                     ...items.map((item) => Padding(
                       padding: const EdgeInsets.only(bottom: 12.0),

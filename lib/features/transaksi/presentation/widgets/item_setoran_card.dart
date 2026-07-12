@@ -118,6 +118,7 @@ class ItemSetoranCard extends StatelessWidget {
                               onChanged({
                                 ...itemData,
                                 'jenis': value,
+                                'jenis_sampah_id': selected.id,
                                 'harga': selected.price,
                               });
                             }

@@ -1,13 +1,16 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
 @lazySingleton
 class TransaksiCubit extends Cubit<TransaksiState> {
   final GetTransaksiUseCase getTransaksiUseCase;
+  final GetTransaksiDetailUseCase getTransaksiDetailUseCase;
   final AddTransaksiUseCase addTransaksiUseCase;
 
   List<TransaksiGroupEntity> _allTransaksi = [];
@@ -16,6 +19,7 @@ class TransaksiCubit extends Cubit<TransaksiState> {
 
   TransaksiCubit(
     this.getTransaksiUseCase,
+    this.getTransaksiDetailUseCase,
     this.addTransaksiUseCase,
   ) : super(TransaksiInitial());
 
@@ -26,7 +30,7 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     emit(TransaksiLoading());
     final result = await getTransaksiUseCase.execute();
     result.fold(
-      (failure) => emit(TransaksiError(failure.message ?? 'Unknown Error')),
+      (failure) => emit(TransaksiError(failure.displayMessage)),
       (data) {
         _allTransaksi = data;
         _emitFiltered();
@@ -44,12 +48,25 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     _emitFiltered();
   }
 
-  Future<void> addTransaksi(TransaksiEntity transaksi) async {
-    final result = await addTransaksiUseCase.execute(transaksi);
-    result.fold(
-      (failure) => emit(TransaksiError(failure.message ?? 'Unknown Error')),
-      (_) => loadTransaksi(),
+  /// Creates a setoran transaction. On success the list is reloaded and the
+  /// backend-authoritative [TransaksiCreated] is returned; otherwise the
+  /// [NetworkException] is returned so the page can show the error.
+  Future<({TransaksiCreated? created, NetworkException? error})> addTransaksi(
+    TransaksiRequest request,
+  ) async {
+    final result = await addTransaksiUseCase.execute(request);
+    return result.fold(
+      (failure) => (created: null, error: failure),
+      (created) {
+        loadTransaksi();
+        return (created: created, error: null);
+      },
     );
+  }
+
+  Future<TransaksiDetailEntity?> fetchTransaksiDetail(String id) async {
+    final result = await getTransaksiDetailUseCase.execute(id);
+    return result.fold((_) => null, (data) => data);
   }
 
   void _emitFiltered() {

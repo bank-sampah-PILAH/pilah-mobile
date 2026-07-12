@@ -96,14 +96,18 @@ import '../features/profile/domain/repository/profile_repository.dart' as _i928;
 import '../features/profile/domain/use_cases/profile_use_cases.dart' as _i483;
 import '../features/profile/presentation/blocs/authentication_bloc.dart'
     as _i957;
-import '../features/transaksi/data/datasources/transaksi_local_data_source.dart'
-    as _i430;
+import '../features/transaksi/data/datasources/transaksi_remote_data_source.dart'
+    as _i881;
+import '../features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart'
+    as _i659;
 import '../features/transaksi/data/repositories/transaksi_repository_impl.dart'
     as _i1041;
 import '../features/transaksi/domain/repositories/transaksi_repository.dart'
     as _i1031;
 import '../features/transaksi/domain/use_cases/add_transaksi_usecase.dart'
     as _i839;
+import '../features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart'
+    as _i218;
 import '../features/transaksi/domain/use_cases/get_transaksi_usecase.dart'
     as _i383;
 import '../features/transaksi/presentation/cubit/transaksi_cubit.dart' as _i474;
@@ -135,30 +139,18 @@ extension GetItInjectableX on _i174.GetIt {
       () => storageModule.sharedPreferences,
       instanceName: 'shared_preferences',
     );
-    gh.lazySingleton<_i430.TransaksiLocalDataSource>(
-        () => _i430.TransaksiLocalDataSourceImpl());
     gh.lazySingleton<_i124.SecureDatabase>(
         () => const _i124.SecureDatabaseImpl());
     gh.lazySingleton<_i112.HargaLocalDataSource>(
         () => _i112.HargaLocalDataSourceImpl());
-    gh.lazySingleton<_i1031.TransaksiRepository>(() =>
-        _i1041.TransaksiRepositoryImpl(gh<_i430.TransaksiLocalDataSource>()));
     gh.factory<_i119.AppEnvironment>(
       () => _i119.ProdEnvironment(),
       registerFor: {_prod},
     );
-    gh.lazySingleton<_i839.AddTransaksiUseCase>(
-        () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
-    gh.lazySingleton<_i383.GetTransaksiUseCase>(
-        () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i936.NetworkUtils>(
         () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
     gh.lazySingleton<_i1024.ProfileLocalDataSources>(
         () => _i1024.ProfileLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
-    gh.lazySingleton<_i474.TransaksiCubit>(() => _i474.TransaksiCubit(
-          gh<_i383.GetTransaksiUseCase>(),
-          gh<_i839.AddTransaksiUseCase>(),
-        ));
     gh.lazySingleton<_i981.AuthLocalDataSources>(
         () => _i981.AuthLocalDataSourcesImpl(
               gh<_i124.SecureDatabase>(),
@@ -170,6 +162,8 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i174.ProductRemoteDataSources>(
         () => _i174.ProductRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i881.TransaksiRemoteDataSource>(
+        () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i622.ProfileRemoteDataSources>(
         () => _i622.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i438.OnboardingRemoteDataSources>(
@@ -206,6 +200,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i698.OnboardingInteractor(gh<_i998.OnboardingRepository>()));
     gh.factory<_i221.OnboardingBloc>(
         () => _i221.OnboardingBloc(gh<_i1022.OnboardingUseCases>()));
+    gh.lazySingleton<_i1031.TransaksiRepository>(() =>
+        _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
     gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
@@ -244,9 +240,16 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i449.ActivateNasabahUseCase>(),
           gh<_i850.DeactivateNasabahUseCase>(),
         ));
-    gh.lazySingleton<_i932.DashboardCubit>(() => _i932.DashboardCubit(
-          gh<_i958.NasabahCubit>(),
-          gh<_i474.TransaksiCubit>(),
+    gh.lazySingleton<_i839.AddTransaksiUseCase>(
+        () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i383.GetTransaksiUseCase>(
+        () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i218.GetTransaksiDetailUseCase>(() =>
+        _i218.GetTransaksiDetailUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i474.TransaksiCubit>(() => _i474.TransaksiCubit(
+          gh<_i383.GetTransaksiUseCase>(),
+          gh<_i218.GetTransaksiDetailUseCase>(),
+          gh<_i839.AddTransaksiUseCase>(),
         ));
     gh.factory<_i513.ProductHomeBloc>(
         () => _i513.ProductHomeBloc(gh<_i60.ProductUseCases>()));
@@ -255,6 +258,10 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i948.AddHargaUseCase>(),
           gh<_i240.UpdateHargaUseCase>(),
           gh<_i989.DeactivateHargaUseCase>(),
+        ));
+    gh.lazySingleton<_i932.DashboardCubit>(() => _i932.DashboardCubit(
+          gh<_i958.NasabahCubit>(),
+          gh<_i474.TransaksiCubit>(),
         ));
     return this;
   }

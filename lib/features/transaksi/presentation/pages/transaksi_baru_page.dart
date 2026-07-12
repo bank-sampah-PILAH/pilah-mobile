@@ -27,25 +27,79 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
+  bool _isSaving = false;
 
   void _addItem() {
     setState(() {
-      setoranItems.add({'jenis': null, 'harga': 0, 'berat': 1.0});
+      setoranItems.add({'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': 1.0});
     });
   }
 
-  String _formatCurrency(int value) {
-    String str = value.toString();
-    String result = '';
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      result = str[i] + result;
-      count++;
-      if (count % 3 == 0 && i != 0) {
-        result = '.$result';
-      }
+  Future<void> _handleSubmit() async {
+    setState(() => _hasSubmitted = true);
+
+    if (selectedCustomer == null ||
+        setoranItems.isEmpty ||
+        setoranItems.any((item) => item['jenis_sampah_id'] == null)) {
+      return;
     }
-    return 'Rp $result';
+
+    final request = TransaksiRequest(
+      nasabahId: selectedCustomer!.id,
+      items: setoranItems
+          .map((item) => ItemSetoranRequest(
+                jenisSampahId: item['jenis_sampah_id'] as String,
+                berat: (item['berat'] as num?)?.toDouble() ?? 0,
+              ))
+          .toList(),
+    );
+
+    final cubit = context.read<TransaksiCubit>();
+    final customerName = selectedCustomer!.name;
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    setState(() => _isSaving = true);
+    final result = await cubit.addTransaksi(request);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (result.error != null) {
+      AppNotification.showError(
+        context,
+        title: 'Gagal Menyimpan',
+        message: result.error!.displayMessage,
+      );
+      return;
+    }
+
+    final created = result.created!;
+    showModalBottomSheet(
+      context: context,
+      isDismissible: true,
+      enableDrag: true,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TransaksiBerhasilBottomSheet(
+        customerName: customerName,
+        totalSetoran: created.totalNilai,
+        newBalance: created.saldoSetelah,
+        itemCount: created.itemCount,
+      ),
+    ).then((_) {
+      if (!mounted) return;
+
+      // If the page is already popping (e.g. going to dashboard), don't rebuild
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) return;
+
+      setState(() {
+        selectedCustomer = null;
+        setoranItems = [];
+        _hasSubmitted = false;
+        _addItem();
+      });
+    });
   }
 
   int get grandTotal {
@@ -54,11 +108,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       final berat = item['berat'] as num? ?? 1.0;
       return sum + (harga * berat).round();
     });
-  }
-
-  int _parseBalance(String balanceStr) {
-    final clean = balanceStr.replaceAll(RegExp(r'[^0-9]'), '');
-    return int.tryParse(clean) ?? 0;
   }
 
   @override
@@ -262,88 +311,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               CustomPrimaryButton(
-                title: 'Simpan Transaksi',
+                title: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
                 icon: Icons.save_outlined,
-                onPressed: () {
-                  setState(() {
-                    _hasSubmitted = true;
-                  });
-                  
-                  if (selectedCustomer == null || setoranItems.isEmpty || setoranItems.any((item) => item['jenis'] == null)) {
-                    return;
-                  }
-
-                  final oldBalanceStr = selectedCustomer!.balance;
-              final oldBalance = _parseBalance(oldBalanceStr);
-              final newBalance = oldBalance + grandTotal;
-
-              // Extract items
-              final formattedItems = setoranItems.map((item) {
-                final harga = item['harga'] as int? ?? 0;
-                final berat = item['berat'] as int? ?? 1;
-                return ItemSetoranEntity(
-                  jenis: item['jenis'] ?? 'Tidak Diketahui',
-                  berat: '$berat kg',
-                  harga: _formatCurrency(harga),
-                  subtotal: _formatCurrency(harga * berat),
-                );
-              }).toList();
-
-              // Create transaction entity
-              final newTx = TransaksiEntity(
-                initials: selectedCustomer!.initials,
-                avatarColor: selectedCustomer!.avatarColor,
-                textColor: selectedCustomer!.textColor,
-                name: selectedCustomer!.name,
-                subtitle: '${formattedItems.first.jenis} • ${formattedItems.first.berat}',
-                amount: '+${_formatCurrency(grandTotal)}',
-                isWaSuccess: true,
-                time: 'Sekarang',
-                balance: _formatCurrency(newBalance),
-                items: formattedItems,
-              );
-
-              context.read<TransaksiCubit>().addTransaksi(newTx);
-
-              // Dismiss keyboard to prevent brief layout overflow errors when bottom sheet appears
-              FocusManager.instance.primaryFocus?.unfocus();
-
-              final customerName = selectedCustomer!.name;
-              final currentTotalSetoran = grandTotal;
-              final currentNewBalance = newBalance;
-              final currentItemCount = setoranItems.length;
-
-
-              showModalBottomSheet(
-                context: context,
-                isDismissible: true,
-                enableDrag: true,
-                useRootNavigator: true,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => TransaksiBerhasilBottomSheet(
-                  customerName: customerName,
-                  totalSetoran: currentTotalSetoran,
-                  newBalance: currentNewBalance,
-                  itemCount: currentItemCount,
-                ),
-              ).then((_) {
-                if (!mounted) return;
-                
-                // If the page is already popping (e.g. going to dashboard), don't rebuild
-                final route = ModalRoute.of(context);
-                if (route != null && !route.isCurrent) return;
-
-                // Clear state
-                setState(() {
-                  selectedCustomer = null;
-                  setoranItems = [];
-                  _hasSubmitted = false;
-                  _addItem();
-                });
-              });
-            },
-          ),
+                onPressed: _isSaving ? null : _handleSubmit,
+              ),
         ],
       ),
     ),

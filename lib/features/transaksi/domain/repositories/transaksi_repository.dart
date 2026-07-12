@@ -4,5 +4,6 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity
 
 abstract class TransaksiRepository {
   Future<Either<NetworkException, List<TransaksiGroupEntity>>> getTransaksi();
-  Future<Either<NetworkException, void>> addTransaksi(TransaksiEntity transaksi);
+  Future<Either<NetworkException, TransaksiCreated>> addTransaksi(TransaksiRequest request);
+  Future<Either<NetworkException, TransaksiDetailEntity>> getTransaksiDetail(String id);
 }
