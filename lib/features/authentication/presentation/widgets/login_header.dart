@@ -42,36 +42,6 @@ class LoginHeader extends StatelessWidget {
             fontSize: 14,
           ),
         ),
-        const SizedBox(height: 16),
-        // Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.greenLight,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: AppColors.greenDark,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Bank Sampah BTH, Depok',
-                style: AppTextStyle.small.copyWith(
-                  color: AppColors.greenDark,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

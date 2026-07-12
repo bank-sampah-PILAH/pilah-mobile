@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'dart:io';
@@ -66,6 +67,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   Widget _buildFormField({
     required String label,
     required Widget child,
+    String? description,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,6 +88,16 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
             ],
           ),
         ),
+        if (description != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         child,
         const SizedBox(height: 20),
@@ -360,9 +372,16 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 0, vertical: 16),
                           ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Nomor Telepon wajib diisi';
+                            }
+                            final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
+                            if (!regex.hasMatch(value)) {
+                              return 'Format nomor tidak valid.';
                             }
                             return null;
                           },
@@ -372,6 +391,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                       // Field 4: Foto Kegiatan
                       _buildFormField(
                         label: 'FOTO KEGIATAN',
+                        description: 'Upload foto kegiatan penimbangan sampah yang valid',
                         child: InkWell(
                           onTap: _pickImage,
                           borderRadius: BorderRadius.circular(12),

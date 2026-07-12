@@ -184,13 +184,14 @@ class PendingApprovalScreen extends StatelessWidget {
                     _buildStep(
                       isCompleted: false,
                       isLast: true,
-                      title: 'Ditinjau Admin',
-                      subtitle: 'Tahap saat ini',
+                      title: 'Ditinjau Admin (Tahap Saat Ini)',
+                      subtitle: 'Proses verifikasi membutuhkan waktu estimasi 5 hari kerja',
                     ),
                   ],
                 ),
               ),
             ),
+
 
             const SizedBox(height: 24),
 

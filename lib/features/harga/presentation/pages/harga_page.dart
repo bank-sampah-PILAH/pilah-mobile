@@ -34,6 +34,7 @@ class _HargaPageBody extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
+        heroTag: 'harga_page_fab',
         onPressed: () {
           showModalBottomSheet(
             context: context,

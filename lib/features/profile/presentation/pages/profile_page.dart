@@ -64,14 +64,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                       fontSize: 18,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.settings_outlined, color: Colors.grey[800], size: 20),
-                  ),
+                  const SizedBox(width: 36),
                 ],
               ),
             ),
@@ -225,13 +218,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                           fontSize: 18,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'sari@banksampahbth.id',
-                        style: AppTextStyle.small.copyWith(
-                          color: Colors.white70,
-                        ),
-                      ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -250,14 +236,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.edit_square, color: Colors.white, size: 20),
-                ),
+
               ],
             ),
           ),
@@ -497,7 +476,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 _buildMemberRow(
                   initials: 'AF',
                   name: 'Ahmad Fadil',
-                  email: 'ahmad.fadil@banksampahibth.id',
                   avatarColor: AppColors.greenDark,
                   isCurrentUser: true,
                 ),
@@ -505,7 +483,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 _buildMemberRow(
                   initials: 'RP',
                   name: 'Rina Puspita',
-                  email: 'rina.puspita@banksampahibth.id',
                   avatarColor: const Color(0xFF7C3AED),
                   isCurrentUser: false,
                 ),
@@ -513,7 +490,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 _buildMemberRow(
                   initials: 'DS',
                   name: 'Dimas Saputra',
-                  email: 'dimas.saputra@banksampahibth.id',
                   avatarColor: const Color(0xFFD4A843),
                   isCurrentUser: false,
                 ),
@@ -528,7 +504,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   Widget _buildMemberRow({
     required String initials,
     required String name,
-    required String email,
     required Color avatarColor,
     required bool isCurrentUser,
   }) {
@@ -584,14 +559,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                       ),
                     ],
                   ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  email,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

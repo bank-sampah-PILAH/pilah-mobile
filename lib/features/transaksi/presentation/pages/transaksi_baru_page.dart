@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -25,10 +26,11 @@ class TransaksiBaruPage extends StatefulWidget {
 class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
+  bool _hasSubmitted = false;
 
   void _addItem() {
     setState(() {
-      setoranItems.add({'jenis': null, 'harga': 0, 'berat': 1});
+      setoranItems.add({'jenis': null, 'harga': 0, 'berat': 1.0});
     });
   }
 
@@ -49,8 +51,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   int get grandTotal {
     return setoranItems.fold(0, (sum, item) {
       final harga = item['harga'] as int? ?? 0;
-      final berat = item['berat'] as int? ?? 1;
-      return sum + (harga * berat);
+      final berat = item['berat'] as num? ?? 1.0;
+      return sum + (harga * berat).round();
     });
   }
 
@@ -111,14 +113,16 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                         letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     PilihNasabahSection(
                       selectedCustomer: selectedCustomer,
-                      onCustomerSelected: (result) {
+                      onCustomerSelected: (customer) {
                         setState(() {
-                          selectedCustomer = result;
+                          selectedCustomer = customer;
                         });
                       },
+                      hasError: _hasSubmitted && selectedCustomer == null,
+                      errorText: 'Nasabah harus dipilih',
                     ),
                     const SizedBox(height: 24),
 
@@ -146,59 +150,86 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
                     // Items or Empty State
                     if (setoranItems.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[300]!, width: 1.5),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Icon(Icons.add, color: Colors.grey[400], size: 24),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Belum Ada Item Setoran',
-                              style: AppTextStyle.title1.copyWith(
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: (_hasSubmitted && setoranItems.isEmpty) ? const Color(0xFFDC2626) : Colors.grey[300]!, 
+                                width: 1.5
                               ),
                             ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Icon(Icons.add, color: Colors.grey[400], size: 24),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum Ada Item Setoran',
+                                  style: AppTextStyle.title1.copyWith(
+                                    color: Colors.grey[500],
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap tombol di bawah untuk menambah item.',
+                                  style: AppTextStyle.small.copyWith(
+                                    color: Colors.grey[400],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_hasSubmitted && setoranItems.isEmpty) ...[
                             const SizedBox(height: 8),
-                            Text(
-                              'Tap tombol di bawah untuk menambah item.',
-                              style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[400],
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Text(
+                                'Daftar setoran tidak boleh kosong',
+                                style: AppTextStyle.small.copyWith(
+                                  color: const Color(0xFFDC2626),
+                                ),
                               ),
-                              textAlign: TextAlign.center,
                             ),
                           ],
-                        ),
+                        ],
                       )
                     else
                       Column(
-                        children: setoranItems.asMap().entries.map((entry) {
+                        children: List.generate(setoranItems.length, (index) {
                           return ItemSetoranCard(
-                            index: entry.key,
-                            itemData: entry.value,
-                            onChanged: (updated) {
+                            index: index,
+                            itemData: setoranItems[index],
+                            hasError: _hasSubmitted && setoranItems[index]['jenis'] == null,
+                            errorText: 'Pilih jenis sampah',
+                            onChanged: (updatedItem) {
                               setState(() {
-                                setoranItems[entry.key] = updated;
+                                setoranItems[index] = updatedItem;
                               });
                             },
                             onDelete: () {
                               setState(() {
-                                setoranItems.removeAt(entry.key);
+                                setoranItems.removeAt(index);
                               });
+                              AppNotification.showSuccess(
+                                context,
+                                title: 'Item Dihapus',
+                                message: 'Item setoran berhasil dihapus.',
+                              );
                             },
                           );
                         }).toList(),
@@ -227,18 +258,22 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: CustomPrimaryButton(
-            title: 'Simpan Transaksi',
-            icon: Icons.save_outlined,
-            onPressed: () {
-              if (selectedCustomer == null || setoranItems.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Data nasabah dan item setoran harus diisi.')),
-                );
-                return;
-              }
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomPrimaryButton(
+                title: 'Simpan Transaksi',
+                icon: Icons.save_outlined,
+                onPressed: () {
+                  setState(() {
+                    _hasSubmitted = true;
+                  });
+                  
+                  if (selectedCustomer == null || setoranItems.isEmpty || setoranItems.any((item) => item['jenis'] == null)) {
+                    return;
+                  }
 
-              final oldBalanceStr = selectedCustomer!.balance;
+                  final oldBalanceStr = selectedCustomer!.balance;
               final oldBalance = _parseBalance(oldBalanceStr);
               final newBalance = oldBalance + grandTotal;
 
@@ -270,31 +305,49 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
               context.read<TransaksiCubit>().addTransaksi(newTx);
 
+              // Dismiss keyboard to prevent brief layout overflow errors when bottom sheet appears
+              FocusManager.instance.primaryFocus?.unfocus();
+
+              final customerName = selectedCustomer!.name;
+              final currentTotalSetoran = grandTotal;
+              final currentNewBalance = newBalance;
+              final currentItemCount = setoranItems.length;
+
+
               showModalBottomSheet(
                 context: context,
-                isDismissible: false,
-                enableDrag: false,
+                isDismissible: true,
+                enableDrag: true,
                 useRootNavigator: true,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) => TransaksiBerhasilBottomSheet(
-                  customerName: selectedCustomer!.name,
-                  totalSetoran: grandTotal,
-                  newBalance: newBalance,
-                  itemCount: setoranItems.length,
+                  customerName: customerName,
+                  totalSetoran: currentTotalSetoran,
+                  newBalance: currentNewBalance,
+                  itemCount: currentItemCount,
                 ),
               ).then((_) {
+                if (!mounted) return;
+                
+                // If the page is already popping (e.g. going to dashboard), don't rebuild
+                final route = ModalRoute.of(context);
+                if (route != null && !route.isCurrent) return;
+
                 // Clear state
                 setState(() {
                   selectedCustomer = null;
                   setoranItems = [];
+                  _hasSubmitted = false;
                   _addItem();
                 });
               });
             },
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
