@@ -341,12 +341,12 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       final nomorWhatsapp = '+62${_whatsappController.text}';
       debugPrint('Perubahan disimpan dengan nomor: $nomorWhatsapp');
       
+      context.pop();
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
         message: 'Perubahan data nasabah berhasil disimpan.',
       );
-      context.pop();
     }
   }
 

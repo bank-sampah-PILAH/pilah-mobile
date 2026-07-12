@@ -133,6 +133,9 @@ class HargaConfirmationDialog extends StatelessWidget {
                         hargaCubit.deactivateHarga(hargaData.id);
                       }
 
+                      context.pop(); // close dialog
+                      context.pop(); // close bottom sheet
+                      
                       AppNotification.showSuccess(
                         context,
                         title: isActivating ? 'Jenis Sampah Aktif' : 'Jenis Sampah Nonaktif',
@@ -140,9 +143,6 @@ class HargaConfirmationDialog extends StatelessWidget {
                             ? '${hargaData.name} akan kembali muncul di daftar transaksi.'
                             : '${hargaData.name} telah disembunyikan dari transaksi.',
                       );
-                      
-                      context.pop(); // close dialog
-                      context.pop(); // close bottom sheet
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isActivating ? emeraldPrimary : errorColor,

@@ -322,12 +322,12 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
       //   textColor: AppColors.greenDark,
       // );
       
+      context.pop();
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
         message: 'Nasabah baru berhasil ditambahkan.',
       );
-      context.pop();
     }
   }
 
