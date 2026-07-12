@@ -286,11 +286,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
               final currentNewBalance = newBalance;
               final currentItemCount = setoranItems.length;
 
-              AppNotification.showSuccess(
-                context,
-                title: 'Transaksi Berhasil',
-                message: 'Transaksi sebesar ${_formatCurrency(grandTotal)} berhasil disimpan.',
-              );
 
               showModalBottomSheet(
                 context: context,
