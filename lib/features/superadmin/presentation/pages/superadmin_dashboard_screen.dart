@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 
 class SuperAdminDashboardScreen extends StatefulWidget {
   const SuperAdminDashboardScreen({super.key});
@@ -341,7 +342,9 @@ class PendingBankCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: () {
+                              showProofImageDialog(context);
+                            },
                             icon: const Icon(Icons.image_outlined, size: 14, color: AppColors.greenDark),
                             label: const Text(
                               'Lihat Bukti',
