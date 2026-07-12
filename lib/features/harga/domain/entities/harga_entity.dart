@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class HargaEntity {
   final String id;
+  final String kodeSampah;
   final String name;
   final int price;
   final String priceFormatted;
@@ -14,6 +15,7 @@ class HargaEntity {
 
   HargaEntity({
     required this.id,
+    required this.kodeSampah,
     required this.name,
     required this.price,
     required this.priceFormatted,

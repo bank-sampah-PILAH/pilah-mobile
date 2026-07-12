@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
-import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 
 class DetailNasabahBottomSheet extends StatelessWidget {
   final Map<String, dynamic> customerData;
@@ -19,7 +17,6 @@ class DetailNasabahBottomSheet extends StatelessWidget {
     this.nasabahCubit,
   });
 
-  // Emerald Eco System Tokens
   static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color mintTint = Color(0xFFF0FDF4);
   static const Color errorColor = Color(0xFFBA1A1A);
@@ -32,8 +29,15 @@ class DetailNasabahBottomSheet extends StatelessWidget {
     final String phone = customerData['phone'] ?? '-';
     final String balance = customerData['balance'] ?? 'Rp 0';
     
-    // Derived or mocked data
-    final String customerId = customerData['id'] ?? 'NAS-0891';
+    // New fields
+    final String idNasabah = customerData['idNasabah'] ?? 'NAS-0000';
+    final String jenisKelamin = customerData['jenisKelamin'] ?? '-';
+    final String tanggalLahir = customerData['tanggalLahir'] ?? '-';
+    final String address = customerData['address'] ?? '-';
+    
+    // Mocked fields that don't exist yet in entity
+    final String tanggalDaftar = '3 Jan 2025';
+    final String ringkasanTrx = 'Total: 15 Trx | 120 kg';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -44,19 +48,31 @@ class DetailNasabahBottomSheet extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BottomSheetHeader(title: ''),
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
 
-              // Header Row
+              // Header Section
               Row(
                 children: [
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
                       color: isActive ? mintTint : Colors.red[50],
                       borderRadius: BorderRadius.circular(16),
@@ -67,7 +83,7 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                       style: AppTextStyle.headline1.copyWith(
                         color: isActive ? emeraldPrimary : Colors.red[400],
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 24,
                       ),
                     ),
                   ),
@@ -81,23 +97,21 @@ class DetailNasabahBottomSheet extends StatelessWidget {
                           style: AppTextStyle.headline1.copyWith(
                             color: Colors.black87,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                            fontSize: 20,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
                             Text(
-                              customerId,
+                              idNasabah,
                               style: AppTextStyle.small.copyWith(
                                 color: Colors.grey[500],
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            CustomStatusBadge(
-                              isActive: isActive,
-                            ),
+                            CustomStatusBadge(isActive: isActive),
                           ],
                         ),
                       ],
@@ -107,66 +121,140 @@ class DetailNasabahBottomSheet extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Info Box
+              // Info Card Section
               Container(
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: mintTint,
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                padding: const EdgeInsets.all(16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoRow('Nomor WA', phone),
-                    const Divider(color: Colors.white, height: 24, thickness: 1.5),
-                    _buildInfoRow('Saldo', balance, valueColor: emeraldPrimary),
-                    const Divider(color: Colors.white, height: 24, thickness: 1.5),
-                    _buildInfoRow('Tanggal Daftar', '📅 12 Mei 2026'),
-                    const Divider(color: Colors.white, height: 24, thickness: 1.5),
-                    _buildInfoRow('Ringkasan Trx', '📊 Total: 15 Trx | 120 kg', valueColor: const Color(0xFF7C3AED)),
-                    const Divider(color: Colors.white, height: 24, thickness: 1.5),
-                    _buildInfoRow('Alamat', 'Jl. Mawar No.12, RT.02/03, Kukusan', multiline: true),
+                    _buildInfoRow('ID Nasabah', idNasabah, isBold: true),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                      'Jenis Kelamin',
+                      jenisKelamin,
+                      isBold: true,
+                      icon: Icon(
+                        jenisKelamin.toLowerCase() == 'perempuan' 
+                          ? Icons.female 
+                          : Icons.male,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow('Tanggal Lahir', tanggalLahir, isBold: true),
+                    const SizedBox(height: 16),
+                    _buildInfoRow('Nomor WA', phone, isBold: true),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                      'Saldo',
+                      balance,
+                      isBold: true,
+                      valueColor: emeraldPrimary,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                      'Tanggal Daftar',
+                      tanggalDaftar,
+                      isBold: true,
+                      icon: Icon(Icons.calendar_month, size: 16, color: Colors.indigo[300]),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                      'Ringkasan Trx',
+                      ringkasanTrx,
+                      isBold: true,
+                      valueColor: AppColors.statPurple,
+                      icon: Icon(Icons.bar_chart, size: 16, color: AppColors.statPurple),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Alamat',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      address,
+                      style: AppTextStyle.title1.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Action Buttons Row
+              // Action Buttons
               Row(
                 children: [
                   Expanded(
-                    child: CustomOutlinedButton(
-                      title: 'Edit Data',
-                      borderColor: emeraldPrimary,
-                      textColor: emeraldPrimary,
-                      onPressed: isActive ? () {
+                    child: OutlinedButton.icon(
+                      onPressed: () {
                         context.pop();
                         showModalBottomSheet(
                           context: context,
-                          useRootNavigator: true, 
+                          useRootNavigator: true,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           builder: (context) => EditNasabahBottomSheet(customerData: customerData),
                         );
-                      } : null,
+                      },
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit Data'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: emeraldPrimary,
+                        side: const BorderSide(color: emeraldPrimary),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: AppTextStyle.title1.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: CustomPrimaryButton(
-                      title: isActive ? 'Nonaktifkan' : 'Aktifkan',
-                      color: isActive ? errorColor : emeraldPrimary,
-                      icon: isActive ? Icons.block : Icons.check,
+                    child: ElevatedButton.icon(
                       onPressed: () {
+                        if (nasabahCubit == null) return;
+                        
                         showDialog(
                           context: context,
-                          builder: (dialogContext) => NasabahConfirmationDialog(
+                          builder: (context) => NasabahConfirmationDialog(
                             isActivating: !isActive,
                             customerName: name,
-                            customerId: customerId,
+                            customerId: customerData['id'] ?? idNasabah,
                             nasabahCubit: nasabahCubit!,
                           ),
                         );
                       },
+                      icon: Icon(isActive ? Icons.block : Icons.check_circle_outline, size: 18, color: Colors.white),
+                      label: Text(isActive ? 'Nonaktifkan' : 'Aktifkan'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isActive ? errorColor : emeraldPrimary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                        textStyle: AppTextStyle.title1.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -178,29 +266,45 @@ class DetailNasabahBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {Color? valueColor, bool multiline = false}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? valueColor,
+    Widget? icon,
+  }) {
     return Row(
-      crossAxisAlignment: multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: AppTextStyle.small.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
+        Text(
+          label,
+          style: AppTextStyle.small.copyWith(
+            color: Colors.grey[500],
           ),
         ),
+        const SizedBox(width: 16),
         Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: AppTextStyle.small.copyWith(
-              color: valueColor ?? Colors.black87,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                icon,
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  value,
+                  style: AppTextStyle.title1.copyWith(
+                    color: valueColor ?? Colors.black87,
+                    fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
           ),
         ),
       ],

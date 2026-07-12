@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 
-class NasabahConfirmationDialog extends StatelessWidget {
+class HargaConfirmationDialog extends StatelessWidget {
   final bool isActivating;
-  final String customerName;
-  final String customerId;
-  final NasabahCubit nasabahCubit;
+  final HargaEntity hargaData;
+  final HargaCubit hargaCubit;
 
-  const NasabahConfirmationDialog({
+  const HargaConfirmationDialog({
     super.key,
     required this.isActivating,
-    required this.customerName,
-    required this.customerId,
-    required this.nasabahCubit,
+    required this.hargaData,
+    required this.hargaCubit,
   });
 
   static const Color emeraldPrimary = Color(0xFF006D44);
@@ -51,7 +50,7 @@ class NasabahConfirmationDialog extends StatelessWidget {
             
             // Title
             Text(
-              isActivating ? 'Aktifkan Nasabah?' : 'Nonaktifkan Nasabah?',
+              isActivating ? 'Aktifkan Jenis Sampah?' : 'Nonaktifkan Jenis Sampah?',
               style: AppTextStyle.headline1.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.bold,
@@ -72,17 +71,17 @@ class NasabahConfirmationDialog extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: isActivating
-                        ? 'Yakin ingin mengaktifkan kembali nasabah '
-                        : 'Yakin ingin menonaktifkan nasabah ',
+                        ? 'Yakin ingin mengaktifkan kembali jenis sampah '
+                        : 'Yakin ingin menonaktifkan jenis sampah ',
                   ),
                   TextSpan(
-                    text: customerName,
+                    text: hargaData.name,
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   TextSpan(
                     text: isActivating
-                        ? '? Nasabah dapat bertransaksi kembali.'
-                        : '? Nasabah tidak dapat bertransaksi.',
+                        ? '? Item ini akan dapat digunakan dalam transaksi lagi.'
+                        : '? Item ini tidak akan muncul pada pilihan transaksi.',
                   ),
                 ],
               ),
@@ -104,10 +103,9 @@ class NasabahConfirmationDialog extends StatelessWidget {
                     ),
                     child: Text(
                       'Batal',
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.grey[700],
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.grey[600],
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -116,22 +114,34 @@ class NasabahConfirmationDialog extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Mutate the data via Cubit
                       if (isActivating) {
-                        nasabahCubit.activateNasabah(customerId);
+                        final updatedHarga = HargaEntity(
+                          id: hargaData.id,
+                          kodeSampah: hargaData.kodeSampah,
+                          name: hargaData.name,
+                          price: hargaData.price,
+                          priceFormatted: hargaData.priceFormatted,
+                          category: hargaData.category,
+                          subtitle: hargaData.subtitle,
+                          badgeText: hargaData.badgeText,
+                          icon: hargaData.icon,
+                          iconColor: hargaData.iconColor,
+                          isActive: true,
+                        );
+                        hargaCubit.updateHarga(updatedHarga);
                       } else {
-                        nasabahCubit.deactivateNasabah(customerId);
+                        hargaCubit.deactivateHarga(hargaData.id);
                       }
-                      
-                      context.pop(); // Pop Dialog
-                      context.pop(); // Pop Bottom Sheet
+
+                      context.pop(); // close dialog
+                      context.pop(); // close bottom sheet
                       
                       AppNotification.showSuccess(
                         context,
-                        title: isActivating ? 'Nasabah Aktif' : 'Nasabah Nonaktif',
+                        title: isActivating ? 'Jenis Sampah Aktif' : 'Jenis Sampah Nonaktif',
                         message: isActivating
-                            ? '$customerName berhasil diaktifkan kembali.'
-                            : '$customerName telah dinonaktifkan.',
+                            ? '${hargaData.name} akan kembali muncul di daftar transaksi.'
+                            : '${hargaData.name} telah disembunyikan dari transaksi.',
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -144,10 +154,9 @@ class NasabahConfirmationDialog extends StatelessWidget {
                     ),
                     child: Text(
                       isActivating ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
-                      style: AppTextStyle.title1.copyWith(
+                      style: AppTextStyle.small.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
                       ),
                     ),
                   ),

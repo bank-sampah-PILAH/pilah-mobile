@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -10,6 +11,8 @@ class ItemSetoranCard extends StatelessWidget {
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
+  final bool hasError;
+  final String? errorText;
 
   const ItemSetoranCard({
     super.key,
@@ -17,6 +20,8 @@ class ItemSetoranCard extends StatelessWidget {
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
+    this.hasError = false,
+    this.errorText,
   });
 
   static const Color emeraldPrimary = Color(0xFF006D44);
@@ -41,8 +46,8 @@ class ItemSetoranCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedType = itemData['jenis'] as String?;
     final harga = itemData['harga'] as int? ?? 0;
-    final berat = itemData['berat'] as int? ?? 1;
-    final subtotal = harga * berat;
+    final berat = itemData['berat'] as num? ?? 1.0;
+    final subtotal = (harga * berat).round();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -65,7 +70,7 @@ class ItemSetoranCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(color: hasError ? errorColor : Colors.grey[200]!),
                   ),
                   child: BlocBuilder<HargaCubit, HargaState>(
                     builder: (context, state) {
@@ -139,6 +144,13 @@ class ItemSetoranCard extends StatelessWidget {
               ),
             ],
           ),
+          if (hasError && errorText != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              errorText!,
+              style: AppTextStyle.small.copyWith(color: errorColor, fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Row 2: Harga
@@ -169,23 +181,17 @@ class ItemSetoranCard extends StatelessWidget {
                     ),
                     Expanded(
                       child: TextFormField(
-                        initialValue: harga > 0 ? harga.toString() : '',
-                        keyboardType: TextInputType.number,
+                        key: ValueKey(harga),
+                        initialValue: harga > 0 ? _formatCurrency(harga).replaceAll('Rp ', '') : '',
+                        readOnly: true,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.only(bottom: 12),
                         ),
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.black87,
+                          color: Colors.grey.shade700,
                           fontWeight: FontWeight.bold,
                         ),
-                        onChanged: (val) {
-                          final newHarga = int.tryParse(val) ?? 0;
-                          onChanged({
-                            ...itemData,
-                            'harga': newHarga,
-                          });
-                        },
                       ),
                     ),
                   ],
@@ -203,57 +209,37 @@ class ItemSetoranCard extends StatelessWidget {
           // Row 3: Berat & Subtotal
           Row(
             children: [
-              // Stepper
+              // Berat Input
               Container(
                 height: 40,
+                width: 100,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey[200]!),
                 ),
-                child: Row(
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        if (berat > 1) {
-                          onChanged({
-                            ...itemData,
-                            'berat': berat - 1,
-                          });
-                        }
-                      },
-                      child: Container(
-                        width: 40,
-                        alignment: Alignment.center,
-                        child: Icon(Icons.remove, color: Colors.grey[600], size: 16),
-                      ),
-                    ),
-                    Container(width: 1, color: Colors.grey[200]),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        berat.toString(),
-                        textAlign: TextAlign.center,
-                        style: AppTextStyle.small.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Container(width: 1, color: Colors.grey[200]),
-                    InkWell(
-                      onTap: () {
-                        onChanged({
-                          ...itemData,
-                          'berat': berat + 1,
-                        });
-                      },
-                      child: Container(
-                        width: 40,
-                        alignment: Alignment.center,
-                        child: Icon(Icons.add, color: Colors.grey[600], size: 16),
-                      ),
-                    ),
+                child: TextFormField(
+                  initialValue: berat == 1.0 ? '1' : (berat % 1 == 0 ? berat.toInt().toString() : berat.toString()),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
+                  textAlign: TextAlign.center,
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.only(bottom: 12),
+                  ),
+                  onChanged: (value) {
+                    final cleanValue = value.replaceAll(',', '.');
+                    final newBerat = num.tryParse(cleanValue) ?? 0.0;
+                    onChanged({
+                      ...itemData,
+                      'berat': newBerat,
+                    });
+                  },
                 ),
               ),
               const SizedBox(width: 8),

@@ -30,6 +30,7 @@ class _NasabahPageBody extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
+        heroTag: 'nasabah_page_fab',
         onPressed: () {
           showModalBottomSheet(
             context: context,
@@ -55,7 +56,7 @@ class _NasabahPageBody extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Nasabah',
+                    'Daftar Nasabah',
                     style: AppTextStyle.headline1.copyWith(
                       color: Colors.black87,
                       fontWeight: FontWeight.bold,

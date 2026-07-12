@@ -14,6 +14,10 @@ class NasabahListItem extends StatelessWidget {
   final String phone;
   final String balance;
   final String? id;
+  final String? idNasabah;
+  final String? jenisKelamin;
+  final String? tanggalLahir;
+  final String? address;
   final NasabahCubit? nasabahCubit;
 
   const NasabahListItem({
@@ -26,6 +30,10 @@ class NasabahListItem extends StatelessWidget {
     required this.phone,
     required this.balance,
     this.id,
+    this.idNasabah,
+    this.jenisKelamin,
+    this.tanggalLahir,
+    this.address,
     this.nasabahCubit,
   });
 
@@ -46,6 +54,10 @@ class NasabahListItem extends StatelessWidget {
               'name': name,
               'phone': phone,
               'balance': balance,
+              'idNasabah': idNasabah,
+              'jenisKelamin': jenisKelamin,
+              'tanggalLahir': tanggalLahir,
+              'address': address,
             },
             nasabahCubit: nasabahCubit,
           ),

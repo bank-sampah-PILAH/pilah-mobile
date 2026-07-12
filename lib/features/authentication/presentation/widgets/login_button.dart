@@ -69,21 +69,10 @@ class LoginButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Generic colored icon placeholder for Google 'G' logo
-          Container(
+          Image.asset(
+            'assets/images/google_logo.png',
             width: 24,
             height: 24,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.g_mobiledata,
-                color: Colors.blue,
-                size: 32,
-              ),
-            ),
           ),
           const SizedBox(width: 12),
           Text(

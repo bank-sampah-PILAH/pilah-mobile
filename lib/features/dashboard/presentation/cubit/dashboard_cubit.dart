@@ -16,8 +16,17 @@ class DashboardCubit extends Cubit<DashboardState> {
   late final StreamSubscription transaksiSubscription;
 
   DashboardCubit(this.nasabahCubit, this.transaksiCubit) : super(const DashboardState()) {
-    _calculateNasabahStats(nasabahCubit.state);
-    _calculateTransaksiStats(transaksiCubit.state);
+    if (nasabahCubit.state is NasabahInitial) {
+      nasabahCubit.loadNasabah();
+    } else {
+      _calculateNasabahStats(nasabahCubit.state);
+    }
+
+    if (transaksiCubit.state is TransaksiInitial) {
+      transaksiCubit.loadTransaksi();
+    } else {
+      _calculateTransaksiStats(transaksiCubit.state);
+    }
 
     nasabahSubscription = nasabahCubit.stream.listen((state) {
       _calculateNasabahStats(state);

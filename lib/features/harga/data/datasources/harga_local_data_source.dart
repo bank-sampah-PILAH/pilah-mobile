@@ -14,6 +14,7 @@ class HargaLocalDataSourceImpl implements HargaLocalDataSource {
   final List<HargaModel> _jenisSampahList = [
     HargaModel(
       id: 'JS-001',
+      kodeSampah: 'PLS-001',
       name: 'Plastik PET',
       price: 3500,
       priceFormatted: 'Rp 3.500',
@@ -26,6 +27,7 @@ class HargaLocalDataSourceImpl implements HargaLocalDataSource {
     ),
     HargaModel(
       id: 'JS-002',
+      kodeSampah: 'KRT-001',
       name: 'Kertas HVS',
       price: 2000,
       priceFormatted: 'Rp 2.000',
@@ -38,6 +40,7 @@ class HargaLocalDataSourceImpl implements HargaLocalDataSource {
     ),
     HargaModel(
       id: 'JS-003',
+      kodeSampah: 'KRT-002',
       name: 'Kardus',
       price: 1500,
       priceFormatted: 'Rp 1.500',
@@ -50,6 +53,7 @@ class HargaLocalDataSourceImpl implements HargaLocalDataSource {
     ),
     HargaModel(
       id: 'JS-004',
+      kodeSampah: 'LGM-001',
       name: 'Logam Besi',
       price: 4000,
       priceFormatted: 'Rp 4.000',
@@ -62,6 +66,7 @@ class HargaLocalDataSourceImpl implements HargaLocalDataSource {
     ),
     HargaModel(
       id: 'JS-005',
+      kodeSampah: 'LGM-002',
       name: 'Aluminium',
       price: 8000,
       priceFormatted: 'Rp 8.000',
@@ -103,6 +108,7 @@ class HargaLocalDataSourceImpl implements HargaLocalDataSource {
       final old = _jenisSampahList[index];
       _jenisSampahList[index] = HargaModel(
         id: old.id,
+        kodeSampah: old.kodeSampah,
         name: old.name,
         price: old.price,
         priceFormatted: old.priceFormatted,

@@ -102,8 +102,9 @@ class TransaksiBerhasilBottomSheet extends StatelessWidget {
           // Action Buttons
           ElevatedButton(
             onPressed: () {
-              context.pop(); // dismiss modal
-              context.go('/dashboard');
+              final router = GoRouter.of(context);
+              Navigator.of(context).pop(); // dismiss modal
+              router.go('/dashboard');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: emeraldPrimary,
@@ -123,28 +124,7 @@ class TransaksiBerhasilBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () {
-              context.pop(); // dismiss modal
-              context.go('/dashboard');
-            },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              minimumSize: const Size(double.infinity, 0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Text(
-              'Lewati',
-              style: AppTextStyle.title1.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
+
         ],
       ),
     );
