@@ -30,6 +30,7 @@ class _NasabahPageBody extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
+        heroTag: 'nasabah_page_fab',
         onPressed: () {
           showModalBottomSheet(
             context: context,
