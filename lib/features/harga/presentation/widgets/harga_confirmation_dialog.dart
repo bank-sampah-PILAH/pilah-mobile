@@ -117,6 +117,7 @@ class HargaConfirmationDialog extends StatelessWidget {
                       if (isActivating) {
                         final updatedHarga = HargaEntity(
                           id: hargaData.id,
+                          kodeSampah: hargaData.kodeSampah,
                           name: hargaData.name,
                           price: hargaData.price,
                           priceFormatted: hargaData.priceFormatted,
