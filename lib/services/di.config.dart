@@ -96,6 +96,22 @@ import '../features/profile/domain/repository/profile_repository.dart' as _i928;
 import '../features/profile/domain/use_cases/profile_use_cases.dart' as _i483;
 import '../features/profile/presentation/blocs/authentication_bloc.dart'
     as _i957;
+import '../features/superadmin/data/datasources/superadmin_remote_data_source.dart'
+    as _i309;
+import '../features/superadmin/data/datasources/superadmin_remote_data_source_impl.dart'
+    as _i495;
+import '../features/superadmin/data/repositories/superadmin_repository_impl.dart'
+    as _i811;
+import '../features/superadmin/domain/repositories/superadmin_repository.dart'
+    as _i260;
+import '../features/superadmin/domain/use_cases/approve_bank_sampah_usecase.dart'
+    as _i958;
+import '../features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart'
+    as _i268;
+import '../features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart'
+    as _i868;
+import '../features/superadmin/presentation/cubit/superadmin_cubit.dart'
+    as _i174;
 import '../features/transaksi/data/datasources/transaksi_remote_data_source.dart'
     as _i881;
 import '../features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart'
@@ -162,6 +178,8 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i174.ProductRemoteDataSources>(
         () => _i174.ProductRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i309.SuperadminRemoteDataSource>(
+        () => _i495.SuperadminRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i881.TransaksiRemoteDataSource>(
         () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i622.ProfileRemoteDataSources>(
@@ -174,6 +192,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i990.NasabahRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i960.HargaRemoteDataSource>(
         () => _i74.HargaRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i260.SuperadminRepository>(() =>
+        _i811.SuperadminRepositoryImpl(gh<_i309.SuperadminRemoteDataSource>()));
     gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
           gh<_i24.AuthRemoteDataSources>(),
           gh<_i981.AuthLocalDataSources>(),
@@ -204,6 +224,12 @@ extension GetItInjectableX on _i174.GetIt {
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
+    gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
+        () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
+    gh.lazySingleton<_i268.GetBankSampahUseCase>(
+        () => _i268.GetBankSampahUseCase(gh<_i260.SuperadminRepository>()));
+    gh.lazySingleton<_i868.RejectBankSampahUseCase>(
+        () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
           gh<_i521.AuthenticationUseCases>(),
           gh<_i934.LoginWithGoogleUseCase>(),
@@ -224,6 +250,11 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i60.ProductUseCases>(
         () => _i283.ProductInteractor(gh<_i128.ProductRepository>()));
+    gh.lazySingleton<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
+          gh<_i268.GetBankSampahUseCase>(),
+          gh<_i958.ApproveBankSampahUseCase>(),
+          gh<_i868.RejectBankSampahUseCase>(),
+        ));
     gh.lazySingleton<_i948.AddHargaUseCase>(
         () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i989.DeactivateHargaUseCase>(
