@@ -27,7 +27,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
-  String? _errorMessage;
 
   void _addItem() {
     setState(() {
@@ -151,43 +150,63 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
                     // Items or Empty State
                     if (setoranItems.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[300]!, width: 1.5),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Icon(Icons.add, color: Colors.grey[400], size: 24),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Belum Ada Item Setoran',
-                              style: AppTextStyle.title1.copyWith(
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: (_hasSubmitted && setoranItems.isEmpty) ? const Color(0xFFDC2626) : Colors.grey[300]!, 
+                                width: 1.5
                               ),
                             ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Icon(Icons.add, color: Colors.grey[400], size: 24),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum Ada Item Setoran',
+                                  style: AppTextStyle.title1.copyWith(
+                                    color: Colors.grey[500],
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap tombol di bawah untuk menambah item.',
+                                  style: AppTextStyle.small.copyWith(
+                                    color: Colors.grey[400],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_hasSubmitted && setoranItems.isEmpty) ...[
                             const SizedBox(height: 8),
-                            Text(
-                              'Tap tombol di bawah untuk menambah item.',
-                              style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[400],
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Text(
+                                'Daftar setoran tidak boleh kosong',
+                                style: AppTextStyle.small.copyWith(
+                                  color: const Color(0xFFDC2626),
+                                ),
                               ),
-                              textAlign: TextAlign.center,
                             ),
                           ],
-                        ),
+                        ],
                       )
                     else
                       Column(
@@ -242,19 +261,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Colors.red.shade600,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
               CustomPrimaryButton(
                 title: 'Simpan Transaksi',
                 icon: Icons.save_outlined,
@@ -264,15 +270,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                   });
                   
                   if (selectedCustomer == null || setoranItems.isEmpty || setoranItems.any((item) => item['jenis'] == null)) {
-                    setState(() {
-                      _errorMessage = 'Silakan lengkapi data yang ditandai merah.';
-                    });
                     return;
                   }
-                  
-                  setState(() {
-                    _errorMessage = null;
-                  });
 
                   final oldBalanceStr = selectedCustomer!.balance;
               final oldBalance = _parseBalance(oldBalanceStr);
@@ -339,7 +338,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 setState(() {
                   selectedCustomer = null;
                   setoranItems = [];
-                  _errorMessage = null;
                   _hasSubmitted = false;
                   _addItem();
                 });
