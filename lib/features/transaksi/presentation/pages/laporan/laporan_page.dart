@@ -17,8 +17,19 @@ class LaporanPage extends StatelessWidget {
   }
 }
 
-class _LaporanPageBody extends StatelessWidget {
+class _LaporanPageBody extends StatefulWidget {
   const _LaporanPageBody();
+
+  @override
+  State<_LaporanPageBody> createState() => _LaporanPageBodyState();
+}
+
+class _LaporanPageBodyState extends State<_LaporanPageBody> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<TransaksiCubit>().loadTransaksi();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -22,8 +22,20 @@ class NasabahPage extends StatelessWidget {
   }
 }
 
-class _NasabahPageBody extends StatelessWidget {
+class _NasabahPageBody extends StatefulWidget {
   const _NasabahPageBody();
+
+  @override
+  State<_NasabahPageBody> createState() => _NasabahPageBodyState();
+}
+
+class _NasabahPageBodyState extends State<_NasabahPageBody> {
+  @override
+  void initState() {
+    super.initState();
+    // Load with the authenticated session when the tab is first opened.
+    context.read<NasabahCubit>().loadNasabah();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -19,17 +19,17 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        // Cubits load their data from each page's initState (post-login), so
+        // the requests carry the authenticated session instead of firing once
+        // at cold start before a token exists.
         BlocProvider<NasabahCubit>(
-          create: (context) => di<NasabahCubit>()..loadNasabah(),
-          lazy: false,
+          create: (context) => di<NasabahCubit>(),
         ),
         BlocProvider<HargaCubit>(
-          create: (context) => di<HargaCubit>()..loadHarga(),
-          lazy: false,
+          create: (context) => di<HargaCubit>(),
         ),
         BlocProvider<TransaksiCubit>(
-          create: (context) => di<TransaksiCubit>()..loadTransaksi(),
-          lazy: false,
+          create: (context) => di<TransaksiCubit>(),
         ),
         BlocProvider<DashboardCubit>(
           create: (context) => di<DashboardCubit>(),
