@@ -30,7 +30,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
   void _addItem() {
     setState(() {
-      setoranItems.add({'jenis': null, 'harga': 0, 'berat': 1});
+      setoranItems.add({'jenis': null, 'harga': 0, 'berat': 1.0});
     });
   }
 
@@ -51,8 +51,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   int get grandTotal {
     return setoranItems.fold(0, (sum, item) {
       final harga = item['harga'] as int? ?? 0;
-      final berat = item['berat'] as int? ?? 1;
-      return sum + (harga * berat);
+      final berat = item['berat'] as num? ?? 1.0;
+      return sum + (harga * berat).round();
     });
   }
 
