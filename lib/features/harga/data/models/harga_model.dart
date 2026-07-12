@@ -65,14 +65,15 @@ class HargaModel extends HargaEntity {
   }
 
   Map<String, dynamic> toJson() {
+    // `id` and `is_active` are read-only on the backend; the record id travels
+    // in the URL for updates, and status is toggled via the dedicated /status
+    // endpoint. Only send the writable fields.
     return {
-      if (id.isNotEmpty && !id.startsWith('JS')) 'id': id,
-      'kode': 'JS-${DateTime.now().millisecondsSinceEpoch}', // Required field in backend
-      'nama_sampah': name,
+      'kode': kodeSampah.trim(),
+      'nama_sampah': name.trim(),
       'kategori': category.toLowerCase(),
-      'deskripsi': subtitle,
+      'deskripsi': subtitle.trim(),
       'harga_per_kg': price.toString(),
-      'is_active': isActive,
     };
   }
 }

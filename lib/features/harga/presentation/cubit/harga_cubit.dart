@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/add_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/deactivate_harga_usecase.dart';
@@ -32,7 +33,7 @@ class HargaCubit extends Cubit<HargaState> {
     emit(HargaLoading());
     final result = await getHargaUseCase.execute();
     result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
+      (failure) => emit(HargaError(failure.displayMessage)),
       (data) {
         _allHarga = data;
         _emitFiltered();
@@ -50,27 +51,39 @@ class HargaCubit extends Cubit<HargaState> {
     _emitFiltered();
   }
 
-  Future<void> addHarga(HargaEntity harga) async {
+  /// Creates a jenis sampah. Returns `null` on success (list reloaded),
+  /// otherwise the [NetworkException] so the form can surface field errors.
+  Future<NetworkException?> addHarga(HargaEntity harga) async {
     final result = await addHargaUseCase.execute(harga);
-    result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
-      (_) => loadHarga(),
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
     );
   }
 
-  Future<void> updateHarga(HargaEntity harga) async {
+  /// Updates a jenis sampah. Returns `null` on success, otherwise the exception.
+  Future<NetworkException?> updateHarga(HargaEntity harga) async {
     final result = await updateHargaUseCase.execute(harga);
-    result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
-      (_) => loadHarga(),
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
     );
   }
 
-  Future<void> deactivateHarga(String id) async {
+  Future<NetworkException?> deactivateHarga(String id) async {
     final result = await deactivateHargaUseCase.execute(id);
-    result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
-      (_) => loadHarga(),
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
     );
   }
 

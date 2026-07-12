@@ -30,6 +30,10 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
   late TextEditingController _priceController;
 
   String? _selectedCategory;
+  bool _isSaving = false;
+  String? _serverKodeError;
+
+  static const List<String> _categories = ['Kertas', 'Plastik', 'Logam', 'Kaca'];
 
   @override
   void initState() {
@@ -37,11 +41,15 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     _kodeSampahController = TextEditingController(text: widget.initialData?.kodeSampah ?? '');
     _nameController = TextEditingController(text: widget.initialData?.name ?? '');
     _descController = TextEditingController(text: widget.initialData?.subtitle ?? '');
-    
-    // Set category if available
+
+    // The backend stores categories lowercase (e.g. "plastik"); match them to
+    // the capitalised dropdown values so edit mode preselects correctly.
     final cat = widget.initialData?.category;
-    if (['Kertas', 'Plastik', 'Logam', 'Kaca'].contains(cat)) {
-      _selectedCategory = cat;
+    if (cat != null && cat.isNotEmpty) {
+      final normalized = cat[0].toUpperCase() + cat.substring(1).toLowerCase();
+      if (_categories.contains(normalized)) {
+        _selectedCategory = normalized;
+      }
     }
     
     // Process price string
@@ -92,6 +100,11 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _kodeSampahController,
+                  onChanged: (_) {
+                    if (_serverKodeError != null) {
+                      setState(() => _serverKodeError = null);
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) return 'Bagian ini wajib diisi.';
                     final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
@@ -100,6 +113,7 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                       final isDuplicate = list.any((e) => e.kodeSampah.trim().toLowerCase() == value.trim().toLowerCase() && e.id != widget.initialData?.id);
                       if (isDuplicate) return 'Kode sampah ini sudah digunakan.';
                     }
+                    if (_serverKodeError != null) return _serverKodeError;
                     return null;
                   },
                   decoration: _buildInputDecoration(hintText: 'Contoh: PLS-001'),
@@ -193,23 +207,33 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _handleSimpan,
+                    onPressed: _isSaving ? null : _handleSimpan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenDark,
+                      disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+                            style: AppTextStyle.title1.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -233,50 +257,57 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     );
   }
 
-  void _handleSimpan() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
-      final isEditMode = widget.initialData != null;
-      
-      final int priceVal = int.tryParse(_priceController.text) ?? 0;
-      final String formattedPrice = 'Rp ${_priceController.text.replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), ".")}';
-      
-      if (isEditMode) {
-        final updatedHarga = HargaEntity(
-          id: widget.initialData!.id,
-          kodeSampah: _kodeSampahController.text,
-          name: _nameController.text,
-          price: priceVal,
-          priceFormatted: formattedPrice,
-          category: _selectedCategory ?? 'Lainnya',
-          subtitle: _descController.text,
-          badgeText: widget.initialData!.badgeText,
-          icon: widget.initialData!.icon,
-          iconColor: widget.initialData!.iconColor,
-          isActive: widget.initialData!.isActive,
-        );
-        cubit.updateHarga(updatedHarga);
-        context.pop();
-        AppNotification.showSuccess(context, title: 'Berhasil', message: 'Jenis sampah berhasil diperbarui.');
-      } else {
-        final newHarga = HargaEntity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          kodeSampah: _kodeSampahController.text,
-          name: _nameController.text,
-          price: priceVal,
-          priceFormatted: formattedPrice,
-          category: _selectedCategory ?? 'Lainnya',
-          subtitle: _descController.text,
-          badgeText: 'Anorganik',
-          icon: Icons.recycling,
-          iconColor: AppColors.greenDark,
-          isActive: true,
-        );
-        cubit.addHarga(newHarga);
-        context.pop();
-        AppNotification.showSuccess(context, title: 'Berhasil', message: 'Jenis sampah baru berhasil ditambahkan.');
-      }
+  Future<void> _handleSimpan() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+    final isEditMode = widget.initialData != null;
+
+    final int priceVal = int.tryParse(_priceController.text) ?? 0;
+    final String formattedPrice =
+        'Rp ${_priceController.text.replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), ".")}';
+
+    final harga = HargaEntity(
+      id: widget.initialData?.id ?? '',
+      kodeSampah: _kodeSampahController.text.trim(),
+      name: _nameController.text.trim(),
+      price: priceVal,
+      priceFormatted: formattedPrice,
+      category: _selectedCategory ?? 'dll',
+      subtitle: _descController.text.trim(),
+      badgeText: widget.initialData?.badgeText ?? 'Anorganik',
+      icon: widget.initialData?.icon ?? Icons.recycling,
+      iconColor: widget.initialData?.iconColor ?? AppColors.greenDark,
+      isActive: widget.initialData?.isActive ?? true,
+    );
+
+    setState(() => _isSaving = true);
+    final error = isEditMode ? await cubit.updateHarga(harga) : await cubit.addHarga(harga);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (error == null) {
+      context.pop();
+      AppNotification.showSuccess(
+        context,
+        title: 'Berhasil',
+        message: isEditMode
+            ? 'Jenis sampah berhasil diperbarui.'
+            : 'Jenis sampah baru berhasil ditambahkan.',
+      );
+      return;
     }
+
+    final fields = error.fieldErrors();
+    if (fields.containsKey('kode')) {
+      setState(() => _serverKodeError = fields['kode']);
+      _formKey.currentState?.validate();
+    }
+    AppNotification.showError(
+      context,
+      title: 'Gagal Menyimpan',
+      message: error.displayMessage,
+    );
   }
 
   Widget _buildLabel(String text) {
