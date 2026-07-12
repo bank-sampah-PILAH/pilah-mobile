@@ -8,6 +8,7 @@ part 'nasabah_model.g.dart';
 class NasabahModel extends NasabahEntity {
   NasabahModel({
     required super.id,
+    required super.idNasabah,
     required super.name,
     required super.phone,
     required super.balance,
@@ -16,6 +17,8 @@ class NasabahModel extends NasabahEntity {
     required super.initials,
     @ColorConverter() required super.avatarColor,
     @ColorConverter() required super.textColor,
+    required super.jenisKelamin,
+    required super.tanggalLahir,
   });
 
   factory NasabahModel.fromJson(Map<String, dynamic> json) => _$NasabahModelFromJson(json);
