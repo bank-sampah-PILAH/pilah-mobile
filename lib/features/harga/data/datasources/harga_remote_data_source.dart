@@ -5,4 +5,5 @@ abstract class HargaRemoteDataSource {
   Future<void> addHarga(HargaModel harga);
   Future<void> updateHarga(HargaModel harga);
   Future<void> deactivateHarga(String id);
+  Future<void> activateHarga(String id);
 }

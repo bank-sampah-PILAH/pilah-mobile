@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/use_cases/activate_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/add_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/deactivate_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.dart';
@@ -14,6 +15,7 @@ class HargaCubit extends Cubit<HargaState> {
   final AddHargaUseCase addHargaUseCase;
   final UpdateHargaUseCase updateHargaUseCase;
   final DeactivateHargaUseCase deactivateHargaUseCase;
+  final ActivateHargaUseCase activateHargaUseCase;
 
   List<HargaEntity> _allHarga = [];
   bool _isActiveTab = true;
@@ -24,6 +26,7 @@ class HargaCubit extends Cubit<HargaState> {
     this.addHargaUseCase,
     this.updateHargaUseCase,
     this.deactivateHargaUseCase,
+    this.activateHargaUseCase,
   ) : super(HargaInitial());
 
   bool get isActiveTab => _isActiveTab;
@@ -78,6 +81,17 @@ class HargaCubit extends Cubit<HargaState> {
 
   Future<NetworkException?> deactivateHarga(String id) async {
     final result = await deactivateHargaUseCase.execute(id);
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
+    );
+  }
+
+  Future<NetworkException?> activateHarga(String id) async {
+    final result = await activateHargaUseCase.execute(id);
     return result.fold(
       (failure) => failure,
       (_) {

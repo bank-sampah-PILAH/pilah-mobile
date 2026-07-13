@@ -165,10 +165,16 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                             icon: Icons.search_off,
                           );
                         }
-                        return const EmptyView(
-                          title: 'Tidak Ada Jenis Nonaktif',
-                          subtitle: 'Semua jenis sampah masih aktif.',
-                          icon: Icons.check_circle_outline,
+                        return EmptyView(
+                          title: state.isActiveTab
+                              ? 'Belum Ada Jenis Sampah'
+                              : 'Tidak Ada Jenis Nonaktif',
+                          subtitle: state.isActiveTab
+                              ? 'Tekan tombol + untuk menambah jenis sampah.'
+                              : 'Semua jenis sampah masih aktif.',
+                          icon: state.isActiveTab
+                              ? Icons.category_outlined
+                              : Icons.check_circle_outline,
                         );
                       }
 

@@ -5,6 +5,12 @@ import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.d
 
 abstract class ProfileRemoteDataSource {
   Future<BankSampahProfile> getBankSampah();
+  Future<BankSampahProfile> updateBankSampah({
+    required String nama,
+    required String alamat,
+    String? kota,
+    required String noHpPic,
+  });
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
   Future<List<TeamMember>> getTeam();
@@ -20,7 +26,26 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<BankSampahProfile> getBankSampah() async {
     final response = await networkService.get(Endpoints.bankSampahMe);
-    final json = response.data as Map<String, dynamic>;
+    return _mapBankSampah(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<BankSampahProfile> updateBankSampah({
+    required String nama,
+    required String alamat,
+    String? kota,
+    required String noHpPic,
+  }) async {
+    final response = await networkService.put(Endpoints.bankSampahMe, data: {
+      'nama': nama,
+      'alamat': alamat,
+      if (kota != null) 'kota': kota,
+      'no_hp_pic': noHpPic,
+    });
+    return _mapBankSampah(response.data as Map<String, dynamic>);
+  }
+
+  BankSampahProfile _mapBankSampah(Map<String, dynamic> json) {
     return BankSampahProfile(
       id: json['id']?.toString() ?? '',
       nama: json['nama']?.toString() ?? '',

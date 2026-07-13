@@ -29,10 +29,17 @@ class TransactionListView extends StatelessWidget {
           final filteredGroups = state.transaksiList;
 
           if (filteredGroups.isEmpty) {
+            if (state.searchQuery.isNotEmpty) {
+              return const EmptyView(
+                title: 'Transaksi Tidak Ditemukan',
+                subtitle: 'Coba kata kunci atau nama pelanggan lain',
+                icon: Icons.search_off,
+              );
+            }
             return const EmptyView(
-              title: 'Transaksi Tidak Ditemukan',
-              subtitle: 'Coba kata kunci atau nama pelanggan lain',
-              icon: Icons.search_off,
+              title: 'Belum Ada Transaksi',
+              subtitle: 'Belum ada transaksi tercatat pada periode ini.',
+              icon: Icons.receipt_long_outlined,
             );
           }
 

@@ -63,6 +63,28 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  /// Persists the editable bank sampah fields via `PUT /bank-sampah/me`.
+  /// Returns `null` on success, otherwise the [NetworkException] so the page can
+  /// surface backend validation (e.g. an invalid phone number).
+  Future<NetworkException?> updateBankSampah({
+    required String nama,
+    required String alamat,
+    required String noHpPic,
+  }) async {
+    try {
+      final updated = await _dataSource.updateBankSampah(
+        nama: nama,
+        alamat: alamat,
+        kota: state.bankSampah?.kota,
+        noHpPic: noHpPic,
+      );
+      emit(state.copyWith(bankSampah: updated));
+      return null;
+    } on Exception catch (e) {
+      return NetworkException.handleException(e);
+    }
+  }
+
   /// Generates a team invite link. Returns the URL on success, otherwise the
   /// [NetworkException] (e.g. 403 when the current user is not the primary
   /// pengelola).

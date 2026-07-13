@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 
@@ -91,6 +93,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       return;
     }
 
+    // The name (and gender/dob) were just saved server-side; refresh the cached
+    // user so the dashboard/profile show the entered name, not the Google one.
+    context.read<AuthenticationBloc>().add(RefreshUserRequested());
     _routeByNextStep(result?.nextStep);
   }
 
@@ -355,9 +360,25 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
                           items: const [
                             DropdownMenuItem(
-                                value: 'Laki-laki', child: Text('♂ Laki-laki')),
+                              value: 'Laki-laki',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.male, size: 20, color: Color(0xFF2563EB)),
+                                  SizedBox(width: 8),
+                                  Text('Laki-laki'),
+                                ],
+                              ),
+                            ),
                             DropdownMenuItem(
-                                value: 'Perempuan', child: Text('♀ Perempuan')),
+                              value: 'Perempuan',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.female, size: 20, color: Color(0xFFDB2777)),
+                                  SizedBox(width: 8),
+                                  Text('Perempuan'),
+                                ],
+                              ),
+                            ),
                           ],
                           onChanged: (val) {
                             setState(() {

@@ -236,11 +236,77 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                           ),
                   ),
                 ),
+
+                // Activate / Deactivate (edit mode only)
+                if (isEditMode) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isSaving ? null : _handleToggleStatus,
+                      icon: Icon(
+                        _isActive ? Icons.block : Icons.check_circle_outline,
+                        size: 20,
+                        color: _isActive ? Colors.red[600] : AppColors.greenDark,
+                      ),
+                      label: Text(
+                        _isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
+                        style: AppTextStyle.title1.copyWith(
+                          color: _isActive ? Colors.red[600] : AppColors.greenDark,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: BorderSide(
+                          color: _isActive ? Colors.red[200]! : AppColors.greenLight,
+                        ),
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  bool get _isActive => widget.initialData?.isActive ?? true;
+
+  Future<void> _handleToggleStatus() async {
+    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+    final id = widget.initialData!.id;
+    final wasActive = _isActive;
+
+    setState(() => _isSaving = true);
+    final error =
+        wasActive ? await cubit.deactivateHarga(id) : await cubit.activateHarga(id);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (error == null) {
+      context.pop();
+      AppNotification.showSuccess(
+        context,
+        title: 'Berhasil',
+        message: wasActive
+            ? 'Jenis sampah berhasil dinonaktifkan.'
+            : 'Jenis sampah berhasil diaktifkan.',
+      );
+      return;
+    }
+
+    AppNotification.showError(
+      context,
+      title: 'Gagal',
+      message: error.displayMessage,
     );
   }
 
