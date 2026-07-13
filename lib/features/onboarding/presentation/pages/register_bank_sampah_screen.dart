@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'dart:io';
@@ -63,6 +65,10 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       _showError(error.displayMessage);
       return;
     }
+
+    // Bank sampah now linked to the user; refresh the cached session so the
+    // header reflects the new bank name.
+    context.read<AuthenticationBloc>().add(RefreshUserRequested());
 
     // Registration submitted → backend sets status to pending review.
     if (result?.nextStep == 'dashboard') {

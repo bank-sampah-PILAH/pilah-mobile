@@ -77,4 +77,14 @@ class HargaRepositoryImpl implements HargaRepository {
       return Left(NetworkException.handleException(e));
     }
   }
+
+  @override
+  Future<Either<NetworkException, void>> activateHarga(String id) async {
+    try {
+      await remoteDataSource.activateHarga(id);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
 }

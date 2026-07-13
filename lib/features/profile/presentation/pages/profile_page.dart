@@ -43,7 +43,12 @@ class _ProfileViewState extends State<_ProfileView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _waController = TextEditingController();
+  final TextEditingController _namaBankController = TextEditingController();
+  final TextEditingController _alamatBankController = TextEditingController();
+  final TextEditingController _hpBankController = TextEditingController();
+  final _bankFormKey = GlobalKey<FormState>();
   bool _waSeeded = false;
+  bool _bankSeeded = false;
 
   @override
   void initState() {
@@ -58,6 +63,9 @@ class _ProfileViewState extends State<_ProfileView>
   void dispose() {
     _tabController.dispose();
     _waController.dispose();
+    _namaBankController.dispose();
+    _alamatBankController.dispose();
+    _hpBankController.dispose();
     super.dispose();
   }
 
@@ -102,10 +110,17 @@ class _ProfileViewState extends State<_ProfileView>
     context.go(LoginPage.route);
   }
 
-  void _seedWaTemplate(BuildContext context, ProfileState state) {
+  void _seedFromProfile(BuildContext context, ProfileState state) {
     if (!_waSeeded && state.waTemplate != null) {
       _waController.text = state.waTemplate!.template;
       _waSeeded = true;
+    }
+    if (!_bankSeeded && state.bankSampah != null) {
+      final bank = state.bankSampah!;
+      _namaBankController.text = bank.nama;
+      _alamatBankController.text = bank.alamat;
+      _hpBankController.text = bank.noHpPic;
+      _bankSeeded = true;
     }
   }
 
@@ -120,9 +135,27 @@ class _ProfileViewState extends State<_ProfileView>
   }
 
   Future<void> _onSaveSettings() async {
-    final err = await context.read<ProfileCubit>().saveWaTemplate(_waController.text.trim());
+    if (!(_bankFormKey.currentState?.validate() ?? false)) return;
+    final cubit = context.read<ProfileCubit>();
+
+    // Save the bank profile first, then the WA template.
+    final bankErr = await cubit.updateBankSampah(
+      nama: _namaBankController.text.trim(),
+      alamat: _alamatBankController.text.trim(),
+      noHpPic: _hpBankController.text.trim(),
+    );
     if (!mounted) return;
-    _snack(err == null ? 'Pengaturan berhasil disimpan' : err.displayMessage, error: err != null);
+    if (bankErr != null) {
+      _snack(bankErr.displayMessage, error: true);
+      return;
+    }
+
+    final waErr = await cubit.saveWaTemplate(_waController.text.trim());
+    if (!mounted) return;
+    _snack(
+      waErr == null ? 'Pengaturan berhasil disimpan' : waErr.displayMessage,
+      error: waErr != null,
+    );
   }
 
   Future<void> _onCopyInvite() async {
@@ -148,7 +181,7 @@ class _ProfileViewState extends State<_ProfileView>
     return MultiBlocListener(
       listeners: [
         BlocListener<AuthenticationBloc, AuthenticationStates>(listener: _onLoggedOut),
-        BlocListener<ProfileCubit, ProfileState>(listener: _seedWaTemplate),
+        BlocListener<ProfileCubit, ProfileState>(listener: _seedFromProfile),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -342,7 +375,6 @@ class _ProfileViewState extends State<_ProfileView>
 
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name = (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
-    final bank = state.bankSampah;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -425,38 +457,52 @@ class _ProfileViewState extends State<_ProfileView>
                 ),
               ],
             ),
-            child: Column(
-              children: [
-                // Home Icon
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenLight.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.greenLight, width: 2),
+            child: Form(
+              key: _bankFormKey,
+              child: Column(
+                children: [
+                  // Home Icon
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.greenLight.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.greenLight, width: 2),
+                      ),
+                      child: const Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
                     ),
-                    child: const Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
                   ),
-                ),
-                const SizedBox(height: 24),
-                _buildFormField(
-                  label: 'NAMA BANK SAMPAH',
-                  value: bank?.nama.isNotEmpty == true ? bank!.nama : '-',
-                ),
-                const SizedBox(height: 16),
-                _buildFormField(
-                  label: 'ALAMAT BANK SAMPAH',
-                  value: _composeAlamat(bank),
-                ),
-                const SizedBox(height: 16),
-                _buildFormField(
-                  label: 'NOMOR HP PENANGGUNG JAWAB',
-                  value: bank?.noHpPic.isNotEmpty == true ? bank!.noHpPic : '-',
-                  prefixIcon: Icons.phone,
-                  iconColor: Colors.pink[400],
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  _buildEditableField(
+                    label: 'NAMA BANK SAMPAH',
+                    controller: _namaBankController,
+                    validator: (v) => (v == null || v.trim().length < 3)
+                        ? 'Nama minimal 3 karakter'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildEditableField(
+                    label: 'ALAMAT BANK SAMPAH',
+                    controller: _alamatBankController,
+                    maxLines: 2,
+                    validator: (v) => (v == null || v.trim().length < 10)
+                        ? 'Alamat wajib diisi (minimal 10 karakter)'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildEditableField(
+                    label: 'NOMOR HP PENANGGUNG JAWAB',
+                    controller: _hpBankController,
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: Icons.phone,
+                    iconColor: Colors.pink[400],
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Nomor HP wajib diisi'
+                        : null,
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -466,11 +512,6 @@ class _ProfileViewState extends State<_ProfileView>
     );
   }
 
-  String _composeAlamat(BankSampahProfile? bank) {
-    if (bank == null) return '-';
-    final parts = [bank.alamat, bank.kota].where((p) => p.trim().isNotEmpty).toList();
-    return parts.isEmpty ? '-' : parts.join(', ');
-  }
 
   // ── Tab 2: Manajemen Tim ────────────────────────────────────────────
 
@@ -703,11 +744,14 @@ class _ProfileViewState extends State<_ProfileView>
     );
   }
 
-  Widget _buildFormField({
+  Widget _buildEditableField({
     required String label,
-    required String value,
+    required TextEditingController controller,
+    String? Function(String?)? validator,
     IconData? prefixIcon,
     Color? iconColor,
+    int maxLines = 1,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -721,26 +765,36 @@ class _ProfileViewState extends State<_ProfileView>
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!, width: 1),
-          ),
-          child: Row(
-            children: [
-              if (prefixIcon != null) ...[
-                Icon(prefixIcon, color: iconColor, size: 20),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Text(
-                  value,
-                  style: AppTextStyle.small.copyWith(color: Colors.black87),
-                ),
-              ),
-            ],
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          style: AppTextStyle.small.copyWith(color: Colors.black87),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: Colors.grey[50],
+            prefixIcon: prefixIcon != null
+                ? Icon(prefixIcon, color: iconColor, size: 20)
+                : null,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
           ),
         ),
       ],
@@ -802,7 +856,9 @@ class _ProfileViewState extends State<_ProfileView>
               const SizedBox(height: 8),
               TextField(
                 controller: _waController,
-                maxLines: 4,
+                minLines: 3,
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.grey[50],

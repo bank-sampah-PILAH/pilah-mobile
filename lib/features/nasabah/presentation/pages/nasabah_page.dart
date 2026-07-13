@@ -144,10 +144,23 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                       final customers = state.nasabahList;
 
                       if (customers.isEmpty) {
-                        return const EmptyView(
-                          title: 'Nasabah Tidak Ditemukan',
-                          subtitle: 'Coba kata kunci yang berbeda',
-                          icon: Icons.search_off,
+                        if (state.searchQuery.isNotEmpty) {
+                          return const EmptyView(
+                            title: 'Nasabah Tidak Ditemukan',
+                            subtitle: 'Coba kata kunci yang berbeda',
+                            icon: Icons.search_off,
+                          );
+                        }
+                        return EmptyView(
+                          title: state.isActiveTab
+                              ? 'Belum Ada Nasabah'
+                              : 'Tidak Ada Nasabah Nonaktif',
+                          subtitle: state.isActiveTab
+                              ? 'Tekan tombol + untuk menambah nasabah pertama.'
+                              : 'Semua nasabah masih berstatus aktif.',
+                          icon: state.isActiveTab
+                              ? Icons.people_outline
+                              : Icons.person_off_outlined,
                         );
                       }
 

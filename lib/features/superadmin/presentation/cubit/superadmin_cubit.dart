@@ -6,7 +6,10 @@ import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampa
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
 
-@lazySingleton
+// Route-scoped: the superadmin screen owns this via BlocProvider and closes it
+// on exit, so it must be a fresh instance per navigation (a singleton would be
+// reused after close and crash with "emit after close" on re-entry).
+@injectable
 class SuperadminCubit extends Cubit<SuperadminState> {
   final GetBankSampahUseCase getBankSampahUseCase;
   final ApproveBankSampahUseCase approveBankSampahUseCase;

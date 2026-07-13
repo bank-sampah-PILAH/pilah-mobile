@@ -7,4 +7,5 @@ abstract class HargaRepository {
   Future<Either<NetworkException, void>> addHarga(HargaEntity harga);
   Future<Either<NetworkException, void>> updateHarga(HargaEntity harga);
   Future<Either<NetworkException, void>> deactivateHarga(String id);
+  Future<Either<NetworkException, void>> activateHarga(String id);
 }

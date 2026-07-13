@@ -11,6 +11,7 @@ import 'events/login_refresh_events.dart';
 import 'events/login_with_google_events.dart';
 import 'events/logout_events.dart';
 import 'events/post_login_events.dart';
+import 'events/refresh_user_events.dart';
 
 @Injectable()
 class AuthenticationBloc
@@ -26,6 +27,7 @@ class AuthenticationBloc
     on<LoginWithGoogleRequested>(_onLoginWithGoogleRequested);
     on<CheckSessionRequested>(_onCheckSessionRequested);
     on<LogoutRequested>(_onLogoutRequested);
+    on<RefreshUserRequested>(_onRefreshUserRequested);
   }
 
   Future _onPostLoginEvent(
@@ -108,5 +110,18 @@ class AuthenticationBloc
     emitter(AuthenticationLoading());
     await _useCases.logout();
     emitter(Unauthenticated());
+  }
+
+  /// Silently re-fetches the current user (no loading state, keeps the current
+  /// session on failure) so the UI reflects freshly-saved profile data.
+  Future _onRefreshUserRequested(
+    RefreshUserRequested event,
+    Emitter<AuthenticationStates> emitter,
+  ) async {
+    final result = await _useCases.getMe();
+    result.fold(
+      (_) {},
+      (entity) => emitter(Authenticated(authEntity: entity)),
+    );
   }
 }
