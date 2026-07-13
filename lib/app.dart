@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 
 import 'package:pilah_mobile/services/di.dart';
@@ -36,6 +37,9 @@ class App extends StatelessWidget {
         ),
         BlocProvider<AuthenticationBloc>(
           create: (context) => di<AuthenticationBloc>(),
+        ),
+        BlocProvider<OnboardingCubit>(
+          create: (context) => di<OnboardingCubit>(),
         ),
       ],
       child: MaterialApp.router(

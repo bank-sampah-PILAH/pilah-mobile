@@ -6,6 +6,7 @@ class AuthEntity {
   final String token;
   final String? nextStep;
   final String? bankSampahNama;
+  final String? role;
 
   const AuthEntity({
     this.id,
@@ -15,5 +16,6 @@ class AuthEntity {
     required this.token,
     this.nextStep,
     this.bankSampahNama,
+    this.role,
   });
 }

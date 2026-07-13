@@ -68,6 +68,27 @@ class NetworkService {
     return response;
   }
 
+  /// POSTs multipart form data (e.g. file uploads). Unlike [post], this does
+  /// NOT force `Content-Type: application/json` — Dio sets
+  /// `multipart/form-data` with the correct boundary from [formData].
+  Future<Response> postMultipart(
+    String path, {
+    required FormData formData,
+  }) async {
+    final userToken = networkUtils.accessToken;
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
+    };
+
+    Response response = await dio
+        .post(environment.baseUrl + path,
+            data: formData,
+            options: options.copyWith(headers: headers))
+        .timeout(globalTimeout);
+    return response;
+  }
+
   Future<Response> put(
     String path, {
     Map<String, dynamic>? queryParams,

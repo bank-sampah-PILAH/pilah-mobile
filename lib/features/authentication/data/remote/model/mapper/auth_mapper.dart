@@ -12,6 +12,7 @@ class AuthMapper {
       token: response.accessToken,
       nextStep: response.nextStep,
       bankSampahNama: response.user.bankSampahNama,
+      role: response.user.role,
     );
   }
 
@@ -31,6 +32,7 @@ class AuthMapper {
       token: '',
       nextStep: (json['state'] ?? json['next_step'])?.toString(),
       bankSampahNama: json['bank_sampah_nama']?.toString(),
+      role: json['role']?.toString(),
     );
   }
 }
