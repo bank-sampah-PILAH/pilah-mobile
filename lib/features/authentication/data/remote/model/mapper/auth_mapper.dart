@@ -14,4 +14,23 @@ class AuthMapper {
       bankSampahNama: response.user.bankSampahNama,
     );
   }
+
+  /// Maps the `GET /auth/me` payload to an [AuthEntity] for session restore.
+  ///
+  /// Unlike the login envelope, this endpoint returns the user fields flat with
+  /// `nama` (no `name`) and exposes the routing hint as `state` (not
+  /// `next_step`), and it carries no token — the session token is already
+  /// persisted, so [AuthEntity.token] is left empty here.
+  static AuthEntity mapMeResponseToDomain(Map<String, dynamic> json) {
+    final name = (json['nama'] ?? json['name'] ?? '').toString();
+    return AuthEntity(
+      id: json['id']?.toString(),
+      name: name,
+      email: json['email']?.toString() ?? '',
+      photoUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}',
+      token: '',
+      nextStep: (json['state'] ?? json['next_step'])?.toString(),
+      bankSampahNama: json['bank_sampah_nama']?.toString(),
+    );
+  }
 }

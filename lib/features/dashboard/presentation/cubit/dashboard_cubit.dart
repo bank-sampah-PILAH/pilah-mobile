@@ -82,6 +82,12 @@ class DashboardCubit extends Cubit<DashboardState> {
     }
   }
 
+  /// Resets the derived stats to zero (used on logout). The source cubits are
+  /// reset separately; their initial states are ignored by the listeners above.
+  void reset() {
+    emit(const DashboardState());
+  }
+
   @override
   Future<void> close() {
     nasabahSubscription.cancel();

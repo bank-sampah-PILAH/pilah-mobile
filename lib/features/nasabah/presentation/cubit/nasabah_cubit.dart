@@ -104,6 +104,15 @@ class NasabahCubit extends Cubit<NasabahState> {
     return result.fold((_) => null, (data) => data);
   }
 
+  /// Clears cached data and resets to the initial state (used on logout, since
+  /// this cubit is an app-scoped singleton that outlives a session).
+  void reset() {
+    _allNasabah = [];
+    _isActiveTab = true;
+    _searchQuery = '';
+    emit(NasabahInitial());
+  }
+
   void _emitFiltered() {
     final filtered = _allNasabah.where((customer) {
       final matchesTab = customer.isActive == _isActiveTab;

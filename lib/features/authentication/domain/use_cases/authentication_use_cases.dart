@@ -13,4 +13,10 @@ abstract class AuthenticationUseCases {
     String accessToken,
     String refreshToken,
   );
+
+  Future<Either<NetworkException, AuthEntity>> getMe();
+
+  Future<Either<NetworkException, void>> logout();
+
+  Future<bool> hasSession();
 }

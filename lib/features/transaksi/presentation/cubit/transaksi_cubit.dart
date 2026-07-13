@@ -69,6 +69,15 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     return result.fold((_) => null, (data) => data);
   }
 
+  /// Clears cached data and resets to the initial state (used on logout, since
+  /// this cubit is an app-scoped singleton that outlives a session).
+  void reset() {
+    _allTransaksi = [];
+    _activeFilter = 'Semua Waktu';
+    _searchQuery = '';
+    emit(TransaksiInitial());
+  }
+
   void _emitFiltered() {
     List<TransaksiGroupEntity> filteredGroups = [];
 

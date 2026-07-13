@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -31,9 +39,23 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     super.dispose();
   }
 
+  /// Signs the user out: the bloc revokes the refresh token and clears local
+  /// tokens; when it reports [Unauthenticated] we clear the app-scoped cubit
+  /// caches and return to login.
+  void _onLoggedOut(BuildContext context, AuthenticationStates state) {
+    if (state is! Unauthenticated) return;
+    context.read<NasabahCubit>().reset();
+    context.read<HargaCubit>().reset();
+    context.read<TransaksiCubit>().reset();
+    context.read<DashboardCubit>().reset();
+    context.go(LoginPage.route);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocListener<AuthenticationBloc, AuthenticationStates>(
+      listener: _onLoggedOut,
+      child: Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -146,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          context.go(LoginPage.route);
+                          context.read<AuthenticationBloc>().add(LogoutRequested());
                         },
                         icon: Icon(Icons.logout, color: Colors.red[600], size: 20),
                         label: Text(
@@ -172,6 +194,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
               ),
           ],
         ),
+      ),
       ),
     );
   }
