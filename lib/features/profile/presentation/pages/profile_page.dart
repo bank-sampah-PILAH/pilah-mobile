@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -125,13 +126,11 @@ class _ProfileViewState extends State<_ProfileView>
   }
 
   void _snack(String message, {bool error = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: error ? Colors.red : null,
-      ),
-    );
+    if (error) {
+      AppNotification.showError(context, title: 'Gagal', message: message);
+    } else {
+      AppNotification.showSuccess(context, title: 'Berhasil', message: message);
+    }
   }
 
   Future<void> _onSaveSettings() async {
