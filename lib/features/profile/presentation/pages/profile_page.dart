@@ -913,6 +913,9 @@ class _ProfileViewState extends State<_ProfileView>
                       const SizedBox(height: 8),
                       Text(
                         preview,
+                        // No maxLines / overflow: the preview wraps and grows
+                        // freely inside the scrollable tab.
+                        softWrap: true,
                         style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
                       ),
                     ],
