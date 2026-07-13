@@ -1,37 +1,51 @@
 import 'package:equatable/equatable.dart';
 
+enum DashboardStatus { initial, loading, loaded, error }
+
 class DashboardState extends Equatable {
+  final DashboardStatus status;
+  final int totalKasBulanIni;
   final int totalNasabahAktif;
-  final int totalSaldoNasabah;
-  final int totalSampah;
+  final double totalSampahKg;
   final int totalTransaksi;
+  final String? error;
 
   const DashboardState({
+    this.status = DashboardStatus.initial,
+    this.totalKasBulanIni = 0,
     this.totalNasabahAktif = 0,
-    this.totalSaldoNasabah = 0,
-    this.totalSampah = 0,
+    this.totalSampahKg = 0,
     this.totalTransaksi = 0,
+    this.error,
   });
 
+  bool get isLoaded => status == DashboardStatus.loaded;
+
   DashboardState copyWith({
+    DashboardStatus? status,
+    int? totalKasBulanIni,
     int? totalNasabahAktif,
-    int? totalSaldoNasabah,
-    int? totalSampah,
+    double? totalSampahKg,
     int? totalTransaksi,
+    String? error,
   }) {
     return DashboardState(
+      status: status ?? this.status,
+      totalKasBulanIni: totalKasBulanIni ?? this.totalKasBulanIni,
       totalNasabahAktif: totalNasabahAktif ?? this.totalNasabahAktif,
-      totalSaldoNasabah: totalSaldoNasabah ?? this.totalSaldoNasabah,
-      totalSampah: totalSampah ?? this.totalSampah,
+      totalSampahKg: totalSampahKg ?? this.totalSampahKg,
       totalTransaksi: totalTransaksi ?? this.totalTransaksi,
+      error: error ?? this.error,
     );
   }
 
   @override
   List<Object?> get props => [
+        status,
+        totalKasBulanIni,
         totalNasabahAktif,
-        totalSaldoNasabah,
-        totalSampah,
+        totalSampahKg,
         totalTransaksi,
+        error,
       ];
 }

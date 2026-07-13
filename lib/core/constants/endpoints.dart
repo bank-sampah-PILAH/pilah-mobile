@@ -14,4 +14,7 @@ class Endpoints {
   static const String team = "/api/v1/team";
   static const String teamInvite = "/api/v1/team/invite";
   static const String waTemplate = "/api/v1/pengaturan/wa-template";
+
+  // dashboard
+  static const String dashboardStats = "/api/v1/dashboard/stats";
 }
