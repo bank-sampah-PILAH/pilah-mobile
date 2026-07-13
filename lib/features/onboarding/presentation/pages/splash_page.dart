@@ -3,12 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/check_session_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -47,14 +46,7 @@ class _SplashPageState extends State<SplashPage> {
 
     if (state is Authenticated) {
       _navigated = true;
-      final step = state.authEntity.nextStep;
-      if (step == 'superadmin_dashboard') {
-        context.go(SuperAdminDashboardScreen.route);
-      } else if (step == null || step.isEmpty || step == 'dashboard') {
-        context.go(DashboardPage.route);
-      } else {
-        context.go(LoginPage.route);
-      }
+      context.go(locationForAuthStep(state.authEntity.nextStep));
     } else if (state is Unauthenticated || state is AuthenticationFailure) {
       _navigated = true;
       context.go(LoginPage.route);
