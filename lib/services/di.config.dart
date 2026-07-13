@@ -34,8 +34,6 @@ import '../features/authentication/domain/use_cases/login_with_google_usecase.da
 import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
 import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
-import '../features/harga/data/datasources/harga_local_data_source.dart'
-    as _i112;
 import '../features/harga/data/datasources/harga_remote_data_source.dart'
     as _i960;
 import '../features/harga/data/datasources/harga_remote_data_source_impl.dart'
@@ -70,38 +68,10 @@ import '../features/nasabah/domain/use_cases/update_nasabah_usecase.dart'
 import '../features/nasabah/presentation/cubit/nasabah_cubit.dart' as _i958;
 import '../features/onboarding/data/datasources/onboarding_remote_data_source.dart'
     as _i247;
-import '../features/onboarding/data/onboarding_repository_impl.dart' as _i255;
-import '../features/onboarding/data/remote/onboarding_remote_data_sources.dart'
-    as _i438;
-import '../features/onboarding/domain/authentication_interactor.dart' as _i698;
-import '../features/onboarding/domain/repository/onboarding_repository.dart'
-    as _i998;
-import '../features/onboarding/domain/use_cases/onboarding_use_cases.dart'
-    as _i1022;
-import '../features/onboarding/presentation/blocs/onboarding_bloc.dart'
-    as _i221;
 import '../features/onboarding/presentation/cubit/onboarding_cubit.dart'
     as _i244;
-import '../features/product/data/product_repository_impl.dart' as _i162;
-import '../features/product/data/remote/product_remote_data_sources.dart'
-    as _i174;
-import '../features/product/domain/product_interactor.dart' as _i283;
-import '../features/product/domain/repository/product_repository.dart' as _i128;
-import '../features/product/domain/use_cases/product_use_cases.dart' as _i60;
-import '../features/product/presentation/home/blocs/product_home_bloc.dart'
-    as _i513;
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
     as _i1053;
-import '../features/profile/data/local/profile_local_data_sources.dart'
-    as _i1024;
-import '../features/profile/data/profile_repository_impl.dart' as _i1030;
-import '../features/profile/data/remote/profile_remote_data_sources.dart'
-    as _i622;
-import '../features/profile/domain/profile_interactor.dart' as _i40;
-import '../features/profile/domain/repository/profile_repository.dart' as _i928;
-import '../features/profile/domain/use_cases/profile_use_cases.dart' as _i483;
-import '../features/profile/presentation/blocs/authentication_bloc.dart'
-    as _i957;
 import '../features/profile/presentation/cubit/profile_cubit.dart' as _i300;
 import '../features/superadmin/data/datasources/superadmin_remote_data_source.dart'
     as _i309;
@@ -166,16 +136,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i124.SecureDatabase>(
         () => const _i124.SecureDatabaseImpl());
-    gh.lazySingleton<_i112.HargaLocalDataSource>(
-        () => _i112.HargaLocalDataSourceImpl());
     gh.factory<_i119.AppEnvironment>(
       () => _i119.ProdEnvironment(),
       registerFor: {_prod},
     );
     gh.lazySingleton<_i936.NetworkUtils>(
         () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
-    gh.lazySingleton<_i1024.ProfileLocalDataSources>(
-        () => _i1024.ProfileLocalDataSourcesImpl(gh<_i124.SecureDatabase>()));
     gh.lazySingleton<_i981.AuthLocalDataSources>(
         () => _i981.AuthLocalDataSourcesImpl(
               gh<_i124.SecureDatabase>(),
@@ -185,8 +151,6 @@ extension GetItInjectableX on _i174.GetIt {
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
         ));
-    gh.lazySingleton<_i174.ProductRemoteDataSources>(
-        () => _i174.ProductRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i247.OnboardingRemoteDataSource>(
         () => _i247.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i309.SuperadminRemoteDataSource>(
@@ -197,10 +161,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1053.ProfileRemoteDataSource>(
         () => _i1053.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
-    gh.lazySingleton<_i622.ProfileRemoteDataSources>(
-        () => _i622.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
-    gh.lazySingleton<_i438.OnboardingRemoteDataSources>(
-        () => _i438.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i24.AuthRemoteDataSources>(
         () => _i24.AuthRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i307.NasabahRemoteDataSource>(
@@ -217,26 +177,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
-    gh.lazySingleton<_i998.OnboardingRepository>(() =>
-        _i255.OnboardingRepositoryImpl(
-            gh<_i438.OnboardingRemoteDataSources>()));
-    gh.lazySingleton<_i128.ProductRepository>(() =>
-        _i162.ProductRepositoryImpl(gh<_i174.ProductRemoteDataSources>()));
-    gh.lazySingleton<_i928.ProfileRepository>(
-        () => _i1030.ProfileRepositoryImpl(
-              gh<_i622.ProfileRemoteDataSources>(),
-              gh<_i1024.ProfileLocalDataSources>(),
-            ));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
     gh.factory<_i300.ProfileCubit>(
         () => _i300.ProfileCubit(gh<_i1053.ProfileRemoteDataSource>()));
-    gh.lazySingleton<_i483.ProfileUseCases>(
-        () => _i40.ProfileInteractor(gh<_i928.ProfileRepository>()));
-    gh.lazySingleton<_i1022.OnboardingUseCases>(
-        () => _i698.OnboardingInteractor(gh<_i998.OnboardingRepository>()));
-    gh.factory<_i221.OnboardingBloc>(
-        () => _i221.OnboardingBloc(gh<_i1022.OnboardingUseCases>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
@@ -251,8 +195,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i521.AuthenticationUseCases>(),
           gh<_i934.LoginWithGoogleUseCase>(),
         ));
-    gh.factory<_i957.ProfileBloc>(
-        () => _i957.ProfileBloc(gh<_i483.ProfileUseCases>()));
     gh.lazySingleton<_i449.ActivateNasabahUseCase>(
         () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i532.AddNasabahUseCase>(
@@ -265,8 +207,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i524.UpdateNasabahUseCase>(
         () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i60.ProductUseCases>(
-        () => _i283.ProductInteractor(gh<_i128.ProductRepository>()));
     gh.lazySingleton<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
           gh<_i268.GetBankSampahUseCase>(),
           gh<_i958.ApproveBankSampahUseCase>(),
@@ -296,8 +236,6 @@ extension GetItInjectableX on _i174.GetIt {
         _i218.GetTransaksiDetailUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i383.GetTransaksiUseCase>(
         () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
-    gh.factory<_i513.ProductHomeBloc>(
-        () => _i513.ProductHomeBloc(gh<_i60.ProductUseCases>()));
     gh.lazySingleton<_i474.TransaksiCubit>(() => _i474.TransaksiCubit(
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i218.GetTransaksiDetailUseCase>(),
