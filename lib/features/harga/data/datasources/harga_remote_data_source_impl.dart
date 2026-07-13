@@ -11,7 +11,13 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
 
   @override
   Future<List<HargaModel>> getHarga() async {
-    final response = await networkService.get('/api/v1/jenis-sampah');
+    // `status=semua` returns both active and inactive so the active/inactive
+    // tabs can filter client-side; without it the backend defaults to `aktif`
+    // and deactivated items vanish from the list entirely.
+    final response = await networkService.get(
+      '/api/v1/jenis-sampah',
+      queryParams: {'status': 'semua', 'page_size': 100},
+    );
     final Map<String, dynamic> responseData = response.data;
     final List<dynamic> data = responseData['results'];
     return data.map((json) => HargaModel.fromJson(json)).toList();
