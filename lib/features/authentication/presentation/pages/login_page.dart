@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_background_wrapper.dart';
@@ -23,12 +24,7 @@ class LoginPage extends StatelessWidget {
       body: BlocConsumer<AuthenticationBloc, AuthenticationStates>(
         listener: (context, state) {
           if (state is Authenticated) {
-            final nextStep = state.authEntity.nextStep;
-            if (nextStep == 'dashboard') {
-              context.go('/dashboard');
-            } else {
-              context.go('/complete-profile');
-            }
+            context.go(locationForAuthStep(state.authEntity.nextStep));
           } else if (state is AuthenticationFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
