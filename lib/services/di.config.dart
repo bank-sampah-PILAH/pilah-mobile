@@ -129,6 +129,8 @@ import '../features/transaksi/domain/repositories/transaksi_repository.dart'
     as _i1031;
 import '../features/transaksi/domain/use_cases/add_transaksi_usecase.dart'
     as _i839;
+import '../features/transaksi/domain/use_cases/export_transaksi_usecase.dart'
+    as _i67;
 import '../features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart'
     as _i218;
 import '../features/transaksi/domain/use_cases/get_transaksi_usecase.dart'
@@ -288,17 +290,20 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i839.AddTransaksiUseCase>(
         () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i67.ExportTransaksiUseCase>(
+        () => _i67.ExportTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i218.GetTransaksiDetailUseCase>(() =>
         _i218.GetTransaksiDetailUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i383.GetTransaksiUseCase>(
         () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.factory<_i513.ProductHomeBloc>(
+        () => _i513.ProductHomeBloc(gh<_i60.ProductUseCases>()));
     gh.lazySingleton<_i474.TransaksiCubit>(() => _i474.TransaksiCubit(
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i218.GetTransaksiDetailUseCase>(),
           gh<_i839.AddTransaksiUseCase>(),
+          gh<_i67.ExportTransaksiUseCase>(),
         ));
-    gh.factory<_i513.ProductHomeBloc>(
-        () => _i513.ProductHomeBloc(gh<_i60.ProductUseCases>()));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),

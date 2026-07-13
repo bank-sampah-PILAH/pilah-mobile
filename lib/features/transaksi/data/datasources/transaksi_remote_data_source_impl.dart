@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 
 @LazySingleton(as: TransaksiRemoteDataSource)
 class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
@@ -13,10 +16,10 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   static const String _path = '/api/v1/transaksi';
 
   @override
-  Future<List<TransaksiGroupEntity>> getTransaksi() async {
+  Future<List<TransaksiGroupEntity>> getTransaksi(TransaksiFilter filter) async {
     final response = await networkService.get(
       _path,
-      queryParams: {'periode': 'bulan_ini', 'page_size': 100},
+      queryParams: {...filter.toQueryParams(), 'page_size': 100},
     );
     final data = response.data;
     final List<dynamic> results =
@@ -41,6 +44,27 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     return order
         .map((header) => TransaksiGroupEntity(header: header, transactions: groups[header]!))
         .toList();
+  }
+
+  @override
+  Future<TransaksiExport> exportTransaksi(TransaksiFilter filter) async {
+    final response = await networkService.getBytes(
+      '$_path/export',
+      queryParams: filter.toQueryParams(),
+    );
+    final data = response.data;
+    final bytes = data is Uint8List
+        ? data
+        : Uint8List.fromList((data as List).cast<int>());
+    final filename = _extractFilename(response.headers.value('content-disposition')) ??
+        'laporan_transaksi_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+    return TransaksiExport(bytes: bytes, filename: filename);
+  }
+
+  String? _extractFilename(String? contentDisposition) {
+    if (contentDisposition == null) return null;
+    final match = RegExp(r'filename="?([^"]+)"?').firstMatch(contentDisposition);
+    return match?.group(1);
   }
 
   @override

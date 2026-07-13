@@ -68,6 +68,30 @@ class NetworkService {
     return response;
   }
 
+  /// GETs a binary payload (e.g. an XLSX export). Returns the raw [Response] so
+  /// the caller can read both `response.data` (bytes) and headers such as
+  /// `content-disposition`.
+  Future<Response> getBytes(
+    String path, {
+    Map<String, dynamic>? queryParams,
+  }) async {
+    final userToken = networkUtils.accessToken;
+    final headers = <String, String>{
+      'Accept': '*/*',
+      if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
+    };
+
+    Response response = await dio
+        .get(environment.baseUrl + path,
+            queryParameters: queryParams,
+            options: options.copyWith(
+              headers: headers,
+              responseType: ResponseType.bytes,
+            ))
+        .timeout(globalTimeout);
+    return response;
+  }
+
   /// POSTs multipart form data (e.g. file uploads). Unlike [post], this does
   /// NOT force `Content-Type: application/json` — Dio sets
   /// `multipart/form-data` with the correct boundary from [formData].
