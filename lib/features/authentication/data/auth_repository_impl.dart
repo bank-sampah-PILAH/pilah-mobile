@@ -67,4 +67,34 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(e as Exception);
     }
   }
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> getMe() {
+    return apiCall<AuthEntity>(
+      func: _remoteDataSources.getMe(),
+      mapper: (value) => value as AuthEntity,
+    );
+  }
+
+  @override
+  Future<Either<NetworkException, void>> logout() async {
+    // Best effort: revoke the refresh token server-side, but never block the
+    // local sign-out on a network failure (expired token, offline, etc.).
+    try {
+      final refreshToken = await _localDataSources.readRefreshToken() ?? '';
+      if (refreshToken.isNotEmpty) {
+        await _remoteDataSources.logout(refreshToken);
+      }
+    } catch (_) {
+      // Ignore — the token is cleared locally regardless.
+    }
+    await _localDataSources.clearToken();
+    return const Right(null);
+  }
+
+  @override
+  Future<bool> hasSession() async {
+    final token = await _localDataSources.readAccessToken();
+    return token != null && token.isNotEmpty;
+  }
 }

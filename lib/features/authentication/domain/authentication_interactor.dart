@@ -27,4 +27,13 @@ class AuthenticationInteractor implements AuthenticationUseCases {
       refreshToken,
     );
   }
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> getMe() => _repository.getMe();
+
+  @override
+  Future<Either<NetworkException, void>> logout() => _repository.logout();
+
+  @override
+  Future<bool> hasSession() => _repository.hasSession();
 }

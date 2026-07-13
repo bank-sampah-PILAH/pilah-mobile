@@ -6,6 +6,9 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
@@ -52,13 +55,20 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     return BlocProvider(
       create: (_) => di<SuperadminCubit>()..loadBankSampah('pending'),
       child: Builder(
-        builder: (context) => Scaffold(
-          backgroundColor: const Color(0xFFF3F4F6),
-          body: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(child: _buildContentArea()),
-            ],
+        builder: (context) => BlocListener<AuthenticationBloc, AuthenticationStates>(
+          listener: (context, state) {
+            if (state is Unauthenticated) {
+              context.go('/login');
+            }
+          },
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF3F4F6),
+            body: Column(
+              children: [
+                _buildHeader(context),
+                Expanded(child: _buildContentArea()),
+              ],
+            ),
           ),
         ),
       ),
@@ -97,7 +107,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                 ],
               ),
               InkWell(
-                onTap: () => context.go('/login'),
+                onTap: () => context.read<AuthenticationBloc>().add(LogoutRequested()),
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(

@@ -87,6 +87,15 @@ class HargaCubit extends Cubit<HargaState> {
     );
   }
 
+  /// Clears cached data and resets to the initial state (used on logout, since
+  /// this cubit is an app-scoped singleton that outlives a session).
+  void reset() {
+    _allHarga = [];
+    _isActiveTab = true;
+    _searchQuery = '';
+    emit(HargaInitial());
+  }
+
   void _emitFiltered() {
     final filtered = _allHarga.where((item) {
       final matchesTab = item.isActive == _isActiveTab;

@@ -14,6 +14,13 @@ class AuthenticationLoading extends AuthenticationStates {
   List<Object?> get props => [];
 }
 
+/// Emitted when no valid session could be restored (no token, or the token was
+/// rejected by `GET /auth/me`), and after an explicit logout.
+class Unauthenticated extends AuthenticationStates {
+  @override
+  List<Object?> get props => [];
+}
+
 class Authenticated extends AuthenticationStates {
   final AuthEntity authEntity;
 
