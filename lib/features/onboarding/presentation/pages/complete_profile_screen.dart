@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final bool isInviteMode;
@@ -22,6 +25,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
   String? _gender;
+  DateTime? _selectedDob;
   bool _isLoading = false;
 
   @override
@@ -54,32 +58,67 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     if (picked != null) {
       setState(() {
+        _selectedDob = picked;
         _dobController.text =
             "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
       });
     }
   }
 
+  String _isoDate(DateTime date) =>
+      "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
   Future<void> _onSaveAndContinue() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      // Simulate network delay for UI testing
-      await Future.delayed(const Duration(seconds: 1));
+    setState(() => _isLoading = true);
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        if (_isInviteMode) {
-          context.go('/dashboard');
-        } else {
-          context.go('/register-bank-sampah');
-        }
-      }
+    final request = CompleteProfileRequest(
+      nama: _nameController.text.trim(),
+      jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
+      tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
+      noHp: _phoneController.text.trim(),
+    );
+
+    final (:result, :error) =
+        await context.read<OnboardingCubit>().completeProfile(request);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error != null) {
+      _showError(error.displayMessage);
+      return;
     }
+
+    _routeByNextStep(result?.nextStep);
+  }
+
+  void _routeByNextStep(String? nextStep) {
+    switch (nextStep) {
+      case 'dashboard':
+        context.go('/dashboard');
+        break;
+      case 'register_bank_sampah':
+        context.go('/register-bank-sampah');
+        break;
+      case 'approval_pending':
+        context.go('/pending-approval');
+        break;
+      case 'superadmin_dashboard':
+        context.go('/superadmin-dashboard');
+        break;
+      default:
+        // Fallback preserves prior behaviour: invited managers join an existing
+        // bank sampah (dashboard), new managers continue to registration.
+        context.go(_isInviteMode ? '/dashboard' : '/register-bank-sampah');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   Widget _buildFormField({

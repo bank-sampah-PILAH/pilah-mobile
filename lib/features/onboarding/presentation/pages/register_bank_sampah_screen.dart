@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'dart:io';
 import 'dart:ui';
-import 'dart:math' as math;
 import 'package:image_picker/image_picker.dart';
 
 class RegisterBankSampahScreen extends StatefulWidget {
@@ -35,21 +37,45 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   }
 
   Future<void> _onSubmit() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        context.go('/pending-approval');
-      }
+    if (_selectedImage == null) {
+      _showError('Foto kegiatan wajib diunggah sebagai bukti validasi');
+      return;
     }
+
+    setState(() => _isLoading = true);
+
+    final request = RegisterBankSampahRequest(
+      nama: _namaController.text.trim(),
+      alamat: _alamatController.text.trim(),
+      noHpPic: _phoneController.text.trim(),
+      fotoKegiatanPath: _selectedImage!.path,
+    );
+
+    final (:result, :error) =
+        await context.read<OnboardingCubit>().registerBankSampah(request);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error != null) {
+      _showError(error.displayMessage);
+      return;
+    }
+
+    // Registration submitted → backend sets status to pending review.
+    if (result?.nextStep == 'dashboard') {
+      context.go('/dashboard');
+    } else {
+      context.go('/pending-approval');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   Future<void> _pickImage() async {
