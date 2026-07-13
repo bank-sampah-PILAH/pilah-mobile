@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -26,11 +27,10 @@ class LoginPage extends StatelessWidget {
           if (state is Authenticated) {
             context.go(locationForAuthStep(state.authEntity.nextStep));
           } else if (state is AuthenticationFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
+            AppNotification.showError(
+              context,
+              title: 'Login Gagal',
+              message: state.message,
             );
           }
         },

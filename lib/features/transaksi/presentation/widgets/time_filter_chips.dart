@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -105,27 +106,19 @@ class TimeFilterChips extends StatelessWidget {
   }
 
   Future<void> _onExport(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
     final cubit = context.read<TransaksiCubit>();
 
-    messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Menyiapkan laporan XLS...'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppNotification.showSuccess(
+      context,
+      title: 'Informasi',
+      message: 'Menyiapkan laporan XLS...',
     );
 
     final (:export, :error) = await cubit.exportTransaksi();
-    messenger.hideCurrentSnackBar();
+    if (!context.mounted) return;
 
     if (error != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppNotification.showError(context, title: 'Gagal', message: error);
       return;
     }
 
@@ -140,12 +133,11 @@ class TimeFilterChips extends StatelessWidget {
         ),
       );
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Gagal menyimpan laporan: $e'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
+      if (!context.mounted) return;
+      AppNotification.showError(
+        context,
+        title: 'Gagal Menyimpan',
+        message: 'Gagal menyimpan laporan: $e',
       );
     }
   }
