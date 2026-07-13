@@ -20,9 +20,8 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Touch the cubit so it is created and loads nasabah + transaksi for the
-    // dashboard metrics when the page is first shown after login.
-    context.read<DashboardCubit>();
+    // Load the current-month metrics from the backend when the dashboard opens.
+    context.read<DashboardCubit>().loadStats();
   }
 
   @override

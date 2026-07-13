@@ -33,6 +33,14 @@ import '../features/authentication/domain/use_cases/login_with_google_usecase.da
     as _i934;
 import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
+import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
+    as _i377;
+import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
+    as _i650;
+import '../features/dashboard/domain/repositories/dashboard_repository.dart'
+    as _i602;
+import '../features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
+    as _i137;
 import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
 import '../features/harga/data/datasources/harga_remote_data_source.dart'
     as _i960;
@@ -159,6 +167,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i495.SuperadminRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i244.OnboardingCubit>(
         () => _i244.OnboardingCubit(gh<_i247.OnboardingRemoteDataSource>()));
+    gh.lazySingleton<_i377.DashboardRemoteDataSource>(
+        () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i881.TransaksiRemoteDataSource>(
         () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1053.ProfileRemoteDataSource>(
@@ -179,6 +189,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
+    gh.lazySingleton<_i602.DashboardRepository>(() =>
+        _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
+    gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
+        () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
     gh.factory<_i300.ProfileCubit>(
@@ -209,11 +223,15 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i524.UpdateNasabahUseCase>(
         () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i932.DashboardCubit>(
+        () => _i932.DashboardCubit(gh<_i137.GetDashboardStatsUseCase>()));
     gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
           gh<_i268.GetBankSampahUseCase>(),
           gh<_i958.ApproveBankSampahUseCase>(),
           gh<_i868.RejectBankSampahUseCase>(),
         ));
+    gh.lazySingleton<_i520.ActivateHargaUseCase>(
+        () => _i520.ActivateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i948.AddHargaUseCase>(
         () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i989.DeactivateHargaUseCase>(
@@ -222,8 +240,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i240.UpdateHargaUseCase>(
         () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i520.ActivateHargaUseCase>(
-        () => _i520.ActivateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i958.NasabahCubit>(() => _i958.NasabahCubit(
           gh<_i789.GetNasabahUseCase>(),
           gh<_i296.GetNasabahRingkasanUseCase>(),
@@ -252,10 +268,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i218.GetTransaksiDetailUseCase>(),
           gh<_i839.AddTransaksiUseCase>(),
           gh<_i67.ExportTransaksiUseCase>(),
-        ));
-    gh.lazySingleton<_i932.DashboardCubit>(() => _i932.DashboardCubit(
-          gh<_i958.NasabahCubit>(),
-          gh<_i474.TransaksiCubit>(),
         ));
     return this;
   }

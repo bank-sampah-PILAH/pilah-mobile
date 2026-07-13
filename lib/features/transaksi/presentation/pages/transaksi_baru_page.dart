@@ -4,6 +4,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
@@ -71,6 +72,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       );
       return;
     }
+
+    // Refresh dashboard metrics so Total Kas / Sampah / Transaksi reflect this
+    // new setoran (the dashboard tab stays alive and won't re-init on its own).
+    context.read<DashboardCubit>().loadStats();
 
     final created = result.created!;
     showModalBottomSheet(
