@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cub
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -68,10 +69,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     FocusManager.instance.primaryFocus?.unfocus();
 
     setState(() => _isSaving = true);
-    // Save the transaction and, on success, automatically send the WhatsApp
-    // notification before we leave the screen. The spinner stays up for the
-    // whole chain.
-    final result = await cubit.addTransaksiWithWa(request);
+    final result = await cubit.addTransaksi(request);
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -88,24 +86,38 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // new setoran (the dashboard tab stays alive and won't re-init on its own).
     context.read<DashboardCubit>().loadStats();
 
-    // Close the screen, then surface the combined save + WA outcome. A failed
-    // WA send is a warning only — the transaction is kept and can be retried
-    // from the detail sheet.
-    context.pop();
-    if (result.waSuccess) {
-      AppNotification.showSuccess(
-        context,
-        title: 'Berhasil',
-        message: 'Transaksi berhasil disimpan & notifikasi WhatsApp terkirim.',
-      );
-    } else {
-      AppNotification.showError(
-        context,
-        title: 'Peringatan',
-        message:
-            'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis. Silakan coba lagi di detail transaksi.',
-      );
-    }
+    final created = result.created!;
+    await showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      builder: (sheetContext) => TransaksiBerhasilBottomSheet(
+        customerName: selectedCustomer!.name,
+        totalSetoran: created.totalNilai,
+        newBalance: created.saldoSetelah,
+        itemCount: created.itemCount,
+        onKirimWaSelesai: () async {
+          final waResult = await cubit.resendWa(created.id);
+          if (!mounted) return;
+          Navigator.of(sheetContext).pop();
+          context.pop();
+          if (waResult.success) {
+            AppNotification.showSuccess(
+              context,
+              title: 'Berhasil',
+              message: 'Transaksi disimpan & notifikasi WhatsApp terkirim.',
+            );
+          } else {
+            AppNotification.showError(
+              context,
+              title: 'Peringatan',
+              message: 'Transaksi berhasil disimpan, namun gagal mengirim WhatsApp otomatis.',
+            );
+          }
+        },
+      ),
+    );
   }
 
   int get grandTotal {
