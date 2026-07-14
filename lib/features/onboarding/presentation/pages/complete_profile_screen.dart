@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final bool isInviteMode;
@@ -27,6 +28,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _nameController = TextEditingController();
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _tokenController = TextEditingController();
   String? _gender;
   DateTime? _selectedDob;
   bool _isLoading = false;
@@ -36,7 +38,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     _nameController.dispose();
     _dobController.dispose();
     _phoneController.dispose();
+    _tokenController.dispose();
     super.dispose();
+  }
+
+  /// Accepts either a bare token or a full invite URL (`…/invite?token=XYZ`),
+  /// so pasting the whole copied link works. Falls back to the trimmed input
+  /// when there's no `token` query parameter to pull out.
+  String _extractToken(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return '';
+    final fromQuery = Uri.tryParse(value)?.queryParameters['token'];
+    if (fromQuery != null && fromQuery.isNotEmpty) return fromQuery;
+    return value;
   }
 
   void _selectDate() async {
@@ -83,21 +97,52 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       noHp: _phoneController.text.trim(),
     );
 
-    final (:result, :error) =
-        await context.read<OnboardingCubit>().completeProfile(request);
+    final cubit = context.read<OnboardingCubit>();
+    final (:result, :error) = await cubit.completeProfile(request);
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
     if (error != null) {
+      setState(() => _isLoading = false);
       _showError(error.displayMessage);
       return;
     }
 
+    var nextStep = result?.nextStep;
+
+    // Join the inviting bank sampah only after the profile is saved: the
+    // backend derives `next_step` from the profile being complete, so accepting
+    // second gives an accurate routing hint (and keeps an invalid form from
+    // consuming the invite).
+    if (_isInviteMode) {
+      final invite = await cubit.acceptInvite(_extractToken(_tokenController.text));
+      if (!mounted) return;
+
+      if (invite.error != null) {
+        setState(() => _isLoading = false);
+        // The profile itself was saved; only joining failed, so keep the user
+        // here to correct the token rather than routing them onward.
+        context.read<AuthenticationBloc>().add(RefreshUserRequested());
+        _showError(invite.error!.displayMessage, title: 'Gagal Bergabung');
+        return;
+      }
+      nextStep = invite.result?.nextStep ?? nextStep;
+    }
+
+    setState(() => _isLoading = false);
+
     // The name (and gender/dob) were just saved server-side; refresh the cached
     // user so the dashboard/profile show the entered name, not the Google one.
     context.read<AuthenticationBloc>().add(RefreshUserRequested());
-    _routeByNextStep(result?.nextStep);
+
+    if (_isInviteMode) {
+      AppNotification.showSuccess(
+        context,
+        title: 'Berhasil Bergabung',
+        message: 'Anda berhasil bergabung dengan bank sampah.',
+      );
+    }
+    _routeByNextStep(nextStep);
   }
 
   void _routeByNextStep(String? nextStep) {
@@ -121,8 +166,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
   }
 
-  void _showError(String message) {
-    AppNotification.showError(context, title: 'Gagal', message: message);
+  void _showError(String message, {String title = 'Gagal'}) {
+    AppNotification.showError(context, title: title, message: message);
   }
 
   Widget _buildFormField({
@@ -170,24 +215,38 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               decoration: const BoxDecoration(
                 color: AppColors.greenDark,
               ),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Lengkapi Profil Anda',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Lengkapi Profil Anda',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Data ini digunakan untuk verifikasi akun Anda.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Data ini digunakan untuk verifikasi akun Anda.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
+                  IconButton(
+                    onPressed: () {
+                      context.read<AuthenticationBloc>().add(LogoutRequested());
+                    },
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    tooltip: 'Keluar',
                   ),
                 ],
               ),
@@ -309,6 +368,55 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Field 0: Token Undangan (invite mode only)
+                      if (_isInviteMode)
+                        _buildFormField(
+                          label: 'KODE / TOKEN UNDANGAN',
+                          child: TextFormField(
+                            controller: _tokenController,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            decoration: InputDecoration(
+                              hintText: 'Paste token undangan di sini',
+                              helperText: 'Boleh tempel seluruh link undangan.',
+                              helperStyle: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 11,
+                              ),
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontWeight: FontWeight.normal,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.vpn_key_outlined,
+                                color: AppColors.greenDark,
+                                size: 20,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: AppColors.greenDark, width: 1.5),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 16),
+                            ),
+                            validator: (value) {
+                              if (_extractToken(value ?? '').isEmpty) {
+                                return 'Token undangan wajib diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+
                       // Field 1: Nama Lengkap
                       _buildFormField(
                         label: 'NAMA LENGKAP',

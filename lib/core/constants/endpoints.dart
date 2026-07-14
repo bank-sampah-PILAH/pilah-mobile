@@ -8,6 +8,7 @@ class Endpoints {
   // onboarding
   static const String onboardingProfile = "/api/v1/onboarding/profile";
   static const String onboardingBankSampah = "/api/v1/onboarding/bank-sampah";
+  static const String invitesAccept = "/api/v1/invites/accept";
 
   // profile / bank sampah / team / settings
   static const String bankSampahMe = "/api/v1/bank-sampah/me";

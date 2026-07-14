@@ -30,6 +30,25 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     );
   }
 
+  /// Joins an existing bank sampah with an invite [token]. Returns the backend
+  /// [OnboardingResult] (with the next routing step) on success; otherwise the
+  /// [NetworkException] carrying the backend's reason (invalid/expired token,
+  /// or a bank sampah that is not approved yet).
+  Future<({OnboardingResult? result, NetworkException? error})> acceptInvite(
+    String token,
+  ) async {
+    emit(const OnboardingSubmitting());
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.acceptInvite(token),
+      mapper: (value) => value as OnboardingResult,
+    );
+    emit(const OnboardingInitial());
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
   /// Submits the bank-sampah registration (multipart, with `foto_kegiatan`).
   Future<({OnboardingResult? result, NetworkException? error})>
       registerBankSampah(RegisterBankSampahRequest request) async {
