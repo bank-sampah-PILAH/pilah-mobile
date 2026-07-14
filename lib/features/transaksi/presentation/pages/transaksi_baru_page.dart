@@ -5,13 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 
@@ -29,6 +29,15 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // The jenis-sampah dropdown options come from HargaCubit, which is otherwise
+    // only loaded when the price-list (Harga) page is visited. Load here so the
+    // dropdown has options even when arriving straight from the dashboard.
+    context.read<HargaCubit>().loadHarga();
+  }
 
   void _addItem() {
     setState(() {
@@ -56,11 +65,13 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     );
 
     final cubit = context.read<TransaksiCubit>();
-    final customerName = selectedCustomer!.name;
     FocusManager.instance.primaryFocus?.unfocus();
 
     setState(() => _isSaving = true);
-    final result = await cubit.addTransaksi(request);
+    // Save the transaction and, on success, automatically send the WhatsApp
+    // notification before we leave the screen. The spinner stays up for the
+    // whole chain.
+    final result = await cubit.addTransaksiWithWa(request);
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -77,34 +88,24 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // new setoran (the dashboard tab stays alive and won't re-init on its own).
     context.read<DashboardCubit>().loadStats();
 
-    final created = result.created!;
-    showModalBottomSheet(
-      context: context,
-      isDismissible: true,
-      enableDrag: true,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => TransaksiBerhasilBottomSheet(
-        customerName: customerName,
-        totalSetoran: created.totalNilai,
-        newBalance: created.saldoSetelah,
-        itemCount: created.itemCount,
-      ),
-    ).then((_) {
-      if (!mounted) return;
-
-      // If the page is already popping (e.g. going to dashboard), don't rebuild
-      final route = ModalRoute.of(context);
-      if (route != null && !route.isCurrent) return;
-
-      setState(() {
-        selectedCustomer = null;
-        setoranItems = [];
-        _hasSubmitted = false;
-        _addItem();
-      });
-    });
+    // Close the screen, then surface the combined save + WA outcome. A failed
+    // WA send is a warning only — the transaction is kept and can be retried
+    // from the detail sheet.
+    context.pop();
+    if (result.waSuccess) {
+      AppNotification.showSuccess(
+        context,
+        title: 'Berhasil',
+        message: 'Transaksi berhasil disimpan & notifikasi WhatsApp terkirim.',
+      );
+    } else {
+      AppNotification.showError(
+        context,
+        title: 'Peringatan',
+        message:
+            'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis. Silakan coba lagi di detail transaksi.',
+      );
+    }
   }
 
   int get grandTotal {

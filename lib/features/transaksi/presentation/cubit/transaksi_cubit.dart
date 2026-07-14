@@ -79,18 +79,24 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     _emitFiltered();
   }
 
-  /// Creates a setoran transaction. On success the list is reloaded and the
-  /// backend-authoritative [TransaksiCreated] is returned; otherwise the
+  /// Creates a setoran transaction and then automatically fires the WhatsApp
+  /// notification for it. A failed WA send is reported via `waSuccess` but never
+  /// rolls back the transaction. On success the list is reloaded *after* the WA
+  /// attempt so the new item appears with its authoritative `status_wa`
+  /// (terkirim/gagal) without a manual refresh; otherwise the creation
   /// [NetworkException] is returned so the page can show the error.
-  Future<({TransaksiCreated? created, NetworkException? error})> addTransaksi(
-    TransaksiRequest request,
-  ) async {
+  Future<({TransaksiCreated? created, NetworkException? error, bool waSuccess})>
+      addTransaksiWithWa(TransaksiRequest request) async {
     final result = await addTransaksiUseCase.execute(request);
     return result.fold(
-      (failure) => (created: null, error: failure),
-      (created) {
-        loadTransaksi();
-        return (created: created, error: null);
+      (failure) async => (created: null, error: failure, waSuccess: false),
+      (created) async {
+        // Chain the WA notification onto the freshly created transaction.
+        final waResult = await resendWaUseCase.execute(created.id);
+        // Reload only after the WA attempt so the list reflects the final
+        // backend status_wa rather than the transient "belum dikirim".
+        await loadTransaksi();
+        return (created: created, error: null, waSuccess: waResult.isRight());
       },
     );
   }
