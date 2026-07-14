@@ -36,6 +36,12 @@ class NasabahCubit extends Cubit<NasabahState> {
   String get searchQuery => _searchQuery;
   int get activeCount => _allNasabah.where((n) => n.isActive).length;
 
+  /// Every active nasabah, independent of the nasabah page's active/inactive
+  /// tab and search query. The Transaksi Baru picker reads this so its options
+  /// aren't narrowed by whatever the nasabah page was last showing.
+  List<NasabahEntity> get activeNasabah =>
+      _allNasabah.where((n) => n.isActive).toList();
+
   Future<void> loadNasabah() async {
     emit(NasabahLoading());
     final result = await getNasabahUseCase.execute();

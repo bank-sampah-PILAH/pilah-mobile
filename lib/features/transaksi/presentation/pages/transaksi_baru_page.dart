@@ -35,10 +35,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   @override
   void initState() {
     super.initState();
-    // The jenis-sampah dropdown options come from HargaCubit, which is otherwise
-    // only loaded when the price-list (Harga) page is visited. Load here so the
-    // dropdown has options even when arriving straight from the dashboard.
+    // Both pickers on this page read app-scoped singletons that are otherwise
+    // only populated by the Harga and Nasabah pages. Load them here so the
+    // dropdowns have options even when arriving straight from the dashboard.
     context.read<HargaCubit>().loadHarga();
+    context.read<NasabahCubit>().loadNasabah();
   }
 
   void _addItem() {
