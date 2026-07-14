@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_u
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
 @lazySingleton
@@ -15,6 +16,7 @@ class TransaksiCubit extends Cubit<TransaksiState> {
   final GetTransaksiDetailUseCase getTransaksiDetailUseCase;
   final AddTransaksiUseCase addTransaksiUseCase;
   final ExportTransaksiUseCase exportTransaksiUseCase;
+  final ResendWaUseCase resendWaUseCase;
 
   List<TransaksiGroupEntity> _allTransaksi = [];
   String _periode = 'bulan_ini';
@@ -27,6 +29,7 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     this.getTransaksiDetailUseCase,
     this.addTransaksiUseCase,
     this.exportTransaksiUseCase,
+    this.resendWaUseCase,
   ) : super(TransaksiInitial());
 
   String get periode => _periode;
@@ -95,6 +98,41 @@ class TransaksiCubit extends Cubit<TransaksiState> {
   Future<TransaksiDetailEntity?> fetchTransaksiDetail(String id) async {
     final result = await getTransaksiDetailUseCase.execute(id);
     return result.fold((_) => null, (data) => data);
+  }
+
+  /// Resends the WhatsApp notification for transaction [id]. Returns whether it
+  /// succeeded and, on failure, the user-facing error message so the caller can
+  /// react on the button itself. On success the matching list item's WA status
+  /// is flipped locally and the filtered list re-emitted, so the list reflects
+  /// the change without triggering a full network reload.
+  Future<({bool success, String? error})> resendWa(String id) async {
+    final result = await resendWaUseCase.execute(id);
+    return result.fold(
+      (failure) => (success: false, error: failure.displayMessage),
+      (status) {
+        _applyWaStatus(id, isWaSuccess: status == 'sent');
+        return (success: true, error: null);
+      },
+    );
+  }
+
+  /// Updates the cached [id] transaction's WA status in place and re-emits the
+  /// filtered list. No-op (no emit) when the item isn't in the current cache.
+  void _applyWaStatus(String id, {required bool isWaSuccess}) {
+    var changed = false;
+    final updated = _allTransaksi.map((group) {
+      final transactions = group.transactions.map((t) {
+        if (t.id == id && t.isWaSuccess != isWaSuccess) {
+          changed = true;
+          return t.copyWith(isWaSuccess: isWaSuccess);
+        }
+        return t;
+      }).toList();
+      return TransaksiGroupEntity(header: group.header, transactions: transactions);
+    }).toList();
+    if (!changed) return;
+    _allTransaksi = updated;
+    _emitFiltered();
   }
 
   /// Downloads the XLSX export for the current filter. Returns the file bytes

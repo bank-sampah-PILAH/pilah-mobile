@@ -12,4 +12,8 @@ abstract class TransaksiRepository {
   Future<Either<NetworkException, TransaksiExport>> exportTransaksi(
     TransaksiFilter filter,
   );
+
+  /// Resends the WhatsApp notification for transaction [id]. On success the
+  /// resulting app-side WA status ('sent' | 'failed' | 'pending') is returned.
+  Future<Either<NetworkException, String>> resendWa(String id);
 }
