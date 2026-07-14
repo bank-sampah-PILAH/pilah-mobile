@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -35,6 +37,20 @@ class AppRouterConfig {
         name: LoginPage.route,
         builder: (context, state) => const LoginPage(),
       ),
+      // Landing point for invite deep links. It renders nothing: it captures
+      // the token and hands off to the normal session-restore flow, which sends
+      // signed-out users to login first. Once signed in, the stored token is
+      // what steers routing to the join screen.
+      GoRoute(
+        path: '/invite',
+        redirect: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          if (token != null) {
+            di<InviteTokenStore>().save(token);
+          }
+          return SplashPage.route;
+        },
+      ),
       GoRoute(
         path: ForgotPasswordPage.route,
         name: ForgotPasswordPage.route,
@@ -54,8 +70,12 @@ class AppRouterConfig {
         path: CompleteProfileScreen.route,
         name: CompleteProfileScreen.route,
         builder: (context, state) {
-          final isInviteMode = state.extra as bool? ?? false;
-          return CompleteProfileScreen(isInviteMode: isInviteMode);
+          // Invite mode is entirely driven by a token captured from a deep
+          // link: with no token there is nothing to join with, so the screen is
+          // a plain profile-completion form.
+          return CompleteProfileScreen(
+            isInviteMode: di<InviteTokenStore>().hasToken,
+          );
         },
       ),
       GoRoute(
