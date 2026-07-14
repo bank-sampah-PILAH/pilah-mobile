@@ -112,7 +112,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
             AppNotification.showError(
               context,
               title: 'Peringatan',
-              message: 'Transaksi berhasil disimpan, namun gagal mengirim WhatsApp otomatis.',
+              message:
+                  'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis. Silakan coba lagi di detail transaksi.',
             );
           }
         },
