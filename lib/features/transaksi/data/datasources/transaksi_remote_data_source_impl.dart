@@ -111,6 +111,16 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     );
   }
 
+  @override
+  Future<String> resendWa(String id) async {
+    // On success the backend returns 200 with {"success": true, "status_wa":
+    // "terkirim", ...}; on a failed send it returns 400 with {"error": ...},
+    // which Dio raises so apiCall can surface the message.
+    final response = await networkService.post('$_path/$id/notify-wa', data: const {});
+    final json = response.data as Map<String, dynamic>;
+    return _waStatus(json['status_wa']?.toString());
+  }
+
   // ---- mapping helpers ----------------------------------------------------
 
   TransaksiEntity _mapListItem(Map<String, dynamic> json, DateTime? tanggal) {

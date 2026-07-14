@@ -43,6 +43,14 @@ class TransaksiRepositoryImpl implements TransaksiRepository {
   }
 
   @override
+  Future<Either<NetworkException, String>> resendWa(String id) {
+    return apiCall<String>(
+      func: remoteDataSource.resendWa(id),
+      mapper: (result) => result as String,
+    );
+  }
+
+  @override
   Future<Either<NetworkException, TransaksiExport>> exportTransaksi(
     TransaksiFilter filter,
   ) async {

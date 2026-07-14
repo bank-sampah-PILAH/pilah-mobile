@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -50,15 +51,35 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
   }
 
   Future<void> _retryWaNotification() async {
+    final id = widget.transactionData['id']?.toString();
+    if (id == null || id.isEmpty) return;
+
     setState(() {
       isLoadingWa = true;
     });
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        isLoadingWa = false;
-        currentWaStatus = 'sent';
-      });
+
+    final result = await context.read<TransaksiCubit>().resendWa(id);
+    if (!mounted) return;
+
+    setState(() {
+      isLoadingWa = false;
+      // Only flip to the success design when the backend confirms the send;
+      // on failure we stay on 'failed' so the "Coba Lagi" button remains.
+      if (result.success) currentWaStatus = 'sent';
+    });
+
+    if (result.success) {
+      AppNotification.showSuccess(
+        context,
+        title: 'Informasi',
+        message: 'Pesan WhatsApp berhasil dikirim ulang.',
+      );
+    } else {
+      AppNotification.showError(
+        context,
+        title: 'Gagal',
+        message: result.error ?? 'Terjadi kesalahan',
+      );
     }
   }
 

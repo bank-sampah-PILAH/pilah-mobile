@@ -40,6 +40,22 @@ class TransaksiEntity {
     required this.balance,
     required this.items,
   });
+
+  TransaksiEntity copyWith({bool? isWaSuccess}) {
+    return TransaksiEntity(
+      id: id,
+      initials: initials,
+      avatarColor: avatarColor,
+      textColor: textColor,
+      name: name,
+      subtitle: subtitle,
+      amount: amount,
+      isWaSuccess: isWaSuccess ?? this.isWaSuccess,
+      time: time,
+      balance: balance,
+      items: items,
+    );
+  }
 }
 
 class TransaksiGroupEntity {
