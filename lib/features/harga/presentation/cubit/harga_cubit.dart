@@ -32,6 +32,12 @@ class HargaCubit extends Cubit<HargaState> {
   bool get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
 
+  /// Every active jenis sampah, independent of the price-list page's
+  /// active/inactive tab and search query. The Transaksi Baru dropdown reads
+  /// this so its options aren't narrowed by the price-list page's current view.
+  List<HargaEntity> get activeJenisSampah =>
+      _allHarga.where((item) => item.isActive).toList();
+
   Future<void> loadHarga() async {
     emit(HargaLoading());
     final result = await getHargaUseCase.execute();
