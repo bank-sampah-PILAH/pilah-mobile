@@ -16,6 +16,7 @@ import '../core/client/app_environment.dart' as _i119;
 import '../core/client/network_service.dart' as _i941;
 import '../core/client/network_utils.dart' as _i936;
 import '../core/database/secure_database.dart' as _i124;
+import '../core/router/invite_token_store.dart' as _i901;
 import '../core/storage/app_storage.dart' as _i812;
 import '../core/storage/storage_module.dart' as _i624;
 import '../features/authentication/data/auth_repository_impl.dart' as _i493;
@@ -133,6 +134,7 @@ extension GetItInjectableX on _i174.GetIt {
       environmentFilter,
     );
     final storageModule = _$StorageModule();
+    gh.lazySingleton<_i901.InviteTokenStore>(() => _i901.InviteTokenStore());
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
       registerFor: {_dev},

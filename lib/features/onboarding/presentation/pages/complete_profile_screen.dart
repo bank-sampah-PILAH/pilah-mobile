@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
@@ -28,7 +30,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _nameController = TextEditingController();
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _tokenController = TextEditingController();
   String? _gender;
   DateTime? _selectedDob;
   bool _isLoading = false;
@@ -38,19 +39,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     _nameController.dispose();
     _dobController.dispose();
     _phoneController.dispose();
-    _tokenController.dispose();
     super.dispose();
-  }
-
-  /// Accepts either a bare token or a full invite URL (`…/invite?token=XYZ`),
-  /// so pasting the whole copied link works. Falls back to the trimmed input
-  /// when there's no `token` query parameter to pull out.
-  String _extractToken(String raw) {
-    final value = raw.trim();
-    if (value.isEmpty) return '';
-    final fromQuery = Uri.tryParse(value)?.queryParameters['token'];
-    if (fromQuery != null && fromQuery.isNotEmpty) return fromQuery;
-    return value;
   }
 
   void _selectDate() async {
@@ -113,19 +102,23 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     // Join the inviting bank sampah only after the profile is saved: the
     // backend derives `next_step` from the profile being complete, so accepting
     // second gives an accurate routing hint (and keeps an invalid form from
-    // consuming the invite).
+    // consuming the invite). The token itself came from the deep link that
+    // opened the app, so there is nothing to ask the user for.
     if (_isInviteMode) {
-      final invite = await cubit.acceptInvite(_extractToken(_tokenController.text));
+      final inviteStore = di<InviteTokenStore>();
+      final invite = await cubit.acceptInvite(inviteStore.token ?? '');
       if (!mounted) return;
 
       if (invite.error != null) {
         setState(() => _isLoading = false);
-        // The profile itself was saved; only joining failed, so keep the user
-        // here to correct the token rather than routing them onward.
+        // The profile itself was saved; only joining failed. The token is kept
+        // so a retry doesn't need the link to be tapped again.
         context.read<AuthenticationBloc>().add(RefreshUserRequested());
         _showError(invite.error!.displayMessage, title: 'Gagal Bergabung');
         return;
       }
+      // Redeemed: drop it so re-visiting this screen isn't stuck in invite mode.
+      inviteStore.clear();
       nextStep = invite.result?.nextStep ?? nextStep;
     }
 
@@ -368,55 +361,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Field 0: Token Undangan (invite mode only)
-                      if (_isInviteMode)
-                        _buildFormField(
-                          label: 'KODE / TOKEN UNDANGAN',
-                          child: TextFormField(
-                            controller: _tokenController,
-                            autocorrect: false,
-                            enableSuggestions: false,
-                            decoration: InputDecoration(
-                              hintText: 'Paste token undangan di sini',
-                              helperText: 'Boleh tempel seluruh link undangan.',
-                              helperStyle: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 11,
-                              ),
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontWeight: FontWeight.normal,
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.vpn_key_outlined,
-                                color: AppColors.greenDark,
-                                size: 20,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: AppColors.greenDark, width: 1.5),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 16),
-                            ),
-                            validator: (value) {
-                              if (_extractToken(value ?? '').isEmpty) {
-                                return 'Token undangan wajib diisi';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-
                       // Field 1: Nama Lengkap
                       _buildFormField(
                         label: 'NAMA LENGKAP',

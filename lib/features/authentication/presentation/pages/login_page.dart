@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_background_wrapper.dart';
@@ -25,7 +27,10 @@ class LoginPage extends StatelessWidget {
       body: BlocConsumer<AuthenticationBloc, AuthenticationStates>(
         listener: (context, state) {
           if (state is Authenticated) {
-            context.go(locationForAuthStep(state.authEntity.nextStep));
+            context.go(locationForAuthStep(
+              state.authEntity.nextStep,
+              hasPendingInvite: di<InviteTokenStore>().hasToken,
+            ));
           } else if (state is AuthenticationFailure) {
             AppNotification.showError(
               context,
@@ -82,36 +87,6 @@ class LoginPage extends StatelessWidget {
                                 alignment: Alignment.center,
                                 child: Text(
                                   'Masuk sebagai SuperAdmin',
-                                  style: TextStyle(
-                                    color: Colors.blueGrey.shade400,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: InkWell(
-                            onTap: () {
-                              context.go('/complete-profile', extra: true);
-                            },
-                            borderRadius: BorderRadius.circular(16),
-                            child: CustomPaint(
-                              painter: _DashedRectPainter(
-                                color: Colors.blueGrey.shade200,
-                                strokeWidth: 1.5,
-                                gap: 6.0,
-                                radius: 16.0,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'Masuk via Invite Link (Pengelola Baru)',
                                   style: TextStyle(
                                     color: Colors.blueGrey.shade400,
                                     fontWeight: FontWeight.w600,

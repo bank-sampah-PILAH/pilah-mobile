@@ -19,9 +19,35 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Hands incoming deep links to the Flutter Router (GoRouter)
+                 instead of the legacy Navigator API. -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="true"
+              />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Invite links: http(s)://<host>/invite?token=… opens the app so
+                 the token can be captured without the user copying anything.
+                 Scheme/host/path entries combine, so every scheme below is
+                 matched against every host. Omitting android:port means any
+                 port matches (the dev API serves on :8000).
+
+                 autoVerify is off: App Links verification needs an
+                 assetlinks.json on the host, which the dev hosts can't serve.
+                 Add the production PILAH_PUBLIC_APP_URL host here once it is
+                 assigned, and turn on autoVerify for it then. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+                <data android:host="10.0.2.2"/>
+                <data android:host="localhost"/>
+                <data android:pathPrefix="/invite"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

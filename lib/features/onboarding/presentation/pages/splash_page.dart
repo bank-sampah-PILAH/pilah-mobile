@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/check_session_events.dart';
@@ -46,7 +48,10 @@ class _SplashPageState extends State<SplashPage> {
 
     if (state is Authenticated) {
       _navigated = true;
-      context.go(locationForAuthStep(state.authEntity.nextStep));
+      context.go(locationForAuthStep(
+        state.authEntity.nextStep,
+        hasPendingInvite: di<InviteTokenStore>().hasToken,
+      ));
     } else if (state is Unauthenticated || state is AuthenticationFailure) {
       _navigated = true;
       context.go(LoginPage.route);
