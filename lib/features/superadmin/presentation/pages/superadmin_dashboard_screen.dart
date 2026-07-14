@@ -122,14 +122,21 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
           const SizedBox(height: 24),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Row(children: _tabStatus.keys.map(_buildTab).toList()),
+            child: Row(
+              children: _tabStatus.keys
+                  .map((label) => _buildTab(context, label))
+                  .toList(),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTab(String label) {
+  // Takes the context explicitly: the SuperadminCubit is provided by the
+  // BlocProvider inside build(), so the surrounding State's own context sits
+  // above it and cannot resolve the cubit.
+  Widget _buildTab(BuildContext context, String label) {
     final isActive = _activeTab == label;
     return GestureDetector(
       onTap: () {
