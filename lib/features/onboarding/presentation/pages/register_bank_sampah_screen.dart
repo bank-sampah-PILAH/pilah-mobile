@@ -40,12 +40,15 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   }
 
   Future<void> _onSubmit() async {
+    // Covers the photo too: it is a FormField, so a missing one fails here and
+    // is reported inline on the picker, exactly like the text fields. No
+    // separate notification — that is what made the photo feel different.
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    if (_selectedImage == null) {
-      _showError('Foto kegiatan wajib diunggah sebagai bukti validasi');
-      return;
-    }
+    // Unreachable once validate() passes; it only narrows the type so the path
+    // below needs no force-unwrap.
+    final image = _selectedImage;
+    if (image == null) return;
 
     setState(() => _isLoading = true);
 
@@ -53,7 +56,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       nama: _namaController.text.trim(),
       alamat: _alamatController.text.trim(),
       noHpPic: _phoneController.text.trim(),
-      fotoKegiatanPath: _selectedImage!.path,
+      fotoKegiatanPath: image.path,
     );
 
     final (:result, :error) =
@@ -83,7 +86,10 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     AppNotification.showError(context, title: 'Gagal', message: message);
   }
 
-  Future<void> _pickImage() async {
+  /// Picks the activity photo and reports it to [field], so the inline error
+  /// clears the moment a photo is chosen rather than lingering until the next
+  /// submit.
+  Future<void> _pickImage(FormFieldState<File> field) async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
@@ -92,6 +98,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       setState(() {
         _selectedImage = File(image.path);
       });
+      field.didChange(_selectedImage);
     }
   }
 
@@ -420,80 +427,125 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                       ),
 
                       // Field 4: Foto Kegiatan
+                      //
+                      // A FormField rather than a bare picker so the photo is
+                      // validated by _formKey.currentState.validate() alongside
+                      // the text fields. Submitting an empty form therefore
+                      // turns this box red and prints its own inline error, the
+                      // same as every other required field, instead of the
+                      // photo alone failing via a separate notification.
                       _buildFormField(
                         label: 'FOTO KEGIATAN',
                         description: 'Upload foto kegiatan penimbangan sampah yang valid',
-                        child: InkWell(
-                          onTap: _pickImage,
-                          borderRadius: BorderRadius.circular(12),
-                          child: _selectedImage != null
-                              ? ClipRRect(
+                        child: FormField<File>(
+                          initialValue: _selectedImage,
+                          // Without this the validator only re-runs on the next
+                          // submit, so the box would stay red even after the
+                          // user picked a photo. onUserInteraction keeps it
+                          // quiet until they touch the field, then clears the
+                          // error the moment they fix it.
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (file) =>
+                              file == null ? 'Foto kegiatan wajib diunggah' : null,
+                          builder: (field) {
+                            // The same colour Material gives a TextFormField's
+                            // error, so the two read as one form.
+                            final errorColor =
+                                Theme.of(field.context).colorScheme.error;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                InkWell(
+                                  onTap: () => _pickImage(field),
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Stack(
-                                    children: [
-                                      Image.file(
-                                        _selectedImage!,
-                                        width: double.infinity,
-                                        height: 150,
-                                        fit: BoxFit.cover,
-                                      ),
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedImage = null;
-                                            });
-                                          },
+                                  child: _selectedImage != null
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Stack(
+                                            children: [
+                                              Image.file(
+                                                _selectedImage!,
+                                                width: double.infinity,
+                                                height: 150,
+                                                fit: BoxFit.cover,
+                                              ),
+                                              Positioned(
+                                                top: 8,
+                                                right: 8,
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _selectedImage = null;
+                                                    });
+                                                    field.didChange(null);
+                                                  },
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(4),
+                                                    decoration: const BoxDecoration(
+                                                      color: Colors.black54,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.close,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : CustomPaint(
+                                          painter: _DashedRectPainter(
+                                              color: field.hasError
+                                                  ? errorColor
+                                                  : Colors.grey.shade400,
+                                              strokeWidth: 1.5,
+                                              gap: 5.0,
+                                              radius: 12.0),
                                           child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.black54,
-                                              shape: BoxShape.circle,
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(vertical: 32),
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.image_outlined, color: AppColors.greenDark, size: 32),
+                                                const SizedBox(height: 12),
+                                                const Text(
+                                                  'Pilih foto',
+                                                  style: TextStyle(
+                                                    color: Colors.black87,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'JPG / PNG · Maks. 5 MB',
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade500,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            child: const Icon(
-                                              Icons.close,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : CustomPaint(
-                                  painter: _DashedRectPainter(
-                                      color: Colors.grey.shade400, strokeWidth: 1.5, gap: 5.0, radius: 12.0),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 32),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.image_outlined, color: AppColors.greenDark, size: 32),
-                                        const SizedBox(height: 12),
-                                        const Text(
-                                          'Pilih foto',
-                                          style: TextStyle(
-                                            color: Colors.black87,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'JPG / PNG · Maks. 5 MB',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade500,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
+                                ),
+                                if (field.hasError) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    field.errorText!,
+                                    style: TextStyle(
+                                      color: errorColor,
+                                      fontSize: 12,
                                     ),
                                   ),
-                                ),
+                                ],
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ],
