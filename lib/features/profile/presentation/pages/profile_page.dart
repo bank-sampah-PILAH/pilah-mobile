@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -368,9 +369,8 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name = (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
 
-    return RefreshIndicator(
+    return AppRefreshIndicator(
       onRefresh: () => context.read<ProfileCubit>().load(silent: true),
-      color: AppColors.greenDark,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -515,9 +515,8 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildManajemenTimTab(ProfileState state, AuthEntity? auth) {
     final team = state.team;
 
-    return RefreshIndicator(
+    return AppRefreshIndicator(
       onRefresh: () => context.read<ProfileCubit>().load(silent: true),
-      color: AppColors.greenDark,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
