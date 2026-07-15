@@ -1,4 +1,4 @@
-package com.example.pilah_mobile
+package com.mobile.pilahapp
 
 import io.flutter.embedding.android.FlutterActivity
 
