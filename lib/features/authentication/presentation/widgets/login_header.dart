@@ -12,12 +12,10 @@ class LoginHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Logo. Deliberately not wrapped in the rounded green tile the old
-        // checkmark sat on: logo.svg paints its own opaque white background
-        // across the full canvas, so the tile would have been covered by a hard
-        // white square with only its corners showing. On the white login
-        // background that backdrop is invisible.
+        // checkmark sat on — the mark carries its own colour and needs no
+        // backing shape.
         //
-        // Only the height is given — width follows the 872:913 viewBox, so the
+        // Only the height is given, so the width follows the viewBox and the
         // logo cannot be stretched.
         SvgPicture.asset(
           'assets/svg/logo.svg',
