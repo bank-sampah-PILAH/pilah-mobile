@@ -1,32 +1,58 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
 @lazySingleton
 class TransaksiCubit extends Cubit<TransaksiState> {
   final GetTransaksiUseCase getTransaksiUseCase;
+  final GetTransaksiDetailUseCase getTransaksiDetailUseCase;
   final AddTransaksiUseCase addTransaksiUseCase;
+  final ExportTransaksiUseCase exportTransaksiUseCase;
+  final ResendWaUseCase resendWaUseCase;
 
   List<TransaksiGroupEntity> _allTransaksi = [];
-  String _activeFilter = 'Semua Waktu';
+  String _periode = 'bulan_ini';
+  DateTime? _dariTanggal;
+  DateTime? _sampaiTanggal;
   String _searchQuery = '';
 
   TransaksiCubit(
     this.getTransaksiUseCase,
+    this.getTransaksiDetailUseCase,
     this.addTransaksiUseCase,
+    this.exportTransaksiUseCase,
+    this.resendWaUseCase,
   ) : super(TransaksiInitial());
 
-  String get activeFilter => _activeFilter;
+  String get periode => _periode;
   String get searchQuery => _searchQuery;
 
-  Future<void> loadTransaksi() async {
-    emit(TransaksiLoading());
-    final result = await getTransaksiUseCase.execute();
+  TransaksiFilter _currentFilter() => TransaksiFilter(
+        periode: _periode,
+        dariTanggal: _dariTanggal,
+        sampaiTanggal: _sampaiTanggal,
+      );
+
+  /// Fetches transactions for the current period filter and search query.
+  ///
+  /// Pass [silent] to skip the [TransaksiLoading] emit — pull-to-refresh already
+  /// shows a spinner, so the list should stay on screen instead of collapsing
+  /// into skeletons underneath it. [silent] only applies when there is data to
+  /// keep: from [TransaksiInitial] or [TransaksiError] there is nothing on
+  /// screen, so a real loading state is emitted regardless.
+  Future<void> loadTransaksi({bool silent = false}) async {
+    if (!silent || state is! TransaksiLoaded) emit(TransaksiLoading());
+    final result = await getTransaksiUseCase.execute(_currentFilter());
     result.fold(
-      (failure) => emit(TransaksiError(failure.message ?? 'Unknown Error')),
+      (failure) => emit(TransaksiError(failure.displayMessage)),
       (data) {
         _allTransaksi = data;
         _emitFiltered();
@@ -34,9 +60,25 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     );
   }
 
-  void setActiveFilter(String filter) {
-    _activeFilter = filter;
-    _emitFiltered();
+  /// Switches to a named period (`bulan_ini`, `bulan_lalu`, …) and refetches
+  /// from the backend with the matching `periode` query param.
+  void setPeriode(String periode) {
+    if (_periode == periode && _dariTanggal == null && _sampaiTanggal == null) {
+      return;
+    }
+    _periode = periode;
+    _dariTanggal = null;
+    _sampaiTanggal = null;
+    loadTransaksi();
+  }
+
+  /// Applies a custom date range (`periode=custom` with `dari_tanggal` /
+  /// `sampai_tanggal`) and refetches from the backend.
+  void applyCustomRange(DateTime start, DateTime end) {
+    _periode = 'custom';
+    _dariTanggal = start;
+    _sampaiTanggal = end;
+    loadTransaksi();
   }
 
   void searchTransaksi(String query) {
@@ -44,29 +86,91 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     _emitFiltered();
   }
 
-  Future<void> addTransaksi(TransaksiEntity transaksi) async {
-    final result = await addTransaksiUseCase.execute(transaksi);
-    result.fold(
-      (failure) => emit(TransaksiError(failure.message ?? 'Unknown Error')),
-      (_) => loadTransaksi(),
+  /// Creates a setoran transaction. Does not touch WhatsApp notification —
+  /// that's a separate, explicit step triggered from the success modal via
+  /// [resendWa].
+  Future<({TransaksiCreated? created, NetworkException? error})>
+      addTransaksi(TransaksiRequest request) async {
+    final result = await addTransaksiUseCase.execute(request);
+    return result.fold(
+      (failure) => (created: null, error: failure),
+      (created) => (created: created, error: null),
     );
   }
 
+  Future<TransaksiDetailEntity?> fetchTransaksiDetail(String id) async {
+    final result = await getTransaksiDetailUseCase.execute(id);
+    return result.fold((_) => null, (data) => data);
+  }
+
+  /// Resends the WhatsApp notification for transaction [id]. Returns whether it
+  /// succeeded and, on failure, the user-facing error message so the caller can
+  /// react on the button itself. On success the matching list item's WA status
+  /// is flipped locally and the filtered list re-emitted, so the list reflects
+  /// the change without triggering a full network reload.
+  Future<({bool success, String? error})> resendWa(String id) async {
+    final result = await resendWaUseCase.execute(id);
+    return result.fold(
+      (failure) => (success: false, error: failure.displayMessage),
+      (status) {
+        _applyWaStatus(id, isWaSuccess: status == 'sent');
+        return (success: true, error: null);
+      },
+    );
+  }
+
+  /// Updates the cached [id] transaction's WA status in place and re-emits the
+  /// filtered list. No-op (no emit) when the item isn't in the current cache.
+  void _applyWaStatus(String id, {required bool isWaSuccess}) {
+    var changed = false;
+    final updated = _allTransaksi.map((group) {
+      final transactions = group.transactions.map((t) {
+        if (t.id == id && t.isWaSuccess != isWaSuccess) {
+          changed = true;
+          return t.copyWith(isWaSuccess: isWaSuccess);
+        }
+        return t;
+      }).toList();
+      return TransaksiGroupEntity(header: group.header, transactions: transactions);
+    }).toList();
+    if (!changed) return;
+    _allTransaksi = updated;
+    _emitFiltered();
+  }
+
+  /// Downloads the XLSX export for the current filter. Returns the file bytes
+  /// on success, otherwise a user-facing error message.
+  Future<({TransaksiExport? export, String? error})> exportTransaksi() async {
+    final result = await exportTransaksiUseCase.execute(_currentFilter());
+    return result.fold(
+      (failure) => (export: null, error: failure.displayMessage),
+      (data) => (export: data, error: null),
+    );
+  }
+
+  /// Clears cached data and resets to the initial state (used on logout, since
+  /// this cubit is an app-scoped singleton that outlives a session).
+  void reset() {
+    _allTransaksi = [];
+    _periode = 'bulan_ini';
+    _dariTanggal = null;
+    _sampaiTanggal = null;
+    _searchQuery = '';
+    emit(TransaksiInitial());
+  }
+
+  /// Period filtering is applied server-side; here we only narrow the already
+  /// fetched (period-scoped) results by the client-side search query.
   void _emitFiltered() {
-    List<TransaksiGroupEntity> filteredGroups = [];
-
     final query = _searchQuery.toLowerCase();
+    final filteredGroups = <TransaksiGroupEntity>[];
 
-    for (var group in _allTransaksi) {
-      if (_activeFilter != 'Semua Waktu' && group.header != _activeFilter && _activeFilter != 'Bulan Ini') {
-        continue;
-      }
-
+    for (final group in _allTransaksi) {
       final filteredTransactions = group.transactions.where((t) {
         if (query.isEmpty) return true;
         return t.name.toLowerCase().contains(query) ||
-               t.initials.toLowerCase().contains(query) ||
-               t.subtitle.toLowerCase().contains(query);
+            t.initials.toLowerCase().contains(query) ||
+            t.subtitle.toLowerCase().contains(query);
       }).toList();
 
       if (filteredTransactions.isNotEmpty) {
@@ -79,7 +183,9 @@ class TransaksiCubit extends Cubit<TransaksiState> {
 
     emit(TransaksiLoaded(
       transaksiList: filteredGroups,
-      activeFilter: _activeFilter,
+      periode: _periode,
+      dariTanggal: _dariTanggal,
+      sampaiTanggal: _sampaiTanggal,
       searchQuery: _searchQuery,
     ));
   }

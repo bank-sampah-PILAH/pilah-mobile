@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 
 class DetailTransaksiBottomSheet extends StatefulWidget {
   final Map<String, dynamic> transactionData;
@@ -23,23 +27,59 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
 
   String currentWaStatus = '';
   bool isLoadingWa = false;
+  TransaksiDetailEntity? _detail;
+  bool _isLoadingDetail = false;
 
   @override
   void initState() {
     super.initState();
     currentWaStatus = widget.transactionData['waStatus'] ?? 'sent';
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    final id = widget.transactionData['id']?.toString();
+    if (id == null || id.isEmpty) return;
+    setState(() => _isLoadingDetail = true);
+    final detail = await context.read<TransaksiCubit>().fetchTransaksiDetail(id);
+    if (!mounted) return;
+    setState(() {
+      _detail = detail;
+      _isLoadingDetail = false;
+      if (detail != null) currentWaStatus = detail.waStatus;
+    });
   }
 
   Future<void> _retryWaNotification() async {
+    final id = widget.transactionData['id']?.toString();
+    if (id == null || id.isEmpty) return;
+
     setState(() {
       isLoadingWa = true;
     });
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        isLoadingWa = false;
-        currentWaStatus = 'sent';
-      });
+
+    final result = await context.read<TransaksiCubit>().resendWa(id);
+    if (!mounted) return;
+
+    setState(() {
+      isLoadingWa = false;
+      // Only flip to the success design when the backend confirms the send;
+      // on failure we stay on 'failed' so the "Coba Lagi" button remains.
+      if (result.success) currentWaStatus = 'sent';
+    });
+
+    if (result.success) {
+      AppNotification.showSuccess(
+        context,
+        title: 'Informasi',
+        message: 'Pesan WhatsApp berhasil dikirim ulang.',
+      );
+    } else {
+      AppNotification.showError(
+        context,
+        title: 'Gagal',
+        message: result.error ?? 'Terjadi kesalahan',
+      );
     }
   }
 
@@ -50,9 +90,21 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
     final Color textColor = widget.transactionData['textColor'] ?? Colors.grey[600]!;
     final String name = widget.transactionData['name'] ?? 'Unknown';
     final String time = widget.transactionData['time'] ?? 'Hari ini';
-    final String amount = widget.transactionData['amount'] ?? 'Rp 0';
-    final String balance = widget.transactionData['balance'] ?? 'Rp 141.100'; // Default fallback
-    final List<Map<String, dynamic>> items = widget.transactionData['items'] ?? [];
+    final String amount = _detail?.amountFormatted ?? widget.transactionData['amount'] ?? 'Rp 0';
+    final String balance = _detail?.balanceFormatted ??
+        ((widget.transactionData['balance'] as String?)?.isNotEmpty == true
+            ? widget.transactionData['balance']
+            : '-');
+    final List<Map<String, dynamic>> items = _detail != null
+        ? _detail!.items
+            .map((i) => {
+                  'jenis': i.jenis,
+                  'berat': i.berat,
+                  'harga': i.harga,
+                  'subtotal': i.subtotal,
+                })
+            .toList()
+        : ((widget.transactionData['items'] as List?)?.cast<Map<String, dynamic>>() ?? []);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -223,7 +275,20 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                     const SizedBox(height: 12),
                     const Divider(height: 1, color: Color(0xFFE5E7EB)),
                     const SizedBox(height: 12),
-                    
+
+                    // Loading indicator while fetching the item breakdown
+                    if (_isLoadingDetail && items.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Center(
+                          child: SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+
                     // Table Items
                     ...items.map((item) => Padding(
                       padding: const EdgeInsets.only(bottom: 12.0),
@@ -450,12 +515,26 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                       strokeWidth: 2,
                     ),
                   )
-                : SizedBox(
-                    width: 120, // To constraint the CustomPrimaryButton if needed, or simply use it natively
-                    child: CustomPrimaryButton(
-                      title: 'Coba Lagi',
-                      icon: Icons.refresh,
-                      onPressed: _retryWaNotification,
+                : ElevatedButton.icon(
+                    onPressed: _retryWaNotification,
+                    icon: const Icon(Icons.refresh, size: 14, color: Colors.white),
+                    label: const Text(
+                      'Coba Lagi',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: emeraldPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
                     ),
                   ),
           ],

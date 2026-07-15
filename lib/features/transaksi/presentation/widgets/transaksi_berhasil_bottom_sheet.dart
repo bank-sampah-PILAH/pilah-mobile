@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
-class TransaksiBerhasilBottomSheet extends StatelessWidget {
+class TransaksiBerhasilBottomSheet extends StatefulWidget {
   final String customerName;
   final int totalSetoran;
   final int newBalance;
   final int itemCount;
+  final Future<void> Function() onKirimWaSelesai;
 
   const TransaksiBerhasilBottomSheet({
     super.key,
@@ -14,9 +14,16 @@ class TransaksiBerhasilBottomSheet extends StatelessWidget {
     required this.totalSetoran,
     required this.newBalance,
     required this.itemCount,
+    required this.onKirimWaSelesai,
   });
 
+  @override
+  State<TransaksiBerhasilBottomSheet> createState() => _TransaksiBerhasilBottomSheetState();
+}
+
+class _TransaksiBerhasilBottomSheetState extends State<TransaksiBerhasilBottomSheet> {
   static const Color emeraldPrimary = Color(0xFF006D44);
+  bool _isSending = false;
 
   String _formatCurrency(int value) {
     String str = value.toString();
@@ -66,7 +73,7 @@ class TransaksiBerhasilBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '$itemCount jenis sampah berhasil dicatat.',
+            '${widget.itemCount} jenis sampah berhasil dicatat.',
             style: AppTextStyle.small.copyWith(
               color: Colors.grey[500],
             ),
@@ -83,17 +90,17 @@ class TransaksiBerhasilBottomSheet extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildSummaryRow('Nasabah', customerName, isBold: false),
+                _buildSummaryRow('Nasabah', widget.customerName, isBold: false),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(height: 1, color: Color(0xFFEEEEEE)),
                 ),
-                _buildSummaryRow('Nilai Setoran', '+${_formatCurrency(totalSetoran)}', isPrimary: true),
+                _buildSummaryRow('Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}', isPrimary: true),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(height: 1, color: Color(0xFFEEEEEE)),
                 ),
-                _buildSummaryRow('Saldo Terbaru', _formatCurrency(newBalance), isPrimary: true),
+                _buildSummaryRow('Saldo Terbaru', _formatCurrency(widget.newBalance), isPrimary: true),
               ],
             ),
           ),
@@ -101,11 +108,14 @@ class TransaksiBerhasilBottomSheet extends StatelessWidget {
 
           // Action Buttons
           ElevatedButton(
-            onPressed: () {
-              final router = GoRouter.of(context);
-              Navigator.of(context).pop(); // dismiss modal
-              router.go('/dashboard');
-            },
+            onPressed: _isSending
+                ? null
+                : () async {
+                    setState(() => _isSending = true);
+                    await widget.onKirimWaSelesai();
+                    if (!mounted) return;
+                    setState(() => _isSending = false);
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: emeraldPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -115,14 +125,20 @@ class TransaksiBerhasilBottomSheet extends StatelessWidget {
               ),
               elevation: 0,
             ),
-            child: Text(
-              'Kirim Notif WhatsApp & Selesai',
-              style: AppTextStyle.title1.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            child: _isSending
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : Text(
+                    'Kirim Notif WhatsApp & Selesai',
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
 
         ],

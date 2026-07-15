@@ -1,6 +1,8 @@
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/constants/endpoints.dart';
+import 'package:pilah_mobile/features/authentication/data/remote/model/mapper/auth_mapper.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/model/request/post_login_request.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:injectable/injectable.dart';
 
 import 'model/responses/auth_response.dart';
@@ -8,6 +10,12 @@ import 'model/responses/auth_response.dart';
 abstract class AuthRemoteDataSources {
   Future<AuthResponse> postLogin(PostLoginRequest request);
   Future<AuthResponse> loginWithGoogle(String idToken);
+
+  /// Restores the current session from the persisted bearer token.
+  Future<AuthEntity> getMe();
+
+  /// Revokes [refreshToken] server-side (blacklists it).
+  Future<void> logout(String refreshToken);
 }
 
 @LazySingleton(as: AuthRemoteDataSources)
@@ -25,28 +33,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
 
   @override
   Future<AuthResponse> loginWithGoogle(String idToken) async {
-    // TODO: Replace with actual API call once backend is ready.
-    // e.g.: final response = await networkService.post(
-    //   Endpoints.loginWithGoogle,
-    //   data: {'idToken': idToken},
-    // );
-    // return AuthResponse.fromJson(response.data);
+    final response = await networkService.post(
+      Endpoints.loginWithGoogle,
+      data: {'id_token': idToken},
+    );
+    return AuthResponse.fromJson(response.data);
+  }
 
-    // Mock implementation for UI testing
-    await Future.delayed(const Duration(seconds: 2));
-    return const AuthResponse(
-      id: 1,
-      username: 'google_user',
-      email: 'user@gmail.com',
-      firstName: 'Google',
-      lastName: 'User',
-      gender: '',
-      image: 'https://lh3.googleusercontent.com/a/default-user',
-      accessToken: 'mock_jwt_token_from_backend',
-      refreshToken: 'mock_refresh_token',
-      name: 'Google User',
-      photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
-      nextStep: 'complete_profile', // Simulated next_step from backend
+  @override
+  Future<AuthEntity> getMe() async {
+    final response = await networkService.get(Endpoints.authMe);
+    return AuthMapper.mapMeResponseToDomain(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<void> logout(String refreshToken) async {
+    await networkService.post(
+      Endpoints.logout,
+      data: {'refresh_token': refreshToken},
     );
   }
 }

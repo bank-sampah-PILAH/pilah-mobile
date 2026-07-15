@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/use_cases/activate_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/add_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/deactivate_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.dart';
@@ -13,6 +15,7 @@ class HargaCubit extends Cubit<HargaState> {
   final AddHargaUseCase addHargaUseCase;
   final UpdateHargaUseCase updateHargaUseCase;
   final DeactivateHargaUseCase deactivateHargaUseCase;
+  final ActivateHargaUseCase activateHargaUseCase;
 
   List<HargaEntity> _allHarga = [];
   bool _isActiveTab = true;
@@ -23,16 +26,30 @@ class HargaCubit extends Cubit<HargaState> {
     this.addHargaUseCase,
     this.updateHargaUseCase,
     this.deactivateHargaUseCase,
+    this.activateHargaUseCase,
   ) : super(HargaInitial());
 
   bool get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
 
-  Future<void> loadHarga() async {
-    emit(HargaLoading());
+  /// Every active jenis sampah, independent of the price-list page's
+  /// active/inactive tab and search query. The Transaksi Baru dropdown reads
+  /// this so its options aren't narrowed by the price-list page's current view.
+  List<HargaEntity> get activeJenisSampah =>
+      _allHarga.where((item) => item.isActive).toList();
+
+  /// Fetches the jenis sampah list, preserving the current tab and search query.
+  ///
+  /// Pass [silent] to skip the [HargaLoading] emit — pull-to-refresh already
+  /// shows a spinner, so the list should stay on screen instead of collapsing
+  /// into skeletons underneath it. [silent] only applies when there is data to
+  /// keep: from [HargaInitial] or [HargaError] there is nothing on screen, so a
+  /// real loading state is emitted regardless.
+  Future<void> loadHarga({bool silent = false}) async {
+    if (!silent || state is! HargaLoaded) emit(HargaLoading());
     final result = await getHargaUseCase.execute();
     result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
+      (failure) => emit(HargaError(failure.displayMessage)),
       (data) {
         _allHarga = data;
         _emitFiltered();
@@ -50,28 +67,60 @@ class HargaCubit extends Cubit<HargaState> {
     _emitFiltered();
   }
 
-  Future<void> addHarga(HargaEntity harga) async {
+  /// Creates a jenis sampah. Returns `null` on success (list reloaded),
+  /// otherwise the [NetworkException] so the form can surface field errors.
+  Future<NetworkException?> addHarga(HargaEntity harga) async {
     final result = await addHargaUseCase.execute(harga);
-    result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
-      (_) => loadHarga(),
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
     );
   }
 
-  Future<void> updateHarga(HargaEntity harga) async {
+  /// Updates a jenis sampah. Returns `null` on success, otherwise the exception.
+  Future<NetworkException?> updateHarga(HargaEntity harga) async {
     final result = await updateHargaUseCase.execute(harga);
-    result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
-      (_) => loadHarga(),
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
     );
   }
 
-  Future<void> deactivateHarga(String id) async {
+  Future<NetworkException?> deactivateHarga(String id) async {
     final result = await deactivateHargaUseCase.execute(id);
-    result.fold(
-      (failure) => emit(HargaError(failure.message ?? 'Unknown Error')),
-      (_) => loadHarga(),
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
     );
+  }
+
+  Future<NetworkException?> activateHarga(String id) async {
+    final result = await activateHargaUseCase.execute(id);
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
+    );
+  }
+
+  /// Clears cached data and resets to the initial state (used on logout, since
+  /// this cubit is an app-scoped singleton that outlives a session).
+  void reset() {
+    _allHarga = [];
+    _isActiveTab = true;
+    _searchQuery = '';
+    emit(HargaInitial());
   }
 
   void _emitFiltered() {

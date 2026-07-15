@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
@@ -22,8 +23,20 @@ class NasabahPage extends StatelessWidget {
   }
 }
 
-class _NasabahPageBody extends StatelessWidget {
+class _NasabahPageBody extends StatefulWidget {
   const _NasabahPageBody();
+
+  @override
+  State<_NasabahPageBody> createState() => _NasabahPageBodyState();
+}
+
+class _NasabahPageBodyState extends State<_NasabahPageBody> {
+  @override
+  void initState() {
+    super.initState();
+    // Load with the authenticated session when the tab is first opened.
+    context.read<NasabahCubit>().loadNasabah();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,19 +76,24 @@ class _NasabahPageBody extends StatelessWidget {
                       fontSize: 24,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenLight,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '4 aktif',
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.greenDark,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  BlocBuilder<NasabahCubit, NasabahState>(
+                    builder: (context, state) {
+                      final activeCount = context.read<NasabahCubit>().activeCount;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$activeCount aktif',
+                          style: AppTextStyle.small.copyWith(
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -112,51 +130,85 @@ class _NasabahPageBody extends StatelessWidget {
               
               // List View
               Expanded(
-                child: BlocBuilder<NasabahCubit, NasabahState>(
-                  builder: (context, state) {
-                    if (state is NasabahLoading || state is NasabahInitial) {
-                      return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: 5,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) => const SkeletonListItem(),
-                      );
-                    }
-
-                    if (state is NasabahLoaded) {
-                      final customers = state.nasabahList;
-
-                      if (customers.isEmpty) {
-                        return const EmptyView(
-                          title: 'Nasabah Tidak Ditemukan',
-                          subtitle: 'Coba kata kunci yang berbeda',
-                          icon: Icons.search_off,
+                child: AppRefreshIndicator(
+                  onRefresh: () =>
+                      context.read<NasabahCubit>().loadNasabah(silent: true),
+                  child: BlocBuilder<NasabahCubit, NasabahState>(
+                    builder: (context, state) {
+                      if (state is NasabahLoading || state is NasabahInitial) {
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: 5,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) => const SkeletonListItem(),
                         );
                       }
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: customers.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final customer = customers[index];
-                          return NasabahListItem(
-                            isActive: customer.isActive,
-                            initials: customer.initials,
-                            avatarColor: customer.avatarColor,
-                            textColor: customer.textColor,
-                            name: customer.name,
-                            phone: customer.phone,
-                            balance: customer.balance,
-                            id: customer.id,
-                            nasabahCubit: context.read<NasabahCubit>(),
-                          );
-                        },
-                      );
-                    }
+                      if (state is NasabahLoaded) {
+                        final customers = state.nasabahList;
 
-                    return const SizedBox.shrink();
-                  },
+                        if (customers.isEmpty) {
+                          if (state.searchQuery.isNotEmpty) {
+                            return const EmptyView(
+                              title: 'Nasabah Tidak Ditemukan',
+                              subtitle: 'Coba kata kunci yang berbeda',
+                              icon: Icons.search_off,
+                            );
+                          }
+                          return EmptyView(
+                            title: state.isActiveTab
+                                ? 'Belum Ada Nasabah'
+                                : 'Tidak Ada Nasabah Nonaktif',
+                            subtitle: state.isActiveTab
+                                ? 'Tekan tombol + untuk menambah nasabah pertama.'
+                                : 'Semua nasabah masih berstatus aktif.',
+                            icon: state.isActiveTab
+                                ? Icons.people_outline
+                                : Icons.person_off_outlined,
+                          );
+                        }
+
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: customers.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final customer = customers[index];
+                            return NasabahListItem(
+                              isActive: customer.isActive,
+                              initials: customer.initials,
+                              avatarColor: customer.avatarColor,
+                              textColor: customer.textColor,
+                              name: customer.name,
+                              phone: customer.phone,
+                              balance: customer.balance,
+                              id: customer.id,
+                              idNasabah: customer.idNasabah,
+                              jenisKelamin: customer.jenisKelamin,
+                              tanggalLahir: customer.tanggalLahir,
+                              tanggalDaftar: customer.tanggalDaftar,
+                              address: customer.address,
+                              nasabahCubit: context.read<NasabahCubit>(),
+                            );
+                          },
+                        );
+                      }
+
+                      // Rendered as a scrollable EmptyView rather than a blank
+                      // box so a failed load can be retried by pulling down.
+                      if (state is NasabahError) {
+                        return EmptyView(
+                          title: 'Gagal Memuat Data',
+                          subtitle: state.message,
+                          icon: Icons.error_outline,
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
               ),
             ],

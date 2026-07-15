@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/time_filter_chips.dart';
@@ -17,8 +18,19 @@ class LaporanPage extends StatelessWidget {
   }
 }
 
-class _LaporanPageBody extends StatelessWidget {
+class _LaporanPageBody extends StatefulWidget {
   const _LaporanPageBody();
+
+  @override
+  State<_LaporanPageBody> createState() => _LaporanPageBodyState();
+}
+
+class _LaporanPageBodyState extends State<_LaporanPageBody> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<TransaksiCubit>().loadTransaksi();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,8 +75,12 @@ class _LaporanPageBody extends StatelessWidget {
             ),
             
             // Scrollable List Section
-            const Expanded(
-              child: TransactionListView(),
+            Expanded(
+              child: AppRefreshIndicator(
+                onRefresh: () =>
+                    context.read<TransaksiCubit>().loadTransaksi(silent: true),
+                child: const TransactionListView(),
+              ),
             ),
           ],
         ),

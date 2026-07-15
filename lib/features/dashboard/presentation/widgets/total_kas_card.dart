@@ -24,6 +24,18 @@ class TotalKasCard extends StatelessWidget {
     return 'Rp $result';
   }
 
+  String _display(DashboardState state) {
+    switch (state.status) {
+      case DashboardStatus.loading:
+      case DashboardStatus.initial:
+        return 'Memuat...';
+      case DashboardStatus.error:
+        return 'Rp —';
+      case DashboardStatus.loaded:
+        return _formatCurrency(state.totalKasBulanIni);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardCubit, DashboardState>(
@@ -48,7 +60,7 @@ class TotalKasCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                _formatCurrency(state.totalSaldoNasabah),
+                _display(state),
                 style: AppTextStyle.headline1.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -57,7 +69,7 @@ class TotalKasCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '↑ 18% dari bulan lalu',
+                'Total nilai transaksi bulan ini',
                 style: AppTextStyle.small.copyWith(
                   color: AppColors.greenLight,
                   fontSize: 12,

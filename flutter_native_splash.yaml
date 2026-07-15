@@ -1,8 +1,19 @@
+# Native launch screen.
+#
+# White to match the Dart SplashPage that renders immediately after it, so the
+# handover between the two is invisible and the app appears to show a single
+# splash. #5D8E6C (AppColors.greenDark) was configured here previously, which
+# would have produced a green native splash followed by a white Dart one.
+#
+# Note this config has never been applied — the checked-in launch_background.xml
+# is still Flutter's default white, so the native splash is already white today.
+# It is corrected here so that running `dart run flutter_native_splash:create`
+# reinforces the white splash instead of reintroducing the green one.
 flutter_native_splash:
-  color: "#5D8E6C"
+  color: "#FFFFFF"
   image: "assets/logo.png"
   android: true
   ios: true
   android_12:
-    color: "#5D8E6C"
+    color: "#FFFFFF"
     image: "assets/logo.png"

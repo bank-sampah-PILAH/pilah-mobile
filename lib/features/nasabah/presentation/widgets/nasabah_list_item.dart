@@ -17,6 +17,7 @@ class NasabahListItem extends StatelessWidget {
   final String? idNasabah;
   final String? jenisKelamin;
   final String? tanggalLahir;
+  final String? tanggalDaftar;
   final String? address;
   final NasabahCubit? nasabahCubit;
 
@@ -33,6 +34,7 @@ class NasabahListItem extends StatelessWidget {
     this.idNasabah,
     this.jenisKelamin,
     this.tanggalLahir,
+    this.tanggalDaftar,
     this.address,
     this.nasabahCubit,
   });
@@ -57,6 +59,7 @@ class NasabahListItem extends StatelessWidget {
               'idNasabah': idNasabah,
               'jenisKelamin': jenisKelamin,
               'tanggalLahir': tanggalLahir,
+              'tanggalDaftar': tanggalDaftar,
               'address': address,
             },
             nasabahCubit: nasabahCubit,

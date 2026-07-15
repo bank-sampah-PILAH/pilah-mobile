@@ -2,14 +2,16 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/states/p
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../domain/model/auth.dart';
 import '../../domain/use_cases/authentication_use_cases.dart';
 import '../../domain/use_cases/login_with_google_usecase.dart';
 import 'authentication_events.dart';
 import 'authentication_states.dart';
+import 'events/check_session_events.dart';
 import 'events/login_refresh_events.dart';
 import 'events/login_with_google_events.dart';
+import 'events/logout_events.dart';
 import 'events/post_login_events.dart';
+import 'events/refresh_user_events.dart';
 
 @Injectable()
 class AuthenticationBloc
@@ -23,6 +25,9 @@ class AuthenticationBloc
     on<PostLoginEvent>(_onPostLoginEvent);
     on<LoginRefreshEvent>(_onLoginRefreshEvent);
     on<LoginWithGoogleRequested>(_onLoginWithGoogleRequested);
+    on<CheckSessionRequested>(_onCheckSessionRequested);
+    on<LogoutRequested>(_onLogoutRequested);
+    on<RefreshUserRequested>(_onRefreshUserRequested);
   }
 
   Future _onPostLoginEvent(
@@ -55,18 +60,68 @@ class AuthenticationBloc
   ) async {
     emitter(AuthenticationLoading());
 
-    // Simulate network delay (no backend yet)
-    await Future.delayed(const Duration(seconds: 1));
+    final response = await _loginWithGoogleUseCase.execute(event.idToken);
 
-    // Mock a successful authentication using the real Google profile data
-    emitter(Authenticated(
-      authEntity: AuthEntity(
-        id: 1,
-        name: event.name,
-        email: event.email,
-        photoUrl: event.photoUrl,
-        token: event.idToken,
-      ),
-    ));
+    response.fold(
+      (failure) {
+        emitter(AuthenticationFailure(message: failure.message ?? 'Unknown error occurred'));
+      },
+      (entity) {
+        if (entity != null) {
+          emitter(Authenticated(authEntity: entity));
+        } else {
+          emitter(AuthenticationFailure(message: 'Invalid response from server'));
+        }
+      },
+    );
+  }
+
+  /// Restores a persisted session on app start. Emits [Authenticated] when the
+  /// token is still valid (per `GET /auth/me`), otherwise clears the stale
+  /// token and emits [Unauthenticated] so the splash routes to login.
+  Future _onCheckSessionRequested(
+    CheckSessionRequested event,
+    Emitter<AuthenticationStates> emitter,
+  ) async {
+    emitter(AuthenticationLoading());
+
+    if (!await _useCases.hasSession()) {
+      emitter(Unauthenticated());
+      return;
+    }
+
+    final result = await _useCases.getMe();
+    await result.fold(
+      (failure) async {
+        // Token missing/expired/invalid — drop the stale session.
+        await _useCases.logout();
+        emitter(Unauthenticated());
+      },
+      (entity) async {
+        emitter(Authenticated(authEntity: entity));
+      },
+    );
+  }
+
+  Future _onLogoutRequested(
+    LogoutRequested event,
+    Emitter<AuthenticationStates> emitter,
+  ) async {
+    emitter(AuthenticationLoading());
+    await _useCases.logout();
+    emitter(Unauthenticated());
+  }
+
+  /// Silently re-fetches the current user (no loading state, keeps the current
+  /// session on failure) so the UI reflects freshly-saved profile data.
+  Future _onRefreshUserRequested(
+    RefreshUserRequested event,
+    Emitter<AuthenticationStates> emitter,
+  ) async {
+    final result = await _useCases.getMe();
+    result.fold(
+      (_) {},
+      (entity) => emitter(Authenticated(authEntity: entity)),
+    );
   }
 }

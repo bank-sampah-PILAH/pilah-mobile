@@ -1,6 +1,7 @@
 ﻿import 'dart:convert';
 
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/retry_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -16,7 +17,12 @@ class NetworkService {
   NetworkService({
     required this.environment,
     required this.networkUtils,
-  });
+  }) {
+    dio.interceptors.add(interceptors);
+    // Added after the logger so a dropped GET is still logged, then quietly
+    // retried once before the failure ever reaches a cubit.
+    dio.interceptors.add(RetryInterceptor(dio));
+  }
 
   Map<String, String> headersRequest() {
     final userToken = networkUtils.accessToken;
@@ -27,7 +33,7 @@ class NetworkService {
     };
   }
 
-  final dio = Dio()..interceptors.add(interceptors);
+  final Dio dio = Dio();
 
   Future<Response> get(
     String path, {
@@ -64,6 +70,51 @@ class NetworkService {
             options: options.copyWith(
               headers: headers ?? headersRequest(),
             ))
+        .timeout(globalTimeout);
+    return response;
+  }
+
+  /// GETs a binary payload (e.g. an XLSX export). Returns the raw [Response] so
+  /// the caller can read both `response.data` (bytes) and headers such as
+  /// `content-disposition`.
+  Future<Response> getBytes(
+    String path, {
+    Map<String, dynamic>? queryParams,
+  }) async {
+    final userToken = networkUtils.accessToken;
+    final headers = <String, String>{
+      'Accept': '*/*',
+      if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
+    };
+
+    Response response = await dio
+        .get(environment.baseUrl + path,
+            queryParameters: queryParams,
+            options: options.copyWith(
+              headers: headers,
+              responseType: ResponseType.bytes,
+            ))
+        .timeout(globalTimeout);
+    return response;
+  }
+
+  /// POSTs multipart form data (e.g. file uploads). Unlike [post], this does
+  /// NOT force `Content-Type: application/json` — Dio sets
+  /// `multipart/form-data` with the correct boundary from [formData].
+  Future<Response> postMultipart(
+    String path, {
+    required FormData formData,
+  }) async {
+    final userToken = networkUtils.accessToken;
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
+    };
+
+    Response response = await dio
+        .post(environment.baseUrl + path,
+            data: formData,
+            options: options.copyWith(headers: headers))
         .timeout(globalTimeout);
     return response;
   }
@@ -165,7 +216,19 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
       'queryParams': err.requestOptions.queryParameters,
       'body': err.requestOptions.data,
       'response': err.response?.data,
-      'type': err.type
+      'type': err.type,
+      // `type` alone can't tell a dropped connection from a parse failure —
+      // both arrive as DioExceptionType.unknown. The wrapped error is the only
+      // thing that names the actual cause (e.g. HttpException: Connection
+      // closed before full header was received), so it must be logged.
+      //
+      // Stringified rather than passed raw: this map is JSON-encoded by the
+      // logger, and handing it an arbitrary non-encodable object risks throwing
+      // *inside* the error interceptor — which Dio would then re-wrap as
+      // another opaque `unknown`, hiding the very cause we're trying to see.
+      'error': err.error?.toString(),
+      'errorType': err.error?.runtimeType.toString(),
+      'message': err.message,
     });
   }
   return handler.next(err);

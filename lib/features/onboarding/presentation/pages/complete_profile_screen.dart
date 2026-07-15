@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final bool isInviteMode;
@@ -22,6 +31,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
   String? _gender;
+  DateTime? _selectedDob;
   bool _isLoading = false;
 
   @override
@@ -54,32 +64,103 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     if (picked != null) {
       setState(() {
+        _selectedDob = picked;
         _dobController.text =
             "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
       });
     }
   }
 
+  String _isoDate(DateTime date) =>
+      "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
   Future<void> _onSaveAndContinue() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      // Simulate network delay for UI testing
-      await Future.delayed(const Duration(seconds: 1));
+    setState(() => _isLoading = true);
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        if (_isInviteMode) {
-          context.go('/dashboard');
-        } else {
-          context.go('/register-bank-sampah');
-        }
-      }
+    final request = CompleteProfileRequest(
+      nama: _nameController.text.trim(),
+      jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
+      tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
+      noHp: _phoneController.text.trim(),
+    );
+
+    final cubit = context.read<OnboardingCubit>();
+    final (:result, :error) = await cubit.completeProfile(request);
+
+    if (!mounted) return;
+
+    if (error != null) {
+      setState(() => _isLoading = false);
+      _showError(error.displayMessage);
+      return;
     }
+
+    var nextStep = result?.nextStep;
+
+    // Join the inviting bank sampah only after the profile is saved: the
+    // backend derives `next_step` from the profile being complete, so accepting
+    // second gives an accurate routing hint (and keeps an invalid form from
+    // consuming the invite). The token itself came from the deep link that
+    // opened the app, so there is nothing to ask the user for.
+    if (_isInviteMode) {
+      final inviteStore = di<InviteTokenStore>();
+      final invite = await cubit.acceptInvite(inviteStore.token ?? '');
+      if (!mounted) return;
+
+      if (invite.error != null) {
+        setState(() => _isLoading = false);
+        // The profile itself was saved; only joining failed. The token is kept
+        // so a retry doesn't need the link to be tapped again.
+        context.read<AuthenticationBloc>().add(RefreshUserRequested());
+        _showError(invite.error!.displayMessage, title: 'Gagal Bergabung');
+        return;
+      }
+      // Redeemed: drop it so re-visiting this screen isn't stuck in invite mode.
+      inviteStore.clear();
+      nextStep = invite.result?.nextStep ?? nextStep;
+    }
+
+    setState(() => _isLoading = false);
+
+    // The name (and gender/dob) were just saved server-side; refresh the cached
+    // user so the dashboard/profile show the entered name, not the Google one.
+    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+
+    if (_isInviteMode) {
+      AppNotification.showSuccess(
+        context,
+        title: 'Berhasil Bergabung',
+        message: 'Anda berhasil bergabung dengan bank sampah.',
+      );
+    }
+    _routeByNextStep(nextStep);
+  }
+
+  void _routeByNextStep(String? nextStep) {
+    switch (nextStep) {
+      case 'dashboard':
+        context.go('/dashboard');
+        break;
+      case 'register_bank_sampah':
+        context.go('/register-bank-sampah');
+        break;
+      case 'approval_pending':
+        context.go('/pending-approval');
+        break;
+      case 'superadmin_dashboard':
+        context.go('/superadmin-dashboard');
+        break;
+      default:
+        // Fallback preserves prior behaviour: invited managers join an existing
+        // bank sampah (dashboard), new managers continue to registration.
+        context.go(_isInviteMode ? '/dashboard' : '/register-bank-sampah');
+    }
+  }
+
+  void _showError(String message, {String title = 'Gagal'}) {
+    AppNotification.showError(context, title: title, message: message);
   }
 
   Widget _buildFormField({
@@ -127,24 +208,38 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               decoration: const BoxDecoration(
                 color: AppColors.greenDark,
               ),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Lengkapi Profil Anda',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Lengkapi Profil Anda',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Data ini digunakan untuk verifikasi akun Anda.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Data ini digunakan untuk verifikasi akun Anda.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
+                  IconButton(
+                    onPressed: () {
+                      context.read<AuthenticationBloc>().add(LogoutRequested());
+                    },
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    tooltip: 'Keluar',
                   ),
                 ],
               ),
@@ -316,9 +411,25 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
                           items: const [
                             DropdownMenuItem(
-                                value: 'Laki-laki', child: Text('♂ Laki-laki')),
+                              value: 'Laki-laki',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.male, size: 20, color: Color(0xFF2563EB)),
+                                  SizedBox(width: 8),
+                                  Text('Laki-laki'),
+                                ],
+                              ),
+                            ),
                             DropdownMenuItem(
-                                value: 'Perempuan', child: Text('♀ Perempuan')),
+                              value: 'Perempuan',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.female, size: 20, color: Color(0xFFDB2777)),
+                                  SizedBox(width: 8),
+                                  Text('Perempuan'),
+                                ],
+                              ),
+                            ),
                           ],
                           onChanged: (val) {
                             setState(() {

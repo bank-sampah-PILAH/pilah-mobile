@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
@@ -25,6 +26,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   final _alamatController = TextEditingController();
 
   String? _jenisKelamin;
+  bool _isSaving = false;
+  String? _serverKodeError;
 
   @override
   void dispose() {
@@ -144,6 +147,11 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _idNasabahController,
+                            onChanged: (_) {
+                              if (_serverKodeError != null) {
+                                setState(() => _serverKodeError = null);
+                              }
+                            },
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) return 'Bagian ini wajib diisi.';
                               final cubit = context.read<NasabahCubit>();
@@ -152,6 +160,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                                 final isDuplicate = list.any((e) => e.idNasabah.trim().toLowerCase() == value.trim().toLowerCase());
                                 if (isDuplicate) return 'ID Nasabah ini sudah digunakan.';
                               }
+                              if (_serverKodeError != null) return _serverKodeError;
                               return null;
                             },
                             decoration: _buildInputDecoration(hintText: 'Contoh: NAS-0900'),
@@ -273,23 +282,33 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _handleSimpan,
+                    onPressed: _isSaving ? null : _handleSimpan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenDark,
+                      disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      'Simpan Nasabah',
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Simpan Nasabah',
+                            style: AppTextStyle.title1.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -301,34 +320,44 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     );
   }
 
-  void _handleSimpan() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final nomorWhatsapp = '+62${_whatsappController.text}';
-      debugPrint('Nasabah disimpan dengan nomor: $nomorWhatsapp');
-      
-      // Usually, you would create NasabahEntity here and send to Cubit:
-      // final nasabah = NasabahEntity(
-      //   id: DateTime.now().millisecondsSinceEpoch.toString(),
-      //   idNasabah: _idNasabahController.text,
-      //   name: _namaController.text,
-      //   jenisKelamin: _jenisKelamin ?? 'Laki-laki',
-      //   tanggalLahir: _tanggalLahirController.text,
-      //   phone: nomorWhatsapp,
-      //   address: _alamatController.text,
-      //   balance: 'Rp 0',
-      //   isActive: true,
-      //   initials: _namaController.text.isNotEmpty ? _namaController.text[0] : 'U',
-      //   avatarColor: AppColors.greenLight,
-      //   textColor: AppColors.greenDark,
-      // );
-      
+  Future<void> _handleSimpan() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isSaving = true);
+    final cubit = context.read<NasabahCubit>();
+    final request = NasabahRequest(
+      kode: _idNasabahController.text.trim(),
+      nama: _namaController.text.trim(),
+      jenisKelamin: _jenisKelamin ?? 'Laki-laki',
+      tanggalLahir: _tanggalLahirController.text.trim(),
+      noHp: '+62${_whatsappController.text.trim()}',
+      alamat: _alamatController.text.trim(),
+    );
+
+    final error = await cubit.addNasabah(request);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (error == null) {
       context.pop();
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
         message: 'Nasabah baru berhasil ditambahkan.',
       );
+      return;
     }
+
+    final fields = error.fieldErrors();
+    if (fields.containsKey('kode')) {
+      setState(() => _serverKodeError = fields['kode']);
+      _formKey.currentState?.validate();
+    }
+    AppNotification.showError(
+      context,
+      title: 'Gagal Menyimpan',
+      message: error.displayMessage,
+    );
   }
 
   Widget _buildLabel(String text) {
