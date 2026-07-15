@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
+
+/// PendingBankCard only touches the cubit when its approve/reject buttons are
+/// tapped, so a bare stub is enough to render it.
+class _StubSuperadminCubit extends Cubit<SuperadminState>
+    implements SuperadminCubit {
+  _StubSuperadminCubit() : super(SuperadminInitial());
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 BankSampahEntity _bank({String kota = '', String alamat = ''}) => BankSampahEntity(
       id: 'b1',
@@ -72,6 +85,49 @@ void main() {
       );
 
       // pumpWidget surfaces a RenderFlex overflow as an exception.
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('PendingBankCard', () {
+    late _StubSuperadminCubit cubit;
+
+    setUp(() => cubit = _StubSuperadminCubit());
+    tearDown(() => cubit.close());
+
+    Future<void> pumpPending(WidgetTester tester, BankSampahEntity bank) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PendingBankCard(bank: bank, cubit: cubit),
+          ),
+        ),
+      ));
+    }
+
+    testWidgets('carries no city line — the address row conveys the location',
+        (tester) async {
+      // A city IS set here: the point is that the pending card still must not
+      // render it separately, because its address row already covers location.
+      await pumpPending(
+        tester,
+        _bank(kota: 'Depok', alamat: 'Jl. Melati 3, Kukusan, Depok'),
+      );
+
+      expect(find.text('Jl. Melati 3, Kukusan, Depok'), findsOneWidget);
+      expect(
+        find.text('Depok'),
+        findsNothing,
+        reason: 'the city duplicates what the address row already says',
+      );
+    });
+
+    testWidgets('shows no placeholder when no city is on record',
+        (tester) async {
+      await pumpPending(tester, _bank(alamat: 'Jl. Melati 3, Kukusan, Depok'));
+
+      expect(find.text('Kota tidak dicantumkan'), findsNothing);
+      expect(find.text('Jl. Melati 3, Kukusan, Depok'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
