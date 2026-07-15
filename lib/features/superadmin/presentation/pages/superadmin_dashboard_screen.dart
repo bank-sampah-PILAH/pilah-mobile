@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
@@ -67,13 +68,12 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
               children: [
                 _buildHeader(context),
                 Expanded(
-                  child: RefreshIndicator(
+                  child: AppRefreshIndicator(
                     // Reloads the tab currently on screen, not whichever status
                     // the cubit happens to have loaded last.
                     onRefresh: () => context
                         .read<SuperadminCubit>()
                         .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
-                    color: AppColors.greenDark,
                     child: _buildContentArea(),
                   ),
                 ),

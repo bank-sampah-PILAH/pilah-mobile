@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -143,10 +144,9 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
 
               // List View
               Expanded(
-                child: RefreshIndicator(
+                child: AppRefreshIndicator(
                   onRefresh: () =>
                       context.read<HargaCubit>().loadHarga(silent: true),
-                  color: AppColors.greenDark,
                   child: BlocBuilder<HargaCubit, HargaState>(
                     builder: (context, state) {
                       if (state is HargaLoading || state is HargaInitial) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
@@ -129,10 +130,9 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
               
               // List View
               Expanded(
-                child: RefreshIndicator(
+                child: AppRefreshIndicator(
                   onRefresh: () =>
                       context.read<NasabahCubit>().loadNasabah(silent: true),
-                  color: AppColors.greenDark,
                   child: BlocBuilder<NasabahCubit, NasabahState>(
                     builder: (context, state) {
                       if (state is NasabahLoading || state is NasabahInitial) {
