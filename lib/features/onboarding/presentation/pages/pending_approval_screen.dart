@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'dart:ui';
 
 class PendingApprovalScreen extends StatelessWidget {
   const PendingApprovalScreen({super.key});
@@ -266,130 +264,11 @@ class PendingApprovalScreen extends StatelessWidget {
               ),
             ),
 
-            // 6. Developer Mode (Simulated Approval)
-            if (kDebugMode) ...[
-              const SizedBox(height: 40),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.grey.shade300,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            '--- Dev Mode: Simulasi Approval ---',
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.grey.shade300,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: InkWell(
-                        onTap: () {
-                          context.go('/dashboard');
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: CustomPaint(
-                          painter: _DashedRectPainter(
-                            color: AppColors.greenDark,
-                            strokeWidth: 1.5,
-                            gap: 5.0,
-                            radius: 12.0,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              '✨ Skip & Masuk ke Dashboard Pengelola',
-                              style: TextStyle(
-                                color: AppColors.greenDark,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
             const SizedBox(height: 40),
           ],
         ),
       ),
       ),
     );
-  }
-}
-
-class _DashedRectPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double gap;
-  final double radius;
-
-  _DashedRectPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.gap,
-    required this.radius,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint dashedPaint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    Path path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-          Rect.fromLTWH(0, 0, size.width, size.height), Radius.circular(radius)));
-
-    Path dashPath = Path();
-
-    double dashWidth = gap;
-    double dashSpace = gap;
-    double distance = 0.0;
-
-    for (PathMetric pathMetric in path.computeMetrics()) {
-      while (distance < pathMetric.length) {
-        dashPath.addPath(
-          pathMetric.extractPath(distance, distance + dashWidth),
-          Offset.zero,
-        );
-        distance += dashWidth;
-        distance += dashSpace;
-      }
-      distance = 0.0;
-    }
-
-    canvas.drawPath(dashPath, dashedPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
   }
 }
