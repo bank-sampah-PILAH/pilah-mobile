@@ -18,6 +18,7 @@ class TransactionListView extends StatelessWidget {
       builder: (context, state) {
         if (state is TransaksiLoading || state is TransaksiInitial) {
           return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 80),
             itemCount: 5,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -29,14 +30,22 @@ class TransactionListView extends StatelessWidget {
           final filteredGroups = state.transaksiList;
 
           if (filteredGroups.isEmpty) {
+            if (state.searchQuery.isNotEmpty) {
+              return const EmptyView(
+                title: 'Transaksi Tidak Ditemukan',
+                subtitle: 'Coba kata kunci atau nama pelanggan lain',
+                icon: Icons.search_off,
+              );
+            }
             return const EmptyView(
-              title: 'Transaksi Tidak Ditemukan',
-              subtitle: 'Coba kata kunci atau nama pelanggan lain',
-              icon: Icons.search_off,
+              title: 'Belum Ada Transaksi',
+              subtitle: 'Belum ada transaksi tercatat pada periode ini.',
+              icon: Icons.receipt_long_outlined,
             );
           }
 
           return ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8).copyWith(bottom: 24),
             itemCount: filteredGroups.length,
             itemBuilder: (context, index) {
@@ -52,6 +61,7 @@ class TransactionListView extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: _buildTransactionCard(
                       context: context,
+                      id: t.id,
                       initials: t.initials,
                       avatarColor: t.avatarColor,
                       textColor: t.textColor,
@@ -69,6 +79,16 @@ class TransactionListView extends StatelessWidget {
                 ],
               );
             },
+          );
+        }
+
+        // Rendered as a scrollable EmptyView rather than a blank box so a
+        // failed load can be retried by pulling down.
+        if (state is TransaksiError) {
+          return EmptyView(
+            title: 'Gagal Memuat Data',
+            subtitle: state.message,
+            icon: Icons.error_outline,
           );
         }
 
@@ -93,6 +113,7 @@ class TransactionListView extends StatelessWidget {
 
   Widget _buildTransactionCard({
     required BuildContext context,
+    required String id,
     required String initials,
     required Color avatarColor,
     required Color textColor,
@@ -113,6 +134,7 @@ class TransactionListView extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (context) => DetailTransaksiBottomSheet(
             transactionData: {
+              'id': id,
               'initials': initials,
               'avatarColor': avatarColor,
               'textColor': textColor,

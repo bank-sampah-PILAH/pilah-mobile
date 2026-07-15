@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 
 class FilterTanggalBottomSheet extends StatefulWidget {
   const FilterTanggalBottomSheet({super.key});
@@ -235,7 +237,12 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => context.pop(),
+                  onPressed: () {
+                    context
+                        .read<TransaksiCubit>()
+                        .applyCustomRange(startDate, endDate);
+                    context.pop();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: emeraldPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),

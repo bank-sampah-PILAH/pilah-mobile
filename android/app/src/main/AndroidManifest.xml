@@ -19,9 +19,44 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Hands incoming deep links to the Flutter Router (GoRouter)
+                 instead of the legacy Navigator API. -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="true"
+              />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Invite links: https://<host>/invite?token=… opens the app so the
+                 token can be captured without the user copying anything.
+                 Scheme/host/path entries combine across the <data> tags below.
+
+                 The host is the production Cloud Run API, derived from
+                 BASE_URL_PROD. It has to match whatever the backend actually
+                 puts in invite_url — that is PILAH_PUBLIC_APP_URL when it is
+                 set, otherwise the incoming request host, which on Cloud Run is
+                 this one. If PILAH_PUBLIC_APP_URL is ever pointed at a separate
+                 web domain, add that host here too or the links stop resolving.
+
+                 autoVerify is off because no assetlinks.json is served yet. Be
+                 aware that this filter therefore does not open the app on its
+                 own: we target SDK 36, and since Android 12 an unverified
+                 http(s) link goes straight to the browser instead of offering a
+                 chooser. Serving /.well-known/assetlinks.json on the host and
+                 flipping autoVerify to true is what actually activates this.
+
+                 The dev hosts (10.0.2.2, localhost) were removed here, so invite
+                 links no longer open the app on the emulator. Restore them in a
+                 debug-only manifest if that flow needs testing again. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="pilah-be-hi6b7cbwta-et.a.run.app"/>
+                <data android:pathPrefix="/invite"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

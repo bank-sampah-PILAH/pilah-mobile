@@ -16,7 +16,7 @@ class NetworkException implements Exception {
 
   static NetworkException handleBadResponse(Response? response) {
     var statusCode = response?.statusCode ?? 0;
-    var message = response?.data['message'];
+    var message = extractMessage(response);
     switch (statusCode) {
       case 400:
         return BadRequestException(response: response, message: message);
@@ -77,6 +77,53 @@ class NetworkException implements Exception {
     }
     return GeneralException(message: e.toString());
   }
+
+  /// Extracts a human-readable message from the PILAH backend error payload.
+  ///
+  /// The Django API returns either:
+  ///  - validation / duplicate errors (HTTP 422): `{"errors": {"field": ["msg"]}}`
+  ///  - other errors (401/403/404/400): `{"error": "msg"}`
+  static String? extractMessage(Response? response) {
+    final data = response?.data;
+    if (data is Map) {
+      final errors = data['errors'];
+      if (errors is Map && errors.isNotEmpty) {
+        final firstValue = errors.values.first;
+        if (firstValue is List && firstValue.isNotEmpty) {
+          return firstValue.first.toString();
+        }
+        return firstValue.toString();
+      }
+      final singleError = data['error'] ?? data['message'] ?? data['detail'];
+      if (singleError != null) return singleError.toString();
+    }
+    if (data is String && data.isNotEmpty) return data;
+    return null;
+  }
+
+  /// Flattens `{"errors": {"field": ["msg"]}}` into `{field: "msg"}` so forms can
+  /// surface backend validation (e.g. duplicate `kode`) against the right field.
+  Map<String, String> fieldErrors() {
+    final data = response?.data;
+    final result = <String, String>{};
+    if (data is Map) {
+      final errors = data['errors'];
+      if (errors is Map) {
+        errors.forEach((key, value) {
+          if (value is List && value.isNotEmpty) {
+            result[key.toString()] = value.first.toString();
+          } else if (value != null) {
+            result[key.toString()] = value.toString();
+          }
+        });
+      }
+    }
+    return result;
+  }
+
+  /// The best user-facing message for this exception, falling back to the prefix.
+  String get displayMessage =>
+      message ?? extractMessage(response) ?? prefix ?? 'Terjadi kesalahan';
 }
 
 class ConnectionTimeOutException extends NetworkException {
@@ -129,11 +176,7 @@ class UnprocessableEntityException extends NetworkException {
           prefix: 'Invalid Request',
         );
 
-  String? getErrorMessage() {
-    return response?.data != null && response?.data['message'] != null
-        ? response!.data['message']
-        : null;
-  }
+  String? getErrorMessage() => NetworkException.extractMessage(response);
 }
 
 class BadRequestException extends NetworkException {
@@ -142,11 +185,7 @@ class BadRequestException extends NetworkException {
           prefix: 'Invalid Request',
         );
 
-  String? getErrorMessage() {
-    return response?.data != null && response?.data['message'] != null
-        ? response!.data['message']
-        : null;
-  }
+  String? getErrorMessage() => NetworkException.extractMessage(response);
 }
 
 class UnauthorisedException extends NetworkException {

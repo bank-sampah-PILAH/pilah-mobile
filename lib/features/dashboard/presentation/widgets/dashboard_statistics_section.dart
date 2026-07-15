@@ -8,17 +8,23 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_sta
 class DashboardStatisticsSection extends StatelessWidget {
   const DashboardStatisticsSection({super.key});
 
+  String _fmtKg(double kg) {
+    if (kg == kg.roundToDouble()) return kg.toInt().toString();
+    return kg.toStringAsFixed(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (context, state) {
+        final loaded = state.status == DashboardStatus.loaded;
         return Row(
           children: [
             StatCard(
               icon: Icons.group_outlined,
               iconColor: AppColors.greenDark,
               iconBgColor: AppColors.greenLight,
-              value: state.totalNasabahAktif.toString(),
+              value: loaded ? state.totalNasabahAktif.toString() : '—',
               label: 'Nasabah Aktif',
             ),
             const SizedBox(width: 12),
@@ -26,7 +32,7 @@ class DashboardStatisticsSection extends StatelessWidget {
               icon: Icons.inventory_2_outlined,
               iconColor: AppColors.statOrange,
               iconBgColor: AppColors.statOrangeLight,
-              value: '${state.totalSampah} kg',
+              value: loaded ? '${_fmtKg(state.totalSampahKg)} kg' : '—',
               label: 'Total Sampah',
             ),
             const SizedBox(width: 12),
@@ -34,7 +40,7 @@ class DashboardStatisticsSection extends StatelessWidget {
               icon: Icons.show_chart,
               iconColor: AppColors.statPurple,
               iconBgColor: AppColors.statPurpleLight,
-              value: '${state.totalTransaksi} Trx',
+              value: loaded ? '${state.totalTransaksi} Trx' : '—',
               label: 'Total Transaksi',
             ),
           ],

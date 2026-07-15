@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -22,10 +23,21 @@ class HargaPage extends StatelessWidget {
   }
 }
 
-class _HargaPageBody extends StatelessWidget {
+class _HargaPageBody extends StatefulWidget {
   const _HargaPageBody();
 
+  @override
+  State<_HargaPageBody> createState() => _HargaPageBodyState();
+}
+
+class _HargaPageBodyState extends State<_HargaPageBody> {
   static const Color emeraldPrimary = Color(0xFF006D44);
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<HargaCubit>().loadHarga();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,52 +144,74 @@ class _HargaPageBody extends StatelessWidget {
 
               // List View
               Expanded(
-                child: BlocBuilder<HargaCubit, HargaState>(
-                  builder: (context, state) {
-                    if (state is HargaLoading || state is HargaInitial) {
-                      return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: 5,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) => const SkeletonListItem(),
-                      );
-                    }
-
-                    if (state is HargaLoaded) {
-                      final items = state.jenisSampahList;
-
-                      if (items.isEmpty) {
-                        if (state.searchQuery.isNotEmpty) {
-                          return const EmptyView(
-                            title: 'Jenis Sampah Tidak Ditemukan',
-                            subtitle: 'Coba kata kunci yang berbeda',
-                            icon: Icons.search_off,
-                          );
-                        }
-                        return const EmptyView(
-                          title: 'Tidak Ada Jenis Nonaktif',
-                          subtitle: 'Semua jenis sampah masih aktif.',
-                          icon: Icons.check_circle_outline,
+                child: AppRefreshIndicator(
+                  onRefresh: () =>
+                      context.read<HargaCubit>().loadHarga(silent: true),
+                  child: BlocBuilder<HargaCubit, HargaState>(
+                    builder: (context, state) {
+                      if (state is HargaLoading || state is HargaInitial) {
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: 5,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) => const SkeletonListItem(),
                         );
                       }
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: items.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return _buildHargaCard(
-                            context: context,
-                            hargaCubit: hargaCubit,
-                            item: item,
-                          );
-                        },
-                      );
-                    }
+                      if (state is HargaLoaded) {
+                        final items = state.jenisSampahList;
 
-                    return const SizedBox.shrink();
-                  },
+                        if (items.isEmpty) {
+                          if (state.searchQuery.isNotEmpty) {
+                            return const EmptyView(
+                              title: 'Jenis Sampah Tidak Ditemukan',
+                              subtitle: 'Coba kata kunci yang berbeda',
+                              icon: Icons.search_off,
+                            );
+                          }
+                          return EmptyView(
+                            title: state.isActiveTab
+                                ? 'Belum Ada Jenis Sampah'
+                                : 'Tidak Ada Jenis Nonaktif',
+                            subtitle: state.isActiveTab
+                                ? 'Tekan tombol + untuk menambah jenis sampah.'
+                                : 'Semua jenis sampah masih aktif.',
+                            icon: state.isActiveTab
+                                ? Icons.category_outlined
+                                : Icons.check_circle_outline,
+                          );
+                        }
+
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: items.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return _buildHargaCard(
+                              context: context,
+                              hargaCubit: hargaCubit,
+                              item: item,
+                            );
+                          },
+                        );
+                      }
+
+                      // Rendered as a scrollable EmptyView rather than a blank
+                      // box so a failed load can be retried by pulling down.
+                      if (state is HargaError) {
+                        return EmptyView(
+                          title: 'Gagal Memuat Data',
+                          subtitle: state.message,
+                          icon: Icons.error_outline,
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
               ),
             ],

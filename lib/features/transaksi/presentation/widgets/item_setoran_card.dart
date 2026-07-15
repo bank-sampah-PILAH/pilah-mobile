@@ -74,15 +74,24 @@ class ItemSetoranCard extends StatelessWidget {
                   ),
                   child: BlocBuilder<HargaCubit, HargaState>(
                     builder: (context, state) {
-                      List<HargaEntity> activeList = [];
-                      if (state is HargaLoaded) {
-                        activeList = state.jenisSampahList.where((t) => t.isActive == true).toList();
-                      }
+                      // Source the options from the full active list rather than
+                      // the price-list page's tab/search-filtered state, so the
+                      // dropdown always offers every active jenis sampah. The
+                      // BlocBuilder still rebuilds this once loadHarga() completes.
+                      final List<HargaEntity> activeList =
+                          context.read<HargaCubit>().activeJenisSampah;
+                      // Guard against a stale selection no longer in the list
+                      // (e.g. a jenis that was deactivated): DropdownButton
+                      // asserts if its value has no matching item.
+                      final selectedValue =
+                          activeList.any((t) => t.name == selectedType)
+                              ? selectedType
+                              : null;
 
                       return DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           isExpanded: true,
-                          value: selectedType,
+                          value: selectedValue,
                           hint: Row(
                             children: [
                               const Icon(Icons.recycling, color: emeraldPrimary, size: 20),
@@ -118,6 +127,7 @@ class ItemSetoranCard extends StatelessWidget {
                               onChanged({
                                 ...itemData,
                                 'jenis': value,
+                                'jenis_sampah_id': selected.id,
                                 'harga': selected.price,
                               });
                             }

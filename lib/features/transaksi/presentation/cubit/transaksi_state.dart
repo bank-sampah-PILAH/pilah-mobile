@@ -14,17 +14,22 @@ class TransaksiLoading extends TransaksiState {}
 
 class TransaksiLoaded extends TransaksiState {
   final List<TransaksiGroupEntity> transaksiList;
-  final String activeFilter;
+  final String periode;
+  final DateTime? dariTanggal;
+  final DateTime? sampaiTanggal;
   final String searchQuery;
 
   const TransaksiLoaded({
     required this.transaksiList,
-    this.activeFilter = 'Bulan Ini',
+    this.periode = 'bulan_ini',
+    this.dariTanggal,
+    this.sampaiTanggal,
     this.searchQuery = '',
   });
 
   @override
-  List<Object?> get props => [transaksiList, activeFilter, searchQuery];
+  List<Object?> get props =>
+      [transaksiList, periode, dariTanggal, sampaiTanggal, searchQuery];
 }
 
 class TransaksiError extends TransaksiState {

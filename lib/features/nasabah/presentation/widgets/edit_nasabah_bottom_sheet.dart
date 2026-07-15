@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
@@ -30,6 +31,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   late TextEditingController _alamatController;
 
   String? _jenisKelamin;
+  bool _isSaving = false;
+  String? _serverKodeError;
 
   @override
   void initState() {
@@ -179,6 +182,11 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _idNasabahController,
+                            onChanged: (_) {
+                              if (_serverKodeError != null) {
+                                setState(() => _serverKodeError = null);
+                              }
+                            },
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) return 'Bagian ini wajib diisi.';
                               final cubit = context.read<NasabahCubit>();
@@ -187,6 +195,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                                 final isDuplicate = list.any((e) => e.idNasabah.trim().toLowerCase() == value.trim().toLowerCase() && e.id != widget.customerData['id']);
                                 if (isDuplicate) return 'ID Nasabah ini sudah digunakan.';
                               }
+                              if (_serverKodeError != null) return _serverKodeError;
                               return null;
                             },
                             decoration: _buildInputDecoration(hintText: 'Contoh: NAS-0900'),
@@ -308,23 +317,33 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _handleSimpan,
+                    onPressed: _isSaving ? null : _handleSimpan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenDark,
+                      disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      'Simpan Perubahan',
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Simpan Perubahan',
+                            style: AppTextStyle.title1.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -336,18 +355,47 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     );
   }
 
-  void _handleSimpan() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final nomorWhatsapp = '+62${_whatsappController.text}';
-      debugPrint('Perubahan disimpan dengan nomor: $nomorWhatsapp');
-      
+  Future<void> _handleSimpan() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final id = widget.customerData['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+
+    setState(() => _isSaving = true);
+    final cubit = context.read<NasabahCubit>();
+    final request = NasabahRequest(
+      kode: _idNasabahController.text.trim(),
+      nama: _namaController.text.trim(),
+      jenisKelamin: _jenisKelamin ?? 'Laki-laki',
+      tanggalLahir: _tanggalLahirController.text.trim(),
+      noHp: '+62${_whatsappController.text.trim()}',
+      alamat: _alamatController.text.trim(),
+    );
+
+    final error = await cubit.updateNasabah(id, request);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (error == null) {
       context.pop();
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
         message: 'Perubahan data nasabah berhasil disimpan.',
       );
+      return;
     }
+
+    final fields = error.fieldErrors();
+    if (fields.containsKey('kode')) {
+      setState(() => _serverKodeError = fields['kode']);
+      _formKey.currentState?.validate();
+    }
+    AppNotification.showError(
+      context,
+      title: 'Gagal Menyimpan',
+      message: error.displayMessage,
+    );
   }
 
   Widget _buildLabel(String text) {
