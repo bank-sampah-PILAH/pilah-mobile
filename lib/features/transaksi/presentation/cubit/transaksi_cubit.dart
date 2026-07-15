@@ -45,9 +45,11 @@ class TransaksiCubit extends Cubit<TransaksiState> {
   ///
   /// Pass [silent] to skip the [TransaksiLoading] emit — pull-to-refresh already
   /// shows a spinner, so the list should stay on screen instead of collapsing
-  /// into skeletons underneath it.
+  /// into skeletons underneath it. [silent] only applies when there is data to
+  /// keep: from [TransaksiInitial] or [TransaksiError] there is nothing on
+  /// screen, so a real loading state is emitted regardless.
   Future<void> loadTransaksi({bool silent = false}) async {
-    if (!silent) emit(TransaksiLoading());
+    if (!silent || state is! TransaksiLoaded) emit(TransaksiLoading());
     final result = await getTransaksiUseCase.execute(_currentFilter());
     result.fold(
       (failure) => emit(TransaksiError(failure.displayMessage)),

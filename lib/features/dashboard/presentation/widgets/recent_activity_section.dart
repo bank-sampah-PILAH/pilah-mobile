@@ -72,6 +72,17 @@ class RecentActivitySection extends StatelessWidget {
               );
             }
 
+            // A failed fetch must not read as "no transactions yet" — the two
+            // look identical to the user but mean opposite things, and the
+            // empty wording sends them looking for a data problem that isn't
+            // there. Surface the failure and let them retry.
+            if (state is TransaksiError) {
+              return _ActivityError(
+                message: state.message,
+                onRetry: () => context.read<TransaksiCubit>().loadTransaksi(),
+              );
+            }
+
             // Flatten the groups and take the most recent few transactions,
             // keeping the day label from each group.
             final entries = <({TransaksiEntity trx, String header})>[];
@@ -118,6 +129,43 @@ class RecentActivitySection extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Shown when the transaksi fetch fails, in place of the activity list.
+class _ActivityError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ActivityError({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: [
+          Icon(Icons.cloud_off, color: Colors.grey[400], size: 32),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: onRetry,
+            child: Text(
+              'Coba Lagi',
+              style: AppTextStyle.small.copyWith(
+                color: AppColors.greenDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

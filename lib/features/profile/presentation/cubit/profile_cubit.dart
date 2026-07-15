@@ -19,8 +19,12 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Pass [silent] to skip the loading emit — pull-to-refresh already shows a
   /// spinner, and the loading state swaps the whole tab body for a centred
   /// spinner, which would tear the RefreshIndicator out of the tree mid-pull.
+  /// [silent] only applies when there is a loaded profile to keep: otherwise
+  /// the page has nothing to render, so a real loading state is emitted.
   Future<void> load({bool silent = false}) async {
-    if (!silent) emit(const ProfileState(status: ProfileStatus.loading));
+    if (!silent || state.status != ProfileStatus.loaded) {
+      emit(const ProfileState(status: ProfileStatus.loading));
+    }
 
     final bankEither = await apiCall<BankSampahProfile>(
       func: _dataSource.getBankSampah(),

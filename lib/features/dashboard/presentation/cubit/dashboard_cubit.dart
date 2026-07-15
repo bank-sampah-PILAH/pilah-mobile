@@ -15,9 +15,11 @@ class DashboardCubit extends Cubit<DashboardState> {
   ///
   /// Pass [silent] to skip the loading emit — pull-to-refresh already shows a
   /// spinner, so the stat cards should keep their figures instead of collapsing
-  /// into skeletons underneath it.
+  /// into skeletons underneath it. [silent] only applies when there are figures
+  /// to keep: before the first successful load, or while an error is showing,
+  /// a real loading state is emitted regardless.
   Future<void> loadStats({bool silent = false}) async {
-    if (!silent) {
+    if (!silent || state.status != DashboardStatus.loaded) {
       emit(state.copyWith(status: DashboardStatus.loading, error: null));
     }
     final result = await getDashboardStatsUseCase.execute();

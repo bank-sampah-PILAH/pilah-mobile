@@ -42,9 +42,11 @@ class HargaCubit extends Cubit<HargaState> {
   ///
   /// Pass [silent] to skip the [HargaLoading] emit — pull-to-refresh already
   /// shows a spinner, so the list should stay on screen instead of collapsing
-  /// into skeletons underneath it.
+  /// into skeletons underneath it. [silent] only applies when there is data to
+  /// keep: from [HargaInitial] or [HargaError] there is nothing on screen, so a
+  /// real loading state is emitted regardless.
   Future<void> loadHarga({bool silent = false}) async {
-    if (!silent) emit(HargaLoading());
+    if (!silent || state is! HargaLoaded) emit(HargaLoading());
     final result = await getHargaUseCase.execute();
     result.fold(
       (failure) => emit(HargaError(failure.displayMessage)),
