@@ -41,8 +41,13 @@ class TransaksiCubit extends Cubit<TransaksiState> {
         sampaiTanggal: _sampaiTanggal,
       );
 
-  Future<void> loadTransaksi() async {
-    emit(TransaksiLoading());
+  /// Fetches transactions for the current period filter and search query.
+  ///
+  /// Pass [silent] to skip the [TransaksiLoading] emit — pull-to-refresh already
+  /// shows a spinner, so the list should stay on screen instead of collapsing
+  /// into skeletons underneath it.
+  Future<void> loadTransaksi({bool silent = false}) async {
+    if (!silent) emit(TransaksiLoading());
     final result = await getTransaksiUseCase.execute(_currentFilter());
     result.fold(
       (failure) => emit(TransaksiError(failure.displayMessage)),

@@ -143,58 +143,75 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
 
               // List View
               Expanded(
-                child: BlocBuilder<HargaCubit, HargaState>(
-                  builder: (context, state) {
-                    if (state is HargaLoading || state is HargaInitial) {
-                      return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: 5,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) => const SkeletonListItem(),
-                      );
-                    }
-
-                    if (state is HargaLoaded) {
-                      final items = state.jenisSampahList;
-
-                      if (items.isEmpty) {
-                        if (state.searchQuery.isNotEmpty) {
-                          return const EmptyView(
-                            title: 'Jenis Sampah Tidak Ditemukan',
-                            subtitle: 'Coba kata kunci yang berbeda',
-                            icon: Icons.search_off,
-                          );
-                        }
-                        return EmptyView(
-                          title: state.isActiveTab
-                              ? 'Belum Ada Jenis Sampah'
-                              : 'Tidak Ada Jenis Nonaktif',
-                          subtitle: state.isActiveTab
-                              ? 'Tekan tombol + untuk menambah jenis sampah.'
-                              : 'Semua jenis sampah masih aktif.',
-                          icon: state.isActiveTab
-                              ? Icons.category_outlined
-                              : Icons.check_circle_outline,
+                child: RefreshIndicator(
+                  onRefresh: () =>
+                      context.read<HargaCubit>().loadHarga(silent: true),
+                  color: AppColors.greenDark,
+                  child: BlocBuilder<HargaCubit, HargaState>(
+                    builder: (context, state) {
+                      if (state is HargaLoading || state is HargaInitial) {
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: 5,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) => const SkeletonListItem(),
                         );
                       }
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 80),
-                        itemCount: items.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return _buildHargaCard(
-                            context: context,
-                            hargaCubit: hargaCubit,
-                            item: item,
-                          );
-                        },
-                      );
-                    }
+                      if (state is HargaLoaded) {
+                        final items = state.jenisSampahList;
 
-                    return const SizedBox.shrink();
-                  },
+                        if (items.isEmpty) {
+                          if (state.searchQuery.isNotEmpty) {
+                            return const EmptyView(
+                              title: 'Jenis Sampah Tidak Ditemukan',
+                              subtitle: 'Coba kata kunci yang berbeda',
+                              icon: Icons.search_off,
+                            );
+                          }
+                          return EmptyView(
+                            title: state.isActiveTab
+                                ? 'Belum Ada Jenis Sampah'
+                                : 'Tidak Ada Jenis Nonaktif',
+                            subtitle: state.isActiveTab
+                                ? 'Tekan tombol + untuk menambah jenis sampah.'
+                                : 'Semua jenis sampah masih aktif.',
+                            icon: state.isActiveTab
+                                ? Icons.category_outlined
+                                : Icons.check_circle_outline,
+                          );
+                        }
+
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: items.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return _buildHargaCard(
+                              context: context,
+                              hargaCubit: hargaCubit,
+                              item: item,
+                            );
+                          },
+                        );
+                      }
+
+                      // Rendered as a scrollable EmptyView rather than a blank
+                      // box so a failed load can be retried by pulling down.
+                      if (state is HargaError) {
+                        return EmptyView(
+                          title: 'Gagal Memuat Data',
+                          subtitle: state.message,
+                          icon: Icons.error_outline,
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
               ),
             ],

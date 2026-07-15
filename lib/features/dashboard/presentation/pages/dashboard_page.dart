@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
@@ -29,30 +32,47 @@ class _DashboardPageState extends State<DashboardPage> {
     context.read<TransaksiCubit>().loadTransaksi();
   }
 
+  /// Refetches everything the dashboard renders. The header's bank sampah name
+  /// comes from the cached session rather than a cubit, so the auth refresh is
+  /// dispatched alongside — it's fire-and-forget, so only the two cubit loads
+  /// hold the spinner open.
+  Future<void> _onRefresh() async {
+    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    await Future.wait([
+      context.read<DashboardCubit>().loadStats(silent: true),
+      context.read<TransaksiCubit>().loadTransaksi(silent: true),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const DashboardHeader(),
-              const SizedBox(height: 24),
-              const TotalKasCard(),
-              const SizedBox(height: 24),
-              
-              // Statistics Row
-              const DashboardStatisticsSection(),
-              const SizedBox(height: 24),
+        child: RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: AppColors.greenDark,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const DashboardHeader(),
+                const SizedBox(height: 24),
+                const TotalKasCard(),
+                const SizedBox(height: 24),
 
-              const DashboardActionButtons(),
-              const SizedBox(height: 32),
-              
-              const RecentActivitySection(),
-            ],
+                // Statistics Row
+                const DashboardStatisticsSection(),
+                const SizedBox(height: 24),
+
+                const DashboardActionButtons(),
+                const SizedBox(height: 32),
+
+                const RecentActivitySection(),
+              ],
+            ),
           ),
         ),
       ),

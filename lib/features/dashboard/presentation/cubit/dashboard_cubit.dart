@@ -12,8 +12,14 @@ class DashboardCubit extends Cubit<DashboardState> {
   /// Loads the current-month metrics from `GET /dashboard/stats`. The backend
   /// computes these authoritatively, so figures like Total Kas / Total Sampah
   /// are correct instead of being (mis)derived from the paginated list.
-  Future<void> loadStats() async {
-    emit(state.copyWith(status: DashboardStatus.loading, error: null));
+  ///
+  /// Pass [silent] to skip the loading emit — pull-to-refresh already shows a
+  /// spinner, so the stat cards should keep their figures instead of collapsing
+  /// into skeletons underneath it.
+  Future<void> loadStats({bool silent = false}) async {
+    if (!silent) {
+      emit(state.copyWith(status: DashboardStatus.loading, error: null));
+    }
     final result = await getDashboardStatsUseCase.execute();
     result.fold(
       (failure) => emit(state.copyWith(

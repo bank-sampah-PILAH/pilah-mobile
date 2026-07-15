@@ -42,8 +42,13 @@ class NasabahCubit extends Cubit<NasabahState> {
   List<NasabahEntity> get activeNasabah =>
       _allNasabah.where((n) => n.isActive).toList();
 
-  Future<void> loadNasabah() async {
-    emit(NasabahLoading());
+  /// Fetches the nasabah list, preserving the current tab and search query.
+  ///
+  /// Pass [silent] to skip the [NasabahLoading] emit — pull-to-refresh already
+  /// shows a spinner, so the list should stay on screen instead of collapsing
+  /// into skeletons underneath it.
+  Future<void> loadNasabah({bool silent = false}) async {
+    if (!silent) emit(NasabahLoading());
     final result = await getNasabahUseCase.execute();
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),

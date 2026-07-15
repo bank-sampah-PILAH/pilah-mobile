@@ -25,9 +25,14 @@ class SuperadminCubit extends Cubit<SuperadminState> {
 
   String get status => _status;
 
-  Future<void> loadBankSampah(String status) async {
+  /// Fetches the bank sampah list for [status] (`pending`, `active`, `rejected`).
+  ///
+  /// Pass [silent] to skip the [SuperadminLoading] emit — pull-to-refresh already
+  /// shows a spinner, so the list should stay on screen instead of collapsing
+  /// into skeletons underneath it.
+  Future<void> loadBankSampah(String status, {bool silent = false}) async {
     _status = status;
-    emit(SuperadminLoading());
+    if (!silent) emit(SuperadminLoading());
     final result = await getBankSampahUseCase.execute(status);
     result.fold(
       (failure) => emit(SuperadminError(failure.displayMessage)),

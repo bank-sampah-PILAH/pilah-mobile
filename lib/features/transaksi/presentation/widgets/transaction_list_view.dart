@@ -18,6 +18,7 @@ class TransactionListView extends StatelessWidget {
       builder: (context, state) {
         if (state is TransaksiLoading || state is TransaksiInitial) {
           return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 80),
             itemCount: 5,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -44,6 +45,7 @@ class TransactionListView extends StatelessWidget {
           }
 
           return ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8).copyWith(bottom: 24),
             itemCount: filteredGroups.length,
             itemBuilder: (context, index) {
@@ -77,6 +79,16 @@ class TransactionListView extends StatelessWidget {
                 ],
               );
             },
+          );
+        }
+
+        // Rendered as a scrollable EmptyView rather than a blank box so a
+        // failed load can be retried by pulling down.
+        if (state is TransaksiError) {
+          return EmptyView(
+            title: 'Gagal Memuat Data',
+            subtitle: state.message,
+            icon: Icons.error_outline,
           );
         }
 
