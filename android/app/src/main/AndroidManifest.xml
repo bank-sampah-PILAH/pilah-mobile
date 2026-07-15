@@ -40,20 +40,29 @@
                  this one. If PILAH_PUBLIC_APP_URL is ever pointed at a separate
                  web domain, add that host here too or the links stop resolving.
 
-                 autoVerify is off because no assetlinks.json is served yet. Be
-                 aware that this filter therefore does not open the app on its
-                 own: we target SDK 36, and since Android 12 an unverified
-                 http(s) link goes straight to the browser instead of offering a
-                 chooser. Serving /.well-known/assetlinks.json on the host and
-                 flipping autoVerify to true is what actually activates this.
+                 Both http and https are declared. Cloud Run only serves https,
+                 but Django currently emits http:// invite links: it sits behind
+                 Cloud Run's TLS terminator and config/settings.py sets no
+                 SECURE_PROXY_SSL_HEADER, so request.build_absolute_uri() does
+                 not know the original request was secure. Registering http keeps
+                 those already-issued links working; the real fix belongs in the
+                 backend.
 
-                 The dev hosts (10.0.2.2, localhost) were removed here, so invite
-                 links no longer open the app on the emulator. Restore them in a
-                 debug-only manifest if that flow needs testing again. -->
-            <intent-filter android:autoVerify="false">
+                 autoVerify is on, but this filter does NOT open the app until
+                 https://<host>/.well-known/assetlinks.json is served with this
+                 app's package name and release SHA-256. We target SDK 36, and
+                 since Android 12 an unverified http(s) link goes straight to the
+                 browser rather than offering a chooser — verification is the
+                 only thing that changes that. Until then, links open in Chrome.
+
+                 The dev hosts (10.0.2.2, localhost) are not registered here, so
+                 invite links do not open the app on the emulator. Restore them
+                 in a debug-only manifest if that flow needs testing again. -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="http"/>
                 <data android:scheme="https"/>
                 <data android:host="pilah-be-hi6b7cbwta-et.a.run.app"/>
                 <data android:pathPrefix="/invite"/>
