@@ -515,12 +515,26 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                       strokeWidth: 2,
                     ),
                   )
-                : SizedBox(
-                    width: 120, // To constraint the CustomPrimaryButton if needed, or simply use it natively
-                    child: CustomPrimaryButton(
-                      title: 'Coba Lagi',
-                      icon: Icons.refresh,
-                      onPressed: _retryWaNotification,
+                : ElevatedButton.icon(
+                    onPressed: _retryWaNotification,
+                    icon: const Icon(Icons.refresh, size: 14, color: Colors.white),
+                    label: const Text(
+                      'Coba Lagi',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: emeraldPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
                     ),
                   ),
           ],
