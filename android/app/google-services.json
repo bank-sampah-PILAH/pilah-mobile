@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "479665432419",
-    "project_id": "pilah-dev",
-    "storage_bucket": "pilah-dev.firebasestorage.app"
+    "project_number": "689825741960",
+    "project_id": "pilah-app",
+    "storage_bucket": "pilah-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:479665432419:android:3c9b3638e5dae4042d9556",
+        "mobilesdk_app_id": "1:689825741960:android:49c2e749ea464ddc58333d",
         "android_client_info": {
-          "package_name": "com.example.pilah_mobile"
+          "package_name": "com.mobile.pilahapp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "479665432419-ggrbhdmna8qsqr5bojqeulmut8a4b5pk.apps.googleusercontent.com",
+          "client_id": "689825741960-o7mfb2jl39gskaqq7o0itcfnik9luone.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.pilah_mobile",
+            "package_name": "com.mobile.pilahapp",
             "certificate_hash": "ef06dcfb0e65284fca6b63325218aca0c0d6f1f2"
           }
         },
         {
-          "client_id": "479665432419-p295afmlkcv1jloeameh33t6ib9gb5nt.apps.googleusercontent.com",
+          "client_id": "689825741960-fp3qgetm67lul3ae17imer9dj4540p4r.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAIkik0xylAqNPoj_T29eGsFnzTOLGPkqE"
+          "current_key": "AIzaSyD6kJExN3neE4hGRmpR852ABc_9cPfZCQU"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "479665432419-p295afmlkcv1jloeameh33t6ib9gb5nt.apps.googleusercontent.com",
+              "client_id": "689825741960-fp3qgetm67lul3ae17imer9dj4540p4r.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
