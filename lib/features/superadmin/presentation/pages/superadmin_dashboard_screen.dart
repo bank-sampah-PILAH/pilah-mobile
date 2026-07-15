@@ -66,7 +66,17 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             body: Column(
               children: [
                 _buildHeader(context),
-                Expanded(child: _buildContentArea()),
+                Expanded(
+                  child: RefreshIndicator(
+                    // Reloads the tab currently on screen, not whichever status
+                    // the cubit happens to have loaded last.
+                    onRefresh: () => context
+                        .read<SuperadminCubit>()
+                        .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
+                    color: AppColors.greenDark,
+                    child: _buildContentArea(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -168,6 +178,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       builder: (context, state) {
         if (state is SuperadminLoading || state is SuperadminInitial) {
           return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(20),
             itemCount: 3,
             separatorBuilder: (_, __) => const SizedBox(height: 16),
@@ -189,6 +200,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
           }
           final cubit = context.read<SuperadminCubit>();
           return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(20),
             itemCount: state.banks.length,
             separatorBuilder: (_, __) => const SizedBox(height: 16),

@@ -15,8 +15,12 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Loads the bank sampah profile, WhatsApp template and team roster. The bank
   /// profile is essential (a failure shows the error screen); the template and
   /// team degrade gracefully so a partial outage still renders the page.
-  Future<void> load() async {
-    emit(const ProfileState(status: ProfileStatus.loading));
+  ///
+  /// Pass [silent] to skip the loading emit — pull-to-refresh already shows a
+  /// spinner, and the loading state swaps the whole tab body for a centred
+  /// spinner, which would tear the RefreshIndicator out of the tree mid-pull.
+  Future<void> load({bool silent = false}) async {
+    if (!silent) emit(const ProfileState(status: ProfileStatus.loading));
 
     final bankEither = await apiCall<BankSampahProfile>(
       func: _dataSource.getBankSampah(),

@@ -375,138 +375,143 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name = (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // User Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.greenDark,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.greenLight,
-                  child: Text(
-                    _initials(name),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
+    return RefreshIndicator(
+      onRefresh: () => context.read<ProfileCubit>().load(silent: true),
+      color: AppColors.greenDark,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.greenDark,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: AppColors.greenLight,
+                    child: Text(
+                      _initials(name),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: AppTextStyle.title1.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _roleLabel(auth?.role),
-                          style: AppTextStyle.extraSmall.copyWith(
-                            color: AppColors.greenDark,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: AppTextStyle.title1.copyWith(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _roleLabel(auth?.role),
+                            style: AppTextStyle.extraSmall.copyWith(
+                              color: AppColors.greenDark,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Section Title
-          _sectionTitle('PROFIL BANK SAMPAH'),
-          const SizedBox(height: 16),
-
-          // Form Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _bankFormKey,
-              child: Column(
-                children: [
-                  // Home Icon
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.greenLight.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.greenLight, width: 2),
-                      ),
-                      child: const Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildEditableField(
-                    label: 'NAMA BANK SAMPAH',
-                    controller: _namaBankController,
-                    validator: (v) => (v == null || v.trim().length < 3)
-                        ? 'Nama minimal 3 karakter'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEditableField(
-                    label: 'ALAMAT BANK SAMPAH',
-                    controller: _alamatBankController,
-                    maxLines: 2,
-                    validator: (v) => (v == null || v.trim().length < 10)
-                        ? 'Alamat wajib diisi (minimal 10 karakter)'
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEditableField(
-                    label: 'NOMOR HP PENANGGUNG JAWAB',
-                    controller: _hpBankController,
-                    keyboardType: TextInputType.phone,
-                    prefixIcon: Icons.phone,
-                    iconColor: Colors.pink[400],
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Nomor HP wajib diisi'
-                        : null,
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 32),
-          _buildWhatsappTemplate(state),
-        ],
+            const SizedBox(height: 32),
+
+            // Section Title
+            _sectionTitle('PROFIL BANK SAMPAH'),
+            const SizedBox(height: 16),
+
+            // Form Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Form(
+                key: _bankFormKey,
+                child: Column(
+                  children: [
+                    // Home Icon
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenLight.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.greenLight, width: 2),
+                        ),
+                        child: const Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildEditableField(
+                      label: 'NAMA BANK SAMPAH',
+                      controller: _namaBankController,
+                      validator: (v) => (v == null || v.trim().length < 3)
+                          ? 'Nama minimal 3 karakter'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildEditableField(
+                      label: 'ALAMAT BANK SAMPAH',
+                      controller: _alamatBankController,
+                      maxLines: 2,
+                      validator: (v) => (v == null || v.trim().length < 10)
+                          ? 'Alamat wajib diisi (minimal 10 karakter)'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildEditableField(
+                      label: 'NOMOR HP PENANGGUNG JAWAB',
+                      controller: _hpBankController,
+                      keyboardType: TextInputType.phone,
+                      prefixIcon: Icons.phone,
+                      iconColor: Colors.pink[400],
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Nomor HP wajib diisi'
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            _buildWhatsappTemplate(state),
+          ],
+        ),
       ),
     );
   }
@@ -517,130 +522,135 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildManajemenTimTab(ProfileState state, AuthEntity? auth) {
     final team = state.team;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Invite Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.greenDark,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Undang Pengelola Baru',
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
+    return RefreshIndicator(
+      onRefresh: () => context.read<ProfileCubit>().load(silent: true),
+      color: AppColors.greenDark,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Invite Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.greenDark,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Undang Pengelola Baru',
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    height: 1.4,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      height: 1.4,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _onCopyInvite,
-                    icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
-                    label: Text(
-                      'Salin Link Undangan',
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.greenDark,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _onCopyInvite,
+                      icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
+                      label: Text(
+                        'Salin Link Undangan',
+                        style: AppTextStyle.small.copyWith(
+                          color: AppColors.greenDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.greenDark,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.greenDark,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // Section Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _sectionTitle('PENGELOLA TERGABUNG'),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.greenLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${team.length} aktif',
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 28),
+            const SizedBox(height: 16),
 
-          // Section Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _sectionTitle('PENGELOLA TERGABUNG'),
+            // Member List Card
+            if (team.isEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.greenLight,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Text(
-                  '${team.length} aktif',
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'Belum ada pengelola lain yang tergabung.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                ),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < team.length; i++) ...[
+                      if (i > 0)
+                        Divider(color: Colors.grey[100], height: 1, thickness: 1, indent: 16, endIndent: 16),
+                      _buildMemberRow(team[i]),
+                    ],
+                  ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Member List Card
-          if (team.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Text(
-                'Belum ada pengelola lain yang tergabung.',
-                textAlign: TextAlign.center,
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-              ),
-            )
-          else
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  for (int i = 0; i < team.length; i++) ...[
-                    if (i > 0)
-                      Divider(color: Colors.grey[100], height: 1, thickness: 1, indent: 16, endIndent: 16),
-                    _buildMemberRow(team[i]),
-                  ],
-                ],
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

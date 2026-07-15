@@ -38,8 +38,13 @@ class HargaCubit extends Cubit<HargaState> {
   List<HargaEntity> get activeJenisSampah =>
       _allHarga.where((item) => item.isActive).toList();
 
-  Future<void> loadHarga() async {
-    emit(HargaLoading());
+  /// Fetches the jenis sampah list, preserving the current tab and search query.
+  ///
+  /// Pass [silent] to skip the [HargaLoading] emit — pull-to-refresh already
+  /// shows a spinner, so the list should stay on screen instead of collapsing
+  /// into skeletons underneath it.
+  Future<void> loadHarga({bool silent = false}) async {
+    if (!silent) emit(HargaLoading());
     final result = await getHargaUseCase.execute();
     result.fold(
       (failure) => emit(HargaError(failure.displayMessage)),

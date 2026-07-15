@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/time_filter_chips.dart';
@@ -74,8 +75,13 @@ class _LaporanPageBodyState extends State<_LaporanPageBody> {
             ),
             
             // Scrollable List Section
-            const Expanded(
-              child: TransactionListView(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () =>
+                    context.read<TransaksiCubit>().loadTransaksi(silent: true),
+                color: AppColors.greenDark,
+                child: const TransactionListView(),
+              ),
             ),
           ],
         ),
