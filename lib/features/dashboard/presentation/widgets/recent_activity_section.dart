@@ -144,9 +144,11 @@ class _ActivityError extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        children: [
-          Icon(Icons.cloud_off, color: Colors.grey[400], size: 32),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off, color: Colors.grey[400], size: 32),
           const SizedBox(height: 8),
           Text(
             message,
@@ -165,6 +167,7 @@ class _ActivityError extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
