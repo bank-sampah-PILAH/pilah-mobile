@@ -25,6 +25,52 @@ String _formatDate(DateTime? date, {String prefix = ''}) {
   return '$prefix${date.day} ${_monthsId[date.month - 1]} ${date.year}';
 }
 
+/// The grey line under a card's title: the most specific location on record.
+///
+/// `kota` is an optional column that the registration form never fills. The form
+/// has no city input — its address field asks for the city inline ("Jl. Nama
+/// Jalan, RT/RW, Kelurahan, Kecamatan, Kota") — so anything registered from the
+/// app arrives with `kota` empty and the city sitting inside `alamat`. The old
+/// 'Kota tidak dicantumkan' fallback therefore reported missing data on every
+/// real submission, when nothing was missing at all.
+///
+/// Returns null when there is genuinely nothing to show, so the caller drops the
+/// line instead of printing a placeholder.
+///
+/// [fallbackToAlamat] is false for the pending card, which already lists the
+/// full address in its detail rows: a truncated copy of it directly above just
+/// reads as a rendering bug.
+String? _locationLabel(BankSampahEntity bank, {bool fallbackToAlamat = true}) {
+  final kota = bank.kota.trim();
+  if (kota.isNotEmpty) return kota;
+  if (!fallbackToAlamat) return null;
+  final alamat = bank.alamat.trim();
+  return alamat.isNotEmpty ? alamat : null;
+}
+
+/// Renders [_locationLabel], or occupies no space at all when there is none.
+class _LocationLine extends StatelessWidget {
+  final BankSampahEntity bank;
+  final bool fallbackToAlamat;
+
+  const _LocationLine(this.bank, {this.fallbackToAlamat = true});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _locationLabel(bank, fallbackToAlamat: fallbackToAlamat);
+    if (label == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+      ),
+    );
+  }
+}
+
 int _waitingDays(DateTime? date) {
   if (date == null) return 0;
   final now = DateTime.now();
@@ -344,11 +390,7 @@ class _PendingBankCardState extends State<PendingBankCard> {
             badgeBg: const Color(0xFFFEF3C7),
             badgeFg: const Color(0xFFD97706),
           ),
-          const SizedBox(height: 4),
-          Text(
-            bank.kota.isNotEmpty ? bank.kota : 'Kota tidak dicantumkan',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-          ),
+          _LocationLine(bank, fallbackToAlamat: false),
           const SizedBox(height: 12),
           _infoRow(Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
           const SizedBox(height: 6),
@@ -444,11 +486,10 @@ class ApprovedBankCard extends StatelessWidget {
             badgeFg: AppColors.greenDark,
             badgeIcon: Icons.check_box,
           ),
-          const SizedBox(height: 4),
-          Text(
-            bank.kota.isNotEmpty ? bank.kota : 'Kota tidak dicantumkan',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-          ),
+          // Falls back to the address: unlike the pending card, this one shows
+          // no address row, so without it an app-registered bank has no
+          // location on screen at all.
+          _LocationLine(bank),
           const SizedBox(height: 12),
           _infoRow(Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
           const SizedBox(height: 6),
@@ -477,11 +518,7 @@ class RejectedBankCard extends StatelessWidget {
             badgeBg: Colors.red.shade50,
             badgeFg: Colors.red.shade600,
           ),
-          const SizedBox(height: 4),
-          Text(
-            bank.kota.isNotEmpty ? bank.kota : 'Kota tidak dicantumkan',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-          ),
+          _LocationLine(bank),
           const SizedBox(height: 12),
           _infoRow(Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
           const SizedBox(height: 6),
