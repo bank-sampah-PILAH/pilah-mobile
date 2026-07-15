@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -62,8 +63,13 @@ class _SplashPageState extends State<SplashPage> {
   Widget build(BuildContext context) {
     return BlocListener<AuthenticationBloc, AuthenticationStates>(
       listener: _handleState,
+      // White, matching the native launch background (a plain white
+      // launch_background.xml). The two are the same colour on purpose: this
+      // page used to be greenDark, so launching showed a white native splash
+      // and then a green Dart one — the "double splash". Same colour, one
+      // apparent splash.
       child: Scaffold(
-        backgroundColor: AppColors.greenDark,
+        backgroundColor: Colors.white,
         body: AnimatedOpacity(
           opacity: _isVisible ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 800),
@@ -76,28 +82,19 @@ class _SplashPageState extends State<SplashPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Icon
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.check_circle_outline,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        ),
+                      // Logo — the same mark the login page shows, so the two
+                      // brand moments match.
+                      SvgPicture.asset(
+                        'assets/svg/logo.svg',
+                        height: 120,
+                        semanticsLabel: 'Logo PILAH',
                       ),
                       const SizedBox(height: 24),
                       // PILAH text
                       Text(
                         'PILAH',
                         style: AppTextStyle.headline1.copyWith(
-                          color: Colors.white,
+                          color: AppColors.greenDark,
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2.0,
@@ -108,7 +105,7 @@ class _SplashPageState extends State<SplashPage> {
                       Text(
                         'Sistem Manajemen Bank Sampah',
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: AppColors.grey100,
                           fontSize: 14,
                         ),
                       ),
@@ -126,7 +123,7 @@ class _SplashPageState extends State<SplashPage> {
                         width: 32,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.greenDark,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -134,7 +131,7 @@ class _SplashPageState extends State<SplashPage> {
                       Text(
                         'Bank Sampah BTH, Depok',
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: AppColors.grey100,
                           fontSize: 12,
                         ),
                       ),
