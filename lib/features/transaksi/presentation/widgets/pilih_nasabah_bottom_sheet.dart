@@ -118,6 +118,15 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                     itemCount: filteredCustomers.length,
                     itemBuilder: (context, index) {
                       final customer = filteredCustomers[index];
+                      // `id` is the backend UUID and means nothing to a user;
+                      // `idNasabah` carries the human-readable kode. It can be
+                      // empty (the mapper defaults it), in which case the phone
+                      // stands alone rather than leading with a stray separator.
+                      final subtitle = [
+                        if (customer.idNasabah.trim().isNotEmpty)
+                          customer.idNasabah,
+                        customer.phone,
+                      ].join(' · ');
                       return InkWell(
                         onTap: () {
                           context.pop(customer);
@@ -159,7 +168,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${customer.id} · ${customer.phone}',
+                                      subtitle,
                                       style: AppTextStyle.small.copyWith(
                                         color: Colors.grey[500],
                                       ),
