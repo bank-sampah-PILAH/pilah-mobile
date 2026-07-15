@@ -104,13 +104,20 @@ class PilihNasabahSection extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              selectedCustomer!.id,
-                              style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[500],
+                            // The kode, not the backend UUID — this card shows
+                            // the nasabah just picked from the sheet, so it has
+                            // to read the same way the sheet does. Omitted
+                            // entirely when the kode is missing, rather than
+                            // falling back to the UUID this fix removes.
+                            if (selectedCustomer!.idNasabah.trim().isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                selectedCustomer!.idNasabah,
+                                style: AppTextStyle.small.copyWith(
+                                  color: Colors.grey[500],
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
