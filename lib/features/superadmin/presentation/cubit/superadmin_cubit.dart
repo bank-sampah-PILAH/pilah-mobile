@@ -29,10 +29,12 @@ class SuperadminCubit extends Cubit<SuperadminState> {
   ///
   /// Pass [silent] to skip the [SuperadminLoading] emit — pull-to-refresh already
   /// shows a spinner, so the list should stay on screen instead of collapsing
-  /// into skeletons underneath it.
+  /// into skeletons underneath it. [silent] only applies when there is data to
+  /// keep: from [SuperadminInitial] or [SuperadminError] there is nothing on
+  /// screen, so a real loading state is emitted regardless.
   Future<void> loadBankSampah(String status, {bool silent = false}) async {
     _status = status;
-    if (!silent) emit(SuperadminLoading());
+    if (!silent || state is! SuperadminLoaded) emit(SuperadminLoading());
     final result = await getBankSampahUseCase.execute(status);
     result.fold(
       (failure) => emit(SuperadminError(failure.displayMessage)),

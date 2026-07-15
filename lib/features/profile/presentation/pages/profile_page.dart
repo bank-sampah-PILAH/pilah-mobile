@@ -10,13 +10,9 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -100,14 +96,11 @@ class _ProfileViewState extends State<_ProfileView>
     return palette[seed.hashCode.abs() % palette.length];
   }
 
-  /// Signs the user out and returns to login once the bloc reports it, clearing
-  /// the app-scoped cubit caches so a later session starts clean.
+  /// Returns to login once the bloc reports the sign-out. Clearing the
+  /// app-scoped cubit caches is handled centrally in [App], so it happens on
+  /// every logout path rather than only the one that passes through this page.
   void _onLoggedOut(BuildContext context, AuthenticationStates state) {
     if (state is! Unauthenticated) return;
-    context.read<NasabahCubit>().reset();
-    context.read<HargaCubit>().reset();
-    context.read<TransaksiCubit>().reset();
-    context.read<DashboardCubit>().reset();
     context.go(LoginPage.route);
   }
 

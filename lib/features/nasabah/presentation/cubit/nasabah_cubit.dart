@@ -46,9 +46,11 @@ class NasabahCubit extends Cubit<NasabahState> {
   ///
   /// Pass [silent] to skip the [NasabahLoading] emit — pull-to-refresh already
   /// shows a spinner, so the list should stay on screen instead of collapsing
-  /// into skeletons underneath it.
+  /// into skeletons underneath it. [silent] only applies when there is data to
+  /// keep: from [NasabahInitial] or [NasabahError] there is nothing on screen,
+  /// so a real loading state is emitted regardless.
   Future<void> loadNasabah({bool silent = false}) async {
-    if (!silent) emit(NasabahLoading());
+    if (!silent || state is! NasabahLoaded) emit(NasabahLoading());
     final result = await getNasabahUseCase.execute();
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),
