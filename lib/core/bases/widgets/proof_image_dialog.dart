@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 
+/// Shows a bank sampah's foto kegiatan so a superadmin can review it.
+///
+/// [imageUrl] is null when the bank sampah has no photo on record. That renders
+/// an explicit "no photo" state — never a stand-in image. This dialog is the
+/// evidence an approval decision is made against, so showing something that
+/// merely looks like a photo is worse than showing nothing: it invites the
+/// reviewer to approve against an image the applicant never submitted. This
+/// previously fell back to a picsum.photos stock photo.
 void showProofImageDialog(BuildContext context, {String? imageUrl}) {
-  // Use a landscape image dummy
-  final url = imageUrl ?? 'https://picsum.photos/seed/document/1200/800';
+  final url = imageUrl?.trim();
+  final hasProof = url != null && url.isNotEmpty;
 
   showDialog(
     context: context,
@@ -42,48 +50,44 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                 borderRadius: BorderRadius.circular(4),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: InteractiveViewer(
-                    minScale: 0.5,
-                    maxScale: 4.0,
-                    child: Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: Colors.grey.shade100,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.blueGrey.shade300,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey.shade100,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.broken_image,
-                                color: Colors.grey.shade400,
-                                size: 48,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Gagal memuat gambar',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
+                  child: hasProof
+                      ? InteractiveViewer(
+                          minScale: 0.5,
+                          maxScale: 4.0,
+                          child: Image.network(
+                            url,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.grey.shade100,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.blueGrey.shade300,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              );
+                            },
+                            // A photo exists but could not be fetched. Kept
+                            // distinct from the no-photo state below: one is a
+                            // network problem, the other means the applicant
+                            // submitted nothing, and a reviewer has to be able
+                            // to tell those apart.
+                            errorBuilder: (context, error, stackTrace) {
+                              return _ProofPlaceholder(
+                                icon: Icons.broken_image,
+                                title: 'Gagal memuat gambar',
+                                subtitle: 'Periksa koneksi lalu coba lagi.',
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
+                        )
+                      : _ProofPlaceholder(
+                          icon: Icons.image_not_supported_outlined,
+                          title: 'Tidak ada foto kegiatan',
+                          subtitle:
+                              'Bank sampah ini mendaftar tanpa melampirkan bukti.',
+                        ),
                 ),
               ),
             ),
@@ -117,4 +121,48 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
       );
     },
   );
+}
+
+/// Fills the image area when there is nothing to show — either no photo was
+/// submitted, or one exists but failed to load.
+class _ProofPlaceholder extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _ProofPlaceholder({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.grey.shade100,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.grey.shade400, size: 48),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
 }
