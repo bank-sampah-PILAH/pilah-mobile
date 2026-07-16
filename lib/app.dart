@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
 
 import 'package:pilah_mobile/services/di.dart';
 import 'core/router/app_router_config.dart';
@@ -54,7 +55,7 @@ class App extends StatelessWidget {
       // misses every other exit path.
       child: BlocListener<AuthenticationBloc, AuthenticationStates>(
         listenWhen: (previous, current) => current is Unauthenticated,
-        listener: (context, state) => _resetSessionScopedCubits(context),
+        listener: (context, state) => resetSessionScopedState(context),
         child: MaterialApp.router(
           title: 'Flutter Pilah Mobile',
           theme: ThemeData(
@@ -69,10 +70,19 @@ class App extends StatelessWidget {
     );
   }
 
-  void _resetSessionScopedCubits(BuildContext context) {
-    context.read<NasabahCubit>().reset();
-    context.read<HargaCubit>().reset();
-    context.read<TransaksiCubit>().reset();
-    context.read<DashboardCubit>().reset();
-  }
+}
+
+/// Clears all state that outlives a single session, on logout or a
+/// rejected/expired session. Top-level so it can be exercised directly in tests
+/// rather than only through the full [App] widget tree.
+void resetSessionScopedState(BuildContext context) {
+  context.read<NasabahCubit>().reset();
+  context.read<HargaCubit>().reset();
+  context.read<TransaksiCubit>().reset();
+  context.read<DashboardCubit>().reset();
+  // Wipe any invite token captured from a deep link. It is an app-scoped
+  // singleton that outlives the session and is otherwise cleared only on
+  // successful redemption, so without this a token captured but not redeemed by
+  // one account would follow the next account that logs in on this device.
+  di<InviteTokenStore>().clear();
 }
