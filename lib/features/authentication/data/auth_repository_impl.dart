@@ -50,6 +50,12 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(entity);
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
+    } catch (e) {
+      // Parse failures from AuthMapper / AuthResponse.fromJson on a malformed
+      // 2xx body throw a TypeError/CastError — a Dart Error, not an Exception —
+      // which the guard above would miss, crashing the login screen. Catch it
+      // here and surface it like any other failure instead.
+      return Left(GeneralException(message: e.toString()));
     }
   }
 

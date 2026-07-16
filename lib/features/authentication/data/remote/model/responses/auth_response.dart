@@ -23,9 +23,13 @@ abstract class AuthResponse with _$AuthResponse {
 abstract class UserResponse with _$UserResponse {
   const factory UserResponse({
     required String id,
-    required String name,
-    required String nama,
-    required String email,
+    // Display-only fields default to '' rather than being required: a partial
+    // 2xx body (a future serializer change, a proxy quirk) then degrades to a
+    // blank name instead of throwing. id/role stay strict — a session missing
+    // those is genuinely broken and is caught by loginWithGoogle's guard.
+    @Default('') String name,
+    @Default('') String nama,
+    @Default('') String email,
     required String role,
     @JsonKey(name: 'bank_sampah_id') String? bankSampahId,
     @JsonKey(name: 'bank_sampah_nama') String? bankSampahNama,
