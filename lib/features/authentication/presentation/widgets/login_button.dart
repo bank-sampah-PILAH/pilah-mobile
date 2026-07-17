@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/widgets/google_sign_in_error.dart';
 
 class LoginButton extends StatelessWidget {
   final bool isLoading;
@@ -36,12 +37,16 @@ class LoginButton extends StatelessWidget {
     } catch (error) {
       log('Google Sign-In error: $error');
 
-      if (!context.mounted) return;
+      // A deliberate cancel/dismiss (message == null) aborts silently — no
+      // snackbar. Anything else shows a clean fallback, never the raw
+      // exception string.
+      final message = sanitizeGoogleSignInError(error);
+      if (message == null || !context.mounted) return;
 
       AppNotification.showError(
         context,
         title: 'Login Gagal',
-        message: error.toString(),
+        message: message,
       );
     }
   }
