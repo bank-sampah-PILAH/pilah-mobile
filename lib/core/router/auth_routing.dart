@@ -22,8 +22,10 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
     case 'approval_pending':
       return '/pending-approval';
     case 'registration_rejected':
-      // No dedicated rejected screen yet; the pending screen shows the status.
-      return '/pending-approval';
+      // A rejected registration re-uses the registration form (in
+      // re-application mode) so the user can fix their data and resubmit,
+      // rather than being stranded on the pending screen.
+      return '/register-bank-sampah';
     case 'dashboard':
     default:
       // `dashboard`, plus null/empty/unknown, land on the main dashboard.
