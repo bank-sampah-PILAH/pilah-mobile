@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -81,7 +84,16 @@ class AppRouterConfig {
       GoRoute(
         path: RegisterBankSampahScreen.route,
         name: RegisterBankSampahScreen.route,
-        builder: (context, state) => const RegisterBankSampahScreen(),
+        builder: (context, state) {
+          // Re-application mode: the user reached this form because their
+          // previous registration was rejected (bank_sampah_status ==
+          // 'rejected'), not as a first-time onboarding step. The screen reads
+          // the flag to swap the stepper for a rejection notice.
+          final authState = context.read<AuthenticationBloc>().state;
+          final isRejected = authState is Authenticated &&
+              authState.authEntity.bankSampahStatus == 'rejected';
+          return RegisterBankSampahScreen(isRejectedReapplication: isRejected);
+        },
       ),
       GoRoute(
         path: PendingApprovalScreen.route,

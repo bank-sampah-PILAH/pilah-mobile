@@ -13,7 +13,15 @@ import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 
 class RegisterBankSampahScreen extends StatefulWidget {
-  const RegisterBankSampahScreen({super.key});
+  /// True when the user is re-applying after a previous registration was
+  /// rejected. Swaps the onboarding stepper for a rejection notice; the form
+  /// itself is identical to a first-time registration.
+  final bool isRejectedReapplication;
+
+  const RegisterBankSampahScreen({
+    super.key,
+    this.isRejectedReapplication = false,
+  });
 
   static const route = '/register-bank-sampah';
 
@@ -143,6 +151,54 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     );
   }
 
+  /// The notice shown at the top of the form when re-applying after a rejection.
+  /// The backend does not surface a rejection reason to the pengelola, so the
+  /// copy is the fixed guidance text.
+  Widget _buildRejectionBanner() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2), // red-50
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFECACA)), // red-200
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade600, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pendaftaran Ditolak',
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pendaftaran sebelumnya ditolak. Mohon periksa kembali data '
+                  'Anda dan daftar ulang.',
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,8 +237,13 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
               ),
             ),
 
-            // 2. Stepper Section
-            Container(
+            // Rejection notice — shown in place of the onboarding stepper when
+            // the user is re-applying after a rejected registration.
+            if (widget.isRejectedReapplication) _buildRejectionBanner(),
+
+            // 2. Stepper Section — first-time onboarding only.
+            if (!widget.isRejectedReapplication)
+              Container(
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(
                 color: Colors.white,
