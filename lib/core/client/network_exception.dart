@@ -121,6 +121,20 @@ class NetworkException implements Exception {
     return result;
   }
 
+  /// Looks up the first of [keys] present in [fieldErrors], or `null` if the
+  /// backend reported no error against any of them.
+  ///
+  /// Lets a form ask "did this failure belong to my phone field?" without
+  /// caring which alias the API used for it.
+  String? fieldError(List<String> keys) {
+    final fields = fieldErrors();
+    for (final key in keys) {
+      final message = fields[key];
+      if (message != null && message.isNotEmpty) return message;
+    }
+    return null;
+  }
+
   /// The best user-facing message for this exception, falling back to the prefix.
   String get displayMessage =>
       message ?? extractMessage(response) ?? prefix ?? 'Terjadi kesalahan';

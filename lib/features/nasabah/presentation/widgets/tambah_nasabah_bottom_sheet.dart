@@ -16,9 +16,14 @@ class TambahNasabahBottomSheet extends StatefulWidget {
   State<TambahNasabahBottomSheet> createState() => _TambahNasabahBottomSheetState();
 }
 
+/// Field keys the backend may report a duplicate-phone validation error under.
+/// The live API uses `no_hp`; the others are accepted defensively so a rename
+/// on the backend degrades to a still-inline error rather than a global one.
+const _phoneErrorKeys = ['no_hp', 'no_whatsapp', 'phone'];
+
 class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  
+
   final _namaController = TextEditingController();
   final _idNasabahController = TextEditingController();
   final _tanggalLahirController = TextEditingController();
@@ -28,6 +33,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   String? _jenisKelamin;
   bool _isSaving = false;
   String? _serverKodeError;
+  String? _serverPhoneError;
 
   @override
   void dispose() {
@@ -226,6 +232,13 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                   ],
+                  onChanged: (_) {
+                    // Clear the backend duplicate error as soon as the number is
+                    // edited, so the inline red text disappears while typing.
+                    if (_serverPhoneError != null) {
+                      setState(() => _serverPhoneError = null);
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Nomor WhatsApp wajib diisi.';
@@ -234,6 +247,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                     if (!regex.hasMatch(value)) {
                       return 'Format nomor tidak valid. Mulai dengan angka 8';
                     }
+                    if (_serverPhoneError != null) return _serverPhoneError;
                     return null;
                   },
                   decoration: _buildInputDecoration(
@@ -348,11 +362,21 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
       return;
     }
 
-    final fields = error.fieldErrors();
-    if (fields.containsKey('kode')) {
-      setState(() => _serverKodeError = fields['kode']);
+    // Backend validation (HTTP 422) is reported against the field it belongs to
+    // and shown inline. Only failures we can't attribute to a field — network
+    // errors, 5xx, unrecognised keys — escalate to the global snackbar.
+    final kodeError = error.fieldError(['kode']);
+    final phoneError = error.fieldError(_phoneErrorKeys);
+
+    if (kodeError != null || phoneError != null) {
+      setState(() {
+        _serverKodeError = kodeError;
+        _serverPhoneError = phoneError;
+      });
       _formKey.currentState?.validate();
+      return;
     }
+
     AppNotification.showError(
       context,
       title: 'Gagal Menyimpan',
