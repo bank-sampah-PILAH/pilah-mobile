@@ -1,9 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/utils/file_downloader.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -105,16 +103,24 @@ class TimeFilterChips extends StatelessWidget {
     );
   }
 
+  /// Downloads the report, then offers to share it.
+  ///
+  /// Sharing used to be the only outcome: the file went to the cache directory
+  /// and the system share sheet opened over it, so a user who just wanted the
+  /// spreadsheet on their phone had to mail it to themselves. Saving to
+  /// Download and putting "Bagikan" on the confirmation covers both, and asks
+  /// nothing of the majority who only wanted the file.
   Future<void> _onExport(BuildContext context) async {
     final cubit = context.read<TransaksiCubit>();
 
-    AppNotification.showSuccess(
+    final loading = AppNotification.showLoading(
       context,
       title: 'Informasi',
       message: 'Menyiapkan laporan XLS...',
     );
 
     final (:export, :error) = await cubit.exportTransaksi();
+    await loading.dismiss();
     if (!context.mounted) return;
 
     if (error != null) {
@@ -122,15 +128,11 @@ class TimeFilterChips extends StatelessWidget {
       return;
     }
 
+    final SavedFile saved;
     try {
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/${export!.filename}');
-      await file.writeAsBytes(export.bytes);
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          text: 'Laporan Transaksi PILAH',
-        ),
+      saved = await FileDownloader.save(
+        filename: export!.filename,
+        bytes: export.bytes,
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -139,7 +141,25 @@ class TimeFilterChips extends StatelessWidget {
         title: 'Gagal Menyimpan',
         message: 'Gagal menyimpan laporan: $e',
       );
+      return;
     }
+
+    if (!context.mounted) return;
+    AppNotification.showSuccess(
+      context,
+      title: 'Berhasil',
+      message: 'Laporan berhasil disimpan ke folder ${saved.folder}',
+      actionLabel: 'Bagikan',
+      // share_plus copies whatever path it is handed into its own cache before
+      // handing out a content:// URI, so the saved file is shareable straight
+      // from Download — no second copy to keep in sync.
+      onAction: () => SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(saved.path)],
+          text: 'Laporan Transaksi PILAH',
+        ),
+      ),
+    );
   }
 
   Widget _buildFilterChip(

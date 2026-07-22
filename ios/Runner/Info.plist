@@ -49,5 +49,13 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- Exported reports are written to the app's Documents directory. These
+		     two keys are what put that directory in the Files app, under "On My
+		     iPhone > Pilah Mobile"; without them the export saves successfully
+		     and the user has no way to reach it. -->
+		<key>UIFileSharingEnabled</key>
+		<true/>
+		<key>LSSupportsOpeningDocumentsInPlace</key>
+		<true/>
 	</dict>
 </plist>
