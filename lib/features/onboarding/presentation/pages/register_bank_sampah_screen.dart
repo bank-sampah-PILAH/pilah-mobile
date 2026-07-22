@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'dart:io';
@@ -199,11 +202,65 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     );
   }
 
+  /// Intercepts a back-navigation attempt. [canPop] on the [PopScope] is false,
+  /// so the pop is already blocked when this fires; we only need to offer the
+  /// exit confirmation.
+  void _onPopInvoked(bool didPop) {
+    if (didPop) return;
+    _confirmExit();
+  }
+
+  /// Shows the "leave registration" confirmation. On confirm, runs the standard
+  /// logout (clears the session and emits [Unauthenticated]); the [BlocListener]
+  /// in [build] handles the redirect to login. Cancelling or dismissing leaves
+  /// the form and its input untouched.
+  Future<void> _confirmExit() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Keluar dari Pendaftaran?',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
+          'tersimpan dan Anda akan dialihkan ke halaman login.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Ya, Keluar'),
+          ),
+        ],
+      ),
+    );
+    if (shouldLogout == true && mounted) {
+      context.read<AuthenticationBloc>().add(LogoutRequested());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SingleChildScrollView(
+    return BlocListener<AuthenticationBloc, AuthenticationStates>(
+      listenWhen: (previous, current) => current is Unauthenticated,
+      listener: (context, state) => context.go(LoginPage.route),
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF9FAFB),
+          body: SingleChildScrollView(
         child: Column(
           children: [
             // 1. Header Section
@@ -214,24 +271,36 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
               decoration: const BoxDecoration(
                 color: AppColors.greenDark,
               ),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Daftarkan Bank Sampah',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Daftarkan Bank Sampah',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Lengkapi data institusi bank sampah Anda.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Lengkapi data institusi bank sampah Anda.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
+                  IconButton(
+                    onPressed: _confirmExit,
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    tooltip: 'Keluar',
                   ),
                 ],
               ),
@@ -703,6 +772,8 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
             ),
             const SizedBox(height: 20),
           ],
+        ),
+      ),
         ),
       ),
     );
