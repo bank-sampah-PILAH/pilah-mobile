@@ -52,14 +52,29 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
 
   @override
   Future<OnboardingResult> acceptInvite(String token) async {
-    // Returns the joined bank sampah alongside `next_step`; only the routing
-    // hint is needed here. A stale/expired token or a bank sampah that isn't
-    // approved yet comes back as 400 {"error": ...}.
+    // Returns the joined bank sampah alongside `next_step`.
+    //
+    // `outcome`/`message` are read as well because not every refusal is an
+    // error status: an account that already belongs to *this* invite's bank
+    // sampah comes back as 200 with `{"outcome": "already_member", "message":
+    // "Anda sudah terdaftar pada bank sampah ini"}`, which looks like a
+    // successful join to anything that only keeps `next_step`. A stale/expired
+    // token, or an account already on a *different* bank sampah, still comes
+    // back as 400 {"error": ...}.
     final response = await networkService.post(
       Endpoints.invitesAccept,
       data: {'token': token},
     );
     final json = response.data as Map<String, dynamic>;
-    return OnboardingResult(nextStep: json['next_step']?.toString());
+    return OnboardingResult(
+      nextStep: json['next_step']?.toString(),
+      outcome: json['outcome']?.toString(),
+      message: (json['message'] ?? json['detail'])?.toString(),
+      // The body is the joined bank sampah serialised, so `nama` is the bank's.
+      // Only safe to read here: the profile endpoint returns a `nama` too, and
+      // that one is the user's.
+      bankSampahNama:
+          (json['nama'] ?? json['bank_sampah_nama'])?.toString(),
+    );
   }
 }
