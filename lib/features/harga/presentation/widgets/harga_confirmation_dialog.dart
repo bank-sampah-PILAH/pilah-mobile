@@ -1,24 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 
+/// Confirmation step for activating / deactivating a jenis sampah.
+///
+/// Pops `true` to confirm and `false` to cancel; a barrier dismiss pops `null`,
+/// so callers must treat a null result as a cancel. The dialog deliberately owns
+/// no cubit and performs no API call — the caller keeps that, along with the
+/// error handling and the success notification, so a failed request cannot be
+/// reported as a success.
 class HargaConfirmationDialog extends StatelessWidget {
   final bool isActivating;
-  final HargaEntity hargaData;
-  final HargaCubit hargaCubit;
+  final String wasteName;
 
   const HargaConfirmationDialog({
     super.key,
     required this.isActivating,
-    required this.hargaData,
-    required this.hargaCubit,
+    required this.wasteName,
   });
 
   static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color errorColor = Color(0xFFDC2626);
+
+  /// Shows the dialog and resolves to whether the user confirmed.
+  static Future<bool> show(
+    BuildContext context, {
+    required bool isActivating,
+    required String wasteName,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => HargaConfirmationDialog(
+        isActivating: isActivating,
+        wasteName: wasteName,
+      ),
+    );
+    return result ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +64,7 @@ class HargaConfirmationDialog extends StatelessWidget {
               child: Icon(iconData, color: iconColor, size: 32),
             ),
             const SizedBox(height: 20),
-            
+
             // Title
             Text(
               isActivating ? 'Aktifkan Jenis Sampah?' : 'Nonaktifkan Jenis Sampah?',
@@ -59,7 +76,7 @@ class HargaConfirmationDialog extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            
+
             // Description
             RichText(
               textAlign: TextAlign.center,
@@ -75,7 +92,7 @@ class HargaConfirmationDialog extends StatelessWidget {
                         : 'Yakin ingin menonaktifkan jenis sampah ',
                   ),
                   TextSpan(
-                    text: hargaData.name,
+                    text: wasteName,
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   TextSpan(
@@ -87,13 +104,13 @@ class HargaConfirmationDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            
+
             // Buttons
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => context.pop(),
+                    onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       side: BorderSide(color: Colors.grey[300]!, width: 1.5),
@@ -113,37 +130,7 @@ class HargaConfirmationDialog extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (isActivating) {
-                        final updatedHarga = HargaEntity(
-                          id: hargaData.id,
-                          kodeSampah: hargaData.kodeSampah,
-                          name: hargaData.name,
-                          price: hargaData.price,
-                          priceFormatted: hargaData.priceFormatted,
-                          category: hargaData.category,
-                          subtitle: hargaData.subtitle,
-                          badgeText: hargaData.badgeText,
-                          icon: hargaData.icon,
-                          iconColor: hargaData.iconColor,
-                          isActive: true,
-                        );
-                        hargaCubit.updateHarga(updatedHarga);
-                      } else {
-                        hargaCubit.deactivateHarga(hargaData.id);
-                      }
-
-                      context.pop(); // close dialog
-                      context.pop(); // close bottom sheet
-                      
-                      AppNotification.showSuccess(
-                        context,
-                        title: isActivating ? 'Jenis Sampah Aktif' : 'Jenis Sampah Nonaktif',
-                        message: isActivating
-                            ? '${hargaData.name} akan kembali muncul di daftar transaksi.'
-                            : '${hargaData.name} telah disembunyikan dari transaksi.',
-                      );
-                    },
+                    onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isActivating ? emeraldPrimary : errorColor,
                       padding: const EdgeInsets.symmetric(vertical: 14),

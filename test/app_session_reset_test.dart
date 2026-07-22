@@ -54,9 +54,10 @@ void main() {
   });
 
   testWidgets(
-      'resetSessionScopedState clears a pending invite token on logout (H1)',
+      'resetSessionScopedState keeps a pending invite token across logout',
       (tester) async {
-    // A user captured an invite deep link but never redeemed it.
+    // A user tapped an invite link while signed in as the wrong account and is
+    // logging out to sign in as the invited one.
     di<InviteTokenStore>().save('invite-token-abc');
     expect(di<InviteTokenStore>().hasToken, isTrue);
 
@@ -84,10 +85,11 @@ void main() {
 
     expect(
       di<InviteTokenStore>().hasToken,
-      isFalse,
-      reason: 'a token from the previous account must not follow the next login',
+      isTrue,
+      reason: 'switching accounts is a step inside the invite flow, not an exit '
+          'from it — the token has to survive until it is redeemed or refused',
     );
-    // The existing session-cubit resets still fire — this fix is additive.
+    // Only the invite token is exempt; the session cubits still reset.
     verify(() => nasabah.reset()).called(1);
     verify(() => harga.reset()).called(1);
     verify(() => transaksi.reset()).called(1);

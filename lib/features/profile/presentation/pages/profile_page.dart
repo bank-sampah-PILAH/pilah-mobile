@@ -41,6 +41,7 @@ class _ProfileViewState extends State<_ProfileView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _waController = TextEditingController();
+  final FocusNode _waFocusNode = FocusNode();
   final TextEditingController _namaBankController = TextEditingController();
   final TextEditingController _alamatBankController = TextEditingController();
   final TextEditingController _hpBankController = TextEditingController();
@@ -61,6 +62,7 @@ class _ProfileViewState extends State<_ProfileView>
   void dispose() {
     _tabController.dispose();
     _waController.dispose();
+    _waFocusNode.dispose();
     _namaBankController.dispose();
     _alamatBankController.dispose();
     _hpBankController.dispose();
@@ -117,6 +119,50 @@ class _ProfileViewState extends State<_ProfileView>
       _hpBankController.text = bank.noHpPic;
       _bankSeeded = true;
     }
+  }
+
+  /// Inserts [variable] (e.g. `{Nama}`) into the WA template at the current
+  /// cursor position, replacing any active selection. When the field has never
+  /// been focused the selection is invalid, so the variable is appended to the
+  /// end instead. Afterwards the cursor sits just past the inserted text and the
+  /// field keeps focus, so consecutive chip taps stack predictably and the live
+  /// preview (listening on the controller) refreshes immediately.
+  void _insertVariable(String variable) {
+    final text = _waController.text;
+    final selection = _waController.selection;
+    final int start = selection.isValid ? selection.start : text.length;
+    final int end = selection.isValid ? selection.end : text.length;
+
+    final newText = text.replaceRange(start, end, variable);
+    _waController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + variable.length),
+    );
+    _waFocusNode.requestFocus();
+  }
+
+  /// Renders a template into the sample message shown in "PREVIEW PESAN".
+  ///
+  /// This is preview-only dummy data; the raw template (with `{...}` variables)
+  /// is what gets saved. The currency variables collapse an optional preceding
+  /// "Rp " so a template written as "Rp {Saldo}" previews as "Rp 125.000" rather
+  /// than "Rp Rp 125.000".
+  String _renderPreview(String template) {
+    return template
+        .replaceAll(RegExp(r'(?:Rp\s*)?\{Total\}'), 'Rp 15.600')
+        .replaceAll(RegExp(r'(?:Rp\s*)?\{Saldo\}'), 'Rp 125.000')
+        .replaceAll('{Nama}', 'Budi Santoso')
+        .replaceAll('{Tanggal}', _previewDate())
+        .replaceAll('{daftar_item}', '- Plastik PET 5.2 kg\n- Kertas Kardus 2.0 kg');
+  }
+
+  String _previewDate() {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    ];
+    final now = DateTime.now();
+    return '${now.day} ${months[now.month - 1]} ${now.year}';
   }
 
   void _snack(String message, {bool error = false}) {
@@ -515,6 +561,15 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildManajemenTimTab(ProfileState state, AuthEntity? auth) {
     final team = state.team;
 
+    // Only the Pengelola Utama (owner) may invite. Their own roster row is the
+    // one flagged both `is_current_user` and `is_primary_pengelola`; invited
+    // (secondary) pengelola have `is_primary_pengelola == false`. This mirrors
+    // the backend, which restricts the invite endpoint to the primary pengelola
+    // (a non-owner tapping the card would only get a 403). If the team roster
+    // failed to load it is empty, so the card fails closed (hidden) rather than
+    // showing an action that cannot succeed.
+    final isPengelolaUtama = team.any((m) => m.isCurrentUser && m.isPrimary);
+
     return AppRefreshIndicator(
       onRefresh: () => context.read<ProfileCubit>().load(silent: true),
       child: SingleChildScrollView(
@@ -523,61 +578,64 @@ class _ProfileViewState extends State<_ProfileView>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Invite Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.greenDark,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Undang Pengelola Baru',
-                    style: AppTextStyle.title1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _onCopyInvite,
-                      icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
-                      label: Text(
-                        'Salin Link Undangan',
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.greenDark,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
+            // Invite Banner — owner only. Both the banner and its trailing gap
+            // are guarded so hiding it leaves no dangling spacing above the list.
+            if (isPengelolaUtama) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.greenDark,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Undang Pengelola Baru',
+                      style: AppTextStyle.title1.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _onCopyInvite,
+                        icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
+                        label: Text(
+                          'Salin Link Undangan',
+                          style: AppTextStyle.small.copyWith(
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.greenDark,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
+              const SizedBox(height: 28),
+            ],
 
             // Section Header
             Row(
@@ -805,7 +863,6 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildWhatsappTemplate(ProfileState state) {
     final variables = state.waTemplate?.variables ??
         const ['{Nama}', '{Total}', '{Saldo}', '{Tanggal}', '{daftar_item}'];
-    final preview = state.waTemplate?.preview;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,6 +914,7 @@ class _ProfileViewState extends State<_ProfileView>
               const SizedBox(height: 8),
               TextField(
                 controller: _waController,
+                focusNode: _waFocusNode,
                 minLines: 3,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
@@ -891,38 +949,46 @@ class _ProfileViewState extends State<_ProfileView>
                   for (final variable in variables) _buildVariableChip(variable),
                 ],
               ),
-              if (preview != null && preview.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.greenLight.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'PREVIEW PESAN',
-                        style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+              // Live preview: rebuilds only this block (not the page) on every
+              // keystroke or chip insert, so the cursor never jumps and fast
+              // typing stays smooth.
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _waController,
+                builder: (context, value, _) {
+                  final rendered = _renderPreview(value.text);
+                  if (rendered.trim().isEmpty) return const SizedBox.shrink();
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(top: 24),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenLight.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PREVIEW PESAN',
+                          style: AppTextStyle.extraSmall.copyWith(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        preview,
-                        // No maxLines / overflow: the preview wraps and grows
-                        // freely inside the scrollable tab.
-                        softWrap: true,
-                        style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                        const SizedBox(height: 8),
+                        Text(
+                          rendered,
+                          // No maxLines / overflow: the preview wraps and grows
+                          // freely inside the scrollable tab.
+                          softWrap: true,
+                          style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -931,18 +997,32 @@ class _ProfileViewState extends State<_ProfileView>
   }
 
   Widget _buildVariableChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.greenLight.withValues(alpha: 0.3),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _insertVariable(label),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.greenLight, width: 1),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyle.small.copyWith(
-          color: AppColors.greenDark,
-          fontWeight: FontWeight.w600,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.greenLight.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.greenLight, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add, size: 14, color: AppColors.greenDark),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: AppTextStyle.small.copyWith(
+                  color: AppColors.greenDark,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

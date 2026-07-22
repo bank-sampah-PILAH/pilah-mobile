@@ -16,9 +16,14 @@ class TambahNasabahBottomSheet extends StatefulWidget {
   State<TambahNasabahBottomSheet> createState() => _TambahNasabahBottomSheetState();
 }
 
+/// Field keys the backend may report a duplicate-phone validation error under.
+/// The live API uses `no_hp`; the others are accepted defensively so a rename
+/// on the backend degrades to a still-inline error rather than a global one.
+const _phoneErrorKeys = ['no_hp', 'no_whatsapp', 'phone'];
+
 class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  
+
   final _namaController = TextEditingController();
   final _idNasabahController = TextEditingController();
   final _tanggalLahirController = TextEditingController();
@@ -27,7 +32,11 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
 
   String? _jenisKelamin;
   bool _isSaving = false;
-  String? _serverKodeError;
+  // Duplicate-ID errors are surfaced via a full-width AppNotification: the ID
+  // field is half-width, so inline errorText truncates to "...". This flag only
+  // drives a red border on the field; the message itself lives in the toast.
+  bool _kodeHasError = false;
+  String? _serverPhoneError;
 
   @override
   void dispose() {
@@ -148,22 +157,21 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                           TextFormField(
                             controller: _idNasabahController,
                             onChanged: (_) {
-                              if (_serverKodeError != null) {
-                                setState(() => _serverKodeError = null);
+                              // Clear the red border as soon as the ID is edited.
+                              if (_kodeHasError) {
+                                setState(() => _kodeHasError = false);
                               }
                             },
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) return 'Bagian ini wajib diisi.';
-                              final cubit = context.read<NasabahCubit>();
-                              if (cubit.state is NasabahLoaded) {
-                                final list = (cubit.state as NasabahLoaded).nasabahList;
-                                final isDuplicate = list.any((e) => e.idNasabah.trim().toLowerCase() == value.trim().toLowerCase());
-                                if (isDuplicate) return 'ID Nasabah ini sudah digunakan.';
-                              }
-                              if (_serverKodeError != null) return _serverKodeError;
-                              return null;
-                            },
-                            decoration: _buildInputDecoration(hintText: 'Contoh: NAS-0900'),
+                            // Only the required check stays inline (short, standard
+                            // across the form). The uniqueness check moved to submit
+                            // (_handleSimpan) so its longer message shows in full via
+                            // AppNotification instead of truncating in this narrow field.
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                            decoration: _buildInputDecoration(
+                              hintText: 'Contoh: NAS-0900',
+                              hasError: _kodeHasError,
+                            ),
                           ),
                         ],
                       ),
@@ -226,6 +234,13 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                   ],
+                  onChanged: (_) {
+                    // Clear the backend duplicate error as soon as the number is
+                    // edited, so the inline red text disappears while typing.
+                    if (_serverPhoneError != null) {
+                      setState(() => _serverPhoneError = null);
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Nomor WhatsApp wajib diisi.';
@@ -234,6 +249,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                     if (!regex.hasMatch(value)) {
                       return 'Format nomor tidak valid. Mulai dengan angka 8';
                     }
+                    if (_serverPhoneError != null) return _serverPhoneError;
                     return null;
                   },
                   decoration: _buildInputDecoration(
@@ -323,10 +339,30 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   Future<void> _handleSimpan() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _isSaving = true);
     final cubit = context.read<NasabahCubit>();
+    final kode = _idNasabahController.text.trim();
+
+    // Uniqueness check, moved out of the inline validator: a duplicate ID gets a
+    // full, readable message in a notification plus a red border on the field,
+    // and still blocks the save.
+    if (cubit.state is NasabahLoaded) {
+      final list = (cubit.state as NasabahLoaded).nasabahList;
+      final isDuplicate =
+          list.any((e) => e.idNasabah.trim().toLowerCase() == kode.toLowerCase());
+      if (isDuplicate) {
+        setState(() => _kodeHasError = true);
+        AppNotification.showError(
+          context,
+          title: 'ID Nasabah Sudah Digunakan',
+          message: 'ID Nasabah "$kode" sudah digunakan. Silakan gunakan ID lain.',
+        );
+        return;
+      }
+    }
+
+    setState(() => _isSaving = true);
     final request = NasabahRequest(
-      kode: _idNasabahController.text.trim(),
+      kode: kode,
       nama: _namaController.text.trim(),
       jenisKelamin: _jenisKelamin ?? 'Laki-laki',
       tanggalLahir: _tanggalLahirController.text.trim(),
@@ -348,11 +384,29 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
       return;
     }
 
-    final fields = error.fieldErrors();
-    if (fields.containsKey('kode')) {
-      setState(() => _serverKodeError = fields['kode']);
-      _formKey.currentState?.validate();
+    // Backend validation (HTTP 422). The duplicate-ID (`kode`) error goes to a
+    // notification with a red border — the field is too narrow for inline text.
+    // The phone field is full-width, so its error stays inline and readable.
+    // Anything we can't attribute to a field escalates to the global snackbar.
+    final kodeError = error.fieldError(['kode']);
+    final phoneError = error.fieldError(_phoneErrorKeys);
+
+    if (kodeError != null) {
+      setState(() => _kodeHasError = true);
+      AppNotification.showError(
+        context,
+        title: 'ID Nasabah Sudah Digunakan',
+        message: kodeError,
+      );
+      return;
     }
+
+    if (phoneError != null) {
+      setState(() => _serverPhoneError = phoneError);
+      _formKey.currentState?.validate();
+      return;
+    }
+
     AppNotification.showError(
       context,
       title: 'Gagal Menyimpan',
@@ -371,19 +425,24 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     );
   }
 
-  InputDecoration _buildInputDecoration({String? hintText}) {
+  InputDecoration _buildInputDecoration({String? hintText, bool hasError = false}) {
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(color: Colors.grey[400]),
       filled: true,
       fillColor: Colors.white,
+      // [hasError] paints the border red without any inline text — used to flag
+      // the compact ID field when its message is shown in an AppNotification.
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: BorderSide(color: hasError ? Colors.red : Colors.grey[300]!),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+        borderSide: BorderSide(
+          color: hasError ? Colors.red : AppColors.greenDark,
+          width: 1.5,
+        ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

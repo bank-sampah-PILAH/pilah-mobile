@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart'
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
@@ -33,7 +34,17 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
   bool _isSaving = false;
   String? _serverKodeError;
 
-  static const List<String> _categories = ['Kertas', 'Plastik', 'Logam', 'Kaca'];
+  /// Dropdown options as (API value, display label, icon). The value is what the
+  /// backend `JenisSampah.Kategori` choices accept and is stored in
+  /// [_selectedCategory]; the label is display-only. They differ for "Lainnya",
+  /// which maps to the backend's catch-all `dll` — there is no `lainnya` choice.
+  static const List<({String value, String label, IconData icon})> _categories = [
+    (value: 'kertas', label: 'Kertas', icon: Icons.description),
+    (value: 'plastik', label: 'Plastik', icon: Icons.recycling),
+    (value: 'logam', label: 'Logam', icon: Icons.settings),
+    (value: 'kaca', label: 'Kaca', icon: Icons.wine_bar),
+    (value: 'dll', label: 'Lainnya', icon: Icons.category_outlined),
+  ];
 
   @override
   void initState() {
@@ -42,14 +53,13 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     _nameController = TextEditingController(text: widget.initialData?.name ?? '');
     _descController = TextEditingController(text: widget.initialData?.subtitle ?? '');
 
-    // The backend stores categories lowercase (e.g. "plastik"); match them to
-    // the capitalised dropdown values so edit mode preselects correctly.
-    final cat = widget.initialData?.category;
-    if (cat != null && cat.isNotEmpty) {
-      final normalized = cat[0].toUpperCase() + cat.substring(1).toLowerCase();
-      if (_categories.contains(normalized)) {
-        _selectedCategory = normalized;
-      }
+    // The dropdown holds the backend value verbatim, so edit mode preselects by
+    // matching the stored category directly. An unknown category (e.g. organik,
+    // which has no dropdown entry) leaves the field empty rather than
+    // silently rewriting it to a category the user never chose.
+    final cat = widget.initialData?.category.toLowerCase();
+    if (cat != null && _categories.any((c) => c.value == cat)) {
+      _selectedCategory = cat;
     }
     
     // Process price string
@@ -146,12 +156,7 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                   hint: const Text('— Pilih Kategori —'),
                   decoration: _buildInputDecoration(),
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                  items: [
-                    _buildDropdownItem('Kertas', Icons.description),
-                    _buildDropdownItem('Plastik', Icons.recycling),
-                    _buildDropdownItem('Logam', Icons.settings),
-                    _buildDropdownItem('Kaca', Icons.wine_bar),
-                  ],
+                  items: _categories.map(_buildDropdownItem).toList(),
                   onChanged: (newValue) {
                     setState(() {
                       _selectedCategory = newValue;
@@ -285,6 +290,16 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     final id = widget.initialData!.id;
     final wasActive = _isActive;
 
+    // Confirm before touching the API. A cancel or a barrier dismiss returns
+    // false, and nothing has changed at this point, so there is no optimistic
+    // UI state to roll back.
+    final confirmed = await HargaConfirmationDialog.show(
+      context,
+      isActivating: !wasActive,
+      wasteName: widget.initialData!.name,
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() => _isSaving = true);
     final error =
         wasActive ? await cubit.deactivateHarga(id) : await cubit.activateHarga(id);
@@ -310,14 +325,16 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     );
   }
 
-  DropdownMenuItem<String> _buildDropdownItem(String text, IconData icon) {
+  DropdownMenuItem<String> _buildDropdownItem(
+    ({String value, String label, IconData icon}) category,
+  ) {
     return DropdownMenuItem<String>(
-      value: text,
+      value: category.value,
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
+          Icon(category.icon, size: 20, color: Colors.grey[600]),
           const SizedBox(width: 12),
-          Text(text),
+          Text(category.label),
         ],
       ),
     );
