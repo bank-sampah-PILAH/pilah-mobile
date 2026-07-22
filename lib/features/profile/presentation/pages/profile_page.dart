@@ -561,6 +561,15 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildManajemenTimTab(ProfileState state, AuthEntity? auth) {
     final team = state.team;
 
+    // Only the Pengelola Utama (owner) may invite. Their own roster row is the
+    // one flagged both `is_current_user` and `is_primary_pengelola`; invited
+    // (secondary) pengelola have `is_primary_pengelola == false`. This mirrors
+    // the backend, which restricts the invite endpoint to the primary pengelola
+    // (a non-owner tapping the card would only get a 403). If the team roster
+    // failed to load it is empty, so the card fails closed (hidden) rather than
+    // showing an action that cannot succeed.
+    final isPengelolaUtama = team.any((m) => m.isCurrentUser && m.isPrimary);
+
     return AppRefreshIndicator(
       onRefresh: () => context.read<ProfileCubit>().load(silent: true),
       child: SingleChildScrollView(
@@ -569,61 +578,64 @@ class _ProfileViewState extends State<_ProfileView>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Invite Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.greenDark,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Undang Pengelola Baru',
-                    style: AppTextStyle.title1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _onCopyInvite,
-                      icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
-                      label: Text(
-                        'Salin Link Undangan',
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.greenDark,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
+            // Invite Banner — owner only. Both the banner and its trailing gap
+            // are guarded so hiding it leaves no dangling spacing above the list.
+            if (isPengelolaUtama) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.greenDark,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Undang Pengelola Baru',
+                      style: AppTextStyle.title1.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _onCopyInvite,
+                        icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
+                        label: Text(
+                          'Salin Link Undangan',
+                          style: AppTextStyle.small.copyWith(
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.greenDark,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
+              const SizedBox(height: 28),
+            ],
 
             // Section Header
             Row(
