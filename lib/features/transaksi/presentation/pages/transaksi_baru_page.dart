@@ -84,10 +84,15 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       return;
     }
 
-    // Refresh dashboard metrics so Total Kas / Sampah / Transaksi reflect this
-    // new setoran (the dashboard tab stays alive and won't re-init on its own).
+    // Refresh the shell tabs that stay alive and won't re-init on their own.
+    // loadStats updates the dashboard metrics (Total Kas / Sampah / Transaksi);
+    // loadTransaksi refreshes the transaksi list that feeds BOTH the dashboard's
+    // "Aktivitas Terbaru" and the Laporan page — silent so those lists update in
+    // place rather than flashing skeletons behind the success sheet. Fire-and-
+    // forget (not awaited), matching loadStats, so the success modal isn't blocked.
     context.read<DashboardCubit>().loadStats();
     context.read<NasabahCubit>().loadNasabah();
+    cubit.loadTransaksi(silent: true);
 
     final created = result.created!;
     await showModalBottomSheet(
@@ -101,22 +106,46 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
         newBalance: created.saldoSetelah,
         itemCount: created.itemCount,
         onKirimWaSelesai: () async {
+          // Both navigators are resolved up front, before the await. Reaching
+          // back for a BuildContext afterwards is what the
+          // use_build_context_synchronously diagnostic was pointing at, and the
+          // `mounted` check below can't cover it: that reports on this State,
+          // while `sheetContext` belongs to the modal route this callback is
+          // about to remove.
+          final sheetNavigator = Navigator.of(sheetContext);
+          final router = GoRouter.of(context);
+
           final waResult = await cubit.resendWa(created.id);
           if (!mounted) return;
-          Navigator.of(sheetContext).pop();
-          context.pop();
+
+          sheetNavigator.pop();
+          router.pop();
+
+          // Deferred rather than raised here. A Flushbar shows itself by
+          // pushing a route, and Navigator anchors an imperatively pushed route
+          // to the page-based one beneath it — in this frame that is a page
+          // already on its way out, so the toast would be torn down along with
+          // it. [AppNotification.afterNavigation] waits for the destination to
+          // settle and shows on the root navigator instead.
           if (waResult.success) {
-            AppNotification.showSuccess(
-              context,
-              title: 'Berhasil',
-              message: 'Transaksi disimpan & notifikasi WhatsApp terkirim.',
+            AppNotification.afterNavigation(
+              (toastContext) => AppNotification.showSuccess(
+                toastContext,
+                title: 'Berhasil',
+                message: 'Transaksi disimpan & notifikasi WhatsApp terkirim.',
+              ),
             );
           } else {
-            AppNotification.showError(
-              context,
-              title: 'Peringatan',
-              message:
-                  'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis. Silakan coba lagi di detail transaksi.',
+            // The transaksi itself was saved — only the WhatsApp notification
+            // failed, and it can be resent from the detail screen. Red would
+            // read as "your transaction didn't go through".
+            AppNotification.afterNavigation(
+              (toastContext) => AppNotification.showWarning(
+                toastContext,
+                title: 'Peringatan',
+                message:
+                    'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis. Silakan coba lagi di detail transaksi.',
+              ),
             );
           }
         },
