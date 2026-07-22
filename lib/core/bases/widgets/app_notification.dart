@@ -53,14 +53,28 @@ class AppNotification {
     });
   }
 
-  static void showSuccess(BuildContext context, {required String title, required String message}) {
-    Flushbar(
+  /// [actionLabel] and [onAction] turn the toast into an offer rather than a
+  /// bare confirmation — "saved, and you can share it from here" — so the
+  /// follow-up stays optional instead of being forced on everyone who exports.
+  ///
+  /// Held twice as long when it carries an action: three seconds is enough to
+  /// read a verdict, not to notice a button and reach for it.
+  static void showSuccess(
+    BuildContext context, {
+    required String title,
+    required String message,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    final bool hasAction = actionLabel != null && onAction != null;
+    late final Flushbar flushbar;
+    flushbar = Flushbar(
       titleText: Text(
-        title, 
+        title,
         style: AppTextStyle.title1.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
       ),
       messageText: Text(
-        message, 
+        message,
         style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
       ),
       flushbarPosition: FlushbarPosition.TOP,
@@ -68,9 +82,59 @@ class AppNotification {
       margin: const EdgeInsets.all(16),
       borderRadius: BorderRadius.circular(12),
       icon: const Icon(Icons.check_circle, color: Colors.white, size: 28),
-      duration: const Duration(seconds: 3),
+      mainButton: hasAction
+          ? TextButton(
+              // Taking the action is also an acknowledgement: leaving the toast
+              // up would only overlap whatever the action opens.
+              onPressed: () {
+                flushbar.dismiss();
+                onAction();
+              },
+              child: Text(
+                actionLabel,
+                style: AppTextStyle.small.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            )
+          : null,
+      duration: Duration(seconds: hasAction ? 6 : 3),
       boxShadows: _shadow,
-    ).show(context);
+    );
+    flushbar.show(context);
+  }
+
+  /// A toast with no duration, for work whose length the app can't predict.
+  ///
+  /// Returns the [Flushbar] so the caller can [Flushbar.dismiss] it the moment
+  /// the work lands — nothing else will, and an undismissed one sits there
+  /// forever. Not dismissible by hand, because a spinner the user can swipe
+  /// away tells them the work stopped when it hasn't.
+  static Flushbar showLoading(BuildContext context, {required String title, required String message}) {
+    final flushbar = Flushbar(
+      titleText: Text(
+        title,
+        style: AppTextStyle.title1.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+      ),
+      messageText: Text(
+        message,
+        style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
+      ),
+      flushbarPosition: FlushbarPosition.TOP,
+      backgroundColor: AppColors.greenDark,
+      margin: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(12),
+      icon: const SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.5,
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
+      ),
+      isDismissible: false,
+      boxShadows: _shadow,
+    );
+    flushbar.show(context);
+    return flushbar;
   }
 
   static void showError(BuildContext context, {required String title, required String message}) {
