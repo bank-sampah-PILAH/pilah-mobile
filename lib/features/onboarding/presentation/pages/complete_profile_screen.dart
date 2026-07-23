@@ -49,6 +49,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _restoreDraft();
     // An invite link can arrive while this screen is already on top, and the
     // router cannot announce it: the redirect resolves back to
     // `/complete-profile`, which produces a `RouteMatchList` equal to the
@@ -64,6 +65,37 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   void _onInviteTokenChanged() {
     if (mounted) setState(() {});
   }
+
+  /// Refills the form from the draft banked on the way to step two.
+  ///
+  /// This is what makes "Kembali" from the registration form a real back
+  /// button. The screen is rebuilt from scratch on the way back — the route
+  /// pushed over it does not preserve this State — so without this the user
+  /// would return to an empty form and have to retype everything, which is the
+  /// whole reason the wizard defers the profile call.
+  ///
+  /// Reads straight from the cubit rather than waiting for a state emission:
+  /// the draft is not part of [OnboardingState], and the controllers have to be
+  /// populated before the first build or the fields flash empty.
+  void _restoreDraft() {
+    final draft = context.read<OnboardingCubit>().profileDraft;
+    if (draft == null) return;
+
+    _nameController.text = draft.nama;
+    _phoneController.text = draft.noHp;
+    _gender = draft.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+
+    // Stored as the ISO string the API wants; the picker and the field need a
+    // DateTime and dd/MM/yyyy back.
+    final parsed = DateTime.tryParse(draft.tanggalLahir);
+    if (parsed != null) {
+      _selectedDob = parsed;
+      _dobController.text = _displayDate(parsed);
+    }
+  }
+
+  String _displayDate(DateTime date) =>
+      "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
 
   @override
   void dispose() {
@@ -97,10 +129,24 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (picked != null) {
       setState(() {
         _selectedDob = picked;
-        _dobController.text =
-            "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+        _dobController.text = _displayDate(picked);
       });
     }
+  }
+
+  /// Whether finishing this form leads to registering a brand-new bank sampah.
+  ///
+  /// Only that path may defer the profile call, because only there is the next
+  /// destination knowable without asking. `AuthService.user_state` reads: an
+  /// account with no bank sampah gets `register_bank_sampah` the moment its
+  /// profile completes, full stop. An account that already has one instead gets
+  /// `approval_pending`, `registration_rejected` or `dashboard` depending on its
+  /// status — a verdict only the backend can give, so those keep sending the
+  /// profile immediately and routing on the answer.
+  bool get _startsNewRegistration {
+    final authState = context.read<AuthenticationBloc>().state;
+    if (authState is! Authenticated) return false;
+    return authState.authEntity.bankSampahStatus == null;
   }
 
   String _isoDate(DateTime date) =>
@@ -113,8 +159,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     // which would otherwise flip [_isInviteMode] halfway through.
     final isInvite = _isInviteMode;
 
-    setState(() => _isLoading = true);
-
     final request = CompleteProfileRequest(
       nama: _nameController.text.trim(),
       jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
@@ -123,6 +167,27 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
 
     final cubit = context.read<OnboardingCubit>();
+
+    // Condition B — a new bank sampah is coming next, so nothing is sent yet.
+    //
+    // Committing the profile here is what made step two a one-way door: the
+    // backend refuses a second `PUT /onboarding/profile` with "Profil sudah
+    // lengkap", so a user who walked back to fix a typo could no longer save
+    // it. Banking the draft instead keeps both steps editable until the
+    // registration form submits them together.
+    //
+    // Pushed, not `go`: the profile screen has to stay underneath for "Kembali"
+    // to return to it. Nothing redirects it away — the global redirect only
+    // fires when an invite token is banked, and this branch is the one where
+    // there is none.
+    if (!isInvite && _startsNewRegistration) {
+      cubit.saveProfileDraft(request);
+      context.push('/register-bank-sampah');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
     final (:result, :error) = await cubit.completeProfile(request);
 
     if (!mounted) return;

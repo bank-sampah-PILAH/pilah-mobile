@@ -11,6 +11,9 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -25,17 +28,25 @@ class _MockTransaksiCubit extends MockCubit<TransaksiState>
 class _MockDashboardCubit extends MockCubit<DashboardState>
     implements DashboardCubit {}
 
+class _MockOnboardingDataSource extends Mock
+    implements OnboardingRemoteDataSource {}
+
 void main() {
   late _MockNasabahCubit nasabah;
   late _MockHargaCubit harga;
   late _MockTransaksiCubit transaksi;
   late _MockDashboardCubit dashboard;
+  // Real, not mocked: the draft it holds is the thing under test, and a mock
+  // would only confirm that a method was called rather than that the data is
+  // actually gone.
+  late OnboardingCubit onboarding;
 
   setUp(() {
     nasabah = _MockNasabahCubit();
     harga = _MockHargaCubit();
     transaksi = _MockTransaksiCubit();
     dashboard = _MockDashboardCubit();
+    onboarding = OnboardingCubit(_MockOnboardingDataSource());
     when(() => nasabah.state).thenReturn(NasabahInitial());
     when(() => harga.state).thenReturn(HargaInitial());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
@@ -48,6 +59,7 @@ void main() {
   });
 
   tearDown(() {
+    onboarding.close();
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
@@ -61,6 +73,14 @@ void main() {
     di<InviteTokenStore>().save('invite-token-abc');
     expect(di<InviteTokenStore>().hasToken, isTrue);
 
+    // Half-way through the registration wizard when they logged out.
+    onboarding.saveProfileDraft(const CompleteProfileRequest(
+      nama: 'Sari Dewi',
+      jenisKelamin: 'perempuan',
+      tanggalLahir: '1990-04-17',
+      noHp: '81234567890',
+    ));
+
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
@@ -68,6 +88,7 @@ void main() {
           BlocProvider<HargaCubit>.value(value: harga),
           BlocProvider<TransaksiCubit>.value(value: transaksi),
           BlocProvider<DashboardCubit>.value(value: dashboard),
+          BlocProvider<OnboardingCubit>.value(value: onboarding),
         ],
         child: MaterialApp(
           home: Builder(
@@ -94,5 +115,12 @@ void main() {
     verify(() => harga.reset()).called(1);
     verify(() => transaksi.reset()).called(1);
     verify(() => dashboard.reset()).called(1);
+    expect(
+      onboarding.hasProfileDraft,
+      isFalse,
+      reason: 'the draft is one person’s name, phone and date of birth — left '
+          'behind it would prefill the next account’s form with it, and be '
+          'submitted under their credentials',
+    );
   });
 }

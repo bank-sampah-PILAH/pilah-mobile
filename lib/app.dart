@@ -152,6 +152,12 @@ void resetSessionScopedState(BuildContext context) {
   context.read<HargaCubit>().reset();
   context.read<TransaksiCubit>().reset();
   context.read<DashboardCubit>().reset();
+  // The half-filled registration profile, unlike the invite token below, is
+  // squarely session-scoped: it is one person's name, phone and date of birth.
+  // Left behind it would prefill the next account's form with a stranger's
+  // details, and worse, `submitRegistration` would send them under that
+  // account's credentials.
+  context.read<OnboardingCubit>().clearProfileDraft();
   // A pending invite token is deliberately NOT cleared here.
   //
   // Logging out is a step *inside* the invite flow, not an exit from it:

@@ -70,8 +70,11 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       fotoKegiatanPath: image.path,
     );
 
+    // Sends the banked profile first when the user came through step one, and
+    // only the registration otherwise. Either way a failure leaves them here
+    // with the form intact, and the profile half is not re-sent on retry.
     final (:result, :error) =
-        await context.read<OnboardingCubit>().registerBankSampah(request);
+        await context.read<OnboardingCubit>().submitRegistration(request);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -202,12 +205,45 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     );
   }
 
-  /// Intercepts a back-navigation attempt. [canPop] on the [PopScope] is false,
-  /// so the pop is already blocked when this fires; we only need to offer the
-  /// exit confirmation.
+  /// Whether this form is step two of the wizard rather than a destination in
+  /// its own right.
+  ///
+  /// A banked draft is the evidence: it exists only when the profile screen
+  /// pushed this route and is still sitting underneath, which is also the only
+  /// case where popping leads anywhere useful. Reached any other way — a
+  /// redirect after login, a rejected re-application — there is no page behind
+  /// this one and back has to keep meaning "leave onboarding".
+  bool get _isWizardStep => context.read<OnboardingCubit>().hasProfileDraft;
+
+  /// Intercepts a back-navigation attempt.
+  ///
+  /// Mid-wizard the pop is allowed through to the profile screen, which refills
+  /// itself from the draft. Offering to log them out instead — which is what
+  /// this did unconditionally — would throw away a completed form to answer a
+  /// request to edit it.
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
+    if (_isWizardStep) {
+      _backToProfile();
+      return;
+    }
     _confirmExit();
+  }
+
+  /// Returns to step one, preferring a pop so the profile screen underneath is
+  /// revealed rather than rebuilt over the top of this one.
+  ///
+  /// Falls back to `go` for the case the draft outlived the stack — a warm
+  /// start that restored straight onto this route, say — where there is nothing
+  /// to pop and the profile screen has to be navigated to outright. It refills
+  /// from the draft either way.
+  void _backToProfile() {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      context.go('/complete-profile');
+    }
   }
 
   /// Shows the "leave registration" confirmation. On confirm, runs the standard
@@ -733,9 +769,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: () {
-                        context.go('/complete-profile');
-                      },
+                      onPressed: _backToProfile,
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
