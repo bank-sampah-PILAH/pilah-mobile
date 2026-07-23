@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -9,8 +12,9 @@ import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.d
 @injectable
 class ProfileCubit extends Cubit<ProfileState> {
   final ProfileRemoteDataSource _dataSource;
+  final ImagePicker _picker;
 
-  ProfileCubit(this._dataSource) : super(const ProfileState());
+  ProfileCubit(this._dataSource, this._picker) : super(const ProfileState());
 
   /// Loads the bank sampah profile, WhatsApp template and team roster. The bank
   /// profile is essential (a failure shows the error screen); the template and
@@ -71,9 +75,34 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  /// Opens the gallery so the user can choose a new logo, holding the result in
+  /// state for the next save. Nothing is uploaded here — a pick the user then
+  /// abandons should leave the stored logo untouched.
+  ///
+  /// A cancelled picker returns null and is not an error: the state is left
+  /// exactly as it was, including any logo picked earlier.
+  ///
+  /// The image is re-encoded down on the way in. The backend caps uploads at
+  /// 5 MB and a modern phone camera clears that on its own, so without this the
+  /// first thing many users would meet is a rejected save.
+  Future<void> pickLogo() async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+      maxWidth: 1024,
+    );
+    if (image == null) return;
+    emit(state.copyWith(selectedLogoFile: File(image.path)));
+  }
+
   /// Persists the editable bank sampah fields via `PUT /bank-sampah/me`.
   /// Returns `null` on success, otherwise the [NetworkException] so the page can
-  /// surface backend validation (e.g. an invalid phone number).
+  /// surface backend validation (e.g. an invalid phone number, or a logo the
+  /// API refuses for its format or size).
+  ///
+  /// Carries the pending logo when there is one. It is only released once the
+  /// response is in hand — a failed save keeps the pick, so the user can retry
+  /// without hunting through the gallery again.
   Future<NetworkException?> updateBankSampah({
     required String nama,
     required String alamat,
@@ -85,8 +114,9 @@ class ProfileCubit extends Cubit<ProfileState> {
         alamat: alamat,
         kota: state.bankSampah?.kota,
         noHpPic: noHpPic,
+        fotoLogoPath: state.selectedLogoFile?.path,
       );
-      emit(state.copyWith(bankSampah: updated));
+      emit(state.copyWith(bankSampah: updated, clearSelectedLogo: true));
       return null;
     } on Exception catch (e) {
       return NetworkException.handleException(e);

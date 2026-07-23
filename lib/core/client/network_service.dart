@@ -119,6 +119,29 @@ class NetworkService {
     return response;
   }
 
+  /// PUTs multipart form data (e.g. a profile edit carrying a logo). The
+  /// multipart counterpart to [put] for the same reason [postMultipart] is one
+  /// to [post]: [headersRequest] pins `Content-Type: application/json`, which
+  /// overrides the `multipart/form-data` Dio derives from [formData] and takes
+  /// the boundary with it, leaving the server a body it cannot parse.
+  Future<Response> putMultipart(
+    String path, {
+    required FormData formData,
+  }) async {
+    final userToken = networkUtils.accessToken;
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
+    };
+
+    Response response = await dio
+        .put(environment.baseUrl + path,
+            data: formData,
+            options: options.copyWith(headers: headers))
+        .timeout(globalTimeout);
+    return response;
+  }
+
   Future<Response> put(
     String path, {
     Map<String, dynamic>? queryParams,

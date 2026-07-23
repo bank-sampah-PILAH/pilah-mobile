@@ -9,6 +9,14 @@ class BankSampahProfile {
   final String noHpPic;
   final String status;
 
+  /// Absolute URL of the uploaded logo, or null when none has been set.
+  ///
+  /// Always ready to hand to `Image.network`: the data source resolves the
+  /// relative `/media/...` path the API returns under local file storage
+  /// against the API origin, so callers never have to know which storage
+  /// backend answered.
+  final String? fotoLogo;
+
   const BankSampahProfile({
     required this.id,
     required this.nama,
@@ -16,6 +24,7 @@ class BankSampahProfile {
     required this.kota,
     required this.noHpPic,
     required this.status,
+    this.fotoLogo,
   });
 }
 

@@ -503,18 +503,7 @@ class _ProfileViewState extends State<_ProfileView>
                 key: _bankFormKey,
                 child: Column(
                   children: [
-                    // Home Icon
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.greenLight.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.greenLight, width: 2),
-                        ),
-                        child: const Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
-                      ),
-                    ),
+                    _buildLogoPicker(state),
                     const SizedBox(height: 24),
                     _buildEditableField(
                       label: 'NAMA BANK SAMPAH',
@@ -555,6 +544,107 @@ class _ProfileViewState extends State<_ProfileView>
     );
   }
 
+  /// The bank sampah logo, and the control for replacing it.
+  ///
+  /// Tapping anywhere on the circle opens the gallery. The camera badge is the
+  /// only thing saying so — an avatar that happens to be tappable reads as
+  /// decoration, and the logo was a static icon before this, so nobody has a
+  /// reason to try. It is painted, not pressed: the badge is small enough that
+  /// making it the target would shrink a comfortable 88px circle down to 28.
+  ///
+  /// A picked file wins over the stored logo. Between choosing an image and
+  /// saving, the local file *is* the answer to "what will this logo be", and
+  /// showing the old one until save would read as a pick that did not register.
+  Widget _buildLogoPicker(ProfileState state) {
+    return Center(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => context.read<ProfileCubit>().pickLogo(),
+              child: Container(
+                width: _logoDiameter,
+                height: _logoDiameter,
+                decoration: BoxDecoration(
+                  color: AppColors.greenLight.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.greenLight, width: 2),
+                ),
+                child: ClipOval(child: _buildLogoContent(state)),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: IgnorePointer(
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.greenDark,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(
+                  Icons.photo_camera_rounded,
+                  color: Colors.white,
+                  size: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Fills the circle with the most current logo available, falling back until
+  /// something can be drawn.
+  Widget _buildLogoContent(ProfileState state) {
+    final file = state.selectedLogoFile;
+    if (file != null) {
+      return Image.file(
+        file,
+        width: _logoDiameter,
+        height: _logoDiameter,
+        fit: BoxFit.cover,
+        // The file came from the gallery a moment ago, so this is close to
+        // unreachable — but an unreadable pick should still leave a logo on
+        // screen rather than a broken-image glyph inside the avatar.
+        errorBuilder: (_, __, ___) => _logoPlaceholder,
+      );
+    }
+
+    final url = state.bankSampah?.fotoLogo;
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        width: _logoDiameter,
+        height: _logoDiameter,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) =>
+            progress == null ? child : _logoPlaceholder,
+        // A logo that is set but unreachable falls back to the same placeholder
+        // as no logo at all. The distinction matters to a superadmin reviewing
+        // evidence, which is why showProofImageDialog keeps the two apart; here
+        // it is the user's own logo on their own settings page, and a broken
+        // glyph in the middle of a form is only noise.
+        errorBuilder: (_, __, ___) => _logoPlaceholder,
+      );
+    }
+
+    return _logoPlaceholder;
+  }
+
+  static const double _logoDiameter = 88;
+
+  static const Widget _logoPlaceholder = Center(
+    child: Icon(Icons.home_outlined, color: AppColors.greenDark, size: 40),
+  );
 
   // ── Tab 2: Manajemen Tim ────────────────────────────────────────────
 

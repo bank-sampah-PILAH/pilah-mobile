@@ -10,12 +10,14 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:get_it/get_it.dart' as _i174;
+import 'package:image_picker/image_picker.dart' as _i183;
 import 'package:injectable/injectable.dart' as _i526;
 
 import '../core/client/app_environment.dart' as _i119;
 import '../core/client/network_service.dart' as _i941;
 import '../core/client/network_utils.dart' as _i936;
 import '../core/database/secure_database.dart' as _i124;
+import '../core/media/image_picker_module.dart' as _i189;
 import '../core/router/invite_token_store.dart' as _i901;
 import '../core/storage/app_storage.dart' as _i812;
 import '../core/storage/storage_module.dart' as _i624;
@@ -133,7 +135,9 @@ extension GetItInjectableX on _i174.GetIt {
       environment,
       environmentFilter,
     );
+    final imagePickerModule = _$ImagePickerModule();
     final storageModule = _$StorageModule();
+    gh.lazySingleton<_i183.ImagePicker>(() => imagePickerModule.imagePicker);
     gh.lazySingleton<_i901.InviteTokenStore>(() => _i901.InviteTokenStore());
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
@@ -198,8 +202,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
-    gh.factory<_i300.ProfileCubit>(
-        () => _i300.ProfileCubit(gh<_i1053.ProfileRemoteDataSource>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
@@ -213,6 +215,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
           gh<_i521.AuthenticationUseCases>(),
           gh<_i934.LoginWithGoogleUseCase>(),
+        ));
+    gh.factory<_i300.ProfileCubit>(() => _i300.ProfileCubit(
+          gh<_i1053.ProfileRemoteDataSource>(),
+          gh<_i183.ImagePicker>(),
         ));
     gh.lazySingleton<_i449.ActivateNasabahUseCase>(
         () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
@@ -278,5 +284,7 @@ extension GetItInjectableX on _i174.GetIt {
     return this;
   }
 }
+
+class _$ImagePickerModule extends _i189.ImagePickerModule {}
 
 class _$StorageModule extends _i624.StorageModule {}
