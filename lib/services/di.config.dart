@@ -10,6 +10,7 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:get_it/get_it.dart' as _i174;
+import 'package:image_cropper/image_cropper.dart' as _i183;
 import 'package:image_picker/image_picker.dart' as _i183;
 import 'package:injectable/injectable.dart' as _i526;
 
@@ -138,6 +139,7 @@ extension GetItInjectableX on _i174.GetIt {
     final imagePickerModule = _$ImagePickerModule();
     final storageModule = _$StorageModule();
     gh.lazySingleton<_i183.ImagePicker>(() => imagePickerModule.imagePicker);
+    gh.lazySingleton<_i183.ImageCropper>(() => imagePickerModule.imageCropper);
     gh.lazySingleton<_i901.InviteTokenStore>(() => _i901.InviteTokenStore());
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
@@ -196,6 +198,11 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
+    gh.factory<_i300.ProfileCubit>(() => _i300.ProfileCubit(
+          gh<_i1053.ProfileRemoteDataSource>(),
+          gh<_i183.ImagePicker>(),
+          gh<_i183.ImageCropper>(),
+        ));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
     gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
@@ -215,10 +222,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
           gh<_i521.AuthenticationUseCases>(),
           gh<_i934.LoginWithGoogleUseCase>(),
-        ));
-    gh.factory<_i300.ProfileCubit>(() => _i300.ProfileCubit(
-          gh<_i1053.ProfileRemoteDataSource>(),
-          gh<_i183.ImagePicker>(),
         ));
     gh.lazySingleton<_i449.ActivateNasabahUseCase>(
         () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));

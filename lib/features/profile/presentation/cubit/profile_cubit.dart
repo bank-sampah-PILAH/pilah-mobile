@@ -1,8 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:injectable/injectable.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
@@ -13,8 +16,10 @@ import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.d
 class ProfileCubit extends Cubit<ProfileState> {
   final ProfileRemoteDataSource _dataSource;
   final ImagePicker _picker;
+  final ImageCropper _cropper;
 
-  ProfileCubit(this._dataSource, this._picker) : super(const ProfileState());
+  ProfileCubit(this._dataSource, this._picker, this._cropper)
+      : super(const ProfileState());
 
   /// Loads the bank sampah profile, WhatsApp template and team roster. The bank
   /// profile is essential (a failure shows the error screen); the template and
@@ -75,24 +80,67 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
-  /// Opens the gallery so the user can choose a new logo, holding the result in
-  /// state for the next save. Nothing is uploaded here — a pick the user then
-  /// abandons should leave the stored logo untouched.
+  /// Opens the gallery, then a square cropper, holding the result in state for
+  /// the next save. Nothing is uploaded here — a pick the user then abandons
+  /// should leave the stored logo untouched.
   ///
-  /// A cancelled picker returns null and is not an error: the state is left
-  /// exactly as it was, including any logo picked earlier.
+  /// Cropping is not optional polish. The logo is only ever drawn inside a
+  /// circle, so an uncropped landscape photo arrives already ruined: the avatar
+  /// takes the centre and throws the sides away, and the user finds out after
+  /// saving. Locking the frame to 1:1 makes what they choose what they get.
   ///
-  /// The image is re-encoded down on the way in. The backend caps uploads at
-  /// 5 MB and a modern phone camera clears that on its own, so without this the
-  /// first thing many users would meet is a rejected save.
+  /// Backing out at either step returns null and is not an error. The state is
+  /// left exactly as it was, including any logo picked earlier — abandoning a
+  /// crop is not a request to undo the previous choice.
+  ///
+  /// Sizing and compression belong to the cropper, not the picker: the picker
+  /// runs first, and anything it shrinks is detail the crop no longer has to
+  /// work with. Doing it once, at the end, also avoids encoding the same JPEG
+  /// twice. The 1024px/quality-70 result lands far under the API's 5 MB cap,
+  /// which a modern phone camera would otherwise breach on its own.
   Future<void> pickLogo() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
-      maxWidth: 1024,
-    );
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
-    emit(state.copyWith(selectedLogoFile: File(image.path)));
+
+    final CroppedFile? cropped = await _cropper.cropImage(
+      sourcePath: image.path,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      compressQuality: 70,
+      // Also normalises whatever the gallery handed over — an iOS HEIC or a
+      // WebP would otherwise reach an API that only accepts JPG and PNG.
+      compressFormat: ImageCompressFormat.jpg,
+      // Setting this locks the cropper to 1:1 outright; the per-platform flags
+      // below keep the UI from offering a freedom the ratio does not allow.
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Potong Logo',
+          toolbarColor: AppColors.greenDark,
+          toolbarWidgetColor: Colors.white,
+          activeControlsWidgetColor: AppColors.greenDark,
+          // The crop overlay is drawn as a circle, matching the avatar the
+          // result goes into. The written file is still square — the circle is
+          // a guide, so the user frames against the shape they will actually
+          // see instead of guessing at the corners.
+          cropStyle: CropStyle.circle,
+          lockAspectRatio: true,
+          initAspectRatio: CropAspectRatioPreset.square,
+          aspectRatioPresets: const [CropAspectRatioPreset.square],
+        ),
+        IOSUiSettings(
+          title: 'Potong Logo',
+          cropStyle: CropStyle.circle,
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+          aspectRatioPickerButtonHidden: true,
+          aspectRatioPresets: const [CropAspectRatioPreset.square],
+        ),
+      ],
+    );
+    if (cropped == null) return;
+
+    emit(state.copyWith(selectedLogoFile: File(cropped.path)));
   }
 
   /// Persists the editable bank sampah fields via `PUT /bank-sampah/me`.
