@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/stat_card.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
@@ -7,11 +8,6 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_sta
 
 class DashboardStatisticsSection extends StatelessWidget {
   const DashboardStatisticsSection({super.key});
-
-  String _fmtKg(double kg) {
-    if (kg == kg.roundToDouble()) return kg.toInt().toString();
-    return kg.toStringAsFixed(1);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +28,7 @@ class DashboardStatisticsSection extends StatelessWidget {
               icon: Icons.inventory_2_outlined,
               iconColor: AppColors.statOrange,
               iconBgColor: AppColors.statOrangeLight,
-              value: loaded ? '${_fmtKg(state.totalSampahKg)} kg' : '—',
+              value: loaded ? '${WeightFormatter.formatKg(state.totalSampahKg)} kg' : '—',
               label: 'Total Sampah',
             ),
             const SizedBox(width: 12),

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
@@ -96,7 +97,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       final item = raw as Map<String, dynamic>;
       return ItemSetoranEntity(
         jenis: item['nama_sampah_snapshot']?.toString() ?? '-',
-        berat: '${_trimDecimal(item['berat'])} kg',
+        berat: '${WeightFormatter.formatKg(item['berat'])} kg',
         harga: _rupiah(item['harga_snapshot']),
         subtotal: _rupiah(item['subtotal']),
       );
@@ -126,7 +127,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   TransaksiEntity _mapListItem(Map<String, dynamic> json, DateTime? tanggal) {
     final name = json['nasabah_nama']?.toString() ?? '-';
     final jenisUtama = json['jenis_sampah_utama']?.toString();
-    final berat = _trimDecimal(json['total_berat_kg']);
+    final berat = WeightFormatter.formatKg(json['total_berat_kg']);
     final palette = _avatarPaletteFor(name);
     return TransaksiEntity(
       id: json['id']?.toString() ?? '',
@@ -180,15 +181,6 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       buffer.write(digits[i]);
     }
     return 'Rp ${buffer.toString()}';
-  }
-
-  String _trimDecimal(dynamic value) {
-    final n = double.tryParse(value?.toString() ?? '') ?? 0;
-    var text = n.toStringAsFixed(2);
-    if (text.contains('.')) {
-      text = text.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
-    }
-    return text;
   }
 
   String _initialsOf(String name) {

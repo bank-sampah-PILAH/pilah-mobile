@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
 /// Read model: maps the PILAH `NasabahSerializer` JSON to [NasabahEntity].
@@ -137,19 +138,9 @@ extension NasabahRingkasanMapper on NasabahRingkasan {
   static NasabahRingkasan fromJson(Map<String, dynamic> json) {
     return NasabahRingkasan(
       jumlahTransaksi: (json['jumlah_transaksi'] as num?)?.toInt() ?? 0,
-      totalKg: _formatKg(json['total_kg']),
+      totalKg: WeightFormatter.formatKg(json['total_kg']),
       tanggalTransaksiTerakhir:
           NasabahModel.isoToDisplay(json['tanggal_transaksi_terakhir']?.toString()),
     );
-  }
-
-  static String _formatKg(dynamic value) {
-    final kg = double.tryParse(value?.toString() ?? '') ?? 0;
-    // Trim trailing zeros: 120.000 -> 120, 5.500 -> 5.5
-    var text = kg.toStringAsFixed(2);
-    if (text.contains('.')) {
-      text = text.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
-    }
-    return text;
   }
 }

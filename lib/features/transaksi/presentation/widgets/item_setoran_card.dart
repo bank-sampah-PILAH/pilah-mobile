@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -228,10 +229,18 @@ class ItemSetoranCard extends StatelessWidget {
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: TextFormField(
-                  initialValue: berat == 1.0 ? '1' : (berat % 1 == 0 ? berat.toInt().toString() : berat.toString()),
+                  // Seed the field with the same comma-formatted weight shown
+                  // everywhere else; onChanged normalises the comma back to a
+                  // dot before parsing.
+                  initialValue: WeightFormatter.formatKg(berat),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  // Accept a dot or a comma decimal separator (Indonesian
+                  // keyboards vary), but only one, and only between digits — the
+                  // anchored pattern drops any second separator so "2,,3" or
+                  // "2.3.4" can never form. onChanged normalises the comma to a
+                  // dot before parsing.
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
                   ],
                   textAlign: TextAlign.center,
                   style: AppTextStyle.small.copyWith(

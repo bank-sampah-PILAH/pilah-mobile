@@ -12,8 +12,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
+import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -139,30 +141,6 @@ class _ProfileViewState extends State<_ProfileView>
       selection: TextSelection.collapsed(offset: start + variable.length),
     );
     _waFocusNode.requestFocus();
-  }
-
-  /// Renders a template into the sample message shown in "PREVIEW PESAN".
-  ///
-  /// This is preview-only dummy data; the raw template (with `{...}` variables)
-  /// is what gets saved. The currency variables collapse an optional preceding
-  /// "Rp " so a template written as "Rp {Saldo}" previews as "Rp 125.000" rather
-  /// than "Rp Rp 125.000".
-  String _renderPreview(String template) {
-    return template
-        .replaceAll(RegExp(r'(?:Rp\s*)?\{Total\}'), 'Rp 15.600')
-        .replaceAll(RegExp(r'(?:Rp\s*)?\{Saldo\}'), 'Rp 125.000')
-        .replaceAll('{Nama}', 'Budi Santoso')
-        .replaceAll('{Tanggal}', _previewDate())
-        .replaceAll('{daftar_item}', '- Plastik PET 5.2 kg\n- Kertas Kardus 2.0 kg');
-  }
-
-  String _previewDate() {
-    const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-    ];
-    final now = DateTime.now();
-    return '${now.day} ${months[now.month - 1]} ${now.year}';
   }
 
   void _snack(String message, {bool error = false}) {
@@ -1032,12 +1010,9 @@ class _ProfileViewState extends State<_ProfileView>
                 style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final variable in variables) _buildVariableChip(variable),
-                ],
+              WaVariableChips(
+                variables: variables,
+                onInsert: _insertVariable,
               ),
               // Live preview: rebuilds only this block (not the page) on every
               // keystroke or chip insert, so the cursor never jumps and fast
@@ -1045,7 +1020,7 @@ class _ProfileViewState extends State<_ProfileView>
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _waController,
                 builder: (context, value, _) {
-                  final rendered = _renderPreview(value.text);
+                  final rendered = renderWaPreview(value.text);
                   if (rendered.trim().isEmpty) return const SizedBox.shrink();
                   return Container(
                     width: double.infinity,
@@ -1086,35 +1061,4 @@ class _ProfileViewState extends State<_ProfileView>
     );
   }
 
-  Widget _buildVariableChip(String label) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _insertVariable(label),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.greenLight.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.greenLight, width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.add, size: 14, color: AppColors.greenDark),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: AppTextStyle.small.copyWith(
-                  color: AppColors.greenDark,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
