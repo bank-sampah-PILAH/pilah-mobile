@@ -20,7 +20,10 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   Future<List<TransaksiGroupEntity>> getTransaksi(TransaksiFilter filter) async {
     final response = await networkService.get(
       _path,
-      queryParams: {...filter.toQueryParams(), 'page_size': 100},
+      queryParams: {
+        ...filter.toQueryParams(),
+        'page_size': filter.pageSize ?? 100,
+      },
     );
     final data = response.data;
     final List<dynamic> results =

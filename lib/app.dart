@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -37,6 +38,9 @@ class App extends StatelessWidget {
         ),
         BlocProvider<DashboardCubit>(
           create: (context) => di<DashboardCubit>(),
+        ),
+        BlocProvider<RecentActivityCubit>(
+          create: (context) => di<RecentActivityCubit>(),
         ),
         BlocProvider<AuthenticationBloc>(
           create: (context) => di<AuthenticationBloc>(),
@@ -152,6 +156,7 @@ void resetSessionScopedState(BuildContext context) {
   context.read<HargaCubit>().reset();
   context.read<TransaksiCubit>().reset();
   context.read<DashboardCubit>().reset();
+  context.read<RecentActivityCubit>().reset();
   // The half-filled registration profile, unlike the invite token below, is
   // squarely session-scoped: it is one person's name, phone and date of birth.
   // Left behind it would prefill the next account's form with a stranger's

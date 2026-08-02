@@ -4,12 +4,12 @@ import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_statistics_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -26,10 +26,9 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     // Load the current-month metrics from the backend when the dashboard opens.
     context.read<DashboardCubit>().loadStats();
-    // Aktivitas Terakhir renders from TransaksiCubit, which is otherwise only
-    // loaded by the Laporan page — without this it spins forever on a cold
-    // start that lands straight on the dashboard.
-    context.read<TransaksiCubit>().loadTransaksi();
+    // Aktivitas Terbaru has its own cubit — see [RecentActivityCubit] for why
+    // it is not the one Laporan drives — so nothing else loads it.
+    context.read<RecentActivityCubit>().load();
   }
 
   /// Refetches everything the dashboard renders. The header's bank sampah name
@@ -40,7 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
     context.read<AuthenticationBloc>().add(RefreshUserRequested());
     await Future.wait([
       context.read<DashboardCubit>().loadStats(silent: true),
-      context.read<TransaksiCubit>().loadTransaksi(silent: true),
+      context.read<RecentActivityCubit>().load(silent: true),
     ]);
   }
 

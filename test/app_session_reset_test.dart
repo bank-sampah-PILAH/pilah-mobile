@@ -7,6 +7,8 @@ import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
@@ -28,6 +30,9 @@ class _MockTransaksiCubit extends MockCubit<TransaksiState>
 class _MockDashboardCubit extends MockCubit<DashboardState>
     implements DashboardCubit {}
 
+class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
+    implements RecentActivityCubit {}
+
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
 
@@ -36,6 +41,7 @@ void main() {
   late _MockHargaCubit harga;
   late _MockTransaksiCubit transaksi;
   late _MockDashboardCubit dashboard;
+  late _MockRecentActivityCubit recentActivity;
   // Real, not mocked: the draft it holds is the thing under test, and a mock
   // would only confirm that a method was called rather than that the data is
   // actually gone.
@@ -46,11 +52,13 @@ void main() {
     harga = _MockHargaCubit();
     transaksi = _MockTransaksiCubit();
     dashboard = _MockDashboardCubit();
+    recentActivity = _MockRecentActivityCubit();
     onboarding = OnboardingCubit(_MockOnboardingDataSource());
     when(() => nasabah.state).thenReturn(NasabahInitial());
     when(() => harga.state).thenReturn(HargaInitial());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => dashboard.state).thenReturn(const DashboardState());
+    when(() => recentActivity.state).thenReturn(RecentActivityInitial());
 
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
@@ -88,6 +96,7 @@ void main() {
           BlocProvider<HargaCubit>.value(value: harga),
           BlocProvider<TransaksiCubit>.value(value: transaksi),
           BlocProvider<DashboardCubit>.value(value: dashboard),
+          BlocProvider<RecentActivityCubit>.value(value: recentActivity),
           BlocProvider<OnboardingCubit>.value(value: onboarding),
         ],
         child: MaterialApp(
@@ -115,6 +124,7 @@ void main() {
     verify(() => harga.reset()).called(1);
     verify(() => transaksi.reset()).called(1);
     verify(() => dashboard.reset()).called(1);
+    verify(() => recentActivity.reset()).called(1);
     expect(
       onboarding.hasProfileDraft,
       isFalse,

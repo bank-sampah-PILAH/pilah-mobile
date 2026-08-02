@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -86,12 +87,13 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
     // Refresh the shell tabs that stay alive and won't re-init on their own.
     // loadStats updates the dashboard metrics (Total Kas / Sampah / Transaksi);
-    // loadTransaksi refreshes the transaksi list that feeds BOTH the dashboard's
-    // "Aktivitas Terbaru" and the Laporan page — silent so those lists update in
+    // the dashboard's "Aktivitas Terbaru" and the Laporan list are separate
+    // cubits and each needs its own nudge — silent so those lists update in
     // place rather than flashing skeletons behind the success sheet. Fire-and-
     // forget (not awaited), matching loadStats, so the success modal isn't blocked.
     context.read<DashboardCubit>().loadStats();
     context.read<NasabahCubit>().loadNasabah();
+    context.read<RecentActivityCubit>().load(silent: true);
     cubit.loadTransaksi(silent: true);
 
     final created = result.created!;

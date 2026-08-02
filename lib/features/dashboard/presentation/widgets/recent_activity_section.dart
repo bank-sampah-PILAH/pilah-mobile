@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/activity_item.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
 class RecentActivitySection extends StatelessWidget {
   const RecentActivitySection({super.key});
@@ -57,9 +57,9 @@ class RecentActivitySection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        BlocBuilder<TransaksiCubit, TransaksiState>(
+        BlocBuilder<RecentActivityCubit, RecentActivityState>(
           builder: (context, state) {
-            if (state is TransaksiLoading || state is TransaksiInitial) {
+            if (state is RecentActivityLoading || state is RecentActivityInitial) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(
@@ -76,23 +76,21 @@ class RecentActivitySection extends StatelessWidget {
             // look identical to the user but mean opposite things, and the
             // empty wording sends them looking for a data problem that isn't
             // there. Surface the failure and let them retry.
-            if (state is TransaksiError) {
+            if (state is RecentActivityError) {
               return _ActivityError(
                 message: state.message,
-                onRetry: () => context.read<TransaksiCubit>().loadTransaksi(),
+                onRetry: () => context.read<RecentActivityCubit>().load(),
               );
             }
 
-            // Flatten the groups and take the most recent few transactions,
-            // keeping the day label from each group.
+            // Flatten the groups, keeping the day label from each one. The
+            // cubit has already capped the total at RecentActivityCubit.limit.
             final entries = <({TransaksiEntity trx, String header})>[];
-            if (state is TransaksiLoaded) {
-              for (final group in state.transaksiList) {
+            if (state is RecentActivityLoaded) {
+              for (final group in state.groups) {
                 for (final trx in group.transactions) {
                   entries.add((trx: trx, header: group.header));
-                  if (entries.length >= 3) break;
                 }
-                if (entries.length >= 3) break;
               }
             }
 

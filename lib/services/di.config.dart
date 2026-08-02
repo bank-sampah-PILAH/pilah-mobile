@@ -46,6 +46,8 @@ import '../features/dashboard/domain/repositories/dashboard_repository.dart'
 import '../features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
     as _i137;
 import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
+import '../features/dashboard/presentation/cubit/recent_activity_cubit.dart'
+    as _i200;
 import '../features/harga/data/datasources/harga_remote_data_source.dart'
     as _i960;
 import '../features/harga/data/datasources/harga_remote_data_source_impl.dart'
@@ -284,6 +286,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i67.ExportTransaksiUseCase>(),
           gh<_i417.ResendWaUseCase>(),
         ));
+    gh.lazySingleton<_i200.RecentActivityCubit>(
+        () => _i200.RecentActivityCubit(gh<_i383.GetTransaksiUseCase>()));
     return this;
   }
 }

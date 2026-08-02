@@ -62,7 +62,7 @@ class StatCard extends StatelessWidget {
                 color: Colors.grey[600],
                 fontSize: 11,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ],
