@@ -19,20 +19,17 @@ import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.d
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 // import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   static const route = '/profile';
 
+  // [ProfileCubit] is app-scoped and provided in [App]; loading is kicked off
+  // from _ProfileView's initState so the request carries the authenticated
+  // session rather than firing at cold start.
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<ProfileCubit>()..load(),
-      child: const _ProfileView(),
-    );
-  }
+  Widget build(BuildContext context) => const _ProfileView();
 }
 
 class _ProfileView extends StatefulWidget {
@@ -63,6 +60,16 @@ class _ProfileViewState extends State<_ProfileView>
     _tabController.addListener(() {
       setState(() {});
     });
+
+    // The cubit is app-scoped, so it may already hold a profile loaded on an
+    // earlier visit. Seed from what it has right now — the BlocListener below
+    // only fires on a *change*, so on a revisit it would never run and the form
+    // would sit empty over a profile that is actually loaded.
+    final cubit = context.read<ProfileCubit>();
+    _seed(cubit.state);
+    // silent: keeps an already-loaded profile on screen instead of collapsing
+    // the tab into a spinner. load() ignores it when there is nothing to keep.
+    cubit.load(silent: true);
   }
 
   @override
@@ -114,7 +121,14 @@ class _ProfileViewState extends State<_ProfileView>
     context.go(LoginPage.route);
   }
 
-  void _seedFromProfile(BuildContext context, ProfileState state) {
+  void _seedFromProfile(BuildContext context, ProfileState state) => _seed(state);
+
+  /// Copies the loaded profile into the form controllers, once per field.
+  ///
+  /// Called from both [initState] and the [BlocListener]: the listener alone
+  /// only covers the first load, and an app-scoped cubit can already be loaded
+  /// by the time this page mounts.
+  void _seed(ProfileState state) {
     if (!_waSeeded && state.waTemplate != null) {
       _waController.text = state.waTemplate!.template;
       _waSeeded = true;

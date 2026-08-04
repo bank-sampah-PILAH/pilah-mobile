@@ -200,7 +200,7 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
-    gh.factory<_i300.ProfileCubit>(() => _i300.ProfileCubit(
+    gh.lazySingleton<_i300.ProfileCubit>(() => _i300.ProfileCubit(
           gh<_i1053.ProfileRemoteDataSource>(),
           gh<_i183.ImagePicker>(),
           gh<_i183.ImageCropper>(),

@@ -12,7 +12,10 @@ import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_da
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 
-@injectable
+/// App-scoped rather than page-scoped: the WhatsApp template it loads is also
+/// read by the transaksi success flow, which builds the wa.me notification from
+/// it. A per-page factory would leave that flow with nothing to read.
+@lazySingleton
 class ProfileCubit extends Cubit<ProfileState> {
   final ProfileRemoteDataSource _dataSource;
   final ImagePicker _picker;
@@ -170,6 +173,14 @@ class ProfileCubit extends Cubit<ProfileState> {
       return NetworkException.handleException(e);
     }
   }
+
+  /// Clears cached data and returns to the initial state (used on logout, since
+  /// this cubit is an app-scoped singleton that outlives a session).
+  ///
+  /// [ProfileState.selectedLogoFile] is the reason this matters beyond stale
+  /// data: it is a path into the previous user's gallery, and left behind it
+  /// would be uploaded as the next bank sampah's logo on their first save.
+  void reset() => emit(const ProfileState());
 
   /// Generates a team invite link. Returns the URL on success, otherwise the
   /// [NetworkException] (e.g. 403 when the current user is not the primary

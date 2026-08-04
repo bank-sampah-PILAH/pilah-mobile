@@ -16,6 +16,8 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.d
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -33,6 +35,8 @@ class _MockDashboardCubit extends MockCubit<DashboardState>
 class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
 
+class _MockProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {}
+
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
 
@@ -42,6 +46,7 @@ void main() {
   late _MockTransaksiCubit transaksi;
   late _MockDashboardCubit dashboard;
   late _MockRecentActivityCubit recentActivity;
+  late _MockProfileCubit profile;
   // Real, not mocked: the draft it holds is the thing under test, and a mock
   // would only confirm that a method was called rather than that the data is
   // actually gone.
@@ -53,12 +58,14 @@ void main() {
     transaksi = _MockTransaksiCubit();
     dashboard = _MockDashboardCubit();
     recentActivity = _MockRecentActivityCubit();
+    profile = _MockProfileCubit();
     onboarding = OnboardingCubit(_MockOnboardingDataSource());
     when(() => nasabah.state).thenReturn(NasabahInitial());
     when(() => harga.state).thenReturn(HargaInitial());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => dashboard.state).thenReturn(const DashboardState());
     when(() => recentActivity.state).thenReturn(RecentActivityInitial());
+    when(() => profile.state).thenReturn(const ProfileState());
 
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
@@ -97,6 +104,7 @@ void main() {
           BlocProvider<TransaksiCubit>.value(value: transaksi),
           BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: recentActivity),
+          BlocProvider<ProfileCubit>.value(value: profile),
           BlocProvider<OnboardingCubit>.value(value: onboarding),
         ],
         child: MaterialApp(
@@ -125,6 +133,12 @@ void main() {
     verify(() => transaksi.reset()).called(1);
     verify(() => dashboard.reset()).called(1);
     verify(() => recentActivity.reset()).called(1);
+    verify(
+      () => profile.reset(),
+      // Holds the bank sampah's WhatsApp template and, more sensitively, any
+      // logo picked but not yet uploaded — a path into the previous user's
+      // gallery that would otherwise be sent as the next bank's logo.
+    ).called(1);
     expect(
       onboarding.hasProfileDraft,
       isFalse,

@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cub
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -41,6 +42,12 @@ class App extends StatelessWidget {
         ),
         BlocProvider<RecentActivityCubit>(
           create: (context) => di<RecentActivityCubit>(),
+        ),
+        // Provided app-wide, not just under the Profile page: the transaksi
+        // success flow reads the saved WhatsApp template from here to build the
+        // wa.me notification.
+        BlocProvider<ProfileCubit>(
+          create: (context) => di<ProfileCubit>(),
         ),
         BlocProvider<AuthenticationBloc>(
           create: (context) => di<AuthenticationBloc>(),
@@ -157,6 +164,9 @@ void resetSessionScopedState(BuildContext context) {
   context.read<TransaksiCubit>().reset();
   context.read<DashboardCubit>().reset();
   context.read<RecentActivityCubit>().reset();
+  // Carries the previous bank sampah's WhatsApp template and, more sensitively,
+  // any logo picked but not yet uploaded — a path into that user's gallery.
+  context.read<ProfileCubit>().reset();
   // The half-filled registration profile, unlike the invite token below, is
   // squarely session-scoped: it is one person's name, phone and date of birth.
   // Left behind it would prefill the next account's form with a stranger's
