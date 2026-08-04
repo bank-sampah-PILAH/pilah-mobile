@@ -12,13 +12,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
-// TEMP (Twilio template policy): the custom WA template editor is hidden, so
-// the live-preview renderer and the variable chips are unused for now. Restore
-// these imports together with the commented-out editor UI below.
-// import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
+import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
-// import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
+import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -50,7 +47,7 @@ class _ProfileViewState extends State<_ProfileView>
   final _bankFormKey = GlobalKey<FormState>();
   bool _waSeeded = false;
   bool _bankSeeded = false;
-  // TEMP (Twilio template policy): see _onSaveSettings.
+  // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
 
   @override
@@ -125,9 +122,9 @@ class _ProfileViewState extends State<_ProfileView>
 
   /// Copies the loaded profile into the form controllers, once per field.
   ///
-  /// Called from both [initState] and the [BlocListener]: the listener alone
-  /// only covers the first load, and an app-scoped cubit can already be loaded
-  /// by the time this page mounts.
+  /// Seeding the WA field is what makes saving safe: [_onSaveSettings] writes
+  /// whatever the field holds, so a field left empty over a stored template
+  /// would blank it on a save the user made purely for the bank details.
   void _seed(ProfileState state) {
     if (!_waSeeded && state.waTemplate != null) {
       _waController.text = state.waTemplate!.template;
@@ -142,28 +139,25 @@ class _ProfileViewState extends State<_ProfileView>
     }
   }
 
-  // TEMP (Twilio template policy): no chips are rendered while the editor is
-  // hidden, so nothing can call this. Restore with the editor UI below.
-  //
-  // /// Inserts [variable] (e.g. `{Nama}`) into the WA template at the current
-  // /// cursor position, replacing any active selection. When the field has never
-  // /// been focused the selection is invalid, so the variable is appended to the
-  // /// end instead. Afterwards the cursor sits just past the inserted text and the
-  // /// field keeps focus, so consecutive chip taps stack predictably and the live
-  // /// preview (listening on the controller) refreshes immediately.
-  // void _insertVariable(String variable) {
-  //   final text = _waController.text;
-  //   final selection = _waController.selection;
-  //   final int start = selection.isValid ? selection.start : text.length;
-  //   final int end = selection.isValid ? selection.end : text.length;
-  //
-  //   final newText = text.replaceRange(start, end, variable);
-  //   _waController.value = TextEditingValue(
-  //     text: newText,
-  //     selection: TextSelection.collapsed(offset: start + variable.length),
-  //   );
-  //   _waFocusNode.requestFocus();
-  // }
+  /// Inserts [variable] (e.g. `{Nama}`) into the WA template at the current
+  /// cursor position, replacing any active selection. When the field has never
+  /// been focused the selection is invalid, so the variable is appended to the
+  /// end instead. Afterwards the cursor sits just past the inserted text and the
+  /// field keeps focus, so consecutive chip taps stack predictably and the live
+  /// preview (listening on the controller) refreshes immediately.
+  void _insertVariable(String variable) {
+    final text = _waController.text;
+    final selection = _waController.selection;
+    final int start = selection.isValid ? selection.start : text.length;
+    final int end = selection.isValid ? selection.end : text.length;
+
+    final newText = text.replaceRange(start, end, variable);
+    _waController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + variable.length),
+    );
+    _waFocusNode.requestFocus();
+  }
 
   void _snack(String message, {bool error = false}) {
     if (error) {
@@ -177,39 +171,37 @@ class _ProfileViewState extends State<_ProfileView>
     if (!(_bankFormKey.currentState?.validate() ?? false)) return;
     final cubit = context.read<ProfileCubit>();
 
-    // TEMP (Twilio template policy): the save button used to read its busy state
-    // from `isSavingTemplate`, which only the (now disabled) WA template write
-    // sets. This local flag keeps the button showing "Menyimpan..." during the
-    // bank save; it can go away when the template write is restored.
+    // One flag for the whole save rather than the cubit's `isSavingTemplate`,
+    // which only covers the template write: the bank profile is saved first, and
+    // the button has to read "Menyimpan..." for that leg too.
     setState(() => _isSavingSettings = true);
 
-    // Save the bank profile. The WA template is not written while its editor is
-    // hidden — see below.
     final bankErr = await cubit.updateBankSampah(
       nama: _namaBankController.text.trim(),
       alamat: _alamatBankController.text.trim(),
       noHpPic: _hpBankController.text.trim(),
     );
     if (!mounted) return;
-    setState(() => _isSavingSettings = false);
     if (bankErr != null) {
+      setState(() => _isSavingSettings = false);
       _snack(bankErr.displayMessage, error: true);
       return;
     }
 
-    // TEMP (Twilio template policy): the template field is commented out, so the
-    // controller holds either the seeded server value or — when the profile has
-    // no template yet — an empty string. Writing it back would at best be a
-    // no-op round-trip and at worst blank out the stored template on a save the
-    // user made for the bank fields. Restore together with the editor UI.
-    //
-    // final waErr = await cubit.saveWaTemplate(_waController.text.trim());
-    // if (!mounted) return;
-    // _snack(
-    //   waErr == null ? 'Pengaturan berhasil disimpan' : waErr.displayMessage,
-    //   error: waErr != null,
-    // );
-    _snack('Pengaturan berhasil disimpan');
+    // Writes whatever the field shows, which is the point of a WYSIWYG editor —
+    // an emptied field is a deliberate "drop my custom template", and the
+    // transaksi notification falls back to the default when it reads back blank.
+    // This is only safe because the controller is seeded from the stored
+    // template on mount as well as on the load emit (see [_seedFromProfile]); a
+    // field that silently stayed empty would blank the template on a save the
+    // user made purely for the bank fields.
+    final waErr = await cubit.saveWaTemplate(_waController.text.trim());
+    if (!mounted) return;
+    setState(() => _isSavingSettings = false);
+    _snack(
+      waErr == null ? 'Pengaturan berhasil disimpan' : waErr.displayMessage,
+      error: waErr != null,
+    );
   }
 
   Future<void> _onCopyInvite() async {
@@ -965,21 +957,9 @@ class _ProfileViewState extends State<_ProfileView>
     );
   }
 
-  /// The message previewed while custom templates are disabled. Mirrors the
-  /// fixed template registered with Twilio, so what a pengelola sees here is
-  /// what their nasabah actually receives.
-  static const String _staticWaPreview =
-      'Halo Budi Susanto 👋\n'
-      'Setoran sampahmu sudah berhasil kami catat! Berikut adalah rincian setoran sampah hari ini:\n'
-      '- Plastik PET 5,2 kg\n'
-      '- Kertas kardus 2 kg\n'
-      'Terima kasih atas kontribusimu untuk lingkungan yang lebih bersih 🌱';
-
   Widget _buildWhatsappTemplate(ProfileState state) {
-    // TEMP (Twilio template policy): the chips are hidden, so nothing consumes
-    // the advertised variable list. Restore with the editor UI below.
-    // final variables = state.waTemplate?.variables ??
-    //     const ['{Nama}', '{Total}', '{Saldo}', '{Tanggal}', '{daftar_item}'];
+    final variables = state.waTemplate?.variables ??
+        const ['{Nama}', '{Total}', '{Saldo}', '{Tanggal}', '{daftar_item}'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1019,131 +999,89 @@ class _ProfileViewState extends State<_ProfileView>
                   ],
                 ),
               ),
-              // ── TEMP (Twilio template policy) ──────────────────────────
-              // Custom templates are rejected by Twilio for now, so the editor
-              // (message field, instructions, variable chips) is hidden and the
-              // preview below shows the one fixed message instead. Uncomment
-              // this block — plus the imports, `_insertVariable`, the
-              // `variables` local, and the `saveWaTemplate` call in
-              // `_onSaveSettings` — to bring the editor back.
-              //
-              // const SizedBox(height: 24),
-              // Text(
-              //   'ISI PESAN',
-              //   style: AppTextStyle.extraSmall.copyWith(
-              //     color: Colors.grey[500],
-              //     fontWeight: FontWeight.bold,
-              //     letterSpacing: 0.5,
-              //   ),
-              // ),
-              // const SizedBox(height: 8),
-              // TextField(
-              //   controller: _waController,
-              //   focusNode: _waFocusNode,
-              //   minLines: 3,
-              //   maxLines: null,
-              //   keyboardType: TextInputType.multiline,
-              //   decoration: InputDecoration(
-              //     filled: true,
-              //     fillColor: Colors.grey[50],
-              //     border: OutlineInputBorder(
-              //       borderRadius: BorderRadius.circular(12),
-              //       borderSide: BorderSide(color: Colors.grey[300]!),
-              //     ),
-              //     enabledBorder: OutlineInputBorder(
-              //       borderRadius: BorderRadius.circular(12),
-              //       borderSide: BorderSide(color: Colors.grey[300]!),
-              //     ),
-              //     focusedBorder: OutlineInputBorder(
-              //       borderRadius: BorderRadius.circular(12),
-              //       borderSide: const BorderSide(color: AppColors.greenDark),
-              //     ),
-              //   ),
-              //   style: AppTextStyle.small.copyWith(color: Colors.black87),
-              // ),
-              // const SizedBox(height: 24),
-              // Text(
-              //   'Gunakan variabel berikut agar sistem mengisi otomatis:',
-              //   style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-              // ),
-              // const SizedBox(height: 12),
-              // WaVariableChips(
-              //   variables: variables,
-              //   onInsert: _insertVariable,
-              // ),
-              // // Live preview: rebuilds only this block (not the page) on every
-              // // keystroke or chip insert, so the cursor never jumps and fast
-              // // typing stays smooth.
-              // ValueListenableBuilder<TextEditingValue>(
-              //   valueListenable: _waController,
-              //   builder: (context, value, _) {
-              //     final rendered = renderWaPreview(value.text);
-              //     if (rendered.trim().isEmpty) return const SizedBox.shrink();
-              //     return Container(
-              //       width: double.infinity,
-              //       margin: const EdgeInsets.only(top: 24),
-              //       padding: const EdgeInsets.all(16),
-              //       decoration: BoxDecoration(
-              //         color: AppColors.greenLight.withValues(alpha: 0.2),
-              //         borderRadius: BorderRadius.circular(16),
-              //       ),
-              //       child: Column(
-              //         crossAxisAlignment: CrossAxisAlignment.start,
-              //         children: [
-              //           Text(
-              //             'PREVIEW PESAN',
-              //             style: AppTextStyle.extraSmall.copyWith(
-              //               color: Colors.grey[600],
-              //               fontWeight: FontWeight.bold,
-              //               letterSpacing: 0.5,
-              //             ),
-              //           ),
-              //           const SizedBox(height: 8),
-              //           Text(
-              //             rendered,
-              //             // No maxLines / overflow: the preview wraps and grows
-              //             // freely inside the scrollable tab.
-              //             softWrap: true,
-              //             style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
-              //           ),
-              //         ],
-              //       ),
-              //     );
-              //   },
-              // ),
-              // ───────────────────────────────────────────────────────────
-
-              // Static preview of the fixed Twilio template. Not driven by the
-              // controller, so it neither listens nor rebuilds.
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(top: 24),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.greenLight.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 24),
+              Text(
+                'ISI PESAN',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PREVIEW PESAN',
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _staticWaPreview,
-                      // No maxLines / overflow: the preview wraps and grows
-                      // freely inside the scrollable tab.
-                      softWrap: true,
-                      style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _waController,
+                focusNode: _waFocusNode,
+                minLines: 3,
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.greenDark),
+                  ),
                 ),
+                style: AppTextStyle.small.copyWith(color: Colors.black87),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Gunakan variabel berikut agar sistem mengisi otomatis:',
+                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+              ),
+              const SizedBox(height: 12),
+              WaVariableChips(
+                variables: variables,
+                onInsert: _insertVariable,
+              ),
+              // Live preview: rebuilds only this block (not the page) on every
+              // keystroke or chip insert, so the cursor never jumps and fast
+              // typing stays smooth.
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _waController,
+                builder: (context, value, _) {
+                  final rendered = renderWaPreview(value.text);
+                  if (rendered.trim().isEmpty) return const SizedBox.shrink();
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(top: 24),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenLight.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PREVIEW PESAN',
+                          style: AppTextStyle.extraSmall.copyWith(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          rendered,
+                          // No maxLines / overflow: the preview wraps and grows
+                          // freely inside the scrollable tab.
+                          softWrap: true,
+                          style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
