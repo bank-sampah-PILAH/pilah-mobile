@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cub
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
@@ -15,8 +16,10 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TransaksiBaruPage extends StatefulWidget {
   const TransaksiBaruPage({super.key});
@@ -41,6 +44,17 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // dropdowns have options even when arriving straight from the dashboard.
     context.read<HargaCubit>().loadHarga();
     context.read<NasabahCubit>().loadNasabah();
+
+    // The WhatsApp draft built on success renders the pengelola's saved
+    // template, which lives in the app-scoped ProfileCubit and is otherwise only
+    // populated by the Profile page. Fetched here — once per session, since a
+    // template already in hand needs no refresh — so someone who goes straight
+    // from the dashboard to a transaksi still gets their own wording instead of
+    // silently falling back to the default.
+    final profileCubit = context.read<ProfileCubit>();
+    if (profileCubit.state.waTemplate == null) {
+      profileCubit.load(silent: true);
+    }
   }
 
   void _addItem() {
@@ -69,6 +83,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     );
 
     final cubit = context.read<TransaksiCubit>();
+    // Resolved before the await, so the WhatsApp template is read without
+    // reaching back through a BuildContext across an async gap.
+    final waTemplate =
+        context.read<ProfileCubit>().state.waTemplate?.template;
     FocusManager.instance.primaryFocus?.unfocus();
 
     setState(() => _isSaving = true);
@@ -97,6 +115,30 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     cubit.loadTransaksi(silent: true);
 
     final created = result.created!;
+
+    // Built here, before the sheet opens, so the draft is a snapshot of what was
+    // actually submitted rather than of whatever the form holds by the time the
+    // pengelola taps the button.
+    final waLink = buildWaSetoranLink(
+      phone: selectedCustomer!.phone,
+      nama: selectedCustomer!.name,
+      items: setoranItems
+          .map((item) => WaSetoranItem(
+                namaSampah: (item['jenis'] as String?) ?? '',
+                berat: (item['berat'] as num?)?.toDouble() ?? 0,
+                // Only `{daftar_item_harga}` reads this; the form already holds
+                // the per-kg price it used to compute the running total.
+                hargaPerKg: (item['harga'] as num?)?.toInt() ?? 0,
+              ))
+          .toList(),
+      customTemplate: waTemplate,
+      // Backend-authoritative, not the form's running total — the server fills
+      // each item's price from the master jenis sampah record, so its figures
+      // are the ones the nasabah's balance actually moved by.
+      total: created.totalNilai,
+      saldo: created.saldoSetelah,
+    );
+
     await showModalBottomSheet(
       context: context,
       isDismissible: false,
@@ -117,7 +159,20 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
           final sheetNavigator = Navigator.of(sheetContext);
           final router = GoRouter.of(context);
 
-          final waResult = await cubit.resendWa(created.id);
+          // TEMP (Twilio outage): the backend no longer dispatches this message,
+          // so instead of asking it to (`cubit.resendWa`) we open WhatsApp with
+          // the same text pre-filled and let the pengelola press send.
+          // externalApplication hands the link to the installed WhatsApp rather
+          // than an in-app webview.
+          var opened = false;
+          try {
+            opened = await launchUrl(waLink, mode: LaunchMode.externalApplication);
+          } catch (_) {
+            // Neither WhatsApp nor a browser could take the link, or the
+            // platform refused the intent outright. Same outcome as `false`:
+            // the transaksi is already saved, only the draft didn't open.
+            opened = false;
+          }
           if (!mounted) return;
 
           sheetNavigator.pop();
@@ -129,24 +184,28 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
           // already on its way out, so the toast would be torn down along with
           // it. [AppNotification.afterNavigation] waits for the destination to
           // settle and shows on the root navigator instead.
-          if (waResult.success) {
+          if (opened) {
+            // Deliberately not "terkirim": all that happened is that a draft was
+            // opened. The pengelola still has to press send inside WhatsApp, and
+            // claiming otherwise would leave them thinking the nasabah was
+            // notified when they closed the draft.
             AppNotification.afterNavigation(
               (toastContext) => AppNotification.showSuccess(
                 toastContext,
                 title: 'Berhasil',
-                message: 'Transaksi disimpan & notifikasi WhatsApp terkirim.',
+                message:
+                    'Transaksi disimpan. Pesan WhatsApp sudah disiapkan — tekan kirim di WhatsApp.',
               ),
             );
           } else {
-            // The transaksi itself was saved — only the WhatsApp notification
-            // failed, and it can be resent from the detail screen. Red would
-            // read as "your transaction didn't go through".
+            // The transaksi itself was saved — only the WhatsApp draft failed to
+            // open. Red would read as "your transaction didn't go through".
             AppNotification.afterNavigation(
               (toastContext) => AppNotification.showWarning(
                 toastContext,
                 title: 'Peringatan',
                 message:
-                    'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis. Silakan coba lagi di detail transaksi.',
+                    'Transaksi disimpan, namun WhatsApp tidak dapat dibuka. Silakan hubungi nasabah secara manual.',
               ),
             );
           }
