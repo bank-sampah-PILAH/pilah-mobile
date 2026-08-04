@@ -1,4 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Package visibility for url_launcher. Since Android 11 an app only sees
+         the activities it declares here, and we target SDK 36: without this
+         block launchUrl() on the wa.me link resolves to nothing and throws,
+         even though WhatsApp and a browser are both installed. Declaring the
+         https VIEW intent is enough — the WA notification uses the
+         https://wa.me/… form rather than the whatsapp:// scheme, so it is
+         handled by WhatsApp's own link filter (or the browser as a fallback). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
     <application
         android:label="Pilah Mobile"
         android:name="${applicationName}"
