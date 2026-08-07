@@ -397,9 +397,14 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
 
-              // Status Notifikasi WA
+              // TEMP: the whole "STATUS NOTIFIKASI WA" section is hidden while the
+              // notification flow moves from the Twilio webhook to a frontend
+              // wa.me redirect. The backend cannot report a "sent" status yet, so
+              // this always rendered as "Gagal Kirim". Uncomment to restore it
+              // (the leading SizedBox is the spacing below the Saldo box).
+              /*
+              const SizedBox(height: 24),
               Text(
                 'STATUS NOTIFIKASI WA',
                 style: AppTextStyle.extraSmall.copyWith(
@@ -410,6 +415,7 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
               ),
               const SizedBox(height: 12),
               _buildWaStatusBox(currentWaStatus, name),
+              */
             ],
           ),
         ),
@@ -417,6 +423,8 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
     );
   }
 
+  // Kept alive (unreferenced) while the WA status section above is disabled.
+  // ignore: unused_element
   Widget _buildWaStatusBox(String status, String name) {
     if (status == 'sent') {
       return Container(

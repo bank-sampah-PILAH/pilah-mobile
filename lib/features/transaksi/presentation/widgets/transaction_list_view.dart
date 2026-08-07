@@ -221,6 +221,11 @@ class TransactionListView extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
+                  // TEMP: WA status chip hidden while the notification flow moves
+                  // from the Twilio webhook to a frontend wa.me redirect. The
+                  // backend cannot report a "sent" status yet, so this always
+                  // rendered as failed. Uncomment the block below to restore it.
+                  /*
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
@@ -246,8 +251,10 @@ class TransactionListView extends StatelessWidget {
                       ],
                     ),
                   ),
+                  */
                   if (time != null) ...[
-                    const SizedBox(width: 8),
+                    // TEMP: this spacer separated the WA chip from the time.
+                    /* const SizedBox(width: 8), */
                     Text(
                       time,
                       style: AppTextStyle.extraSmall.copyWith(
