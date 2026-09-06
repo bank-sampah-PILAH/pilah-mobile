@@ -13,7 +13,8 @@ class SuperadminRepositoryImpl implements SuperadminRepository {
   SuperadminRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<NetworkException, List<BankSampahEntity>>> getBankSampah(String status) {
+  Future<Either<NetworkException, List<BankSampahEntity>>> getBankSampah(
+      String status) {
     return apiCall<List<BankSampahEntity>>(
       func: remoteDataSource.getBankSampah(status),
       mapper: (result) => (result as List).cast<BankSampahEntity>(),
@@ -21,7 +22,8 @@ class SuperadminRepositoryImpl implements SuperadminRepository {
   }
 
   @override
-  Future<Either<NetworkException, void>> approve(String id, {String? catatan}) async {
+  Future<Either<NetworkException, void>> approve(String id,
+      {String? catatan}) async {
     try {
       await remoteDataSource.approve(id, catatan);
       return const Right(null);
@@ -31,7 +33,8 @@ class SuperadminRepositoryImpl implements SuperadminRepository {
   }
 
   @override
-  Future<Either<NetworkException, void>> reject(String id, {String? catatan}) async {
+  Future<Either<NetworkException, void>> reject(String id,
+      {String? catatan}) async {
     try {
       await remoteDataSource.reject(id, catatan);
       return const Right(null);

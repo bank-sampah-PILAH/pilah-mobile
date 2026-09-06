@@ -23,7 +23,7 @@ class EditNasabahBottomSheet extends StatefulWidget {
 
 class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _namaController;
   late TextEditingController _idNasabahController;
   late TextEditingController _tanggalLahirController;
@@ -37,17 +37,20 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _namaController = TextEditingController(text: widget.customerData['name'] ?? '');
-    _idNasabahController = TextEditingController(text: widget.customerData['idNasabah'] ?? '');
-    
+    _namaController =
+        TextEditingController(text: widget.customerData['name'] ?? '');
+    _idNasabahController =
+        TextEditingController(text: widget.customerData['idNasabah'] ?? '');
+
     // Safely parse jenis kelamin
     final jk = widget.customerData['jenisKelamin'];
     if (jk == 'Laki-laki' || jk == 'Perempuan') {
       _jenisKelamin = jk;
     }
 
-    _tanggalLahirController = TextEditingController(text: widget.customerData['tanggalLahir'] ?? '');
-    
+    _tanggalLahirController =
+        TextEditingController(text: widget.customerData['tanggalLahir'] ?? '');
+
     // Strip +62 safely
     String phone = widget.customerData['phone'] ?? '';
     if (phone.isNotEmpty) {
@@ -60,8 +63,9 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       }
     }
     _whatsappController = TextEditingController(text: phone);
-    
-    _alamatController = TextEditingController(text: widget.customerData['address'] ?? '');
+
+    _alamatController =
+        TextEditingController(text: widget.customerData['address'] ?? '');
   }
 
   @override
@@ -144,7 +148,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.close, color: Colors.grey[600], size: 20),
+                        child: Icon(Icons.close,
+                            color: Colors.grey[600], size: 20),
                       ),
                     ),
                   ],
@@ -166,8 +171,11 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _namaController,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
-                  decoration: _buildInputDecoration(hintText: 'Contoh: Budi Santoso'),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
+                  decoration:
+                      _buildInputDecoration(hintText: 'Contoh: Budi Santoso'),
                 ),
                 const SizedBox(height: 20),
 
@@ -188,17 +196,28 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                               }
                             },
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) return 'Bagian ini wajib diisi.';
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Bagian ini wajib diisi.';
+                              }
                               final cubit = context.read<NasabahCubit>();
                               if (cubit.state is NasabahLoaded) {
-                                final list = (cubit.state as NasabahLoaded).nasabahList;
-                                final isDuplicate = list.any((e) => e.idNasabah.trim().toLowerCase() == value.trim().toLowerCase() && e.id != widget.customerData['id']);
-                                if (isDuplicate) return 'ID Nasabah ini sudah digunakan.';
+                                final list =
+                                    (cubit.state as NasabahLoaded).nasabahList;
+                                final isDuplicate = list.any((e) =>
+                                    e.idNasabah.trim().toLowerCase() ==
+                                        value.trim().toLowerCase() &&
+                                    e.id != widget.customerData['id']);
+                                if (isDuplicate) {
+                                  return 'ID Nasabah ini sudah digunakan.';
+                                }
                               }
-                              if (_serverKodeError != null) return _serverKodeError;
+                              if (_serverKodeError != null) {
+                                return _serverKodeError;
+                              }
                               return null;
                             },
-                            decoration: _buildInputDecoration(hintText: 'Contoh: NAS-0900'),
+                            decoration: _buildInputDecoration(
+                                hintText: 'Contoh: NAS-0900'),
                           ),
                         ],
                       ),
@@ -211,12 +230,17 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                           _buildLabel('JENIS KELAMIN'),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
-                            value: _jenisKelamin,
-                            validator: (value) => (value == null || value.isEmpty) ? 'Pilih jenis kelamin.' : null,
+                            initialValue: _jenisKelamin,
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Pilih jenis kelamin.'
+                                    : null,
                             hint: const Text('— Pilih —'),
                             decoration: _buildInputDecoration(),
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                            items: ['Laki-laki', 'Perempuan'].map((String value) {
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Colors.grey),
+                            items:
+                                ['Laki-laki', 'Perempuan'].map((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value),
@@ -242,11 +266,14 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                   controller: _tanggalLahirController,
                   readOnly: true,
                   onTap: _selectDate,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
                   decoration: _buildInputDecoration(
                     hintText: 'dd/mm/yyyy',
                   ).copyWith(
-                    suffixIcon: Icon(Icons.calendar_today, color: Colors.grey[600], size: 20),
+                    suffixIcon: Icon(Icons.calendar_today,
+                        color: Colors.grey[600], size: 20),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -295,7 +322,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                         const SizedBox(width: 12),
                       ],
                     ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints:
+                        const BoxConstraints(minWidth: 0, minHeight: 0),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -306,7 +334,9 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 TextFormField(
                   controller: _alamatController,
                   maxLines: 4,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
                   decoration: _buildInputDecoration(
                     hintText: 'Nama jalan, RT/RW, Kelurahan...',
                   ),
@@ -320,7 +350,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     onPressed: _isSaving ? null : _handleSimpan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenDark,
-                      disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
+                      disabledBackgroundColor:
+                          AppColors.greenDark.withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -333,7 +364,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(

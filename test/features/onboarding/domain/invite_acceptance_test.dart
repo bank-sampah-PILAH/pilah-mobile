@@ -4,7 +4,8 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 
-NetworkException _badRequest(String error) => NetworkException.handleBadResponse(
+NetworkException _badRequest(String error) =>
+    NetworkException.handleBadResponse(
       Response<Map<String, dynamic>>(
         requestOptions: RequestOptions(path: '/invites/accept'),
         statusCode: 400,
@@ -96,7 +97,8 @@ void main() {
       expect(
         classifyInviteAcceptance(
           result: null,
-          error: _badRequest('Tautan undangan tidak valid atau sudah kedaluwarsa'),
+          error:
+              _badRequest('Tautan undangan tidak valid atau sudah kedaluwarsa'),
         ),
         InviteAcceptance.rejected,
       );

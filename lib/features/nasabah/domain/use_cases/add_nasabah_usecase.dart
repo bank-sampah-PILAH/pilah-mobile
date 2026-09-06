@@ -12,7 +12,8 @@ class AddNasabahUseCase implements UseCase<NasabahEntity, NasabahRequest> {
   AddNasabahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, NasabahEntity>> execute([NasabahRequest? args]) {
+  Future<Either<NetworkException, NasabahEntity>> execute(
+      [NasabahRequest? args]) {
     return repository.addNasabah(args!);
   }
 }

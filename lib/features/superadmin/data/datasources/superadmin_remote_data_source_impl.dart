@@ -13,11 +13,13 @@ class SuperadminRemoteDataSourceImpl implements SuperadminRemoteDataSource {
 
   @override
   Future<List<BankSampahModel>> getBankSampah(String status) async {
-    final response = await networkService.get(_path, queryParams: {'status': status});
+    final response =
+        await networkService.get(_path, queryParams: {'status': status});
     // This endpoint returns {count, results} (not DRF-paginated envelope).
     final data = response.data;
-    final List<dynamic> results =
-        data is Map<String, dynamic> ? (data['results'] as List? ?? []) : (data as List);
+    final List<dynamic> results = data is Map<String, dynamic>
+        ? (data['results'] as List? ?? [])
+        : (data as List);
     return results
         .map((json) => BankSampahModel.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -27,7 +29,10 @@ class SuperadminRemoteDataSourceImpl implements SuperadminRemoteDataSource {
   Future<void> approve(String id, String? catatan) async {
     await networkService.post(
       '$_path/$id/approve',
-      data: {if (catatan != null && catatan.trim().isNotEmpty) 'catatan': catatan.trim()},
+      data: {
+        if (catatan != null && catatan.trim().isNotEmpty)
+          'catatan': catatan.trim()
+      },
     );
   }
 
@@ -35,7 +40,10 @@ class SuperadminRemoteDataSourceImpl implements SuperadminRemoteDataSource {
   Future<void> reject(String id, String? catatan) async {
     await networkService.post(
       '$_path/$id/reject',
-      data: {if (catatan != null && catatan.trim().isNotEmpty) 'catatan': catatan.trim()},
+      data: {
+        if (catatan != null && catatan.trim().isNotEmpty)
+          'catatan': catatan.trim()
+      },
     );
   }
 }

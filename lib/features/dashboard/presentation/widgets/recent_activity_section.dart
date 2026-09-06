@@ -19,7 +19,9 @@ class RecentActivitySection extends StatelessWidget {
         return 'Kemarin';
       default:
         final lower = header.toLowerCase();
-        return lower.isEmpty ? lower : '${lower[0].toUpperCase()}${lower.substring(1)}';
+        return lower.isEmpty
+            ? lower
+            : '${lower[0].toUpperCase()}${lower.substring(1)}';
     }
   }
 
@@ -50,7 +52,8 @@ class RecentActivitySection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward, size: 16, color: AppColors.greenDark),
+                  const Icon(Icons.arrow_forward,
+                      size: 16, color: AppColors.greenDark),
                 ],
               ),
             ),
@@ -59,7 +62,8 @@ class RecentActivitySection extends StatelessWidget {
         const SizedBox(height: 8),
         BlocBuilder<RecentActivityCubit, RecentActivityState>(
           builder: (context, state) {
-            if (state is RecentActivityLoading || state is RecentActivityInitial) {
+            if (state is RecentActivityLoading ||
+                state is RecentActivityInitial) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(
@@ -147,25 +151,25 @@ class _ActivityError extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.cloud_off, color: Colors.grey[400], size: 32),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            child: Text(
-              'Coba Lagi',
-              style: AppTextStyle.small.copyWith(
-                color: AppColors.greenDark,
-                fontWeight: FontWeight.w600,
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(
+                'Coba Lagi',
+                style: AppTextStyle.small.copyWith(
+                  color: AppColors.greenDark,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

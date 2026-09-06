@@ -89,8 +89,8 @@ class TransaksiCubit extends Cubit<TransaksiState> {
   /// Creates a setoran transaction. Does not touch WhatsApp notification —
   /// that's a separate, explicit step triggered from the success modal via
   /// [resendWa].
-  Future<({TransaksiCreated? created, NetworkException? error})>
-      addTransaksi(TransaksiRequest request) async {
+  Future<({TransaksiCreated? created, NetworkException? error})> addTransaksi(
+      TransaksiRequest request) async {
     final result = await addTransaksiUseCase.execute(request);
     return result.fold(
       (failure) => (created: null, error: failure),
@@ -131,7 +131,8 @@ class TransaksiCubit extends Cubit<TransaksiState> {
         }
         return t;
       }).toList();
-      return TransaksiGroupEntity(header: group.header, transactions: transactions);
+      return TransaksiGroupEntity(
+          header: group.header, transactions: transactions);
     }).toList();
     if (!changed) return;
     _allTransaksi = updated;

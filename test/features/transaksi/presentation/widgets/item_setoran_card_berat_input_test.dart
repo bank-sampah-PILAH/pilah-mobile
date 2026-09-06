@@ -37,7 +37,12 @@ void main() {
           home: Scaffold(
             body: ItemSetoranCard(
               index: 0,
-              itemData: {'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': berat},
+              itemData: {
+                'jenis': null,
+                'jenis_sampah_id': null,
+                'harga': 0,
+                'berat': berat
+              },
               onChanged: changes.add,
               onDelete: () {},
             ),
@@ -53,7 +58,8 @@ void main() {
   Finder beratField() => find.byType(TextFormField).last;
 
   group('ItemSetoranCard berat input', () {
-    testWidgets('seeds the field with a comma-formatted weight', (tester) async {
+    testWidgets('seeds the field with a comma-formatted weight',
+        (tester) async {
       await pumpCard(tester, berat: 2.5);
 
       // The berat field shows the same comma format used across the app.
@@ -61,7 +67,8 @@ void main() {
       expect(find.text('2.5'), findsNothing);
     });
 
-    testWidgets('accepts a comma decimal and normalises it to a dot for parsing',
+    testWidgets(
+        'accepts a comma decimal and normalises it to a dot for parsing',
         (tester) async {
       final changes = await pumpCard(tester);
 
@@ -94,7 +101,8 @@ void main() {
       await tester.pump();
 
       // The anchored formatter keeps only the first separator.
-      final editable = tester.widgetList<EditableText>(find.byType(EditableText)).last;
+      final editable =
+          tester.widgetList<EditableText>(find.byType(EditableText)).last;
       expect(editable.controller.text, '2,');
       expect(editable.controller.text.split(RegExp(r'[.,]')).length - 1, 1);
     });

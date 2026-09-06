@@ -86,7 +86,8 @@ class _PhotoFieldHarnessState extends State<_PhotoFieldHarness> {
 
 void main() {
   group('Foto Kegiatan validation', () {
-    testWidgets('submitting with no photo shows the inline error', (tester) async {
+    testWidgets('submitting with no photo shows the inline error',
+        (tester) async {
       await tester.pumpWidget(const _PhotoFieldHarness());
 
       expect(find.text('Foto kegiatan wajib diunggah'), findsNothing);

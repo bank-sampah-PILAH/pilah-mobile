@@ -31,7 +31,8 @@ class WeightFormatter {
     final frac = centi % 100;
     if (frac == 0) return '$sign$whole';
     // "05" keeps its leading zero (0,05); a trailing zero is padding (50 -> 5).
-    final fraction = frac.toString().padLeft(2, '0').replaceAll(RegExp(r'0+$'), '');
+    final fraction =
+        frac.toString().padLeft(2, '0').replaceAll(RegExp(r'0+$'), '');
     return '$sign$whole,$fraction';
   }
 

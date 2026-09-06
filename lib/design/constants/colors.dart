@@ -20,7 +20,7 @@ class AppColors {
   static const Color statOrange = Color(0xFFEBA658);
   static const Color statPurpleLight = Color(0xFFF4EDFA);
   static const Color statPurple = Color(0xFFA583D9);
-  
+
   // List Avatars
   static const Color avatarYellow = Color(0xFFFFF8D6);
   static const Color avatarYellowText = Color(0xFFD4A017);

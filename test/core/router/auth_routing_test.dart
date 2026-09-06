@@ -15,9 +15,11 @@ void main() {
 
     test('the other onboarding steps are unchanged', () {
       expect(locationForAuthStep('complete_profile'), '/complete-profile');
-      expect(locationForAuthStep('register_bank_sampah'), '/register-bank-sampah');
+      expect(
+          locationForAuthStep('register_bank_sampah'), '/register-bank-sampah');
       expect(locationForAuthStep('approval_pending'), '/pending-approval');
-      expect(locationForAuthStep('superadmin_dashboard'), '/superadmin-dashboard');
+      expect(
+          locationForAuthStep('superadmin_dashboard'), '/superadmin-dashboard');
       expect(locationForAuthStep('dashboard'), '/dashboard');
       expect(locationForAuthStep(null), '/dashboard');
     });
@@ -32,8 +34,13 @@ void main() {
     test('a pending invite outranks every other onboarding step', () {
       // A complete profile can't use the completion form (it would be trapped
       // on "Profil sudah lengkap"), so every one of these hands off to the gate.
-      for (final step in ['registration_rejected', 'register_bank_sampah',
-        'approval_pending', 'dashboard', null]) {
+      for (final step in [
+        'registration_rejected',
+        'register_bank_sampah',
+        'approval_pending',
+        'dashboard',
+        null
+      ]) {
         expect(
           locationForAuthStep(step, hasPendingInvite: true),
           '/invite-processing',

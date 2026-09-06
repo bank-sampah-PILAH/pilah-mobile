@@ -17,7 +17,8 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_u
 class RecentActivityCubit extends Cubit<RecentActivityState> {
   final GetTransaksiUseCase getTransaksiUseCase;
 
-  RecentActivityCubit(this.getTransaksiUseCase) : super(RecentActivityInitial());
+  RecentActivityCubit(this.getTransaksiUseCase)
+      : super(RecentActivityInitial());
 
   /// How many transactions the section shows. Also the requested `page_size`:
   /// the backend returns newest-first, so the first three rows of an unfiltered
@@ -32,7 +33,9 @@ class RecentActivityCubit extends Cubit<RecentActivityState> {
   /// [RecentActivityInitial] or [RecentActivityError] the section is empty, so
   /// a real loading state is emitted regardless.
   Future<void> load({bool silent = false}) async {
-    if (!silent || state is! RecentActivityLoaded) emit(RecentActivityLoading());
+    if (!silent || state is! RecentActivityLoaded) {
+      emit(RecentActivityLoading());
+    }
     final result = await getTransaksiUseCase.execute(
       const TransaksiFilter.semua(pageSize: limit),
     );

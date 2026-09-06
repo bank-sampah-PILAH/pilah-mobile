@@ -11,7 +11,8 @@ class PilihNasabahBottomSheet extends StatefulWidget {
   const PilihNasabahBottomSheet({super.key});
 
   @override
-  State<PilihNasabahBottomSheet> createState() => _PilihNasabahBottomSheetState();
+  State<PilihNasabahBottomSheet> createState() =>
+      _PilihNasabahBottomSheetState();
 }
 
 class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
@@ -88,7 +89,8 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                       child: Text(
                         state.message,
                         textAlign: TextAlign.center,
-                        style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                        style: AppTextStyle.small
+                            .copyWith(color: Colors.grey[500]),
                       ),
                     );
                   }
@@ -100,7 +102,8 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                   final filteredCustomers = context
                       .read<NasabahCubit>()
                       .activeNasabah
-                      .where((customer) => customer.name.toLowerCase().contains(query))
+                      .where((customer) =>
+                          customer.name.toLowerCase().contains(query))
                       .toList();
 
                   if (filteredCustomers.isEmpty) {
@@ -109,7 +112,8 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                         query.isEmpty
                             ? 'Belum ada nasabah aktif.'
                             : 'Nasabah tidak ditemukan.',
-                        style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                        style: AppTextStyle.small
+                            .copyWith(color: Colors.grey[500]),
                       ),
                     );
                   }

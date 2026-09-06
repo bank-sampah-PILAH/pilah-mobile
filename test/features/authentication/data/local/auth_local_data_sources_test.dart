@@ -83,7 +83,8 @@ void main() {
       expect(
         networkUtils.accessToken,
         isEmpty,
-        reason: 'logout must deauthenticate the session even if the delete fails',
+        reason:
+            'logout must deauthenticate the session even if the delete fails',
       );
     });
   });

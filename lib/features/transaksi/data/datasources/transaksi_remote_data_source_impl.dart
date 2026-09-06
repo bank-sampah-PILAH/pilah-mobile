@@ -17,7 +17,8 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   static const String _path = '/api/v1/transaksi';
 
   @override
-  Future<List<TransaksiGroupEntity>> getTransaksi(TransaksiFilter filter) async {
+  Future<List<TransaksiGroupEntity>> getTransaksi(
+      TransaksiFilter filter) async {
     final response = await networkService.get(
       _path,
       queryParams: {
@@ -26,8 +27,9 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       },
     );
     final data = response.data;
-    final List<dynamic> results =
-        data is Map<String, dynamic> ? (data['results'] as List? ?? []) : (data as List);
+    final List<dynamic> results = data is Map<String, dynamic>
+        ? (data['results'] as List? ?? [])
+        : (data as List);
 
     final today = DateTime.now();
     final groups = <String, List<TransaksiEntity>>{};
@@ -35,7 +37,8 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
 
     for (final raw in results) {
       final json = raw as Map<String, dynamic>;
-      final tanggal = DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal();
+      final tanggal =
+          DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal();
       final header = _bucketHeader(tanggal, today);
       final entity = _mapListItem(json, tanggal);
       if (!groups.containsKey(header)) {
@@ -46,7 +49,8 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     }
 
     return order
-        .map((header) => TransaksiGroupEntity(header: header, transactions: groups[header]!))
+        .map((header) =>
+            TransaksiGroupEntity(header: header, transactions: groups[header]!))
         .toList();
   }
 
@@ -60,14 +64,16 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     final bytes = data is Uint8List
         ? data
         : Uint8List.fromList((data as List).cast<int>());
-    final filename = _extractFilename(response.headers.value('content-disposition')) ??
-        'laporan_transaksi_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+    final filename =
+        _extractFilename(response.headers.value('content-disposition')) ??
+            'laporan_transaksi_${DateTime.now().millisecondsSinceEpoch}.xlsx';
     return TransaksiExport(bytes: bytes, filename: filename);
   }
 
   String? _extractFilename(String? contentDisposition) {
     if (contentDisposition == null) return null;
-    final match = RegExp(r'filename="?([^"]+)"?').firstMatch(contentDisposition);
+    final match =
+        RegExp(r'filename="?([^"]+)"?').firstMatch(contentDisposition);
     return match?.group(1);
   }
 
@@ -76,7 +82,8 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     final body = {
       'nasabah_id': request.nasabahId,
       'items': request.items
-          .map((item) => {'jenis_sampah_id': item.jenisSampahId, 'berat': item.berat})
+          .map((item) =>
+              {'jenis_sampah_id': item.jenisSampahId, 'berat': item.berat})
           .toList(),
       if (request.catatan != null && request.catatan!.trim().isNotEmpty)
         'catatan': request.catatan!.trim(),
@@ -120,7 +127,8 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     // On success the backend returns 200 with {"success": true, "status_wa":
     // "terkirim", ...}; on a failed send it returns 400 with {"error": ...},
     // which Dio raises so apiCall can surface the message.
-    final response = await networkService.post('$_path/$id/notify-wa', data: const {});
+    final response =
+        await networkService.post('$_path/$id/notify-wa', data: const {});
     final json = response.data as Map<String, dynamic>;
     return _waStatus(json['status_wa']?.toString());
   }
@@ -174,7 +182,8 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     }
   }
 
-  int _toInt(dynamic value) => (double.tryParse(value?.toString() ?? '') ?? 0).round();
+  int _toInt(dynamic value) =>
+      (double.tryParse(value?.toString() ?? '') ?? 0).round();
 
   String _rupiah(dynamic value) {
     final digits = _toInt(value).abs().toString();
@@ -187,7 +196,8 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   }
 
   String _initialsOf(String name) {
-    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts =
+        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return 'NN';
     return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }

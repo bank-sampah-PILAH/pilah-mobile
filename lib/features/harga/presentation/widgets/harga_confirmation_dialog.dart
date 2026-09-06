@@ -41,7 +41,8 @@ class HargaConfirmationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final bgColor = isActivating ? Colors.green[50] : Colors.orange[50];
     final iconColor = isActivating ? Colors.green[600] : Colors.orange[400];
-    final iconData = isActivating ? Icons.check_box : Icons.warning_amber_rounded;
+    final iconData =
+        isActivating ? Icons.check_box : Icons.warning_amber_rounded;
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -67,7 +68,9 @@ class HargaConfirmationDialog extends StatelessWidget {
 
             // Title
             Text(
-              isActivating ? 'Aktifkan Jenis Sampah?' : 'Nonaktifkan Jenis Sampah?',
+              isActivating
+                  ? 'Aktifkan Jenis Sampah?'
+                  : 'Nonaktifkan Jenis Sampah?',
               style: AppTextStyle.headline1.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.bold,
@@ -93,7 +96,8 @@ class HargaConfirmationDialog extends StatelessWidget {
                   ),
                   TextSpan(
                     text: wasteName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   TextSpan(
                     text: isActivating
@@ -132,7 +136,8 @@ class HargaConfirmationDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isActivating ? emeraldPrimary : errorColor,
+                      backgroundColor:
+                          isActivating ? emeraldPrimary : errorColor,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
                       shape: RoundedRectangleBorder(

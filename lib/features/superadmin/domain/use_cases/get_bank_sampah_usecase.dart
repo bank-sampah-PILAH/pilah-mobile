@@ -12,7 +12,8 @@ class GetBankSampahUseCase implements UseCase<List<BankSampahEntity>, String> {
   GetBankSampahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, List<BankSampahEntity>>> execute([String? args]) {
+  Future<Either<NetworkException, List<BankSampahEntity>>> execute(
+      [String? args]) {
     return repository.getBankSampah(args ?? 'pending');
   }
 }

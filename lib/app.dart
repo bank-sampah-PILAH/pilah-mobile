@@ -83,7 +83,6 @@ class App extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Re-checks for a pending invite every time the app comes to the foreground.
@@ -127,7 +126,8 @@ class _PendingInviteResumeWatcherState
     // One frame of slack: on Android the new intent is delivered before resume,
     // but the platform route push that carries `/invite?token=…` into the router
     // still has to land before the store can be asked about it.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _routeToPendingInvite());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _routeToPendingInvite());
   }
 
   void _routeToPendingInvite() {

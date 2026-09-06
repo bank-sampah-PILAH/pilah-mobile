@@ -34,7 +34,8 @@ void main() {
       expect(normalizeWaPhone('+6281234567890'), '6281234567890');
     });
 
-    test('collapses the double prefix left by a 0-prefixed entry in a '
+    test(
+        'collapses the double prefix left by a 0-prefixed entry in a '
         '+62 field', () {
       // The nasabah forms save '+62' + whatever was typed, so a user who typed
       // their number with the leading 0 is stored as +620812…. Indonesian
@@ -87,7 +88,8 @@ void main() {
     });
 
     test('gives every item its own line', () {
-      final lines = buildWaSetoranMessage(nama: 'Budi', items: _items).split('\n');
+      final lines =
+          buildWaSetoranMessage(nama: 'Budi', items: _items).split('\n');
 
       expect(lines, hasLength(5));
       expect(lines.where((l) => l.startsWith('- ')), hasLength(2));
@@ -117,7 +119,9 @@ void main() {
   });
 
   group('buildWaSetoranLink', () {
-    Uri link({String phone = '0812-3456-7890', List<WaSetoranItem> items = _items}) =>
+    Uri link(
+            {String phone = '0812-3456-7890',
+            List<WaSetoranItem> items = _items}) =>
         buildWaSetoranLink(phone: phone, nama: 'Budi Susanto', items: items);
 
     test('targets wa.me with the normalized number', () {
@@ -179,7 +183,8 @@ void main() {
   });
 
   group('custom templates', () {
-    String render(String? template, {int total = 0, int saldo = 0, DateTime? tanggal}) =>
+    String render(String? template,
+            {int total = 0, int saldo = 0, DateTime? tanggal}) =>
         buildWaSetoranMessage(
           nama: 'Budi Susanto',
           items: _items,
@@ -234,14 +239,16 @@ void main() {
         nama: 'Budi',
         customTemplate: '{daftar_item_harga}',
         items: const [
-          WaSetoranItem(namaSampah: 'Plastik PET', berat: 5.2, hargaPerKg: 2500),
+          WaSetoranItem(
+              namaSampah: 'Plastik PET', berat: 5.2, hargaPerKg: 2500),
         ],
       );
 
       expect(message, '- Plastik PET 5,2 kg x Rp 2.500 = Rp 13.000');
     });
 
-    test('does not let {daftar_item} partially consume {daftar_item_harga}', () {
+    test('does not let {daftar_item} partially consume {daftar_item_harga}',
+        () {
       // '{daftar_item}' is a prefix of '{daftar_item_harga}'. Replacing the
       // short token first would leave a dangling '_harga}' in the message.
       final message = buildWaSetoranMessage(
@@ -299,7 +306,8 @@ void main() {
         phone: '0812-3456-7890',
         nama: 'Budi Susanto',
         items: _items,
-        customTemplate: 'Halo {Nama} ✨\nRincian:\n{daftar_item}\nTotal Rp {Total}',
+        customTemplate:
+            'Halo {Nama} ✨\nRincian:\n{daftar_item}\nTotal Rp {Total}',
         total: 15600,
       );
 

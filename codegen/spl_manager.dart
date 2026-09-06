@@ -1,4 +1,4 @@
-﻿// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print
 /// SPL Manager — Software Product Line CLI for Flutter Clean Architecture
 ///
 /// Variability points:
@@ -35,7 +35,10 @@ part 'src/utils.dart';
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 void main(List<String> args) async {
-  if (args.isEmpty) { _printHelp(); exit(0); }
+  if (args.isEmpty) {
+    _printHelp();
+    exit(0);
+  }
 
   switch (args[0]) {
     case 'list':
@@ -43,13 +46,19 @@ void main(List<String> args) async {
 
     case 'add':
       // Global defaults from flags
-      final stateIdx            = args.indexOf('--state');
-      final globalState         = stateIdx != -1 && stateIdx + 1 < args.length ? args[stateIdx + 1] : null;
-      final storageIdx          = args.indexOf('--storage');
-      final globalStorageOverride = storageIdx != -1 && storageIdx + 1 < args.length ? args[storageIdx + 1] : null;
-      final globalWithStorage   = args.contains('--with-storage') || globalStorageOverride != null;
-      final globalWithTest      = args.contains('--with-test');
-      final globalShellRoute    = args.contains('--shell-route');
+      final stateIdx = args.indexOf('--state');
+      final globalState = stateIdx != -1 && stateIdx + 1 < args.length
+          ? args[stateIdx + 1]
+          : null;
+      final storageIdx = args.indexOf('--storage');
+      final globalStorageOverride =
+          storageIdx != -1 && storageIdx + 1 < args.length
+              ? args[storageIdx + 1]
+              : null;
+      final globalWithStorage =
+          args.contains('--with-storage') || globalStorageOverride != null;
+      final globalWithTest = args.contains('--with-test');
+      final globalShellRoute = args.contains('--shell-route');
       // Collect feature specs — positional args (may include inline ,options)
       final specs = <String>[];
       for (var i = 1; i < args.length; i++) {
@@ -58,30 +67,34 @@ void main(List<String> args) async {
         if (storageIdx != -1 && i == storageIdx + 1) continue;
         specs.add(args[i]);
       }
-      if (specs.isEmpty) _die(
-        'Usage: add <name>[,storage=<p>][,state=<s>][,test][,shell] [name2[,...]] ...\n'
-        '  Global flags (apply to all unless overridden inline):\n'
-        '    --with-storage  --storage <provider>  --with-test  --shell-route  --state <s>',
-      );
+      if (specs.isEmpty)
+        _die(
+          'Usage: add <name>[,storage=<p>][,state=<s>][,test][,shell] [name2[,...]] ...\n'
+          '  Global flags (apply to all unless overridden inline):\n'
+          '    --with-storage  --storage <provider>  --with-test  --shell-route  --state <s>',
+        );
       for (final spec in specs) {
         final f = _parseFeatureSpec(spec,
             globalStorageOverride: globalStorageOverride,
-            globalWithStorage:     globalWithStorage,
-            globalState:           globalState,
-            globalWithTest:        globalWithTest,
-            globalShellRoute:      globalShellRoute);
+            globalWithStorage: globalWithStorage,
+            globalState: globalState,
+            globalWithTest: globalWithTest,
+            globalShellRoute: globalShellRoute);
         await _cmdAdd(f.name,
-            withStorage:     f.withStorage,
+            withStorage: f.withStorage,
             storageOverride: f.storageOverride,
-            withTest:        f.withTest,
-            shellRoute:      f.shellRoute,
-            stateOverride:   f.stateOverride,
-            runDi:           false);
+            withTest: f.withTest,
+            shellRoute: f.shellRoute,
+            stateOverride: f.stateOverride,
+            runDi: false);
       }
       print('\n  Wiring DI (build_runner)...');
       await _runBuildRunner();
       if (specs.length == 1) {
-        final module = specs[0].split(',')[0].toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+        final module = specs[0]
+            .split(',')[0]
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9_]'), '_');
         print('\n  ✓ Done! lib/features/$module/');
       } else {
         print('\n  ✓ Done! ${specs.length} features added.');
@@ -118,7 +131,8 @@ void main(List<String> args) async {
       if (names.length > 1) print('\n  ✓ ${names.length} features removed.');
 
     case 'storage':
-      if (args.length < 2) _die('Usage: storage add|remove|default|list [<provider>]');
+      if (args.length < 2)
+        _die('Usage: storage add|remove|default|list [<provider>]');
       switch (args[1]) {
         case 'add':
           if (args.length < 3) _die('Usage: storage add <provider>');
@@ -132,7 +146,8 @@ void main(List<String> args) async {
         case 'list':
           _cmdStorageList();
         default:
-          _die('Unknown storage subcommand: ${args[1]}\nValid: add | remove | default | list');
+          _die(
+              'Unknown storage subcommand: ${args[1]}\nValid: add | remove | default | list');
       }
 
     case 'state':

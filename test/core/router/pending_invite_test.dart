@@ -49,7 +49,8 @@ void main() {
 
   group('resolvePendingInvite', () {
     test('is null with no token banked', () {
-      expect(resolvePendingInvite(step: 'dashboard', role: 'pengelola'), isNull);
+      expect(
+          resolvePendingInvite(step: 'dashboard', role: 'pengelola'), isNull);
     });
 
     test('points a pengelola at the screen that can redeem the token', () {
@@ -80,7 +81,8 @@ void main() {
       expect(
         di<InviteTokenStore>().hasToken,
         isFalse,
-        reason: 'a token now survives logout, so one left banked by a superadmin '
+        reason:
+            'a token now survives logout, so one left banked by a superadmin '
             'would follow the next pengelola signed in on this device',
       );
     });
@@ -88,7 +90,8 @@ void main() {
     test('the superadmin role wins even if the step says otherwise', () {
       di<InviteTokenStore>().save('invite-token-abc');
 
-      expect(resolvePendingInvite(step: 'dashboard', role: 'superadmin'), isNull);
+      expect(
+          resolvePendingInvite(step: 'dashboard', role: 'superadmin'), isNull);
       expect(di<InviteTokenStore>().hasToken, isFalse);
     });
   });

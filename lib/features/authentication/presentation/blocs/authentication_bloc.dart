@@ -64,13 +64,15 @@ class AuthenticationBloc
 
     response.fold(
       (failure) {
-        emitter(AuthenticationFailure(message: failure.message ?? 'Unknown error occurred'));
+        emitter(AuthenticationFailure(
+            message: failure.message ?? 'Unknown error occurred'));
       },
       (entity) {
         if (entity != null) {
           emitter(Authenticated(authEntity: entity));
         } else {
-          emitter(AuthenticationFailure(message: 'Invalid response from server'));
+          emitter(
+              AuthenticationFailure(message: 'Invalid response from server'));
         }
       },
     );

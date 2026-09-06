@@ -8,8 +8,6 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_sta
 class TotalKasCard extends StatelessWidget {
   const TotalKasCard({super.key});
 
-
-
   String _formatCurrency(int value) {
     String str = value.toString();
     String result = '';
@@ -41,13 +39,13 @@ class TotalKasCard extends StatelessWidget {
     return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (context, state) {
         return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.greenDark,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.greenDark,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(

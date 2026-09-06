@@ -16,7 +16,8 @@ import 'app_storage.dart';
 abstract class StorageModule {
   @lazySingleton
   @Named('flutter_secure_storage')
-  AppStorage get flutterSecureStorage => const SecureStorageProvider(FlutterSecureStorage());
+  AppStorage get flutterSecureStorage =>
+      const SecureStorageProvider(FlutterSecureStorage());
 
   @lazySingleton
   @Named('shared_preferences')

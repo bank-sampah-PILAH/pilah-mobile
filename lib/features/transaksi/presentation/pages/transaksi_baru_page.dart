@@ -59,7 +59,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
   void _addItem() {
     setState(() {
-      setoranItems.add({'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': 1.0});
+      setoranItems.add(
+          {'jenis': null, 'jenis_sampah_id': null, 'harga': 0, 'berat': 1.0});
     });
   }
 
@@ -85,8 +86,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     final cubit = context.read<TransaksiCubit>();
     // Resolved before the await, so the WhatsApp template is read without
     // reaching back through a BuildContext across an async gap.
-    final waTemplate =
-        context.read<ProfileCubit>().state.waTemplate?.template;
+    final waTemplate = context.read<ProfileCubit>().state.waTemplate?.template;
     FocusManager.instance.primaryFocus?.unfocus();
 
     setState(() => _isSaving = true);
@@ -166,7 +166,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
           // than an in-app webview.
           var opened = false;
           try {
-            opened = await launchUrl(waLink, mode: LaunchMode.externalApplication);
+            opened =
+                await launchUrl(waLink, mode: LaunchMode.externalApplication);
           } catch (_) {
             // Neither WhatsApp nor a browser could take the link, or the
             // platform refused the intent outright. Same outcome as `false`:
@@ -243,7 +244,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
+                      child: Icon(Icons.arrow_back,
+                          color: Colors.grey[800], size: 20),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -258,10 +260,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -321,9 +324,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: (_hasSubmitted && setoranItems.isEmpty) ? const Color(0xFFDC2626) : Colors.grey[300]!, 
-                                width: 1.5
-                              ),
+                                  color: (_hasSubmitted && setoranItems.isEmpty)
+                                      ? const Color(0xFFDC2626)
+                                      : Colors.grey[300]!,
+                                  width: 1.5),
                             ),
                             child: Column(
                               children: [
@@ -333,7 +337,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                     color: Colors.grey[50],
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Icon(Icons.add, color: Colors.grey[400], size: 24),
+                                  child: Icon(Icons.add,
+                                      color: Colors.grey[400], size: 24),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -375,7 +380,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                           return ItemSetoranCard(
                             index: index,
                             itemData: setoranItems[index],
-                            hasError: _hasSubmitted && setoranItems[index]['jenis'] == null,
+                            hasError: _hasSubmitted &&
+                                setoranItems[index]['jenis'] == null,
                             errorText: 'Pilih jenis sampah',
                             onChanged: (updatedItem) {
                               setState(() {
@@ -427,10 +433,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                 icon: Icons.save_outlined,
                 onPressed: _isSaving ? null : _handleSubmit,
               ),
-        ],
+            ],
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 }

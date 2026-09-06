@@ -56,16 +56,17 @@ void main() {
 
       await cubit.load();
 
-      final filter =
-          verify(() => getTransaksi.execute(captureAny())).captured.single
-              as TransaksiFilter;
+      final filter = verify(() => getTransaksi.execute(captureAny()))
+          .captured
+          .single as TransaksiFilter;
       expect(filter.periode, TransaksiFilter.periodeSemua);
       expect(filter.dariTanggal, isNull);
       expect(filter.sampaiTanggal, isNull);
       expect(
         filter.toQueryParams().keys,
         ['periode'],
-        reason: 'the dashboard shows the latest transactions full stop — a date '
+        reason:
+            'the dashboard shows the latest transactions full stop — a date '
             'param here is what scoped it to the current month',
       );
     });
@@ -76,9 +77,9 @@ void main() {
 
       await cubit.load();
 
-      final filter =
-          verify(() => getTransaksi.execute(captureAny())).captured.single
-              as TransaksiFilter;
+      final filter = verify(() => getTransaksi.execute(captureAny()))
+          .captured
+          .single as TransaksiFilter;
       expect(filter.pageSize, RecentActivityCubit.limit);
     });
 
@@ -121,7 +122,8 @@ void main() {
   });
 
   group('load(silent:)', () {
-    test('silent from Initial still emits Loading — the section has nothing '
+    test(
+        'silent from Initial still emits Loading — the section has nothing '
         'to show', () async {
       when(() => getTransaksi.execute(any()))
           .thenAnswer((_) async => Right(oneGroup));
