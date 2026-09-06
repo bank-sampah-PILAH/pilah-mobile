@@ -74,8 +74,11 @@ jobs:
       - name: flutter analyze
         run: flutter analyze --fatal-infos
 
+      # Scoped to the real Dart trees. `dart format` has no exclude flag and
+      # bricks/ holds Mason Mustache templates, which are not parseable Dart —
+      # formatting `.` aborts on them.
       - name: dart format check
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=none --set-exit-if-changed lib test codegen
 
       - name: Run tests with coverage
         run: flutter test --coverage
