@@ -40,13 +40,25 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # .env is gitignored (runtime asset loaded via flutter_dotenv), but
+      # pubspec.yaml declares it as an asset — without the file even
+      # `flutter analyze` fails with asset_does_not_exist. A copy of the
+      # example env is materialized up front so analyze and tests both see it.
+      - name: Prepare .env
+        run: cp .env.example .env
+
       # Lockfile drift check: pubspec.yaml changed but pubspec.lock not
       # regenerated (or vice versa). Keeps dependency bumps deliberate.
       - name: Verify lockfile consistency
         run: |
           flutter pub get --enforce-lockfile >/dev/null
           git diff --exit-code pubspec.lock \
-            || { echo '::error::pubspec.lock is out of sync with pubspec.yaml — run `flutter pub get` and commit the updated lockfile'; exit 1; }
+            || { echo "::error::pubspec.lock is out of sync with pubspec.yaml — run flutter pub get and commit the updated lockfile"; exit 1; }
+
+      # *.freezed.dart / *.g.dart are gitignored — CI checkouts don't have
+      # them, so they must be generated before analyze/tests can pass.
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
 
       # Blocking on the project's configured lints (analysis_options.yaml,
       # flutter_lints). `--fatal-infos` treats style infos as failures too so
@@ -57,12 +69,7 @@ jobs:
       - name: dart format check
         run: dart format --output=none --set-exit-if-changed .
 
-      # Tests run against the real repo tree. .env is gitignored (it's a
-      # runtime asset loaded via flutter_dotenv) so a minimal placeholder is
-      # materialized here — tests that touch env keys get sane values.
-      - name: Prepare .env for tests
-        run: cp .env.example .env
-
+      # .env was already materialized above (analyze needs it too).
       - name: Run tests with coverage
         run: flutter test --coverage
 
@@ -72,6 +79,7 @@ jobs:
       # tooling needed on the runner.
       - name: Coverage report (fail under 25%)
         run: |
+          # shellcheck disable=SC2016  # the awk program is intentionally single-quoted
           pct="$(awk '
             /^DA:/ { found++; split($0, a, ","); if (a[2]+0 > 0) hit++ }
             END { if (found == 0) exit 1; printf "%.1f", 100 * hit / found }
