@@ -1,4 +1,4 @@
-﻿import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 
 class PhoneFormatter extends TextInputFormatter {
   @override
@@ -16,7 +16,7 @@ class PhoneFormatter extends TextInputFormatter {
     final text = newValue.text;
     for (int i = 0; i < text.length; i++) {
       stringBuffer.write(text[i]);
-      final indexAfter = i+1;
+      final indexAfter = i + 1;
       if (indexAfter % sectionLength == 0 && indexAfter != text.length) {
         stringBuffer.write(separator);
       }

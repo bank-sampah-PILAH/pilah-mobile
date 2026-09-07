@@ -98,21 +98,26 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                   return true;
                 },
                 builder: (context, state) {
-                  final isActiveTab = state is HargaLoaded ? state.isActiveTab : true;
+                  final isActiveTab =
+                      state is HargaLoaded ? state.isActiveTab : true;
                   return Row(
                     children: [
                       GestureDetector(
-                        onTap: () => context.read<HargaCubit>().setActiveTab(true),
+                        onTap: () =>
+                            context.read<HargaCubit>().setActiveTab(true),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isActiveTab ? emeraldPrimary : Colors.grey[100],
+                            color:
+                                isActiveTab ? emeraldPrimary : Colors.grey[100],
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             'Aktif',
                             style: AppTextStyle.small.copyWith(
-                              color: isActiveTab ? Colors.white : Colors.grey[600],
+                              color:
+                                  isActiveTab ? Colors.white : Colors.grey[600],
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -120,17 +125,23 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
-                        onTap: () => context.read<HargaCubit>().setActiveTab(false),
+                        onTap: () =>
+                            context.read<HargaCubit>().setActiveTab(false),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 8),
                           decoration: BoxDecoration(
-                            color: !isActiveTab ? emeraldPrimary : Colors.grey[100],
+                            color: !isActiveTab
+                                ? emeraldPrimary
+                                : Colors.grey[100],
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             'Tidak Aktif',
                             style: AppTextStyle.small.copyWith(
-                              color: !isActiveTab ? Colors.white : Colors.grey[600],
+                              color: !isActiveTab
+                                  ? Colors.white
+                                  : Colors.grey[600],
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -154,8 +165,10 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.only(bottom: 80),
                           itemCount: 5,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) => const SkeletonListItem(),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) =>
+                              const SkeletonListItem(),
                         );
                       }
 
@@ -187,7 +200,8 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.only(bottom: 80),
                           itemCount: items.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final item = items[index];
                             return _buildHargaCard(
@@ -220,8 +234,6 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       ),
     );
   }
-
-
 
   Widget _buildHargaCard({
     required BuildContext context,

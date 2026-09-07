@@ -30,7 +30,8 @@ class TimeFilterChips extends StatelessWidget {
         return true;
       },
       builder: (context, state) {
-        final activePeriode = state is TransaksiLoaded ? state.periode : 'bulan_ini';
+        final activePeriode =
+            state is TransaksiLoaded ? state.periode : 'bulan_ini';
         return Row(
           children: [
             for (final entry in _chips.entries) ...[
@@ -63,7 +64,9 @@ class TimeFilterChips extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.calendar_today_outlined,
-                  color: activePeriode == 'custom' ? Colors.white : const Color(0xFF6B7280),
+                  color: activePeriode == 'custom'
+                      ? Colors.white
+                      : const Color(0xFF6B7280),
                   size: 20,
                 ),
               ),
@@ -74,7 +77,8 @@ class TimeFilterChips extends StatelessWidget {
               onTap: () => _onExport(context),
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
@@ -83,7 +87,8 @@ class TimeFilterChips extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.download_rounded, color: Color(0xFF374151), size: 16),
+                    const Icon(Icons.download_rounded,
+                        color: Color(0xFF374151), size: 16),
                     const SizedBox(width: 4),
                     Text(
                       'XLS',

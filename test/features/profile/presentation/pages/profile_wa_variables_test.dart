@@ -4,14 +4,27 @@ import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_c
 
 /// The variable list exactly as the deployed backend returns it — note it does
 /// not yet advertise `{daftar_item_harga}`.
-const _backendVariables = ['{Nama}', '{Total}', '{Saldo}', '{Tanggal}', '{daftar_item}'];
+const _backendVariables = [
+  '{Nama}',
+  '{Total}',
+  '{Saldo}',
+  '{Tanggal}',
+  '{daftar_item}'
+];
 
 void main() {
   group('WaVariableChips.withDaftarItemHarga', () {
     test('inserts {daftar_item_harga} right after {daftar_item}', () {
       expect(
         WaVariableChips.withDaftarItemHarga(_backendVariables),
-        ['{Nama}', '{Total}', '{Saldo}', '{Tanggal}', '{daftar_item}', '{daftar_item_harga}'],
+        [
+          '{Nama}',
+          '{Total}',
+          '{Saldo}',
+          '{Tanggal}',
+          '{daftar_item}',
+          '{daftar_item_harga}'
+        ],
       );
     });
 
@@ -39,7 +52,8 @@ void main() {
           ),
         );
 
-    testWidgets('renders a chip for the new {daftar_item_harga} variable even '
+    testWidgets(
+        'renders a chip for the new {daftar_item_harga} variable even '
         'though the backend list omits it', (tester) async {
       await tester.pumpWidget(host(onInsert: (_) {}));
 
@@ -47,7 +61,8 @@ void main() {
       expect(find.text('{daftar_item_harga}'), findsOneWidget);
     });
 
-    testWidgets('tapping the {daftar_item_harga} chip reports the inserted token',
+    testWidgets(
+        'tapping the {daftar_item_harga} chip reports the inserted token',
         (tester) async {
       String? inserted;
       await tester.pumpWidget(host(onInsert: (v) => inserted = v));
@@ -67,7 +82,8 @@ void main() {
           );
 
       expect(tooltipFor('{daftar_item}').message, 'Daftar item & berat');
-      expect(tooltipFor('{daftar_item_harga}').message, 'Daftar item, berat, & harga');
+      expect(tooltipFor('{daftar_item_harga}').message,
+          'Daftar item, berat, & harga');
     });
   });
 }

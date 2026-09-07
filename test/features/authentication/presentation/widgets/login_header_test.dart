@@ -13,8 +13,7 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/login_
 /// protecting is that the logo is never *stretched*, whatever it looks like.
 double _logoAspectRatio() {
   final svg = File('assets/svg/logo.svg').readAsStringSync();
-  final viewBox =
-      RegExp(r'viewBox="0 0 ([\d.]+) ([\d.]+)"').firstMatch(svg);
+  final viewBox = RegExp(r'viewBox="0 0 ([\d.]+) ([\d.]+)"').firstMatch(svg);
   expect(viewBox, isNotNull, reason: 'logo.svg should declare a viewBox');
   return double.parse(viewBox!.group(1)!) / double.parse(viewBox.group(2)!);
 }

@@ -83,7 +83,8 @@ class _ProfileViewState extends State<_ProfileView>
   // ── Helpers ─────────────────────────────────────────────────────────
 
   String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts =
+        name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return 'NA';
     return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
@@ -118,7 +119,8 @@ class _ProfileViewState extends State<_ProfileView>
     context.go(LoginPage.route);
   }
 
-  void _seedFromProfile(BuildContext context, ProfileState state) => _seed(state);
+  void _seedFromProfile(BuildContext context, ProfileState state) =>
+      _seed(state);
 
   /// Copies the loaded profile into the form controllers, once per field.
   ///
@@ -226,7 +228,8 @@ class _ProfileViewState extends State<_ProfileView>
 
     return MultiBlocListener(
       listeners: [
-        BlocListener<AuthenticationBloc, AuthenticationStates>(listener: _onLoggedOut),
+        BlocListener<AuthenticationBloc, AuthenticationStates>(
+            listener: _onLoggedOut),
         BlocListener<ProfileCubit, ProfileState>(listener: _seedFromProfile),
       ],
       child: Scaffold(
@@ -249,7 +252,8 @@ class _ProfileViewState extends State<_ProfileView>
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
+                        child: Icon(Icons.arrow_back,
+                            color: Colors.grey[800], size: 20),
                       ),
                     ),
                     Text(
@@ -301,7 +305,8 @@ class _ProfileViewState extends State<_ProfileView>
               ),
 
               // Bottom Buttons (only visible on Pengaturan Umum tab)
-              if (_tabController.index == 0 && profileState.status == ProfileStatus.loaded)
+              if (_tabController.index == 0 &&
+                  profileState.status == ProfileStatus.loaded)
                 Container(
                   padding: const EdgeInsets.all(16),
                   color: Colors.transparent,
@@ -321,9 +326,12 @@ class _ProfileViewState extends State<_ProfileView>
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+                              : const Icon(Icons.save_outlined,
+                                  color: Colors.white, size: 20),
                           label: Text(
-                            _isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan',
+                            _isSavingSettings
+                                ? 'Menyimpan...'
+                                : 'Simpan Pengaturan',
                             style: AppTextStyle.title1.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -345,9 +353,12 @@ class _ProfileViewState extends State<_ProfileView>
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            context.read<AuthenticationBloc>().add(LogoutRequested());
+                            context
+                                .read<AuthenticationBloc>()
+                                .add(LogoutRequested());
                           },
-                          icon: Icon(Icons.logout, color: Colors.red[600], size: 20),
+                          icon: Icon(Icons.logout,
+                              color: Colors.red[600], size: 20),
                           label: Text(
                             'Keluar dari Aplikasi',
                             style: AppTextStyle.title1.copyWith(
@@ -377,8 +388,10 @@ class _ProfileViewState extends State<_ProfileView>
   }
 
   Widget _buildTabBody(ProfileState state, AuthEntity? auth) {
-    if (state.status == ProfileStatus.loading || state.status == ProfileStatus.initial) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.greenDark));
+    if (state.status == ProfileStatus.loading ||
+        state.status == ProfileStatus.initial) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.greenDark));
     }
     if (state.status == ProfileStatus.error) {
       return _buildError(state.error);
@@ -420,7 +433,8 @@ class _ProfileViewState extends State<_ProfileView>
   // ── Tab 1: Pengaturan Umum ──────────────────────────────────────────
 
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
-    final name = (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
+    final name =
+        (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
 
     return AppRefreshIndicator(
       onRefresh: () => context.read<ProfileCubit>().load(silent: true),
@@ -467,7 +481,8 @@ class _ProfileViewState extends State<_ProfileView>
                         ),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -709,7 +724,8 @@ class _ProfileViewState extends State<_ProfileView>
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _onCopyInvite,
-                        icon: const Icon(Icons.copy, color: AppColors.greenDark, size: 18),
+                        icon: const Icon(Icons.copy,
+                            color: AppColors.greenDark, size: 18),
                         label: Text(
                           'Salin Link Undangan',
                           style: AppTextStyle.small.copyWith(
@@ -740,7 +756,8 @@ class _ProfileViewState extends State<_ProfileView>
               children: [
                 _sectionTitle('PENGELOLA TERGABUNG'),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.greenLight,
                     borderRadius: BorderRadius.circular(12),
@@ -790,7 +807,12 @@ class _ProfileViewState extends State<_ProfileView>
                   children: [
                     for (int i = 0; i < team.length; i++) ...[
                       if (i > 0)
-                        Divider(color: Colors.grey[100], height: 1, thickness: 1, indent: 16, endIndent: 16),
+                        Divider(
+                            color: Colors.grey[100],
+                            height: 1,
+                            thickness: 1,
+                            indent: 16,
+                            endIndent: 16),
                       _buildMemberRow(team[i]),
                     ],
                   ],
@@ -836,7 +858,8 @@ class _ProfileViewState extends State<_ProfileView>
                 if (member.isCurrentUser) ...[
                   const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.greenDark,
                       borderRadius: BorderRadius.circular(8),
@@ -934,14 +957,16 @@ class _ProfileViewState extends State<_ProfileView>
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: iconColor, size: 20)
                 : null,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+              borderSide:
+                  const BorderSide(color: AppColors.greenDark, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -978,14 +1003,16 @@ class _ProfileViewState extends State<_ProfileView>
             children: [
               // Alert Info Bar
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.greenLight.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.chat_bubble_outline, color: AppColors.greenDark, size: 20),
+                    const Icon(Icons.chat_bubble_outline,
+                        color: AppColors.greenDark, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -1076,7 +1103,8 @@ class _ProfileViewState extends State<_ProfileView>
                           // No maxLines / overflow: the preview wraps and grows
                           // freely inside the scrollable tab.
                           softWrap: true,
-                          style: AppTextStyle.small.copyWith(color: Colors.black87, height: 1.5),
+                          style: AppTextStyle.small
+                              .copyWith(color: Colors.black87, height: 1.5),
                         ),
                       ],
                     ),
@@ -1089,5 +1117,4 @@ class _ProfileViewState extends State<_ProfileView>
       ],
     );
   }
-
 }

@@ -83,8 +83,7 @@ class _InviteGatePageState extends State<InviteGatePage> {
     // to retry can tap the link again.
     store.clear();
 
-    final acceptance =
-        classifyInviteAcceptance(result: result, error: error);
+    final acceptance = classifyInviteAcceptance(result: result, error: error);
 
     if (acceptance == InviteAcceptance.joined) {
       // Refresh the cached user so the dashboard reflects the new association.

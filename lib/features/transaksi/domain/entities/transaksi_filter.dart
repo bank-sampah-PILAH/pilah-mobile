@@ -40,8 +40,12 @@ class TransaksiFilter {
   Map<String, dynamic> toQueryParams() {
     final params = <String, dynamic>{'periode': periode};
     if (isCustom) {
-      if (dariTanggal != null) params['dari_tanggal'] = _iso(dariTanggal!);
-      if (sampaiTanggal != null) params['sampai_tanggal'] = _iso(sampaiTanggal!);
+      if (dariTanggal != null) {
+        params['dari_tanggal'] = _iso(dariTanggal!);
+      }
+      if (sampaiTanggal != null) {
+        params['sampai_tanggal'] = _iso(sampaiTanggal!);
+      }
     }
     return params;
   }

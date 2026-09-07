@@ -78,9 +78,11 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                   ),
                   BlocBuilder<NasabahCubit, NasabahState>(
                     builder: (context, state) {
-                      final activeCount = context.read<NasabahCubit>().activeCount;
+                      final activeCount =
+                          context.read<NasabahCubit>().activeCount;
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.greenLight,
                           borderRadius: BorderRadius.circular(20),
@@ -98,7 +100,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Search Bar
               CustomSearchField(
                 hintText: 'Cari nama nasabah...',
@@ -107,7 +109,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Filter Chips
               BlocBuilder<NasabahCubit, NasabahState>(
                 buildWhen: (previous, current) {
@@ -117,7 +119,8 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                   return true;
                 },
                 builder: (context, state) {
-                  final isActiveTab = state is NasabahLoaded ? state.isActiveTab : true;
+                  final isActiveTab =
+                      state is NasabahLoaded ? state.isActiveTab : true;
                   return NasabahFilterChips(
                     isActiveTab: isActiveTab,
                     onTabChanged: (value) {
@@ -127,7 +130,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // List View
               Expanded(
                 child: AppRefreshIndicator(
@@ -140,8 +143,10 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.only(bottom: 80),
                           itemCount: 5,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) => const SkeletonListItem(),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) =>
+                              const SkeletonListItem(),
                         );
                       }
 
@@ -173,7 +178,8 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.only(bottom: 80),
                           itemCount: customers.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final customer = customers[index];
                             return NasabahListItem(

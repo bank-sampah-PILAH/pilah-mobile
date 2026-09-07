@@ -87,7 +87,8 @@ void main() {
           .thenAnswer((_) async => Right([transaksiGroup]));
 
       expect(cubit.state, isA<TransaksiInitial>());
-      final emitted = await _capture(cubit, () => cubit.loadTransaksi(silent: true));
+      final emitted =
+          await _capture(cubit, () => cubit.loadTransaksi(silent: true));
 
       expect(
         emitted.first,
@@ -107,7 +108,8 @@ void main() {
       when(() => getTransaksi.execute(any()))
           .thenAnswer((_) async => Right([transaksiGroup]));
 
-      final emitted = await _capture(cubit, () => cubit.loadTransaksi(silent: true));
+      final emitted =
+          await _capture(cubit, () => cubit.loadTransaksi(silent: true));
 
       expect(
         emitted.first,
@@ -124,7 +126,8 @@ void main() {
       await cubit.loadTransaksi();
       expect(cubit.state, isA<TransaksiLoaded>());
 
-      final emitted = await _capture(cubit, () => cubit.loadTransaksi(silent: true));
+      final emitted =
+          await _capture(cubit, () => cubit.loadTransaksi(silent: true));
 
       expect(
         emitted.whereType<TransaksiLoading>(),

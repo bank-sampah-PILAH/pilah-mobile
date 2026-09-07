@@ -7,7 +7,8 @@ class SecureStorageProvider implements AppStorage {
   final FlutterSecureStorage _storage;
   const SecureStorageProvider(this._storage);
 
-  @override Future<void> init() async {}
+  @override
+  Future<void> init() async {}
 
   @override
   Future<void> put(String key, dynamic value) async =>
@@ -23,8 +24,10 @@ class SecureStorageProvider implements AppStorage {
     return value as T?;
   }
 
-  @override Future<void> delete(String key) async => _storage.delete(key: key);
-  @override Future<void> clear() async => _storage.deleteAll();
-  @override Future<bool> contains(String key) async =>
-      _storage.containsKey(key: key);
+  @override
+  Future<void> delete(String key) async => _storage.delete(key: key);
+  @override
+  Future<void> clear() async => _storage.deleteAll();
+  @override
+  Future<bool> contains(String key) async => _storage.containsKey(key: key);
 }

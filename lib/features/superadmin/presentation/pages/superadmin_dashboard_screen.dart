@@ -16,8 +16,18 @@ import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_s
 import 'package:pilah_mobile/services/di.dart';
 
 const List<String> _monthsId = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des'
 ];
 
 String _formatDate(DateTime? date, {String prefix = ''}) {
@@ -83,7 +93,8 @@ class SuperAdminDashboardScreen extends StatefulWidget {
   static const route = '/superadmin-dashboard';
 
   @override
-  State<SuperAdminDashboardScreen> createState() => _SuperAdminDashboardScreenState();
+  State<SuperAdminDashboardScreen> createState() =>
+      _SuperAdminDashboardScreenState();
 }
 
 class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
@@ -100,7 +111,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     return BlocProvider(
       create: (_) => di<SuperadminCubit>()..loadBankSampah('pending'),
       child: Builder(
-        builder: (context) => BlocListener<AuthenticationBloc, AuthenticationStates>(
+        builder: (context) =>
+            BlocListener<AuthenticationBloc, AuthenticationStates>(
           listener: (context, state) {
             if (state is Unauthenticated) {
               context.go('/login');
@@ -151,24 +163,32 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                 children: [
                   Text(
                     'SuperAdmin PILAH',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 13),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     'Manajemen Bank Sampah',
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               InkWell(
-                onTap: () => context.read<AuthenticationBloc>().add(LogoutRequested()),
+                onTap: () =>
+                    context.read<AuthenticationBloc>().add(LogoutRequested()),
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.3)),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.logout, color: Colors.white, size: 20),
+                  child:
+                      const Icon(Icons.logout, color: Colors.white, size: 20),
                 ),
               ),
             ],
@@ -280,7 +300,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       case 'rejected':
         icon = Icons.cancel_outlined;
         title = 'Belum Ada Penolakan';
-        subtitle = 'Pendaftaran yang ditolak akan tercatat di sini sebagai arsip.';
+        subtitle =
+            'Pendaftaran yang ditolak akan tercatat di sini sebagai arsip.';
         break;
       default:
         icon = Icons.inbox_outlined;
@@ -314,7 +335,8 @@ class _PendingBankCardState extends State<PendingBankCard> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         content: Text(message, style: const TextStyle(fontSize: 14)),
         actions: [
           TextButton(
@@ -353,13 +375,15 @@ class _PendingBankCardState extends State<PendingBankCard> {
     if (!confirmed || !mounted) return;
 
     setState(() => _isProcessing = true);
-    final error =
-        approve ? await widget.cubit.approve(bank.id) : await widget.cubit.reject(bank.id);
+    final error = approve
+        ? await widget.cubit.approve(bank.id)
+        : await widget.cubit.reject(bank.id);
 
     if (error != null) {
       if (mounted) setState(() => _isProcessing = false);
       if (overlayContext.mounted) {
-        AppNotification.showError(overlayContext, title: 'Gagal', message: error.displayMessage);
+        AppNotification.showError(overlayContext,
+            title: 'Gagal', message: error.displayMessage);
       }
       return;
     }
@@ -391,13 +415,17 @@ class _PendingBankCardState extends State<PendingBankCard> {
           // No location line here on purpose: the full address is listed in the
           // detail rows below, so a city above it is redundant.
           const SizedBox(height: 12),
-          _infoRow(Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
+          _infoRow(
+              Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
           const SizedBox(height: 6),
           _infoRow(Icons.location_on_outlined, bank.alamat),
           const SizedBox(height: 6),
-          _infoRow(Icons.calendar_today_outlined, _formatDate(bank.createdAt, prefix: 'Diajukan: ')),
+          _infoRow(Icons.calendar_today_outlined,
+              _formatDate(bank.createdAt, prefix: 'Diajukan: ')),
           const SizedBox(height: 6),
-          _infoRow(Icons.access_time_outlined, 'Menunggu: ${_waitingDays(bank.createdAt)} hari', isBold: true),
+          _infoRow(Icons.access_time_outlined,
+              'Menunggu: ${_waitingDays(bank.createdAt)} hari',
+              isBold: true),
           const SizedBox(height: 16),
           if (_isProcessing)
             const Center(
@@ -406,7 +434,8 @@ class _PendingBankCardState extends State<PendingBankCard> {
                 child: SizedBox(
                   height: 22,
                   width: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.greenDark),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.greenDark),
                 ),
               ),
             )
@@ -415,16 +444,22 @@ class _PendingBankCardState extends State<PendingBankCard> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => showProofImageDialog(context, imageUrl: bank.fotoKegiatan),
-                    icon: const Icon(Icons.image_outlined, size: 14, color: AppColors.greenDark),
+                    onPressed: () => showProofImageDialog(context,
+                        imageUrl: bank.fotoKegiatan),
+                    icon: const Icon(Icons.image_outlined,
+                        size: 14, color: AppColors.greenDark),
                     label: const Text('Lihat Bukti',
-                        style: TextStyle(fontSize: 12, color: AppColors.greenDark, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenLight,
                       foregroundColor: AppColors.greenDark,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ),
@@ -432,14 +467,19 @@ class _PendingBankCardState extends State<PendingBankCard> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _runAction(approve: true),
-                    icon: const Icon(Icons.check, size: 14, color: Colors.white),
+                    icon:
+                        const Icon(Icons.check, size: 14, color: Colors.white),
                     label: const Text('Setujui',
-                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenDark,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ),
@@ -449,12 +489,16 @@ class _PendingBankCardState extends State<PendingBankCard> {
                     onPressed: () => _runAction(approve: false),
                     icon: const Icon(Icons.close, size: 14, color: Colors.red),
                     label: const Text('Tolak',
-                        style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red, width: 1),
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ),
@@ -490,9 +534,11 @@ class ApprovedBankCard extends StatelessWidget {
           // location on screen at all.
           _LocationLine(bank),
           const SizedBox(height: 12),
-          _infoRow(Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
+          _infoRow(
+              Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
           const SizedBox(height: 6),
-          _infoRow(Icons.calendar_today_outlined, _formatDate(bank.createdAt, prefix: 'Terdaftar: ')),
+          _infoRow(Icons.calendar_today_outlined,
+              _formatDate(bank.createdAt, prefix: 'Terdaftar: ')),
         ],
       ),
     );
@@ -519,9 +565,11 @@ class RejectedBankCard extends StatelessWidget {
           ),
           _LocationLine(bank),
           const SizedBox(height: 12),
-          _infoRow(Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
+          _infoRow(
+              Icons.person_outline, '${bank.pengelolaNama ?? '-'} (Ketua)'),
           const SizedBox(height: 6),
-          _infoRow(Icons.calendar_today_outlined, _formatDate(bank.createdAt, prefix: 'Diajukan: ')),
+          _infoRow(Icons.calendar_today_outlined,
+              _formatDate(bank.createdAt, prefix: 'Diajukan: ')),
         ],
       ),
     );
@@ -541,7 +589,10 @@ class _CardShell extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: IntrinsicHeight(
@@ -592,13 +643,17 @@ class _CardHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87),
           ),
         ),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+              color: badgeBg, borderRadius: BorderRadius.circular(12)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -608,7 +663,8 @@ class _CardHeader extends StatelessWidget {
               ],
               Text(
                 badgeText,
-                style: TextStyle(color: badgeFg, fontSize: 10, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: badgeFg, fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -622,7 +678,8 @@ Widget _infoRow(IconData icon, String text, {bool isBold = false}) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon, size: 16, color: isBold ? Colors.black87 : Colors.grey.shade500),
+      Icon(icon,
+          size: 16, color: isBold ? Colors.black87 : Colors.grey.shade500),
       const SizedBox(width: 8),
       Expanded(
         child: Text(

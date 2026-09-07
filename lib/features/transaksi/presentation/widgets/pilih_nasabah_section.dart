@@ -44,11 +44,12 @@ class PilihNasabahSection extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: hasError 
-                    ? const Color(0xFFDC2626) // errorColor
-                    : (selectedCustomer != null ? const Color(0xFF006D44) : Colors.grey[300]!), 
-                width: 1.5
-              ),
+                  color: hasError
+                      ? const Color(0xFFDC2626) // errorColor
+                      : (selectedCustomer != null
+                          ? const Color(0xFF006D44)
+                          : Colors.grey[300]!),
+                  width: 1.5),
             ),
             child: selectedCustomer == null
                 ? Row(
@@ -59,7 +60,8 @@ class PilihNasabahSection extends StatelessWidget {
                           color: Color(0xFFF5F5F5), // grey[100]
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.person_outline, color: Colors.grey[500], size: 20),
+                        child: Icon(Icons.person_outline,
+                            color: Colors.grey[500], size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -109,7 +111,9 @@ class PilihNasabahSection extends StatelessWidget {
                             // to read the same way the sheet does. Omitted
                             // entirely when the kode is missing, rather than
                             // falling back to the UUID this fix removes.
-                            if (selectedCustomer!.idNasabah.trim().isNotEmpty) ...[
+                            if (selectedCustomer!.idNasabah
+                                .trim()
+                                .isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
                                 selectedCustomer!.idNasabah,

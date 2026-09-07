@@ -164,7 +164,8 @@ void main() {
       );
     });
 
-    testWidgets('leaves the form empty when nothing was banked', (tester) async {
+    testWidgets('leaves the form empty when nothing was banked',
+        (tester) async {
       final cubit = OnboardingCubit(_MockDataSource());
       addTearDown(cubit.close);
 
@@ -223,7 +224,8 @@ void main() {
       verifyNever(() => dataSource.completeProfile(any()));
     });
 
-    testWidgets('is made immediately when the account already has a bank sampah',
+    testWidgets(
+        'is made immediately when the account already has a bank sampah',
         (tester) async {
       final dataSource = _MockDataSource();
       when(() => dataSource.completeProfile(any())).thenAnswer(

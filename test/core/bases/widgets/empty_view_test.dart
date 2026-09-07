@@ -4,7 +4,8 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 
 /// Hosts [child] in the same shape the real pages use: a RefreshIndicator
 /// filling the remaining space of a Column (i.e. bounded height).
-Widget _host({required Widget child, required Future<void> Function() onRefresh}) {
+Widget _host(
+    {required Widget child, required Future<void> Function() onRefresh}) {
   return MaterialApp(
     home: Scaffold(
       body: Column(
@@ -37,7 +38,8 @@ void main() {
       expect(find.text('Belum Ada Nasabah'), findsOneWidget);
       expect(refreshCount, 0);
 
-      await tester.fling(find.text('Belum Ada Nasabah'), const Offset(0, 300), 1000);
+      await tester.fling(
+          find.text('Belum Ada Nasabah'), const Offset(0, 300), 1000);
       await tester.pumpAndSettle();
 
       expect(refreshCount, 1, reason: 'an empty state must still be pullable');

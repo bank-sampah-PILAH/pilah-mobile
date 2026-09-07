@@ -74,7 +74,8 @@ void main() {
     });
 
     test('both variables in one template resolve independently', () {
-      final rendered = renderWaPreview('{daftar_item}\n---\n{daftar_item_harga}');
+      final rendered =
+          renderWaPreview('{daftar_item}\n---\n{daftar_item_harga}');
       expect(
         rendered,
         '- Plastik PET 5,2 kg\n'

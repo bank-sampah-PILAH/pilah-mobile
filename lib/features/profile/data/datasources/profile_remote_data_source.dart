@@ -119,7 +119,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
   @override
   Future<void> updateWaTemplate(String template) async {
-    await networkService.put(Endpoints.waTemplate, data: {'template': template});
+    await networkService
+        .put(Endpoints.waTemplate, data: {'template': template});
   }
 
   @override
@@ -143,7 +144,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
   @override
   Future<String> generateInviteUrl() async {
-    final response = await networkService.post(Endpoints.teamInvite, data: const {});
+    final response =
+        await networkService.post(Endpoints.teamInvite, data: const {});
     final json = response.data as Map<String, dynamic>;
     return json['invite_url']?.toString() ?? '';
   }

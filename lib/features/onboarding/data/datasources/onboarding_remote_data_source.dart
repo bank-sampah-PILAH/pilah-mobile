@@ -6,7 +6,8 @@ import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_enti
 
 abstract class OnboardingRemoteDataSource {
   Future<OnboardingResult> completeProfile(CompleteProfileRequest request);
-  Future<OnboardingResult> registerBankSampah(RegisterBankSampahRequest request);
+  Future<OnboardingResult> registerBankSampah(
+      RegisterBankSampahRequest request);
   Future<OnboardingResult> acceptInvite(String token);
 }
 
@@ -17,7 +18,8 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
   OnboardingRemoteDataSourceImpl(this.networkService);
 
   @override
-  Future<OnboardingResult> completeProfile(CompleteProfileRequest request) async {
+  Future<OnboardingResult> completeProfile(
+      CompleteProfileRequest request) async {
     final response = await networkService.put(
       Endpoints.onboardingProfile,
       data: request.toJson(),
@@ -73,8 +75,7 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
       // The body is the joined bank sampah serialised, so `nama` is the bank's.
       // Only safe to read here: the profile endpoint returns a `nama` too, and
       // that one is the user's.
-      bankSampahNama:
-          (json['nama'] ?? json['bank_sampah_nama'])?.toString(),
+      bankSampahNama: (json['nama'] ?? json['bank_sampah_nama'])?.toString(),
     );
   }
 }

@@ -41,13 +41,13 @@ class DashboardActionButtons extends StatelessWidget {
             onPressed: () {
               // 1. Trigger the route change to the Nasabah tab
               context.go('/nasabah');
-              
+
               // 2. Wait for the tab transition animation to complete before showing the modal
               Future.delayed(const Duration(milliseconds: 300), () {
                 if (context.mounted) {
                   showModalBottomSheet(
                     context: context,
-                    useRootNavigator: true, 
+                    useRootNavigator: true,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (context) => const TambahNasabahBottomSheet(),
@@ -55,7 +55,8 @@ class DashboardActionButtons extends StatelessWidget {
                 }
               });
             },
-            icon: const Icon(Icons.person_add_outlined, color: AppColors.greenDark, size: 20),
+            icon: const Icon(Icons.person_add_outlined,
+                color: AppColors.greenDark, size: 20),
             label: Text(
               'Tambah\nNasabah',
               style: AppTextStyle.small.copyWith(

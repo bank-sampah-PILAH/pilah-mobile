@@ -1,0 +1,139 @@
+# CI — the merge gate for pilah-mobile. One verification job, KISS:
+#   - install with --enforce-lockfile (fails on lockfile drift)
+#   - codegen (freezed/json/injectable outputs are gitignored, must be generated)
+#   - dart format check
+#   - flutter analyze (error+warning+info severity, blocking)
+#   - tests with coverage (>= 25% floor)
+#   - Android debug APK build (compile gate for the Gradle/Kotlin/AGP side)
+#   - workflow hygiene (actionlint + shellcheck on this file)
+name: CI
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Matches the local dev SDK (3.38.3 stable). Pin exactly so a new Flutter
+  # release can't silently change analyzer/test behavior under the gate.
+  FLUTTER_VERSION: "3.38.3"
+
+jobs:
+  verify:
+    name: Format, analyze, tests & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Exact-version Flutter via the official versioned runner. The pub cache
+      # is kept across runs so dependency downloads stay off the critical path.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # Java 17 for the Gradle side of the debug APK build.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # --enforce-lockfile is the CI flag: it fails when pubspec.lock doesn't
+      # exactly represent a valid resolution for pubspec.yaml (or hashes don't
+      # match) instead of quietly re-resolving. Keeps dependency bumps
+      # deliberate — the lockfile must be updated in the same commit.
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # .env is gitignored (runtime asset loaded via flutter_dotenv), but
+      # pubspec.yaml declares it as an asset — without the file even
+      # `flutter analyze` fails with asset_does_not_exist. A copy of the
+      # example env is materialized up front so analyze and tests both see it.
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      # *.freezed.dart / *.g.dart are gitignored — CI checkouts don't have
+      # them, so they must be generated before analyze/tests can pass.
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Formatting first: it's nearly free, so an unformatted commit should
+      # fail in seconds rather than waiting for the analyzer to finish.
+      # Scoped to the real Dart trees — `dart format` has no exclude flag and
+      # bricks/ holds Mason Mustache templates, which are not parseable Dart.
+      - name: dart format check
+        run: dart format --output=none --set-exit-if-changed lib test codegen
+
+      # Blocking on the project's configured lints (analysis_options.yaml,
+      # flutter_lints). `--fatal-infos` treats style infos as failures too so
+      # sloppy code can't ride in silently.
+      - name: flutter analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      # Blocking gate. The suite is young (26% at gate introduction — large
+      # feature areas predate it), so the floor starts at 25% and must only
+      # move UP as tests are added. Parse the lcov directly: no lcov/genhtml
+      # tooling needed on the runner.
+      - name: Coverage report (fail under 25%)
+        run: |
+          # shellcheck disable=SC2016  # the awk program is intentionally single-quoted
+          pct="$(awk '
+            /^DA:/ { found++; split($0, a, ","); if (a[2]+0 > 0) hit++ }
+            END { if (found == 0) exit 1; printf "%.1f", 100 * hit / found }
+          ' coverage/lcov.info)"
+          echo "line coverage: ${pct}%"
+          awk -v p="$pct" 'BEGIN { exit (p+0 >= 25 ? 0 : 1) }' \
+            || { echo "::error::line coverage ${pct}% is below the 25% gate"; exit 1; }
+
+      # google-services.json is gitignored (Firebase credential). CI builds a
+      # debug APK, so a placeholder with the right shape satisfies the Gradle
+      # google-services plugin without any real credential.
+      - name: Stub google-services.json
+        run: |
+          cat > android/app/google-services.json <<'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "ci-placeholder",
+              "storage_bucket": "ci-placeholder.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+                  "android_client_info": {
+                    "package_name": "com.mobile.pilahapp"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  { "current_key": "AIzaSyCI_PLACEHOLDER_KEY_000000000000000" }
+                ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
+      # Debug APK: compiles Dart (AOT) + Kotlin + Gradle wiring without needing
+      # the release keystore (key.properties is gitignored, release signing
+      # resolves to null storeFile and only release builds use it). Exit 0
+      # already means the APK was produced; artifact packaging/verification
+      # belongs to a future CD pipeline instead.
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      # Lints the CI workflow files themselves (syntax, expression misuse,
+      # invalid action inputs, shell scripts in run blocks). Cheap step at the
+      # end so workflow edits still get everything else checked in one job.
+      - name: actionlint
+        run: docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color

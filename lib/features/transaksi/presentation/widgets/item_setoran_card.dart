@@ -71,7 +71,8 @@ class ItemSetoranCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: hasError ? errorColor : Colors.grey[200]!),
+                    border: Border.all(
+                        color: hasError ? errorColor : Colors.grey[200]!),
                   ),
                   child: BlocBuilder<HargaCubit, HargaState>(
                     builder: (context, state) {
@@ -95,21 +96,25 @@ class ItemSetoranCard extends StatelessWidget {
                           value: selectedValue,
                           hint: Row(
                             children: [
-                              const Icon(Icons.recycling, color: emeraldPrimary, size: 20),
+                              const Icon(Icons.recycling,
+                                  color: emeraldPrimary, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'Pilih Jenis',
-                                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                                style: AppTextStyle.small
+                                    .copyWith(color: Colors.grey[500]),
                               ),
                             ],
                           ),
-                          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
+                          icon: Icon(Icons.keyboard_arrow_down,
+                              color: Colors.grey[400]),
                           items: activeList.map((type) {
                             return DropdownMenuItem<String>(
                               value: type.name,
                               child: Row(
                                 children: [
-                                  Icon(type.icon, color: type.iconColor, size: 20),
+                                  Icon(type.icon,
+                                      color: type.iconColor, size: 20),
                                   const SizedBox(width: 8),
                                   Text(
                                     type.name,
@@ -124,7 +129,8 @@ class ItemSetoranCard extends StatelessWidget {
                           }).toList(),
                           onChanged: (value) {
                             if (value != null) {
-                              final selected = activeList.firstWhere((t) => t.name == value);
+                              final selected =
+                                  activeList.firstWhere((t) => t.name == value);
                               onChanged({
                                 ...itemData,
                                 'jenis': value,
@@ -159,7 +165,8 @@ class ItemSetoranCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               errorText!,
-              style: AppTextStyle.small.copyWith(color: errorColor, fontSize: 12),
+              style:
+                  AppTextStyle.small.copyWith(color: errorColor, fontSize: 12),
             ),
           ],
           const SizedBox(height: 16),
@@ -187,13 +194,16 @@ class ItemSetoranCard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         'Rp',
-                        style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                        style: AppTextStyle.small
+                            .copyWith(color: Colors.grey[500]),
                       ),
                     ),
                     Expanded(
                       child: TextFormField(
                         key: ValueKey(harga),
-                        initialValue: harga > 0 ? _formatCurrency(harga).replaceAll('Rp ', '') : '',
+                        initialValue: harga > 0
+                            ? _formatCurrency(harga).replaceAll('Rp ', '')
+                            : '',
                         readOnly: true,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
@@ -233,7 +243,8 @@ class ItemSetoranCard extends StatelessWidget {
                   // everywhere else; onChanged normalises the comma back to a
                   // dot before parsing.
                   initialValue: WeightFormatter.formatKg(berat),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   // Accept a dot or a comma decimal separator (Indonesian
                   // keyboards vary), but only one, and only between digits — the
                   // anchored pattern drops any second separator so "2,,3" or

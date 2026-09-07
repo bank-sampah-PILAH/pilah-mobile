@@ -27,13 +27,13 @@ class LoginButton extends StatelessWidget {
       if (!context.mounted) return;
 
       context.read<AuthenticationBloc>().add(
-        LoginWithGoogleRequested(
-          name: googleUser.displayName ?? 'Unknown',
-          email: googleUser.email,
-          photoUrl: googleUser.photoUrl ?? '',
-          idToken: idToken,
-        ),
-      );
+            LoginWithGoogleRequested(
+              name: googleUser.displayName ?? 'Unknown',
+              email: googleUser.email,
+              photoUrl: googleUser.photoUrl ?? '',
+              idToken: idToken,
+            ),
+          );
     } catch (error) {
       log('Google Sign-In error: $error');
 

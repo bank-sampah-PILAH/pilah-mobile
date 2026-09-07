@@ -43,7 +43,8 @@ void main() {
       );
     });
 
-    testWidgets('falls back to no identifier rather than the UUID when the '
+    testWidgets(
+        'falls back to no identifier rather than the UUID when the '
         'kode is missing', (tester) async {
       await tester.pumpWidget(_host(_nasabah(kode: '')));
 

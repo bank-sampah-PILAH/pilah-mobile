@@ -23,7 +23,8 @@ class DetailNasabahBottomSheet extends StatefulWidget {
   static const Color errorColor = Color(0xFFBA1A1A);
 
   @override
-  State<DetailNasabahBottomSheet> createState() => _DetailNasabahBottomSheetState();
+  State<DetailNasabahBottomSheet> createState() =>
+      _DetailNasabahBottomSheetState();
 }
 
 class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
@@ -51,9 +52,10 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
     final String jenisKelamin = customerData['jenisKelamin'] ?? '-';
     final String tanggalLahir = customerData['tanggalLahir'] ?? '-';
     final String address = customerData['address'] ?? '-';
-    final String tanggalDaftar = (customerData['tanggalDaftar'] as String?)?.isNotEmpty == true
-        ? customerData['tanggalDaftar']
-        : '-';
+    final String tanggalDaftar =
+        (customerData['tanggalDaftar'] as String?)?.isNotEmpty == true
+            ? customerData['tanggalDaftar']
+            : '-';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -90,14 +92,18 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: isActive ? DetailNasabahBottomSheet.mintTint : Colors.red[50],
+                      color: isActive
+                          ? DetailNasabahBottomSheet.mintTint
+                          : Colors.red[50],
                       borderRadius: BorderRadius.circular(16),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       initials,
                       style: AppTextStyle.headline1.copyWith(
-                        color: isActive ? DetailNasabahBottomSheet.emeraldPrimary : Colors.red[400],
+                        color: isActive
+                            ? DetailNasabahBottomSheet.emeraldPrimary
+                            : Colors.red[400],
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
                       ),
@@ -177,7 +183,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                       'Tanggal Daftar',
                       tanggalDaftar,
                       isBold: true,
-                      icon: Icon(Icons.calendar_month, size: 16, color: Colors.indigo[300]),
+                      icon: Icon(Icons.calendar_month,
+                          size: 16, color: Colors.indigo[300]),
                     ),
                     const SizedBox(height: 16),
                     _buildRingkasanRow(),
@@ -215,14 +222,17 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                           useRootNavigator: true,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (context) => EditNasabahBottomSheet(customerData: customerData),
+                          builder: (context) => EditNasabahBottomSheet(
+                              customerData: customerData),
                         );
                       },
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit Data'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: DetailNasabahBottomSheet.emeraldPrimary,
-                        side: const BorderSide(color: DetailNasabahBottomSheet.emeraldPrimary),
+                        foregroundColor:
+                            DetailNasabahBottomSheet.emeraldPrimary,
+                        side: const BorderSide(
+                            color: DetailNasabahBottomSheet.emeraldPrimary),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -250,10 +260,15 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                           ),
                         );
                       },
-                      icon: Icon(isActive ? Icons.block : Icons.check_circle_outline, size: 18, color: Colors.white),
+                      icon: Icon(
+                          isActive ? Icons.block : Icons.check_circle_outline,
+                          size: 18,
+                          color: Colors.white),
                       label: Text(isActive ? 'Nonaktifkan' : 'Aktifkan'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isActive ? DetailNasabahBottomSheet.errorColor : DetailNasabahBottomSheet.emeraldPrimary,
+                        backgroundColor: isActive
+                            ? DetailNasabahBottomSheet.errorColor
+                            : DetailNasabahBottomSheet.emeraldPrimary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

@@ -56,7 +56,8 @@ class RetryInterceptor extends Interceptor {
   RetryInterceptor(this.dio);
 
   @override
-  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+  Future<void> onError(
+      DioException err, ErrorInterceptorHandler handler) async {
     if (!_isRetryableDrop(err)) return handler.next(err);
 
     final options = err.requestOptions;

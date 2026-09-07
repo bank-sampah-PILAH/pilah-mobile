@@ -27,7 +27,8 @@ class TransaksiRepositoryImpl implements TransaksiRepository {
   }
 
   @override
-  Future<Either<NetworkException, TransaksiCreated>> addTransaksi(TransaksiRequest request) {
+  Future<Either<NetworkException, TransaksiCreated>> addTransaksi(
+      TransaksiRequest request) {
     return apiCall<TransaksiCreated>(
       func: remoteDataSource.addTransaksi(request),
       mapper: (result) => result as TransaksiCreated,
@@ -35,7 +36,8 @@ class TransaksiRepositoryImpl implements TransaksiRepository {
   }
 
   @override
-  Future<Either<NetworkException, TransaksiDetailEntity>> getTransaksiDetail(String id) {
+  Future<Either<NetworkException, TransaksiDetailEntity>> getTransaksiDetail(
+      String id) {
     return apiCall<TransaksiDetailEntity>(
       func: remoteDataSource.getTransaksiDetail(id),
       mapper: (result) => result as TransaksiDetailEntity,

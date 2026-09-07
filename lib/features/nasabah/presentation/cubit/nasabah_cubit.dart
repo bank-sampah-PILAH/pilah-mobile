@@ -85,7 +85,8 @@ class NasabahCubit extends Cubit<NasabahState> {
   }
 
   /// Updates a nasabah. Returns `null` on success, otherwise the exception.
-  Future<NetworkException?> updateNasabah(String id, NasabahRequest request) async {
+  Future<NetworkException?> updateNasabah(
+      String id, NasabahRequest request) async {
     final result = await updateNasabahUseCase.execute(
       UpdateNasabahParams(id: id, request: request),
     );

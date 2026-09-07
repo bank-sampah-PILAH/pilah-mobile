@@ -32,14 +32,15 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.black54, size: 20),
+                  icon:
+                      const Icon(Icons.close, color: Colors.black54, size: 20),
                   onPressed: () => Navigator.of(context).pop(),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 8),
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
 
@@ -91,9 +92,9 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                 ),
               ),
             ),
-            
+
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
-            
+
             // Bottom Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -106,7 +107,8 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                       backgroundColor: const Color(0xFF6B7280), // Cool gray
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),

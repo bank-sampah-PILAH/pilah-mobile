@@ -10,7 +10,8 @@ class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
 
   String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts =
+        name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return 'P';
     return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
@@ -20,7 +21,8 @@ class DashboardHeader extends StatelessWidget {
     return BlocBuilder<AuthenticationBloc, AuthenticationStates>(
       builder: (context, state) {
         final auth = state is Authenticated ? state.authEntity : null;
-        final name = (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengelola';
+        final name =
+            (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengelola';
         final bankName = (auth?.bankSampahNama?.trim().isNotEmpty ?? false)
             ? auth!.bankSampahNama!
             : 'Bank Sampah';

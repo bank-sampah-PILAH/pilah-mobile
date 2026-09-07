@@ -46,34 +46,35 @@ class TransactionListView extends StatelessWidget {
 
           return ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8).copyWith(bottom: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
+                .copyWith(bottom: 24),
             itemCount: filteredGroups.length,
             itemBuilder: (context, index) {
               final group = filteredGroups[index];
               final header = group.header;
               final transactions = group.transactions;
-              
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(header),
                   ...transactions.map((t) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: _buildTransactionCard(
-                      context: context,
-                      id: t.id,
-                      initials: t.initials,
-                      avatarColor: t.avatarColor,
-                      textColor: t.textColor,
-                      name: t.name,
-                      subtitle: t.subtitle,
-                      amount: t.amount,
-                      isWaSuccess: t.isWaSuccess,
-                      time: t.time,
-                      balance: t.balance,
-                      items: t.items,
-                    ),
-                  )),
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: _buildTransactionCard(
+                          context: context,
+                          id: t.id,
+                          initials: t.initials,
+                          avatarColor: t.avatarColor,
+                          textColor: t.textColor,
+                          name: t.name,
+                          subtitle: t.subtitle,
+                          amount: t.amount,
+                          isWaSuccess: t.isWaSuccess,
+                          time: t.time,
+                          balance: t.balance,
+                          items: t.items,
+                        ),
+                      )),
                   if (index < filteredGroups.length - 1)
                     const SizedBox(height: 12),
                 ],
@@ -129,7 +130,7 @@ class TransactionListView extends StatelessWidget {
       onTap: () {
         showModalBottomSheet(
           context: context,
-          useRootNavigator: true, 
+          useRootNavigator: true,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (context) => DetailTransaksiBottomSheet(
@@ -143,12 +144,14 @@ class TransactionListView extends StatelessWidget {
               'amount': amount,
               'balance': balance,
               'waStatus': isWaSuccess ? 'sent' : 'failed',
-              'items': items.map((i) => {
-                'jenis': i.jenis,
-                'berat': i.berat,
-                'harga': i.harga,
-                'subtotal': i.subtotal,
-              }).toList(),
+              'items': items
+                  .map((i) => {
+                        'jenis': i.jenis,
+                        'berat': i.berat,
+                        'harga': i.harga,
+                        'subtotal': i.subtotal,
+                      })
+                  .toList(),
             },
           ),
         );
@@ -167,65 +170,65 @@ class TransactionListView extends StatelessWidget {
           ],
         ),
         child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: avatarColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initials,
-              style: AppTextStyle.title1.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.bold,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: avatarColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initials,
+                style: AppTextStyle.title1.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  name,
+                  amount,
                   style: AppTextStyle.title1.copyWith(
-                    color: Colors.black87,
+                    color: AppColors.greenDark,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                amount,
-                style: AppTextStyle.title1.copyWith(
-                  color: AppColors.greenDark,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  // TEMP: WA status chip hidden while the notification flow moves
-                  // from the Twilio webhook to a frontend wa.me redirect. The
-                  // backend cannot report a "sent" status yet, so this always
-                  // rendered as failed. Uncomment the block below to restore it.
-                  /*
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    // TEMP: WA status chip hidden while the notification flow moves
+                    // from the Twilio webhook to a frontend wa.me redirect. The
+                    // backend cannot report a "sent" status yet, so this always
+                    // rendered as failed. Uncomment the block below to restore it.
+                    /*
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
@@ -252,23 +255,23 @@ class TransactionListView extends StatelessWidget {
                     ),
                   ),
                   */
-                  if (time != null) ...[
-                    // TEMP: this spacer separated the WA chip from the time.
-                    /* const SizedBox(width: 8), */
-                    Text(
-                      time,
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: Colors.grey[400],
+                    if (time != null) ...[
+                      // TEMP: this spacer separated the WA chip from the time.
+                      /* const SizedBox(width: 8), */
+                      Text(
+                        time,
+                        style: AppTextStyle.extraSmall.copyWith(
+                          color: Colors.grey[400],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-            ],
-          ),
-        ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }

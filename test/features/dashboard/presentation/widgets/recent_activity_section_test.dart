@@ -51,8 +51,8 @@ void main() {
   group('RecentActivitySection', () {
     testWidgets('a failed fetch is not disguised as "no transactions yet"',
         (tester) async {
-      final cubit =
-          _StubRecentActivityCubit(const RecentActivityError('Koneksi terputus'));
+      final cubit = _StubRecentActivityCubit(
+          const RecentActivityError('Koneksi terputus'));
       addTearDown(cubit.close);
 
       await tester.pumpWidget(_host(cubit));
@@ -68,8 +68,8 @@ void main() {
     });
 
     testWidgets('the error state offers a working retry', (tester) async {
-      final cubit =
-          _StubRecentActivityCubit(const RecentActivityError('Koneksi terputus'));
+      final cubit = _StubRecentActivityCubit(
+          const RecentActivityError('Koneksi terputus'));
       addTearDown(cubit.close);
 
       await tester.pumpWidget(_host(cubit));
@@ -89,7 +89,8 @@ void main() {
       expect(find.text('Coba Lagi'), findsNothing);
     });
 
-    testWidgets('renders every transaction the cubit hands it, day label and all',
+    testWidgets(
+        'renders every transaction the cubit hands it, day label and all',
         (tester) async {
       final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
         TransaksiGroupEntity(header: 'HARI INI', transactions: [_trx('Budi')]),

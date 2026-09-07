@@ -54,8 +54,9 @@ class ProfileState extends Equatable {
       team: team ?? this.team,
       error: error ?? this.error,
       isSavingTemplate: isSavingTemplate ?? this.isSavingTemplate,
-      selectedLogoFile:
-          clearSelectedLogo ? null : (selectedLogoFile ?? this.selectedLogoFile),
+      selectedLogoFile: clearSelectedLogo
+          ? null
+          : (selectedLogoFile ?? this.selectedLogoFile),
     );
   }
 

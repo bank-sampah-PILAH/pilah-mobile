@@ -14,6 +14,11 @@ analyzer:
     - bricks/**           # Mason brick templates (Mustache syntax, not valid Dart)
     - codegen/**          # CLI tools (print statements expected in dev tools)
     - features_catalog/** # Inactive features (disabled via spl_manager, code preserved)
+  errors:
+    # @JsonKey on freezed constructor parameters is the documented freezed +
+    # json_serializable pattern; the "can only be used on fields or getters"
+    # warning is a false positive there (the generator reads the parameter).
+    invalid_annotation_target: ignore
 
 linter:
   # The lint rules applied to this project can be customized in the

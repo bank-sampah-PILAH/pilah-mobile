@@ -32,7 +32,8 @@ void main() {
       expect(
         model.fotoKegiatan,
         url,
-        reason: 'if the backend sends a URL, the frontend surfaces it unchanged',
+        reason:
+            'if the backend sends a URL, the frontend surfaces it unchanged',
       );
     });
 
@@ -55,12 +56,13 @@ void main() {
     // The three ways the field legitimately arrives empty. All map to null so
     // the UI shows its honest "no photo" state — none of these is data loss.
     test('an empty string maps to null', () {
-      expect(BankSampahModel.fromJson(_json(fotoValue: '')).fotoKegiatan, isNull);
+      expect(
+          BankSampahModel.fromJson(_json(fotoValue: '')).fotoKegiatan, isNull);
     });
 
     test('an explicit JSON null maps to null', () {
-      expect(
-          BankSampahModel.fromJson(_json(fotoValue: null)).fotoKegiatan, isNull);
+      expect(BankSampahModel.fromJson(_json(fotoValue: null)).fotoKegiatan,
+          isNull);
     });
 
     test('a missing key maps to null', () {
@@ -72,13 +74,19 @@ void main() {
     // renaming (foto_kegiatan_url, foto, bukti, image_url) would surface as
     // null, i.e. a key mismatch is detectable here, not silently absorbed.
     test('a differently-named key is NOT read (strict key match)', () {
-      for (final wrongKey in ['foto_kegiatan_url', 'foto', 'bukti', 'image_url']) {
+      for (final wrongKey in [
+        'foto_kegiatan_url',
+        'foto',
+        'bukti',
+        'image_url'
+      ]) {
         final json = _json(fotoKey: wrongKey);
         json.remove('foto_kegiatan');
         expect(
           BankSampahModel.fromJson(json).fotoKegiatan,
           isNull,
-          reason: 'frontend reads only foto_kegiatan; $wrongKey would read null',
+          reason:
+              'frontend reads only foto_kegiatan; $wrongKey would read null',
         );
       }
     });

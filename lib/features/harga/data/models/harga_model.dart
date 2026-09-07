@@ -20,11 +20,11 @@ class HargaModel extends HargaEntity {
     final String priceStr = json['harga_per_kg']?.toString() ?? '0';
     final int price = double.tryParse(priceStr)?.toInt() ?? 0;
     final String category = json['kategori']?.toString() ?? 'dll';
-    
+
     IconData icon = Icons.recycling;
     Color iconColor = Colors.green;
     String badgeText = 'Anorganik';
-    
+
     switch (category.toLowerCase()) {
       case 'kertas':
         icon = Icons.description;

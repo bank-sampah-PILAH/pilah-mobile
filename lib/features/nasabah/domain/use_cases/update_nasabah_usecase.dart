@@ -13,13 +13,15 @@ class UpdateNasabahParams {
 }
 
 @lazySingleton
-class UpdateNasabahUseCase implements UseCase<NasabahEntity, UpdateNasabahParams> {
+class UpdateNasabahUseCase
+    implements UseCase<NasabahEntity, UpdateNasabahParams> {
   final NasabahRepository repository;
 
   UpdateNasabahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, NasabahEntity>> execute([UpdateNasabahParams? args]) {
+  Future<Either<NetworkException, NasabahEntity>> execute(
+      [UpdateNasabahParams? args]) {
     return repository.updateNasabah(args!.id, args.request);
   }
 }
