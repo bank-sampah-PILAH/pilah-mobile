@@ -104,6 +104,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     name: Build debug APK artifact
     runs-on: ubuntu-latest
+    environment: staging
     permissions:
       contents: read
     steps:
@@ -120,42 +121,32 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Prepare .env
+        env:
+          APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+        run: |
+          if [ -z "$APP_ENV_FILE" ]; then
+            echo "::error::The staging environment secret APP_ENV_FILE is required."
+            exit 1
+          fi
+          printf '%s' "$APP_ENV_FILE" > .env
+
+      - name: Prepare google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::error::The staging environment secret GOOGLE_SERVICES_JSON is required."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          jq empty android/app/google-services.json
+
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Prepare .env
-        run: cp .env.example .env
-
       - name: Generate code (build_runner)
         run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Stub google-services.json
-        run: |
-          cat > android/app/google-services.json <<'EOF'
-          {
-            "project_info": {
-              "project_number": "000000000000",
-              "project_id": "ci-placeholder",
-              "storage_bucket": "ci-placeholder.appspot.com"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
-                  "android_client_info": {
-                    "package_name": "com.mobile.pilahapp"
-                  }
-                },
-                "oauth_client": [],
-                "api_key": [
-                  { "current_key": "AIzaSyCI_PLACEHOLDER_KEY_000000000000000" }
-                ],
-                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          EOF
 
       - name: Build debug APK
         run: flutter build apk --debug
