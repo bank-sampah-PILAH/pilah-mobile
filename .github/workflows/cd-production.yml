@@ -36,7 +36,14 @@ jobs:
           java-version: "17"
 
       - name: Prepare application environment
-        run: cp .env.example .env
+        env:
+          APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+        run: |
+          if [ -z "$APP_ENV_FILE" ]; then
+            echo "::error::The production environment secret APP_ENV_FILE is required."
+            exit 1
+          fi
+          printf '%s' "$APP_ENV_FILE" > .env
 
       - name: Prepare Android signing
         env:
