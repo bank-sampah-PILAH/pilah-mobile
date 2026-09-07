@@ -7,13 +7,15 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter
 import 'package:pilah_mobile/features/transaksi/domain/repositories/transaksi_repository.dart';
 
 @lazySingleton
-class GetTransaksiUseCase implements UseCase<List<TransaksiGroupEntity>, TransaksiFilter> {
+class GetTransaksiUseCase
+    implements UseCase<List<TransaksiGroupEntity>, TransaksiFilter> {
   final TransaksiRepository repository;
 
   GetTransaksiUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, List<TransaksiGroupEntity>>> execute([TransaksiFilter? args]) {
+  Future<Either<NetworkException, List<TransaksiGroupEntity>>> execute(
+      [TransaksiFilter? args]) {
     return repository.getTransaksi(args ?? const TransaksiFilter());
   }
 }

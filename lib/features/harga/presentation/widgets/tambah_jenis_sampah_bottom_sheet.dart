@@ -16,15 +16,18 @@ class TambahJenisSampahBottomSheet extends StatefulWidget {
   final HargaEntity? initialData;
   final HargaCubit? hargaCubit;
 
-  const TambahJenisSampahBottomSheet({super.key, this.initialData, this.hargaCubit});
+  const TambahJenisSampahBottomSheet(
+      {super.key, this.initialData, this.hargaCubit});
 
   @override
-  State<TambahJenisSampahBottomSheet> createState() => _TambahJenisSampahBottomSheetState();
+  State<TambahJenisSampahBottomSheet> createState() =>
+      _TambahJenisSampahBottomSheetState();
 }
 
-class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSheet> {
+class _TambahJenisSampahBottomSheetState
+    extends State<TambahJenisSampahBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _kodeSampahController;
   late TextEditingController _nameController;
   late TextEditingController _descController;
@@ -38,7 +41,8 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
   /// backend `JenisSampah.Kategori` choices accept and is stored in
   /// [_selectedCategory]; the label is display-only. They differ for "Lainnya",
   /// which maps to the backend's catch-all `dll` — there is no `lainnya` choice.
-  static const List<({String value, String label, IconData icon})> _categories = [
+  static const List<({String value, String label, IconData icon})> _categories =
+      [
     (value: 'kertas', label: 'Kertas', icon: Icons.description),
     (value: 'plastik', label: 'Plastik', icon: Icons.recycling),
     (value: 'logam', label: 'Logam', icon: Icons.settings),
@@ -49,9 +53,12 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
   @override
   void initState() {
     super.initState();
-    _kodeSampahController = TextEditingController(text: widget.initialData?.kodeSampah ?? '');
-    _nameController = TextEditingController(text: widget.initialData?.name ?? '');
-    _descController = TextEditingController(text: widget.initialData?.subtitle ?? '');
+    _kodeSampahController =
+        TextEditingController(text: widget.initialData?.kodeSampah ?? '');
+    _nameController =
+        TextEditingController(text: widget.initialData?.name ?? '');
+    _descController =
+        TextEditingController(text: widget.initialData?.subtitle ?? '');
 
     // The dropdown holds the backend value verbatim, so edit mode preselects by
     // matching the stored category directly. An unknown category (e.g. organik,
@@ -61,7 +68,7 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     if (cat != null && _categories.any((c) => c.value == cat)) {
       _selectedCategory = cat;
     }
-    
+
     // Process price string
     String initialPrice = '';
     if (widget.initialData != null) {
@@ -82,7 +89,7 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
   @override
   Widget build(BuildContext context) {
     final bool isEditMode = widget.initialData != null;
-    
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -101,7 +108,8 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 BottomSheetHeader(
-                  title: isEditMode ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah',
+                  title:
+                      isEditMode ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah',
                 ),
                 const SizedBox(height: 24),
 
@@ -116,17 +124,26 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                     }
                   },
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Bagian ini wajib diisi.';
-                    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Bagian ini wajib diisi.';
+                    }
+                    final cubit =
+                        widget.hargaCubit ?? context.read<HargaCubit>();
                     if (cubit.state is HargaLoaded) {
                       final list = (cubit.state as HargaLoaded).jenisSampahList;
-                      final isDuplicate = list.any((e) => e.kodeSampah.trim().toLowerCase() == value.trim().toLowerCase() && e.id != widget.initialData?.id);
-                      if (isDuplicate) return 'Kode sampah ini sudah digunakan.';
+                      final isDuplicate = list.any((e) =>
+                          e.kodeSampah.trim().toLowerCase() ==
+                              value.trim().toLowerCase() &&
+                          e.id != widget.initialData?.id);
+                      if (isDuplicate) {
+                        return 'Kode sampah ini sudah digunakan.';
+                      }
                     }
                     if (_serverKodeError != null) return _serverKodeError;
                     return null;
                   },
-                  decoration: _buildInputDecoration(hintText: 'Contoh: PLS-001'),
+                  decoration:
+                      _buildInputDecoration(hintText: 'Contoh: PLS-001'),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -142,8 +159,11 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameController,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
-                  decoration: _buildInputDecoration(hintText: 'Contoh: Plastik PET'),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
+                  decoration:
+                      _buildInputDecoration(hintText: 'Contoh: Plastik PET'),
                 ),
                 const SizedBox(height: 20),
 
@@ -151,8 +171,10 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                 _buildLabel('KATEGORI'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
-                  validator: (value) => (value == null || value.isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                  initialValue: _selectedCategory,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
                   hint: const Text('— Pilih Kategori —'),
                   decoration: _buildInputDecoration(),
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -171,7 +193,8 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                 TextFormField(
                   controller: _descController,
                   maxLines: 2,
-                  decoration: _buildInputDecoration(hintText: 'Contoh: Botol bening, kemasan plastik'),
+                  decoration: _buildInputDecoration(
+                      hintText: 'Contoh: Botol bening, kemasan plastik'),
                 ),
                 const SizedBox(height: 20),
 
@@ -182,12 +205,15 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                   controller: _priceController,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
                   decoration: _buildInputDecoration(
                     hintText: '0',
                   ).copyWith(
                     prefixIcon: Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 8, top: 14, bottom: 14),
+                      padding: const EdgeInsets.only(
+                          left: 16, right: 8, top: 14, bottom: 14),
                       child: Text(
                         'Rp',
                         style: AppTextStyle.title1.copyWith(
@@ -196,7 +222,8 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                         ),
                       ),
                     ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints:
+                        const BoxConstraints(minWidth: 0, minHeight: 0),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -215,7 +242,8 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                     onPressed: _isSaving ? null : _handleSimpan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenDark,
-                      disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
+                      disabledBackgroundColor:
+                          AppColors.greenDark.withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -228,11 +256,14 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
-                            isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+                            isEditMode
+                                ? 'Simpan Perubahan'
+                                : 'Simpan Jenis Sampah',
                             style: AppTextStyle.title1.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -252,12 +283,16 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                       icon: Icon(
                         _isActive ? Icons.block : Icons.check_circle_outline,
                         size: 20,
-                        color: _isActive ? Colors.red[600] : AppColors.greenDark,
+                        color:
+                            _isActive ? Colors.red[600] : AppColors.greenDark,
                       ),
                       label: Text(
-                        _isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
+                        _isActive
+                            ? 'Nonaktifkan Jenis Sampah'
+                            : 'Aktifkan Jenis Sampah',
                         style: AppTextStyle.title1.copyWith(
-                          color: _isActive ? Colors.red[600] : AppColors.greenDark,
+                          color:
+                              _isActive ? Colors.red[600] : AppColors.greenDark,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -268,7 +303,9 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
                           borderRadius: BorderRadius.circular(16),
                         ),
                         side: BorderSide(
-                          color: _isActive ? Colors.red[200]! : AppColors.greenLight,
+                          color: _isActive
+                              ? Colors.red[200]!
+                              : AppColors.greenLight,
                         ),
                         backgroundColor: Colors.white,
                       ),
@@ -301,8 +338,9 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     if (!confirmed || !mounted) return;
 
     setState(() => _isSaving = true);
-    final error =
-        wasActive ? await cubit.deactivateHarga(id) : await cubit.activateHarga(id);
+    final error = wasActive
+        ? await cubit.deactivateHarga(id)
+        : await cubit.activateHarga(id);
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -365,7 +403,9 @@ class _TambahJenisSampahBottomSheetState extends State<TambahJenisSampahBottomSh
     );
 
     setState(() => _isSaving = true);
-    final error = isEditMode ? await cubit.updateHarga(harga) : await cubit.addHarga(harga);
+    final error = isEditMode
+        ? await cubit.updateHarga(harga)
+        : await cubit.addHarga(harga);
     if (!mounted) return;
     setState(() => _isSaving = false);
 

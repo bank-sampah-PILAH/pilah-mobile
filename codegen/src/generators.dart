@@ -1,4 +1,4 @@
-﻿// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print
 part of '../spl_manager.dart';
 
 // ─── Feature file generation ──────────────────────────────────────────────────
@@ -29,7 +29,8 @@ void _generateFeatureFiles(
   final files = <String, String>{
     // Data layer
     'lib/features/$module/data/local/${module}_local_data_sources.dart':
-        _tplLocalDataSources(module, className, storageProvider: storageProvider),
+        _tplLocalDataSources(module, className,
+            storageProvider: storageProvider),
     'lib/features/$module/data/model/mapper/${module}_mapper.dart':
         _tplMapper(module, className),
     'lib/features/$module/data/model/responses/${module}_response.dart':
@@ -105,7 +106,8 @@ Map<String, List<String>> _checkCrossFeatureDeps(String module) {
       // Skip the module's own files
       if (normalized.contains('/$module/')) continue;
       final lines = entity.readAsLinesSync();
-      final matches = lines.where((l) => l.contains(pattern)).map((l) => l.trim()).toList();
+      final matches =
+          lines.where((l) => l.contains(pattern)).map((l) => l.trim()).toList();
       if (matches.isNotEmpty) results[normalized] = matches;
     }
   }
@@ -180,21 +182,21 @@ void _removeRoute(String module) {
   // Remove top-level GoRoute (exact format we generate)
   content = content.replaceAll(
     "      GoRoute(\n"
-    "          path: ${className}Page.route,\n"
-    "          name: ${className}Page.route,\n"
-    "          builder: (context, state) => const ${className}Page()),\n",
+        "          path: ${className}Page.route,\n"
+        "          name: ${className}Page.route,\n"
+        "          builder: (context, state) => const ${className}Page()),\n",
     '',
   );
 
   // Remove shell GoRoute (exact format we generate)
   content = content.replaceAll(
     "\n          GoRoute(\n"
-    "              path: ${className}Page.route,\n"
-    "              name: ${className}Page.route,\n"
-    "              parentNavigatorKey: _shellKey,\n"
-    "              pageBuilder: (context, state) =>\n"
-    "                  const NoTransitionPage(child: ${className}Page()),\n"
-    "              builder: (context, state) => const ${className}Page())",
+        "              path: ${className}Page.route,\n"
+        "              name: ${className}Page.route,\n"
+        "              parentNavigatorKey: _shellKey,\n"
+        "              pageBuilder: (context, state) =>\n"
+        "                  const NoTransitionPage(child: ${className}Page()),\n"
+        "              builder: (context, state) => const ${className}Page())",
     '',
   );
 
@@ -214,7 +216,8 @@ void _removeTests(String module) {
 
 // ─── Test file generation ─────────────────────────────────────────────────────
 
-void _generateTestFiles(String module, String className, {String state = 'bloc'}) {
+void _generateTestFiles(String module, String className,
+    {String state = 'bloc'}) {
   final testDir = 'test/features/$module';
   Directory('$testDir/domain').createSync(recursive: true);
   Directory('$testDir/presentation').createSync(recursive: true);

@@ -13,8 +13,11 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
 
-class MockAuthenticationUseCases extends Mock implements AuthenticationUseCases {}
-class MockLoginWithGoogleUseCase extends Mock implements LoginWithGoogleUseCase {}
+class MockAuthenticationUseCases extends Mock
+    implements AuthenticationUseCases {}
+
+class MockLoginWithGoogleUseCase extends Mock
+    implements LoginWithGoogleUseCase {}
 
 void main() {
   late AuthenticationBloc bloc;
@@ -65,15 +68,16 @@ void main() {
       ],
       verify: (_) {
         verify(() => mockUseCases.postLogin(tUsername, tPassword)).called(1);
-        verify(() => mockUseCases.saveToken(tAuth.token, tAuth.token)).called(1);
+        verify(() => mockUseCases.saveToken(tAuth.token, tAuth.token))
+            .called(1);
       },
     );
 
     blocTest<AuthenticationBloc, dynamic>(
       'emits [Loading, Error] when login fails',
       build: () {
-        when(() => mockUseCases.postLogin(tUsername, tPassword))
-            .thenAnswer((_) async => Left(GeneralException(message: 'Login failed')));
+        when(() => mockUseCases.postLogin(tUsername, tPassword)).thenAnswer(
+            (_) async => Left(GeneralException(message: 'Login failed')));
         return bloc;
       },
       act: (bloc) => bloc.add(const PostLoginEvent(
@@ -106,19 +110,50 @@ void main() {
       const tEmail = 'test@example.com';
       const tPhotoUrl = 'https://example.com/photo.png';
 
+      final tAuthEntity = AuthEntity(
+        id: '1',
+        name: tName,
+        email: tEmail,
+        photoUrl: tPhotoUrl,
+        token: 'access_token',
+      );
+
       blocTest<AuthenticationBloc, dynamic>(
         'emits [Loading, Authenticated] when Google login is successful',
-        build: () => bloc,
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken))
+              .thenAnswer((_) async => Right(tAuthEntity));
+          return bloc;
+        },
         act: (bloc) => bloc.add(LoginWithGoogleRequested(
           name: tName,
           email: tEmail,
           photoUrl: tPhotoUrl,
           idToken: tIdToken,
         )),
-        wait: const Duration(seconds: 2),
         expect: () => [
           isA<AuthenticationLoading>(),
           isA<Authenticated>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'emits [Loading, Failure] when Google login fails',
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken)).thenAnswer(
+              (_) async =>
+                  Left(GeneralException(message: 'Google login failed')));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(
+          name: tName,
+          email: tEmail,
+          photoUrl: tPhotoUrl,
+          idToken: tIdToken,
+        )),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<AuthenticationFailure>(),
         ],
       );
     });

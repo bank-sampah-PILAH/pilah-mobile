@@ -18,10 +18,12 @@ class TransaksiBerhasilBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<TransaksiBerhasilBottomSheet> createState() => _TransaksiBerhasilBottomSheetState();
+  State<TransaksiBerhasilBottomSheet> createState() =>
+      _TransaksiBerhasilBottomSheetState();
 }
 
-class _TransaksiBerhasilBottomSheetState extends State<TransaksiBerhasilBottomSheet> {
+class _TransaksiBerhasilBottomSheetState
+    extends State<TransaksiBerhasilBottomSheet> {
   static const Color emeraldPrimary = Color(0xFF006D44);
   bool _isSending = false;
 
@@ -58,7 +60,8 @@ class _TransaksiBerhasilBottomSheetState extends State<TransaksiBerhasilBottomSh
               color: Colors.green[50],
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle, color: emeraldPrimary, size: 40),
+            child:
+                const Icon(Icons.check_circle, color: emeraldPrimary, size: 40),
           ),
           const SizedBox(height: 24),
 
@@ -95,12 +98,16 @@ class _TransaksiBerhasilBottomSheetState extends State<TransaksiBerhasilBottomSh
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(height: 1, color: Color(0xFFEEEEEE)),
                 ),
-                _buildSummaryRow('Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}', isPrimary: true),
+                _buildSummaryRow(
+                    'Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}',
+                    isPrimary: true),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(height: 1, color: Color(0xFFEEEEEE)),
                 ),
-                _buildSummaryRow('Saldo Terbaru', _formatCurrency(widget.newBalance), isPrimary: true),
+                _buildSummaryRow(
+                    'Saldo Terbaru', _formatCurrency(widget.newBalance),
+                    isPrimary: true),
               ],
             ),
           ),
@@ -129,7 +136,8 @@ class _TransaksiBerhasilBottomSheetState extends State<TransaksiBerhasilBottomSh
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : Text(
                     'Kirim Notif WhatsApp & Selesai',
@@ -140,13 +148,13 @@ class _TransaksiBerhasilBottomSheetState extends State<TransaksiBerhasilBottomSh
                     ),
                   ),
           ),
-
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isPrimary = false, bool isBold = true}) {
+  Widget _buildSummaryRow(String label, String value,
+      {bool isPrimary = false, bool isBold = true}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

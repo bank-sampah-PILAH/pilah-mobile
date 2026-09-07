@@ -22,7 +22,8 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cub
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockNasabahCubit extends MockCubit<NasabahState> implements NasabahCubit {}
+class _MockNasabahCubit extends MockCubit<NasabahState>
+    implements NasabahCubit {}
 
 class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
 
@@ -35,7 +36,8 @@ class _MockDashboardCubit extends MockCubit<DashboardState>
 class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
 
-class _MockProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {}
+class _MockProfileCubit extends MockCubit<ProfileState>
+    implements ProfileCubit {}
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
@@ -124,7 +126,8 @@ void main() {
     expect(
       di<InviteTokenStore>().hasToken,
       isTrue,
-      reason: 'switching accounts is a step inside the invite flow, not an exit '
+      reason:
+          'switching accounts is a step inside the invite flow, not an exit '
           'from it — the token has to survive until it is redeemed or refused',
     );
     // Only the invite token is exempt; the session cubits still reset.

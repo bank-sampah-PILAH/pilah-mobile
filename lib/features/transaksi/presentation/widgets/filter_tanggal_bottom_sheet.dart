@@ -8,14 +8,15 @@ class FilterTanggalBottomSheet extends StatefulWidget {
   const FilterTanggalBottomSheet({super.key});
 
   @override
-  State<FilterTanggalBottomSheet> createState() => _FilterTanggalBottomSheetState();
+  State<FilterTanggalBottomSheet> createState() =>
+      _FilterTanggalBottomSheetState();
 }
 
 class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
   // Emerald Eco System Tokens
   static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color mintTint = Color(0xFFF0FDF4);
-  
+
   late DateTime startDate;
   late DateTime endDate;
 
@@ -127,7 +128,8 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                         color: Colors.grey[100],
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, color: Colors.black87, size: 20),
+                      child: const Icon(Icons.close,
+                          color: Colors.black87, size: 20),
                     ),
                   ),
                 ],
@@ -148,7 +150,8 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                 onTap: () => _selectDate(context, true),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: Colors.grey[300]!),
@@ -164,7 +167,8 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                           fontSize: 16,
                         ),
                       ),
-                      Icon(Icons.calendar_today_outlined, color: Colors.grey[600], size: 20),
+                      Icon(Icons.calendar_today_outlined,
+                          color: Colors.grey[600], size: 20),
                     ],
                   ),
                 ),
@@ -185,7 +189,8 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                 onTap: () => _selectDate(context, false),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: Colors.grey[300]!),
@@ -201,7 +206,8 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                           fontSize: 16,
                         ),
                       ),
-                      Icon(Icons.calendar_today_outlined, color: Colors.grey[600], size: 20),
+                      Icon(Icons.calendar_today_outlined,
+                          color: Colors.grey[600], size: 20),
                     ],
                   ),
                 ),
@@ -217,7 +223,8 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: emeraldPrimary, size: 18),
+                    const Icon(Icons.info_outline,
+                        color: emeraldPrimary, size: 18),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(

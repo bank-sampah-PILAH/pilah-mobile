@@ -26,7 +26,8 @@ void main() {
       );
     });
 
-    test('a non-cancel GoogleSignInException degrades to the clean fallback', () {
+    test('a non-cancel GoogleSignInException degrades to the clean fallback',
+        () {
       const error = GoogleSignInException(
         code: GoogleSignInExceptionCode.clientConfigurationError,
         description: 'OAuth client 479665432419 misconfigured',

@@ -22,7 +22,8 @@ class NasabahConfirmationDialog extends StatefulWidget {
   static const Color errorColor = Color(0xFFDC2626);
 
   @override
-  State<NasabahConfirmationDialog> createState() => _NasabahConfirmationDialogState();
+  State<NasabahConfirmationDialog> createState() =>
+      _NasabahConfirmationDialogState();
 }
 
 class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
@@ -32,16 +33,17 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
     // The root overlay stays mounted after the dialog/sheet are popped, so use
     // it to host the notification instead of this dialog's (soon defunct) context.
     final overlayContext = Navigator.of(context, rootNavigator: true).context;
+    final dialogContext = context;
 
     setState(() => _isProcessing = true);
     final error = await widget.nasabahCubit
         .setNasabahStatus(widget.customerId, widget.isActivating);
-    if (!mounted) return;
+    if (!mounted || !dialogContext.mounted) return;
     setState(() => _isProcessing = false);
 
     if (error == null) {
-      context.pop(); // Dialog
-      context.pop(); // Bottom sheet
+      dialogContext.pop(); // Dialog
+      dialogContext.pop(); // Bottom sheet
       AppNotification.showSuccess(
         overlayContext,
         title: widget.isActivating ? 'Nasabah Aktif' : 'Nasabah Nonaktif',
@@ -50,7 +52,7 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
             : '${widget.customerName} telah dinonaktifkan.',
       );
     } else {
-      context.pop(); // Dialog only, keep the sheet so the user can retry
+      dialogContext.pop(); // Dialog only, keep the sheet so the user can retry
       AppNotification.showError(
         overlayContext,
         title: 'Gagal',
@@ -62,8 +64,10 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
   @override
   Widget build(BuildContext context) {
     final bgColor = widget.isActivating ? Colors.green[50] : Colors.orange[50];
-    final iconColor = widget.isActivating ? Colors.green[600] : Colors.orange[400];
-    final iconData = widget.isActivating ? Icons.check_box : Icons.warning_amber_rounded;
+    final iconColor =
+        widget.isActivating ? Colors.green[600] : Colors.orange[400];
+    final iconData =
+        widget.isActivating ? Icons.check_box : Icons.warning_amber_rounded;
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -89,7 +93,9 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
 
             // Title
             Text(
-              widget.isActivating ? 'Aktifkan Nasabah?' : 'Nonaktifkan Nasabah?',
+              widget.isActivating
+                  ? 'Aktifkan Nasabah?'
+                  : 'Nonaktifkan Nasabah?',
               style: AppTextStyle.headline1.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.bold,
@@ -115,7 +121,8 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
                   ),
                   TextSpan(
                     text: widget.customerName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   TextSpan(
                     text: widget.isActivating
@@ -174,11 +181,14 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
                             width: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
-                            widget.isActivating ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
+                            widget.isActivating
+                                ? 'Ya, Aktifkan'
+                                : 'Ya, Nonaktifkan',
                             style: AppTextStyle.title1.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

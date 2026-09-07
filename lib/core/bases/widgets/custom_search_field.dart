@@ -24,7 +24,8 @@ class CustomSearchField extends StatelessWidget {
         prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
         filled: true,
         fillColor: Colors.grey[50],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,

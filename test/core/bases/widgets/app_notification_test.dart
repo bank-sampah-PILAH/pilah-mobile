@@ -76,13 +76,15 @@ void main() {
         (context) => AppNotification.showWarning(
           context,
           title: 'Peringatan',
-          message: 'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis.',
+          message:
+              'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis.',
         ),
       );
 
       expect(find.text('Peringatan'), findsOneWidget);
       expect(
-        find.text('Transaksi disimpan, namun gagal mengirim WhatsApp otomatis.'),
+        find.text(
+            'Transaksi disimpan, namun gagal mengirim WhatsApp otomatis.'),
         findsOneWidget,
       );
 
@@ -120,8 +122,11 @@ void main() {
       final warning = tester.widget<Flushbar>(find.byType(Flushbar));
 
       expect(
-        {success.backgroundColor, error.backgroundColor, warning.backgroundColor}
-            .length,
+        {
+          success.backgroundColor,
+          error.backgroundColor,
+          warning.backgroundColor
+        }.length,
         3,
         reason: 'a tone that shares a fill with another conveys nothing',
       );

@@ -1,4 +1,4 @@
-﻿// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print
 part of '../spl_manager.dart';
 
 // ─── Per-feature spec parser ──────────────────────────────────────────────────
@@ -32,15 +32,15 @@ part of '../spl_manager.dart';
   final name = parts[0];
 
   String? storageOverride = globalStorageOverride;
-  bool withStorage        = globalWithStorage;
-  String? stateOverride   = globalState;
-  bool withTest           = globalWithTest;
-  bool shellRoute         = globalShellRoute;
+  bool withStorage = globalWithStorage;
+  String? stateOverride = globalState;
+  bool withTest = globalWithTest;
+  bool shellRoute = globalShellRoute;
 
   for (final part in parts.skip(1)) {
     if (part.startsWith('storage=')) {
       storageOverride = part.substring(8);
-      withStorage     = true;
+      withStorage = true;
     } else if (part == 'with-storage' || part == 'ws') {
       withStorage = true;
     } else if (part.startsWith('state=')) {
@@ -53,12 +53,12 @@ part of '../spl_manager.dart';
   }
 
   return (
-    name:            name,
+    name: name,
     storageOverride: storageOverride,
-    withStorage:     withStorage,
-    stateOverride:   stateOverride,
-    withTest:        withTest,
-    shellRoute:      shellRoute,
+    withStorage: withStorage,
+    stateOverride: stateOverride,
+    withTest: withTest,
+    shellRoute: shellRoute,
   );
 }
 

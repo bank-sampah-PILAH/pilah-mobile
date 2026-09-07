@@ -27,7 +27,8 @@ class BankSampahModel extends BankSampahEntity {
       noHpPic: json['no_hp_pic']?.toString() ?? '',
       fotoKegiatan: (foto != null && foto.isNotEmpty) ? foto : null,
       status: json['status']?.toString() ?? 'pending',
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '')?.toLocal(),
+      createdAt:
+          DateTime.tryParse(json['created_at']?.toString() ?? '')?.toLocal(),
       pengelolaNama: pengelola?['nama']?.toString(),
       pengelolaEmail: pengelola?['email']?.toString(),
       pengelolaNoHp: pengelola?['no_hp']?.toString(),

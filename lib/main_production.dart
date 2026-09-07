@@ -13,12 +13,12 @@ import 'package:pilah_mobile/core/client/network_utils.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables
   await dotenv.load(fileName: ".env");
-  
+
   configureDependencies(environment: AppKey.prodEnv);
-  
+
   await di.get<AppStorage>(instanceName: 'shared_preferences').init();
   await di<NetworkUtils>().init();
 

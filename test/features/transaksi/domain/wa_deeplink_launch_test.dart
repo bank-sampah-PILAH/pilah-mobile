@@ -77,8 +77,8 @@ void main() {
       () async {
     when(() => launcher.launchUrl(any(), any())).thenAnswer((_) async => false);
 
-    expect(await launchUrl(waLink, mode: LaunchMode.externalApplication),
-        isFalse);
+    expect(
+        await launchUrl(waLink, mode: LaunchMode.externalApplication), isFalse);
   });
 
   test('a refused intent throws, which is why the caller wraps it in try/catch',

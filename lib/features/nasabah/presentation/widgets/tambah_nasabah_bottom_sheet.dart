@@ -13,7 +13,8 @@ class TambahNasabahBottomSheet extends StatefulWidget {
   const TambahNasabahBottomSheet({super.key});
 
   @override
-  State<TambahNasabahBottomSheet> createState() => _TambahNasabahBottomSheetState();
+  State<TambahNasabahBottomSheet> createState() =>
+      _TambahNasabahBottomSheetState();
 }
 
 /// Field keys the backend may report a duplicate-phone validation error under.
@@ -118,7 +119,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.close, color: Colors.grey[600], size: 20),
+                        child: Icon(Icons.close,
+                            color: Colors.grey[600], size: 20),
                       ),
                     ),
                   ],
@@ -140,8 +142,11 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _namaController,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
-                  decoration: _buildInputDecoration(hintText: 'Contoh: Budi Santoso'),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
+                  decoration:
+                      _buildInputDecoration(hintText: 'Contoh: Budi Santoso'),
                 ),
                 const SizedBox(height: 20),
 
@@ -167,7 +172,9 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                             // (_handleSimpan) so its longer message shows in full via
                             // AppNotification instead of truncating in this narrow field.
                             validator: (value) =>
-                                (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                                (value == null || value.trim().isEmpty)
+                                    ? 'Bagian ini wajib diisi.'
+                                    : null,
                             decoration: _buildInputDecoration(
                               hintText: 'Contoh: NAS-0900',
                               hasError: _kodeHasError,
@@ -184,12 +191,17 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                           _buildLabel('JENIS KELAMIN'),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
-                            value: _jenisKelamin,
-                            validator: (value) => (value == null || value.isEmpty) ? 'Pilih jenis kelamin.' : null,
+                            initialValue: _jenisKelamin,
+                            validator: (value) =>
+                                (value == null || value.isEmpty)
+                                    ? 'Pilih jenis kelamin.'
+                                    : null,
                             hint: const Text('— Pilih —'),
                             decoration: _buildInputDecoration(),
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                            items: ['Laki-laki', 'Perempuan'].map((String value) {
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Colors.grey),
+                            items:
+                                ['Laki-laki', 'Perempuan'].map((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value),
@@ -215,11 +227,14 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                   controller: _tanggalLahirController,
                   readOnly: true,
                   onTap: _selectDate,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
                   decoration: _buildInputDecoration(
                     hintText: 'dd/mm/yyyy',
                   ).copyWith(
-                    suffixIcon: Icon(Icons.calendar_today, color: Colors.grey[600], size: 20),
+                    suffixIcon: Icon(Icons.calendar_today,
+                        color: Colors.grey[600], size: 20),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -276,7 +291,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                         const SizedBox(width: 12),
                       ],
                     ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints:
+                        const BoxConstraints(minWidth: 0, minHeight: 0),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -287,7 +303,9 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                 TextFormField(
                   controller: _alamatController,
                   maxLines: 4,
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Bagian ini wajib diisi.' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Bagian ini wajib diisi.'
+                      : null,
                   decoration: _buildInputDecoration(
                     hintText: 'Nama jalan, RT/RW, Kelurahan...',
                   ),
@@ -301,7 +319,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                     onPressed: _isSaving ? null : _handleSimpan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.greenDark,
-                      disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
+                      disabledBackgroundColor:
+                          AppColors.greenDark.withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -314,7 +333,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
@@ -347,14 +367,15 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     // and still blocks the save.
     if (cubit.state is NasabahLoaded) {
       final list = (cubit.state as NasabahLoaded).nasabahList;
-      final isDuplicate =
-          list.any((e) => e.idNasabah.trim().toLowerCase() == kode.toLowerCase());
+      final isDuplicate = list
+          .any((e) => e.idNasabah.trim().toLowerCase() == kode.toLowerCase());
       if (isDuplicate) {
         setState(() => _kodeHasError = true);
         AppNotification.showError(
           context,
           title: 'ID Nasabah Sudah Digunakan',
-          message: 'ID Nasabah "$kode" sudah digunakan. Silakan gunakan ID lain.',
+          message:
+              'ID Nasabah "$kode" sudah digunakan. Silakan gunakan ID lain.',
         );
         return;
       }
@@ -425,7 +446,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     );
   }
 
-  InputDecoration _buildInputDecoration({String? hintText, bool hasError = false}) {
+  InputDecoration _buildInputDecoration(
+      {String? hintText, bool hasError = false}) {
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(color: Colors.grey[400]),
@@ -435,7 +457,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
       // the compact ID field when its message is shown in an AppNotification.
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: hasError ? Colors.red : Colors.grey[300]!),
+        borderSide:
+            BorderSide(color: hasError ? Colors.red : Colors.grey[300]!),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

@@ -21,7 +21,8 @@ class NasabahRepositoryImpl implements NasabahRepository {
   }
 
   @override
-  Future<Either<NetworkException, NasabahRingkasan>> getNasabahRingkasan(String id) {
+  Future<Either<NetworkException, NasabahRingkasan>> getNasabahRingkasan(
+      String id) {
     return apiCall<NasabahRingkasan>(
       func: remoteDataSource.getNasabahRingkasan(id),
       mapper: (result) => result as NasabahRingkasan,
@@ -29,7 +30,8 @@ class NasabahRepositoryImpl implements NasabahRepository {
   }
 
   @override
-  Future<Either<NetworkException, NasabahEntity>> addNasabah(NasabahRequest request) {
+  Future<Either<NetworkException, NasabahEntity>> addNasabah(
+      NasabahRequest request) {
     return apiCall<NasabahEntity>(
       func: remoteDataSource.addNasabah(request),
       mapper: (result) => result as NasabahEntity,

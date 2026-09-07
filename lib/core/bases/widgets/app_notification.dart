@@ -71,7 +71,8 @@ class AppNotification {
     flushbar = Flushbar(
       titleText: Text(
         title,
-        style: AppTextStyle.title1.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+        style: AppTextStyle.title1.copyWith(
+            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
       ),
       messageText: Text(
         message,
@@ -92,7 +93,8 @@ class AppNotification {
               },
               child: Text(
                 actionLabel,
-                style: AppTextStyle.small.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                style: AppTextStyle.small
+                    .copyWith(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             )
           : null,
@@ -108,11 +110,13 @@ class AppNotification {
   /// the work lands — nothing else will, and an undismissed one sits there
   /// forever. Not dismissible by hand, because a spinner the user can swipe
   /// away tells them the work stopped when it hasn't.
-  static Flushbar showLoading(BuildContext context, {required String title, required String message}) {
+  static Flushbar showLoading(BuildContext context,
+      {required String title, required String message}) {
     final flushbar = Flushbar(
       titleText: Text(
         title,
-        style: AppTextStyle.title1.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+        style: AppTextStyle.title1.copyWith(
+            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
       ),
       messageText: Text(
         message,
@@ -137,14 +141,16 @@ class AppNotification {
     return flushbar;
   }
 
-  static void showError(BuildContext context, {required String title, required String message}) {
+  static void showError(BuildContext context,
+      {required String title, required String message}) {
     Flushbar(
       titleText: Text(
-        title, 
-        style: AppTextStyle.title1.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+        title,
+        style: AppTextStyle.title1.copyWith(
+            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
       ),
       messageText: Text(
-        message, 
+        message,
         style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
       ),
       flushbarPosition: FlushbarPosition.TOP,
@@ -164,15 +170,20 @@ class AppNotification {
   ///
   /// Held for the same four seconds as [showError]: a warning carries something
   /// worth reading, unlike a success that only confirms what the user expected.
-  static void showWarning(BuildContext context, {required String title, required String message}) {
+  static void showWarning(BuildContext context,
+      {required String title, required String message}) {
     Flushbar(
       titleText: Text(
         title,
-        style: AppTextStyle.title1.copyWith(color: _warningForeground, fontWeight: FontWeight.bold, fontSize: 14),
+        style: AppTextStyle.title1.copyWith(
+            color: _warningForeground,
+            fontWeight: FontWeight.bold,
+            fontSize: 14),
       ),
       messageText: Text(
         message,
-        style: AppTextStyle.small.copyWith(color: _warningForeground, fontSize: 12),
+        style: AppTextStyle.small
+            .copyWith(color: _warningForeground, fontSize: 12),
       ),
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: _warningBackground,
@@ -180,7 +191,8 @@ class AppNotification {
       borderWidth: 1,
       margin: const EdgeInsets.all(16),
       borderRadius: BorderRadius.circular(12),
-      icon: const Icon(Icons.warning_amber_rounded, color: _warningForeground, size: 28),
+      icon: const Icon(Icons.warning_amber_rounded,
+          color: _warningForeground, size: 28),
       duration: const Duration(seconds: 4),
       boxShadows: _shadow,
     ).show(context);

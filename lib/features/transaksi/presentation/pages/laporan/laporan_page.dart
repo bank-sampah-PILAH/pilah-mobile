@@ -58,7 +58,7 @@ class _LaporanPageBodyState extends State<_LaporanPageBody> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Search Bar
                   CustomSearchField(
                     hintText: 'Cari nama pelanggan...',
@@ -67,13 +67,13 @@ class _LaporanPageBodyState extends State<_LaporanPageBody> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Filter Row
                   const TimeFilterChips(),
                 ],
               ),
             ),
-            
+
             // Scrollable List Section
             Expanded(
               child: AppRefreshIndicator(

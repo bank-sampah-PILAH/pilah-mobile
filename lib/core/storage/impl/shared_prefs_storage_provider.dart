@@ -23,8 +23,12 @@ class SharedPrefsStorageProvider implements AppStorage {
     }
   }
 
-  @override Future<T?> get<T>(String key) async => _prefs.get(key) as T?;
-  @override Future<void> delete(String key) async => _prefs.remove(key);
-  @override Future<void> clear() async => _prefs.clear();
-  @override Future<bool> contains(String key) async => _prefs.containsKey(key);
+  @override
+  Future<T?> get<T>(String key) async => _prefs.get(key) as T?;
+  @override
+  Future<void> delete(String key) async => _prefs.remove(key);
+  @override
+  Future<void> clear() async => _prefs.clear();
+  @override
+  Future<bool> contains(String key) async => _prefs.containsKey(key);
 }

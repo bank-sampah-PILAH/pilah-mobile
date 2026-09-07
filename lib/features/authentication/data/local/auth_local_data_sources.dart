@@ -41,9 +41,11 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
     // calls: they can finish onboarding now and re-authenticate next launch.
     try {
       await _database.write(key: AppKey.token, value: request.accessToken);
-      await _database.write(key: AppKey.refreshToken, value: request.refreshToken);
+      await _database.write(
+          key: AppKey.refreshToken, value: request.refreshToken);
     } catch (e) {
-      Logger().e('Secure storage write failed; session kept in memory only: $e');
+      Logger()
+          .e('Secure storage write failed; session kept in memory only: $e');
     }
   }
 
@@ -64,5 +66,6 @@ class AuthLocalDataSourcesImpl implements AuthLocalDataSources {
   Future<String?> readAccessToken() => _database.getString(AppKey.token);
 
   @override
-  Future<String?> readRefreshToken() => _database.getString(AppKey.refreshToken);
+  Future<String?> readRefreshToken() =>
+      _database.getString(AppKey.refreshToken);
 }

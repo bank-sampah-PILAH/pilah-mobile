@@ -10,13 +10,15 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
-class MockNasabahCubit extends MockCubit<NasabahState> implements NasabahCubit {}
+class MockNasabahCubit extends MockCubit<NasabahState>
+    implements NasabahCubit {}
 
 const _duplicatePhoneMessage = 'Nomor HP nasabah sudah digunakan';
 
 /// The exact payload the live API returns when a phone number is already
 /// registered to another nasabah in the same bank sampah.
-NetworkException _duplicatePhoneException() => NetworkException.handleBadResponse(
+NetworkException _duplicatePhoneException() =>
+    NetworkException.handleBadResponse(
       Response(
         requestOptions: RequestOptions(path: '/api/v1/nasabah'),
         statusCode: 422,
@@ -53,7 +55,8 @@ Future<void> _fillValidForm(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   await tester.enterText(find.byType(TextFormField).at(3), '81234567890');
-  await tester.enterText(find.byType(TextFormField).at(4), 'Jl. Melati No. 3, RT 01/RW 02');
+  await tester.enterText(
+      find.byType(TextFormField).at(4), 'Jl. Melati No. 3, RT 01/RW 02');
   await tester.pumpAndSettle();
 }
 
@@ -75,7 +78,8 @@ void main() {
   });
 
   group('422 duplicate-phone parsing', () {
-    test('maps the no_hp payload to a field error rather than a bare message', () {
+    test('maps the no_hp payload to a field error rather than a bare message',
+        () {
       final exception = _duplicatePhoneException();
 
       expect(exception, isA<UnprocessableEntityException>());
@@ -105,7 +109,8 @@ void main() {
       when(() => cubit.state).thenReturn(const NasabahLoaded(nasabahList: []));
     });
 
-    testWidgets('renders the backend message inline and suppresses the global '
+    testWidgets(
+        'renders the backend message inline and suppresses the global '
         'error notification', (tester) async {
       tester.view.physicalSize = const Size(1200, 2600);
       tester.view.devicePixelRatio = 1.0;

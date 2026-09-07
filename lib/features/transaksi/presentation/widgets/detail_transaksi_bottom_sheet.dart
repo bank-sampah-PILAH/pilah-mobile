@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 
@@ -16,10 +15,12 @@ class DetailTransaksiBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<DetailTransaksiBottomSheet> createState() => _DetailTransaksiBottomSheetState();
+  State<DetailTransaksiBottomSheet> createState() =>
+      _DetailTransaksiBottomSheetState();
 }
 
-class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet> {
+class _DetailTransaksiBottomSheetState
+    extends State<DetailTransaksiBottomSheet> {
   // Emerald Eco System Tokens
   static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color mintTint = Color(0xFFF0FDF4); // or #ecfdf5 as requested
@@ -41,7 +42,8 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
     final id = widget.transactionData['id']?.toString();
     if (id == null || id.isEmpty) return;
     setState(() => _isLoadingDetail = true);
-    final detail = await context.read<TransaksiCubit>().fetchTransaksiDetail(id);
+    final detail =
+        await context.read<TransaksiCubit>().fetchTransaksiDetail(id);
     if (!mounted) return;
     setState(() {
       _detail = detail;
@@ -86,11 +88,14 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
   @override
   Widget build(BuildContext context) {
     final String initials = widget.transactionData['initials'] ?? 'NN';
-    final Color avatarColor = widget.transactionData['avatarColor'] ?? Colors.grey[200]!;
-    final Color textColor = widget.transactionData['textColor'] ?? Colors.grey[600]!;
+    final Color avatarColor =
+        widget.transactionData['avatarColor'] ?? Colors.grey[200]!;
+    final Color textColor =
+        widget.transactionData['textColor'] ?? Colors.grey[600]!;
     final String name = widget.transactionData['name'] ?? 'Unknown';
     final String time = widget.transactionData['time'] ?? 'Hari ini';
-    final String amount = _detail?.amountFormatted ?? widget.transactionData['amount'] ?? 'Rp 0';
+    final String amount =
+        _detail?.amountFormatted ?? widget.transactionData['amount'] ?? 'Rp 0';
     final String balance = _detail?.balanceFormatted ??
         ((widget.transactionData['balance'] as String?)?.isNotEmpty == true
             ? widget.transactionData['balance']
@@ -104,7 +109,9 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                   'subtotal': i.subtotal,
                 })
             .toList()
-        : ((widget.transactionData['items'] as List?)?.cast<Map<String, dynamic>>() ?? []);
+        : ((widget.transactionData['items'] as List?)
+                ?.cast<Map<String, dynamic>>() ??
+            []);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -291,52 +298,52 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
 
                     // Table Items
                     ...items.map((item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              item['jenis'] ?? '',
-                              style: AppTextStyle.small.copyWith(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  item['jenis'] ?? '',
+                                  style: AppTextStyle.small.copyWith(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              item['berat'] ?? '',
-                              style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[600],
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  item['berat'] ?? '',
+                                  style: AppTextStyle.small.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              item['harga'] ?? '',
-                              style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[600],
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  item['harga'] ?? '',
+                                  style: AppTextStyle.small.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              item['subtotal'] ?? '',
-                              textAlign: TextAlign.right,
-                              style: AppTextStyle.small.copyWith(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.bold,
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  item['subtotal'] ?? '',
+                                  textAlign: TextAlign.right,
+                                  style: AppTextStyle.small.copyWith(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    )),
-                    
+                        )),
+
                     // Total Row
                     const Divider(height: 1, color: Color(0xFFE5E7EB)),
                     const SizedBox(height: 12),
@@ -442,7 +449,8 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                 color: mintTint,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.wechat, color: emeraldPrimary, size: 24), // Placeholder for WA icon
+              child: const Icon(Icons.wechat,
+                  color: emeraldPrimary, size: 24), // Placeholder for WA icon
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -525,7 +533,8 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                   )
                 : ElevatedButton.icon(
                     onPressed: _retryWaNotification,
-                    icon: const Icon(Icons.refresh, size: 14, color: Colors.white),
+                    icon: const Icon(Icons.refresh,
+                        size: 14, color: Colors.white),
                     label: const Text(
                       'Coba Lagi',
                       style: TextStyle(
@@ -536,7 +545,8 @@ class _DetailTransaksiBottomSheetState extends State<DetailTransaksiBottomSheet>
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: emeraldPrimary,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       minimumSize: const Size(0, 0),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       shape: RoundedRectangleBorder(

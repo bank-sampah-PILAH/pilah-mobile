@@ -87,8 +87,9 @@ void main() {
     }));
 
     test('attaches the picked file under foto_logo', () async {
-      final file = File('${Directory.systemTemp.createTempSync().path}/logo.png')
-        ..writeAsBytesSync(List<int>.filled(64, 7));
+      final file =
+          File('${Directory.systemTemp.createTempSync().path}/logo.png')
+            ..writeAsBytesSync(List<int>.filled(64, 7));
       addTearDown(() => file.parent.deleteSync(recursive: true));
       stubPut(_bankJson(fotoLogo: '/media/bank_sampah/logo/logo.png'));
 
@@ -116,7 +117,8 @@ void main() {
       // multipart boundary and leave the server unable to read the body.
       verifyNever(() => network.put(any(),
           data: any(named: 'data'), formData: any(named: 'formData')));
-      verify(() => network.putMultipart(any(), formData: any(named: 'formData')))
+      verify(() =>
+              network.putMultipart(any(), formData: any(named: 'formData')))
           .called(1);
     });
   });

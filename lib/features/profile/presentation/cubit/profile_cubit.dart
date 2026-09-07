@@ -44,8 +44,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     );
 
     await bankEither.fold(
-      (error) async =>
-          emit(ProfileState(status: ProfileStatus.error, error: error.displayMessage)),
+      (error) async => emit(ProfileState(
+          status: ProfileStatus.error, error: error.displayMessage)),
       (bank) async {
         final waEither = await apiCall<WaTemplate>(
           func: _dataSource.getWaTemplate(),
@@ -73,8 +73,8 @@ class ProfileCubit extends Cubit<ProfileState> {
       await _dataSource.updateWaTemplate(template);
       emit(state.copyWith(
         isSavingTemplate: false,
-        waTemplate:
-            (state.waTemplate ?? const WaTemplate(template: '')).copyWith(template: template),
+        waTemplate: (state.waTemplate ?? const WaTemplate(template: ''))
+            .copyWith(template: template),
       ));
       return null;
     } on Exception catch (e) {

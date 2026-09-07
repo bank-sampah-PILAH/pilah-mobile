@@ -110,18 +110,21 @@ class FileDownloader {
       for (final dir in downloads.where((d) => !d.existsSync())) {
         candidates.add(_Candidate(dir, 'Download'));
       }
-      candidates.addAll(_maybe(await getExternalStorageDirectory(), 'Dokumen Aplikasi'));
+      candidates.addAll(
+          _maybe(await getExternalStorageDirectory(), 'Dokumen Aplikasi'));
     } else if (Platform.isIOS) {
       // Surfaced in the Files app under "On My iPhone › Pilah Mobile", which
       // the UIFileSharingEnabled / LSSupportsOpeningDocumentsInPlace pair in
       // ios/Runner/Info.plist is what enables.
-      candidates.add(_Candidate(await getApplicationDocumentsDirectory(), 'Dokumen Aplikasi'));
+      candidates.add(_Candidate(
+          await getApplicationDocumentsDirectory(), 'Dokumen Aplikasi'));
     } else {
       candidates.addAll(_maybe(await getDownloadsDirectory(), 'Download'));
     }
 
     // Always last, and always present: the one directory every platform grants.
-    candidates.add(_Candidate(await getApplicationDocumentsDirectory(), 'Dokumen Aplikasi'));
+    candidates.add(_Candidate(
+        await getApplicationDocumentsDirectory(), 'Dokumen Aplikasi'));
     return candidates;
   }
 

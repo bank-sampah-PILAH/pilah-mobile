@@ -16,7 +16,8 @@ class _StubSuperadminCubit extends Cubit<SuperadminState>
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-BankSampahEntity _bank({String kota = '', String alamat = ''}) => BankSampahEntity(
+BankSampahEntity _bank({String kota = '', String alamat = ''}) =>
+    BankSampahEntity(
       id: 'b1',
       nama: 'Bank Sampah BTH',
       alamat: alamat,
@@ -41,12 +42,14 @@ Future<void> _pumpCard(WidgetTester tester, BankSampahEntity bank) async {
 void main() {
   group('bank card location line', () {
     testWidgets('shows the city when one is on record', (tester) async {
-      await _pumpCard(tester, _bank(kota: 'Depok', alamat: 'Jl. Melati 3, Depok'));
+      await _pumpCard(
+          tester, _bank(kota: 'Depok', alamat: 'Jl. Melati 3, Depok'));
 
       expect(find.text('Depok'), findsOneWidget);
     });
 
-    testWidgets('falls back to the address when no city is set', (tester) async {
+    testWidgets('falls back to the address when no city is set',
+        (tester) async {
       // The registration form has no city input — it asks for the city inside
       // the address — so this is what every app-registered bank looks like.
       await _pumpCard(
@@ -79,7 +82,8 @@ void main() {
       await _pumpCard(
         tester,
         _bank(
-          alamat: 'Jl. Raya Margonda No. 525 Blok A2 Lantai 3, RT 004 / RW 011, '
+          alamat:
+              'Jl. Raya Margonda No. 525 Blok A2 Lantai 3, RT 004 / RW 011, '
               'Kelurahan Kemiri Muka, Kecamatan Beji, Kota Depok, Jawa Barat 16423',
         ),
       );

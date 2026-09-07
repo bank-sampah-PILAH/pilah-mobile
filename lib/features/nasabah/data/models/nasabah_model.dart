@@ -70,12 +70,10 @@ class NasabahModel extends NasabahEntity {
   }
 
   static String initialsOf(String name) {
-    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts =
+        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return 'NN';
-    return parts
-        .take(2)
-        .map((p) => p[0].toUpperCase())
-        .join();
+    return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
 
   /// Maps the backend gender value to the UI label used by the dropdowns.
@@ -139,8 +137,8 @@ extension NasabahRingkasanMapper on NasabahRingkasan {
     return NasabahRingkasan(
       jumlahTransaksi: (json['jumlah_transaksi'] as num?)?.toInt() ?? 0,
       totalKg: WeightFormatter.formatKg(json['total_kg']),
-      tanggalTransaksiTerakhir:
-          NasabahModel.isoToDisplay(json['tanggal_transaksi_terakhir']?.toString()),
+      tanggalTransaksiTerakhir: NasabahModel.isoToDisplay(
+          json['tanggal_transaksi_terakhir']?.toString()),
     );
   }
 }

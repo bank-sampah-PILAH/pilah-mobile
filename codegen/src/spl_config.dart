@@ -1,11 +1,12 @@
-﻿// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print
 part of '../spl_manager.dart';
 
 // ─── spl.yaml helpers ─────────────────────────────────────────────────────────
 
 Map<String, dynamic> _readSplConfig() {
   const path = 'spl.yaml';
-  if (!File(path).existsSync()) _die('spl.yaml not found. Run from project root.');
+  if (!File(path).existsSync())
+    _die('spl.yaml not found. Run from project root.');
 
   final lines = File(path).readAsLinesSync();
   final config = <String, dynamic>{};
@@ -23,11 +24,14 @@ Map<String, dynamic> _readSplConfig() {
 
     final trimmed = line.trim();
 
-    if (section == 'app' || section == 'storage' || section == 'state_management') {
+    if (section == 'app' ||
+        section == 'storage' ||
+        section == 'state_management') {
       final idx = trimmed.indexOf(':');
       if (idx > 0) {
         config.putIfAbsent(section!, () => <String, String>{});
-        (config[section] as Map<String, dynamic>)[trimmed.substring(0, idx).trim()] =
+        (config[section]
+                as Map<String, dynamic>)[trimmed.substring(0, idx).trim()] =
             trimmed.substring(idx + 1).trim();
       }
     }
@@ -94,10 +98,12 @@ void _updateFeatureStatusInConfig(String name, String status) {
       inFeature = true;
       patched = false;
     } else if (inFeature && line.trim().startsWith('status:') && !patched) {
-      result.add(line.replaceFirst(RegExp(r'status:\s*\w+'), 'status: $status'));
+      result
+          .add(line.replaceFirst(RegExp(r'status:\s*\w+'), 'status: $status'));
       patched = true;
       continue;
-    } else if (inFeature && (line.trim().startsWith('- name:') || !line.startsWith('  '))) {
+    } else if (inFeature &&
+        (line.trim().startsWith('- name:') || !line.startsWith('  '))) {
       inFeature = false;
     }
     result.add(line);
@@ -124,9 +130,9 @@ void _setActiveStorageInConfig(List<String> providers) {
   const path = 'spl.yaml';
   File(path).writeAsStringSync(
     File(path).readAsStringSync().replaceFirst(
-      RegExp(r'active:.*'),
-      'active: ${providers.join(',')}',
-    ),
+          RegExp(r'active:.*'),
+          'active: ${providers.join(',')}',
+        ),
   );
 }
 
@@ -137,7 +143,8 @@ void _updateStorageDefaultInConfig(String provider) {
   if (content.contains(RegExp(r'^\s*default:', multiLine: true))) {
     content = content.replaceFirst(RegExp(r'default:.*'), 'default: $provider');
   } else {
-    content = content.replaceFirst(RegExp(r'local_backend:.*'), 'default: $provider');
+    content =
+        content.replaceFirst(RegExp(r'local_backend:.*'), 'default: $provider');
   }
   File(path).writeAsStringSync(content);
 }
@@ -146,9 +153,9 @@ void _updateStateDefaultInConfig(String solution) {
   const path = 'spl.yaml';
   File(path).writeAsStringSync(
     File(path).readAsStringSync().replaceFirst(
-      RegExp(r'default: (bloc|cubit|riverpod)'),
-      'default: $solution',
-    ),
+          RegExp(r'default: (bloc|cubit|riverpod)'),
+          'default: $solution',
+        ),
   );
 }
 
@@ -169,11 +176,19 @@ Future<bool> _tryMasonFeature(String module,
   print('  Using Mason brick: feature');
   final r = await Process.run(
     'mason',
-    ['make', 'feature',
-      '--name', module,
-      '--with_storage', withStorage.toString(),
-      '--state', state,
-      '-o', '.', '--no-confirm'],
+    [
+      'make',
+      'feature',
+      '--name',
+      module,
+      '--with_storage',
+      withStorage.toString(),
+      '--state',
+      state,
+      '-o',
+      '.',
+      '--no-confirm'
+    ],
     runInShell: true,
   );
   if (r.exitCode != 0) {
@@ -188,15 +203,16 @@ Future<bool> _tryMasonStorage(String provider) async {
   if (!await _checkMason()) return false;
   final brick = switch (provider) {
     'flutter_secure_storage' => 'storage_secure',
-    'sqflite'                => 'storage_sqflite',
-    'hive'                   => 'storage_hive',
-    'shared_preferences'     => 'storage_prefs',
-    _                        => null,
+    'sqflite' => 'storage_sqflite',
+    'hive' => 'storage_hive',
+    'shared_preferences' => 'storage_prefs',
+    _ => null,
   };
   if (brick == null) return false;
   print('  Using Mason brick: $brick');
   final r = await Process.run(
-    'mason', ['make', brick, '-o', '.', '--no-confirm'],
+    'mason',
+    ['make', brick, '-o', '.', '--no-confirm'],
     runInShell: true,
   );
   if (r.exitCode != 0) {

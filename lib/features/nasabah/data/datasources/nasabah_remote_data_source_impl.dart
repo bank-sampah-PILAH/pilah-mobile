@@ -21,8 +21,9 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
       queryParams: {'status': 'semua', 'page_size': 100},
     );
     final data = response.data;
-    final List<dynamic> results =
-        data is Map<String, dynamic> ? (data['results'] as List? ?? []) : (data as List);
+    final List<dynamic> results = data is Map<String, dynamic>
+        ? (data['results'] as List? ?? [])
+        : (data as List);
     return results
         .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -31,9 +32,10 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   @override
   Future<NasabahRingkasan> getNasabahRingkasan(String id) async {
     final response = await networkService.get('$_path/$id');
-    final ringkasan = (response.data as Map<String, dynamic>)['ringkasan_transaksi']
-            as Map<String, dynamic>? ??
-        <String, dynamic>{};
+    final ringkasan =
+        (response.data as Map<String, dynamic>)['ringkasan_transaksi']
+                as Map<String, dynamic>? ??
+            <String, dynamic>{};
     return NasabahRingkasanMapper.fromJson(ringkasan);
   }
 
@@ -57,6 +59,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
 
   @override
   Future<void> setStatus(String id, bool isActive) async {
-    await networkService.patch('$_path/$id/status', data: {'is_active': isActive});
+    await networkService
+        .patch('$_path/$id/status', data: {'is_active': isActive});
   }
 }

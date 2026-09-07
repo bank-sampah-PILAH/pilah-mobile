@@ -20,8 +20,10 @@ class MainPage extends StatelessWidget {
         selectedItemColor: AppColors.greenDark,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
-        selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+        selectedLabelStyle:
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {
           navigationShell.goBranch(

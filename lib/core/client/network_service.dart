@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/retry_interceptor.dart';
@@ -113,8 +113,7 @@ class NetworkService {
 
     Response response = await dio
         .post(environment.baseUrl + path,
-            data: formData,
-            options: options.copyWith(headers: headers))
+            data: formData, options: options.copyWith(headers: headers))
         .timeout(globalTimeout);
     return response;
   }
@@ -136,8 +135,7 @@ class NetworkService {
 
     Response response = await dio
         .put(environment.baseUrl + path,
-            data: formData,
-            options: options.copyWith(headers: headers))
+            data: formData, options: options.copyWith(headers: headers))
         .timeout(globalTimeout);
     return response;
   }

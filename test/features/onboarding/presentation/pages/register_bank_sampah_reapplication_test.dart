@@ -52,7 +52,8 @@ Future<void> _pumpScreen(
 
 void main() {
   group('RegisterBankSampahScreen re-application mode', () {
-    testWidgets('shows the rejection banner and hides the stepper when rejected',
+    testWidgets(
+        'shows the rejection banner and hides the stepper when rejected',
         (tester) async {
       await _pumpScreen(tester, isRejectedReapplication: true);
 
