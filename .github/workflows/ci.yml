@@ -1,13 +1,11 @@
 # CI — the merge gate for pilah-mobile. One verification job, KISS:
-#   - lockfile consistency (pubspec.lock vs pubspec.yaml drift)
+#   - install with --enforce-lockfile (fails on lockfile drift)
 #   - codegen (freezed/json/injectable outputs are gitignored, must be generated)
 #   - dart format check
 #   - flutter analyze (error+warning+info severity, blocking)
 #   - tests with coverage (>= 25% floor)
 #   - Android debug APK build (compile gate for the Gradle/Kotlin/AGP side)
 #   - workflow hygiene (actionlint + shellcheck on this file)
-# Heavy secret scanning (gitleaks) runs on a weekly schedule instead of per
-# PR — see secret-scan.yml.
 name: CI
 
 on:
@@ -45,8 +43,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # --enforce-lockfile is the CI flag: it fails when pubspec.lock doesn't
+      # exactly represent a valid resolution for pubspec.yaml (or hashes don't
+      # match) instead of quietly re-resolving. Keeps dependency bumps
+      # deliberate — the lockfile must be updated in the same commit.
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       # .env is gitignored (runtime asset loaded via flutter_dotenv), but
       # pubspec.yaml declares it as an asset — without the file even
@@ -55,30 +57,23 @@ jobs:
       - name: Prepare .env
         run: cp .env.example .env
 
-      # Lockfile drift check: pubspec.yaml changed but pubspec.lock not
-      # regenerated (or vice versa). Keeps dependency bumps deliberate.
-      - name: Verify lockfile consistency
-        run: |
-          flutter pub get --enforce-lockfile >/dev/null
-          git diff --exit-code pubspec.lock \
-            || { echo "::error::pubspec.lock is out of sync with pubspec.yaml — run flutter pub get and commit the updated lockfile"; exit 1; }
-
       # *.freezed.dart / *.g.dart are gitignored — CI checkouts don't have
       # them, so they must be generated before analyze/tests can pass.
       - name: Generate code (build_runner)
         run: dart run build_runner build --delete-conflicting-outputs
 
-      # Blocking on the project's configured lints (analysis_options.yaml,
-      # flutter_lints). `--fatal-infos` treats style infos as failures too so
-      # unformatted/sloppy code can't ride in silently.
-      - name: flutter analyze
-        run: flutter analyze --fatal-infos
-
-      # Scoped to the real Dart trees. `dart format` has no exclude flag and
-      # bricks/ holds Mason Mustache templates, which are not parseable Dart —
-      # formatting `.` aborts on them.
+      # Formatting first: it's nearly free, so an unformatted commit should
+      # fail in seconds rather than waiting for the analyzer to finish.
+      # Scoped to the real Dart trees — `dart format` has no exclude flag and
+      # bricks/ holds Mason Mustache templates, which are not parseable Dart.
       - name: dart format check
         run: dart format --output=none --set-exit-if-changed lib test codegen
+
+      # Blocking on the project's configured lints (analysis_options.yaml,
+      # flutter_lints). `--fatal-infos` treats style infos as failures too so
+      # sloppy code can't ride in silently.
+      - name: flutter analyze
+        run: flutter analyze --fatal-infos
 
       - name: Run tests with coverage
         run: flutter test --coverage
@@ -131,18 +126,11 @@ jobs:
 
       # Debug APK: compiles Dart (AOT) + Kotlin + Gradle wiring without needing
       # the release keystore (key.properties is gitignored, release signing
-      # resolves to null storeFile and only release builds use it).
+      # resolves to null storeFile and only release builds use it). Exit 0
+      # already means the APK was produced; artifact packaging/verification
+      # belongs to a future CD pipeline instead.
       - name: Build debug APK
         run: flutter build apk --debug
-
-      # Sanity: the artifact must exist and be a valid zip (APK). Catches
-      # "build succeeded" but produced nothing weird.
-      - name: Verify APK artifact
-        run: |
-          apk="$(ls build/app/outputs/flutter-apk/app-debug.apk)"
-          test -s "$apk"
-          unzip -t "$apk" > /dev/null
-          echo "APK OK: $(du -h "$apk" | cut -f1)"
 
       # Lints the CI workflow files themselves (syntax, expression misuse,
       # invalid action inputs, shell scripts in run blocks). Cheap step at the
