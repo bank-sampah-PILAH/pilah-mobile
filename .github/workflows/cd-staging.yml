@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -119,3 +119,29 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Create staging release with generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: staging-${{ github.run_number }}
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Using existing staging release $RELEASE_TAG."
+          else
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Staging build $RELEASE_TAG" \
+              --prerelease \
+              --generate-notes
+          fi
+
+      - name: Attach staging APK to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: staging-${{ github.run_number }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
