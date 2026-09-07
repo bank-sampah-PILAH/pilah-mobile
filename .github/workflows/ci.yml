@@ -1,10 +1,9 @@
-# CI — the merge gate for pilah-mobile. One verification job, KISS:
+# CI — the automatic merge gate for pilah-mobile. One verification job, KISS:
 #   - install with --enforce-lockfile (fails on lockfile drift)
 #   - codegen (freezed/json/injectable outputs are gitignored, must be generated)
 #   - dart format check
 #   - flutter analyze (error+warning+info severity, blocking)
 #   - tests with coverage (>= 25% floor)
-#   - Android debug APK build (compile gate for the Gradle/Kotlin/AGP side)
 #   - workflow hygiene (actionlint + shellcheck on this file)
 name: CI
 
@@ -12,6 +11,7 @@ on:
   push:
     branches: [main, staging]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -24,6 +24,7 @@ env:
 
 jobs:
   verify:
+    if: github.event_name != 'workflow_dispatch'
     name: Format, analyze, tests & build
     runs-on: ubuntu-latest
     steps:
@@ -93,9 +94,41 @@ jobs:
           awk -v p="$pct" 'BEGIN { exit (p+0 >= 25 ? 0 : 1) }' \
             || { echo "::error::line coverage ${pct}% is below the 25% gate"; exit 1; }
 
-      # google-services.json is gitignored (Firebase credential). CI builds a
-      # debug APK, so a placeholder with the right shape satisfies the Gradle
-      # google-services plugin without any real credential.
+      # Lints the CI workflow files themselves (syntax, expression misuse,
+      # invalid action inputs, shell scripts in run blocks). Cheap step at the
+      # end so workflow edits still get everything else checked in one job.
+      - name: actionlint
+        run: docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color
+
+  debug_apk:
+    if: github.event_name == 'workflow_dispatch'
+    name: Build debug APK artifact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: Stub google-services.json
         run: |
           cat > android/app/google-services.json <<'EOF'
@@ -124,16 +157,13 @@ jobs:
           }
           EOF
 
-      # Debug APK: compiles Dart (AOT) + Kotlin + Gradle wiring without needing
-      # the release keystore (key.properties is gitignored, release signing
-      # resolves to null storeFile and only release builds use it). Exit 0
-      # already means the APK was produced; artifact packaging/verification
-      # belongs to a future CD pipeline instead.
       - name: Build debug APK
         run: flutter build apk --debug
 
-      # Lints the CI workflow files themselves (syntax, expression misuse,
-      # invalid action inputs, shell scripts in run blocks). Cheap step at the
-      # end so workflow edits still get everything else checked in one job.
-      - name: actionlint
-        run: docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-${{ github.run_number }}-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

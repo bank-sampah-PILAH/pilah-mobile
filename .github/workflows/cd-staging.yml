@@ -1,0 +1,114 @@
+name: CD - Staging
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: cd-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep CD on the same pinned Flutter release as the merge gate.
+  FLUTTER_VERSION: "3.38.3"
+
+jobs:
+  distribute:
+    name: Build staging APK artifact
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Prepare application environment
+        run: cp .env.example .env
+
+      - name: Prepare Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          required_secrets=(
+            ANDROID_KEYSTORE_BASE64
+            ANDROID_KEY_ALIAS
+            ANDROID_KEY_PASSWORD
+            ANDROID_KEYSTORE_PASSWORD
+          )
+          for secret_name in "${required_secrets[@]}"; do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error::The staging environment secret ${secret_name} is required."
+              exit 1
+            fi
+          done
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" \
+            | base64 --decode > android/app/upload-keystore.jks
+          printf '%s\n' \
+            "storePassword=$ANDROID_KEYSTORE_PASSWORD" \
+            "keyPassword=$ANDROID_KEY_PASSWORD" \
+            "keyAlias=$ANDROID_KEY_ALIAS" \
+            "storeFile=upload-keystore.jks" > android/key.properties
+
+      # Firebase access is not available yet. This keeps the Android build
+      # compileable; the resulting artifact is not connected to a real Firebase
+      # project until the real google-services.json is provided.
+      - name: Stub google-services.json
+        run: |
+          cat > android/app/google-services.json <<'EOF'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "ci-placeholder",
+              "storage_bucket": "ci-placeholder.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+                  "android_client_info": {
+                    "package_name": "com.mobile.pilahapp"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  { "current_key": "AIzaSyCI_PLACEHOLDER_KEY_000000000000000" }
+                ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # This project has no Android product flavors. Staging is the existing
+      # development entrypoint built as a signed release APK.
+      - name: Build signed staging APK
+        run: flutter build apk --release -t lib/main_development.dart
+
+      - name: Upload staging APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-${{ github.run_number }}-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
