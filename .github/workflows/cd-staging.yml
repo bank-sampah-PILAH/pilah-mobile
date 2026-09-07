@@ -70,36 +70,16 @@ jobs:
             "keyAlias=$ANDROID_KEY_ALIAS" \
             "storeFile=upload-keystore.jks" > android/key.properties
 
-      # Firebase access is not available yet. This keeps the Android build
-      # compileable; the resulting artifact is not connected to a real Firebase
-      # project until the real google-services.json is provided.
-      - name: Stub google-services.json
+      - name: Prepare google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          cat > android/app/google-services.json <<'EOF'
-          {
-            "project_info": {
-              "project_number": "000000000000",
-              "project_id": "ci-placeholder",
-              "storage_bucket": "ci-placeholder.appspot.com"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
-                  "android_client_info": {
-                    "package_name": "com.mobile.pilahapp"
-                  }
-                },
-                "oauth_client": [],
-                "api_key": [
-                  { "current_key": "AIzaSyCI_PLACEHOLDER_KEY_000000000000000" }
-                ],
-                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          EOF
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::error::The staging environment secret GOOGLE_SERVICES_JSON is required."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          jq empty android/app/google-services.json
 
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
