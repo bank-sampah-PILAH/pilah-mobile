@@ -1,0 +1,50 @@
+# SonarQube analysis. Reports to the selfhosted instance at
+# https://sonar.heraldoarman.com (Community Edition — no branch support,
+# so the report destination is switched per git branch):
+#   main    -> project pilah-mobile
+#   staging -> project pilah-mobile-staging
+#   any other branch / PR base -> pilah-mobile-staging (report-only, non-gating)
+name: SonarQube
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonar:
+    name: SonarQube analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # fetch-depth: 0 so new-code detection can diff against the target branch.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pick project key & token by branch
+        id: pick
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "key=pilah-mobile" >> "$GITHUB_OUTPUT"
+          else
+            echo "key=pilah-mobile-staging" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ steps.pick.outputs.key == 'pilah-mobile' && secrets.SONAR_TOKEN || secrets.SONAR_TOKEN_STAGING }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ steps.pick.outputs.key }}
+            -Dsonar.sources=lib
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
