@@ -11,6 +11,7 @@ class NasabahListItem extends StatelessWidget {
   final Color avatarColor;
   final Color textColor;
   final String name;
+  final String email;
   final String phone;
   final String balance;
   final String? id;
@@ -28,6 +29,7 @@ class NasabahListItem extends StatelessWidget {
     required this.avatarColor,
     required this.textColor,
     required this.name,
+    this.email = '',
     required this.phone,
     required this.balance,
     this.id,
@@ -54,6 +56,7 @@ class NasabahListItem extends StatelessWidget {
               'isActive': isActive,
               'initials': initials,
               'name': name,
+              'email': email,
               'phone': phone,
               'balance': balance,
               'idNasabah': idNasabah,
