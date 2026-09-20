@@ -4,11 +4,17 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+
+/// Filter tab on the nasabah page. `menunggu` shows pending membership
+/// submissions (PIL-188); rejected rows appear in no tab (audit only).
+enum NasabahTab { aktif, tidakAktif, menunggu }
 
 @lazySingleton
 class NasabahCubit extends Cubit<NasabahState> {
@@ -18,9 +24,11 @@ class NasabahCubit extends Cubit<NasabahState> {
   final UpdateNasabahUseCase updateNasabahUseCase;
   final ActivateNasabahUseCase activateNasabahUseCase;
   final DeactivateNasabahUseCase deactivateNasabahUseCase;
+  final ApproveNasabahUseCase approveNasabahUseCase;
+  final RejectNasabahUseCase rejectNasabahUseCase;
 
   List<NasabahEntity> _allNasabah = [];
-  bool _isActiveTab = true;
+  bool? _isActiveTab = true;
   String _searchQuery = '';
 
   NasabahCubit(
@@ -30,17 +38,22 @@ class NasabahCubit extends Cubit<NasabahState> {
     this.updateNasabahUseCase,
     this.activateNasabahUseCase,
     this.deactivateNasabahUseCase,
+    this.approveNasabahUseCase,
+    this.rejectNasabahUseCase,
   ) : super(NasabahInitial());
 
-  bool get isActiveTab => _isActiveTab;
+  /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
+  bool? get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
-  int get activeCount => _allNasabah.where((n) => n.isActive).length;
+  int get activeCount =>
+      _allNasabah.where((n) => n.isActive && n.status == 'approved').length;
 
   /// Every active nasabah, independent of the nasabah page's active/inactive
   /// tab and search query. The Transaksi Baru picker reads this so its options
   /// aren't narrowed by whatever the nasabah page was last showing.
-  List<NasabahEntity> get activeNasabah =>
-      _allNasabah.where((n) => n.isActive).toList();
+  List<NasabahEntity> get activeNasabah => _allNasabah
+      .where((n) => n.isActive && n.status == 'approved')
+      .toList();
 
   /// Fetches the nasabah list, preserving the current tab and search query.
   ///
@@ -61,7 +74,7 @@ class NasabahCubit extends Cubit<NasabahState> {
     );
   }
 
-  void setActiveTab(bool isActive) {
+  void setActiveTab(bool? isActive) {
     _isActiveTab = isActive;
     _emitFiltered();
   }
@@ -113,6 +126,26 @@ class NasabahCubit extends Cubit<NasabahState> {
     );
   }
 
+  /// Approves or rejects a pending membership submission (PIL-188). Returns
+  /// `null` on success, otherwise the exception.
+  Future<NetworkException?> decideNasabah(
+    String id, {
+    required bool approve,
+    String? catatan,
+  }) async {
+    final params = DecideNasabahParams(id: id, catatan: catatan);
+    final result = approve
+        ? await approveNasabahUseCase.execute(params)
+        : await rejectNasabahUseCase.execute(params);
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadNasabah();
+        return null;
+      },
+    );
+  }
+
   Future<NasabahRingkasan?> fetchRingkasan(String id) async {
     final result = await getNasabahRingkasanUseCase.execute(id);
     return result.fold((_) => null, (data) => data);
@@ -129,7 +162,16 @@ class NasabahCubit extends Cubit<NasabahState> {
 
   void _emitFiltered() {
     final filtered = _allNasabah.where((customer) {
-      final matchesTab = customer.isActive == _isActiveTab;
+      bool matchesTab;
+      if (_isActiveTab == null) {
+        // Menunggu tab: pending submissions only.
+        matchesTab = customer.status == 'pending';
+      } else {
+        // Active/inactive tabs cover approved memberships only; rejected rows
+        // (audit records) appear in no tab.
+        matchesTab = customer.status == 'approved' &&
+            customer.isActive == _isActiveTab;
+      }
       if (_searchQuery.isEmpty) return matchesTab;
 
       final query = _searchQuery.toLowerCase();

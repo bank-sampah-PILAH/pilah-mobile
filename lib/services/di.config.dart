@@ -74,11 +74,15 @@ import '../features/nasabah/domain/repositories/nasabah_repository.dart'
 import '../features/nasabah/domain/use_cases/activate_nasabah_usecase.dart'
     as _i449;
 import '../features/nasabah/domain/use_cases/add_nasabah_usecase.dart' as _i532;
+import '../features/nasabah/domain/use_cases/approve_nasabah_usecase.dart'
+    as _i66;
 import '../features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart'
     as _i850;
 import '../features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart'
     as _i296;
 import '../features/nasabah/domain/use_cases/get_nasabah_usecase.dart' as _i789;
+import '../features/nasabah/domain/use_cases/reject_nasabah_usecase.dart'
+    as _i529;
 import '../features/nasabah/domain/use_cases/update_nasabah_usecase.dart'
     as _i524;
 import '../features/nasabah/presentation/cubit/nasabah_cubit.dart' as _i958;
@@ -215,28 +219,32 @@ extension GetItInjectableX on _i174.GetIt {
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
-    gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
-        () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i268.GetBankSampahUseCase>(
         () => _i268.GetBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i868.RejectBankSampahUseCase>(
         () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
+    gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
+        () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
           gh<_i521.AuthenticationUseCases>(),
           gh<_i934.LoginWithGoogleUseCase>(),
         ));
-    gh.lazySingleton<_i449.ActivateNasabahUseCase>(
-        () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i532.AddNasabahUseCase>(
-        () => _i532.AddNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i850.DeactivateNasabahUseCase>(
-        () => _i850.DeactivateNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i296.GetNasabahRingkasanUseCase>(
-        () => _i296.GetNasabahRingkasanUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i789.GetNasabahUseCase>(
         () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i449.ActivateNasabahUseCase>(
+        () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i296.GetNasabahRingkasanUseCase>(
+        () => _i296.GetNasabahRingkasanUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i524.UpdateNasabahUseCase>(
         () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i850.DeactivateNasabahUseCase>(
+        () => _i850.DeactivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i532.AddNasabahUseCase>(
+        () => _i532.AddNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i66.ApproveNasabahUseCase>(
+        () => _i66.ApproveNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i529.RejectNasabahUseCase>(
+        () => _i529.RejectNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i932.DashboardCubit>(
         () => _i932.DashboardCubit(gh<_i137.GetDashboardStatsUseCase>()));
     gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
@@ -244,16 +252,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i958.ApproveBankSampahUseCase>(),
           gh<_i868.RejectBankSampahUseCase>(),
         ));
-    gh.lazySingleton<_i520.ActivateHargaUseCase>(
-        () => _i520.ActivateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i948.AddHargaUseCase>(
-        () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i989.DeactivateHargaUseCase>(
-        () => _i989.DeactivateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i1009.GetHargaUseCase>(
-        () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i240.UpdateHargaUseCase>(
-        () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i958.NasabahCubit>(() => _i958.NasabahCubit(
           gh<_i789.GetNasabahUseCase>(),
           gh<_i296.GetNasabahRingkasanUseCase>(),
@@ -261,17 +259,29 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i524.UpdateNasabahUseCase>(),
           gh<_i449.ActivateNasabahUseCase>(),
           gh<_i850.DeactivateNasabahUseCase>(),
+          gh<_i66.ApproveNasabahUseCase>(),
+          gh<_i529.RejectNasabahUseCase>(),
         ));
-    gh.lazySingleton<_i839.AddTransaksiUseCase>(
-        () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
-    gh.lazySingleton<_i67.ExportTransaksiUseCase>(
-        () => _i67.ExportTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i948.AddHargaUseCase>(
+        () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i240.UpdateHargaUseCase>(
+        () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i1009.GetHargaUseCase>(
+        () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i989.DeactivateHargaUseCase>(
+        () => _i989.DeactivateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i520.ActivateHargaUseCase>(
+        () => _i520.ActivateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i218.GetTransaksiDetailUseCase>(() =>
         _i218.GetTransaksiDetailUseCase(gh<_i1031.TransaksiRepository>()));
-    gh.lazySingleton<_i383.GetTransaksiUseCase>(
-        () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i417.ResendWaUseCase>(
         () => _i417.ResendWaUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i383.GetTransaksiUseCase>(
+        () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i67.ExportTransaksiUseCase>(
+        () => _i67.ExportTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.lazySingleton<_i839.AddTransaksiUseCase>(
+        () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),
