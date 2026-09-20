@@ -31,7 +31,7 @@ void main() {
       MaterialApp(
         home: BlocProvider<AuthenticationBloc>.value(
           value: auth,
-          child: const LoginPage(showDemoLogin: true),
+          child: const LoginPage(debugShowDemoLogin: true),
         ),
       ),
     );
@@ -45,7 +45,7 @@ void main() {
       MaterialApp(
         home: BlocProvider<AuthenticationBloc>.value(
           value: auth,
-          child: const LoginPage(showDemoLogin: false),
+          child: const LoginPage(debugShowDemoLogin: false),
         ),
       ),
     );

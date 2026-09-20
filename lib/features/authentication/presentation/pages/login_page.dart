@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -17,9 +18,10 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/login_
 import 'package:pilah_mobile/features/authentication/presentation/widgets/welcome_card.dart';
 
 class LoginPage extends StatelessWidget {
-  final bool? showDemoLogin;
+  @visibleForTesting
+  final bool? debugShowDemoLogin;
 
-  const LoginPage({super.key, this.showDemoLogin});
+  const LoginPage({super.key, this.debugShowDemoLogin});
 
   static const route = '/login';
 
@@ -45,9 +47,9 @@ class LoginPage extends StatelessWidget {
         builder: (context, state) {
           final isLoading = state is AuthenticationLoading;
           final environment =
-              showDemoLogin == null ? di<AppEnvironment>() : null;
-          final demoLoginEnabled =
-              showDemoLogin ?? environment!.supportsDemoLogin;
+              debugShowDemoLogin == null ? di<AppEnvironment>() : null;
+          final demoLoginEnabled = !kReleaseMode &&
+              (debugShowDemoLogin ?? environment!.supportsDemoLogin);
 
           return LoginBackgroundWrapper(
             child: SafeArea(
