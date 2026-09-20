@@ -8,7 +8,13 @@ abstract class AuthRepository {
     String password,
   );
 
-  Future<Either<NetworkException, AuthEntity>> loginWithGoogle(String idToken);
+  Future<Either<NetworkException, GoogleAuthOutcome>> loginWithGoogle(
+      String idToken);
+
+  Future<Either<NetworkException, AuthEntity>> registerGoogleUser({
+    required String registrationToken,
+    required String role,
+  });
 
   Future<Either<Exception, void>> saveToken(
     String accessToken,

@@ -42,6 +42,14 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
   switch (step) {
     case 'superadmin_dashboard':
       return '/superadmin-dashboard';
+    case 'register_nasabah':
+      return '/register-nasabah';
+    case 'nasabah_dashboard':
+      return '/nasabah-dashboard';
+    case 'register_bank_sampah_induk':
+      return '/register-bank-sampah-induk';
+    case 'pengelola_induk_dashboard':
+      return '/pengelola-induk-dashboard';
     case 'complete_profile':
       return completeProfileLocation;
     case 'register_bank_sampah':

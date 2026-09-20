@@ -14,6 +14,8 @@ abstract class AppEnvironment {
 
   String get demoCustomerEmail;
 
+  String get demoIndukEmail;
+
   String get demoSuperadminEmail;
 }
 
@@ -35,6 +37,9 @@ class DevEnvironment implements AppEnvironment {
   String get demoCustomerEmail => Secret.demoCustomerEmail;
 
   @override
+  String get demoIndukEmail => Secret.demoIndukEmail;
+
+  @override
   String get demoSuperadminEmail => Secret.demoSuperadminEmail;
 }
 
@@ -54,6 +59,9 @@ class ProdEnvironment implements AppEnvironment {
 
   @override
   String get demoCustomerEmail => '';
+
+  @override
+  String get demoIndukEmail => '';
 
   @override
   String get demoSuperadminEmail => '';

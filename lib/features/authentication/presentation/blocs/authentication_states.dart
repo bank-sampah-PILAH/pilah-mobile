@@ -30,6 +30,50 @@ class Authenticated extends AuthenticationStates {
   List<Object?> get props => [authEntity];
 }
 
+class GoogleRegistrationPending extends AuthenticationStates {
+  final GoogleRegistrationRequired registration;
+
+  GoogleRegistrationPending({required this.registration});
+
+  @override
+  List<Object?> get props => [registration];
+}
+
+class GoogleRegistrationSubmitting extends AuthenticationStates {
+  final GoogleRegistrationRequired registration;
+  final String role;
+
+  GoogleRegistrationSubmitting({
+    required this.registration,
+    required this.role,
+  });
+
+  @override
+  List<Object?> get props => [registration, role];
+}
+
+class GoogleRegistrationFailure extends AuthenticationStates {
+  final GoogleRegistrationRequired registration;
+  final String message;
+
+  GoogleRegistrationFailure({
+    required this.registration,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [registration, message];
+}
+
+class GoogleRegistrationExpired extends AuthenticationStates {
+  final String message;
+
+  GoogleRegistrationExpired({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class AuthenticationFailure extends AuthenticationStates {
   final String message;
 

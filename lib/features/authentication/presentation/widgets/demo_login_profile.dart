@@ -45,10 +45,18 @@ abstract final class DemoLoginProfiles {
     tokenPrefix: 'dev-superadmin',
   );
 
+  static const induk = DemoLoginProfile(
+    label: 'Pengelola Bank Sampah Induk',
+    name: 'Pengelola Induk PILAH E2E',
+    email: 'induk.demo@example.com',
+    tokenPrefix: 'dev-pengelola-induk',
+  );
+
   static const all = <DemoLoginProfile>[
     operator,
     pendingOperator,
     customer,
+    induk,
     superadmin,
   ];
 
@@ -70,6 +78,12 @@ abstract final class DemoLoginProfiles {
           name: customer.name,
           email: environment.demoCustomerEmail,
           tokenPrefix: customer.tokenPrefix,
+        ),
+        DemoLoginProfile(
+          label: induk.label,
+          name: induk.name,
+          email: environment.demoIndukEmail,
+          tokenPrefix: induk.tokenPrefix,
         ),
         DemoLoginProfile(
           label: superadmin.label,
