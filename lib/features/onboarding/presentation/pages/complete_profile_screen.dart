@@ -147,7 +147,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   bool get _startsNewRegistration {
     final authState = context.read<AuthenticationBloc>().state;
     if (authState is! Authenticated) return false;
-    return authState.authEntity.bankSampahStatus == null;
+    return authState.authEntity.role == 'pengelola' &&
+        authState.authEntity.bankSampahStatus == null;
   }
 
   String _isoDate(DateTime date) =>
@@ -297,6 +298,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         break;
       case 'superadmin_dashboard':
         context.go('/superadmin-dashboard');
+        break;
+      case 'register_nasabah':
+        context.go('/register-nasabah');
+        break;
+      case 'nasabah_dashboard':
+        context.go('/nasabah-dashboard');
+        break;
+      case 'register_bank_sampah_induk':
+        context.go('/register-bank-sampah-induk');
+        break;
+      case 'pengelola_induk_dashboard':
+        context.go('/pengelola-induk-dashboard');
         break;
       default:
         // Fallback preserves prior behaviour: invited managers join an existing

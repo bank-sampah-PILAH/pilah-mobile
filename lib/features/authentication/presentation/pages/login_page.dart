@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_l
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_footer.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_header.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/welcome_card.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 
 class LoginPage extends StatelessWidget {
   @visibleForTesting
@@ -36,6 +37,8 @@ class LoginPage extends StatelessWidget {
               state.authEntity.nextStep,
               hasPendingInvite: di<InviteTokenStore>().hasToken,
             ));
+          } else if (state is GoogleRegistrationPending) {
+            context.go(RoleSelectionPage.route);
           } else if (state is AuthenticationFailure) {
             AppNotification.showError(
               context,

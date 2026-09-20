@@ -21,3 +21,29 @@ class AuthEntity {
     this.role,
   });
 }
+
+sealed class GoogleAuthOutcome {
+  const GoogleAuthOutcome();
+}
+
+class GoogleSession extends GoogleAuthOutcome {
+  final AuthEntity auth;
+
+  const GoogleSession(this.auth);
+}
+
+class GoogleRegistrationRequired extends GoogleAuthOutcome {
+  final String registrationToken;
+  final int expiresIn;
+  final String name;
+  final String email;
+  final String photoUrl;
+
+  const GoogleRegistrationRequired({
+    required this.registrationToken,
+    required this.expiresIn,
+    required this.name,
+    required this.email,
+    required this.photoUrl,
+  });
+}
