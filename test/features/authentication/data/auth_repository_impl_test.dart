@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/data/auth_repository_impl.dart';
 import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_sources.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/auth_remote_data_sources.dart';
+import 'package:pilah_mobile/features/authentication/data/remote/model/request/save_token_request.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 class _MockAuthRemote extends Mock implements AuthRemoteDataSources {}
@@ -14,6 +15,12 @@ void main() {
   late _MockAuthRemote remote;
   late _MockAuthLocal local;
   late AuthRepositoryImpl repo;
+
+  setUpAll(() {
+    registerFallbackValue(
+      const SaveTokenRequest(accessToken: '', refreshToken: ''),
+    );
+  });
 
   setUp(() {
     remote = _MockAuthRemote();

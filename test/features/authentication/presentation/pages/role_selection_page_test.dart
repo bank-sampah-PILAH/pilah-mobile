@@ -67,8 +67,8 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
 
-    verify(() => auth.add(
-          const RegisterGoogleRoleRequested(role: 'nasabah'),
-        )).called(1);
+    final event = verify(() => auth.add(captureAny())).captured.single
+        as RegisterGoogleRoleRequested;
+    expect(event.role, 'nasabah');
   });
 }
