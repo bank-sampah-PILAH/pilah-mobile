@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -182,6 +183,67 @@ void main() {
           isA<GoogleRegistrationSubmitting>(),
           isA<Authenticated>(),
         ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'keeps registration in memory when role submission fails',
+        build: () {
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: 'pengelola',
+              )).thenAnswer(
+            (_) async => Left(GeneralException(message: 'Network failed')),
+          );
+          return bloc;
+        },
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(role: 'pengelola'),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
+          isA<GoogleRegistrationFailure>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'clears registration when the signed token is expired',
+        build: () {
+          final response = Response<dynamic>(
+            requestOptions: RequestOptions(path: '/auth/google/register'),
+            data: {
+              'code': 'registration_token_expired',
+              'error': 'Sesi pendaftaran kedaluwarsa',
+            },
+            statusCode: 400,
+          );
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: 'nasabah',
+              )).thenAnswer(
+            (_) async => Left(BadRequestException(
+              response: response,
+              message: 'Sesi pendaftaran kedaluwarsa',
+            )),
+          );
+          return bloc;
+        },
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(role: 'nasabah'),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
+          isA<GoogleRegistrationExpired>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'change account clears the pending registration',
+        build: () => bloc,
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(const ChangeGoogleAccountRequested()),
+        expect: () => [isA<AuthenticationInitial>()],
       );
 
       blocTest<AuthenticationBloc, dynamic>(
