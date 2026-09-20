@@ -55,6 +55,10 @@ void main() {
         'dev-nasabah:nasabah.demo@example.com:Nasabah PILAH E2E',
       );
       expect(
+        DemoLoginProfiles.induk.idToken,
+        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E',
+      );
+      expect(
         DemoLoginProfiles.superadmin.idToken,
         'dev-superadmin:superadmin.demo@example.com:Superadmin PILAH E2E',
       );
@@ -67,6 +71,7 @@ void main() {
           'Pengurus',
           'Pengelola Induk',
           'Nasabah',
+          'Pengelola Bank Sampah Induk',
           'Superadmin',
         ],
       );

@@ -10,6 +10,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_refresh_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
 
@@ -122,7 +123,7 @@ void main() {
         'emits [Loading, Authenticated] when Google login is successful',
         build: () {
           when(() => mockLoginWithGoogle.execute(tIdToken))
-              .thenAnswer((_) async => Right(tAuthEntity));
+              .thenAnswer((_) async => Right(GoogleSession(tAuthEntity)));
           return bloc;
         },
         act: (bloc) => bloc.add(LoginWithGoogleRequested(
@@ -133,6 +134,52 @@ void main() {
         )),
         expect: () => [
           isA<AuthenticationLoading>(),
+          isA<Authenticated>(),
+        ],
+      );
+
+      final registration = GoogleRegistrationRequired(
+        registrationToken: 'signed-token',
+        expiresIn: 600,
+        name: tName,
+        email: tEmail,
+        photoUrl: tPhotoUrl,
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'emits role selection for an unknown Google account',
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken))
+              .thenAnswer((_) async => Right(registration));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(
+          name: tName,
+          email: tEmail,
+          photoUrl: tPhotoUrl,
+          idToken: tIdToken,
+        )),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<GoogleRegistrationPending>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'submits the selected role and authenticates the new account',
+        build: () {
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: 'nasabah',
+              )).thenAnswer((_) async => Right(tAuthEntity));
+          return bloc;
+        },
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(role: 'nasabah'),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
           isA<Authenticated>(),
         ],
       );
