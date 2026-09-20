@@ -14,6 +14,7 @@ class NasabahEntity {
   final String jenisKelamin;
   final String tanggalLahir;
   final String tanggalDaftar;
+
   /// Backend membership status: `pending` | `approved` | `rejected`.
   /// Defaults to approved so legacy payloads keep behaving.
   final String status;

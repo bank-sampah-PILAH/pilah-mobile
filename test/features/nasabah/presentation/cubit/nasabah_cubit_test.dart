@@ -31,12 +31,12 @@ class MockActivateNasabahUseCase extends Mock
 class MockDeactivateNasabahUseCase extends Mock
     implements DeactivateNasabahUseCase {}
 
-class MockApproveNasabahUseCase extends Mock
-    implements ApproveNasabahUseCase {}
+class MockApproveNasabahUseCase extends Mock implements ApproveNasabahUseCase {}
 
 class MockRejectNasabahUseCase extends Mock implements RejectNasabahUseCase {}
 
-NasabahEntity _nasabah(String kode, {required String status, bool isActive = true}) =>
+NasabahEntity _nasabah(String kode,
+        {required String status, bool isActive = true}) =>
     NasabahEntity(
       id: kode,
       idNasabah: kode,
@@ -130,10 +130,10 @@ void main() {
       },
       expect: () => [
         isA<NasabahLoading>(),
-        isA<NasabahLoaded>()
-            .having((s) => s.nasabahList.map((n) => n.idNasabah), 'aktif ids',
-                ['NAS-0001'])
-            .having((s) => s.isMenungguTab, 'isMenungguTab', isFalse),
+        isA<NasabahLoaded>().having(
+            (s) => s.nasabahList.map((n) => n.idNasabah), 'aktif ids', [
+          'NAS-0001'
+        ]).having((s) => s.isMenungguTab, 'isMenungguTab', isFalse),
       ],
     );
 
@@ -150,14 +150,14 @@ void main() {
       },
       expect: () => [
         isA<NasabahLoading>(),
-        isA<NasabahLoaded>()
-            .having((s) => s.nasabahList.map((n) => n.idNasabah), 'aktif ids',
-                ['NAS-0001']),
-        isA<NasabahLoaded>()
-            .having(
-                (s) => s.nasabahList.map((n) => n.idNasabah), 'menunggu',
-                ['NAS-0003'])
-            .having((s) => s.isMenungguTab, 'isMenungguTab', isTrue),
+        isA<NasabahLoaded>().having(
+            (s) => s.nasabahList.map((n) => n.idNasabah),
+            'aktif ids',
+            ['NAS-0001']),
+        isA<NasabahLoaded>().having(
+            (s) => s.nasabahList.map((n) => n.idNasabah), 'menunggu', [
+          'NAS-0003'
+        ]).having((s) => s.isMenungguTab, 'isMenungguTab', isTrue),
       ],
     );
 
@@ -200,11 +200,11 @@ void main() {
           approve: true, catatan: 'Data lengkap');
 
       expect(error, isNull);
-      final captured =
-          verify(() => approveUseCase.execute(captureAny<DecideNasabahParams>()))
-              .captured
-              .cast<DecideNasabahParams>()
-              .single;
+      final captured = verify(
+              () => approveUseCase.execute(captureAny<DecideNasabahParams>()))
+          .captured
+          .cast<DecideNasabahParams>()
+          .single;
       expect(captured.id, 'NAS-0003');
       expect(captured.catatan, 'Data lengkap');
       verify(() => getUseCase.execute()).called(1);
@@ -215,8 +215,8 @@ void main() {
       when(() => rejectUseCase.execute(any(that: isA<DecideNasabahParams>())))
           .thenAnswer((_) async => const Right(null));
 
-      final error =
-          await cubit.decideNasabah('NAS-0003', approve: false, catatan: 'Tidak valid');
+      final error = await cubit.decideNasabah('NAS-0003',
+          approve: false, catatan: 'Tidak valid');
 
       expect(error, isNull);
       final captured =

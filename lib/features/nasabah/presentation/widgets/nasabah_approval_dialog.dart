@@ -60,9 +60,7 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: widget.isApproving
-                      ? emeraldPrimary
-                      : Colors.red,
+                  color: widget.isApproving ? emeraldPrimary : Colors.red,
                 ),
               ),
             ),
@@ -78,8 +76,7 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
           onPressed: () =>
               Navigator.of(context).pop(_catatanController.text.trim()),
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-                widget.isApproving ? emeraldPrimary : Colors.red,
+            backgroundColor: widget.isApproving ? emeraldPrimary : Colors.red,
             foregroundColor: Colors.white,
             elevation: 0,
           ),

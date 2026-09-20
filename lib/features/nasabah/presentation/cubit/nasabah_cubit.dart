@@ -51,9 +51,8 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// Every active nasabah, independent of the nasabah page's active/inactive
   /// tab and search query. The Transaksi Baru picker reads this so its options
   /// aren't narrowed by whatever the nasabah page was last showing.
-  List<NasabahEntity> get activeNasabah => _allNasabah
-      .where((n) => n.isActive && n.status == 'approved')
-      .toList();
+  List<NasabahEntity> get activeNasabah =>
+      _allNasabah.where((n) => n.isActive && n.status == 'approved').toList();
 
   /// Fetches the nasabah list, preserving the current tab and search query.
   ///
@@ -169,8 +168,8 @@ class NasabahCubit extends Cubit<NasabahState> {
       } else {
         // Active/inactive tabs cover approved memberships only; rejected rows
         // (audit records) appear in no tab.
-        matchesTab = customer.status == 'approved' &&
-            customer.isActive == _isActiveTab;
+        matchesTab =
+            customer.status == 'approved' && customer.isActive == _isActiveTab;
       }
       if (_searchQuery.isEmpty) return matchesTab;
 

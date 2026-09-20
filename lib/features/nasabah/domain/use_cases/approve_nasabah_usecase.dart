@@ -19,8 +19,7 @@ class ApproveNasabahUseCase implements UseCase<void, DecideNasabahParams> {
   ApproveNasabahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, void>> execute(
-      [DecideNasabahParams? args]) {
+  Future<Either<NetworkException, void>> execute([DecideNasabahParams? args]) {
     return repository.approveNasabah(args!.id, catatan: args.catatan);
   }
 }
