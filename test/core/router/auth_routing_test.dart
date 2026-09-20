@@ -20,6 +20,12 @@ void main() {
       expect(locationForAuthStep('approval_pending'), '/pending-approval');
       expect(
           locationForAuthStep('superadmin_dashboard'), '/superadmin-dashboard');
+      expect(locationForAuthStep('register_nasabah'), '/register-nasabah');
+      expect(locationForAuthStep('nasabah_dashboard'), '/nasabah-dashboard');
+      expect(locationForAuthStep('register_bank_sampah_induk'),
+          '/register-bank-sampah-induk');
+      expect(locationForAuthStep('pengelola_induk_dashboard'),
+          '/pengelola-induk-dashboard');
       expect(locationForAuthStep('dashboard'), '/dashboard');
       expect(locationForAuthStep(null), '/dashboard');
     });

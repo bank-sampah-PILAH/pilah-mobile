@@ -17,6 +17,10 @@ void main() {
         'dev-nasabah:customer.demo@example.com:Nasabah PILAH E2E',
       );
       expect(
+        DemoLoginProfiles.induk.idToken,
+        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E',
+      );
+      expect(
         DemoLoginProfiles.superadmin.idToken,
         'dev-superadmin:superadmin.demo@example.com:Superadmin PILAH E2E',
       );
@@ -29,6 +33,7 @@ void main() {
           'Operator aktif',
           'Operator menunggu persetujuan',
           'Nasabah',
+          'Pengelola Bank Sampah Induk',
           'Superadmin',
         ],
       );
