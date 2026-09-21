@@ -14,7 +14,9 @@ class NasabahLoading extends NasabahState {}
 
 class NasabahLoaded extends NasabahState {
   final List<NasabahEntity> nasabahList;
-  final bool isActiveTab;
+
+  /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
+  final bool? isActiveTab;
   final String searchQuery;
 
   const NasabahLoaded({
@@ -22,6 +24,8 @@ class NasabahLoaded extends NasabahState {
     this.isActiveTab = true,
     this.searchQuery = '',
   });
+
+  bool get isMenungguTab => isActiveTab == null;
 
   @override
   List<Object?> get props => [nasabahList, isActiveTab, searchQuery];

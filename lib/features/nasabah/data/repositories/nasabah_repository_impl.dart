@@ -68,4 +68,30 @@ class NasabahRepositoryImpl implements NasabahRepository {
       return Left(NetworkException.handleException(e));
     }
   }
+
+  @override
+  Future<Either<NetworkException, void>> approveNasabah(
+    String id, {
+    String? catatan,
+  }) async {
+    try {
+      await remoteDataSource.approveNasabah(id, catatan);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkException, void>> rejectNasabah(
+    String id, {
+    String? catatan,
+  }) async {
+    try {
+      await remoteDataSource.rejectNasabah(id, catatan);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
 }
