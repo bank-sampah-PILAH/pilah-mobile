@@ -1,5 +1,43 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
+
+class _StubEnvironment implements AppEnvironment {
+  const _StubEnvironment();
+
+  @override
+  String get baseUrl => 'https://example.test';
+
+  @override
+  bool get supportsDemoLogin => true;
+
+  @override
+  String get demoOperatorEmail => 'configured.operator@example.com';
+
+  @override
+  String get demoPendingOperatorEmail => 'configured.pending@example.com';
+
+  @override
+  String get demoCustomerEmail => 'configured.customer@example.com';
+
+  @override
+  String get demoSuperadminEmail => 'configured.superadmin@example.com';
+}
+
+Map<String, String> _readExampleEnv() {
+  final values = <String, String>{};
+  for (final line in File('.env.example').readAsLinesSync()) {
+    final entry = line.trim();
+    if (entry.isEmpty || entry.startsWith('#')) continue;
+    final separator = entry.indexOf('=');
+    if (separator > 0) {
+      values[entry.substring(0, separator)] = entry.substring(separator + 1);
+    }
+  }
+  return values;
+}
 
 void main() {
   group('DemoLoginProfiles', () {
@@ -31,6 +69,40 @@ void main() {
           'Nasabah',
           'Superadmin',
         ],
+      );
+    });
+
+    test('keeps seeded email constants aligned with the env example', () {
+      final env = _readExampleEnv();
+
+      expect(DemoLoginProfiles.operator.email, env['DEMO_OPERATOR_EMAIL']);
+      expect(
+        DemoLoginProfiles.pendingOperator.email,
+        env['DEMO_PENDING_OPERATOR_EMAIL'],
+      );
+      expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
+      expect(
+        DemoLoginProfiles.superadmin.email,
+        env['DEMO_SUPERADMIN_EMAIL'],
+      );
+    });
+
+    test('maps environment-configured emails and token prefixes', () {
+      final profiles =
+          DemoLoginProfiles.forEnvironment(const _StubEnvironment());
+
+      expect(
+        profiles.map((profile) => profile.email),
+        [
+          'configured.operator@example.com',
+          'configured.pending@example.com',
+          'configured.customer@example.com',
+          'configured.superadmin@example.com',
+        ],
+      );
+      expect(
+        profiles.map((profile) => profile.tokenPrefix),
+        ['dev', 'dev', 'dev-nasabah', 'dev-superadmin'],
       );
     });
   });

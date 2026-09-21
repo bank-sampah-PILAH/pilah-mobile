@@ -31,7 +31,10 @@ DEMO_SUPERADMIN_EMAIL=superadmin.demo@example.com
 ```
 
 The button submits the backend's local-only `dev:`, `dev-nasabah:`, and
-`dev-superadmin:` test tokens for the seeded roles. It is hidden whenever the
+`dev-superadmin:` test tokens for the seeded roles. Keep these four email values
+in sync with the corresponding pilah-be `PILAH_SEED_*_EMAIL` variables before
+running E2E.
+It is hidden whenever the
 app is built in release mode, and the staging/production entry point keeps
 only the real Google Sign-In button. Never enable fake tokens or the demo
 button for production-facing builds.

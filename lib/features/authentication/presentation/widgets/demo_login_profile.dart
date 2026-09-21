@@ -24,6 +24,7 @@ abstract final class DemoLoginProfiles {
     tokenPrefix: 'dev',
   );
 
+  // Keep this email paired with pilah-be's PILAH_SEED_PENDING_OPERATOR_EMAIL.
   static const pendingOperator = DemoLoginProfile(
     label: 'Operator menunggu persetujuan',
     name: 'Operator Pending PILAH E2E',
