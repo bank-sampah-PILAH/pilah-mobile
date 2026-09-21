@@ -52,12 +52,14 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
         message: state.message,
       );
     } else if (state is GoogleRegistrationExpired) {
-      AppNotification.showError(
-        context,
-        title: 'Sesi Berakhir',
-        message: state.message,
-      );
       context.go(LoginPage.route);
+      AppNotification.afterNavigation(
+        (context) => AppNotification.showError(
+          context,
+          title: 'Sesi Berakhir',
+          message: state.message,
+        ),
+      );
     }
   }
 

@@ -32,7 +32,11 @@ void main() {
 
     test('an incomplete profile redeems the invite on the completion form', () {
       expect(
-        locationForAuthStep('complete_profile', hasPendingInvite: true),
+        locationForAuthStep(
+          'complete_profile',
+          hasPendingInvite: true,
+          role: 'pengelola',
+        ),
         '/complete-profile',
       );
     });
@@ -48,7 +52,11 @@ void main() {
         null
       ]) {
         expect(
-          locationForAuthStep(step, hasPendingInvite: true),
+          locationForAuthStep(
+            step,
+            hasPendingInvite: true,
+            role: 'pengelola',
+          ),
           '/invite-processing',
           reason: 'step "$step" must not swallow a pending invite',
         );
@@ -61,15 +69,34 @@ void main() {
       // dashboard used to leave the user there, so /invites/accept was never
       // called.
       expect(
-        locationForAuthStep('dashboard', hasPendingInvite: true),
+        locationForAuthStep(
+          'dashboard',
+          hasPendingInvite: true,
+          role: 'pengelola',
+        ),
         '/invite-processing',
       );
     });
 
     test('a superadmin is exempt — they belong to no bank sampah', () {
       expect(
-        locationForAuthStep('superadmin_dashboard', hasPendingInvite: true),
+        locationForAuthStep(
+          'superadmin_dashboard',
+          hasPendingInvite: true,
+          role: 'superadmin',
+        ),
         '/superadmin-dashboard',
+      );
+    });
+
+    test('an ineligible role keeps its own route while invite is pending', () {
+      expect(
+        locationForAuthStep(
+          'nasabah_dashboard',
+          hasPendingInvite: true,
+          role: 'nasabah',
+        ),
+        '/nasabah-dashboard',
       );
     });
   });
