@@ -11,7 +11,7 @@ class _MockJadwalRepository extends Mock implements JadwalRepository {}
 
 void main() {
   final schedule = JadwalEntity(
-    id: 'jadwal-1',
+    id: '',
     bankSampahId: 'bank-1',
     jenisKegiatan: 'penimbangan',
     mulaiPada: DateTime.utc(2026, 10, 10, 1),

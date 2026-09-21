@@ -47,7 +47,11 @@ class MainPage extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.insert_drive_file_outlined),
             label: 'Laporan',
-          )
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month_outlined),
+            label: 'Jadwal',
+          ),
         ],
       ),
     );

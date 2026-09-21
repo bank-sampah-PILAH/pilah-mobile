@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/login_pa
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
@@ -245,6 +246,15 @@ class AppRouterConfig {
                 path: LaporanPage.route,
                 name: LaporanPage.route,
                 builder: (context, state) => const LaporanPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: JadwalPage.route,
+                name: JadwalPage.route,
+                builder: (context, state) => const JadwalPage(),
               ),
             ],
           ),
