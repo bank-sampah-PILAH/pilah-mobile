@@ -15,6 +15,10 @@ class NasabahEntity {
   final String tanggalLahir;
   final String tanggalDaftar;
 
+  /// Backend membership status: `pending` | `approved` | `rejected`.
+  /// Defaults to approved so legacy payloads keep behaving.
+  final String status;
+
   NasabahEntity({
     required this.id,
     required this.idNasabah,
@@ -29,6 +33,7 @@ class NasabahEntity {
     required this.jenisKelamin,
     required this.tanggalLahir,
     this.tanggalDaftar = '',
+    this.status = 'approved',
   });
 }
 
