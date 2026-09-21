@@ -137,7 +137,9 @@ class NasabahCubit extends Cubit<NasabahState> {
       final phone = customer.phone.toLowerCase();
       final email = customer.email.toLowerCase();
       return matchesTab &&
-          (name.contains(query) || phone.contains(query) || email.contains(query));
+          (name.contains(query) ||
+              phone.contains(query) ||
+              email.contains(query));
     }).toList();
 
     emit(NasabahLoaded(
