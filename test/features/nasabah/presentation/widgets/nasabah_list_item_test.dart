@@ -60,21 +60,21 @@ void main() {
   });
 
   Widget host() => MaterialApp(
-    home: Scaffold(
-      body: NasabahListItem(
-        isActive: true,
-        initials: 'B',
-        avatarColor: const Color(0xFFEAF5EC),
-        textColor: const Color(0xFF2F6B45),
-        name: 'Budi Santoso',
-        phone: '08123456789',
-        balance: 'Rp 0',
-        idNasabah: 'NAS-0001',
-        isPending: true,
-        nasabahCubit: cubit,
-      ),
-    ),
-  );
+        home: Scaffold(
+          body: NasabahListItem(
+            isActive: true,
+            initials: 'B',
+            avatarColor: const Color(0xFFEAF5EC),
+            textColor: const Color(0xFF2F6B45),
+            name: 'Budi Santoso',
+            phone: '08123456789',
+            balance: 'Rp 0',
+            idNasabah: 'NAS-0001',
+            isPending: true,
+            nasabahCubit: cubit,
+          ),
+        ),
+      );
 
   testWidgets('pending item reject path calls reject use case', (tester) async {
     when(
@@ -95,9 +95,9 @@ void main() {
     await tester.tap(find.text('Tolak'));
     await tester.pumpAndSettle();
 
-    final captured =
-        verify(() => rejectUseCase.execute(captureAny())).captured.single
-            as DecideNasabahParams;
+    final captured = verify(() => rejectUseCase.execute(captureAny()))
+        .captured
+        .single as DecideNasabahParams;
     expect(captured.id, 'NAS-0001');
     expect(captured.catatan, 'Data tidak valid');
   });
