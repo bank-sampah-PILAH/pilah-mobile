@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -14,7 +15,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_c
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
-  static const route = '/dashboard';
+  static const route = AppLocations.dashboard;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -172,7 +173,8 @@ class _HomeHeader extends StatelessWidget {
           const SizedBox(width: 12),
           IconButton(
             tooltip: 'Profil',
-            onPressed: canOpenProfile ? () => context.go('/profile') : null,
+            onPressed:
+                canOpenProfile ? () => context.go(AppLocations.profile) : null,
             icon: CircleAvatar(
               radius: 20,
               backgroundColor: AppColors.greenLight,

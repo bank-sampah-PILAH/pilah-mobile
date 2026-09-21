@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,19 +22,19 @@ import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_c
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
-  static const route = '/profile';
+  static const route = AppLocations.profile;
 
   // [ProfileCubit] is app-scoped and provided in [App]; loading is kicked off
   // from _ProfileView's initState so the request carries the authenticated
   // session rather than firing at cold start.
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-        builder: (context, state) =>
-            state is Authenticated && state.authEntity.role == 'nasabah'
-                ? const ProfilNasabahPage()
-                : const _ProfileView(),
-      );
+  Widget build(BuildContext context) {
+    final isNasabah = context.select<AuthenticationBloc, bool>((bloc) {
+      final state = bloc.state;
+      return state is Authenticated && state.authEntity.role == 'nasabah';
+    });
+    return isNasabah ? const ProfilNasabahPage() : const _ProfileView();
+  }
 }
 
 class _ProfileView extends StatefulWidget {
