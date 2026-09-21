@@ -18,10 +18,7 @@ const _bank = BankSampahDirectoryEntity(
   fotoLogo: '',
 );
 
-const _request = RegisterNasabahRequest(
-  bankSampahId: 'bank-1',
-  alamat: 'Jl. Melati No. 5',
-);
+const _request = RegisterNasabahRequest(bankSampahId: 'bank-1');
 
 DioException _refusal(String message, {int status = 400}) => DioException(
       requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),

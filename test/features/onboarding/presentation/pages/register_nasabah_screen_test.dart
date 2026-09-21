@@ -85,12 +85,9 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('submits the picked bank and address, then routes onward',
-      (tester) async {
-    when(() => dataSource.registerNasabah(const RegisterNasabahRequest(
-          bankSampahId: 'bank-1',
-          alamat: 'Jl. Melati No. 5',
-        ))).thenAnswer(
+  testWidgets('submits the picked bank, then routes onward', (tester) async {
+    when(() => dataSource.registerNasabah(
+        const RegisterNasabahRequest(bankSampahId: 'bank-1'))).thenAnswer(
       (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'),
     );
 
@@ -109,18 +106,11 @@ void main() {
     // Bottom sheet closed, selection now shown on the form.
     expect(find.text('Bank Sampah BTH'), findsOneWidget);
 
-    await tester.enterText(
-      find.byType(TextFormField),
-      'Jl. Melati No. 5',
-    );
-
     await tester.tap(find.text('Ajukan Pendaftaran'));
     await tester.pumpAndSettle();
 
-    verify(() => dataSource.registerNasabah(const RegisterNasabahRequest(
-          bankSampahId: 'bank-1',
-          alamat: 'Jl. Melati No. 5',
-        ))).called(1);
+    verify(() => dataSource.registerNasabah(
+        const RegisterNasabahRequest(bankSampahId: 'bank-1'))).called(1);
     verify(() => auth.add(
           any<AuthenticationEvent>(that: isA<RefreshUserRequested>()),
         )).called(1);
@@ -131,7 +121,6 @@ void main() {
       (tester) async {
     await pump(tester);
 
-    await tester.enterText(find.byType(TextFormField), 'Jl. Melati No. 5');
     await tester.tap(find.text('Ajukan Pendaftaran'));
     await tester.pumpAndSettle();
 
