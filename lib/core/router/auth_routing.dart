@@ -18,13 +18,17 @@ const inviteProcessingLocation = '/invite-processing';
 /// so onboarding routing stays consistent.
 ///
 /// [hasPendingInvite] reports whether an invite token was captured from a deep
-/// link and is still waiting to be redeemed.
-String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
-  // A pending invite outranks the user's own onboarding step: they followed an
-  // invite link. Superadmins and Pengelola Induk cannot redeem bank invites.
-  if (hasPendingInvite &&
-      step != 'superadmin_dashboard' &&
-      step != 'pengelola_induk_dashboard') {
+/// link and is still waiting to be redeemed. [role] gates invite routing to
+/// the role accepted by the backend.
+String locationForAuthStep(
+  String? step, {
+  bool hasPendingInvite = false,
+  String? role,
+}) {
+  // A pending invite outranks the user's own onboarding step only for the
+  // backend-supported role. Other roles keep their own route and discard the
+  // token through [resolvePendingInvite].
+  if (hasPendingInvite && role == 'pengelola' && step != 'superadmin_dashboard') {
     // A brand-new joiner whose profile isn't complete yet finishes it and
     // redeems the token together on the completion screen (invite mode).
     if (step == 'complete_profile') return completeProfileLocation;
@@ -81,7 +85,11 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
 /// top-level redirect, the resume watcher) should use this rather than
 /// [locationForAuthStep], which always has to answer with somewhere to go.
 String? pendingInviteLocation(String? step) {
-  final location = locationForAuthStep(step, hasPendingInvite: true);
+  final location = locationForAuthStep(
+    step,
+    hasPendingInvite: true,
+    role: 'pengelola',
+  );
   return location == completeProfileLocation ||
           location == inviteProcessingLocation
       ? location
