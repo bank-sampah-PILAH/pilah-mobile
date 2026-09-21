@@ -23,6 +23,9 @@ class _StubEnvironment implements AppEnvironment {
   String get demoCustomerEmail => 'configured.customer@example.com';
 
   @override
+  String get demoIndukEmail => 'configured.induk@example.com';
+
+  @override
   String get demoSuperadminEmail => 'configured.superadmin@example.com';
 }
 
@@ -86,6 +89,7 @@ void main() {
         env['DEMO_PENGELOLA_INDUK_EMAIL'],
       );
       expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
+      expect(DemoLoginProfiles.induk.email, env['DEMO_INDUK_EMAIL']);
       expect(
         DemoLoginProfiles.superadmin.email,
         env['DEMO_SUPERADMIN_EMAIL'],
@@ -102,12 +106,19 @@ void main() {
           'configured.operator@example.com',
           'configured.induk@example.com',
           'configured.customer@example.com',
+          'configured.induk@example.com',
           'configured.superadmin@example.com',
         ],
       );
       expect(
         profiles.map((profile) => profile.tokenPrefix),
-        ['dev', 'dev-pengelola-induk', 'dev-nasabah', 'dev-superadmin'],
+        [
+          'dev',
+          'dev-pengelola-induk',
+          'dev-nasabah',
+          'dev-pengelola-induk',
+          'dev-superadmin',
+        ],
       );
     });
   });
