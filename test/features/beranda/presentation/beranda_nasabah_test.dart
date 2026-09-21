@@ -102,6 +102,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.byType(LoginPage), findsNothing);
+    verifyNever(() => dashboard.loadStats());
+    verifyNever(() => activity.load());
   }
 
   group('PIL-225 beranda nasabah — first red slice', () {
@@ -115,23 +117,56 @@ void main() {
     for (final label in ['Saldo', 'Riwayat Aktivitas', 'Detail Bank Sampah']) {
       testWidgets('beranda menyediakan akses aktif ke $label', (tester) async {
         final semantics = tester.ensureSemantics();
-        addTearDown(semantics.dispose);
-        await loginAsNasabah(tester);
-        final entry = find.text(label);
-        expect(entry, findsOneWidget);
-        await tester.ensureVisible(entry);
-        await tester.pumpAndSettle();
-        expect(
-          tester
-              .getSemantics(entry)
-              .getSemanticsData()
-              .hasAction(SemanticsAction.tap),
-          isTrue,
-          reason: '$label harus bisa diakses, bukan sekadar teks statis',
-        );
+        try {
+          await loginAsNasabah(tester);
+          final entry = find.text(label);
+          expect(entry, findsOneWidget);
+          await tester.ensureVisible(entry);
+          await tester.pumpAndSettle();
+          expect(
+            tester
+                .getSemantics(entry)
+                .getSemanticsData()
+                .hasAction(SemanticsAction.tap),
+            isTrue,
+            reason: '$label harus bisa diakses, bukan sekadar teks statis',
+          );
+        } finally {
+          semantics.dispose();
+        }
       });
     }
 
+    testWidgets('nasabah tidak melihat menu pengelola', (tester) async {
+      await loginAsNasabah(tester);
+      expect(find.text('Nasabah'), findsNothing);
+      expect(find.text('Laporan'), findsNothing);
+      expect(find.text('TOTAL KAS BULAN INI'), findsNothing);
+    });
+
+    for (final entry in {
+      'Saldo': 'Informasi saldo Anda belum tersedia.',
+      'Riwayat Aktivitas': 'Informasi riwayat aktivitas Anda belum tersedia.',
+      'Detail Bank Sampah': 'Unit bank sampah Anda: Bank Sampah Melati',
+    }.entries) {
+      testWidgets('ketuk ${entry.key} membuka informasi dan dapat ditutup', (
+        tester,
+      ) async {
+        await loginAsNasabah(tester);
+        await tester.ensureVisible(find.text(entry.key));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(entry.key));
+        await tester.pumpAndSettle();
+        expect(find.text(entry.value), findsOneWidget);
+        await tester.tap(find.text('Tutup'));
+        await tester.pumpAndSettle();
+        expect(find.text(entry.value), findsNothing);
+        await tester.scrollUntilVisible(find.text('Beranda'), -300);
+        await tester.pumpAndSettle();
+        expect(find.text('Beranda'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
     for (final bankName in ['Bank Sampah Melati', 'Bank Sampah Kenanga']) {
       testWidgets('menampilkan unit milik akun: $bankName', (tester) async {
         await loginAsNasabah(tester, bankName: bankName);
