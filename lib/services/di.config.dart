@@ -233,6 +233,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i449.ActivateNasabahUseCase>(
         () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i66.ApproveNasabahUseCase>(
+        () => _i66.ApproveNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i529.RejectNasabahUseCase>(
+        () => _i529.RejectNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i296.GetNasabahRingkasanUseCase>(
         () => _i296.GetNasabahRingkasanUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i524.UpdateNasabahUseCase>(
@@ -241,10 +245,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i850.DeactivateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i532.AddNasabahUseCase>(
         () => _i532.AddNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i66.ApproveNasabahUseCase>(
-        () => _i66.ApproveNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i529.RejectNasabahUseCase>(
-        () => _i529.RejectNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i932.DashboardCubit>(
         () => _i932.DashboardCubit(gh<_i137.GetDashboardStatsUseCase>()));
     gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(

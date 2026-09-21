@@ -82,15 +82,17 @@ class NasabahListItem extends StatelessWidget {
     if (cubit == null) return;
     final overlayContext = Navigator.of(context, rootNavigator: true).context;
 
+    final reject = await _showActionSheet(context);
+    if (reject == null || !context.mounted) return;
     final catatan = await showNasabahApprovalDialog(
       context,
-      isApproving: true,
+      isApproving: !reject,
       customerName: name,
     );
     if (catatan == null) return;
     final error = await cubit.decideNasabah(
       id ?? idNasabah ?? '',
-      approve: true,
+      approve: !reject,
       catatan: catatan,
     );
     if (overlayContext.mounted && error != null) {
@@ -100,6 +102,44 @@ class NasabahListItem extends StatelessWidget {
         message: error.displayMessage,
       );
     }
+  }
+
+  /// Action sheet for a pending submission: Setujui / Tolak. Returns `true`
+  /// to reject, `false` to approve, `null` when dismissed.
+  Future<bool?> _showActionSheet(BuildContext context) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.check_circle_outline,
+                  color: Color(0xFF006D44),
+                ),
+                title: const Text('Setujui'),
+                onTap: () => Navigator.of(sheetContext).pop(false),
+              ),
+              ListTile(
+                leading: const Icon(Icons.cancel_outlined, color: Colors.red),
+                title: const Text('Tolak'),
+                onTap: () => Navigator.of(sheetContext).pop(true),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -161,18 +201,14 @@ class NasabahListItem extends StatelessWidget {
                         _PendingBadge(),
                       ] else if (!isActive) ...[
                         const SizedBox(width: 8),
-                        CustomStatusBadge(
-                          isActive: false,
-                        ),
+                        CustomStatusBadge(isActive: false),
                       ],
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     phone,
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[400],
-                    ),
+                    style: AppTextStyle.small.copyWith(color: Colors.grey[400]),
                   ),
                 ],
               ),
