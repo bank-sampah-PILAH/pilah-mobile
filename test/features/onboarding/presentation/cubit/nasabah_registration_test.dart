@@ -58,8 +58,11 @@ void main() {
     });
 
     test('surfaces a network failure instead of throwing', () async {
-      when(() => dataSource.listBankSampahDirectory())
-          .thenThrow(_refusal('Gagal memuat daftar bank sampah'));
+      // Rejected future, not a synchronous throw: apiCall receives the
+      // future already evaluated, so a throw during the mock call itself
+      // would sail past its try/catch rather than exercise it.
+      when(() => dataSource.listBankSampahDirectory()).thenAnswer(
+          (_) async => throw _refusal('Gagal memuat daftar bank sampah'));
 
       final (:result, :error) = await cubit.loadBankSampahDirectory();
 
@@ -81,8 +84,9 @@ void main() {
     });
 
     test('surfaces the backend refusal', () async {
-      when(() => dataSource.registerNasabah(_request))
-          .thenThrow(_refusal('Anda sudah terdaftar sebagai nasabah di bank sampah ini'));
+      when(() => dataSource.registerNasabah(_request)).thenAnswer(
+          (_) async => throw _refusal(
+              'Anda sudah terdaftar sebagai nasabah di bank sampah ini'));
 
       final (:result, :error) = await cubit.registerNasabah(_request);
 

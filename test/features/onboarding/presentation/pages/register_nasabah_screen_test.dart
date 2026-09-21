@@ -57,7 +57,7 @@ void main() {
 
   tearDown(() => onboarding.close());
 
-  Future<void> _pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester) async {
     final router = GoRouter(
       initialLocation: RegisterNasabahScreen.route,
       routes: [
@@ -94,7 +94,7 @@ void main() {
       (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'),
     );
 
-    await _pump(tester);
+    await pump(tester);
 
     // Nothing picked yet.
     expect(find.text('Tap untuk pilih bank sampah'), findsOneWidget);
@@ -129,7 +129,7 @@ void main() {
 
   testWidgets('blocks submit and shows an inline error with no bank picked',
       (tester) async {
-    await _pump(tester);
+    await pump(tester);
 
     await tester.enterText(find.byType(TextFormField), 'Jl. Melati No. 5');
     await tester.tap(find.text('Ajukan Pendaftaran'));
