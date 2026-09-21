@@ -24,6 +24,9 @@ class _FakeRegisterNasabahRequest extends Fake
 
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
+class _FakeCompleteProfileRequest extends Fake
+    implements CompleteProfileRequest {}
+
 const _bank = BankSampahDirectoryEntity(
   id: 'bank-1',
   nama: 'Bank Sampah BTH',
@@ -32,10 +35,19 @@ const _bank = BankSampahDirectoryEntity(
   fotoLogo: '',
 );
 
+const _draft = CompleteProfileRequest(
+  nama: 'Nasabah PILAH',
+  jenisKelamin: 'perempuan',
+  tanggalLahir: '1998-05-20',
+  noHp: '81234567890',
+  alamat: 'Jl. Melati No. 5',
+);
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeRegisterNasabahRequest());
     registerFallbackValue(_FakeAuthEvent());
+    registerFallbackValue(_FakeCompleteProfileRequest());
   });
 
   late _MockAuthBloc auth;
@@ -57,10 +69,21 @@ void main() {
 
   tearDown(() => onboarding.close());
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<GoRouter> pump(WidgetTester tester, {bool pushed = false}) async {
     final router = GoRouter(
-      initialLocation: RegisterNasabahScreen.route,
+      initialLocation:
+          pushed ? '/complete-profile' : RegisterNasabahScreen.route,
       routes: [
+        GoRoute(
+          path: '/complete-profile',
+          builder: (_, __) => const Scaffold(body: Text('COMPLETE PROFILE')),
+          routes: [
+            GoRoute(
+              path: 'register-nasabah',
+              builder: (_, __) => const RegisterNasabahScreen(),
+            ),
+          ],
+        ),
         GoRoute(
           path: RegisterNasabahScreen.route,
           builder: (_, __) => const RegisterNasabahScreen(),
@@ -83,6 +106,13 @@ void main() {
       ),
     );
     await tester.pump();
+
+    if (pushed) {
+      router.push('/complete-profile/register-nasabah');
+      await tester.pumpAndSettle();
+    }
+
+    return router;
   }
 
   testWidgets('submits the picked bank, then routes onward', (tester) async {
@@ -126,5 +156,55 @@ void main() {
 
     expect(find.text('Bank sampah wajib dipilih'), findsOneWidget);
     verifyNever(() => dataSource.registerNasabah(any()));
+  });
+
+  testWidgets('hides the Kembali button when reached directly', (tester) async {
+    await pump(tester);
+
+    expect(find.text('Kembali'), findsNothing);
+  });
+
+  testWidgets(
+      'shows Kembali mid-wizard and pops back to the profile screen underneath',
+      (tester) async {
+    onboarding.saveProfileDraft(_draft);
+
+    await pump(tester, pushed: true);
+
+    expect(find.text('Kembali'), findsOneWidget);
+
+    await tester.tap(find.text('Kembali'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('COMPLETE PROFILE'), findsOneWidget);
+  });
+
+  testWidgets('sends the banked profile draft before the membership request',
+      (tester) async {
+    onboarding.saveProfileDraft(_draft);
+    when(() => dataSource.completeProfile(_draft)).thenAnswer(
+      (_) async => const OnboardingResult(nextStep: 'register_nasabah'),
+    );
+    when(() => dataSource.registerNasabah(
+        const RegisterNasabahRequest(bankSampahId: 'bank-1'))).thenAnswer(
+      (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'),
+    );
+
+    await pump(tester, pushed: true);
+
+    await tester.tap(find.text('Tap untuk pilih bank sampah'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bank Sampah BTH'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ajukan Pendaftaran'));
+    await tester.pumpAndSettle();
+
+    verifyInOrder([
+      () => dataSource.completeProfile(_draft),
+      () => dataSource.registerNasabah(
+          const RegisterNasabahRequest(bankSampahId: 'bank-1')),
+    ]);
+    expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
   });
 }
