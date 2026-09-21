@@ -14,8 +14,8 @@ import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_c
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart';
 
 /// The nasabah half of PIL-204: a calon nasabah, having already completed
-/// their profile on the shared complete_profile step, fills in their address
-/// and picks a bank sampah to apply to join.
+/// their profile (including address) on the shared complete_profile step,
+/// picks a bank sampah to apply to join.
 class RegisterNasabahScreen extends StatefulWidget {
   const RegisterNasabahScreen({super.key});
 
@@ -27,7 +27,6 @@ class RegisterNasabahScreen extends StatefulWidget {
 
 class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _alamatController = TextEditingController();
 
   BankSampahDirectoryEntity? _selectedBank;
   // Only shown once a submit attempt happens, matching the text fields'
@@ -36,12 +35,6 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   bool _showBankError = false;
   bool _isLoading = false;
 
-  @override
-  void dispose() {
-    _alamatController.dispose();
-    super.dispose();
-  }
-
   Future<void> _onSubmit() async {
     setState(() => _showBankError = _selectedBank == null);
     final formValid = _formKey.currentState?.validate() ?? false;
@@ -49,10 +42,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
 
     setState(() => _isLoading = true);
 
-    final request = RegisterNasabahRequest(
-      bankSampahId: _selectedBank!.id,
-      alamat: _alamatController.text.trim(),
-    );
+    final request = RegisterNasabahRequest(bankSampahId: _selectedBank!.id);
     final (:result, :error) =
         await context.read<OnboardingCubit>().registerNasabah(request);
 
@@ -189,8 +179,8 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Lengkapi alamat dan pilih bank sampah untuk '
-                              'mengajukan keanggotaan.',
+                              'Pilih bank sampah untuk mengajukan '
+                              'keanggotaan.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white.withValues(alpha: 0.9),
@@ -238,45 +228,6 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                               onBankSelected: _onBankSelected,
                               hasError: _showBankError,
                               errorText: 'Bank sampah wajib dipilih',
-                            ),
-                          ),
-                          _buildFormField(
-                            label: 'ALAMAT LENGKAP',
-                            child: TextFormField(
-                              controller: _alamatController,
-                              maxLines: 5,
-                              minLines: 3,
-                              decoration: InputDecoration(
-                                hintText:
-                                    'Jl. Nama Jalan, RT/RW, Kelurahan,\nKecamatan, Kota',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Alamat wajib diisi';
-                                }
-                                return null;
-                              },
                             ),
                           ),
                         ],

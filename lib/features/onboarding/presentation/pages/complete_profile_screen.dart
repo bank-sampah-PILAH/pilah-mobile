@@ -43,9 +43,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _nameController = TextEditingController();
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _alamatController = TextEditingController();
   String? _gender;
   DateTime? _selectedDob;
   bool _isLoading = false;
+
+  /// Only nasabah accounts have a use for a personal address here —
+  /// pengelola/pengelola induk give their organization's address on a
+  /// separate step.
+  bool get _isNasabah {
+    final authState = context.read<AuthenticationBloc>().state;
+    return authState is Authenticated && authState.authEntity.role == 'nasabah';
+  }
 
   @override
   void initState() {
@@ -84,6 +93,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     _nameController.text = draft.nama;
     _phoneController.text = draft.noHp;
+    _alamatController.text = draft.alamat;
     _gender = draft.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
 
     // Stored as the ISO string the API wants; the picker and the field need a
@@ -104,6 +114,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     _nameController.dispose();
     _dobController.dispose();
     _phoneController.dispose();
+    _alamatController.dispose();
     super.dispose();
   }
 
@@ -166,6 +177,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
       tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
       noHp: _phoneController.text.trim(),
+      alamat: _isNasabah ? _alamatController.text.trim() : '',
     );
 
     final cubit = context.read<OnboardingCubit>();
@@ -792,6 +804,48 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               },
                             ),
                           ),
+
+                          // Field 5: Alamat — nasabah accounts only.
+                          if (_isNasabah)
+                            _buildFormField(
+                              label: 'ALAMAT LENGKAP',
+                              child: TextFormField(
+                                controller: _alamatController,
+                                maxLines: 5,
+                                minLines: 3,
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'Jl. Nama Jalan, RT/RW, Kelurahan,\nKecamatan, Kota',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.greenDark, width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 16),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Alamat wajib diisi';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
                         ],
                       ),
                     ),

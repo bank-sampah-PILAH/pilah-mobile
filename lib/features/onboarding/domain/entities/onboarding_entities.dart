@@ -13,11 +13,16 @@ class CompleteProfileRequest {
   /// Local number digits (e.g. `81234567890`); the backend normalizes it.
   final String noHp;
 
+  /// Required for a nasabah account, ignored by the backend for every other
+  /// role. Empty when this account isn't nasabah.
+  final String alamat;
+
   const CompleteProfileRequest({
     required this.nama,
     required this.jenisKelamin,
     required this.tanggalLahir,
     required this.noHp,
+    this.alamat = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -25,6 +30,7 @@ class CompleteProfileRequest {
         'jenis_kelamin': jenisKelamin,
         'tanggal_lahir': tanggalLahir,
         'no_hp': noHp,
+        if (alamat.trim().isNotEmpty) 'alamat': alamat,
       };
 }
 
@@ -74,34 +80,25 @@ class BankSampahDirectoryEntity {
 }
 
 /// Input for `POST /onboarding/nasabah`: a calon nasabah applying to join
-/// [bankSampahId]. `nama`/`jenis_kelamin`/`tanggal_lahir`/`no_hp` are not
-/// asked for again here — the backend copies them from the profile completed
-/// on the shared `complete_profile` step.
+/// [bankSampahId]. `nama`/`jenis_kelamin`/`tanggal_lahir`/`no_hp`/`alamat`
+/// are not asked for again here — the backend copies them from the profile
+/// completed on the shared `complete_profile` step.
 class RegisterNasabahRequest {
   final String bankSampahId;
-  final String alamat;
 
-  const RegisterNasabahRequest({
-    required this.bankSampahId,
-    required this.alamat,
-  });
+  const RegisterNasabahRequest({required this.bankSampahId});
 
-  Map<String, dynamic> toJson() => {
-        'bank_sampah_id': bankSampahId,
-        'alamat': alamat,
-      };
+  Map<String, dynamic> toJson() => {'bank_sampah_id': bankSampahId};
 
   // Value equality so a mocktail `verify` can match a request rebuilt from
   // form state against the fresh instance the screen actually sent, instead
   // of requiring the exact same object reference.
   @override
   bool operator ==(Object other) =>
-      other is RegisterNasabahRequest &&
-      other.bankSampahId == bankSampahId &&
-      other.alamat == alamat;
+      other is RegisterNasabahRequest && other.bankSampahId == bankSampahId;
 
   @override
-  int get hashCode => Object.hash(bankSampahId, alamat);
+  int get hashCode => bankSampahId.hashCode;
 }
 
 /// Outcome of an onboarding step: the backend's next routing hint, plus the
