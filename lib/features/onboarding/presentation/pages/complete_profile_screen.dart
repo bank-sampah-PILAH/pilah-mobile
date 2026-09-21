@@ -162,6 +162,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         authState.authEntity.bankSampahStatus == null;
   }
 
+  /// Whether finishing this form leads to the nasabah bank-sampah picker.
+  ///
+  /// No further condition is needed the way [_startsNewRegistration] checks
+  /// `bankSampahStatus`: reaching this screen at all means `is_profile_complete`
+  /// is false, and a Nasabah membership row can only exist for an account
+  /// whose profile is already complete (`IsNasabah` requires it) — so a
+  /// nasabah account here can never already have one, and `next_step` is
+  /// deterministically `register_nasabah` the moment the profile lands.
+  bool get _startsNasabahRegistration {
+    final authState = context.read<AuthenticationBloc>().state;
+    return authState is Authenticated && authState.authEntity.role == 'nasabah';
+  }
+
   String _isoDate(DateTime date) =>
       "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
@@ -197,6 +210,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (!isInvite && _startsNewRegistration) {
       cubit.saveProfileDraft(request);
       context.push('/register-bank-sampah');
+      return;
+    }
+
+    // Same deferral, for the nasabah wizard: the bank-sampah picker submits
+    // this draft alongside the membership application, so the user can still
+    // come back and edit their profile (including the alamat just entered)
+    // right up until that final submit.
+    if (!isInvite && _startsNasabahRegistration) {
+      cubit.saveProfileDraft(request);
+      context.push('/register-nasabah');
       return;
     }
 

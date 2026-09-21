@@ -43,8 +43,9 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
     setState(() => _isLoading = true);
 
     final request = RegisterNasabahRequest(bankSampahId: _selectedBank!.id);
-    final (:result, :error) =
-        await context.read<OnboardingCubit>().registerNasabah(request);
+    final (:result, :error) = await context
+        .read<OnboardingCubit>()
+        .submitNasabahRegistration(request);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -69,6 +70,41 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
       _selectedBank = bank;
       _showBankError = false;
     });
+  }
+
+  /// Whether this form is step two of the wizard rather than a destination in
+  /// its own right.
+  ///
+  /// A banked draft is the evidence: it exists only when the profile screen
+  /// pushed this route and is still sitting underneath, which is also the only
+  /// case where popping leads anywhere useful. Reached any other way — a
+  /// relogin whose profile was already complete — there is no page behind
+  /// this one and back has to keep meaning "leave onboarding".
+  bool get _isWizardStep => context.read<OnboardingCubit>().hasProfileDraft;
+
+  /// Intercepts a back-navigation attempt.
+  ///
+  /// Mid-wizard the pop is allowed through to the profile screen, which
+  /// refills itself from the draft — so anything picked here, and the
+  /// profile fields, both stay editable until the final submit.
+  void _onPopInvoked(bool didPop) {
+    if (didPop) return;
+    if (_isWizardStep) {
+      _backToProfile();
+      return;
+    }
+    _confirmExit();
+  }
+
+  /// Returns to step one, preferring a pop so the profile screen underneath is
+  /// revealed rather than rebuilt over the top of this one.
+  void _backToProfile() {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      context.go('/complete-profile');
+    }
   }
 
   Future<void> _confirmExit() async {
@@ -149,9 +185,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
       listener: (context, state) => context.go(LoginPage.route),
       child: PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) _confirmExit();
-        },
+        onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
         child: Scaffold(
           backgroundColor: const Color(0xFFF9FAFB),
           body: SingleChildScrollView(
@@ -238,44 +272,73 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _onSubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.greenDark,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Ajukan Pendaftaran',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward,
-                                    color: Colors.white, size: 20),
-                              ],
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _onSubmit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.greenDark,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                    ),
+                            elevation: 0,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Ajukan Pendaftaran',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Icon(Icons.arrow_forward,
+                                        color: Colors.white, size: 20),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      if (_isWizardStep) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: _backToProfile,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(color: Colors.grey.shade300),
+                              backgroundColor: Colors.white,
+                            ),
+                            child: Text(
+                              'Kembali',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 Padding(

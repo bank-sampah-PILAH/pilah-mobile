@@ -191,6 +191,52 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     );
   }
 
+  /// Sends the whole nasabah wizard: the banked profile draft (with alamat)
+  /// first, then the bank-sampah membership application, and reports the
+  /// step that failed.
+  ///
+  /// Mirrors [submitRegistration]'s ordering and the same
+  /// [_profileSubmitted] survival trick: see that method's doc for why the
+  /// two calls aren't atomic. With no draft banked this is just
+  /// [registerNasabah] — the user reached the form directly, on an account
+  /// whose profile was already complete.
+  Future<({OnboardingResult? result, NetworkException? error})>
+      submitNasabahRegistration(RegisterNasabahRequest request) async {
+    emit(const OnboardingSubmitting());
+
+    final draft = _profileDraft;
+    if (draft != null && !_profileSubmitted) {
+      final profileEither = await apiCall<OnboardingResult>(
+        func: _dataSource.completeProfile(draft),
+        mapper: (value) => value as OnboardingResult,
+      );
+
+      final NetworkException? profileError =
+          profileEither.fold((error) => error, (_) => null);
+
+      if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
+        emit(const OnboardingInitial());
+        return (result: null, error: profileError);
+      }
+
+      _profileSubmitted = true;
+    }
+
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerNasabah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    emit(const OnboardingInitial());
+
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) {
+        clearProfileDraft();
+        return (result: result, error: null);
+      },
+    );
+  }
+
   /// Whether [error] is the backend declining to complete an already-complete
   /// profile.
   ///
