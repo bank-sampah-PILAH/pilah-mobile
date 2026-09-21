@@ -11,6 +11,14 @@ class PendingApprovalScreen extends StatelessWidget {
 
   static const route = '/pending-approval';
 
+  /// Whether the signed-in account is a nasabah awaiting a membership
+  /// decision, as opposed to a pengelola/pengelola induk awaiting a bank
+  /// sampah decision (PIL-188's original audience for this screen).
+  bool _isNasabah(BuildContext context) {
+    final authState = context.read<AuthenticationBloc>().state;
+    return authState is Authenticated && authState.authEntity.role == 'nasabah';
+  }
+
   Widget _buildStep({
     required bool isCompleted,
     required bool isLast,
@@ -91,6 +99,7 @@ class PendingApprovalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNasabah = _isNasabah(context);
     return BlocListener<AuthenticationBloc, AuthenticationStates>(
       listener: (context, state) {
         if (state is Unauthenticated) {
@@ -152,7 +161,9 @@ class PendingApprovalScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Admin sedang meninjau data institusi Anda.',
+                isNasabah
+                    ? 'Admin sedang meninjau data keanggotaan Anda.'
+                    : 'Admin sedang meninjau data institusi Anda.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey.shade600,
@@ -183,13 +194,19 @@ class PendingApprovalScreen extends StatelessWidget {
                         isCompleted: true,
                         isLast: false,
                         title: 'Profil diri dilengkapi',
-                        subtitle: 'Data personal PIC sudah tersimpan',
+                        subtitle: isNasabah
+                            ? 'Data personal Anda sudah tersimpan'
+                            : 'Data personal PIC sudah tersimpan',
                       ),
                       _buildStep(
                         isCompleted: true,
                         isLast: false,
-                        title: 'Data institusi dikirim',
-                        subtitle: 'Formulir registrasi bank sampah diterima',
+                        title: isNasabah
+                            ? 'Pengajuan keanggotaan dikirim'
+                            : 'Data institusi dikirim',
+                        subtitle: isNasabah
+                            ? 'Formulir pendaftaran nasabah diterima'
+                            : 'Formulir registrasi bank sampah diterima',
                       ),
                       _buildStep(
                         isCompleted: false,
