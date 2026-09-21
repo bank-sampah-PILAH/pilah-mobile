@@ -254,7 +254,13 @@ class AppRouterConfig {
               GoRoute(
                 path: JadwalPage.route,
                 name: JadwalPage.route,
-                builder: (context, state) => const JadwalPage(),
+                builder: (context, state) {
+                  final authState = context.read<AuthenticationBloc>().state;
+                  return JadwalPage(
+                    customerMode: authState is Authenticated &&
+                        authState.authEntity.role == 'nasabah',
+                  );
+                },
               ),
             ],
           ),

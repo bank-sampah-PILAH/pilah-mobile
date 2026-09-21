@@ -8,8 +8,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dar
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 
-class _MockJadwalCubit extends MockCubit<JadwalState>
-    implements JadwalCubit {}
+class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 
 void main() {
   testWidgets('customer schedule view is read only', (tester) async {

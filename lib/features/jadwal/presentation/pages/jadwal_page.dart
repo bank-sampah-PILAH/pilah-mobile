@@ -11,8 +11,9 @@ import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calenda
 
 class JadwalPage extends StatefulWidget {
   static const route = '/jadwal';
+  final bool customerMode;
 
-  const JadwalPage({super.key});
+  const JadwalPage({super.key, this.customerMode = false});
 
   @override
   State<JadwalPage> createState() => _JadwalPageState();
@@ -28,8 +29,12 @@ class _JadwalPageState extends State<JadwalPage> {
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
-    context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
-    _loadCalendarDatesFor(_selectedDate);
+    if (widget.customerMode) {
+      context.read<JadwalCubit>().loadJadwal();
+    } else {
+      context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
+      _loadCalendarDatesFor(_selectedDate);
+    }
   }
 
   @override
@@ -165,7 +170,7 @@ class _JadwalPageState extends State<JadwalPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          'Jadwal Kegiatan',
+          widget.customerMode ? 'Jadwal Bank Sampah' : 'Jadwal Kegiatan',
           style: AppTextStyle.headline1.copyWith(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -176,18 +181,20 @@ class _JadwalPageState extends State<JadwalPage> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
-      floatingActionButton: BlocBuilder<JadwalCubit, JadwalState>(
-        builder: (context, state) => FloatingActionButton(
-          heroTag: 'jadwal_page_fab',
-          tooltip: 'Buat Jadwal',
-          onPressed: state is JadwalLoaded &&
-                  (state.isTransitioning || state.isSaving)
-              ? null
-              : () => _openForm(),
-          backgroundColor: AppColors.greenDark,
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
-      ),
+      floatingActionButton: widget.customerMode
+          ? null
+          : BlocBuilder<JadwalCubit, JadwalState>(
+              builder: (context, state) => FloatingActionButton(
+                heroTag: 'jadwal_page_fab',
+                tooltip: 'Buat Jadwal',
+                onPressed: state is JadwalLoaded &&
+                        (state.isTransitioning || state.isSaving)
+                    ? null
+                    : () => _openForm(),
+                backgroundColor: AppColors.greenDark,
+                child: const Icon(Icons.add, color: Colors.white),
+              ),
+            ),
       body: BlocBuilder<JadwalCubit, JadwalState>(
         builder: (context, state) {
           if (state is JadwalInitial || state is JadwalLoading) {
@@ -197,130 +204,189 @@ class _JadwalPageState extends State<JadwalPage> {
             return _RetryableMessage(
               message: state.message,
               buttonLabel: 'Coba Lagi',
-              onPressed: () =>
-                  context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
+              onPressed: () => context.read<JadwalCubit>().loadJadwal(
+                    date: widget.customerMode ? null : _selectedDate,
+                  ),
             );
           }
 
-          final loaded = state as JadwalLoaded;
-          final isTransitioning = loaded.isTransitioning;
-          final isLifecycleActionDisabled =
-              isTransitioning || loaded.isSaving;
-          final items = List<JadwalEntity>.of(loaded.items)
+          final loadedState = state as JadwalLoaded;
+          final items = List<JadwalEntity>.of(loadedState.items)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
-          final dayItems = items
-              .where(
-                (item) => DateUtils.isSameDay(
-                  item.mulaiPada.toLocal(),
-                  _selectedDate,
-                ),
-              )
-              .toList();
           return RefreshIndicator(
-            onRefresh: () => context
-                .read<JadwalCubit>()
-                .loadJadwal(silent: true, date: _selectedDate),
-            child: ListView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
-              children: [
-                JadwalCalendar(
-                  selectedDate: _selectedDate,
-                  scheduledDates: loaded.scheduledDates,
-                  isMonthExpanded: _isMonthExpanded,
-                  onSelectDate: _selectDate,
-                  onNavigate: _navigateCalendar,
-                  onToggleMonth: () =>
-                      setState(() => _isMonthExpanded = !_isMonthExpanded),
+            onRefresh: () => context.read<JadwalCubit>().loadJadwal(
+                  silent: true,
+                  date: widget.customerMode ? null : _selectedDate,
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        formatJadwalDayHeading(_selectedDate),
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${loaded.totalCount} jadwal',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (loaded.isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 28),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (dayItems.isEmpty)
-                  _EmptyScheduleDay(
-                    date: _selectedDate,
-                    onCreate: _openForm,
-                    onRefresh: () => context
-                        .read<JadwalCubit>()
-                        .loadJadwal(date: _selectedDate),
-                  )
-                else
-                  ...dayItems.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _ScheduleCard(
-                        item: item,
-                        onTap: isTransitioning ? null : () => _openForm(item),
-                        onCancel: isLifecycleActionDisabled
-                            ? null
-                            : () => _confirmCancellation(item),
-                        onPublish: isLifecycleActionDisabled
-                            ? null
-                            : () => _changeStatus(item, 'terbitkan'),
-                        onComplete: isLifecycleActionDisabled
-                            ? null
-                            : () => _confirmCompletion(item),
-                      ),
-                    ),
-                  ),
-                if (!loaded.isLoading && loaded.hasMore)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: loaded.loadingMoreError != null
-                        ? Center(
-                            child: TextButton.icon(
-                              onPressed:
-                                  context.read<JadwalCubit>().loadNextPage,
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Coba muat lagi'),
-                            ),
-                          )
-                        : loaded.isLoadingMore
-                            ? const Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              )
-                            : const SizedBox(height: 1),
-                  ),
-              ],
-            ),
+            child: widget.customerMode
+                ? _buildCustomerAgenda(items, loadedState)
+                : _buildPengurusAgenda(items, loadedState),
           );
         },
       ),
     );
+  }
+
+  Widget _buildCustomerAgenda(
+    List<JadwalEntity> items,
+    JadwalLoaded loadedState,
+  ) {
+    return ListView.separated(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      itemCount:
+          items.isEmpty ? 1 : items.length + (loadedState.hasMore ? 1 : 0),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        if (items.isEmpty) {
+          return SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.65,
+            child: _RetryableMessage(
+              message: 'Belum ada jadwal kegiatan',
+              buttonLabel: 'Muat Ulang',
+              onPressed: () => context.read<JadwalCubit>().loadJadwal(),
+            ),
+          );
+        }
+        if (index >= items.length) {
+          return _buildLoadMoreFooter(loadedState);
+        }
+        final item = items[index];
+        return Card(
+          child: ListTile(
+            leading: Icon(
+              item.jenisKegiatan == 'penimbangan'
+                  ? Icons.scale_outlined
+                  : Icons.payments_outlined,
+              color: AppColors.greenDark,
+            ),
+            title: Text(item.lokasi),
+            subtitle: Text(
+              '${_formatDateTime(item.mulaiPada.toLocal())}\n${_statusLabel(item.status)}',
+            ),
+            isThreeLine: true,
+            trailing: item.isOverlapping
+                ? const Tooltip(
+                    message: 'Jadwal bertumpuk di lokasi yang sama',
+                    child: Icon(Icons.warning_amber, color: Colors.orange),
+                  )
+                : null,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPengurusAgenda(
+    List<JadwalEntity> items,
+    JadwalLoaded loadedState,
+  ) {
+    final isTransitioning = loadedState.isTransitioning;
+    final isLifecycleActionDisabled = isTransitioning || loadedState.isSaving;
+    final dayItems = items
+        .where(
+          (item) => DateUtils.isSameDay(
+            item.mulaiPada.toLocal(),
+            _selectedDate,
+          ),
+        )
+        .toList();
+
+    return ListView(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+      children: [
+        JadwalCalendar(
+          selectedDate: _selectedDate,
+          scheduledDates: loadedState.scheduledDates,
+          isMonthExpanded: _isMonthExpanded,
+          onSelectDate: _selectDate,
+          onNavigate: _navigateCalendar,
+          onToggleMonth: () =>
+              setState(() => _isMonthExpanded = !_isMonthExpanded),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text(
+                formatJadwalDayHeading(_selectedDate),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              '${loadedState.totalCount} jadwal',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (dayItems.isEmpty)
+          _EmptyScheduleDay(
+            date: _selectedDate,
+            onCreate: _openForm,
+            onRefresh: () =>
+                context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
+          )
+        else
+          ...dayItems.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ScheduleCard(
+                item: item,
+                onTap: isTransitioning ? null : () => _openForm(item),
+                onCancel: isLifecycleActionDisabled
+                    ? null
+                    : () => _confirmCancellation(item),
+                onPublish: isLifecycleActionDisabled
+                    ? null
+                    : () => _changeStatus(item, 'terbitkan'),
+                onComplete: isLifecycleActionDisabled
+                    ? null
+                    : () => _confirmCompletion(item),
+              ),
+            ),
+          ),
+        if (!loadedState.isLoading && loadedState.hasMore)
+          _buildLoadMoreFooter(loadedState),
+      ],
+    );
+  }
+
+  Widget _buildLoadMoreFooter(JadwalLoaded loadedState) {
+    if (loadedState.loadingMoreError != null) {
+      return Center(
+        child: TextButton.icon(
+          onPressed: context.read<JadwalCubit>().loadNextPage,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Coba muat lagi'),
+        ),
+      );
+    }
+    if (loadedState.isLoadingMore) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    return const SizedBox(height: 1);
   }
 }
 
