@@ -74,9 +74,8 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
 ///
 /// Only two screens spend a token: the completion form (invite mode) and the
 /// invite gate. Any other destination means this account can never redeem it —
-/// today that includes superadmins and Pengelola Induk — and forcing
-/// a redirect there would pin the user to one screen for the rest of the
-/// session, since nothing would ever clear the token.
+/// and forcing a redirect there would pin the user to one screen for the rest
+/// of the session, since nothing would ever clear the token.
 ///
 /// Callers that want to *interrupt* the user for a pending invite (the router's
 /// top-level redirect, the resume watcher) should use this rather than

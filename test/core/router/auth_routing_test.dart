@@ -88,9 +88,8 @@ void main() {
       expect(pendingInviteLocation(null), '/invite-processing');
     });
 
-    test('is null for a session that can never redeem an invite', () {
-      // Nothing would ever clear the token for a superadmin, so redirecting
-      // them would pin the session to one screen for good.
+    test('is null for a step that can never redeem an invite', () {
+      // No route can redeem the token from a superadmin session.
       expect(pendingInviteLocation('superadmin_dashboard'), isNull);
     });
   });
