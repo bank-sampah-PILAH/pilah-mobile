@@ -103,6 +103,14 @@ class _JadwalPageState extends State<JadwalPage> {
     );
   }
 
+  Future<void> _changeStatus(JadwalEntity item, String action) async {
+    final failure =
+        await context.read<JadwalCubit>().changeStatus(item.id, action);
+    if (!mounted || failure == null) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -219,6 +227,9 @@ class _JadwalPageState extends State<JadwalPage> {
                       child: _ScheduleCard(
                         item: item,
                         onTap: () => _openForm(item),
+                        onCancel: () => _changeStatus(item, 'batalkan'),
+                        onPublish: () => _changeStatus(item, 'terbitkan'),
+                        onComplete: () => _changeStatus(item, 'selesaikan'),
                       ),
                     ),
                   ),
@@ -355,8 +366,17 @@ class _EmptyScheduleDay extends StatelessWidget {
 class _ScheduleCard extends StatelessWidget {
   final JadwalEntity item;
   final VoidCallback onTap;
+  final VoidCallback onCancel;
+  final VoidCallback onPublish;
+  final VoidCallback onComplete;
 
-  const _ScheduleCard({required this.item, required this.onTap});
+  const _ScheduleCard({
+    required this.item,
+    required this.onTap,
+    required this.onCancel,
+    required this.onPublish,
+    required this.onComplete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -375,52 +395,105 @@ class _ScheduleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         side: BorderSide(color: Colors.grey.shade200),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _activityLabel(item.jenisKegiatan),
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _ScheduleInfoLine(icon: Icons.schedule_outlined, text: timeRange),
-              const SizedBox(height: 8),
-              _ScheduleInfoLine(icon: Icons.place_outlined, text: item.lokasi),
-              if (item.keterangan.trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _ScheduleInfoLine(
-                  icon: Icons.notes_outlined,
-                  text: item.keterangan,
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ScheduleStatus(status: item.status),
-                  const Spacer(),
-                  if (item.isOverlapping)
-                    const Tooltip(
-                      message: 'Jadwal bertumpuk di lokasi yang sama',
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                        size: 20,
-                      ),
+                  Text(
+                    _activityLabel(item.jenisKegiatan),
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ScheduleInfoLine(
+                    icon: Icons.schedule_outlined,
+                    text: timeRange,
+                  ),
+                  const SizedBox(height: 8),
+                  _ScheduleInfoLine(
+                    icon: Icons.place_outlined,
+                    text: item.lokasi,
+                  ),
+                  if (item.keterangan.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _ScheduleInfoLine(
+                      icon: Icons.notes_outlined,
+                      text: item.keterangan,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _ScheduleStatus(status: item.status),
+                      const Spacer(),
+                      if (item.isOverlapping)
+                        const Tooltip(
+                          message: 'Jadwal bertumpuk di lokasi yang sama',
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+          if (item.status == 'draft')
+            OverflowBar(
+              alignment: MainAxisAlignment.end,
+              spacing: 8,
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.greenDark,
+                  ),
+                  onPressed: onCancel,
+                  child: const Text('Batalkan'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.greenDark,
+                  ),
+                  onPressed: onPublish,
+                  child: const Text('Terbitkan'),
+                ),
+              ],
+            ),
+          if (item.status == 'diterbitkan')
+            OverflowBar(
+              alignment: MainAxisAlignment.end,
+              spacing: 8,
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.greenDark,
+                  ),
+                  onPressed: onCancel,
+                  child: const Text('Batalkan'),
+                ),
+                FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.greenLight,
+                    foregroundColor: AppColors.greenDark,
+                  ),
+                  onPressed: onComplete,
+                  child: const Text('Tandai Selesai'),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }
