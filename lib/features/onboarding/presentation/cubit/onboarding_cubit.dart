@@ -177,8 +177,8 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   /// [OnboardingResult] (with the next routing step, `nasabah_dashboard` on
   /// success) on success; otherwise the [NetworkException] carrying the
   /// backend's reason (bank sampah unavailable, already a member, ...).
-  Future<({OnboardingResult? result, NetworkException? error})>
-      registerNasabah(RegisterNasabahRequest request) async {
+  Future<({OnboardingResult? result, NetworkException? error})> registerNasabah(
+      RegisterNasabahRequest request) async {
     emit(const OnboardingSubmitting());
     final either = await apiCall<OnboardingResult>(
       func: _dataSource.registerNasabah(request),

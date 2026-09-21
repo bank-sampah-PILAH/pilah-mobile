@@ -27,7 +27,8 @@ class PilihBankSampahSection extends StatelessWidget {
       children: [
         InkWell(
           onTap: () async {
-            final result = await showModalBottomSheet<BankSampahDirectoryEntity>(
+            final result =
+                await showModalBottomSheet<BankSampahDirectoryEntity>(
               context: context,
               useRootNavigator: true,
               isScrollControlled: true,

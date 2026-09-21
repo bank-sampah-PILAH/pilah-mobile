@@ -84,8 +84,8 @@ void main() {
     });
 
     test('surfaces the backend refusal', () async {
-      when(() => dataSource.registerNasabah(_request)).thenAnswer(
-          (_) async => throw _refusal(
+      when(() => dataSource.registerNasabah(_request)).thenAnswer((_) async =>
+          throw _refusal(
               'Anda sudah terdaftar sebagai nasabah di bank sampah ini'));
 
       final (:result, :error) = await cubit.registerNasabah(_request);
