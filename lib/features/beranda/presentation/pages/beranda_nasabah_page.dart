@@ -36,7 +36,10 @@ class BerandaNasabahPage extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                     children: [
-                      _HomeHeader(name: name),
+                      _HomeHeader(
+                        name: name,
+                        canOpenProfile: auth?.role == 'nasabah',
+                      ),
                       const SizedBox(height: 12),
                       Text('Beranda',
                           style: _text(12, color: AppColors.grey100)),
@@ -145,8 +148,9 @@ TextStyle _text(
     );
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.name});
+  const _HomeHeader({required this.name, required this.canOpenProfile});
   final String name;
+  final bool canOpenProfile;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -166,13 +170,17 @@ class _HomeHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.greenLight,
-            child: Text(
-              name.isEmpty ? 'N' : name.characters.first.toUpperCase(),
-              style: _text(14,
-                  weight: FontWeight.w600, color: AppColors.greenDark),
+          IconButton(
+            tooltip: 'Profil',
+            onPressed: canOpenProfile ? () => context.go('/profile') : null,
+            icon: CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.greenLight,
+              child: Text(
+                name.isEmpty ? 'N' : name.characters.first.toUpperCase(),
+                style: _text(14,
+                    weight: FontWeight.w600, color: AppColors.greenDark),
+              ),
             ),
           ),
         ],
