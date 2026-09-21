@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -118,7 +119,10 @@ class BerandaNasabahPage extends StatelessWidget {
                       const SizedBox(width: 12),
                       Text('PILAH', style: _text(17, weight: FontWeight.w800)),
                       const Spacer(),
-                      CircleAvatar(
+                      IconButton(
+                        tooltip: 'Profil',
+                        onPressed: ready ? () => context.go('/profile') : null,
+                        icon: CircleAvatar(
                         radius: 20,
                         backgroundColor: const Color(0xFFD1FAE5),
                         child: Text(
@@ -131,6 +135,7 @@ class BerandaNasabahPage extends StatelessWidget {
                             color: const Color(0xFF047857),
                           ),
                         ),
+                      ),
                       ),
                     ],
                   ),

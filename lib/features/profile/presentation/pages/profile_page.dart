@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,7 +27,13 @@ class ProfilePage extends StatelessWidget {
   // from _ProfileView's initState so the request carries the authenticated
   // session rather than firing at cold start.
   @override
-  Widget build(BuildContext context) => const _ProfileView();
+  Widget build(BuildContext context) =>
+      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
+        builder: (context, state) =>
+            state is Authenticated && state.authEntity.role == 'nasabah'
+                ? const ProfilNasabahPage()
+                : const _ProfileView(),
+      );
 }
 
 class _ProfileView extends StatefulWidget {
