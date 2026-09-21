@@ -158,6 +158,39 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     );
   }
 
+  /// Lists the bank sampah a calon nasabah can apply to join (PIL-204's
+  /// picker). Returns the backend list on success; otherwise the
+  /// [NetworkException] so the picker can surface a retry.
+  Future<({List<BankSampahDirectoryEntity>? result, NetworkException? error})>
+      loadBankSampahDirectory() async {
+    final either = await apiCall<List<BankSampahDirectoryEntity>>(
+      func: _dataSource.listBankSampahDirectory(),
+      mapper: (value) => value as List<BankSampahDirectoryEntity>,
+    );
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Submits a calon nasabah's membership application. Returns the backend
+  /// [OnboardingResult] (with the next routing step, `nasabah_dashboard` on
+  /// success) on success; otherwise the [NetworkException] carrying the
+  /// backend's reason (bank sampah unavailable, already a member, ...).
+  Future<({OnboardingResult? result, NetworkException? error})>
+      registerNasabah(RegisterNasabahRequest request) async {
+    emit(const OnboardingSubmitting());
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerNasabah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    emit(const OnboardingInitial());
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
   /// Whether [error] is the backend declining to complete an already-complete
   /// profile.
   ///

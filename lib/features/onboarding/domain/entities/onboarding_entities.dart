@@ -46,6 +46,64 @@ class RegisterBankSampahRequest {
   });
 }
 
+/// A bank sampah a calon nasabah can apply to join, as listed by
+/// `GET /bank-sampah` (PIL-204's picker).
+class BankSampahDirectoryEntity {
+  final String id;
+  final String nama;
+  final String alamat;
+  final String kota;
+  final String fotoLogo;
+
+  const BankSampahDirectoryEntity({
+    required this.id,
+    required this.nama,
+    required this.alamat,
+    required this.kota,
+    required this.fotoLogo,
+  });
+
+  factory BankSampahDirectoryEntity.fromJson(Map<String, dynamic> json) =>
+      BankSampahDirectoryEntity(
+        id: json['id'] as String,
+        nama: json['nama'] as String,
+        alamat: (json['alamat'] as String?) ?? '',
+        kota: (json['kota'] as String?) ?? '',
+        fotoLogo: (json['foto_logo'] as String?) ?? '',
+      );
+}
+
+/// Input for `POST /onboarding/nasabah`: a calon nasabah applying to join
+/// [bankSampahId]. `nama`/`jenis_kelamin`/`tanggal_lahir`/`no_hp` are not
+/// asked for again here — the backend copies them from the profile completed
+/// on the shared `complete_profile` step.
+class RegisterNasabahRequest {
+  final String bankSampahId;
+  final String alamat;
+
+  const RegisterNasabahRequest({
+    required this.bankSampahId,
+    required this.alamat,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'bank_sampah_id': bankSampahId,
+        'alamat': alamat,
+      };
+
+  // Value equality so a mocktail `verify` can match a request rebuilt from
+  // form state against the fresh instance the screen actually sent, instead
+  // of requiring the exact same object reference.
+  @override
+  bool operator ==(Object other) =>
+      other is RegisterNasabahRequest &&
+      other.bankSampahId == bankSampahId &&
+      other.alamat == alamat;
+
+  @override
+  int get hashCode => Object.hash(bankSampahId, alamat);
+}
+
 /// Outcome of an onboarding step: the backend's next routing hint, plus the
 /// discriminator `POST /invites/accept` uses to say something happened that was
 /// neither a join nor an error.
