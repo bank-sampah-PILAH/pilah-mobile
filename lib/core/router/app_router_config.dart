@@ -71,9 +71,9 @@ class AppRouterConfig {
       final authState = context.read<AuthenticationBloc>().state;
       if (authState is! Authenticated) return null;
 
-      // `null` means this account can't redeem an invite at all (superadmin) —
-      // in which case the token is dropped here rather than left to follow the
-      // next account onto this device. See [resolvePendingInvite].
+      // `null` means this account can't redeem an invite at all — in which
+      // case the token is dropped here rather than left to follow the next
+      // account onto this device. See [resolvePendingInvite].
       final target = resolvePendingInvite(
         step: authState.authEntity.nextStep,
         role: authState.authEntity.role,

@@ -71,27 +71,30 @@ void main() {
       );
     });
 
-    test('discards a token a superadmin session can never spend', () {
-      di<InviteTokenStore>().save('invite-token-abc');
+    test('discards a token a non-pengelola role cannot spend', () {
+      for (final role in ['superadmin', 'pengelola_induk', 'nasabah']) {
+        di<InviteTokenStore>().save('invite-token-abc');
 
-      expect(
-        resolvePendingInvite(step: 'superadmin_dashboard', role: 'superadmin'),
-        isNull,
-      );
-      expect(
-        di<InviteTokenStore>().hasToken,
-        isFalse,
-        reason:
-            'a token now survives logout, so one left banked by a superadmin '
-            'would follow the next pengelola signed in on this device',
-      );
+        expect(
+          resolvePendingInvite(step: 'dashboard', role: role),
+          isNull,
+          reason: '$role cannot redeem a bank invite',
+        );
+        expect(
+          di<InviteTokenStore>().hasToken,
+          isFalse,
+          reason: 'the rejected invite must not follow the next account',
+        );
+      }
     });
 
-    test('the superadmin role wins even if the step says otherwise', () {
+    test('the role gate wins even if the step can otherwise redeem', () {
       di<InviteTokenStore>().save('invite-token-abc');
 
       expect(
-          resolvePendingInvite(step: 'dashboard', role: 'superadmin'), isNull);
+        resolvePendingInvite(step: 'complete_profile', role: 'nasabah'),
+        isNull,
+      );
       expect(di<InviteTokenStore>().hasToken, isFalse);
     });
   });
