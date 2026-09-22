@@ -12,12 +12,5 @@ class PencairanCubit extends Cubit<PencairanState> {
 
   PencairanCubit(this._useCases) : super(const PencairanInitialState());
 
-  Future<void> getSomething() async {
-    emit(const PencairanLoadingState());
-    final result = await _useCases.getSomething();
-    result.fold(
-      (failure) => emit(PencairanErrorState(message: failure.message ?? '')),
-      (data)    => emit(PencairanSuccessState(data: data)),
-    );
-  }
+  PencairanUseCases get useCases => _useCases;
 }
