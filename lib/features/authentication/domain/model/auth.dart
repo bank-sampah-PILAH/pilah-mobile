@@ -9,6 +9,15 @@ class AuthEntity {
   final String? bankSampahStatus; // pending | active | rejected | null
   final String? role;
 
+  /// Backend-saved profile fields (empty/null when not yet filled). Lets
+  /// complete_profile prefill from the account's actual data — e.g. a
+  /// nasabah synced from a pengurus-entered record (PIL-154) — instead of
+  /// always starting blank.
+  final String noHp;
+  final String jenisKelamin;
+  final String? tanggalLahir;
+  final String alamat;
+
   const AuthEntity({
     this.id,
     required this.name,
@@ -19,6 +28,10 @@ class AuthEntity {
     this.bankSampahNama,
     this.bankSampahStatus,
     this.role,
+    this.noHp = '',
+    this.jenisKelamin = '',
+    this.tanggalLahir,
+    this.alamat = '',
   });
 }
 
