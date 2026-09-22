@@ -1,0 +1,146 @@
+import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/features/pencairan/data/pencairan_repository_impl.dart';
+import 'package:pilah_mobile/features/pencairan/data/remote/pencairan_remote_data_sources.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+
+class _MockNetworkService extends Mock implements NetworkService {}
+
+Response<dynamic> _ok(String path, Object data) => Response<dynamic>(
+      requestOptions: RequestOptions(path: path),
+      data: data,
+      statusCode: 200,
+    );
+
+Map<String, dynamic> _pencairanJson() => {
+      'id': 'p-1',
+      'nasabah_id': 'n-1',
+      'nasabah_nama': 'Ahmad Ridwan',
+      'tanggal': '2026-09-22T03:15:00Z',
+      'nominal': '200000.00',
+      'metode': 'tunai',
+      'keterangan': 'Diambil pagi',
+      'status': 'tercatat',
+      'saldo_sebelum': '465600.00',
+      'saldo_sesudah': '265600.00',
+    };
+
+void main() {
+  late _MockNetworkService network;
+  late PencairanRepositoryImpl repository;
+
+  setUp(() {
+    network = _MockNetworkService();
+    repository = PencairanRepositoryImpl(PencairanRemoteDataSourceImpl(network));
+  });
+
+  group('getSaldo', () {
+    test('reads the saldo as whole rupiah', () async {
+      when(() => network.get('/api/v1/nasabah/n-1/saldo')).thenAnswer(
+        (_) async => _ok('/api/v1/nasabah/n-1/saldo', {
+          'nasabah_id': 'n-1',
+          'total_saldo': '465600.50',
+        }),
+      );
+
+      final result = await repository.getSaldo('n-1');
+
+      expect(result, const Right<NetworkException, int>(465600));
+    });
+  });
+
+  group('createPencairan', () {
+    test('posts the payout and maps the recorded pencairan', () async {
+      Map<String, dynamic>? sent;
+      when(() => network.post('/api/v1/pencairan', data: any(named: 'data')))
+          .thenAnswer((invocation) async {
+        sent = invocation.namedArguments[#data] as Map<String, dynamic>;
+        return _ok('/api/v1/pencairan', _pencairanJson());
+      });
+
+      final result = await repository.createPencairan(
+        PencairanRequest(
+          nasabahId: 'n-1',
+          nominal: 200000,
+          metode: MetodePencairan.tunai,
+          tanggal: DateTime.utc(2026, 9, 22, 3, 15),
+          keterangan: '  Diambil pagi  ',
+        ),
+      );
+
+      expect(sent, {
+        'nasabah_id': 'n-1',
+        'nominal': 200000,
+        'metode': 'tunai',
+        'tanggal': '2026-09-22T03:15:00.000Z',
+        'keterangan': 'Diambil pagi',
+      });
+      final pencairan = result.getOrElse(() => throw 'expected Right');
+      expect(pencairan.id, 'p-1');
+      expect(pencairan.nasabahNama, 'Ahmad Ridwan');
+      expect(pencairan.nominal, 200000);
+      expect(pencairan.metode, MetodePencairan.tunai);
+      expect(pencairan.saldoSebelum, 465600);
+      expect(pencairan.saldoSesudah, 265600);
+      expect(pencairan.status, 'tercatat');
+    });
+
+    test('leaves out a blank keterangan', () async {
+      Map<String, dynamic>? sent;
+      when(() => network.post('/api/v1/pencairan', data: any(named: 'data')))
+          .thenAnswer((invocation) async {
+        sent = invocation.namedArguments[#data] as Map<String, dynamic>;
+        return _ok('/api/v1/pencairan', _pencairanJson());
+      });
+
+      await repository.createPencairan(
+        PencairanRequest(
+          nasabahId: 'n-1',
+          nominal: 50000,
+          metode: MetodePencairan.transfer,
+          tanggal: DateTime.utc(2026, 9, 22),
+          keterangan: '   ',
+        ),
+      );
+
+      expect(sent!.containsKey('keterangan'), isFalse);
+      expect(sent!['metode'], 'transfer');
+    });
+
+    test('surfaces a 422 as an UnprocessableEntityException', () async {
+      when(() => network.post('/api/v1/pencairan', data: any(named: 'data')))
+          .thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/pencairan'),
+          type: DioExceptionType.badResponse,
+          response: Response<dynamic>(
+            requestOptions: RequestOptions(path: '/api/v1/pencairan'),
+            statusCode: 422,
+            data: {
+              'errors': {
+                'nominal': ['Saldo nasabah tidak mencukupi'],
+              },
+            },
+          ),
+        ),
+      );
+
+      final result = await repository.createPencairan(
+        PencairanRequest(
+          nasabahId: 'n-1',
+          nominal: 999999,
+          metode: MetodePencairan.tunai,
+          tanggal: DateTime.utc(2026, 9, 22),
+        ),
+      );
+
+      final failure = result.swap().getOrElse(() => throw 'expected Left');
+      expect(failure, isA<UnprocessableEntityException>());
+      expect(failure.message, 'Saldo nasabah tidak mencukupi');
+    });
+  });
+}
