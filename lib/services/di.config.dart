@@ -86,6 +86,15 @@ import '../features/nasabah/domain/use_cases/reject_nasabah_usecase.dart'
 import '../features/nasabah/domain/use_cases/update_nasabah_usecase.dart'
     as _i524;
 import '../features/nasabah/presentation/cubit/nasabah_cubit.dart' as _i958;
+import '../features/pencairan/data/pencairan_repository_impl.dart' as _i913;
+import '../features/pencairan/data/remote/pencairan_remote_data_sources.dart'
+    as _i1037;
+import '../features/pencairan/domain/pencairan_interactor.dart' as _i659;
+import '../features/pencairan/domain/repository/pencairan_repository.dart'
+    as _i449;
+import '../features/pencairan/domain/use_cases/pencairan_use_cases.dart'
+    as _i686;
+import '../features/pencairan/presentation/blocs/pencairan_cubit.dart' as _i553;
 import '../features/onboarding/data/datasources/onboarding_remote_data_source.dart'
     as _i247;
 import '../features/onboarding/presentation/cubit/onboarding_cubit.dart'
@@ -298,6 +307,14 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i200.RecentActivityCubit>(
         () => _i200.RecentActivityCubit(gh<_i383.GetTransaksiUseCase>()));
+    gh.lazySingleton<_i1037.PencairanRemoteDataSources>(
+        () => _i1037.PencairanRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i449.PencairanRepository>(() =>
+        _i913.PencairanRepositoryImpl(gh<_i1037.PencairanRemoteDataSources>()));
+    gh.lazySingleton<_i686.PencairanUseCases>(
+        () => _i659.PencairanInteractor(gh<_i449.PencairanRepository>()));
+    gh.factory<_i553.PencairanCubit>(
+        () => _i553.PencairanCubit(gh<_i686.PencairanUseCases>()));
     return this;
   }
 }
