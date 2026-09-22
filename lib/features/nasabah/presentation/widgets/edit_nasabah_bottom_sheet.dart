@@ -26,6 +26,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
 
   late TextEditingController _namaController;
   late TextEditingController _idNasabahController;
+  late TextEditingController _emailController;
   late TextEditingController _tanggalLahirController;
   late TextEditingController _whatsappController;
   late TextEditingController _alamatController;
@@ -33,6 +34,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   String? _jenisKelamin;
   bool _isSaving = false;
   String? _serverKodeError;
+  String? _serverEmailError;
 
   @override
   void initState() {
@@ -41,6 +43,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
         TextEditingController(text: widget.customerData['name'] ?? '');
     _idNasabahController =
         TextEditingController(text: widget.customerData['idNasabah'] ?? '');
+    _emailController =
+        TextEditingController(text: widget.customerData['email'] ?? '');
 
     // Safely parse jenis kelamin
     final jk = widget.customerData['jenisKelamin'];
@@ -72,6 +76,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   void dispose() {
     _namaController.dispose();
     _idNasabahController.dispose();
+    _emailController.dispose();
     _tanggalLahirController.dispose();
     _whatsappController.dispose();
     _alamatController.dispose();
@@ -259,6 +264,35 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 ),
                 const SizedBox(height: 20),
 
+                // Field: EMAIL
+                _buildLabel('EMAIL'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  onChanged: (_) {
+                    if (_serverEmailError != null) {
+                      setState(() => _serverEmailError = null);
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email wajib diisi.';
+                    }
+                    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    if (!regex.hasMatch(value.trim())) {
+                      return 'Format email tidak valid.';
+                    }
+                    if (_serverEmailError != null) return _serverEmailError;
+                    return null;
+                  },
+                  decoration: _buildInputDecoration(
+                    hintText: 'Contoh: budi@gmail.com',
+                  ),
+                ),
+                const SizedBox(height: 20),
+
                 // Field: TANGGAL LAHIR
                 _buildLabel('TANGGAL LAHIR'),
                 const SizedBox(height: 8),
@@ -398,6 +432,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     final request = NasabahRequest(
       kode: _idNasabahController.text.trim(),
       nama: _namaController.text.trim(),
+      email: _emailController.text.trim(),
       jenisKelamin: _jenisKelamin ?? 'Laki-laki',
       tanggalLahir: _tanggalLahirController.text.trim(),
       noHp: '+62${_whatsappController.text.trim()}',
@@ -421,6 +456,10 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     final fields = error.fieldErrors();
     if (fields.containsKey('kode')) {
       setState(() => _serverKodeError = fields['kode']);
+      _formKey.currentState?.validate();
+    }
+    if (fields.containsKey('email')) {
+      setState(() => _serverEmailError = fields['email']);
       _formKey.currentState?.validate();
     }
     AppNotification.showError(

@@ -54,3 +54,5 @@ android/app/google-services.json
 # AI assistants
 .claude
 reference/
+# Flutter coverage output
+coverage/
