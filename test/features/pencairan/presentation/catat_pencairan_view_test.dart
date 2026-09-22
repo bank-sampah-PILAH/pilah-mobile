@@ -66,6 +66,14 @@ void main() {
   CustomPrimaryButton submitButton(WidgetTester tester) =>
       tester.widget(find.byKey(const Key('submit-pencairan')));
 
+  /// The form scrolls on a phone; bring the button on screen before tapping.
+  Future<void> tapSubmit(WidgetTester tester) async {
+    final submit = find.byKey(const Key('submit-pencairan'));
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> enterNominal(WidgetTester tester, String value) async {
     await tester.enterText(find.byKey(const Key('nominal-field')), value);
     await tester.pump();
@@ -111,8 +119,7 @@ void main() {
     await enterNominal(tester, '200000');
     await tester.tap(find.text('Transfer'));
     await tester.pump();
-    await tester.tap(find.byKey(const Key('submit-pencairan')));
-    await tester.pumpAndSettle();
+    await tapSubmit(tester);
 
     expect(
       find.text('Pencairan Rp 200.000 akan dicatat sebagai pembayaran '
@@ -154,8 +161,7 @@ void main() {
     await pumpView(tester);
 
     await enterNominal(tester, '200000');
-    await tester.tap(find.byKey(const Key('submit-pencairan')));
-    await tester.pumpAndSettle();
+    await tapSubmit(tester);
     await tester.tap(find.text('Catat'));
     await tester.pumpAndSettle();
 
