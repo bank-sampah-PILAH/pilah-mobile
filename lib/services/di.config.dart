@@ -104,10 +104,12 @@ import '../features/pencairan/data/remote/pencairan_remote_data_sources.dart'
     as _i1037;
 import '../features/pencairan/domain/pencairan_interactor.dart' as _i659;
 import '../features/pencairan/domain/repository/pencairan_repository.dart'
-    as _pencairanRepository;
+    as _i449;
 import '../features/pencairan/domain/use_cases/pencairan_use_cases.dart'
     as _i686;
 import '../features/pencairan/presentation/blocs/pencairan_cubit.dart' as _i553;
+import '../features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart'
+    as _i8;
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
     as _i1053;
 import '../features/profile/presentation/cubit/profile_cubit.dart' as _i300;
@@ -227,7 +229,7 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i244.OnboardingCubit(gh<_i247.OnboardingRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
-    gh.lazySingleton<_pencairanRepository.PencairanRepository>(() =>
+    gh.lazySingleton<_i449.PencairanRepository>(() =>
         _i913.PencairanRepositoryImpl(gh<_i1037.PencairanRemoteDataSources>()));
     gh.lazySingleton<_i40.HargaRepository>(
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
@@ -290,8 +292,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i67.ExportTransaksiUseCase>(),
           gh<_i417.ResendWaUseCase>(),
         ));
-    gh.lazySingleton<_i686.PencairanUseCases>(() => _i659.PencairanInteractor(
-        gh<_pencairanRepository.PencairanRepository>()));
+    gh.lazySingleton<_i686.PencairanUseCases>(
+        () => _i659.PencairanInteractor(gh<_i449.PencairanRepository>()));
     gh.lazySingleton<_i520.ActivateHargaUseCase>(
         () => _i520.ActivateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i948.AddHargaUseCase>(
@@ -317,6 +319,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.factory<_i553.PencairanCubit>(
         () => _i553.PencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.factory<_i8.RiwayatPencairanCubit>(
+        () => _i8.RiwayatPencairanCubit(gh<_i686.PencairanUseCases>()));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),
