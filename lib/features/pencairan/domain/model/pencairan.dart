@@ -33,6 +33,7 @@ class PencairanRequest extends Equatable {
 
 class Pencairan extends Equatable {
   final String id;
+  final String nasabahId;
   final String nasabahNama;
   final int nominal;
   final MetodePencairan metode;
@@ -41,9 +42,11 @@ class Pencairan extends Equatable {
   final String status;
   final int saldoSebelum;
   final int saldoSesudah;
+  final String dicatatOlehNama;
 
   const Pencairan({
     required this.id,
+    this.nasabahId = '',
     required this.nasabahNama,
     required this.nominal,
     required this.metode,
@@ -52,11 +55,13 @@ class Pencairan extends Equatable {
     required this.status,
     required this.saldoSebelum,
     required this.saldoSesudah,
+    this.dicatatOlehNama = '',
   });
 
   @override
   List<Object?> get props => [
         id,
+        nasabahId,
         nasabahNama,
         nominal,
         metode,
@@ -65,5 +70,6 @@ class Pencairan extends Equatable {
         status,
         saldoSebelum,
         saldoSesudah,
+        dicatatOlehNama,
       ];
 }
