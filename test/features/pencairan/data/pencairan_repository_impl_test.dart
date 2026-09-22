@@ -35,7 +35,8 @@ void main() {
 
   setUp(() {
     network = _MockNetworkService();
-    repository = PencairanRepositoryImpl(PencairanRemoteDataSourceImpl(network));
+    repository =
+        PencairanRepositoryImpl(PencairanRemoteDataSourceImpl(network));
   });
 
   group('getSaldo', () {
