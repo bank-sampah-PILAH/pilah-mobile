@@ -71,6 +71,31 @@ void main() {
     expect(find.text('Jl. Melati No. 5'), findsOneWidget);
   });
 
+  testWidgets('prefills jenis kelamin and tanggal lahir from the saved profile',
+      (tester) async {
+    // Backfill: covers _prefillFromSavedProfile's gender/DOB branches, which
+    // had no direct test despite being implemented alongside the nama/no_hp/
+    // alamat prefill above — found via a coverage review, not written
+    // test-first (see 01-tdd.md for why this is reported separately).
+    await _pumpScreen(
+      tester,
+      const AuthEntity(
+        id: 'user-1',
+        name: 'Nasabah PILAH',
+        email: 'nasabah@example.com',
+        photoUrl: '',
+        token: 'jwt',
+        nextStep: 'complete_profile',
+        role: 'nasabah',
+        jenisKelamin: 'perempuan',
+        tanggalLahir: '1998-05-20',
+      ),
+    );
+
+    expect(find.text('Perempuan'), findsOneWidget);
+    expect(find.text('20/05/1998'), findsOneWidget);
+  });
+
   testWidgets('does not prefill alamat for a pengelola account',
       (tester) async {
     await _pumpScreen(
