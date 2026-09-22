@@ -9,7 +9,9 @@ part 'pencairan_response.g.dart';
 abstract class PencairanResponse with _$PencairanResponse {
   const factory PencairanResponse({
     required String id,
+    @JsonKey(name: 'nasabah_id') @Default('') String nasabahId,
     @JsonKey(name: 'nasabah_nama') @Default('') String nasabahNama,
+    @JsonKey(name: 'dicatat_oleh_nama') @Default('') String dicatatOlehNama,
     String? tanggal,
     required String nominal,
     required String metode,

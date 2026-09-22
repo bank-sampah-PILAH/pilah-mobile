@@ -5,7 +5,9 @@ class PencairanMapper {
   static Pencairan mapResponseToDomain(PencairanResponse response) {
     return Pencairan(
       id: response.id,
+      nasabahId: response.nasabahId,
       nasabahNama: response.nasabahNama,
+      dicatatOlehNama: response.dicatatOlehNama,
       nominal: rupiah(response.nominal),
       metode: MetodePencairan.fromApi(response.metode),
       tanggal: DateTime.tryParse(response.tanggal ?? '')?.toLocal(),

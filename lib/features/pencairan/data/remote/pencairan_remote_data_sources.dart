@@ -2,12 +2,14 @@ import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../domain/model/pencairan.dart';
+import '../../domain/model/riwayat_pencairan_filter.dart';
 import '../model/mapper/pencairan_mapper.dart';
 import '../model/responses/pencairan_response.dart';
 
 abstract class PencairanRemoteDataSources {
   Future<int> getSaldo(String nasabahId);
   Future<PencairanResponse> createPencairan(PencairanRequest request);
+  Future<List<PencairanResponse>> getRiwayat(RiwayatPencairanFilter filter);
 }
 
 @LazySingleton(as: PencairanRemoteDataSources)
@@ -40,5 +42,22 @@ class PencairanRemoteDataSourceImpl implements PencairanRemoteDataSources {
       },
     );
     return PencairanResponse.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<PencairanResponse>> getRiwayat(
+    RiwayatPencairanFilter filter,
+  ) async {
+    final response = await _networkService.get(
+      _path,
+      queryParams: filter.toQueryParams(),
+    );
+    final data = response.data;
+    final List<dynamic> rows = data is Map<String, dynamic>
+        ? (data['results'] as List? ?? const [])
+        : (data as List);
+    return rows
+        .map((row) => PencairanResponse.fromJson(row as Map<String, dynamic>))
+        .toList();
   }
 }

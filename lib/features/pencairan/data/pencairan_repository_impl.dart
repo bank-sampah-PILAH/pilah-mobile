@@ -7,6 +7,7 @@ import 'model/mapper/pencairan_mapper.dart';
 import 'model/responses/pencairan_response.dart';
 import 'remote/pencairan_remote_data_sources.dart';
 import '../domain/model/pencairan.dart';
+import '../domain/model/riwayat_pencairan_filter.dart';
 import '../domain/repository/pencairan_repository.dart';
 
 @LazySingleton(as: PencairanRepository)
@@ -31,6 +32,18 @@ class PencairanRepositoryImpl implements PencairanRepository {
       func: _remote.createPencairan(request),
       mapper: (value) =>
           PencairanMapper.mapResponseToDomain(value as PencairanResponse),
+    );
+  }
+
+  @override
+  Future<Either<NetworkException, List<Pencairan>>> getRiwayat(
+    RiwayatPencairanFilter filter,
+  ) {
+    return apiCall<List<Pencairan>>(
+      func: _remote.getRiwayat(filter),
+      mapper: (value) => (value as List<PencairanResponse>)
+          .map(PencairanMapper.mapResponseToDomain)
+          .toList(),
     );
   }
 }
