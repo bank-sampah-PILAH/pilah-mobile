@@ -89,7 +89,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// populated before the first build or the fields flash empty.
   void _restoreDraft() {
     final draft = context.read<OnboardingCubit>().profileDraft;
-    if (draft == null) return;
+    if (draft == null) {
+      _prefillFromSavedProfile();
+      return;
+    }
 
     _nameController.text = draft.nama;
     _phoneController.text = draft.noHp;
@@ -102,6 +105,39 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (parsed != null) {
       _selectedDob = parsed;
       _dobController.text = _displayDate(parsed);
+    }
+  }
+
+  /// Prefills the form from the account's own saved profile when there is no
+  /// wizard draft to restore instead (a draft always wins — it represents
+  /// more recent input than whatever the backend last saved).
+  ///
+  /// Covers both the plain Google-name fallback the backend has always
+  /// applied and a nasabah synced from a pengurus-entered record (PIL-154):
+  /// without this, neither is visible here, since this screen otherwise only
+  /// ever restores from the in-memory wizard draft and starts blank
+  /// regardless of what the account already has saved.
+  void _prefillFromSavedProfile() {
+    final authState = context.read<AuthenticationBloc>().state;
+    if (authState is! Authenticated) return;
+    final auth = authState.authEntity;
+
+    if (auth.name.isNotEmpty) _nameController.text = auth.name;
+    if (auth.noHp.isNotEmpty) _phoneController.text = auth.noHp;
+    if (_isNasabah && auth.alamat.isNotEmpty) {
+      _alamatController.text = auth.alamat;
+    }
+    if (auth.jenisKelamin.isNotEmpty) {
+      _gender = auth.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+    }
+
+    final tanggalLahir = auth.tanggalLahir;
+    if (tanggalLahir != null) {
+      final parsed = DateTime.tryParse(tanggalLahir);
+      if (parsed != null) {
+        _selectedDob = parsed;
+        _dobController.text = _displayDate(parsed);
+      }
     }
   }
 
