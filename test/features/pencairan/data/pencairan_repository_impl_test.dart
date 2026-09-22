@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/pencairan/data/pencairan_repository_impl.dart';
 import 'package:pilah_mobile/features/pencairan/data/remote/pencairan_remote_data_sources.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 
 class _MockNetworkService extends Mock implements NetworkService {}
 
@@ -142,6 +143,69 @@ void main() {
       final failure = result.swap().getOrElse(() => throw 'expected Left');
       expect(failure, isA<UnprocessableEntityException>());
       expect(failure.message, 'Saldo nasabah tidak mencukupi');
+    });
+  });
+
+  group('getRiwayat', () {
+    Map<String, dynamic>? sentParams;
+
+    void stubList(List<Map<String, dynamic>> rows) {
+      when(() => network.get('/api/v1/pencairan',
+              queryParams: any(named: 'queryParams')))
+          .thenAnswer((invocation) async {
+        sentParams =
+            invocation.namedArguments[#queryParams] as Map<String, dynamic>;
+        return _ok('/api/v1/pencairan', {
+          'count': rows.length,
+          'next': null,
+          'previous': null,
+          'results': rows,
+        });
+      });
+    }
+
+    setUp(() => sentParams = null);
+
+    test('asks for the whole history when the periode is semua', () async {
+      stubList([
+        {
+          ..._pencairanJson(),
+          'nasabah_id': 'n-1',
+          'dicatat_oleh_nama': 'Ibu Sari',
+        },
+      ]);
+
+      final result = await repository.getRiwayat(
+        const RiwayatPencairanFilter(periode: RiwayatPeriode.semua),
+      );
+
+      expect(sentParams!.containsKey('periode'), isFalse);
+      expect(sentParams!['page_size'], 100);
+      final rows = result.getOrElse(() => throw 'expected Right');
+      expect(rows, hasLength(1));
+      expect(rows.single.id, 'p-1');
+      expect(rows.single.nasabahId, 'n-1');
+      expect(rows.single.dicatatOlehNama, 'Ibu Sari');
+      expect(rows.single.nominal, 200000);
+    });
+
+    test('sends the periode, nasabah and search that are set', () async {
+      stubList(const []);
+
+      await repository.getRiwayat(
+        const RiwayatPencairanFilter(
+          periode: RiwayatPeriode.bulanIni,
+          nasabahId: 'n-1',
+          search: '  siti ',
+        ),
+      );
+
+      expect(sentParams, {
+        'periode': 'bulan_ini',
+        'nasabah_id': 'n-1',
+        'search': 'siti',
+        'page_size': 100,
+      });
     });
   });
 }
