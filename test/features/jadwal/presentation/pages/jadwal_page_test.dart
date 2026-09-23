@@ -139,6 +139,10 @@ void main() {
       home: BlocProvider.value(value: cubit, child: const JadwalPage()),
     ));
     await tester.pumpAndSettle();
+    expect(
+      tester.widget<ListView>(find.byType(ListView)).physics,
+      isA<AlwaysScrollableScrollPhysics>(),
+    );
     await tester.drag(find.byType(ListView), const Offset(0, 300));
     await tester.pumpAndSettle();
 
