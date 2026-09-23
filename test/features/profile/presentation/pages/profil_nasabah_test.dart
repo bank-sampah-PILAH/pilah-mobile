@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,11 +33,15 @@ void main() {
     String name = 'Siti Aminah',
     String email = 'siti@example.test',
     String route = '/profile',
+    String? apiName,
+    bool membershipActive = true,
   }) async {
     final auth = _Auth();
     profile = _Profile();
     final invites = InviteTokenStore();
     di.registerSingleton<InviteTokenStore>(invites);
+    di.registerSingleton<NasabahRepository>(
+        PreviewNasabahRepository(name: apiName ?? name, email: email));
     whenListen(auth, const Stream<AuthenticationStates>.empty(),
         initialState: Authenticated(
             authEntity: AuthEntity(
@@ -46,7 +52,7 @@ void main() {
           token: 'test-token',
           role: 'nasabah',
           nextStep: 'dashboard',
-          bankSampahStatus: 'active',
+          bankSampahStatus: membershipActive ? 'active' : 'pending',
           bankSampahNama: 'Bank Sampah Melati',
         )));
     whenListen(profile, const Stream<ProfileState>.empty(),
@@ -56,6 +62,7 @@ void main() {
       await auth.close();
       await profile.close();
       await di.unregister<InviteTokenStore>();
+      await di.unregister<NasabahRepository>();
       invites.dispose();
     });
     router.go(route);
@@ -97,6 +104,16 @@ void main() {
             findsNothing);
       });
     }
+
+    testWidgets('profile refreshes server identity without active membership',
+        (tester) async {
+      await openProfile(tester,
+          name: 'Old session name',
+          apiName: 'Updated API name',
+          membershipActive: false);
+      expect(find.text('Updated API name'), findsOneWidget);
+      expect(find.text('Old session name'), findsNothing);
+    });
 
     testWidgets('role nasabah tidak dilabeli Pengelola', (tester) async {
       await openProfile(tester);

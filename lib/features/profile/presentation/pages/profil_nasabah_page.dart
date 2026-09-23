@@ -1,3 +1,6 @@
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +10,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 
-/// Read-only personal identity from the current session, without admin APIs.
+/// Refreshes read-only identity from the nasabah API without requiring membership.
 class ProfilNasabahPage extends StatelessWidget {
   const ProfilNasabahPage({super.key});
 
@@ -48,15 +51,26 @@ class ProfilNasabahPage extends StatelessWidget {
                               if (auth?.role != 'nasabah')
                                 Text('Silakan masuk untuk melihat profil Anda.',
                                     style: NasabahStyle.text(15))
-                              else ...[
-                                _IdentityCard(name: auth!.name.trim()),
-                                const SizedBox(height: 24),
-                                Text('Informasi Akun',
-                                    style: NasabahStyle.text(17,
-                                        weight: FontWeight.w600)),
-                                const SizedBox(height: 12),
-                                _AccountCard(email: auth.email.trim()),
-                              ],
+                              else
+                                NasabahResource<NasabahIdentity>(
+                                  key: ValueKey(
+                                      (auth!.id, auth.email, auth.token)),
+                                  load: () => di<NasabahRepository>().profile(),
+                                  builder: (context, identity) => Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _IdentityCard(name: identity.name.trim()),
+                                      const SizedBox(height: 24),
+                                      Text('Informasi Akun',
+                                          style: NasabahStyle.text(17,
+                                              weight: FontWeight.w600)),
+                                      const SizedBox(height: 12),
+                                      _AccountCard(
+                                          email: identity.email.trim()),
+                                    ],
+                                  ),
+                                ),
                             ])))),
           );
         },
