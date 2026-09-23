@@ -18,6 +18,9 @@ class RiwayatPencairanCubit extends Cubit<RiwayatPencairanState> {
       items: state.items,
     ));
     final result = await _useCases.getRiwayat(filter);
+    // A slower earlier request must not overwrite the filter now on screen,
+    // and the page may be gone by the time the response lands.
+    if (isClosed || state.filter != filter) return;
     result.fold(
       (failure) => emit(RiwayatPencairanState(
         status: RiwayatStatus.failure,

@@ -121,7 +121,8 @@ void main() {
   testWidgets('asks for a second letter instead of searching for one',
       (tester) async {
     await pumpView(tester);
-    final before = verify(() => useCases.getRiwayat(captureAny())).captured;
+    // Consume the initial load, so verifyNever below only sees a new request.
+    verify(() => useCases.getRiwayat(any())).called(1);
 
     await tester.enterText(find.byKey(const Key('riwayat-search')), 's');
     await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -130,10 +131,7 @@ void main() {
     // The backend ignores a search below 2 characters, which would silently
     // return the whole riwayat; say so rather than sending it.
     expect(find.text('Minimal 2 huruf'), findsOneWidget);
-    expect(
-      verify(() => useCases.getRiwayat(captureAny())).captured.length,
-      before.length,
-    );
+    verifyNever(() => useCases.getRiwayat(any()));
   });
 
   testWidgets('clears an active search from the field', (tester) async {

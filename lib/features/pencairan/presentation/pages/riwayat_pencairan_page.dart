@@ -58,7 +58,35 @@ class RiwayatPencairanView extends StatefulWidget {
 }
 
 class _RiwayatPencairanViewState extends State<RiwayatPencairanView> {
+  /// The backend ignores a `search` shorter than this and returns everything,
+  /// so the screen refuses to send one rather than lying about the result.
+  static const _minSearchLength = 2;
+
+  final _searchController = TextEditingController();
+  String? _searchError;
+
   bool get _perNasabah => widget.nasabahId != null;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _submitSearch(String value) {
+    final search = value.trim();
+    if (search.isNotEmpty && search.length < _minSearchLength) {
+      setState(() => _searchError = 'Minimal 2 huruf');
+      return;
+    }
+    setState(() => _searchError = null);
+    context.read<RiwayatPencairanCubit>().setSearch(search);
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _submitSearch('');
+  }
 
   @override
   void initState() {
@@ -89,13 +117,25 @@ class _RiwayatPencairanViewState extends State<RiwayatPencairanView> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: TextField(
                     key: const Key('riwayat-search'),
+                    controller: _searchController,
                     textInputAction: TextInputAction.search,
-                    onSubmitted: cubit.setSearch,
-                    decoration: const InputDecoration(
+                    onSubmitted: _submitSearch,
+                    decoration: InputDecoration(
                       hintText: 'Cari nama nasabah',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.search),
+                      border: const OutlineInputBorder(),
                       isDense: true,
+                      errorText: _searchError,
+                      // Shown only while a search is actually applied, so the
+                      // chips are never quietly narrowed by a stale term.
+                      suffixIcon: state.filter.search.isEmpty
+                          ? null
+                          : IconButton(
+                              key: const Key('riwayat-search-clear'),
+                              icon: const Icon(Icons.close),
+                              tooltip: 'Hapus pencarian',
+                              onPressed: _clearSearch,
+                            ),
                     ),
                   ),
                 ),
