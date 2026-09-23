@@ -123,7 +123,7 @@ void main() {
 
     expect(
       find.text('Pencairan Rp 200.000 akan dicatat sebagai pembayaran '
-          'transfer.'),
+          'Transfer.'),
       findsOneWidget,
     );
     await tester.tap(find.text('Catat'));
@@ -166,6 +166,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Saldo nasabah tidak mencukupi'), findsOneWidget);
+  });
+
+  testWidgets('clears the server nominal error once the nominal is edited',
+      (tester) async {
+    when(() => useCases.createPencairan(any())).thenAnswer(
+      (_) async => Left(
+        UnprocessableEntityException(
+          message: 'Saldo nasabah tidak mencukupi',
+          response: Response<dynamic>(
+            requestOptions: RequestOptions(path: '/api/v1/pencairan'),
+            statusCode: 422,
+            data: {
+              'errors': {
+                'nominal': ['Saldo nasabah tidak mencukupi'],
+              },
+            },
+          ),
+        ),
+      ),
+    );
+    await pumpView(tester);
+
+    await enterNominal(tester, '200000');
+    await tapSubmit(tester);
+    await tester.tap(find.text('Catat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saldo nasabah tidak mencukupi'), findsOneWidget);
+
+    await enterNominal(tester, '100000');
+
+    expect(find.text('Saldo nasabah tidak mencukupi'), findsNothing);
   });
 
   testWidgets('does not offer dates after today', (tester) async {
