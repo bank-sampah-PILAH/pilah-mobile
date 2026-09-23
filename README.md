@@ -136,3 +136,7 @@ branch rules:(feature|hotfix|coldfix|service|integration|ui)//\*
 ### How to contribute
 
 To help work on this project, please refer to [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Nasabah API integration
+
+See [PIL-225 / PIL-226 integration guide](docs/NASABAH_API_INTEGRATION.md) for backend refactor commits, module usage, API setup, validation, and known limitations.

@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -96,10 +97,7 @@ class AppRouterConfig {
       // captures nothing — the token is already banked by the time this runs —
       // and only hands off to the session-restore flow, which routes a signed-out
       // user to login. The stored token then steers them onward from there.
-      GoRoute(
-        path: '/invite',
-        redirect: (context, state) => SplashPage.route,
-      ),
+      GoRoute(path: '/invite', redirect: (context, state) => SplashPage.route),
       GoRoute(
         path: ForgotPasswordPage.route,
         name: ForgotPasswordPage.route,
@@ -149,7 +147,8 @@ class AppRouterConfig {
           // 'rejected'), not as a first-time onboarding step. The screen reads
           // the flag to swap the stepper for a rejection notice.
           final authState = context.read<AuthenticationBloc>().state;
-          final isRejected = authState is Authenticated &&
+          final isRejected =
+              authState is Authenticated &&
               authState.authEntity.bankSampahStatus == 'rejected';
           return RegisterBankSampahScreen(isRejectedReapplication: isRejected);
         },
@@ -174,7 +173,16 @@ class AppRouterConfig {
               GoRoute(
                 path: DashboardPage.route,
                 name: DashboardPage.route,
-                builder: (context, state) => const DashboardPage(),
+                builder: (context, state) =>
+                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
+                      builder: (context, authState) {
+                        if (authState is Authenticated &&
+                            authState.authEntity.role == 'nasabah') {
+                          return const BerandaNasabahPage();
+                        }
+                        return const DashboardPage();
+                      },
+                    ),
               ),
             ],
           ),
