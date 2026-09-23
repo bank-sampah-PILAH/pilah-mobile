@@ -107,7 +107,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
         title: const Text('Konfirmasi pencairan'),
         content: Text(
           'Pencairan Rp ${formatRupiahId(nominal)} akan dicatat sebagai '
-          'pembayaran ${_metode.name}.',
+          'pembayaran ${_metode.label}.',
         ),
         actions: [
           TextButton(
@@ -189,7 +189,11 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                     controller: _nominalController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (_) => setState(() {}),
+                    onChanged: (_) {
+                      // The server's rejection was about the old value.
+                      context.read<PencairanCubit>().clearNominalError();
+                      setState(() {});
+                    },
                     decoration: InputDecoration(
                       labelText: 'Nominal',
                       prefixText: 'Rp ',

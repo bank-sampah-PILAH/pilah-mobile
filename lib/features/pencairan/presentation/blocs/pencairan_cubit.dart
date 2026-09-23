@@ -50,14 +50,16 @@ class PencairanCubit extends Cubit<PencairanState> {
     );
   }
 
+  /// Drops a server-side nominal rejection, so editing the field stops
+  /// showing an error about the value the user has already changed.
+  void clearNominalError() {
+    if (state.nominalError == null) return;
+    emit(state.copyWith(nominalError: null));
+  }
+
   /// The first message the API returned for [field] on a 422, if any.
   String? _fieldError(NetworkException failure, String field) {
     if (failure is! UnprocessableEntityException) return null;
-    final data = failure.response?.data;
-    final errors = data is Map ? data['errors'] : null;
-    final messages = errors is Map ? errors[field] : null;
-    return messages is List && messages.isNotEmpty
-        ? messages.first.toString()
-        : null;
+    return failure.fieldError([field]);
   }
 }

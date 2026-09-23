@@ -175,5 +175,64 @@ void main() {
       verify(() => useCases.createPencairan(any())).called(1);
       await cubit.close();
     });
+
+    blocTest<PencairanCubit, PencairanState>(
+      'reads a nominal error sent as a bare string, not a list',
+      build: () {
+        when(() => useCases.createPencairan(_request)).thenAnswer(
+          (_) async => Left(
+            UnprocessableEntityException(
+              message: 'Saldo nasabah tidak mencukupi',
+              response: Response<dynamic>(
+                requestOptions: RequestOptions(path: '/api/v1/pencairan'),
+                statusCode: 422,
+                data: const {
+                  'errors': {'nominal': 'Saldo nasabah tidak mencukupi'},
+                },
+              ),
+            ),
+          ),
+        );
+        return PencairanCubit(useCases);
+      },
+      act: (cubit) => cubit.submit(_request),
+      skip: 1,
+      expect: () => const [
+        PencairanState(
+          submitStatus: SubmitStatus.failure,
+          nominalError: 'Saldo nasabah tidak mencukupi',
+        ),
+      ],
+    );
+  });
+
+  group('clearNominalError', () {
+    blocTest<PencairanCubit, PencairanState>(
+      'drops the server error so an edited nominal stops showing it',
+      build: () => PencairanCubit(useCases),
+      seed: () => const PencairanState(
+        saldoStatus: SaldoStatus.loaded,
+        saldo: 465600,
+        submitStatus: SubmitStatus.failure,
+        nominalError: 'Saldo nasabah tidak mencukupi',
+      ),
+      act: (cubit) => cubit.clearNominalError(),
+      expect: () => const [
+        PencairanState(
+          saldoStatus: SaldoStatus.loaded,
+          saldo: 465600,
+          submitStatus: SubmitStatus.failure,
+        ),
+      ],
+    );
+
+    blocTest<PencairanCubit, PencairanState>(
+      'stays quiet when there is no server error to clear',
+      build: () => PencairanCubit(useCases),
+      seed: () =>
+          const PencairanState(saldoStatus: SaldoStatus.loaded, saldo: 465600),
+      act: (cubit) => cubit.clearNominalError(),
+      expect: () => const <PencairanState>[],
+    );
   });
 }
