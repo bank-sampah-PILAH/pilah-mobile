@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dar
 @lazySingleton
 class JadwalCubit extends Cubit<JadwalState> {
   final JadwalRepository repository;
+  bool _transitionInProgress = false;
 
   int _loadVersion = 0;
   int _calendarVersion = 0;
@@ -25,6 +26,7 @@ class JadwalCubit extends Cubit<JadwalState> {
       state is JadwalLoaded ? (state as JadwalLoaded).items : const [];
 
   Future<void> loadJadwal({bool silent = false, DateTime? date}) async {
+    final hadLoadedState = state is JadwalLoaded;
     final requestedDate = date == null ? null : _dateOnly(date);
     final dateChanged = !_sameDate(requestedDate, _dateFilter);
     _dateFilter = requestedDate;
@@ -37,6 +39,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     if (dateChanged) {
       emit(JadwalLoaded(
         const [],
+        isTransitioning: hadLoadedState && _transitionInProgress,
         isLoading: true,
         scheduledDates: _scheduledDates,
       ));
@@ -53,6 +56,7 @@ class JadwalCubit extends Cubit<JadwalState> {
         _hasMore = page.hasMore;
         emit(JadwalLoaded(
           page.items,
+          isTransitioning: hadLoadedState && _transitionInProgress,
           hasMore: page.hasMore,
           totalCount: page.totalCount,
           scheduledDates: _scheduledDates,
@@ -156,26 +160,29 @@ class JadwalCubit extends Cubit<JadwalState> {
   }
 
   Future<NetworkException?> changeStatus(String id, String action) async {
+    if (_transitionInProgress) return null;
     final current = state;
-    if (current is JadwalLoaded && current.isTransitioning) return null;
+    _transitionInProgress = true;
     if (current is JadwalLoaded) {
       emit(current.copyWith(isTransitioning: true));
     }
 
-    final result = await repository.transition(id, action);
-    return result.fold(
-      (failure) {
-        final loaded = state;
-        if (loaded is JadwalLoaded) {
-          emit(loaded.copyWith(isTransitioning: false));
-        }
-        return failure;
-      },
-      (_) async {
-        await _reloadAfterMutation();
-        return null;
-      },
-    );
+    try {
+      final result = await repository.transition(id, action);
+      return await result.fold(
+        (failure) async => failure,
+        (_) async {
+          await _reloadAfterMutation();
+          return null;
+        },
+      );
+    } finally {
+      _transitionInProgress = false;
+      final latest = state;
+      if (latest is JadwalLoaded && latest.isTransitioning) {
+        emit(latest.copyWith(isTransitioning: false));
+      }
+    }
   }
 
   Future<void> _reloadAfterMutation() async {
