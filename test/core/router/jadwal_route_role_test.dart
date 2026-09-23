@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +40,8 @@ void main() {
   testWidgets('authenticated nasabah receives the read-only jadwal route',
       (tester) async {
     final authenticationBloc = _MockAuthenticationBloc();
+    final authenticationStates = StreamController<AuthenticationStates>();
+    addTearDown(authenticationStates.close);
     final jadwalCubit = _MockJadwalCubit();
     final schedule = JadwalEntity(
       id: 'jadwal-1',
@@ -48,17 +52,10 @@ void main() {
       lokasi: 'Balai Warga',
       status: 'diterbitkan',
     );
-    when(() => authenticationBloc.state).thenReturn(
-      Authenticated(
-        authEntity: const AuthEntity(
-          id: 'nasabah-1',
-          name: 'Nasabah',
-          email: 'nasabah@example.com',
-          photoUrl: '',
-          token: 'token',
-          role: 'nasabah',
-        ),
-      ),
+    whenListen(
+      authenticationBloc,
+      authenticationStates.stream,
+      initialState: AuthenticationLoading(),
     );
     when(() => jadwalCubit.state).thenReturn(JadwalLoaded([schedule]));
     when(() => jadwalCubit.loadJadwal()).thenAnswer((_) async {});
@@ -74,6 +71,23 @@ void main() {
           BlocProvider<JadwalCubit>.value(value: jadwalCubit),
         ],
         child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Jadwal Kegiatan'), findsNothing);
+    expect(find.byType(FloatingActionButton), findsNothing);
+
+    authenticationStates.add(
+      Authenticated(
+        authEntity: const AuthEntity(
+          id: 'nasabah-1',
+          name: 'Nasabah',
+          email: 'nasabah@example.com',
+          photoUrl: '',
+          token: 'token',
+          role: 'nasabah',
+        ),
       ),
     );
     await tester.pumpAndSettle();
