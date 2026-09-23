@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,4 +121,46 @@ void main() {
     expect: () => const <RiwayatPencairanState>[],
     verify: (_) => verifyNever(() => useCases.getRiwayat(any())),
   );
+
+  test('ignores a response for a filter the user has moved on from', () async {
+    const stale = RiwayatPencairanFilter(periode: RiwayatPeriode.bulanLalu);
+    const current = RiwayatPencairanFilter(periode: RiwayatPeriode.semua);
+    const staleRow = Pencairan(
+      id: 'p-old',
+      nasabahNama: 'Bulan Lalu',
+      nominal: 1000,
+      metode: MetodePencairan.tunai,
+      tanggal: null,
+      keterangan: '',
+      status: 'tercatat',
+      saldoSebelum: 0,
+      saldoSesudah: 0,
+    );
+    final slow = Completer<Either<NetworkException, List<Pencairan>>>();
+    when(() => useCases.getRiwayat(stale)).thenAnswer((_) => slow.future);
+    when(() => useCases.getRiwayat(current))
+        .thenAnswer((_) async => const Right([_row]));
+    final cubit = RiwayatPencairanCubit(useCases);
+
+    final first = cubit.load(stale);
+    await cubit.load(current);
+    slow.complete(const Right([staleRow]));
+    await first;
+
+    expect(cubit.state.filter, current);
+    expect(cubit.state.items, const [_row]);
+    await cubit.close();
+  });
+
+  test('does not emit after the page is closed', () async {
+    final slow = Completer<Either<NetworkException, List<Pencairan>>>();
+    when(() => useCases.getRiwayat(any())).thenAnswer((_) => slow.future);
+    final cubit = RiwayatPencairanCubit(useCases);
+
+    final inFlight = cubit.load(_bankWide);
+    await cubit.close();
+    slow.complete(const Right([_row]));
+
+    await expectLater(inFlight, completes);
+  });
 }
