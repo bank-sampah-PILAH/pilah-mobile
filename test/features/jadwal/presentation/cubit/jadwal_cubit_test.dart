@@ -193,6 +193,31 @@ void main() {
     verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
   });
 
+  test('keeps status transitions locked during a list refresh', () async {
+    final existing = _existingSchedule();
+    final transitionResult =
+        Completer<Either<NetworkException, JadwalEntity>>();
+    when(() => repository.getJadwal())
+        .thenAnswer((_) async => Right([existing]));
+    when(() => repository.transition('schedule-1', 'terbitkan'))
+        .thenAnswer((_) => transitionResult.future);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await cubit.loadJadwal();
+    final first = cubit.changeStatus('schedule-1', 'terbitkan');
+    await Future<void>.delayed(Duration.zero);
+    await cubit.loadJadwal(silent: true);
+    final stateDuringRefresh = cubit.state;
+    final second = cubit.changeStatus('schedule-1', 'terbitkan');
+    transitionResult.complete(Right(existing));
+
+    expect(await first, isNull);
+    expect(await second, isNull);
+    expect(stateDuringRefresh, JadwalLoaded([existing], isTransitioning: true));
+    verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
+  });
+
   blocTest<JadwalCubit, JadwalState>(
     'restores loaded schedules when a status transition fails',
     build: () {
