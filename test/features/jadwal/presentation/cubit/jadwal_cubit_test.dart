@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -169,20 +171,56 @@ void main() {
     },
   );
 
+  test('ignores a concurrent status transition', () async {
+    final existing = _existingSchedule();
+    final transitionResult =
+        Completer<Either<NetworkException, JadwalEntity>>();
+    when(() => repository.getJadwal())
+        .thenAnswer((_) async => Right([existing]));
+    when(() => repository.transition('schedule-1', 'terbitkan'))
+        .thenAnswer((_) => transitionResult.future);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await cubit.loadJadwal();
+    final first = cubit.changeStatus('schedule-1', 'terbitkan');
+    await Future<void>.delayed(Duration.zero);
+    final second = cubit.changeStatus('schedule-1', 'terbitkan');
+    transitionResult.complete(Right(existing));
+
+    expect(await first, isNull);
+    expect(await second, isNull);
+    verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
+  });
+
   blocTest<JadwalCubit, JadwalState>(
-    'returns a failed status transition without reloading',
+    'restores loaded schedules when a status transition fails',
     build: () {
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([_existingSchedule()])),
+      );
       when(() => repository.transition('schedule-1', 'terbitkan')).thenAnswer(
         (_) async => Left(GeneralException(message: 'rejected')),
       );
       return JadwalCubit(repository);
     },
-    act: (cubit) async => expect(
-      await cubit.changeStatus('schedule-1', 'terbitkan'),
-      isA<GeneralException>(),
-    ),
-    expect: () => [],
-    verify: (_) => verifyNever(() => repository.getJadwal(page: 1, date: null)),
+    act: (cubit) async {
+      await cubit.loadJadwal();
+      expect(
+        await cubit.changeStatus('schedule-1', 'terbitkan'),
+        isA<GeneralException>(),
+      );
+    },
+    expect: () {
+      final existing = _existingSchedule();
+      return [
+        const JadwalLoading(),
+        JadwalLoaded([existing], totalCount: 1),
+        JadwalLoaded([existing], isTransitioning: true, totalCount: 1),
+        JadwalLoaded([existing], totalCount: 1),
+      ];
+    },
+    verify: (_) => verify(() => repository.getJadwal(page: 1, date: null)).called(1),
   );
 
   blocTest<JadwalCubit, JadwalState>(
