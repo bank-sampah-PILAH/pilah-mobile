@@ -17,15 +17,21 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
 
   @override
   Future<List<JadwalModel>> getJadwal() async {
-    final response = await networkService.get(
-      '/api/v1/jadwal',
-      queryParams: {'page_size': 100},
-    );
-    final data = response.data as Map<String, dynamic>;
-    final results = data['results'] as List<dynamic>? ?? const [];
-    return results
-        .map((item) => JadwalModel.fromJson(item as Map<String, dynamic>))
-        .toList();
+    final schedules = <JadwalModel>[];
+    var page = 1;
+    while (true) {
+      final response = await networkService.get(
+        '/api/v1/jadwal',
+        queryParams: {'page_size': 100, if (page > 1) 'page': page},
+      );
+      final data = response.data as Map<String, dynamic>;
+      final results = data['results'] as List<dynamic>? ?? const [];
+      schedules.addAll(results.map(
+        (item) => JadwalModel.fromJson(item as Map<String, dynamic>),
+      ));
+      if (data['next'] == null) return schedules;
+      page++;
+    }
   }
 
   @override

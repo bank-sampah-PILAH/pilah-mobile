@@ -50,11 +50,19 @@ class _JadwalPageState extends State<JadwalPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is JadwalError) {
-            return Center(child: Text(state.message));
+            return _RetryableMessage(
+              message: state.message,
+              buttonLabel: 'Coba Lagi',
+              onPressed: () => context.read<JadwalCubit>().loadJadwal(),
+            );
           }
           final items = (state as JadwalLoaded).items;
           if (items.isEmpty) {
-            return const Center(child: Text('Belum ada jadwal kegiatan'));
+            return _RetryableMessage(
+              message: 'Belum ada jadwal kegiatan',
+              buttonLabel: 'Muat Ulang',
+              onPressed: () => context.read<JadwalCubit>().loadJadwal(),
+            );
           }
           return RefreshIndicator(
             onRefresh: () =>
@@ -76,7 +84,7 @@ class _JadwalPageState extends State<JadwalPage> {
                     ),
                     title: Text(item.lokasi),
                     subtitle: Text(
-                      '${_formatDateTime(item.mulaiPada.toLocal())}\n${item.status}',
+                      '${_formatDateTime(item.mulaiPada.toLocal())}\n${_statusLabel(item.status)}',
                     ),
                     isThreeLine: true,
                     trailing: item.isOverlapping
@@ -95,6 +103,33 @@ class _JadwalPageState extends State<JadwalPage> {
       ),
     );
   }
+}
+
+class _RetryableMessage extends StatelessWidget {
+  final String message;
+  final String buttonLabel;
+  final VoidCallback onPressed;
+
+  const _RetryableMessage({
+    required this.message,
+    required this.buttonLabel,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, textAlign: TextAlign.center),
+            TextButton.icon(
+              onPressed: onPressed,
+              icon: const Icon(Icons.refresh),
+              label: Text(buttonLabel),
+            ),
+          ],
+        ),
+      );
 }
 
 class _JadwalForm extends StatefulWidget {
@@ -139,11 +174,15 @@ class _JadwalFormState extends State<_JadwalForm> {
 
   Future<void> _pickDateTime({required bool start}) async {
     final current = start ? _startsAt : _endsAt;
+    final currentDate = DateUtils.dateOnly(current);
+    final today = DateUtils.dateOnly(DateTime.now());
+    final firstDate = currentDate.isBefore(today) ? currentDate : today;
+    final lastDate = today.add(const Duration(days: 730));
     final date = await showDatePicker(
       context: context,
-      initialDate: current,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 730)),
+      initialDate: currentDate.isAfter(lastDate) ? lastDate : currentDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (date == null || !mounted) return;
     final time = await showTimePicker(
@@ -167,6 +206,12 @@ class _JadwalFormState extends State<_JadwalForm> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (widget.initial == null && _startsAt.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Waktu mulai harus di masa depan')),
+      );
+      return;
+    }
     if (!_endsAt.isAfter(_startsAt)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -258,27 +303,35 @@ class _JadwalFormState extends State<_JadwalForm> {
                   initialValue: _audience,
                   decoration:
                       const InputDecoration(labelText: 'Cakupan penerima'),
-                  items: const [
-                    DropdownMenuItem(
+                  items: [
+                    const DropdownMenuItem(
                       value: 'semua_nasabah',
                       child: Text('Semua nasabah'),
                     ),
-                    DropdownMenuItem(
-                      value: 'nasabah_terpilih',
-                      child: Text('Nasabah terpilih'),
-                    ),
+                    if (widget.initial?.cakupanPenerima == 'nasabah_terpilih')
+                      const DropdownMenuItem(
+                        value: 'nasabah_terpilih',
+                        child: Text('Nasabah terpilih'),
+                      ),
                   ],
                   onChanged: (value) => setState(() => _audience = value!),
                 ),
                 const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _submit,
-                    child: Text(widget.initial == null
-                        ? 'Simpan Jadwal'
-                        : 'Simpan Perubahan'),
-                  ),
+                BlocBuilder<JadwalCubit, JadwalState>(
+                  builder: (context, state) {
+                    final isSaving = state is JadwalLoaded && state.isSaving;
+                    return SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: isSaving ? null : _submit,
+                        child: Text(isSaving
+                            ? 'Menyimpan...'
+                            : widget.initial == null
+                                ? 'Simpan Jadwal'
+                                : 'Simpan Perubahan'),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -316,3 +369,11 @@ String _formatDateTime(DateTime value) {
   return '${twoDigits(value.day)}/${twoDigits(value.month)}/${value.year}, '
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
+
+String _statusLabel(String status) => switch (status) {
+      'draft' => 'Draf',
+      'diterbitkan' => 'Diterbitkan',
+      'dibatalkan' => 'Dibatalkan',
+      'selesai' => 'Selesai',
+      _ => status,
+    };
