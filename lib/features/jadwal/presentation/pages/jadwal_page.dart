@@ -211,7 +211,12 @@ class _JadwalPageState extends State<JadwalPage> {
           }
 
           final loadedState = state as JadwalLoaded;
-          final items = List<JadwalEntity>.of(loadedState.items)
+          final visibleItems = widget.customerMode
+              ? loadedState.items
+                  .where((item) => item.status == 'diterbitkan')
+                  .toList()
+              : loadedState.items;
+          final items = List<JadwalEntity>.of(visibleItems)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
           return RefreshIndicator(
             onRefresh: () => context.read<JadwalCubit>().loadJadwal(
@@ -266,12 +271,6 @@ class _JadwalPageState extends State<JadwalPage> {
               '${_formatDateTime(item.mulaiPada.toLocal())}\n${_statusLabel(item.status)}',
             ),
             isThreeLine: true,
-            trailing: item.isOverlapping
-                ? const Tooltip(
-                    message: 'Jadwal bertumpuk di lokasi yang sama',
-                    child: Icon(Icons.warning_amber, color: Colors.orange),
-                  )
-                : null,
           ),
         );
       },
