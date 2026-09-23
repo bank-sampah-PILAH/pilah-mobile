@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class DetailNasabahBottomSheet extends StatefulWidget {
@@ -232,6 +233,42 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
+                      textStyle: AppTextStyle.title1.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // History stays viewable after a nasabah is deactivated.
+              if (customerData['id'] != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final router = GoRouter.of(context);
+                      Navigator.of(context).pop();
+                      router.push(
+                        RiwayatPencairanPage.route,
+                        extra: RiwayatPencairanArgs(
+                          nasabahId: customerData['id'].toString(),
+                          nasabahNama: name,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    label: const Text('Riwayat Pencairan'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: DetailNasabahBottomSheet.emeraldPrimary,
+                      side: const BorderSide(
+                          color: DetailNasabahBottomSheet.emeraldPrimary),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       textStyle: AppTextStyle.title1.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
