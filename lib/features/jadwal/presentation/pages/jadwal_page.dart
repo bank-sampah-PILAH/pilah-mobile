@@ -111,6 +111,28 @@ class _JadwalPageState extends State<JadwalPage> {
         .showSnackBar(SnackBar(content: Text(failure.displayMessage)));
   }
 
+  Future<void> _confirmCancellation(JadwalEntity item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Batalkan jadwal?'),
+        content: const Text('Jadwal yang dibatalkan tidak dapat dipulihkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Kembali'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Ya, batalkan'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    await _changeStatus(item, 'batalkan');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,7 +154,8 @@ class _JadwalPageState extends State<JadwalPage> {
         builder: (context, state) => FloatingActionButton(
           heroTag: 'jadwal_page_fab',
           tooltip: 'Buat Jadwal',
-          onPressed: state is JadwalLoaded && state.isSaving
+          onPressed: state is JadwalLoaded &&
+                  (state.isTransitioning || state.isSaving)
               ? null
               : () => _openForm(),
           backgroundColor: AppColors.greenDark,
@@ -154,6 +177,7 @@ class _JadwalPageState extends State<JadwalPage> {
           }
 
           final loaded = state as JadwalLoaded;
+          final isTransitioning = loaded.isTransitioning;
           final items = List<JadwalEntity>.of(loaded.items)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
           final dayItems = items
@@ -226,10 +250,16 @@ class _JadwalPageState extends State<JadwalPage> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _ScheduleCard(
                         item: item,
-                        onTap: () => _openForm(item),
-                        onCancel: () => _changeStatus(item, 'batalkan'),
-                        onPublish: () => _changeStatus(item, 'terbitkan'),
-                        onComplete: () => _changeStatus(item, 'selesaikan'),
+                        onTap: isTransitioning ? null : () => _openForm(item),
+                        onCancel: isTransitioning
+                            ? null
+                            : () => _confirmCancellation(item),
+                        onPublish: isTransitioning
+                            ? null
+                            : () => _changeStatus(item, 'terbitkan'),
+                        onComplete: isTransitioning
+                            ? null
+                            : () => _changeStatus(item, 'selesaikan'),
                       ),
                     ),
                   ),
@@ -365,10 +395,10 @@ class _EmptyScheduleDay extends StatelessWidget {
 
 class _ScheduleCard extends StatelessWidget {
   final JadwalEntity item;
-  final VoidCallback onTap;
-  final VoidCallback onCancel;
-  final VoidCallback onPublish;
-  final VoidCallback onComplete;
+  final VoidCallback? onTap;
+  final VoidCallback? onCancel;
+  final VoidCallback? onPublish;
+  final VoidCallback? onComplete;
 
   const _ScheduleCard({
     required this.item,

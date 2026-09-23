@@ -156,9 +156,21 @@ class JadwalCubit extends Cubit<JadwalState> {
   }
 
   Future<NetworkException?> changeStatus(String id, String action) async {
+    final current = state;
+    if (current is JadwalLoaded && current.isTransitioning) return null;
+    if (current is JadwalLoaded) {
+      emit(current.copyWith(isTransitioning: true));
+    }
+
     final result = await repository.transition(id, action);
     return result.fold(
-      (failure) => failure,
+      (failure) {
+        final loaded = state;
+        if (loaded is JadwalLoaded) {
+          emit(loaded.copyWith(isTransitioning: false));
+        }
+        return failure;
+      },
       (_) async {
         await _reloadAfterMutation();
         return null;

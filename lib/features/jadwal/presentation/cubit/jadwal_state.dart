@@ -19,6 +19,7 @@ class JadwalLoading extends JadwalState {
 class JadwalLoaded extends JadwalState {
   final List<JadwalEntity> items;
   final bool isSaving;
+  final bool isTransitioning;
   final bool isLoading;
   final bool hasMore;
   final bool isLoadingMore;
@@ -29,6 +30,7 @@ class JadwalLoaded extends JadwalState {
   const JadwalLoaded(
     this.items, {
     this.isSaving = false,
+    this.isTransitioning = false,
     this.isLoading = false,
     this.hasMore = false,
     this.isLoadingMore = false,
@@ -40,6 +42,7 @@ class JadwalLoaded extends JadwalState {
   JadwalLoaded copyWith({
     List<JadwalEntity>? items,
     bool? isSaving,
+    bool? isTransitioning,
     bool? isLoading,
     bool? hasMore,
     bool? isLoadingMore,
@@ -51,6 +54,7 @@ class JadwalLoaded extends JadwalState {
       JadwalLoaded(
         items ?? this.items,
         isSaving: isSaving ?? this.isSaving,
+        isTransitioning: isTransitioning ?? this.isTransitioning,
         isLoading: isLoading ?? this.isLoading,
         hasMore: hasMore ?? this.hasMore,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
@@ -65,6 +69,7 @@ class JadwalLoaded extends JadwalState {
   List<Object?> get props => [
         items,
         isSaving,
+        isTransitioning,
         isLoading,
         hasMore,
         isLoadingMore,
