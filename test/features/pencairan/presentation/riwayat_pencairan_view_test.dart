@@ -118,6 +118,37 @@ void main() {
     expect(lastFilter().search, 'siti');
   });
 
+  testWidgets('asks for a second letter instead of searching for one',
+      (tester) async {
+    await pumpView(tester);
+    final before = verify(() => useCases.getRiwayat(captureAny())).captured;
+
+    await tester.enterText(find.byKey(const Key('riwayat-search')), 's');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    // The backend ignores a search below 2 characters, which would silently
+    // return the whole riwayat; say so rather than sending it.
+    expect(find.text('Minimal 2 huruf'), findsOneWidget);
+    expect(
+      verify(() => useCases.getRiwayat(captureAny())).captured.length,
+      before.length,
+    );
+  });
+
+  testWidgets('clears an active search from the field', (tester) async {
+    await pumpView(tester);
+    await tester.enterText(find.byKey(const Key('riwayat-search')), 'siti');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('riwayat-search-clear')));
+    await tester.pumpAndSettle();
+
+    expect(lastFilter().search, '');
+    expect(find.byKey(const Key('riwayat-search-clear')), findsNothing);
+  });
+
   testWidgets('shows the full record when an entry is tapped', (tester) async {
     await pumpView(tester);
 
