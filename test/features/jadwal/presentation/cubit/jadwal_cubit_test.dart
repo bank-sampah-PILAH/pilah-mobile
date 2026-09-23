@@ -218,6 +218,30 @@ void main() {
     verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
   });
 
+  test('ignores a schedule load that finishes after session reset', () async {
+    final previous = _existingSchedule();
+    final current = _existingSchedule(id: 'schedule-2');
+    final previousResult =
+        Completer<Either<NetworkException, List<JadwalEntity>>>();
+    var loadCount = 0;
+    when(() => repository.getJadwal()).thenAnswer((_) async {
+      loadCount++;
+      if (loadCount == 1) return previousResult.future;
+      return Right([current]);
+    });
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    final previousLoad = cubit.loadJadwal();
+    await Future<void>.delayed(Duration.zero);
+    cubit.reset();
+    await cubit.loadJadwal();
+    previousResult.complete(Right([previous]));
+    await previousLoad;
+
+    expect(cubit.state, JadwalLoaded([current]));
+  });
+
   test('a stale transition cannot clear the new session transition', () async {
     final previous = _existingSchedule();
     final current = _existingSchedule(id: 'schedule-2');
