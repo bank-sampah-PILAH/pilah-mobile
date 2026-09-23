@@ -218,6 +218,47 @@ void main() {
     verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
   });
 
+  test('a stale transition cannot clear the new session transition', () async {
+    final previous = _existingSchedule();
+    final current = _existingSchedule(id: 'schedule-2');
+    final previousResult = Completer<Either<NetworkException, JadwalEntity>>();
+    final currentResult = Completer<Either<NetworkException, JadwalEntity>>();
+    var loadCount = 0;
+    when(() => repository.getJadwal(page: 1, date: null)).thenAnswer((_) async {
+      loadCount++;
+      return Right(_page([loadCount == 1 ? previous : current]));
+    });
+    when(() => repository.transition('schedule-1', 'terbitkan'))
+        .thenAnswer((_) => previousResult.future);
+    when(() => repository.transition('schedule-2', 'terbitkan'))
+        .thenAnswer((_) => currentResult.future);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await cubit.loadJadwal();
+    final previousTransition = cubit.changeStatus('schedule-1', 'terbitkan');
+    await Future<void>.delayed(Duration.zero);
+    cubit.reset();
+    await cubit.loadJadwal();
+    final currentTransition = cubit.changeStatus('schedule-2', 'terbitkan');
+    await Future<void>.delayed(Duration.zero);
+
+    previousResult.complete(
+      Left(GeneralException(message: 'session expired')),
+    );
+    expect(await previousTransition, isA<GeneralException>());
+    final stateAfterStaleFailure = cubit.state;
+    currentResult.complete(Right(current));
+    expect(await currentTransition, isNull);
+
+    expect(
+      stateAfterStaleFailure,
+      JadwalLoaded([current], isTransitioning: true, totalCount: 1),
+    );
+    expect(cubit.state, JadwalLoaded([current], totalCount: 1));
+    verify(() => repository.transition('schedule-2', 'terbitkan')).called(1);
+  });
+
   blocTest<JadwalCubit, JadwalState>(
     'restores loaded schedules when a status transition fails',
     build: () {
@@ -304,7 +345,6 @@ JadwalPageResult _page(
       totalCount: totalCount ?? items.length,
       hasMore: hasMore,
     );
-
 JadwalEntity _existingSchedule({String id = 'schedule-1'}) => JadwalEntity(
       id: id,
       bankSampahId: 'bank-1',
