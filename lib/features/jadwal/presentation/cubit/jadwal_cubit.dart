@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dar
 class JadwalCubit extends Cubit<JadwalState> {
   final JadwalRepository repository;
   bool _transitionInProgress = false;
+  int _sessionGeneration = 0;
 
   int _loadVersion = 0;
   int _calendarVersion = 0;
@@ -26,6 +27,7 @@ class JadwalCubit extends Cubit<JadwalState> {
       state is JadwalLoaded ? (state as JadwalLoaded).items : const [];
 
   Future<void> loadJadwal({bool silent = false, DateTime? date}) async {
+    final generation = _sessionGeneration;
     final hadLoadedState = state is JadwalLoaded;
     final requestedDate = date == null ? null : _dateOnly(date);
     final dateChanged = !_sameDate(requestedDate, _dateFilter);
@@ -48,7 +50,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     }
 
     final result = await repository.getJadwal(page: 1, date: requestedDate);
-    if (version != _loadVersion) return;
+    if (version != _loadVersion || generation != _sessionGeneration) return;
     result.fold(
       (failure) => emit(JadwalError(failure.displayMessage)),
       (page) {
@@ -161,6 +163,7 @@ class JadwalCubit extends Cubit<JadwalState> {
 
   Future<NetworkException?> changeStatus(String id, String action) async {
     if (_transitionInProgress) return null;
+    final generation = _sessionGeneration;
     final current = state;
     _transitionInProgress = true;
     if (current is JadwalLoaded) {
@@ -169,6 +172,9 @@ class JadwalCubit extends Cubit<JadwalState> {
 
     try {
       final result = await repository.transition(id, action);
+      if (generation != _sessionGeneration) {
+        return result.fold((failure) => failure, (_) => null);
+      }
       return await result.fold(
         (failure) async => failure,
         (_) async {
@@ -177,10 +183,12 @@ class JadwalCubit extends Cubit<JadwalState> {
         },
       );
     } finally {
-      _transitionInProgress = false;
-      final latest = state;
-      if (latest is JadwalLoaded && latest.isTransitioning) {
-        emit(latest.copyWith(isTransitioning: false));
+      if (generation == _sessionGeneration) {
+        _transitionInProgress = false;
+        final latest = state;
+        if (latest is JadwalLoaded && latest.isTransitioning) {
+          emit(latest.copyWith(isTransitioning: false));
+        }
       }
     }
   }
@@ -202,6 +210,8 @@ class JadwalCubit extends Cubit<JadwalState> {
       : right != null && _dateOnly(left) == _dateOnly(right);
 
   void reset() {
+    _sessionGeneration++;
+    _transitionInProgress = false;
     _loadVersion++;
     _calendarVersion++;
     _page = 1;
