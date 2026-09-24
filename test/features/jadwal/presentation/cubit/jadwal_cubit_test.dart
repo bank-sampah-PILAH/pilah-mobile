@@ -242,7 +242,8 @@ void main() {
     expect(cubit.state, JadwalLoaded([current]));
   });
 
-  test('a refresh started before a transition cannot overwrite its reload', () async {
+  test('a refresh started before a transition cannot overwrite its reload',
+      () async {
     final draft = _existingSchedule();
     final published = _existingSchedule(status: 'diterbitkan');
     final staleLoad = Completer<Either<NetworkException, JadwalPageResult>>();
