@@ -10,6 +10,7 @@ class JadwalCubit extends Cubit<JadwalState> {
   final JadwalRepository repository;
   bool _transitionInProgress = false;
   int _sessionGeneration = 0;
+  int _loadGeneration = 0;
 
   int _loadVersion = 0;
   int _calendarVersion = 0;
@@ -27,7 +28,7 @@ class JadwalCubit extends Cubit<JadwalState> {
       state is JadwalLoaded ? (state as JadwalLoaded).items : const [];
 
   Future<void> loadJadwal({bool silent = false, DateTime? date}) async {
-    final generation = _sessionGeneration;
+    final sessionGeneration = _sessionGeneration;
     final hadLoadedState = state is JadwalLoaded;
     final requestedDate = date == null ? null : _dateOnly(date);
     final dateChanged = !_sameDate(requestedDate, _dateFilter);
@@ -50,7 +51,9 @@ class JadwalCubit extends Cubit<JadwalState> {
     }
 
     final result = await repository.getJadwal(page: 1, date: requestedDate);
-    if (version != _loadVersion || generation != _sessionGeneration) return;
+    if (version != _loadVersion || sessionGeneration != _sessionGeneration) {
+      return;
+    }
     result.fold(
       (failure) => emit(JadwalError(failure.displayMessage)),
       (page) {
