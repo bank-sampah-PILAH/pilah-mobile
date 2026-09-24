@@ -273,6 +273,90 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                     ],
                   ),
                 ),
+
+                // Onboarding stepper: step one (Profil Diri) already landed
+                // on the shared complete_profile screen, so it renders done
+                // here — this is step two.
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: AppColors.greenDark,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.check,
+                                  color: Colors.white, size: 20),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Profil Diri',
+                            style: TextStyle(
+                              color: AppColors.greenDark,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 100,
+                        height: 2,
+                        margin: const EdgeInsets.only(bottom: 24),
+                        color: AppColors.greenDark,
+                      ),
+                      Column(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: AppColors.greenDark,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '2',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Pilih Bank Sampah',
+                            style: TextStyle(
+                              color: AppColors.greenDark,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),

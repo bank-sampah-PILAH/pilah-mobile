@@ -174,6 +174,14 @@ void main() {
     expect(find.text('Kembali'), findsNothing);
   });
 
+  testWidgets('shows the onboarding stepper with step 2 highlighted',
+      (tester) async {
+    await pump(tester);
+
+    expect(find.text('Profil Diri'), findsOneWidget);
+    expect(find.text('Pilih Bank Sampah'), findsOneWidget);
+  });
+
   testWidgets(
       'shows Kembali mid-wizard and pops back to the profile screen underneath',
       (tester) async {
@@ -241,7 +249,7 @@ void main() {
       await tester.tap(find.text('Tap untuk pilih bank sampah'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pilih Bank Sampah'), findsNothing);
+      expect(find.text('Cari nama bank sampah...'), findsNothing);
     });
 
     testWidgets(
@@ -260,6 +268,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ajukan Pendaftaran'), findsNothing);
+      await tester.ensureVisible(find.text('Lanjutkan'));
       await tester.tap(find.text('Lanjutkan'));
       await tester.pumpAndSettle();
 
@@ -276,7 +285,7 @@ void main() {
       await tester.tap(find.text('Tap untuk pilih bank sampah'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pilih Bank Sampah'), findsOneWidget);
+      expect(find.text('Cari nama bank sampah...'), findsOneWidget);
     });
   });
 }

@@ -82,4 +82,21 @@ void main() {
 
     expect(_alamatHint, findsNothing);
   });
+
+  testWidgets(
+      "labels step 2 'Pilih Bank Sampah' for a nasabah account, not the "
+      'pengelola wording', (tester) async {
+    await _pumpScreen(tester, role: 'nasabah');
+
+    expect(find.text('Pilih Bank Sampah'), findsOneWidget);
+    expect(find.text('Data Bank Sampah'), findsNothing);
+  });
+
+  testWidgets("labels step 2 'Data Bank Sampah' for a pengelola account",
+      (tester) async {
+    await _pumpScreen(tester, role: 'pengelola');
+
+    expect(find.text('Data Bank Sampah'), findsOneWidget);
+    expect(find.text('Pilih Bank Sampah'), findsNothing);
+  });
 }
