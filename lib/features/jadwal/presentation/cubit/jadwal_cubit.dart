@@ -29,7 +29,6 @@ class JadwalCubit extends Cubit<JadwalState> {
 
   Future<void> loadJadwal({bool silent = false, DateTime? date}) async {
     final sessionGeneration = _sessionGeneration;
-    final hadLoadedState = state is JadwalLoaded;
     final requestedDate = date == null ? null : _dateOnly(date);
     final dateChanged = !_sameDate(requestedDate, _dateFilter);
     _dateFilter = requestedDate;
@@ -42,7 +41,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     if (dateChanged) {
       emit(JadwalLoaded(
         const [],
-        isTransitioning: hadLoadedState && _transitionInProgress,
+        isTransitioning: _transitionInProgress,
         isLoading: true,
         scheduledDates: _scheduledDates,
       ));
@@ -61,7 +60,7 @@ class JadwalCubit extends Cubit<JadwalState> {
         _hasMore = page.hasMore;
         emit(JadwalLoaded(
           page.items,
-          isTransitioning: hadLoadedState && _transitionInProgress,
+          isTransitioning: _transitionInProgress,
           hasMore: page.hasMore,
           totalCount: page.totalCount,
           scheduledDates: _scheduledDates,
