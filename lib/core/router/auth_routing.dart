@@ -53,6 +53,7 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
       // re-application mode) so the user can fix their data and resubmit,
       // rather than being stranded on the pending screen.
       return '/register-bank-sampah';
+    case 'nasabah_dashboard':
     case 'dashboard':
     default:
       // `dashboard`, plus null/empty/unknown, land on the main dashboard.

@@ -98,6 +98,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans.ttf
+
   assets:
     - .env
     - assets/
@@ -135,3 +140,9 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/logo.png"
   min_sdk_android: 21
+
+# Existing PIL-225 compatibility bridge for Freezed 2.x on Flutter 3.41.3.
+# Compatibility bridge for Freezed 2.x on Flutter 3.41.3.
+# test/test_core declare analyzer >=8; validate tests and generation when updating.
+dependency_overrides:
+  analyzer: 7.7.1

@@ -1,3 +1,6 @@
+import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -81,6 +84,12 @@ class AppRouterConfig {
     },
     routes: <RouteBase>[
       GoRoute(
+        path: AppLocations.history,
+        builder: (_, state) => NasabahHistoryScreen(
+          membershipId: state.uri.queryParameters['keanggotaan_id'],
+        ),
+      ),
+      GoRoute(
         path: SplashPage.route,
         name: SplashPage.route,
         builder: (context, state) => const SplashPage(),
@@ -96,10 +105,7 @@ class AppRouterConfig {
       // captures nothing — the token is already banked by the time this runs —
       // and only hands off to the session-restore flow, which routes a signed-out
       // user to login. The stored token then steers them onward from there.
-      GoRoute(
-        path: '/invite',
-        redirect: (context, state) => SplashPage.route,
-      ),
+      GoRoute(path: '/invite', redirect: (context, state) => SplashPage.route),
       GoRoute(
         path: ForgotPasswordPage.route,
         name: ForgotPasswordPage.route,
@@ -174,7 +180,21 @@ class AppRouterConfig {
               GoRoute(
                 path: DashboardPage.route,
                 name: DashboardPage.route,
-                builder: (context, state) => const DashboardPage(),
+                builder: (context, state) =>
+                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
+                  builder: (context, authState) {
+                    if (authState is! Authenticated) {
+                      return const Scaffold(
+                          body: Center(
+                        child: Text('Silakan masuk untuk melihat Beranda.'),
+                      ));
+                    }
+                    if (authState.authEntity.role == 'nasabah') {
+                      return const BerandaNasabahPage();
+                    }
+                    return const DashboardPage();
+                  },
+                ),
               ),
             ],
           ),
