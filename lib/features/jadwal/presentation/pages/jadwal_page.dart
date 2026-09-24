@@ -178,6 +178,8 @@ class _JadwalPageState extends State<JadwalPage> {
 
           final loaded = state as JadwalLoaded;
           final isTransitioning = loaded.isTransitioning;
+          final isLifecycleActionDisabled =
+              isTransitioning || loaded.isSaving;
           final items = List<JadwalEntity>.of(loaded.items)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
           final dayItems = items
@@ -251,13 +253,13 @@ class _JadwalPageState extends State<JadwalPage> {
                       child: _ScheduleCard(
                         item: item,
                         onTap: isTransitioning ? null : () => _openForm(item),
-                        onCancel: isTransitioning
+                        onCancel: isLifecycleActionDisabled
                             ? null
                             : () => _confirmCancellation(item),
-                        onPublish: isTransitioning
+                        onPublish: isLifecycleActionDisabled
                             ? null
                             : () => _changeStatus(item, 'terbitkan'),
-                        onComplete: isTransitioning
+                        onComplete: isLifecycleActionDisabled
                             ? null
                             : () => _changeStatus(item, 'selesaikan'),
                       ),
