@@ -12,12 +12,21 @@ class PilihBankSampahSection extends StatelessWidget {
   final bool hasError;
   final String? errorText;
 
+  /// False when registration is locked (PIL-204: one membership per
+  /// nasabah for now) — the field renders but no longer opens the picker.
+  final bool enabled;
+
+  /// Bank sampah ids to hide from the picker, e.g. ones already joined.
+  final Set<String> excludedBankIds;
+
   const PilihBankSampahSection({
     super.key,
     required this.selectedBank,
     required this.onBankSelected,
     this.hasError = false,
     this.errorText,
+    this.enabled = true,
+    this.excludedBankIds = const {},
   });
 
   @override
@@ -26,24 +35,28 @@ class PilihBankSampahSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          onTap: () async {
-            final result =
-                await showModalBottomSheet<BankSampahDirectoryEntity>(
-              context: context,
-              useRootNavigator: true,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => const PilihBankSampahBottomSheet(),
-            );
-            if (result != null) {
-              onBankSelected(result);
-            }
-          },
+          onTap: !enabled
+              ? null
+              : () async {
+                  final result =
+                      await showModalBottomSheet<BankSampahDirectoryEntity>(
+                    context: context,
+                    useRootNavigator: true,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => PilihBankSampahBottomSheet(
+                      excludedBankIds: excludedBankIds,
+                    ),
+                  );
+                  if (result != null) {
+                    onBankSelected(result);
+                  }
+                },
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: enabled ? Colors.white : const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: hasError

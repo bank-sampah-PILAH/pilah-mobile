@@ -35,6 +35,15 @@ const _bank = BankSampahDirectoryEntity(
   fotoLogo: '',
 );
 
+const _joinedMembership = NasabahMembershipEntity(
+  id: 'membership-1',
+  bankSampahId: 'bank-joined',
+  bankSampahNama: 'Bank Sampah Lama',
+  bankSampahKota: 'Bogor',
+  status: 'approved',
+  isActive: true,
+);
+
 const _draft = CompleteProfileRequest(
   nama: 'Nasabah PILAH',
   jenisKelamin: 'perempuan',
@@ -65,6 +74,7 @@ void main() {
     onboarding = OnboardingCubit(dataSource);
     when(() => dataSource.listBankSampahDirectory())
         .thenAnswer((_) async => [_bank]);
+    when(() => dataSource.listMyMemberships()).thenAnswer((_) async => []);
   });
 
   tearDown(() => onboarding.close());
@@ -206,5 +216,57 @@ void main() {
           const RegisterNasabahRequest(bankSampahId: 'bank-1')),
     ]);
     expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
+  });
+
+  group('existing membership lock', () {
+    testWidgets('shows the joined bank sampah and its status', (tester) async {
+      when(() => dataSource.listMyMemberships())
+          .thenAnswer((_) async => [_joinedMembership]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bank Sampah Lama'), findsOneWidget);
+      expect(find.textContaining('hanya dapat terdaftar di 1 bank sampah'),
+          findsOneWidget);
+    });
+
+    testWidgets('locks the picker so it no longer opens', (tester) async {
+      when(() => dataSource.listMyMemberships())
+          .thenAnswer((_) async => [_joinedMembership]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pilih Bank Sampah'), findsNothing);
+    });
+
+    testWidgets('disables submit so no registration can be sent',
+        (tester) async {
+      when(() => dataSource.listMyMemberships())
+          .thenAnswer((_) async => [_joinedMembership]);
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => dataSource.registerNasabah(any()));
+    });
+
+    testWidgets('leaves the picker open with no existing membership',
+        (tester) async {
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pilih Bank Sampah'), findsOneWidget);
+    });
   });
 }

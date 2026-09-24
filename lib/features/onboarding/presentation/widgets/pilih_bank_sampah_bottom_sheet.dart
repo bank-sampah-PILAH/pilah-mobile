@@ -11,7 +11,10 @@ import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_c
 /// Lets a calon nasabah pick a bank sampah to apply to (PIL-204), searching
 /// the list [OnboardingCubit.loadBankSampahDirectory] fetches on open.
 class PilihBankSampahBottomSheet extends StatefulWidget {
-  const PilihBankSampahBottomSheet({super.key});
+  /// Bank sampah ids to hide from the list, e.g. ones already joined.
+  final Set<String> excludedBankIds;
+
+  const PilihBankSampahBottomSheet({super.key, this.excludedBankIds = const {}});
 
   @override
   State<PilihBankSampahBottomSheet> createState() =>
@@ -47,9 +50,14 @@ class _PilihBankSampahBottomSheetState
       });
       return;
     }
+    final banks = result ?? const [];
     setState(() {
       _loadState = _LoadState.loaded;
-      _banks = result ?? const [];
+      _banks = widget.excludedBankIds.isEmpty
+          ? banks
+          : banks
+              .where((bank) => !widget.excludedBankIds.contains(bank.id))
+              .toList();
     });
   }
 

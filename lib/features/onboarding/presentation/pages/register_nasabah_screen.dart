@@ -35,7 +35,28 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   bool _showBankError = false;
   bool _isLoading = false;
 
+  List<NasabahMembershipEntity> _memberships = const [];
+
+  /// PIL-204 scope for now: one membership per nasabah. Any existing
+  /// membership — pending, approved, or rejected — locks further
+  /// registration rather than letting a second application through.
+  bool get _isLocked => _memberships.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMemberships();
+  }
+
+  Future<void> _loadMemberships() async {
+    final (:result, :error) =
+        await context.read<OnboardingCubit>().loadMyMemberships();
+    if (!mounted || error != null) return;
+    setState(() => _memberships = result ?? const []);
+  }
+
   Future<void> _onSubmit() async {
+    if (_isLocked) return;
     setState(() => _showBankError = _selectedBank == null);
     final formValid = _formKey.currentState?.validate() ?? false;
     if (!formValid || _selectedBank == null) return;
@@ -63,6 +84,17 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
 
   void _showError(String message) {
     AppNotification.showError(context, title: 'Gagal', message: message);
+  }
+
+  String _membershipStatusLabel(NasabahMembershipEntity membership) {
+    switch (membership.status) {
+      case 'pending':
+        return 'Menunggu';
+      case 'rejected':
+        return 'Ditolak';
+      default:
+        return membership.isActive ? 'Aktif' : 'Nonaktif';
+    }
   }
 
   void _onBankSelected(BankSampahDirectoryEntity bank) {
@@ -252,6 +284,24 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (_isLocked) ...[
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Saat ini Anda hanya dapat terdaftar di 1 '
+                                'bank sampah.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.brown[700],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                           _buildFormField(
                             label: 'BANK SAMPAH',
                             description:
@@ -262,8 +312,47 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                               onBankSelected: _onBankSelected,
                               hasError: _showBankError,
                               errorText: 'Bank sampah wajib dipilih',
+                              enabled: !_isLocked,
+                              excludedBankIds: _memberships
+                                  .map((membership) => membership.bankSampahId)
+                                  .toSet(),
                             ),
                           ),
+                          if (_memberships.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            Text(
+                              'BANK SAMPAH YANG SUDAH TERGABUNG',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            for (final membership in _memberships)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        membership.bankSampahNama,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      _membershipStatusLabel(membership),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ],
                       ),
                     ),
@@ -277,7 +366,8 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _onSubmit,
+                          onPressed:
+                              (_isLoading || _isLocked) ? null : _onSubmit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.greenDark,
                             padding: const EdgeInsets.symmetric(vertical: 16),
