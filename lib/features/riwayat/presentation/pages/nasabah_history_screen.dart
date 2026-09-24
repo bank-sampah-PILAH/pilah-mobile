@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/riwayat_nasabah_page.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_membership_content.dart';
 
 /// Re-key history on account or membership changes to discard stale responses.
 class NasabahHistoryScreen extends StatelessWidget {
@@ -35,19 +36,15 @@ class NasabahHistoryScreen extends StatelessWidget {
             body: SafeArea(
               child: auth?.role != 'nasabah'
                   ? const Center(child: Text('Silakan masuk sebagai nasabah.'))
-                  : member == null || member.isEmpty
-                      ? Center(
-                          child: TextButton(
-                            onPressed: () => context.go(AppLocations.dashboard),
-                            child: const Text('Pilih bank sampah dari Beranda'),
-                          ),
-                        )
-                      : RiwayatNasabahPage(
-                          key: ValueKey(
-                              (auth!.id, auth.email, auth.token, member)),
-                          loadPage: (page) => di<NasabahRepository>()
-                              .history(member, page: page),
-                        ),
+                  : NasabahMembershipContent(
+                      key: ValueKey((auth!.id, auth.email, auth.token, member)),
+                      membershipId: member,
+                      builder: (id) => RiwayatNasabahPage(
+                        key: ValueKey(id),
+                        loadPage: (page) =>
+                            di<NasabahRepository>().history(id, page: page),
+                      ),
+                    ),
             ),
           );
         },

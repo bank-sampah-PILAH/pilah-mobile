@@ -93,10 +93,36 @@ void main() {
     expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
   });
 
-  testWidgets('direct history link without membership returns to selection',
-      (tester) async {
+  testWidgets('direct history resolves the active membership', (tester) async {
     await open(tester, '/riwayat');
-    expect(find.text('Pilih bank sampah dari Beranda'), findsOneWidget);
-    expect(repository.requests, isEmpty);
+    expect(find.text('Rp 1'), findsOneWidget);
+    expect(repository.requests, [('member-b', 1)]);
+  });
+
+  testWidgets('customer navigation opens real history bank and profile routes',
+      (tester) async {
+    await open(tester, '/dashboard');
+    final bar = find.byType(BottomNavigationBar);
+    expect(bar, findsOneWidget);
+    await tester.tap(find.descendant(of: bar, matching: find.text('Riwayat')));
+    await tester.pumpAndSettle();
+    expect(find.text('Rp 1'), findsOneWidget);
+    await tester
+        .tap(find.descendant(of: bar, matching: find.text('Bank Sampah')));
+    await tester.pumpAndSettle();
+    expect(find.text('Jl. Melati'), findsOneWidget);
+    await tester.tap(find.descendant(of: bar, matching: find.text('Profil')));
+    await tester.pumpAndSettle();
+    expect(find.text('preview@example.test'), findsOneWidget);
+    expect(tester.widget<BottomNavigationBar>(bar).currentIndex, 3);
+  });
+
+  testWidgets(
+      'customer direct link to staff customers is redirected before loading',
+      (tester) async {
+    await open(tester, '/nasabah');
+    expect(router.routeInformationProvider.value.uri.path, '/dashboard');
+    expect(find.text('Selamat datang, Siti'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

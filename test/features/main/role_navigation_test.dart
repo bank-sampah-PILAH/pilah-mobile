@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,27 +15,37 @@ class MockAuth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
 
 Authenticated session(String role) => Authenticated(
-  authEntity: AuthEntity(
-    name: 'Siti',
-    email: 'siti@example.test',
-    photoUrl: '',
-    token: 'test',
-    role: role,
-    nextStep: 'dashboard',
-  ),
-);
+      authEntity: AuthEntity(
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'test',
+        role: role,
+        nextStep: 'dashboard',
+      ),
+    );
 
-Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state) async {
+Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
+    {Stream<AuthenticationStates>? states}) async {
   final auth = MockAuth();
   when(() => auth.state).thenReturn(state);
   when(() => auth.stream).thenAnswer((_) => const Stream.empty());
+  if (states != null) whenListen(auth, states, initialState: state);
   final router = GoRouter(
     initialLocation: '/home',
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => MainPage(navigationShell: shell),
         branches: [
-          for (final path in ['/home', '/history', '/bank', '/profile'])
+          for (final path in [
+            '/home',
+            '/customers',
+            '/prices',
+            '/reports',
+            '/history',
+            '/bank',
+            '/profile'
+          ])
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -66,6 +77,20 @@ List<String?> labels(WidgetTester tester) => tester
     .toList();
 
 void main() {
+  testWidgets('changing roles resets an incompatible selected branch',
+      (tester) async {
+    final states = StreamController<AuthenticationStates>.broadcast();
+    addTearDown(states.close);
+    final router =
+        await mount(tester, session('nasabah'), states: states.stream);
+    await tester.tap(find.text('Riwayat'));
+    await tester.pumpAndSettle();
+    states.add(session('pengelola'));
+    await tester.pumpAndSettle();
+    expect(labels(tester), ['Dashboard', 'Nasabah', 'Harga', 'Laporan']);
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+    expect(find.text('body:/history'), findsNothing);
+  });
   testWidgets(
     'nasabah receives customer destinations rather than staff menus',
     (tester) async {
