@@ -263,7 +263,7 @@ class AppRouterConfig {
                     final auth = authState.authEntity;
                     return JadwalPage(
                       key: ValueKey(auth.id ?? auth.email),
-                      customerMode: auth.role == 'nasabah',
+                      customerMode: auth.role != 'pengelola',
                     );
                   },
                 ),
