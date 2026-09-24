@@ -186,6 +186,58 @@ void main() {
       isNotNull,
     );
   });
+
+  testWidgets('disables lifecycle actions while a schedule save is pending',
+      (tester) async {
+    final repository = _MockJadwalRepository();
+    final schedule = _schedule(status: 'draft');
+    final save = Completer<Either<NetworkException, JadwalEntity>>();
+    when(() => repository.getJadwal())
+        .thenAnswer((_) async => Right([schedule]));
+    when(() => repository.updateJadwal(schedule))
+        .thenAnswer((_) => save.future);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(
+      BlocProvider<JadwalCubit>.value(
+        value: cubit,
+        child: const MaterialApp(home: JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final saveResult = cubit.saveJadwal(schedule);
+    await tester.pumpAndSettle();
+
+    expect(cubit.state, JadwalLoaded([schedule], isSaving: true));
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Terbitkan'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<TextButton>(find.widgetWithText(TextButton, 'Batalkan'))
+          .onPressed,
+      isNull,
+    );
+
+    save.complete(Right(schedule));
+    expect(await saveResult, isNull);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Terbitkan'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+  });
 }
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
