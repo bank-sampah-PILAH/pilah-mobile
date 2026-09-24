@@ -1,3 +1,7 @@
+import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -60,7 +64,7 @@ class AppRouterConfig {
       }
 
       final store = di<InviteTokenStore>();
-      if (!store.hasToken) return null;
+      if (!store.hasToken) return _roleRedirect(context, path);
 
       // No session yet (signed out, or a cold start still restoring one): the
       // token keeps until there is an account to redeem it with, and `/invite`
@@ -76,7 +80,7 @@ class AppRouterConfig {
         step: authState.authEntity.nextStep,
         role: authState.authEntity.role,
       );
-      if (target == null || target == path) return null;
+      if (target == null || target == path) return _roleRedirect(context, path);
       return target;
     },
     routes: <RouteBase>[
@@ -96,19 +100,11 @@ class AppRouterConfig {
       // captures nothing — the token is already banked by the time this runs —
       // and only hands off to the session-restore flow, which routes a signed-out
       // user to login. The stored token then steers them onward from there.
-      GoRoute(
-        path: '/invite',
-        redirect: (context, state) => SplashPage.route,
-      ),
+      GoRoute(path: '/invite', redirect: (context, state) => SplashPage.route),
       GoRoute(
         path: ForgotPasswordPage.route,
         name: ForgotPasswordPage.route,
         builder: (context, state) => const ForgotPasswordPage(),
-      ),
-      GoRoute(
-        path: ProfilePage.route,
-        name: ProfilePage.route,
-        builder: (context, state) => const ProfilePage(),
       ),
       GoRoute(
         path: TransaksiBaruPage.route,
@@ -174,7 +170,21 @@ class AppRouterConfig {
               GoRoute(
                 path: DashboardPage.route,
                 name: DashboardPage.route,
-                builder: (context, state) => const DashboardPage(),
+                builder: (context, state) =>
+                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
+                  builder: (context, authState) {
+                    if (authState is! Authenticated) {
+                      return const Scaffold(
+                          body: Center(
+                        child: Text('Silakan masuk untuk melihat Beranda.'),
+                      ));
+                    }
+                    if (authState.authEntity.role == 'nasabah') {
+                      return const BerandaNasabahPage();
+                    }
+                    return const DashboardPage();
+                  },
+                ),
               ),
             ],
           ),
@@ -205,10 +215,61 @@ class AppRouterConfig {
               ),
             ],
           ),
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: AppLocations.history,
+                builder: (_, state) => NasabahHistoryScreen(
+                      membershipId: state.uri.queryParameters['keanggotaan_id'],
+                    )),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: AppLocations.customerBank,
+                builder: (_, __) => const NasabahBankPage()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: ProfilePage.route,
+                name: ProfilePage.route,
+                builder: (_, __) => const ProfilePage()),
+          ]),
         ],
       ),
     ],
   );
 
   static GoRouter getRouter() => _router;
+
+  static String? _roleRedirect(BuildContext context, String path) {
+    final state = context.read<AuthenticationBloc>().state;
+    if (state is! Authenticated) return null;
+    final role = state.authEntity.role;
+    final staffPaths = {
+      NasabahPage.route,
+      HargaPage.route,
+      LaporanPage.route,
+      TransaksiBaruPage.route
+    };
+    final customerPaths = {AppLocations.history, AppLocations.customerBank};
+    final protected = staffPaths.contains(path) ||
+        customerPaths.contains(path) ||
+        path == AppLocations.dashboard ||
+        path == AppLocations.profile;
+    if (role == 'superadmin' && protected) {
+      return SuperAdminDashboardScreen.route;
+    }
+    if (role == 'nasabah' && staffPaths.contains(path)) {
+      return AppLocations.dashboard;
+    }
+    if ((role == 'pengelola' || role == 'pengelola_induk') &&
+        customerPaths.contains(path)) {
+      return AppLocations.dashboard;
+    }
+    if (!{'nasabah', 'pengelola', 'pengelola_induk', 'superadmin'}
+            .contains(role) &&
+        protected) {
+      return LoginPage.route;
+    }
+    return null;
+  }
 }
