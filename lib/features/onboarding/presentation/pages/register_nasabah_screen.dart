@@ -56,14 +56,24 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   }
 
   Future<void> _onSubmit() async {
-    if (_isLocked) return;
-    setState(() => _showBankError = _selectedBank == null);
-    final formValid = _formKey.currentState?.validate() ?? false;
-    if (!formValid || _selectedBank == null) return;
+    // Locked means a membership already exists — usually because the
+    // pengurus-entered record auto-linked at login, before this draft was
+    // ever sent. There's no new bank to register, but the profile itself
+    // still needs to land: OnboardingCubit.submitNasabahRegistration skips
+    // its own registerNasabah call once completing the profile already
+    // reaches nasabah_dashboard, so a placeholder bank id here is never
+    // actually sent anywhere.
+    if (!_isLocked) {
+      setState(() => _showBankError = _selectedBank == null);
+      final formValid = _formKey.currentState?.validate() ?? false;
+      if (!formValid || _selectedBank == null) return;
+    }
 
     setState(() => _isLoading = true);
 
-    final request = RegisterNasabahRequest(bankSampahId: _selectedBank!.id);
+    final request = RegisterNasabahRequest(
+      bankSampahId: _isLocked ? _memberships.first.bankSampahId : _selectedBank!.id,
+    );
     final (:result, :error) = await context
         .read<OnboardingCubit>()
         .submitNasabahRegistration(request);
@@ -366,8 +376,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed:
-                              (_isLoading || _isLocked) ? null : _onSubmit,
+                          onPressed: _isLoading ? null : _onSubmit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.greenDark,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -385,18 +394,20 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Row(
+                              : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      'Ajukan Pendaftaran',
-                                      style: TextStyle(
+                                      _isLocked
+                                          ? 'Lanjutkan'
+                                          : 'Ajukan Pendaftaran',
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Icon(Icons.arrow_forward,
                                         color: Colors.white, size: 20),
                                   ],

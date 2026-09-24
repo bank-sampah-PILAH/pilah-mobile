@@ -244,18 +244,28 @@ void main() {
       expect(find.text('Pilih Bank Sampah'), findsNothing);
     });
 
-    testWidgets('disables submit so no registration can be sent',
-        (tester) async {
+    testWidgets(
+        'submitting while locked lands the profile without a new '
+        'registration', (tester) async {
+      // Realistic shape of this state: the pengurus-entered record already
+      // linked at login, before the profile draft banked on step one was
+      // ever sent — there is no route to this screen, locked, without one.
+      onboarding.saveProfileDraft(_draft);
       when(() => dataSource.listMyMemberships())
           .thenAnswer((_) async => [_joinedMembership]);
+      when(() => dataSource.completeProfile(_draft)).thenAnswer(
+          (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'));
 
-      await pump(tester);
+      await pump(tester, pushed: true);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Ajukan Pendaftaran'));
+      expect(find.text('Ajukan Pendaftaran'), findsNothing);
+      await tester.tap(find.text('Lanjutkan'));
       await tester.pumpAndSettle();
 
+      verify(() => dataSource.completeProfile(_draft)).called(1);
       verifyNever(() => dataSource.registerNasabah(any()));
+      expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
     });
 
     testWidgets('leaves the picker open with no existing membership',
