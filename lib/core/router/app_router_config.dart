@@ -1,4 +1,6 @@
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -82,6 +84,12 @@ class AppRouterConfig {
     },
     routes: <RouteBase>[
       GoRoute(
+        path: AppLocations.history,
+        builder: (_, state) => NasabahHistoryScreen(
+          membershipId: state.uri.queryParameters['keanggotaan_id'],
+        ),
+      ),
+      GoRoute(
         path: SplashPage.route,
         name: SplashPage.route,
         builder: (context, state) => const SplashPage(),
@@ -147,8 +155,7 @@ class AppRouterConfig {
           // 'rejected'), not as a first-time onboarding step. The screen reads
           // the flag to swap the stepper for a rejection notice.
           final authState = context.read<AuthenticationBloc>().state;
-          final isRejected =
-              authState is Authenticated &&
+          final isRejected = authState is Authenticated &&
               authState.authEntity.bankSampahStatus == 'rejected';
           return RegisterBankSampahScreen(isRejectedReapplication: isRejected);
         },
@@ -175,14 +182,19 @@ class AppRouterConfig {
                 name: DashboardPage.route,
                 builder: (context, state) =>
                     BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-                      builder: (context, authState) {
-                        if (authState is Authenticated &&
-                            authState.authEntity.role == 'nasabah') {
-                          return const BerandaNasabahPage();
-                        }
-                        return const DashboardPage();
-                      },
-                    ),
+                  builder: (context, authState) {
+                    if (authState is! Authenticated) {
+                      return const Scaffold(
+                          body: Center(
+                        child: Text('Silakan masuk untuk melihat Beranda.'),
+                      ));
+                    }
+                    if (authState.authEntity.role == 'nasabah') {
+                      return const BerandaNasabahPage();
+                    }
+                    return const DashboardPage();
+                  },
+                ),
               ),
             ],
           ),

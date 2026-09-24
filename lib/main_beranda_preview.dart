@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
@@ -15,6 +16,11 @@ import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah
 void main() {
   di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
   final router = GoRouter(initialLocation: AppLocations.dashboard, routes: [
+    GoRoute(
+        path: AppLocations.history,
+        builder: (_, state) => NasabahHistoryScreen(
+              membershipId: state.uri.queryParameters['keanggotaan_id'],
+            )),
     GoRoute(
         path: AppLocations.dashboard,
         builder: (_, __) => const BerandaNasabahPage()),

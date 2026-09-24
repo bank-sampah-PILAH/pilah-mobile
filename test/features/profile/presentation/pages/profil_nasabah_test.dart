@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -35,6 +37,7 @@ void main() {
     String route = '/profile',
     String? apiName,
     bool membershipActive = true,
+    Stream<AuthenticationStates>? states,
   }) async {
     final auth = _Auth();
     profile = _Profile();
@@ -42,7 +45,7 @@ void main() {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
         PreviewNasabahRepository(name: apiName ?? name, email: email));
-    whenListen(auth, const Stream<AuthenticationStates>.empty(),
+    whenListen(auth, states ?? const Stream<AuthenticationStates>.empty(),
         initialState: Authenticated(
             authEntity: AuthEntity(
           id: 'nasabah-226',
@@ -75,6 +78,20 @@ void main() {
   }
 
   group('PIL-226 profil nasabah — proposed RED slice', () {
+    testWidgets(
+        'logout clears customer identity without loading staff settings',
+        (tester) async {
+      final states = StreamController<AuthenticationStates>();
+      addTearDown(states.close);
+      await openProfile(tester, states: states.stream);
+      expect(find.text('siti@example.test'), findsOneWidget);
+      states.add(Unauthenticated());
+      await tester.pumpAndSettle();
+      expect(find.text('siti@example.test'), findsNothing);
+      expect(find.text('Silakan masuk untuk melihat profil Anda.'),
+          findsOneWidget);
+      verifyNever(() => profile.load(silent: true));
+    });
     testWidgets('akses Profil dari Beranda membuka profil akun',
         (tester) async {
       await openProfile(tester, route: '/dashboard');

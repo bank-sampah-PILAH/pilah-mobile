@@ -1,5 +1,29 @@
 # PIL-227: activity history, RED phase
 
+## GREEN follow-up
+
+The subsequent implementation request supersedes the RED-only stop below.
+The page now uses the typed `NasabahHistory` repository contract and is available
+from Beranda at `/riwayat?keanggotaan_id=...`. It appends pages without replacing
+earlier rows, retries the failed page, refreshes from page one, preserves exact
+decimal formatting, and handles loading/empty/error states. Session and membership
+keys discard stale responses; signed-out users cannot load history. A direct link
+without a membership guides the customer back to bank selection on Beranda.
+
+TDD evidence: the original five tests plus three pagination/refresh/disposal
+tests failed before implementation and passed afterwards. Two production-route
+tests cover membership propagation, appended pages, logout, and missing selection.
+The former home modal tests now exercise the dedicated screen and back action.
+PIL-226's committed customer infrastructure is merged as a dependency, including
+the session-transition regression fix. Setoran remains the API's activity scope.
+
+The following section records the original RED checkpoint.
+
+Final GREEN validation: `flutter analyze` reports no issues; `flutter test
+--no-pub --reporter expanded` passes 259 tests, with one existing live-API test
+skipped because its disposable backend fixture is not configured. The combined
+profile/history backend passes all 77 tests with `python manage.py test`.
+
 Source: https://linear.app/pilah-2/issue/PIL-227/halaman-daftar-riwayat-aktivitas-nasabah
 
 The ticket has no description. Parent PIL-151 requires access to customer history

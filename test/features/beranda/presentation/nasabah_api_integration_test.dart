@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -68,8 +70,18 @@ void main() {
       {Stream<AuthenticationStates>? states}) async {
     whenListen(auth, states ?? const Stream<AuthenticationStates>.empty(),
         initialState: session('Siti'));
+    final router = GoRouter(initialLocation: '/dashboard', routes: [
+      GoRoute(
+          path: '/dashboard', builder: (_, __) => const BerandaNasabahPage()),
+      GoRoute(
+          path: '/riwayat',
+          builder: (_, state) => NasabahHistoryScreen(
+                membershipId: state.uri.queryParameters['keanggotaan_id'],
+              )),
+    ]);
+    addTearDown(router.dispose);
     await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: const MaterialApp(home: BerandaNasabahPage())));
+        value: auth, child: MaterialApp.router(routerConfig: router)));
     await tester.pump();
   }
 
@@ -108,11 +120,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Riwayat Aktivitas'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Berikutnya'));
+    await tester.tap(find.text('Muat Lagi'));
     await tester.pumpAndSettle();
     expect(repository.pages, [('member-b', 1), ('member-b', 2)]);
     expect(find.text('Rp 2'), findsOneWidget);
-    expect(find.text('Berikutnya'), findsNothing);
+    expect(find.text('Rp 1'), findsOneWidget);
+    expect(find.text('Muat Lagi'), findsNothing);
   });
 
   testWidgets('switching account discards an earlier pending home response',

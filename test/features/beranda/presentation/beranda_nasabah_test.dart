@@ -151,7 +151,7 @@ void main() {
 
     for (final entry in {
       'Saldo': 'Belum ada perubahan saldo.',
-      'Riwayat Aktivitas': 'Halaman 1',
+      'Riwayat Aktivitas': 'Belum ada aktivitas',
       'Detail Bank Sampah': 'Jl. Melati',
     }.entries) {
       testWidgets('ketuk ${entry.key} membuka informasi dan dapat ditutup', (
@@ -163,7 +163,11 @@ void main() {
         await tester.tap(find.text(entry.key));
         await tester.pumpAndSettle();
         expect(find.text(entry.value), findsOneWidget);
-        await tester.tap(find.text('Tutup'));
+        if (entry.key == 'Riwayat Aktivitas') {
+          await tester.tap(find.byTooltip('Kembali ke Beranda'));
+        } else {
+          await tester.tap(find.text('Tutup'));
+        }
         await tester.pumpAndSettle();
         expect(find.text(entry.value), findsNothing);
         await tester.scrollUntilVisible(find.text('Beranda'), -300);

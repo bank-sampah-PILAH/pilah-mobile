@@ -29,11 +29,17 @@ class ProfilePage extends StatelessWidget {
   // session rather than firing at cold start.
   @override
   Widget build(BuildContext context) {
-    final isNasabah = context.select<AuthenticationBloc, bool>((bloc) {
-      final state = bloc.state;
-      return state is Authenticated && state.authEntity.role == 'nasabah';
-    });
-    return isNasabah ? const ProfilNasabahPage() : const _ProfileView();
+    final state = context.watch<AuthenticationBloc>().state;
+    final role = state is Authenticated ? state.authEntity.role : null;
+    if (role == 'nasabah') return const ProfilNasabahPage();
+    if (role == 'pengelola' || role == 'pengelola_induk') {
+      return const _ProfileView();
+    }
+    return const Scaffold(
+      body: SafeArea(
+        child: Center(child: Text('Silakan masuk untuk melihat profil Anda.')),
+      ),
+    );
   }
 }
 
