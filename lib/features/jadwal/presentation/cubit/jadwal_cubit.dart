@@ -150,7 +150,7 @@ class JadwalCubit extends Cubit<JadwalState> {
   }
 
   Future<NetworkException?> saveJadwal(JadwalEntity jadwal) async {
-    if (_saveInProgress) {
+    if (_saveInProgress || _transitionInProgress) {
       return GeneralException(
         message: 'Tunggu proses jadwal selesai sebelum menyimpan.',
       );
