@@ -46,6 +46,34 @@ void main() {
     verify(() => cubit.changeStatus('jadwal-1', 'terbitkan')).called(1);
   });
 
+  testWidgets('draft schedule confirms cancellation before transitioning',
+      (tester) async {
+    final cubit = _MockJadwalCubit();
+    when(() => cubit.state)
+        .thenReturn(JadwalLoaded([_schedule(status: 'draft')]));
+    when(() => cubit.loadJadwal()).thenAnswer((_) async {});
+    when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
+
+    await tester.pumpWidget(
+      BlocProvider<JadwalCubit>.value(
+        value: cubit,
+        child: const MaterialApp(home: JadwalPage()),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Batalkan'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    verifyNever(() => cubit.changeStatus(any(), any()));
+
+    await tester.tap(find.text('Ya, batalkan'));
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.changeStatus('jadwal-1', 'batalkan')).called(1);
+  });
+
   testWidgets('published schedule confirms cancellation and reports failures',
       (tester) async {
     final cubit = _MockJadwalCubit();
