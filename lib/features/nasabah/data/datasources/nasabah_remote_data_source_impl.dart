@@ -62,4 +62,26 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
     await networkService
         .patch('$_path/$id/status', data: {'is_active': isActive});
   }
+
+  @override
+  Future<void> approveNasabah(String id, String? catatan) async {
+    await networkService.post(
+      '$_path/$id/approve',
+      data: {
+        if (catatan != null && catatan.trim().isNotEmpty)
+          'catatan': catatan.trim()
+      },
+    );
+  }
+
+  @override
+  Future<void> rejectNasabah(String id, String? catatan) async {
+    await networkService.post(
+      '$_path/$id/reject',
+      data: {
+        if (catatan != null && catatan.trim().isNotEmpty)
+          'catatan': catatan.trim()
+      },
+    );
+  }
 }

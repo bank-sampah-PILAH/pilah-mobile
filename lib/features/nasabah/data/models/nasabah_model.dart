@@ -22,6 +22,7 @@ class NasabahModel extends NasabahEntity {
     required super.jenisKelamin,
     required super.tanggalLahir,
     required super.tanggalDaftar,
+    required super.status,
   });
 
   factory NasabahModel.fromJson(Map<String, dynamic> json) {
@@ -42,7 +43,20 @@ class NasabahModel extends NasabahEntity {
       jenisKelamin: genderLabel(json['jenis_kelamin']?.toString()),
       tanggalLahir: isoToDisplay(json['tanggal_lahir']?.toString()),
       tanggalDaftar: isoToDisplay(json['tanggal_daftar']?.toString()),
+      status: json['status']?.toString() ?? 'approved',
     );
+  }
+
+  /// UI label for the membership status (PIL-188).
+  String statusLabel() {
+    switch (status) {
+      case 'pending':
+        return 'Menunggu';
+      case 'rejected':
+        return 'Ditolak';
+      default:
+        return 'Disetujui';
+    }
   }
 
   /// Builds the request body for POST/PUT `/nasabah` from a [NasabahRequest].

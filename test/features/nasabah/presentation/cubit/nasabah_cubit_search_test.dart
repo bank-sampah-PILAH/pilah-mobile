@@ -8,6 +8,8 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_useca
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
@@ -26,6 +28,11 @@ class _MockActivateNasabahUseCase extends Mock
 
 class _MockDeactivateNasabahUseCase extends Mock
     implements DeactivateNasabahUseCase {}
+
+class _MockApproveNasabahUseCase extends Mock
+    implements ApproveNasabahUseCase {}
+
+class _MockRejectNasabahUseCase extends Mock implements RejectNasabahUseCase {}
 
 NasabahEntity _nasabah(String name, String email, String phone) =>
     NasabahEntity(
@@ -57,6 +64,8 @@ void main() {
       _MockUpdateNasabahUseCase(),
       _MockActivateNasabahUseCase(),
       _MockDeactivateNasabahUseCase(),
+      _MockApproveNasabahUseCase(),
+      _MockRejectNasabahUseCase(),
     );
     when(() => getUseCase.execute()).thenAnswer(
       (_) async =>
