@@ -218,6 +218,33 @@ void main() {
     verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
   });
 
+  test('keeps transition actions locked across a refresh during a save',
+      () async {
+    final existing = _existingSchedule();
+    final saveResult = Completer<Either<NetworkException, JadwalEntity>>();
+    when(() => repository.getJadwal())
+        .thenAnswer((_) async => Right([existing]));
+    when(() => repository.updateJadwal(existing))
+        .thenAnswer((_) => saveResult.future);
+    when(() => repository.transition('schedule-1', 'terbitkan'))
+        .thenAnswer((_) async => Right(existing));
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await cubit.loadJadwal();
+    final save = cubit.saveJadwal(existing);
+    await Future<void>.delayed(Duration.zero);
+    await cubit.loadJadwal(silent: true);
+    final stateDuringRefresh = cubit.state;
+    await cubit.changeStatus('schedule-1', 'terbitkan');
+
+    saveResult.complete(Right(existing));
+    expect(await save, isNull);
+    expect(stateDuringRefresh, JadwalLoaded([existing], isSaving: true));
+    expect(cubit.state, JadwalLoaded([existing]));
+    verifyNever(() => repository.transition('schedule-1', 'terbitkan'));
+  });
+
   test('preserves transition state when a failed refresh is retried', () async {
     final existing = _existingSchedule();
     final transitionResult =
