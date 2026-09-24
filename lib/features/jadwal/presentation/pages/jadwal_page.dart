@@ -133,6 +133,28 @@ class _JadwalPageState extends State<JadwalPage> {
     await _changeStatus(item, 'batalkan');
   }
 
+  Future<void> _confirmCompletion(JadwalEntity item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tandai jadwal selesai?'),
+        content: const Text('Jadwal yang diselesaikan tidak dapat diubah.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Kembali'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Ya, selesaikan'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    await _changeStatus(item, 'selesaikan');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -261,7 +283,7 @@ class _JadwalPageState extends State<JadwalPage> {
                             : () => _changeStatus(item, 'terbitkan'),
                         onComplete: isLifecycleActionDisabled
                             ? null
-                            : () => _changeStatus(item, 'selesaikan'),
+                            : () => _confirmCompletion(item),
                       ),
                     ),
                   ),
