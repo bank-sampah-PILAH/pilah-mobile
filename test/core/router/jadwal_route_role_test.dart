@@ -37,8 +37,7 @@ void main() {
     }
   });
 
-  testWidgets('authenticated nasabah receives the read-only jadwal route',
-      (tester) async {
+  testWidgets('unknown roles fail closed on the jadwal route', (tester) async {
     final authenticationBloc = _MockAuthenticationBloc();
     final authenticationStates = StreamController<AuthenticationStates>();
     addTearDown(authenticationStates.close);
@@ -77,6 +76,28 @@ void main() {
 
     expect(find.text('Jadwal Kegiatan'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
+
+    for (final role in <String?>[null, 'unknown-role']) {
+      authenticationStates.add(
+        Authenticated(
+          authEntity: AuthEntity(
+            id: 'nasabah-1',
+            name: 'Nasabah',
+            email: 'nasabah@example.com',
+            photoUrl: '',
+            token: 'token',
+            role: role,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.text('Batalkan'), findsNothing);
+      expect(find.text('Terbitkan'), findsNothing);
+      expect(find.text('Tandai Selesai'), findsNothing);
+    }
 
     authenticationStates.add(
       Authenticated(
