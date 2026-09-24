@@ -342,6 +342,44 @@ void main() {
     expect(cubit.state, JadwalLoaded([current]));
   });
 
+  test('a stale save cannot clear the new session save lock', () async {
+    final previous = _existingSchedule();
+    final current = _existingSchedule(id: 'schedule-2');
+    final previousSaveResult =
+        Completer<Either<NetworkException, JadwalEntity>>();
+    final currentSaveResult =
+        Completer<Either<NetworkException, JadwalEntity>>();
+    var loadCount = 0;
+    when(() => repository.getJadwal()).thenAnswer((_) async {
+      loadCount++;
+      return Right([loadCount == 1 ? previous : current]);
+    });
+    when(() => repository.updateJadwal(previous))
+        .thenAnswer((_) => previousSaveResult.future);
+    when(() => repository.updateJadwal(current))
+        .thenAnswer((_) => currentSaveResult.future);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await cubit.loadJadwal();
+    final previousSave = cubit.saveJadwal(previous);
+    await Future<void>.delayed(Duration.zero);
+    cubit.reset();
+    await cubit.loadJadwal();
+    final currentSave = cubit.saveJadwal(current);
+    await Future<void>.delayed(Duration.zero);
+
+    previousSaveResult.complete(Right(previous));
+    expect(await previousSave, isNull);
+    expect(cubit.state, JadwalLoaded([current], isSaving: true));
+    await cubit.changeStatus('schedule-2', 'terbitkan');
+    verifyNever(() => repository.transition('schedule-2', 'terbitkan'));
+
+    currentSaveResult.complete(Right(current));
+    expect(await currentSave, isNull);
+    expect(cubit.state, JadwalLoaded([current]));
+  });
+
   test('a refresh started before a transition cannot overwrite its reload',
       () async {
     final draft = _existingSchedule();
