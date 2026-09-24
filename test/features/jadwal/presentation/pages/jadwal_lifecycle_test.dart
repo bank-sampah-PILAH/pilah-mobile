@@ -238,6 +238,43 @@ void main() {
       isNotNull,
     );
   });
+
+  testWidgets('prevents opening a schedule form during a transition',
+      (tester) async {
+    final repository = _MockJadwalRepository();
+    final schedule = _schedule(status: 'draft');
+    final transition = Completer<Either<NetworkException, JadwalEntity>>();
+    when(() => repository.getJadwal())
+        .thenAnswer((_) async => Right([schedule]));
+    when(() => repository.transition('jadwal-1', 'terbitkan'))
+        .thenAnswer((_) => transition.future);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(
+      BlocProvider<JadwalCubit>.value(
+        value: cubit,
+        child: const MaterialApp(home: JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Terbitkan'));
+    await tester.pump();
+
+    final fabFinder = find.byType(FloatingActionButton);
+    expect(tester.widget<FloatingActionButton>(fabFinder).onPressed, isNull);
+    await tester.tap(fabFinder, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('Buat Jadwal'), findsNothing);
+
+    transition.complete(Right(schedule));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<FloatingActionButton>(fabFinder).onPressed,
+      isNotNull,
+    );
+  });
 }
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
