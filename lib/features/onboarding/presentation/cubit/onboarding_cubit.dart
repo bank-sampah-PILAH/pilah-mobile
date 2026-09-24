@@ -173,6 +173,22 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     );
   }
 
+  /// Lists the calling nasabah's own memberships (`GET /nasabah/me`), used
+  /// to show what's already joined and lock the picker under the current
+  /// one-membership-per-nasabah scope. Returns the backend list on success;
+  /// otherwise the [NetworkException].
+  Future<({List<NasabahMembershipEntity>? result, NetworkException? error})>
+      loadMyMemberships() async {
+    final either = await apiCall<List<NasabahMembershipEntity>>(
+      func: _dataSource.listMyMemberships(),
+      mapper: (value) => value as List<NasabahMembershipEntity>,
+    );
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
   /// Submits a calon nasabah's membership application. Returns the backend
   /// [OnboardingResult] (with the next routing step, `nasabah_dashboard` on
   /// success) on success; otherwise the [NetworkException] carrying the
@@ -220,6 +236,18 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       }
 
       _profileSubmitted = true;
+
+      // A pengurus-entered record matching this account's verified email
+      // auto-links on login (AuthService._sync_nasabah_prefill), so
+      // completing the profile can already finish onboarding on its own.
+      // Calling registerNasabah in that case would fail with "already
+      // registered" since the membership already exists.
+      final profileResult = profileEither.fold((_) => null, (result) => result);
+      if (profileResult?.nextStep == 'nasabah_dashboard') {
+        emit(const OnboardingInitial());
+        clearProfileDraft();
+        return (result: profileResult, error: null);
+      }
     }
 
     final either = await apiCall<OnboardingResult>(

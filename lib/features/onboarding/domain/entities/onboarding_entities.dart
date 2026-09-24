@@ -79,6 +79,42 @@ class BankSampahDirectoryEntity {
       );
 }
 
+/// One row from `GET /nasabah/me`: a calon/active nasabah's own membership.
+/// Used by the bank-sampah picker (PIL-204) to show what's already joined
+/// and lock further registrations under the current one-membership-per-
+/// nasabah scope.
+class NasabahMembershipEntity {
+  final String id;
+  final String bankSampahId;
+  final String bankSampahNama;
+  final String bankSampahKota;
+
+  /// Backend enum value: `pending`, `approved`, or `rejected`.
+  final String status;
+  final bool isActive;
+
+  const NasabahMembershipEntity({
+    required this.id,
+    required this.bankSampahId,
+    required this.bankSampahNama,
+    required this.bankSampahKota,
+    required this.status,
+    required this.isActive,
+  });
+
+  factory NasabahMembershipEntity.fromJson(Map<String, dynamic> json) {
+    final bank = json['bank_sampah'] as Map<String, dynamic>? ?? const {};
+    return NasabahMembershipEntity(
+      id: json['id']?.toString() ?? '',
+      bankSampahId: bank['id']?.toString() ?? '',
+      bankSampahNama: bank['nama']?.toString() ?? '',
+      bankSampahKota: bank['kota']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      isActive: json['is_active'] as bool? ?? false,
+    );
+  }
+}
+
 /// Input for `POST /onboarding/nasabah`: a calon nasabah applying to join
 /// [bankSampahId]. `nama`/`jenis_kelamin`/`tanggal_lahir`/`no_hp`/`alamat`
 /// are not asked for again here — the backend copies them from the profile

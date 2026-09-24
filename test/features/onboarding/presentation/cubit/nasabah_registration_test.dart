@@ -82,6 +82,37 @@ void main() {
     });
   });
 
+  group('loadMyMemberships', () {
+    const membership = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah BTH',
+      bankSampahKota: 'Depok',
+      status: 'approved',
+      isActive: true,
+    );
+
+    test('returns the memberships the data source lists', () async {
+      when(() => dataSource.listMyMemberships())
+          .thenAnswer((_) async => [membership]);
+
+      final (:result, :error) = await cubit.loadMyMemberships();
+
+      expect(error, isNull);
+      expect(result, [membership]);
+    });
+
+    test('surfaces a network failure instead of throwing', () async {
+      when(() => dataSource.listMyMemberships()).thenAnswer(
+          (_) async => throw _refusal('Gagal memuat keanggotaan'));
+
+      final (:result, :error) = await cubit.loadMyMemberships();
+
+      expect(result, isNull);
+      expect(error?.displayMessage, 'Gagal memuat keanggotaan');
+    });
+  });
+
   group('registerNasabah', () {
     test('sends the request and returns the next step', () async {
       when(() => dataSource.registerNasabah(_request)).thenAnswer(
@@ -166,6 +197,26 @@ void main() {
         reason: 'the draft is the form contents; dropping it on a failure the '
             'user can fix would empty the screen they need to correct',
       );
+    });
+
+    test(
+        'skips the membership application when completing the profile '
+        'already reaches nasabah_dashboard', () async {
+      // A pengurus-entered record matching the account's verified email
+      // auto-links on login (AuthService._sync_nasabah_prefill), so
+      // completing the profile alone can already finish onboarding.
+      // Calling registerNasabah afterwards would fail with "already
+      // registered" since the membership already exists.
+      cubit.saveProfileDraft(_draft);
+      when(() => dataSource.completeProfile(any())).thenAnswer((_) async =>
+          const OnboardingResult(nextStep: 'nasabah_dashboard'));
+
+      final (:result, :error) = await cubit.submitNasabahRegistration(_request);
+
+      expect(error, isNull);
+      expect(result?.nextStep, 'nasabah_dashboard');
+      verifyNever(() => dataSource.registerNasabah(any()));
+      expect(cubit.hasProfileDraft, isFalse);
     });
 
     test('clears the draft once both steps land', () async {

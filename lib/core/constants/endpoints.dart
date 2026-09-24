@@ -12,6 +12,7 @@ class Endpoints {
   static const String invitesAccept = "/api/v1/invites/accept";
   static const String onboardingNasabah = "/api/v1/onboarding/nasabah";
   static const String bankSampahDirectory = "/api/v1/bank-sampah";
+  static const String nasabahMe = "/api/v1/nasabah/me";
 
   // profile / bank sampah / team / settings
   static const String bankSampahMe = "/api/v1/bank-sampah/me";

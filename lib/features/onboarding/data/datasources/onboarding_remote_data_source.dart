@@ -11,6 +11,7 @@ abstract class OnboardingRemoteDataSource {
   Future<OnboardingResult> acceptInvite(String token);
   Future<List<BankSampahDirectoryEntity>> listBankSampahDirectory();
   Future<OnboardingResult> registerNasabah(RegisterNasabahRequest request);
+  Future<List<NasabahMembershipEntity>> listMyMemberships();
 }
 
 @LazySingleton(as: OnboardingRemoteDataSource)
@@ -100,5 +101,15 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
     );
     final json = response.data as Map<String, dynamic>;
     return OnboardingResult(nextStep: json['next_step']?.toString());
+  }
+
+  @override
+  Future<List<NasabahMembershipEntity>> listMyMemberships() async {
+    final response = await networkService.get(Endpoints.nasabahMe);
+    final list = response.data as List<dynamic>;
+    return list
+        .map((item) =>
+            NasabahMembershipEntity.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 }

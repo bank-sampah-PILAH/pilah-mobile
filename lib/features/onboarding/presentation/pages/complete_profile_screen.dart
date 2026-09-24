@@ -198,14 +198,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         authState.authEntity.bankSampahStatus == null;
   }
 
-  /// Whether finishing this form leads to the nasabah bank-sampah picker.
+  /// Whether finishing this form banks the draft and pushes the nasabah
+  /// bank-sampah picker next, rather than submitting straight away.
   ///
-  /// No further condition is needed the way [_startsNewRegistration] checks
-  /// `bankSampahStatus`: reaching this screen at all means `is_profile_complete`
-  /// is false, and a Nasabah membership row can only exist for an account
-  /// whose profile is already complete (`IsNasabah` requires it) — so a
-  /// nasabah account here can never already have one, and `next_step` is
-  /// deterministically `register_nasabah` the moment the profile lands.
+  /// Unlike [_startsNewRegistration], reaching this screen does NOT mean the
+  /// account has no membership yet: a pengurus-entered Nasabah record
+  /// matching this account's verified email auto-links on login
+  /// (`AuthService._sync_nasabah_prefill`) while the profile is still
+  /// incomplete, so `next_step` after submitting can already be
+  /// `nasabah_dashboard`. That case is handled downstream in
+  /// `OnboardingCubit.submitNasabahRegistration`, which skips the
+  /// registration call entirely when the profile step alone finishes
+  /// onboarding — this getter only decides whether to defer to that wizard
+  /// step at all.
   bool get _startsNasabahRegistration {
     final authState = context.read<AuthenticationBloc>().state;
     return authState is Authenticated && authState.authEntity.role == 'nasabah';
