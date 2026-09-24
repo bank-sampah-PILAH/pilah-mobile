@@ -114,7 +114,8 @@ void main() {
     expect(find.text('offline'), findsOneWidget);
   });
 
-  testWidgets('published schedule can be marked complete', (tester) async {
+  testWidgets('published schedule confirms completion before transitioning',
+      (tester) async {
     final cubit = _MockJadwalCubit();
     final schedule = _schedule(status: 'diterbitkan');
     when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
@@ -130,7 +131,20 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.text('Tandai Selesai'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Ya, selesaikan'), findsOneWidget);
+    verifyNever(() => cubit.changeStatus(any(), any()));
+
+    await tester.tap(find.text('Kembali'));
+    await tester.pumpAndSettle();
+    verifyNever(() => cubit.changeStatus(any(), any()));
+
+    await tester.tap(find.text('Tandai Selesai'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, selesaikan'));
+    await tester.pumpAndSettle();
 
     verify(() => cubit.changeStatus('jadwal-1', 'selesaikan')).called(1);
   });
