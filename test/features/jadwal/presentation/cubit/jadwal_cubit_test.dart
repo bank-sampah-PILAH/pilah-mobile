@@ -242,6 +242,32 @@ void main() {
     expect(cubit.state, JadwalLoaded([current]));
   });
 
+  test('a refresh started before a transition cannot overwrite its reload', () async {
+    final draft = _existingSchedule();
+    final published = _existingSchedule(status: 'diterbitkan');
+    final staleLoad = Completer<Either<NetworkException, JadwalPageResult>>();
+    var loadCount = 0;
+    when(() => repository.getJadwal(page: 1, date: null)).thenAnswer((_) {
+      loadCount++;
+      if (loadCount == 1) return Future.value(Right(_page([draft])));
+      if (loadCount == 2) return staleLoad.future;
+      return Future.value(Right(_page([published])));
+    });
+    when(() => repository.transition('schedule-1', 'terbitkan'))
+        .thenAnswer((_) async => Right(published));
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await cubit.loadJadwal();
+    final oldRefresh = cubit.loadJadwal(silent: true);
+    await Future<void>.delayed(Duration.zero);
+    await cubit.changeStatus('schedule-1', 'terbitkan');
+    staleLoad.complete(Right(_page([draft])));
+    await oldRefresh;
+
+    expect(cubit.state, JadwalLoaded([published], totalCount: 1));
+  });
+
   test('a stale transition cannot clear the new session transition', () async {
     final previous = _existingSchedule();
     final current = _existingSchedule(id: 'schedule-2');
@@ -369,11 +395,16 @@ JadwalPageResult _page(
       totalCount: totalCount ?? items.length,
       hasMore: hasMore,
     );
-JadwalEntity _existingSchedule({String id = 'schedule-1'}) => JadwalEntity(
+JadwalEntity _existingSchedule({
+  String id = 'schedule-1',
+  String status = 'draft',
+}) =>
+    JadwalEntity(
       id: id,
       bankSampahId: 'bank-1',
       jenisKegiatan: 'penimbangan',
       mulaiPada: DateTime.utc(2026, 10, 10, 1),
       selesaiPada: DateTime.utc(2026, 10, 10, 3),
       lokasi: 'Balai Warga',
+      status: status,
     );
