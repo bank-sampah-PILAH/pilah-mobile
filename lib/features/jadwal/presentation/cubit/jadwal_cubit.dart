@@ -9,8 +9,8 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dar
 class JadwalCubit extends Cubit<JadwalState> {
   final JadwalRepository repository;
   bool _transitionInProgress = false;
+  bool _saveInProgress = false;
   int _sessionGeneration = 0;
-  int _loadGeneration = 0;
 
   int _loadVersion = 0;
   int _calendarVersion = 0;
@@ -41,6 +41,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     if (dateChanged) {
       emit(JadwalLoaded(
         const [],
+        isSaving: _saveInProgress,
         isTransitioning: _transitionInProgress,
         isLoading: true,
         scheduledDates: _scheduledDates,
@@ -60,6 +61,7 @@ class JadwalCubit extends Cubit<JadwalState> {
         _hasMore = page.hasMore;
         emit(JadwalLoaded(
           page.items,
+          isSaving: _saveInProgress,
           isTransitioning: _transitionInProgress,
           hasMore: page.hasMore,
           totalCount: page.totalCount,
@@ -148,23 +150,43 @@ class JadwalCubit extends Cubit<JadwalState> {
   }
 
   Future<NetworkException?> saveJadwal(JadwalEntity jadwal) async {
+    if (_saveInProgress) {
+      return GeneralException(
+        message: 'Tunggu proses jadwal selesai sebelum menyimpan.',
+      );
+    }
+
+    final generation = _sessionGeneration;
     final current = state is JadwalLoaded ? state as JadwalLoaded : null;
-    emit((current ?? JadwalLoaded(_items)).copyWith(isSaving: true));
-    final result = jadwal.id.isEmpty
-        ? await repository.createJadwal(jadwal)
-        : await repository.updateJadwal(jadwal);
-    return await result.fold((failure) async {
-      final loaded = state is JadwalLoaded ? state as JadwalLoaded : current;
-      if (loaded != null) emit(loaded.copyWith(isSaving: false));
-      return failure;
-    }, (_) async {
-      await _reloadAfterMutation();
-      return null;
-    });
+    _saveInProgress = true;
+    try {
+      emit((current ?? JadwalLoaded(_items)).copyWith(isSaving: true));
+      final result = jadwal.id.isEmpty
+          ? await repository.createJadwal(jadwal)
+          : await repository.updateJadwal(jadwal);
+      if (generation != _sessionGeneration) {
+        return result.fold((failure) => failure, (_) => null);
+      }
+      return await result.fold(
+        (failure) async => failure,
+        (_) async {
+          await _reloadAfterMutation();
+          return null;
+        },
+      );
+    } finally {
+      if (generation == _sessionGeneration) {
+        _saveInProgress = false;
+        final latest = state;
+        if (latest is JadwalLoaded && latest.isSaving) {
+          emit(latest.copyWith(isSaving: false));
+        }
+      }
+    }
   }
 
   Future<NetworkException?> changeStatus(String id, String action) async {
-    if (_transitionInProgress) return null;
+    if (_transitionInProgress || _saveInProgress) return null;
     final generation = _sessionGeneration;
     final current = state;
     _transitionInProgress = true;
@@ -214,6 +236,7 @@ class JadwalCubit extends Cubit<JadwalState> {
   void reset() {
     _sessionGeneration++;
     _transitionInProgress = false;
+    _saveInProgress = false;
     _loadVersion++;
     _calendarVersion++;
     _page = 1;
