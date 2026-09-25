@@ -101,4 +101,21 @@ void main() {
     );
     verifyNever(() => getUseCase.execute(any()));
   });
+
+  test('switching tab asks the server for that tab, from the first page',
+      () async {
+    when(() => getUseCase.execute(any())).thenAnswer(
+      (_) async => Right(_page([_nasabah('NAS-0001')])),
+    );
+
+    await cubit.loadNasabah();
+    await cubit.setActiveTab(false);
+
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .cast<GetNasabahParams>();
+    expect(params.first.status, 'aktif');
+    expect(params.last.status, 'tidak_aktif');
+    expect(params.last.page, 1);
+  });
 }
