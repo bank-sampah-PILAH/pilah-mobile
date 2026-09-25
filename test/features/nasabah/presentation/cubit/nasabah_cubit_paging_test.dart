@@ -1,7 +1,8 @@
-import 'package:dartz/dartz.dart' show Right;
+import 'package:dartz/dartz.dart' show Left, Right;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
@@ -13,6 +14,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_useca
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -117,5 +119,76 @@ void main() {
     expect(params.first.status, 'aktif');
     expect(params.last.status, 'tidak_aktif');
     expect(params.last.page, 1);
+  });
+
+  test('appends the next page instead of replacing the visible rows', () async {
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      return Right(params.page == 1
+          ? _page([_nasabah('NAS-0001')], totalCount: 3, hasMore: true)
+          : _page([_nasabah('NAS-0002'), _nasabah('NAS-0003')],
+              totalCount: 3, hasMore: false));
+    });
+
+    await cubit.loadNasabah();
+    await cubit.loadMoreNasabah();
+
+    final state = cubit.state as NasabahLoaded;
+    expect(state.nasabahList.map((n) => n.idNasabah),
+        ['NAS-0001', 'NAS-0002', 'NAS-0003']);
+    expect(state.hasMore, isFalse);
+  });
+
+  test('stays quiet once the last page has been reached', () async {
+    when(() => getUseCase.execute(any())).thenAnswer(
+      (_) async => Right(_page([_nasabah('NAS-0001')])),
+    );
+
+    await cubit.loadNasabah();
+    clearInteractions(getUseCase);
+    await cubit.loadMoreNasabah();
+
+    verifyNever(() => getUseCase.execute(any()));
+  });
+
+  test('ignores a second request while one page is already in flight',
+      () async {
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      if (params.page > 1) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      return Right(_page([_nasabah('NAS-000${params.page}')], hasMore: true));
+    });
+
+    await cubit.loadNasabah();
+    clearInteractions(getUseCase);
+
+    // Menggulir cepat memanggil ini berkali-kali; hanya satu yang boleh jalan.
+    await Future.wait([
+      cubit.loadMoreNasabah(),
+      cubit.loadMoreNasabah(),
+      cubit.loadMoreNasabah(),
+    ]);
+
+    verify(() => getUseCase.execute(any())).called(1);
+  });
+
+  test('keeps the rows on screen when loading the next page fails', () async {
+    var panggilan = 0;
+    when(() => getUseCase.execute(any())).thenAnswer((_) async {
+      panggilan++;
+      if (panggilan == 1) {
+        return Right(_page([_nasabah('NAS-0001')], hasMore: true));
+      }
+      return Left(NetworkException(message: 'jaringan putus'));
+    });
+
+    await cubit.loadNasabah();
+    await cubit.loadMoreNasabah();
+
+    final state = cubit.state as NasabahLoaded;
+    expect(state.nasabahList.map((n) => n.idNasabah), ['NAS-0001']);
+    expect(state.isLoadingMore, isFalse);
   });
 }
