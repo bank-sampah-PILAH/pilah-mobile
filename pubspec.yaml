@@ -19,7 +19,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+3
 
 environment:
-  sdk: ">=3.0.5 <4.0.0"
+  sdk: ">=3.8.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -55,7 +55,7 @@ dependencies:
   infinite_scroll_pagination: ^5.1.1
   injectable: ^3.0.0
   # J
-  json_annotation: ^4.8.1
+  json_annotation: ^4.12.0
   # L
   logger: ^2.5.0
   # S
