@@ -43,7 +43,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // only populated by the Harga and Nasabah pages. Load them here so the
     // dropdowns have options even when arriving straight from the dashboard.
     context.read<HargaCubit>().loadHarga();
-    context.read<NasabahCubit>().loadNasabah();
+    context.read<NasabahCubit>().loadActiveNasabah();
 
     // The WhatsApp draft built on success renders the pengelola's saved
     // template, which lives in the app-scoped ProfileCubit and is otherwise only
@@ -110,7 +110,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // place rather than flashing skeletons behind the success sheet. Fire-and-
     // forget (not awaited), matching loadStats, so the success modal isn't blocked.
     context.read<DashboardCubit>().loadStats();
-    context.read<NasabahCubit>().loadNasabah();
+    context.read<NasabahCubit>().loadActiveNasabah();
     context.read<RecentActivityCubit>().load(silent: true);
     cubit.loadTransaksi(silent: true);
 

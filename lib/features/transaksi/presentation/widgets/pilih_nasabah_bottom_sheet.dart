@@ -30,7 +30,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
     // route having populated the shared cubit.
     final cubit = context.read<NasabahCubit>();
     if (cubit.state is NasabahInitial) {
-      cubit.loadNasabah();
+      cubit.loadActiveNasabah();
     }
   }
 

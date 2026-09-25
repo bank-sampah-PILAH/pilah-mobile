@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
@@ -17,6 +18,9 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 class MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
+
+class MockGetActiveNasabahUseCase extends Mock
+    implements GetActiveNasabahUseCase {}
 
 class MockGetNasabahRingkasanUseCase extends Mock
     implements GetNasabahRingkasanUseCase {}
@@ -106,6 +110,7 @@ void main() {
         .thenAnswer((_) async => Right(_page(const [])));
     cubit = NasabahCubit(
       getUseCase,
+      MockGetActiveNasabahUseCase(),
       ringkasanUseCase,
       addUseCase,
       updateUseCase,

@@ -52,6 +52,33 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   }
 
   @override
+  Future<NasabahPage> getActiveNasabah() async {
+    final response = await networkService.get(
+      _path,
+      queryParams: {'status': 'aktif', 'page_size': 100},
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final results = data['results'] as List? ?? [];
+      return NasabahPage(
+        items: results
+            .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
+            .toList(),
+        totalCount: (data['count'] as num?)?.toInt() ?? results.length,
+        hasMore: data['next'] != null,
+      );
+    }
+    final items = (data as List)
+        .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+    return NasabahPage(
+      items: items,
+      totalCount: items.length,
+      hasMore: false,
+    );
+  }
+
+  @override
   Future<NasabahRingkasan> getNasabahRingkasan(String id) async {
     final response = await networkService.get('$_path/$id');
     final ringkasan =

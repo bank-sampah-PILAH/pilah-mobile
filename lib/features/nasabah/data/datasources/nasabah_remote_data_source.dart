@@ -11,6 +11,12 @@ abstract class NasabahRemoteDataSource {
     String status,
     String? search,
   });
+
+  /// Seluruh nasabah aktif dalam satu panggilan, untuk picker Transaksi Baru.
+  ///
+  /// Picker memerlukan semua pilihan sekaligus, jadi ia sengaja tidak memakai
+  /// paginasi halaman daftar nasabah (PIL-214).
+  Future<NasabahPage> getActiveNasabah();
   Future<NasabahRingkasan> getNasabahRingkasan(String id);
   Future<NasabahModel> addNasabah(NasabahRequest request);
   Future<NasabahModel> updateNasabah(String id, NasabahRequest request);

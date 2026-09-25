@@ -4,6 +4,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 
 abstract class NasabahRepository {
   Future<Either<NetworkException, NasabahPage>> getNasabah();
+  Future<Either<NetworkException, NasabahPage>> getActiveNasabah();
   Future<Either<NetworkException, NasabahRingkasan>> getNasabahRingkasan(
       String id);
   Future<Either<NetworkException, NasabahEntity>> addNasabah(

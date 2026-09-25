@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
@@ -15,6 +16,9 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
+
+class _MockGetActiveNasabahUseCase extends Mock
+    implements GetActiveNasabahUseCase {}
 
 class _MockGetNasabahRingkasanUseCase extends Mock
     implements GetNasabahRingkasanUseCase {}
@@ -63,6 +67,7 @@ void main() {
     getUseCase = _MockGetNasabahUseCase();
     cubit = NasabahCubit(
       getUseCase,
+      _MockGetActiveNasabahUseCase(),
       _MockGetNasabahRingkasanUseCase(),
       _MockAddNasabahUseCase(),
       _MockUpdateNasabahUseCase(),

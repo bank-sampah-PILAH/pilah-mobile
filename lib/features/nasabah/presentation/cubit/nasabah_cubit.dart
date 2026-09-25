@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
@@ -19,6 +20,7 @@ enum NasabahTab { aktif, tidakAktif, menunggu }
 @lazySingleton
 class NasabahCubit extends Cubit<NasabahState> {
   final GetNasabahUseCase getNasabahUseCase;
+  final GetActiveNasabahUseCase getActiveNasabahUseCase;
   final GetNasabahRingkasanUseCase getNasabahRingkasanUseCase;
   final AddNasabahUseCase addNasabahUseCase;
   final UpdateNasabahUseCase updateNasabahUseCase;
@@ -33,6 +35,7 @@ class NasabahCubit extends Cubit<NasabahState> {
 
   NasabahCubit(
     this.getNasabahUseCase,
+    this.getActiveNasabahUseCase,
     this.getNasabahRingkasanUseCase,
     this.addNasabahUseCase,
     this.updateNasabahUseCase,
@@ -64,6 +67,22 @@ class NasabahCubit extends Cubit<NasabahState> {
   Future<void> loadNasabah({bool silent = false}) async {
     if (!silent || state is! NasabahLoaded) emit(NasabahLoading());
     final result = await getNasabahUseCase.execute();
+    result.fold(
+      (failure) => emit(NasabahError(failure.displayMessage)),
+      (data) {
+        _allNasabah = data.items;
+        _emitFiltered();
+      },
+    );
+  }
+
+  /// Memuat seluruh nasabah aktif untuk picker Transaksi Baru.
+  ///
+  /// Dipisah dari [loadNasabah] karena halaman daftar nasabah berpaginasi,
+  /// sedangkan picker harus menampilkan semua pilihan sekaligus (PIL-214).
+  Future<void> loadActiveNasabah() async {
+    if (state is! NasabahLoaded) emit(NasabahLoading());
+    final result = await getActiveNasabahUseCase.execute();
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
