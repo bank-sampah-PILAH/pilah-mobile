@@ -21,7 +21,7 @@ class RoleSelectionPage extends StatefulWidget {
 }
 
 class _RoleSelectionPageState extends State<RoleSelectionPage> {
-  String? _selectedRole;
+  GoogleRegistrationRole? _selectedRole;
   GoogleRegistrationRequired? _registration;
 
   @override
