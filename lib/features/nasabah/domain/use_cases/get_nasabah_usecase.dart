@@ -6,13 +6,13 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/domain/repositories/nasabah_repository.dart';
 
 @lazySingleton
-class GetNasabahUseCase implements UseCase<List<NasabahEntity>, void> {
+class GetNasabahUseCase implements UseCase<NasabahPage, void> {
   final NasabahRepository repository;
 
   GetNasabahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, List<NasabahEntity>>> execute([void args]) {
+  Future<Either<NetworkException, NasabahPage>> execute([void args]) {
     return repository.getNasabah();
   }
 }

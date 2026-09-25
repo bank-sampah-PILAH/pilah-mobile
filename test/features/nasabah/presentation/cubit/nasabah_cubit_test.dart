@@ -53,6 +53,10 @@ NasabahEntity _nasabah(String kode,
       status: status,
     );
 
+/// Bungkus daftar nasabah menjadi satu halaman utuh (tanpa halaman lanjutan).
+NasabahPage _page(List<NasabahEntity> items) =>
+    NasabahPage(items: items, totalCount: items.length, hasMore: false);
+
 void main() {
   late MockGetNasabahUseCase getUseCase;
   late MockGetNasabahRingkasanUseCase ringkasanUseCase;
@@ -98,7 +102,8 @@ void main() {
     deactivateUseCase = MockDeactivateNasabahUseCase();
     approveUseCase = MockApproveNasabahUseCase();
     rejectUseCase = MockRejectNasabahUseCase();
-    when(() => getUseCase.execute()).thenAnswer((_) async => const Right([]));
+    when(() => getUseCase.execute())
+        .thenAnswer((_) async => Right(_page(const [])));
     cubit = NasabahCubit(
       getUseCase,
       ringkasanUseCase,
@@ -123,7 +128,7 @@ void main() {
       'aktif tab shows approved+active only',
       build: () {
         when(() => getUseCase.execute())
-            .thenAnswer((_) async => Right(seedData()));
+            .thenAnswer((_) async => Right(_page(seedData())));
         return cubit;
       },
       act: (cubit) async {
@@ -143,7 +148,7 @@ void main() {
       'menunggu tab shows pending rows only',
       build: () {
         when(() => getUseCase.execute())
-            .thenAnswer((_) async => Right(seedData()));
+            .thenAnswer((_) async => Right(_page(seedData())));
         return cubit;
       },
       act: (cubit) async {
@@ -165,7 +170,7 @@ void main() {
 
     test('rejected rows appear in no tab', () async {
       when(() => getUseCase.execute())
-          .thenAnswer((_) async => Right(seedData()));
+          .thenAnswer((_) async => Right(_page(seedData())));
       await cubit.loadNasabah();
       cubit.setActiveTab(true);
       expect((cubit.state as NasabahLoaded).nasabahList.map((n) => n.idNasabah),
@@ -182,7 +187,7 @@ void main() {
   group('activeCount', () {
     test('counts approved active rows only', () async {
       when(() => getUseCase.execute())
-          .thenAnswer((_) async => Right(seedData()));
+          .thenAnswer((_) async => Right(_page(seedData())));
       await cubit.loadNasabah();
       expect(cubit.activeCount, 1);
     });
@@ -191,9 +196,9 @@ void main() {
   group('decideNasabah', () {
     test('approve calls approve use case with catatan and reloads', () async {
       when(() => getUseCase.execute()).thenAnswer((_) async {
-        return Right([
+        return Right(_page([
           _nasabah('NAS-0003', status: 'approved'),
-        ]);
+        ]));
       });
       when(() => approveUseCase.execute(any(that: isA<DecideNasabahParams>())))
           .thenAnswer((_) async => const Right(null));
@@ -213,7 +218,8 @@ void main() {
     });
 
     test('reject calls reject use case with alasan', () async {
-      when(() => getUseCase.execute()).thenAnswer((_) async => const Right([]));
+      when(() => getUseCase.execute())
+        .thenAnswer((_) async => Right(_page(const [])));
       when(() => rejectUseCase.execute(any(that: isA<DecideNasabahParams>())))
           .thenAnswer((_) async => const Right(null));
 

@@ -13,7 +13,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   static const String _path = '/api/v1/nasabah';
 
   @override
-  Future<List<NasabahModel>> getNasabah() async {
+  Future<NasabahPage> getNasabah() async {
     // `status=semua` returns both active and inactive so the active/inactive
     // tabs can be filtered client-side; page_size is maxed to fetch in one call.
     final response = await networkService.get(
@@ -21,12 +21,25 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
       queryParams: {'status': 'semua', 'page_size': 100},
     );
     final data = response.data;
-    final List<dynamic> results = data is Map<String, dynamic>
-        ? (data['results'] as List? ?? [])
-        : (data as List);
-    return results
+    if (data is Map<String, dynamic>) {
+      final results = data['results'] as List? ?? [];
+      return NasabahPage(
+        items: results
+            .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
+            .toList(),
+        // `count` adalah total di server; `next` null berarti ini halaman akhir.
+        totalCount: (data['count'] as num?)?.toInt() ?? results.length,
+        hasMore: data['next'] != null,
+      );
+    }
+    final items = (data as List)
         .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
         .toList();
+    return NasabahPage(
+      items: items,
+      totalCount: items.length,
+      hasMore: false,
+    );
   }
 
   @override

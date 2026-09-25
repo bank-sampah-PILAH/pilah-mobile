@@ -67,7 +67,7 @@ class NasabahCubit extends Cubit<NasabahState> {
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
-        _allNasabah = data;
+        _allNasabah = data.items;
         _emitFiltered();
       },
     );

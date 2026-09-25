@@ -75,3 +75,23 @@ class NasabahRingkasan {
     this.tanggalTransaksiTerakhir,
   });
 }
+
+/// Satu halaman daftar nasabah milik satu bank sampah (PIL-214).
+///
+/// [totalCount] adalah jumlah seluruh nasabah yang cocok dengan penyaring di
+/// server, bukan jumlah yang sudah dimuat, sehingga penghitung di layar tetap
+/// benar walaupun baru sebagian halaman yang diambil.
+class NasabahPage {
+  final List<NasabahEntity> items;
+  final int totalCount;
+  final bool hasMore;
+
+  const NasabahPage({
+    required this.items,
+    required this.totalCount,
+    required this.hasMore,
+  });
+
+  static const NasabahPage empty =
+      NasabahPage(items: [], totalCount: 0, hasMore: false);
+}

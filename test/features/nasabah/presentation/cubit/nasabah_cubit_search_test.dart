@@ -51,6 +51,10 @@ NasabahEntity _nasabah(String name, String email, String phone) =>
       tanggalLahir: '01/01/2000',
     );
 
+/// Bungkus daftar nasabah menjadi satu halaman utuh (tanpa halaman lanjutan).
+NasabahPage _page(List<NasabahEntity> items) =>
+    NasabahPage(items: items, totalCount: items.length, hasMore: false);
+
 void main() {
   late NasabahCubit cubit;
   late _MockGetNasabahUseCase getUseCase;
@@ -69,7 +73,7 @@ void main() {
     );
     when(() => getUseCase.execute()).thenAnswer(
       (_) async =>
-          Right([_nasabah('Budi Santoso', 'budi@example.com', '81234567890')]),
+          Right(_page([_nasabah('Budi Santoso', 'budi@example.com', '81234567890')])),
     );
   });
 
