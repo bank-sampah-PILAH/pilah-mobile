@@ -57,8 +57,16 @@ NasabahEntity _nasabah(String kode,
     );
 
 /// Bungkus daftar nasabah menjadi satu halaman utuh (tanpa halaman lanjutan).
-NasabahPage _page(List<NasabahEntity> items) =>
-    NasabahPage(items: items, totalCount: items.length, hasMore: false);
+NasabahPage _page(
+  List<NasabahEntity> items, {
+  int? totalCount,
+  bool hasMore = false,
+}) =>
+    NasabahPage(
+      items: items,
+      totalCount: totalCount ?? items.length,
+      hasMore: hasMore,
+    );
 
 void main() {
   late MockGetNasabahUseCase getUseCase;
@@ -180,11 +188,18 @@ void main() {
   });
 
   group('activeCount', () {
-    test('counts approved active rows only', () async {
-      when(() => getUseCase.execute(any()))
-          .thenAnswer((_) async => Right(_page(seedData())));
+    test('reports the server total, not the number of rows loaded', () async {
+      when(() => getUseCase.execute(any())).thenAnswer(
+        (_) async => Right(_page(
+          [_nasabah('NAS-0001', status: 'approved')],
+          totalCount: 37,
+          hasMore: true,
+        )),
+      );
+
       await cubit.loadNasabah();
-      expect(cubit.activeCount, 1);
+
+      expect(cubit.activeCount, 37);
     });
   });
 
