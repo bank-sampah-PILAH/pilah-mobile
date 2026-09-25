@@ -56,7 +56,7 @@ abstract final class DemoLoginProfiles {
         DemoLoginProfile(
           label: pengurus.label,
           name: pengurus.name,
-          email: pengurus.email,
+          email: environment.demoPengurusEmail,
           tokenPrefix: pengurus.tokenPrefix,
         ),
         DemoLoginProfile(

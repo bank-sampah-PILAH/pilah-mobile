@@ -14,6 +14,9 @@ class _StubEnvironment implements AppEnvironment {
   bool get supportsDemoLogin => true;
 
   @override
+  String get demoPengurusEmail => 'configured.pengurus@example.com';
+
+  @override
   String get demoPengelolaIndukEmail => 'configured.induk@example.com';
 
   @override
@@ -73,6 +76,10 @@ void main() {
       final env = _readExampleEnv();
 
       expect(
+        DemoLoginProfiles.pengurus.email,
+        env['DEMO_PENGURUS_EMAIL'],
+      );
+      expect(
         DemoLoginProfiles.pengelolaInduk.email,
         env['DEMO_PENGELOLA_INDUK_EMAIL'],
       );
@@ -90,7 +97,7 @@ void main() {
       expect(
         profiles.map((profile) => profile.email),
         [
-          'pengurus.demo@example.com',
+          'configured.pengurus@example.com',
           'configured.induk@example.com',
           'configured.customer@example.com',
           'configured.superadmin@example.com',

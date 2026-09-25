@@ -7,6 +7,9 @@ abstract class Secret {
   static bool get demoLoginEnabled =>
       (dotenv.env['ENABLE_DEMO_LOGIN'] ?? 'false').toLowerCase() == 'true';
 
+  static String get demoPengurusEmail =>
+      dotenv.env['DEMO_PENGURUS_EMAIL'] ?? 'pengurus.demo@example.com';
+
   static String get demoPengelolaIndukEmail =>
       dotenv.env['DEMO_PENGELOLA_INDUK_EMAIL'] ?? 'induk.demo@example.com';
 

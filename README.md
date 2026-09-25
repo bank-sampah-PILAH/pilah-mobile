@@ -24,6 +24,7 @@ button with these `.env` values:
 
 ```env
 ENABLE_DEMO_LOGIN=true
+DEMO_PENGURUS_EMAIL=pengurus.demo@example.com
 DEMO_PENGELOLA_INDUK_EMAIL=induk.demo@example.com
 DEMO_CUSTOMER_EMAIL=nasabah.demo@example.com
 DEMO_SUPERADMIN_EMAIL=superadmin.demo@example.com
@@ -31,7 +32,7 @@ DEMO_SUPERADMIN_EMAIL=superadmin.demo@example.com
 
 The button submits the backend's local-only `dev:`, `dev-pengelola-induk:`,
 `dev-nasabah:`, and `dev-superadmin:` test tokens for the seeded roles. Keep
-these three email values in sync with the corresponding pilah-be seed variables
+these four email values in sync with the corresponding pilah-be seed variables
 before running E2E.
 It is hidden whenever the
 app is built in release mode, and the staging/production entry point keeps
