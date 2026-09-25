@@ -88,9 +88,12 @@ void main() {
         '/superadmin-dashboard',
       );
       expect(
-        locationForAuthStep('pengelola_induk_dashboard',
-            hasPendingInvite: true),
-        '/pengelola-induk',
+        locationForAuthStep(
+          'pengelola_induk_dashboard',
+          hasPendingInvite: true,
+          role: 'pengelola_induk',
+        ),
+        '/pengelola-induk-dashboard',
       );
     });
 
@@ -111,7 +114,6 @@ void main() {
       expect(pendingInviteLocation('complete_profile'), '/complete-profile');
       expect(pendingInviteLocation('dashboard'), '/invite-processing');
       expect(pendingInviteLocation('approval_pending'), '/invite-processing');
-      expect(pendingInviteLocation('pengelola_induk_dashboard'), isNull);
       expect(pendingInviteLocation(null), '/invite-processing');
     });
 
