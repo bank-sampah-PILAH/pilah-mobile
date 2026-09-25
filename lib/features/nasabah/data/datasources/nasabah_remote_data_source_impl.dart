@@ -13,12 +13,21 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   static const String _path = '/api/v1/nasabah';
 
   @override
-  Future<NasabahPage> getNasabah() async {
-    // `status=semua` returns both active and inactive so the active/inactive
-    // tabs can be filtered client-side; page_size is maxed to fetch in one call.
+  Future<NasabahPage> getNasabah({
+    int page = 1,
+    String status = 'aktif',
+    String? search,
+  }) async {
+    // Penyaringan dilakukan server supaya paginasi tetap benar: menyaring di
+    // aplikasi hanya akan menyaring halaman yang kebetulan sudah dimuat.
+    // Ukuran halaman mengikuti default server, tidak dipaksa dari sini.
     final response = await networkService.get(
       _path,
-      queryParams: {'status': 'semua', 'page_size': 100},
+      queryParams: {
+        'status': status,
+        'page': page,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
     );
     final data = response.data;
     if (data is Map<String, dynamic>) {
