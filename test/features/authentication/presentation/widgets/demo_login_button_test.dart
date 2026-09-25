@@ -34,6 +34,27 @@ void main() {
     await auth.close();
   });
 
+  testWidgets('signs in with the Pengelola Induk role token', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<AuthenticationBloc>.value(
+          value: auth,
+          child: const Scaffold(body: DemoLoginButton()),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Masuk dengan akun demo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pengelola Induk'));
+    await tester.pump();
+
+    final event = verify(() => auth.add(captureAny())).captured.single
+        as LoginWithGoogleRequested;
+    expect(event.idToken,
+        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E');
+  });
+
   testWidgets('dispatches the selected seeded account token', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

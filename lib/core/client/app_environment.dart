@@ -10,7 +10,7 @@ abstract class AppEnvironment {
 
   String get demoOperatorEmail;
 
-  String get demoPendingOperatorEmail;
+  String get demoPengelolaIndukEmail;
 
   String get demoCustomerEmail;
 
@@ -29,7 +29,7 @@ class DevEnvironment implements AppEnvironment {
   String get demoOperatorEmail => Secret.demoOperatorEmail;
 
   @override
-  String get demoPendingOperatorEmail => Secret.demoPendingOperatorEmail;
+  String get demoPengelolaIndukEmail => Secret.demoPengelolaIndukEmail;
 
   @override
   String get demoCustomerEmail => Secret.demoCustomerEmail;
@@ -50,7 +50,7 @@ class ProdEnvironment implements AppEnvironment {
   String get demoOperatorEmail => '';
 
   @override
-  String get demoPendingOperatorEmail => '';
+  String get demoPengelolaIndukEmail => '';
 
   @override
   String get demoCustomerEmail => '';

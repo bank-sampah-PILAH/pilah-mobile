@@ -17,7 +17,7 @@ class _StubEnvironment implements AppEnvironment {
   String get demoOperatorEmail => 'configured.operator@example.com';
 
   @override
-  String get demoPendingOperatorEmail => 'configured.pending@example.com';
+  String get demoPengelolaIndukEmail => 'configured.induk@example.com';
 
   @override
   String get demoCustomerEmail => 'configured.customer@example.com';
@@ -47,8 +47,8 @@ void main() {
         'dev:operator.demo@example.com:Operator PILAH E2E',
       );
       expect(
-        DemoLoginProfiles.pendingOperator.idToken,
-        'dev:pending.operator.demo@example.com:Operator Pending PILAH E2E',
+        DemoLoginProfiles.pengelolaInduk.idToken,
+        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E',
       );
       expect(
         DemoLoginProfiles.customer.idToken,
@@ -64,8 +64,8 @@ void main() {
       expect(
         DemoLoginProfiles.all.map((profile) => profile.label),
         [
-          'Operator aktif',
-          'Operator menunggu persetujuan',
+          'Pengurus',
+          'Pengelola Induk',
           'Nasabah',
           'Superadmin',
         ],
@@ -77,8 +77,8 @@ void main() {
 
       expect(DemoLoginProfiles.operator.email, env['DEMO_OPERATOR_EMAIL']);
       expect(
-        DemoLoginProfiles.pendingOperator.email,
-        env['DEMO_PENDING_OPERATOR_EMAIL'],
+        DemoLoginProfiles.pengelolaInduk.email,
+        env['DEMO_PENGELOLA_INDUK_EMAIL'],
       );
       expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
       expect(
@@ -95,14 +95,14 @@ void main() {
         profiles.map((profile) => profile.email),
         [
           'configured.operator@example.com',
-          'configured.pending@example.com',
+          'configured.induk@example.com',
           'configured.customer@example.com',
           'configured.superadmin@example.com',
         ],
       );
       expect(
         profiles.map((profile) => profile.tokenPrefix),
-        ['dev', 'dev', 'dev-nasabah', 'dev-superadmin'],
+        ['dev', 'dev-pengelola-induk', 'dev-nasabah', 'dev-superadmin'],
       );
     });
   });

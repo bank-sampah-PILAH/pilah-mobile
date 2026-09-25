@@ -18,18 +18,17 @@ class DemoLoginProfile {
 
 abstract final class DemoLoginProfiles {
   static const operator = DemoLoginProfile(
-    label: 'Operator aktif',
+    label: 'Pengurus',
     name: 'Operator PILAH E2E',
     email: 'operator.demo@example.com',
     tokenPrefix: 'dev',
   );
 
-  // Keep this email paired with pilah-be's PILAH_SEED_PENDING_OPERATOR_EMAIL.
-  static const pendingOperator = DemoLoginProfile(
-    label: 'Operator menunggu persetujuan',
-    name: 'Operator Pending PILAH E2E',
-    email: 'pending.operator.demo@example.com',
-    tokenPrefix: 'dev',
+  static const pengelolaInduk = DemoLoginProfile(
+    label: 'Pengelola Induk',
+    name: 'Pengelola Induk PILAH E2E',
+    email: 'induk.demo@example.com',
+    tokenPrefix: 'dev-pengelola-induk',
   );
 
   static const customer = DemoLoginProfile(
@@ -48,7 +47,7 @@ abstract final class DemoLoginProfiles {
 
   static const all = <DemoLoginProfile>[
     operator,
-    pendingOperator,
+    pengelolaInduk,
     customer,
     superadmin,
   ];
@@ -61,10 +60,10 @@ abstract final class DemoLoginProfiles {
           tokenPrefix: operator.tokenPrefix,
         ),
         DemoLoginProfile(
-          label: pendingOperator.label,
-          name: pendingOperator.name,
-          email: environment.demoPendingOperatorEmail,
-          tokenPrefix: pendingOperator.tokenPrefix,
+          label: pengelolaInduk.label,
+          name: pengelolaInduk.name,
+          email: environment.demoPengelolaIndukEmail,
+          tokenPrefix: pengelolaInduk.tokenPrefix,
         ),
         DemoLoginProfile(
           label: customer.label,

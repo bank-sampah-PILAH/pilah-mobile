@@ -37,6 +37,16 @@ void main() {
     );
 
     expect(find.text('Masuk dengan akun demo'), findsOneWidget);
+    final googleButton = find.ancestor(
+      of: find.text('Masuk dengan Google'),
+      matching: find.byType(OutlinedButton),
+    );
+    final demoButton = find.ancestor(
+      of: find.text('Masuk dengan akun demo'),
+      matching: find.byType(OutlinedButton),
+    );
+    expect(
+        tester.getSize(demoButton).width, tester.getSize(googleButton).width);
   });
 
   testWidgets('does not show the demo login action when disabled',

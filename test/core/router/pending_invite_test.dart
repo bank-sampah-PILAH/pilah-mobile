@@ -87,6 +87,18 @@ void main() {
       );
     });
 
+    test('a Pengelola Induk session cannot redeem an invite', () {
+      di<InviteTokenStore>().save('invite-token-abc');
+
+      expect(
+          resolvePendingInvite(
+            step: 'pengelola_induk_dashboard',
+            role: 'pengelola_induk',
+          ),
+          isNull);
+      expect(di<InviteTokenStore>().hasToken, isFalse);
+    });
+
     test('the superadmin role wins even if the step says otherwise', () {
       di<InviteTokenStore>().save('invite-token-abc');
 
