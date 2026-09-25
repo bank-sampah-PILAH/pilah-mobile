@@ -71,8 +71,8 @@ class BankSampahDirectoryEntity {
 
   factory BankSampahDirectoryEntity.fromJson(Map<String, dynamic> json) =>
       BankSampahDirectoryEntity(
-        id: json['id'] as String,
-        nama: json['nama'] as String,
+        id: json['id']?.toString() ?? '',
+        nama: json['nama']?.toString() ?? '',
         alamat: (json['alamat'] as String?) ?? '',
         kota: (json['kota'] as String?) ?? '',
         fotoLogo: (json['foto_logo'] as String?) ?? '',
