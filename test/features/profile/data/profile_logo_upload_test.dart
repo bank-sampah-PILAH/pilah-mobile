@@ -30,6 +30,9 @@ class _StubEnvironment implements AppEnvironment {
   String get demoCustomerEmail => '';
 
   @override
+  String get demoNewNasabahEmail => '';
+
+  @override
   String get demoIndukEmail => '';
 
   @override

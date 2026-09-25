@@ -17,6 +17,14 @@ abstract class Secret {
   static String get demoCustomerEmail =>
       dotenv.env['DEMO_CUSTOMER_EMAIL'] ?? 'customer.demo@example.com';
 
+  /// Always an unregistered account: unlike [demoCustomerEmail] (seeded with
+  /// a completed profile and membership already in place), this one has no
+  /// fixture data behind it, so it always lands on complete_profile and the
+  /// bank-sampah picker — the self-registration flow, on demand, without
+  /// hand-editing .env or the seed script per attempt.
+  static String get demoNewNasabahEmail =>
+      dotenv.env['DEMO_NEW_NASABAH_EMAIL'] ?? 'nasabah.baru.demo@example.com';
+
   static String get demoIndukEmail =>
       dotenv.env['DEMO_INDUK_EMAIL'] ?? 'induk.demo@example.com';
 
