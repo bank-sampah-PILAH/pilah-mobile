@@ -21,9 +21,10 @@ const inviteProcessingLocation = '/invite-processing';
 /// link and is still waiting to be redeemed.
 String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
   // A pending invite outranks the user's own onboarding step: they followed an
-  // invite link. Superadmins are exempt — they don't belong to a bank sampah and
-  // have no invite to accept.
-  if (hasPendingInvite && step != 'superadmin_dashboard') {
+  // invite link. Superadmins and Pengelola Induk cannot redeem bank invites.
+  if (hasPendingInvite &&
+      step != 'superadmin_dashboard' &&
+      step != 'pengelola_induk_dashboard') {
     // A brand-new joiner whose profile isn't complete yet finishes it and
     // redeems the token together on the completion screen (invite mode).
     if (step == 'complete_profile') return completeProfileLocation;
@@ -49,7 +50,7 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
     case 'register_bank_sampah_induk':
       return '/register-bank-sampah-induk';
     case 'pengelola_induk_dashboard':
-      return '/pengelola-induk-dashboard';
+      return '/pengelola-induk';
     case 'complete_profile':
       return completeProfileLocation;
     case 'register_bank_sampah':
@@ -73,7 +74,7 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
 ///
 /// Only two screens spend a token: the completion form (invite mode) and the
 /// invite gate. Any other destination means this account can never redeem it —
-/// today that is only a superadmin, who belongs to no bank sampah — and forcing
+/// today that includes superadmins and Pengelola Induk — and forcing
 /// a redirect there would pin the user to one screen for the rest of the
 /// session, since nothing would ever clear the token.
 ///

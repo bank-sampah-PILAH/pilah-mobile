@@ -23,7 +23,6 @@ class RoleHandoffPage extends StatelessWidget {
   static const registerNasabahRoute = '/register-nasabah';
   static const nasabahDashboardRoute = '/nasabah-dashboard';
   static const registerIndukRoute = '/register-bank-sampah-induk';
-  static const indukDashboardRoute = '/pengelola-induk-dashboard';
 
   @override
   Widget build(BuildContext context) {

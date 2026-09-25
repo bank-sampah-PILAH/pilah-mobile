@@ -18,23 +18,23 @@ class DemoLoginProfile {
 
 abstract final class DemoLoginProfiles {
   static const operator = DemoLoginProfile(
-    label: 'Operator aktif',
+    label: 'Pengurus',
     name: 'Operator PILAH E2E',
-    email: 'operator.demo@example.com',
+    email: 'pengurus.demo@example.com',
     tokenPrefix: 'dev',
   );
 
-  static const pendingOperator = DemoLoginProfile(
-    label: 'Operator menunggu persetujuan',
-    name: 'Operator Pending PILAH E2E',
-    email: 'pending.operator.demo@example.com',
-    tokenPrefix: 'dev',
+  static const pengelolaInduk = DemoLoginProfile(
+    label: 'Pengelola Induk',
+    name: 'Pengelola Induk PILAH E2E',
+    email: 'induk.demo@example.com',
+    tokenPrefix: 'dev-pengelola-induk',
   );
 
   static const customer = DemoLoginProfile(
     label: 'Nasabah',
     name: 'Nasabah PILAH E2E',
-    email: 'customer.demo@example.com',
+    email: 'nasabah.demo@example.com',
     tokenPrefix: 'dev-nasabah',
   );
 
@@ -54,19 +54,11 @@ abstract final class DemoLoginProfiles {
     tokenPrefix: 'dev-superadmin',
   );
 
-  static const induk = DemoLoginProfile(
-    label: 'Pengelola Bank Sampah Induk',
-    name: 'Pengelola Induk PILAH E2E',
-    email: 'induk.demo@example.com',
-    tokenPrefix: 'dev-pengelola-induk',
-  );
-
   static const all = <DemoLoginProfile>[
     operator,
-    pendingOperator,
+    pengelolaInduk,
     customer,
     newNasabah,
-    induk,
     superadmin,
   ];
 
@@ -78,10 +70,10 @@ abstract final class DemoLoginProfiles {
           tokenPrefix: operator.tokenPrefix,
         ),
         DemoLoginProfile(
-          label: pendingOperator.label,
-          name: pendingOperator.name,
-          email: environment.demoPendingOperatorEmail,
-          tokenPrefix: pendingOperator.tokenPrefix,
+          label: pengelolaInduk.label,
+          name: pengelolaInduk.name,
+          email: environment.demoPengelolaIndukEmail,
+          tokenPrefix: pengelolaInduk.tokenPrefix,
         ),
         DemoLoginProfile(
           label: customer.label,
@@ -94,12 +86,6 @@ abstract final class DemoLoginProfiles {
           name: newNasabah.name,
           email: environment.demoNewNasabahEmail,
           tokenPrefix: newNasabah.tokenPrefix,
-        ),
-        DemoLoginProfile(
-          label: induk.label,
-          name: induk.name,
-          email: environment.demoIndukEmail,
-          tokenPrefix: induk.tokenPrefix,
         ),
         DemoLoginProfile(
           label: superadmin.label,

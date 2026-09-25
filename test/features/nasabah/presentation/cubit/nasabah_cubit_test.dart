@@ -68,7 +68,7 @@ void main() {
     registerFallbackValue(NasabahRequest(
       kode: 'NAS-0001',
       nama: 'Budi',
-      email: '',
+      email: 'budi@example.com',
       jenisKelamin: 'Laki-laki',
       tanggalLahir: '01/01/1990',
       noHp: '08123456789',
@@ -79,7 +79,7 @@ void main() {
       request: NasabahRequest(
         kode: 'NAS-0001',
         nama: 'Budi',
-        email: '',
+        email: 'budi@example.com',
         jenisKelamin: 'Laki-laki',
         tanggalLahir: '01/01/1990',
         noHp: '08123456789',

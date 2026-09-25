@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/pengelola_induk_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
@@ -196,13 +197,9 @@ class AppRouterConfig {
         ),
       ),
       GoRoute(
-        path: RoleHandoffPage.indukDashboardRoute,
-        builder: (context, state) => const RoleHandoffPage(
-          title: 'Akun Pengelola Induk Siap',
-          message:
-              'Beranda Bank Sampah Induk sedang disiapkan. Data organisasi Anda sudah tersimpan.',
-          registrationInProgress: false,
-        ),
+        path: PengelolaIndukPage.route,
+        name: PengelolaIndukPage.route,
+        builder: (context, state) => const PengelolaIndukPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

@@ -10,15 +10,13 @@ abstract class AppEnvironment {
 
   String get demoOperatorEmail;
 
-  String get demoPendingOperatorEmail;
+  String get demoPengelolaIndukEmail;
 
   String get demoCustomerEmail;
 
   /// Always unregistered, unlike [demoCustomerEmail] — for trying the
   /// self-registration flow on demand.
   String get demoNewNasabahEmail;
-
-  String get demoIndukEmail;
 
   String get demoSuperadminEmail;
 }
@@ -35,16 +33,13 @@ class DevEnvironment implements AppEnvironment {
   String get demoOperatorEmail => Secret.demoOperatorEmail;
 
   @override
-  String get demoPendingOperatorEmail => Secret.demoPendingOperatorEmail;
+  String get demoPengelolaIndukEmail => Secret.demoPengelolaIndukEmail;
 
   @override
   String get demoCustomerEmail => Secret.demoCustomerEmail;
 
   @override
   String get demoNewNasabahEmail => Secret.demoNewNasabahEmail;
-
-  @override
-  String get demoIndukEmail => Secret.demoIndukEmail;
 
   @override
   String get demoSuperadminEmail => Secret.demoSuperadminEmail;
@@ -62,16 +57,13 @@ class ProdEnvironment implements AppEnvironment {
   String get demoOperatorEmail => '';
 
   @override
-  String get demoPendingOperatorEmail => '';
+  String get demoPengelolaIndukEmail => '';
 
   @override
   String get demoCustomerEmail => '';
 
   @override
   String get demoNewNasabahEmail => '';
-
-  @override
-  String get demoIndukEmail => '';
 
   @override
   String get demoSuperadminEmail => '';

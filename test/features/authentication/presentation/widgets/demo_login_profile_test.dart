@@ -1,31 +1,45 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
 
-class _FakeEnvironment implements AppEnvironment {
+class _StubEnvironment implements AppEnvironment {
+  const _StubEnvironment();
+
   @override
-  String get baseUrl => '';
+  String get baseUrl => 'https://example.test';
 
   @override
   bool get supportsDemoLogin => true;
 
   @override
-  String get demoOperatorEmail => 'op@overridden.example.com';
+  String get demoOperatorEmail => 'configured.operator@example.com';
 
   @override
-  String get demoPendingOperatorEmail => 'pending@overridden.example.com';
+  String get demoPengelolaIndukEmail => 'configured.induk@example.com';
 
   @override
-  String get demoCustomerEmail => 'customer@overridden.example.com';
+  String get demoCustomerEmail => 'configured.customer@example.com';
 
   @override
-  String get demoNewNasabahEmail => 'fresh@overridden.example.com';
+  String get demoNewNasabahEmail => 'configured.fresh@example.com';
 
   @override
-  String get demoIndukEmail => 'induk@overridden.example.com';
+  String get demoSuperadminEmail => 'configured.superadmin@example.com';
+}
 
-  @override
-  String get demoSuperadminEmail => 'superadmin@overridden.example.com';
+Map<String, String> _readExampleEnv() {
+  final values = <String, String>{};
+  for (final line in File('.env.example').readAsLinesSync()) {
+    final entry = line.trim();
+    if (entry.isEmpty || entry.startsWith('#')) continue;
+    final separator = entry.indexOf('=');
+    if (separator > 0) {
+      values[entry.substring(0, separator)] = entry.substring(separator + 1);
+    }
+  }
+  return values;
 }
 
 void main() {
@@ -33,23 +47,19 @@ void main() {
     test('uses backend-compatible tokens for every seeded local role', () {
       expect(
         DemoLoginProfiles.operator.idToken,
-        'dev:operator.demo@example.com:Operator PILAH E2E',
+        'dev:pengurus.demo@example.com:Operator PILAH E2E',
       );
       expect(
-        DemoLoginProfiles.pendingOperator.idToken,
-        'dev:pending.operator.demo@example.com:Operator Pending PILAH E2E',
+        DemoLoginProfiles.pengelolaInduk.idToken,
+        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E',
       );
       expect(
         DemoLoginProfiles.customer.idToken,
-        'dev-nasabah:customer.demo@example.com:Nasabah PILAH E2E',
+        'dev-nasabah:nasabah.demo@example.com:Nasabah PILAH E2E',
       );
       expect(
         DemoLoginProfiles.newNasabah.idToken,
         'dev-nasabah:nasabah.baru.demo@example.com:Nasabah Baru PILAH E2E',
-      );
-      expect(
-        DemoLoginProfiles.induk.idToken,
-        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E',
       );
       expect(
         DemoLoginProfiles.superadmin.idToken,
@@ -61,39 +71,57 @@ void main() {
       expect(
         DemoLoginProfiles.all.map((profile) => profile.label),
         [
-          'Operator aktif',
-          'Operator menunggu persetujuan',
+          'Pengurus',
+          'Pengelola Induk',
           'Nasabah',
           'Nasabah Baru (Pendaftaran)',
-          'Pengelola Bank Sampah Induk',
           'Superadmin',
         ],
       );
     });
 
-    test(
-        'forEnvironment overrides every profile\'s email, keeping label/name/prefix',
-        () {
-      final profiles = DemoLoginProfiles.forEnvironment(_FakeEnvironment());
+    test('keeps seeded email constants aligned with the env example', () {
+      final env = _readExampleEnv();
+
+      expect(DemoLoginProfiles.operator.email, env['DEMO_OPERATOR_EMAIL']);
+      expect(
+        DemoLoginProfiles.pengelolaInduk.email,
+        env['DEMO_PENGELOLA_INDUK_EMAIL'],
+      );
+      expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
+      expect(
+        DemoLoginProfiles.newNasabah.email,
+        env['DEMO_NEW_NASABAH_EMAIL'],
+      );
+      expect(
+        DemoLoginProfiles.superadmin.email,
+        env['DEMO_SUPERADMIN_EMAIL'],
+      );
+    });
+
+    test('maps environment-configured emails and token prefixes', () {
+      final profiles =
+          DemoLoginProfiles.forEnvironment(const _StubEnvironment());
 
       expect(
-        profiles.map((p) => p.email),
+        profiles.map((profile) => profile.email),
         [
-          'op@overridden.example.com',
-          'pending@overridden.example.com',
-          'customer@overridden.example.com',
-          'fresh@overridden.example.com',
-          'induk@overridden.example.com',
-          'superadmin@overridden.example.com',
+          'configured.operator@example.com',
+          'configured.induk@example.com',
+          'configured.customer@example.com',
+          'configured.fresh@example.com',
+          'configured.superadmin@example.com',
         ],
       );
       expect(
-        profiles.map((p) => p.label),
-        DemoLoginProfiles.all.map((p) => p.label),
-      );
-      expect(
-        profiles.map((p) => p.tokenPrefix),
-        DemoLoginProfiles.all.map((p) => p.tokenPrefix),
+        profiles.map((profile) => profile.tokenPrefix),
+        [
+          'dev',
+          'dev-pengelola-induk',
+          'dev-nasabah',
+          'dev-nasabah',
+          'dev-superadmin',
+        ],
       );
     });
   });

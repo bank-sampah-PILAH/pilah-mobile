@@ -24,8 +24,8 @@ void main() {
       expect(locationForAuthStep('nasabah_dashboard'), '/nasabah-dashboard');
       expect(locationForAuthStep('register_bank_sampah_induk'),
           '/register-bank-sampah-induk');
-      expect(locationForAuthStep('pengelola_induk_dashboard'),
-          '/pengelola-induk-dashboard');
+      expect(
+          locationForAuthStep('pengelola_induk_dashboard'), '/pengelola-induk');
       expect(locationForAuthStep('dashboard'), '/dashboard');
       expect(locationForAuthStep(null), '/dashboard');
     });
@@ -66,10 +66,15 @@ void main() {
       );
     });
 
-    test('a superadmin is exempt — they belong to no bank sampah', () {
+    test('non-pengelola roles do not enter the invite flow', () {
       expect(
         locationForAuthStep('superadmin_dashboard', hasPendingInvite: true),
         '/superadmin-dashboard',
+      );
+      expect(
+        locationForAuthStep('pengelola_induk_dashboard',
+            hasPendingInvite: true),
+        '/pengelola-induk',
       );
     });
   });
@@ -79,6 +84,7 @@ void main() {
       expect(pendingInviteLocation('complete_profile'), '/complete-profile');
       expect(pendingInviteLocation('dashboard'), '/invite-processing');
       expect(pendingInviteLocation('approval_pending'), '/invite-processing');
+      expect(pendingInviteLocation('pengelola_induk_dashboard'), isNull);
       expect(pendingInviteLocation(null), '/invite-processing');
     });
 

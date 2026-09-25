@@ -62,21 +62,25 @@ class DemoLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: isLoading ? null : () => _selectProfile(context),
-      icon: const Icon(Icons.science_outlined, color: AppColors.greenDark),
-      label: Text(
-        'Masuk dengan akun demo',
-        style: AppTextStyle.headline3.copyWith(
-          color: AppColors.black,
-          fontWeight: FontWeight.w600,
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: isLoading ? null : () => _selectProfile(context),
+        icon: const Icon(Icons.science_outlined, color: AppColors.greenDark),
+        label: Text(
+          'Masuk dengan akun demo',
+          style: AppTextStyle.headline3.copyWith(
+            color: AppColors.black,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        side: BorderSide(color: Colors.grey.shade300),
-        backgroundColor: Colors.white,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          side: BorderSide(color: Colors.grey.shade300),
+          backgroundColor: Colors.white,
+        ),
       ),
     );
   }
