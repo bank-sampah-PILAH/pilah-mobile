@@ -101,4 +101,38 @@ void main() {
     verify(() => getActiveUseCase.execute()).called(1);
     verifyNever(() => getUseCase.execute(any()));
   });
+
+  testWidgets('fetches even when the cubit already holds the nasabah page list',
+      (tester) async {
+    when(() => getUseCase.execute(any())).thenAnswer(
+      (_) async => Right(HalamanNasabah(
+        items: [_nasabah('NAS-0009')],
+        totalCount: 1,
+        hasMore: false,
+      )),
+    );
+    when(() => getActiveUseCase.execute()).thenAnswer(
+      (_) async => Right(HalamanNasabah(
+        items: [_nasabah('NAS-0001')],
+        totalCount: 1,
+        hasMore: false,
+      )),
+    );
+
+    // Pengurus membuka halaman nasabah lebih dulu: cubit sudah Loaded, tetapi
+    // daftar picker masih kosong karena diisi jalur yang berbeda.
+    await cubit.loadNasabah();
+    clearInteractions(getActiveUseCase);
+
+    await tester.pumpWidget(MaterialApp(
+      home: BlocProvider<NasabahCubit>.value(
+        value: cubit,
+        child: const Scaffold(body: PilihNasabahBottomSheet()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    verify(() => getActiveUseCase.execute()).called(1);
+    expect(find.text('Nasabah NAS-0001'), findsOneWidget);
+  });
 }
