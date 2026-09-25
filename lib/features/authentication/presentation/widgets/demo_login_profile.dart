@@ -20,7 +20,7 @@ abstract final class DemoLoginProfiles {
   static const operator = DemoLoginProfile(
     label: 'Pengurus',
     name: 'Operator PILAH E2E',
-    email: 'operator.demo@example.com',
+    email: 'pengurus.demo@example.com',
     tokenPrefix: 'dev',
   );
 
@@ -34,7 +34,7 @@ abstract final class DemoLoginProfiles {
   static const customer = DemoLoginProfile(
     label: 'Nasabah',
     name: 'Nasabah PILAH E2E',
-    email: 'customer.demo@example.com',
+    email: 'nasabah.demo@example.com',
     tokenPrefix: 'dev-nasabah',
   );
 

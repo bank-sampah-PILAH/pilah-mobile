@@ -24,9 +24,9 @@ button with these `.env` values:
 
 ```env
 ENABLE_DEMO_LOGIN=true
-DEMO_OPERATOR_EMAIL=operator.demo@example.com
+DEMO_OPERATOR_EMAIL=pengurus.demo@example.com
 DEMO_PENGELOLA_INDUK_EMAIL=induk.demo@example.com
-DEMO_CUSTOMER_EMAIL=customer.demo@example.com
+DEMO_CUSTOMER_EMAIL=nasabah.demo@example.com
 DEMO_SUPERADMIN_EMAIL=superadmin.demo@example.com
 ```
 

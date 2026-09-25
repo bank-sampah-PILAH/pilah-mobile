@@ -72,11 +72,11 @@ void main() {
 
     final event = verify(() => auth.add(captureAny())).captured.single
         as LoginWithGoogleRequested;
-    expect(event.email, 'customer.demo@example.com');
+    expect(event.email, 'nasabah.demo@example.com');
     expect(event.name, 'Nasabah PILAH E2E');
     expect(
       event.idToken,
-      'dev-nasabah:customer.demo@example.com:Nasabah PILAH E2E',
+      'dev-nasabah:nasabah.demo@example.com:Nasabah PILAH E2E',
     );
   });
 }

@@ -44,7 +44,7 @@ void main() {
     test('uses backend-compatible tokens for every seeded local role', () {
       expect(
         DemoLoginProfiles.operator.idToken,
-        'dev:operator.demo@example.com:Operator PILAH E2E',
+        'dev:pengurus.demo@example.com:Operator PILAH E2E',
       );
       expect(
         DemoLoginProfiles.pengelolaInduk.idToken,
@@ -52,7 +52,7 @@ void main() {
       );
       expect(
         DemoLoginProfiles.customer.idToken,
-        'dev-nasabah:customer.demo@example.com:Nasabah PILAH E2E',
+        'dev-nasabah:nasabah.demo@example.com:Nasabah PILAH E2E',
       );
       expect(
         DemoLoginProfiles.superadmin.idToken,

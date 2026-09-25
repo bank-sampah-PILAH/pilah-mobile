@@ -8,13 +8,13 @@ abstract class Secret {
       (dotenv.env['ENABLE_DEMO_LOGIN'] ?? 'false').toLowerCase() == 'true';
 
   static String get demoOperatorEmail =>
-      dotenv.env['DEMO_OPERATOR_EMAIL'] ?? 'operator.demo@example.com';
+      dotenv.env['DEMO_OPERATOR_EMAIL'] ?? 'pengurus.demo@example.com';
 
   static String get demoPengelolaIndukEmail =>
       dotenv.env['DEMO_PENGELOLA_INDUK_EMAIL'] ?? 'induk.demo@example.com';
 
   static String get demoCustomerEmail =>
-      dotenv.env['DEMO_CUSTOMER_EMAIL'] ?? 'customer.demo@example.com';
+      dotenv.env['DEMO_CUSTOMER_EMAIL'] ?? 'nasabah.demo@example.com';
 
   static String get demoSuperadminEmail =>
       dotenv.env['DEMO_SUPERADMIN_EMAIL'] ?? 'superadmin.demo@example.com';
