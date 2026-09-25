@@ -55,4 +55,24 @@ void main() {
     expect(halaman.totalCount, 42);
     expect(halaman.hasMore, isTrue);
   });
+
+  test('asks the server for the requested page, tab, and search term',
+      () async {
+    when(() => network.get(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => _halaman(results: []));
+
+    await dataSource.getNasabah(page: 2, status: 'tidak_aktif', search: 'budi');
+
+    final params = verify(() => network.get(
+          '/api/v1/nasabah',
+          queryParams: captureAny(named: 'queryParams'),
+        )).captured.single as Map<String, dynamic>;
+
+    expect(params['page'], 2);
+    expect(params['status'], 'tidak_aktif');
+    expect(params['search'], 'budi');
+    // Ukuran halaman dibiarkan mengikuti default server; memaksa 100 di sini
+    // adalah cara lama yang membuat daftar terpotong diam-diam.
+    expect(params.containsKey('page_size'), isFalse);
+  });
 }
