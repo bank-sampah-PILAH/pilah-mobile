@@ -103,8 +103,8 @@ void main() {
     });
 
     test('surfaces a network failure instead of throwing', () async {
-      when(() => dataSource.listMyMemberships()).thenAnswer(
-          (_) async => throw _refusal('Gagal memuat keanggotaan'));
+      when(() => dataSource.listMyMemberships())
+          .thenAnswer((_) async => throw _refusal('Gagal memuat keanggotaan'));
 
       final (:result, :error) = await cubit.loadMyMemberships();
 
@@ -208,8 +208,8 @@ void main() {
       // Calling registerNasabah afterwards would fail with "already
       // registered" since the membership already exists.
       cubit.saveProfileDraft(_draft);
-      when(() => dataSource.completeProfile(any())).thenAnswer((_) async =>
-          const OnboardingResult(nextStep: 'nasabah_dashboard'));
+      when(() => dataSource.completeProfile(any())).thenAnswer(
+          (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'));
 
       final (:result, :error) = await cubit.submitNasabahRegistration(_request);
 

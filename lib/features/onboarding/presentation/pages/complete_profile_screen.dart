@@ -611,7 +611,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
+                              _isNasabah
+                                  ? 'Pilih Bank Sampah'
+                                  : 'Data Bank Sampah',
                               style: TextStyle(
                                 color: Colors.grey.shade400,
                                 fontSize: 12,

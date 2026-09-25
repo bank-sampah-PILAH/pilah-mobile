@@ -72,7 +72,8 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
     setState(() => _isLoading = true);
 
     final request = RegisterNasabahRequest(
-      bankSampahId: _isLocked ? _memberships.first.bankSampahId : _selectedBank!.id,
+      bankSampahId:
+          _isLocked ? _memberships.first.bankSampahId : _selectedBank!.id,
     );
     final (:result, :error) = await context
         .read<OnboardingCubit>()

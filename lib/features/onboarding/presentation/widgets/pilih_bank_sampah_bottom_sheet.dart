@@ -14,7 +14,8 @@ class PilihBankSampahBottomSheet extends StatefulWidget {
   /// Bank sampah ids to hide from the list, e.g. ones already joined.
   final Set<String> excludedBankIds;
 
-  const PilihBankSampahBottomSheet({super.key, this.excludedBankIds = const {}});
+  const PilihBankSampahBottomSheet(
+      {super.key, this.excludedBankIds = const {}});
 
   @override
   State<PilihBankSampahBottomSheet> createState() =>
