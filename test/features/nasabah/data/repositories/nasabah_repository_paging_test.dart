@@ -52,7 +52,7 @@ void main() {
       search: 'budi',
     );
 
-    expect(hasil.getOrElse(() => HalamanNasabah.empty).totalCount, 42);
+    expect(hasil.toOption().toNullable()?.totalCount, 42);
     verify(() => remote.getNasabah(page: 3, status: 'menunggu', search: 'budi'))
         .called(1);
   });

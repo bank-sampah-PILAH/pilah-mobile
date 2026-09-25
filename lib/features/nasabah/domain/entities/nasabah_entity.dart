@@ -91,7 +91,4 @@ class HalamanNasabah {
     required this.totalCount,
     required this.hasMore,
   });
-
-  static const HalamanNasabah empty =
-      HalamanNasabah(items: [], totalCount: 0, hasMore: false);
 }
