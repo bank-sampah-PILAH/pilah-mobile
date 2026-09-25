@@ -177,7 +177,9 @@ void main() {
         },
         seed: () => GoogleRegistrationPending(registration: registration),
         act: (bloc) => bloc.add(
-          const RegisterGoogleRoleRequested(role: GoogleRegistrationRole.nasabah),
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
         ),
         expect: () => [
           isA<GoogleRegistrationSubmitting>(),
@@ -198,7 +200,9 @@ void main() {
         },
         seed: () => GoogleRegistrationPending(registration: registration),
         act: (bloc) => bloc.add(
-          const RegisterGoogleRoleRequested(role: GoogleRegistrationRole.pengelola),
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.pengelola,
+          ),
         ),
         expect: () => [
           isA<GoogleRegistrationSubmitting>(),
@@ -230,7 +234,9 @@ void main() {
         },
         seed: () => GoogleRegistrationPending(registration: registration),
         act: (bloc) => bloc.add(
-          const RegisterGoogleRoleRequested(role: GoogleRegistrationRole.nasabah),
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
         ),
         expect: () => [
           isA<GoogleRegistrationSubmitting>(),
