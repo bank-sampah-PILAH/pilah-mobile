@@ -171,13 +171,13 @@ void main() {
         build: () {
           when(() => mockLoginWithGoogle.register(
                 registrationToken: 'signed-token',
-                role: 'nasabah',
+                role: GoogleRegistrationRole.nasabah,
               )).thenAnswer((_) async => Right(tAuthEntity));
           return bloc;
         },
         seed: () => GoogleRegistrationPending(registration: registration),
         act: (bloc) => bloc.add(
-          const RegisterGoogleRoleRequested(role: 'nasabah'),
+          const RegisterGoogleRoleRequested(role: GoogleRegistrationRole.nasabah),
         ),
         expect: () => [
           isA<GoogleRegistrationSubmitting>(),
@@ -190,7 +190,7 @@ void main() {
         build: () {
           when(() => mockLoginWithGoogle.register(
                 registrationToken: 'signed-token',
-                role: 'pengelola',
+                role: GoogleRegistrationRole.pengelola,
               )).thenAnswer(
             (_) async => Left(GeneralException(message: 'Network failed')),
           );
@@ -198,7 +198,7 @@ void main() {
         },
         seed: () => GoogleRegistrationPending(registration: registration),
         act: (bloc) => bloc.add(
-          const RegisterGoogleRoleRequested(role: 'pengelola'),
+          const RegisterGoogleRoleRequested(role: GoogleRegistrationRole.pengelola),
         ),
         expect: () => [
           isA<GoogleRegistrationSubmitting>(),
@@ -219,7 +219,7 @@ void main() {
           );
           when(() => mockLoginWithGoogle.register(
                 registrationToken: 'signed-token',
-                role: 'nasabah',
+                role: GoogleRegistrationRole.nasabah,
               )).thenAnswer(
             (_) async => Left(BadRequestException(
               response: response,
@@ -230,7 +230,7 @@ void main() {
         },
         seed: () => GoogleRegistrationPending(registration: registration),
         act: (bloc) => bloc.add(
-          const RegisterGoogleRoleRequested(role: 'nasabah'),
+          const RegisterGoogleRoleRequested(role: GoogleRegistrationRole.nasabah),
         ),
         expect: () => [
           isA<GoogleRegistrationSubmitting>(),

@@ -97,7 +97,7 @@ void main() {
 
       final result = await repo.registerGoogleUser(
         registrationToken: 'signed-registration-token',
-        role: 'nasabah',
+        role: GoogleRegistrationRole.nasabah,
       );
 
       expect(result.isRight(), isTrue);

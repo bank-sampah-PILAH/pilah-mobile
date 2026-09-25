@@ -236,7 +236,7 @@ class _VerifiedIdentity extends StatelessWidget {
 }
 
 class _RoleOption {
-  final String value;
+  final GoogleRegistrationRole value;
   final String title;
   final String description;
   final IconData icon;
@@ -246,19 +246,19 @@ class _RoleOption {
 
 const _roleOptions = [
   _RoleOption(
-    'nasabah',
+    GoogleRegistrationRole.nasabah,
     'Nasabah',
     'Menabung sampah dan memantau saldo.',
     Icons.recycling_outlined,
   ),
   _RoleOption(
-    'pengelola',
+    GoogleRegistrationRole.pengelola,
     'Pengelola Bank Sampah',
     'Mengelola transaksi dan anggota bank sampah.',
     Icons.storefront_outlined,
   ),
   _RoleOption(
-    'pengelola_induk',
+    GoogleRegistrationRole.pengelolaInduk,
     'Pengelola Bank Sampah Induk',
     'Mendampingi unit-unit bank sampah.',
     Icons.account_balance_outlined,

@@ -22,6 +22,16 @@ class AuthEntity {
   });
 }
 
+enum GoogleRegistrationRole {
+  nasabah('nasabah'),
+  pengelola('pengelola'),
+  pengelolaInduk('pengelola_induk');
+
+  const GoogleRegistrationRole(this.wireValue);
+
+  final String wireValue;
+}
+
 sealed class GoogleAuthOutcome {
   const GoogleAuthOutcome();
 }

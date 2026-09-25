@@ -41,7 +41,7 @@ class GoogleRegistrationPending extends AuthenticationStates {
 
 class GoogleRegistrationSubmitting extends AuthenticationStates {
   final GoogleRegistrationRequired registration;
-  final String role;
+  final GoogleRegistrationRole role;
 
   GoogleRegistrationSubmitting({
     required this.registration,

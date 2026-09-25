@@ -69,6 +69,6 @@ void main() {
 
     final event = verify(() => auth.add(captureAny())).captured.single
         as RegisterGoogleRoleRequested;
-    expect(event.role, 'nasabah');
+    expect(event.role, GoogleRegistrationRole.nasabah);
   });
 }
