@@ -44,24 +44,21 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
     return _halaman(response.data);
   }
 
-  /// Membaca bentuk paginasi DRF `{count, next, previous, results}`, dan tetap
-  /// menerima daftar polos agar endpoint lama tidak ikut rusak.
+  /// Membaca bentuk paginasi DRF `{count, next, previous, results}`.
+  ///
+  /// Endpoint daftar nasabah selalu terpaginasi karena paginasi dipasang global
+  /// di backend, jadi tidak ada cabang untuk daftar polos.
   NasabahPage _halaman(dynamic data) {
-    if (data is Map<String, dynamic>) {
-      final results = data['results'] as List? ?? [];
-      return NasabahPage(
-        items: results
-            .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
-            .toList(),
-        // `count` adalah total di server; `next` null berarti ini halaman akhir.
-        totalCount: (data['count'] as num?)?.toInt() ?? results.length,
-        hasMore: data['next'] != null,
-      );
-    }
-    final items = (data as List)
-        .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
-        .toList();
-    return NasabahPage(items: items, totalCount: items.length, hasMore: false);
+    final amplop = data as Map<String, dynamic>;
+    final results = amplop['results'] as List? ?? [];
+    return NasabahPage(
+      items: results
+          .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      // `count` adalah total di server; `next` null berarti ini halaman akhir.
+      totalCount: (amplop['count'] as num?)?.toInt() ?? results.length,
+      hasMore: amplop['next'] != null,
+    );
   }
 
   @override
