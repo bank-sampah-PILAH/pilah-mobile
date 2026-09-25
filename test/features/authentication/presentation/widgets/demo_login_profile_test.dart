@@ -14,16 +14,10 @@ class _StubEnvironment implements AppEnvironment {
   bool get supportsDemoLogin => true;
 
   @override
-  String get demoOperatorEmail => 'configured.operator@example.com';
-
-  @override
   String get demoPengelolaIndukEmail => 'configured.induk@example.com';
 
   @override
   String get demoCustomerEmail => 'configured.customer@example.com';
-
-  @override
-  String get demoIndukEmail => 'configured.induk@example.com';
 
   @override
   String get demoSuperadminEmail => 'configured.superadmin@example.com';
@@ -83,13 +77,15 @@ void main() {
     test('keeps seeded email constants aligned with the env example', () {
       final env = _readExampleEnv();
 
-      expect(DemoLoginProfiles.operator.email, env['DEMO_OPERATOR_EMAIL']);
       expect(
         DemoLoginProfiles.pengelolaInduk.email,
         env['DEMO_PENGELOLA_INDUK_EMAIL'],
       );
       expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
-      expect(DemoLoginProfiles.induk.email, env['DEMO_INDUK_EMAIL']);
+      expect(
+        DemoLoginProfiles.induk.email,
+        env['DEMO_PENGELOLA_INDUK_EMAIL'],
+      );
       expect(
         DemoLoginProfiles.superadmin.email,
         env['DEMO_SUPERADMIN_EMAIL'],
@@ -103,7 +99,7 @@ void main() {
       expect(
         profiles.map((profile) => profile.email),
         [
-          'configured.operator@example.com',
+          'pengurus.demo@example.com',
           'configured.induk@example.com',
           'configured.customer@example.com',
           'configured.induk@example.com',

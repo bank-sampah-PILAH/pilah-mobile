@@ -64,7 +64,7 @@ abstract final class DemoLoginProfiles {
         DemoLoginProfile(
           label: operator.label,
           name: operator.name,
-          email: environment.demoOperatorEmail,
+          email: operator.email,
           tokenPrefix: operator.tokenPrefix,
         ),
         DemoLoginProfile(
@@ -82,7 +82,7 @@ abstract final class DemoLoginProfiles {
         DemoLoginProfile(
           label: induk.label,
           name: induk.name,
-          email: environment.demoIndukEmail,
+          email: environment.demoPengelolaIndukEmail,
           tokenPrefix: induk.tokenPrefix,
         ),
         DemoLoginProfile(

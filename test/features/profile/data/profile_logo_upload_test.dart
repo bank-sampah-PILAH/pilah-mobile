@@ -21,16 +21,10 @@ class _StubEnvironment implements AppEnvironment {
   bool get supportsDemoLogin => false;
 
   @override
-  String get demoOperatorEmail => '';
-
-  @override
   String get demoPengelolaIndukEmail => '';
 
   @override
   String get demoCustomerEmail => '';
-
-  @override
-  String get demoIndukEmail => '';
 
   @override
   String get demoSuperadminEmail => '';

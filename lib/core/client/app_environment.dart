@@ -8,13 +8,9 @@ abstract class AppEnvironment {
 
   bool get supportsDemoLogin;
 
-  String get demoOperatorEmail;
-
   String get demoPengelolaIndukEmail;
 
   String get demoCustomerEmail;
-
-  String get demoIndukEmail;
 
   String get demoSuperadminEmail;
 }
@@ -28,16 +24,10 @@ class DevEnvironment implements AppEnvironment {
   bool get supportsDemoLogin => !kReleaseMode && Secret.demoLoginEnabled;
 
   @override
-  String get demoOperatorEmail => Secret.demoOperatorEmail;
-
-  @override
   String get demoPengelolaIndukEmail => Secret.demoPengelolaIndukEmail;
 
   @override
   String get demoCustomerEmail => Secret.demoCustomerEmail;
-
-  @override
-  String get demoIndukEmail => Secret.demoIndukEmail;
 
   @override
   String get demoSuperadminEmail => Secret.demoSuperadminEmail;
@@ -52,16 +42,10 @@ class ProdEnvironment implements AppEnvironment {
   bool get supportsDemoLogin => false;
 
   @override
-  String get demoOperatorEmail => '';
-
-  @override
   String get demoPengelolaIndukEmail => '';
 
   @override
   String get demoCustomerEmail => '';
-
-  @override
-  String get demoIndukEmail => '';
 
   @override
   String get demoSuperadminEmail => '';
