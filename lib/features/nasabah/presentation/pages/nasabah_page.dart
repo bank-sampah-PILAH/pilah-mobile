@@ -6,7 +6,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
@@ -180,33 +180,13 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                           );
                         }
 
-                        return ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(bottom: 80),
-                          itemCount: customers.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final customer = customers[index];
-                            return NasabahListItem(
-                              isActive: customer.isActive,
-                              initials: customer.initials,
-                              avatarColor: customer.avatarColor,
-                              textColor: customer.textColor,
-                              name: customer.name,
-                              email: customer.email,
-                              phone: customer.phone,
-                              balance: customer.balance,
-                              id: customer.id,
-                              idNasabah: customer.idNasabah,
-                              jenisKelamin: customer.jenisKelamin,
-                              tanggalLahir: customer.tanggalLahir,
-                              tanggalDaftar: customer.tanggalDaftar,
-                              address: customer.address,
-                              isPending: customer.status == 'pending',
-                              nasabahCubit: context.read<NasabahCubit>(),
-                            );
-                          },
+                        return NasabahPagedListView(
+                          items: customers,
+                          hasMore: state.hasMore,
+                          isLoadingMore: state.isLoadingMore,
+                          onLoadMore: () =>
+                              context.read<NasabahCubit>().loadMoreNasabah(),
+                          nasabahCubit: context.read<NasabahCubit>(),
                         );
                       }
 
