@@ -123,4 +123,32 @@ void main() {
 
     verify(() => getUseCase.execute(any())).called(1);
   });
+
+  test('sends a two-character query, the shortest the server will honour',
+      () async {
+    await cubit.loadNasabah();
+
+    // Batas persis: satu huruf diabaikan server, dua huruf sudah dilayani.
+    cubit.searchNasabah('bu');
+    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .cast<GetNasabahParams>();
+    expect(params.last.search, 'bu');
+  });
+
+  test('clearing the query drops it from the request', () async {
+    await cubit.loadNasabah();
+
+    cubit.searchNasabah('budi');
+    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    cubit.searchNasabah('');
+    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .cast<GetNasabahParams>();
+    expect(params.last.search, isNull);
+  });
 }
