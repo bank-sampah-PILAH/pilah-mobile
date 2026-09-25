@@ -1,5 +1,6 @@
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../domain/use_cases/authentication_use_cases.dart';
@@ -122,10 +123,17 @@ class AuthenticationBloc
     );
   }
 
-  void _onChangeGoogleAccountRequested(
+  /// Also disconnects Google's own session — otherwise the next
+  /// `authenticate()` silently returns the same account and "Ganti akun"
+  /// can never actually switch. Best-effort: still clears app state if
+  /// disconnect fails.
+  Future<void> _onChangeGoogleAccountRequested(
     ChangeGoogleAccountRequested event,
     Emitter<AuthenticationStates> emitter,
-  ) {
+  ) async {
+    try {
+      await GoogleSignIn.instance.disconnect();
+    } catch (_) {}
     emitter(AuthenticationInitial());
   }
 
