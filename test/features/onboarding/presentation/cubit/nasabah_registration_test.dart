@@ -245,5 +245,33 @@ void main() {
       verify(() => dataSource.completeProfile(any())).called(1);
       verify(() => dataSource.registerNasabah(any())).called(2);
     });
+
+    test(
+        'resends the profile when a fresh draft is banked after a partial '
+        'failure', () async {
+      cubit.saveProfileDraft(_draft);
+      stubProfile();
+      stubRegister(throws: _refusal('Bank sampah sedang tidak tersedia'));
+
+      final first = await cubit.submitNasabahRegistration(_request);
+      expect(first.error?.displayMessage, 'Bank sampah sedang tidak tersedia');
+
+      // Edited draft, not an unedited retry like the test above.
+      const editedDraft = CompleteProfileRequest(
+        nama: 'Nasabah PILAH',
+        jenisKelamin: 'perempuan',
+        tanggalLahir: '1998-05-20',
+        noHp: '81234567890',
+        alamat: 'Jl. Melati No. 99 (diperbaiki)',
+      );
+      cubit.saveProfileDraft(editedDraft);
+      stubRegister();
+
+      final second = await cubit.submitNasabahRegistration(_request);
+
+      expect(second.error, isNull);
+      verify(() => dataSource.completeProfile(_draft)).called(1);
+      verify(() => dataSource.completeProfile(editedDraft)).called(1);
+    });
   });
 }

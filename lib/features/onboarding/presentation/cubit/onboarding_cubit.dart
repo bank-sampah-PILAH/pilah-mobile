@@ -40,8 +40,13 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   bool get hasProfileDraft => _profileDraft != null;
 
   /// Banks step one's input and moves on without touching the network.
+  ///
+  /// Resets [_profileSubmitted]: a freshly banked draft is always unsent,
+  /// even after an earlier one already landed — otherwise a post-failure
+  /// edit would silently skip resending and register stale data.
   void saveProfileDraft(CompleteProfileRequest request) {
     _profileDraft = request;
+    _profileSubmitted = false;
   }
 
   /// Forgets the pending draft. Called once the whole wizard has landed, and on
