@@ -57,12 +57,12 @@ NasabahEntity _nasabah(String kode,
     );
 
 /// Bungkus daftar nasabah menjadi satu halaman utuh (tanpa halaman lanjutan).
-NasabahPage _page(
+HalamanNasabah _page(
   List<NasabahEntity> items, {
   int? totalCount,
   bool hasMore = false,
 }) =>
-    NasabahPage(
+    HalamanNasabah(
       items: items,
       totalCount: totalCount ?? items.length,
       hasMore: hasMore,

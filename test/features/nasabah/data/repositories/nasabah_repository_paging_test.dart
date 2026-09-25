@@ -27,7 +27,7 @@ void main() {
   late _MockRemote remote;
   late NasabahRepositoryImpl repository;
 
-  final halaman = NasabahPage(
+  final halaman = HalamanNasabah(
     items: [_nasabah('NAS-0001')],
     totalCount: 42,
     hasMore: true,
@@ -52,7 +52,7 @@ void main() {
       search: 'budi',
     );
 
-    expect(hasil.getOrElse(() => NasabahPage.empty).totalCount, 42);
+    expect(hasil.getOrElse(() => HalamanNasabah.empty).totalCount, 42);
     verify(() => remote.getNasabah(page: 3, status: 'menunggu', search: 'budi'))
         .called(1);
   });

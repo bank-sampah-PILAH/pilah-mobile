@@ -21,13 +21,13 @@ class GetNasabahParams {
   });
 }
 
-class GetNasabahUseCase implements UseCase<NasabahPage, GetNasabahParams> {
+class GetNasabahUseCase implements UseCase<HalamanNasabah, GetNasabahParams> {
   final NasabahRepository repository;
 
   GetNasabahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, NasabahPage>> execute([
+  Future<Either<NetworkException, HalamanNasabah>> execute([
     GetNasabahParams? args,
   ]) {
     final params = args ?? const GetNasabahParams();

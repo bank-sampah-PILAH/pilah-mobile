@@ -81,17 +81,17 @@ class NasabahRingkasan {
 /// [totalCount] adalah jumlah seluruh nasabah yang cocok dengan penyaring di
 /// server, bukan jumlah yang sudah dimuat, sehingga penghitung di layar tetap
 /// benar walaupun baru sebagian halaman yang diambil.
-class NasabahPage {
+class HalamanNasabah {
   final List<NasabahEntity> items;
   final int totalCount;
   final bool hasMore;
 
-  const NasabahPage({
+  const HalamanNasabah({
     required this.items,
     required this.totalCount,
     required this.hasMore,
   });
 
-  static const NasabahPage empty =
-      NasabahPage(items: [], totalCount: 0, hasMore: false);
+  static const HalamanNasabah empty =
+      HalamanNasabah(items: [], totalCount: 0, hasMore: false);
 }

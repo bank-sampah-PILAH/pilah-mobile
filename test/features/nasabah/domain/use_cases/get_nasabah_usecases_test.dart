@@ -11,7 +11,7 @@ class _MockRepository extends Mock implements NasabahRepository {}
 void main() {
   late _MockRepository repository;
 
-  const halaman = NasabahPage(items: [], totalCount: 7, hasMore: false);
+  const halaman = HalamanNasabah(items: [], totalCount: 7, hasMore: false);
 
   setUp(() {
     repository = _MockRepository();

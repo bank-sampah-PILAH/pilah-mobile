@@ -16,7 +16,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   static const int _batasPicker = 100;
 
   @override
-  Future<NasabahPage> getNasabah({
+  Future<HalamanNasabah> getNasabah({
     int page = 1,
     String status = 'aktif',
     String? search,
@@ -36,7 +36,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   }
 
   @override
-  Future<NasabahPage> getActiveNasabah() async {
+  Future<HalamanNasabah> getActiveNasabah() async {
     final response = await networkService.get(
       _path,
       queryParams: {'status': 'aktif', 'page_size': _batasPicker},
@@ -48,10 +48,10 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   ///
   /// Endpoint daftar nasabah selalu terpaginasi karena paginasi dipasang global
   /// di backend, jadi tidak ada cabang untuk daftar polos.
-  NasabahPage _halaman(dynamic data) {
+  HalamanNasabah _halaman(dynamic data) {
     final amplop = data as Map<String, dynamic>;
     final results = amplop['results'] as List? ?? [];
-    return NasabahPage(
+    return HalamanNasabah(
       items: results
           .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
           .toList(),

@@ -6,7 +6,7 @@ abstract class NasabahRemoteDataSource {
   ///
   /// [status] memakai kosakata backend: `aktif`, `tidak_aktif`, `menunggu`,
   /// `ditolak`. [search] diabaikan server bila kurang dari dua karakter.
-  Future<NasabahPage> getNasabah({
+  Future<HalamanNasabah> getNasabah({
     int page,
     String status,
     String? search,
@@ -16,7 +16,7 @@ abstract class NasabahRemoteDataSource {
   ///
   /// Picker memerlukan semua pilihan sekaligus, jadi ia sengaja tidak memakai
   /// paginasi halaman daftar nasabah (PIL-214).
-  Future<NasabahPage> getActiveNasabah();
+  Future<HalamanNasabah> getActiveNasabah();
   Future<NasabahRingkasan> getNasabahRingkasan(String id);
   Future<NasabahModel> addNasabah(NasabahRequest request);
   Future<NasabahModel> updateNasabah(String id, NasabahRequest request);

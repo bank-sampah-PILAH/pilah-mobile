@@ -55,12 +55,12 @@ NasabahEntity _nasabah(String nomor) => NasabahEntity(
       status: 'approved',
     );
 
-NasabahPage _page(
+HalamanNasabah _page(
   List<NasabahEntity> items, {
   int? totalCount,
   bool hasMore = false,
 }) =>
-    NasabahPage(
+    HalamanNasabah(
       items: items,
       totalCount: totalCount ?? items.length,
       hasMore: hasMore,
@@ -190,5 +190,16 @@ void main() {
     final state = cubit.state as NasabahLoaded;
     expect(state.nasabahList.map((n) => n.idNasabah), ['NAS-0001']);
     expect(state.isLoadingMore, isFalse);
+  });
+
+  test('surfaces an error when the picker list cannot be fetched', () async {
+    when(() => getActiveUseCase.execute()).thenAnswer(
+      (_) async => Left(NetworkException(message: 'jaringan putus')),
+    );
+
+    await cubit.loadActiveNasabah();
+
+    expect(cubit.state, isA<NasabahError>());
+    expect(cubit.activeNasabah, isEmpty);
   });
 }

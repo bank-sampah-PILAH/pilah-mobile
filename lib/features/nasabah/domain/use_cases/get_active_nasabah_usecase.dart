@@ -10,13 +10,13 @@ import 'package:pilah_mobile/features/nasabah/domain/repositories/nasabah_reposi
 /// Halaman daftar nasabah memakai [GetNasabahUseCase] yang berpaginasi; picker
 /// sengaja dipisah karena ia membutuhkan semua pilihan sekaligus (PIL-214).
 @lazySingleton
-class GetActiveNasabahUseCase implements UseCase<NasabahPage, void> {
+class GetActiveNasabahUseCase implements UseCase<HalamanNasabah, void> {
   final NasabahRepository repository;
 
   GetActiveNasabahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, NasabahPage>> execute([void args]) {
+  Future<Either<NetworkException, HalamanNasabah>> execute([void args]) {
     return repository.getActiveNasabah();
   }
 }

@@ -38,8 +38,8 @@ class MockApproveNasabahUseCase extends Mock implements ApproveNasabahUseCase {}
 class MockRejectNasabahUseCase extends Mock implements RejectNasabahUseCase {}
 
 /// Bungkus daftar nasabah menjadi satu halaman utuh (tanpa halaman lanjutan).
-NasabahPage _page(List<NasabahEntity> items) =>
-    NasabahPage(items: items, totalCount: items.length, hasMore: false);
+HalamanNasabah _page(List<NasabahEntity> items) =>
+    HalamanNasabah(items: items, totalCount: items.length, hasMore: false);
 
 void main() {
   late MockGetNasabahUseCase getUseCase;
