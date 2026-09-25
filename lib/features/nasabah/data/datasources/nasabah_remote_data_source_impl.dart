@@ -12,6 +12,9 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
 
   static const String _path = '/api/v1/nasabah';
 
+  /// Batas `max_page_size` backend; dipakai picker yang menarik satu kali ambil.
+  static const int _batasPicker = 100;
+
   @override
   Future<NasabahPage> getNasabah({
     int page = 1,
@@ -29,7 +32,21 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
         if (search != null && search.isNotEmpty) 'search': search,
       },
     );
-    final data = response.data;
+    return _halaman(response.data);
+  }
+
+  @override
+  Future<NasabahPage> getActiveNasabah() async {
+    final response = await networkService.get(
+      _path,
+      queryParams: {'status': 'aktif', 'page_size': _batasPicker},
+    );
+    return _halaman(response.data);
+  }
+
+  /// Membaca bentuk paginasi DRF `{count, next, previous, results}`, dan tetap
+  /// menerima daftar polos agar endpoint lama tidak ikut rusak.
+  NasabahPage _halaman(dynamic data) {
     if (data is Map<String, dynamic>) {
       final results = data['results'] as List? ?? [];
       return NasabahPage(
@@ -44,38 +61,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
     final items = (data as List)
         .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
         .toList();
-    return NasabahPage(
-      items: items,
-      totalCount: items.length,
-      hasMore: false,
-    );
-  }
-
-  @override
-  Future<NasabahPage> getActiveNasabah() async {
-    final response = await networkService.get(
-      _path,
-      queryParams: {'status': 'aktif', 'page_size': 100},
-    );
-    final data = response.data;
-    if (data is Map<String, dynamic>) {
-      final results = data['results'] as List? ?? [];
-      return NasabahPage(
-        items: results
-            .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
-            .toList(),
-        totalCount: (data['count'] as num?)?.toInt() ?? results.length,
-        hasMore: data['next'] != null,
-      );
-    }
-    final items = (data as List)
-        .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
-        .toList();
-    return NasabahPage(
-      items: items,
-      totalCount: items.length,
-      hasMore: false,
-    );
+    return NasabahPage(items: items, totalCount: items.length, hasMore: false);
   }
 
   @override
