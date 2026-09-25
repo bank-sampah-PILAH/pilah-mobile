@@ -54,3 +54,6 @@ android/app/google-services.json
 # AI assistants
 .claude
 reference/
+
+# FVM Version Cache
+.fvm/
