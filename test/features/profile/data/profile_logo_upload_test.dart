@@ -16,6 +16,21 @@ class _StubEnvironment implements AppEnvironment {
   final String baseUrl;
 
   const _StubEnvironment(this.baseUrl);
+
+  @override
+  bool get supportsDemoLogin => false;
+
+  @override
+  String get demoOperatorEmail => '';
+
+  @override
+  String get demoPengelolaIndukEmail => '';
+
+  @override
+  String get demoCustomerEmail => '';
+
+  @override
+  String get demoSuperadminEmail => '';
 }
 
 /// The shape `PUT /bank-sampah/me` answers with, so the mapper has something

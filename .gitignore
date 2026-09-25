@@ -56,3 +56,6 @@ android/app/google-services.json
 reference/
 # Flutter coverage output
 coverage/
+
+# FVM Version Cache
+.fvm/

@@ -18,9 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Matches the local dev SDK (3.38.3 stable). Pin exactly so a new Flutter
-  # release can't silently change analyzer/test behavior under the gate.
-  FLUTTER_VERSION: "3.38.3"
+  # Matches the repository's `.fvmrc` (3.41.3 stable). Pin exactly so a new
+  # Flutter release can't silently change analyzer/test behavior under the gate.
+  FLUTTER_VERSION: "3.41.3"
 
 jobs:
   verify:

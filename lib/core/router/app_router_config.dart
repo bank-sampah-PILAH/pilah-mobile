@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/pengelola_induk_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
@@ -163,6 +164,11 @@ class AppRouterConfig {
         path: SuperAdminDashboardScreen.route,
         name: SuperAdminDashboardScreen.route,
         builder: (context, state) => const SuperAdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: PengelolaIndukPage.route,
+        name: PengelolaIndukPage.route,
+        builder: (context, state) => const PengelolaIndukPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
