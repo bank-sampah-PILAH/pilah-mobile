@@ -13,20 +13,46 @@ void main() {
       );
     });
 
-    test('the other onboarding steps are unchanged', () {
-      expect(locationForAuthStep('complete_profile'), '/complete-profile');
+    test('routes backend steps for all four roles', () {
+      // Pengurus is `pengelola` in the backend role enum.
       expect(
-          locationForAuthStep('register_bank_sampah'), '/register-bank-sampah');
-      expect(locationForAuthStep('approval_pending'), '/pending-approval');
+        locationForAuthStep('complete_profile', role: 'pengelola'),
+        '/complete-profile',
+      );
       expect(
-          locationForAuthStep('superadmin_dashboard'), '/superadmin-dashboard');
-      expect(locationForAuthStep('register_nasabah'), '/register-nasabah');
-      expect(locationForAuthStep('nasabah_dashboard'), '/nasabah-dashboard');
-      expect(locationForAuthStep('register_bank_sampah_induk'),
-          '/register-bank-sampah-induk');
-      expect(locationForAuthStep('pengelola_induk_dashboard'),
-          '/pengelola-induk-dashboard');
-      expect(locationForAuthStep('dashboard'), '/dashboard');
+        locationForAuthStep('register_bank_sampah', role: 'pengelola'),
+        '/register-bank-sampah',
+      );
+      expect(
+        locationForAuthStep('approval_pending', role: 'pengelola'),
+        '/pending-approval',
+      );
+      expect(
+        locationForAuthStep('dashboard', role: 'pengelola'),
+        '/dashboard',
+      );
+      expect(
+        locationForAuthStep('superadmin_dashboard', role: 'superadmin'),
+        '/superadmin-dashboard',
+      );
+      expect(
+        locationForAuthStep('register_nasabah', role: 'nasabah'),
+        '/register-nasabah',
+      );
+      expect(
+        locationForAuthStep('nasabah_dashboard', role: 'nasabah'),
+        '/nasabah-dashboard',
+      );
+      expect(
+        locationForAuthStep('register_bank_sampah_induk',
+            role: 'pengelola_induk'),
+        '/register-bank-sampah-induk',
+      );
+      expect(
+        locationForAuthStep('pengelola_induk_dashboard',
+            role: 'pengelola_induk'),
+        '/pengelola-induk-dashboard',
+      );
       expect(locationForAuthStep(null), '/dashboard');
     });
 
