@@ -17,9 +17,9 @@ class DemoLoginProfile {
 }
 
 abstract final class DemoLoginProfiles {
-  static const operator = DemoLoginProfile(
+  static const pengurus = DemoLoginProfile(
     label: 'Pengurus',
-    name: 'Operator PILAH E2E',
+    name: 'Pengurus PILAH E2E',
     email: 'pengurus.demo@example.com',
     tokenPrefix: 'dev',
   );
@@ -45,27 +45,19 @@ abstract final class DemoLoginProfiles {
     tokenPrefix: 'dev-superadmin',
   );
 
-  static const induk = DemoLoginProfile(
-    label: 'Pengelola Bank Sampah Induk',
-    name: 'Pengelola Induk PILAH E2E',
-    email: 'induk.demo@example.com',
-    tokenPrefix: 'dev-pengelola-induk',
-  );
-
   static const all = <DemoLoginProfile>[
-    operator,
+    pengurus,
     pengelolaInduk,
     customer,
-    induk,
     superadmin,
   ];
 
   static List<DemoLoginProfile> forEnvironment(AppEnvironment environment) => [
         DemoLoginProfile(
-          label: operator.label,
-          name: operator.name,
-          email: operator.email,
-          tokenPrefix: operator.tokenPrefix,
+          label: pengurus.label,
+          name: pengurus.name,
+          email: pengurus.email,
+          tokenPrefix: pengurus.tokenPrefix,
         ),
         DemoLoginProfile(
           label: pengelolaInduk.label,
@@ -78,12 +70,6 @@ abstract final class DemoLoginProfiles {
           name: customer.name,
           email: environment.demoCustomerEmail,
           tokenPrefix: customer.tokenPrefix,
-        ),
-        DemoLoginProfile(
-          label: induk.label,
-          name: induk.name,
-          email: environment.demoPengelolaIndukEmail,
-          tokenPrefix: induk.tokenPrefix,
         ),
         DemoLoginProfile(
           label: superadmin.label,

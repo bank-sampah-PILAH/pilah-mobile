@@ -40,8 +40,8 @@ void main() {
   group('DemoLoginProfiles', () {
     test('uses backend-compatible tokens for every seeded local role', () {
       expect(
-        DemoLoginProfiles.operator.idToken,
-        'dev:pengurus.demo@example.com:Operator PILAH E2E',
+        DemoLoginProfiles.pengurus.idToken,
+        'dev:pengurus.demo@example.com:Pengurus PILAH E2E',
       );
       expect(
         DemoLoginProfiles.pengelolaInduk.idToken,
@@ -50,10 +50,6 @@ void main() {
       expect(
         DemoLoginProfiles.customer.idToken,
         'dev-nasabah:nasabah.demo@example.com:Nasabah PILAH E2E',
-      );
-      expect(
-        DemoLoginProfiles.induk.idToken,
-        'dev-pengelola-induk:induk.demo@example.com:Pengelola Induk PILAH E2E',
       );
       expect(
         DemoLoginProfiles.superadmin.idToken,
@@ -68,7 +64,6 @@ void main() {
           'Pengurus',
           'Pengelola Induk',
           'Nasabah',
-          'Pengelola Bank Sampah Induk',
           'Superadmin',
         ],
       );
@@ -82,10 +77,6 @@ void main() {
         env['DEMO_PENGELOLA_INDUK_EMAIL'],
       );
       expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
-      expect(
-        DemoLoginProfiles.induk.email,
-        env['DEMO_PENGELOLA_INDUK_EMAIL'],
-      );
       expect(
         DemoLoginProfiles.superadmin.email,
         env['DEMO_SUPERADMIN_EMAIL'],
@@ -102,7 +93,6 @@ void main() {
           'pengurus.demo@example.com',
           'configured.induk@example.com',
           'configured.customer@example.com',
-          'configured.induk@example.com',
           'configured.superadmin@example.com',
         ],
       );
@@ -112,7 +102,6 @@ void main() {
           'dev',
           'dev-pengelola-induk',
           'dev-nasabah',
-          'dev-pengelola-induk',
           'dev-superadmin',
         ],
       );
