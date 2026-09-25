@@ -29,7 +29,12 @@ class NasabahCubit extends Cubit<NasabahState> {
   final ApproveNasabahUseCase approveNasabahUseCase;
   final RejectNasabahUseCase rejectNasabahUseCase;
 
+  /// Daftar untuk picker Transaksi Baru: seluruh nasabah aktif, tanpa paginasi.
   List<NasabahEntity> _allNasabah = [];
+
+  /// Halaman daftar nasabah yang sedang ditampilkan, hasil paginasi server.
+  List<NasabahEntity> _items = [];
+
   bool? _isActiveTab = true;
   String _searchQuery = '';
 
@@ -49,7 +54,7 @@ class NasabahCubit extends Cubit<NasabahState> {
   bool? get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
   int get activeCount =>
-      _allNasabah.where((n) => n.isActive && n.status == 'approved').length;
+      _items.where((n) => n.isActive && n.status == 'approved').length;
 
   /// Every active nasabah, independent of the nasabah page's active/inactive
   /// tab and search query. The Transaksi Baru picker reads this so its options
@@ -66,14 +71,24 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// so a real loading state is emitted regardless.
   Future<void> loadNasabah({bool silent = false}) async {
     if (!silent || state is! NasabahLoaded) emit(NasabahLoading());
-    final result = await getNasabahUseCase.execute();
+    final result = await getNasabahUseCase.execute(_params(1));
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
-        _allNasabah = data.items;
+        _items = data.items;
         _emitFiltered();
       },
     );
+  }
+
+  GetNasabahParams _params(int halaman) => GetNasabahParams(
+        page: halaman,
+        status: _statusParam,
+      );
+
+  String get _statusParam {
+    if (_isActiveTab == null) return 'menunggu';
+    return _isActiveTab! ? 'aktif' : 'tidak_aktif';
   }
 
   /// Memuat seluruh nasabah aktif untuk picker Transaksi Baru.
@@ -87,14 +102,19 @@ class NasabahCubit extends Cubit<NasabahState> {
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
         _allNasabah = data.items;
-        _emitFiltered();
+        emit(NasabahLoaded(
+          nasabahList: activeNasabah,
+          isActiveTab: _isActiveTab,
+          searchQuery: _searchQuery,
+        ));
       },
     );
   }
 
-  void setActiveTab(bool? isActive) {
+  Future<void> setActiveTab(bool? isActive) async {
+    if (_isActiveTab == isActive) return;
     _isActiveTab = isActive;
-    _emitFiltered();
+    await loadNasabah();
   }
 
   void searchNasabah(String query) {
@@ -179,27 +199,15 @@ class NasabahCubit extends Cubit<NasabahState> {
   }
 
   void _emitFiltered() {
-    final filtered = _allNasabah.where((customer) {
-      bool matchesTab;
-      if (_isActiveTab == null) {
-        // Menunggu tab: pending submissions only.
-        matchesTab = customer.status == 'pending';
-      } else {
-        // Active/inactive tabs cover approved memberships only; rejected rows
-        // (audit records) appear in no tab.
-        matchesTab =
-            customer.status == 'approved' && customer.isActive == _isActiveTab;
-      }
-      if (_searchQuery.isEmpty) return matchesTab;
+    // Tab sudah disaring server; yang tersisa di sini hanya pencarian, dan itu
+    // dipindahkan ke server pada langkah berikutnya.
+    final filtered = _items.where((customer) {
+      if (_searchQuery.isEmpty) return true;
 
       final query = _searchQuery.toLowerCase();
-      final name = customer.name.toLowerCase();
-      final phone = customer.phone.toLowerCase();
-      final email = customer.email.toLowerCase();
-      return matchesTab &&
-          (name.contains(query) ||
-              phone.contains(query) ||
-              email.contains(query));
+      return customer.name.toLowerCase().contains(query) ||
+          customer.phone.toLowerCase().contains(query) ||
+          customer.email.toLowerCase().contains(query);
     }).toList();
 
     emit(NasabahLoaded(

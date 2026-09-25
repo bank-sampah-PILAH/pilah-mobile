@@ -13,9 +13,17 @@ class NasabahRepositoryImpl implements NasabahRepository {
   NasabahRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<NetworkException, NasabahPage>> getNasabah() {
+  Future<Either<NetworkException, NasabahPage>> getNasabah({
+    int page = 1,
+    String status = 'aktif',
+    String? search,
+  }) {
     return apiCall<NasabahPage>(
-      func: remoteDataSource.getNasabah(),
+      func: remoteDataSource.getNasabah(
+        page: page,
+        status: status,
+        search: search,
+      ),
       mapper: (result) => result as NasabahPage,
     );
   }

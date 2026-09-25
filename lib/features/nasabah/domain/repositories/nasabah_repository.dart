@@ -3,7 +3,11 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
 abstract class NasabahRepository {
-  Future<Either<NetworkException, NasabahPage>> getNasabah();
+  Future<Either<NetworkException, NasabahPage>> getNasabah({
+    int page,
+    String status,
+    String? search,
+  });
   Future<Either<NetworkException, NasabahPage>> getActiveNasabah();
   Future<Either<NetworkException, NasabahRingkasan>> getNasabahRingkasan(
       String id);

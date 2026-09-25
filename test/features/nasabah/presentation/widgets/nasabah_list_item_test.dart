@@ -55,7 +55,7 @@ void main() {
     getUseCase = MockGetNasabahUseCase();
     approveUseCase = MockApproveNasabahUseCase();
     rejectUseCase = MockRejectNasabahUseCase();
-    when(() => getUseCase.execute())
+    when(() => getUseCase.execute(any()))
         .thenAnswer((_) async => Right(_page(const [])));
     cubit = NasabahCubit(
       getUseCase,

@@ -6,13 +6,35 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/domain/repositories/nasabah_repository.dart';
 
 @lazySingleton
-class GetNasabahUseCase implements UseCase<NasabahPage, void> {
+/// Penyaring satu halaman daftar nasabah (PIL-214).
+///
+/// [status] memakai kosakata backend: `aktif`, `tidak_aktif`, `menunggu`.
+class GetNasabahParams {
+  final int page;
+  final String status;
+  final String? search;
+
+  const GetNasabahParams({
+    this.page = 1,
+    this.status = 'aktif',
+    this.search,
+  });
+}
+
+class GetNasabahUseCase implements UseCase<NasabahPage, GetNasabahParams> {
   final NasabahRepository repository;
 
   GetNasabahUseCase(this.repository);
 
   @override
-  Future<Either<NetworkException, NasabahPage>> execute([void args]) {
-    return repository.getNasabah();
+  Future<Either<NetworkException, NasabahPage>> execute([
+    GetNasabahParams? args,
+  ]) {
+    final params = args ?? const GetNasabahParams();
+    return repository.getNasabah(
+      page: params.page,
+      status: params.status,
+      search: params.search,
+    );
   }
 }

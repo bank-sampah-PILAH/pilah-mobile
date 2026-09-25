@@ -76,7 +76,7 @@ void main() {
       _MockApproveNasabahUseCase(),
       _MockRejectNasabahUseCase(),
     );
-    when(() => getUseCase.execute()).thenAnswer(
+    when(() => getUseCase.execute(any())).thenAnswer(
       (_) async =>
           Right(_page([_nasabah('Budi Santoso', 'budi@example.com', '81234567890')])),
     );
