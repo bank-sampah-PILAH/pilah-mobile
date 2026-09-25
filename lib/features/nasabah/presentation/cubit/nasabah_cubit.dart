@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -35,8 +37,14 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// Halaman daftar nasabah yang sedang ditampilkan, hasil paginasi server.
   List<NasabahEntity> _items = [];
 
+  Timer? _jedaCari;
+
   bool? _isActiveTab = true;
   String _searchQuery = '';
+
+  /// Jeda ketik sebelum pencarian dikirim, supaya satu kata tidak memicu
+  /// satu panggilan API per huruf.
+  static const Duration jedaPencarian = Duration(milliseconds: 300);
 
   NasabahCubit(
     this.getNasabahUseCase,
@@ -76,7 +84,7 @@ class NasabahCubit extends Cubit<NasabahState> {
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
         _items = data.items;
-        _emitFiltered();
+        _emitLoaded();
       },
     );
   }
@@ -84,6 +92,8 @@ class NasabahCubit extends Cubit<NasabahState> {
   GetNasabahParams _params(int halaman) => GetNasabahParams(
         page: halaman,
         status: _statusParam,
+        // Server mengabaikan kata kunci di bawah dua huruf, jadi jangan dikirim.
+        search: _searchQuery.length >= 2 ? _searchQuery : null,
       );
 
   String get _statusParam {
@@ -117,9 +127,20 @@ class NasabahCubit extends Cubit<NasabahState> {
     await loadNasabah();
   }
 
+  /// Mengirim kata kunci ke server setelah pengurus berhenti mengetik.
+  ///
+  /// Pencarian harus dilakukan server karena menyaring di aplikasi hanya akan
+  /// menyaring halaman yang kebetulan sudah dimuat.
   void searchNasabah(String query) {
     _searchQuery = query;
-    _emitFiltered();
+    _jedaCari?.cancel();
+    _jedaCari = Timer(jedaPencarian, loadNasabah);
+  }
+
+  @override
+  Future<void> close() {
+    _jedaCari?.cancel();
+    return super.close();
   }
 
   /// Creates a nasabah. Returns `null` on success (list reloaded), otherwise the
@@ -198,20 +219,9 @@ class NasabahCubit extends Cubit<NasabahState> {
     emit(NasabahInitial());
   }
 
-  void _emitFiltered() {
-    // Tab sudah disaring server; yang tersisa di sini hanya pencarian, dan itu
-    // dipindahkan ke server pada langkah berikutnya.
-    final filtered = _items.where((customer) {
-      if (_searchQuery.isEmpty) return true;
-
-      final query = _searchQuery.toLowerCase();
-      return customer.name.toLowerCase().contains(query) ||
-          customer.phone.toLowerCase().contains(query) ||
-          customer.email.toLowerCase().contains(query);
-    }).toList();
-
+  void _emitLoaded() {
     emit(NasabahLoaded(
-      nasabahList: filtered,
+      nasabahList: _items,
       isActiveTab: _isActiveTab,
       searchQuery: _searchQuery,
     ));
