@@ -75,4 +75,20 @@ void main() {
     // adalah cara lama yang membuat daftar terpotong diam-diam.
     expect(params.containsKey('page_size'), isFalse);
   });
+
+  test('picker path still fetches every active nasabah in one call', () async {
+    when(() => network.get(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => _halaman(results: [_nasabahJson('NAS-0001')]));
+
+    await dataSource.getActiveNasabah();
+
+    final params = verify(() => network.get(
+          '/api/v1/nasabah',
+          queryParams: captureAny(named: 'queryParams'),
+        )).captured.single as Map<String, dynamic>;
+
+    // Picker setoran butuh seluruh pilihan sekaligus, bukan satu halaman.
+    expect(params['status'], 'aktif');
+    expect(params['page_size'], 100);
+  });
 }
