@@ -13,7 +13,6 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_u
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -77,25 +76,51 @@ void main() {
       _MockRejectNasabahUseCase(),
     );
     when(() => getUseCase.execute(any())).thenAnswer(
-      (_) async =>
-          Right(_page([_nasabah('Budi Santoso', 'budi@example.com', '81234567890')])),
+      (_) async => Right(
+          _page([_nasabah('Budi Santoso', 'budi@example.com', '81234567890')])),
     );
   });
 
-  test('search matches nasabah by email, same as name and phone', () async {
+  // Pencarian dijalankan server (PIL-214) supaya seluruh nasabah ikut dicari,
+  // bukan hanya halaman yang kebetulan sudah dimuat. Backend mencocokkan nama,
+  // nomor HP, dan email sekaligus.
+  test('forwards the typed query to the server after the typing pause',
+      () async {
     await cubit.loadNasabah();
 
     cubit.searchNasabah('budi@example.com');
-    expect(
-      (cubit.state as NasabahLoaded).nasabahList,
-      hasLength(1),
-      reason: 'email typed into search should find the nasabah',
-    );
+    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
 
-    cubit.searchNasabah('siti@example.com');
-    expect((cubit.state as NasabahLoaded).nasabahList, isEmpty);
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .cast<GetNasabahParams>();
+    expect(params.last.search, 'budi@example.com');
+    expect(params.last.page, 1, reason: 'a new query restarts at page one');
+  });
 
-    cubit.searchNasabah('Budi');
-    expect((cubit.state as NasabahLoaded).nasabahList, hasLength(1));
+  test('keeps a one-letter query off the wire, matching the server contract',
+      () async {
+    await cubit.loadNasabah();
+
+    cubit.searchNasabah('b');
+    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+
+    final params = verify(() => getUseCase.execute(captureAny()))
+        .captured
+        .cast<GetNasabahParams>();
+    expect(params.last.search, isNull);
+  });
+
+  test('only calls the API once for a burst of keystrokes', () async {
+    await cubit.loadNasabah();
+    clearInteractions(getUseCase);
+
+    cubit.searchNasabah('b');
+    cubit.searchNasabah('bu');
+    cubit.searchNasabah('bud');
+    cubit.searchNasabah('budi');
+    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+
+    verify(() => getUseCase.execute(any())).called(1);
   });
 }
