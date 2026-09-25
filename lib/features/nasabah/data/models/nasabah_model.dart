@@ -11,6 +11,7 @@ class NasabahModel extends NasabahEntity {
     required super.id,
     required super.idNasabah,
     required super.name,
+    required super.email,
     required super.phone,
     required super.balance,
     required super.isActive,
@@ -31,6 +32,7 @@ class NasabahModel extends NasabahEntity {
       id: json['id']?.toString() ?? '',
       idNasabah: json['kode']?.toString() ?? '',
       name: nama,
+      email: json['email']?.toString() ?? '',
       phone: json['no_hp']?.toString() ?? '',
       balance: formatRupiah(json['total_saldo']),
       isActive: json['is_active'] as bool? ?? true,
@@ -62,6 +64,7 @@ class NasabahModel extends NasabahEntity {
     return {
       'kode': request.kode.trim(),
       'nama': request.nama.trim(),
+      'email': request.email.trim(),
       'jenis_kelamin': genderValue(request.jenisKelamin),
       'tanggal_lahir': displayToIso(request.tanggalLahir),
       'no_hp': request.noHp.trim(),

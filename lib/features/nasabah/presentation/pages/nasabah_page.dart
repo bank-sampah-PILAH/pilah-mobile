@@ -194,6 +194,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                               avatarColor: customer.avatarColor,
                               textColor: customer.textColor,
                               name: customer.name,
+                              email: customer.email,
                               phone: customer.phone,
                               balance: customer.balance,
                               id: customer.id,

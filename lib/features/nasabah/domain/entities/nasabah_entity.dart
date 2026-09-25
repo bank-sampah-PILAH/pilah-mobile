@@ -4,6 +4,7 @@ class NasabahEntity {
   final String id;
   final String idNasabah;
   final String name;
+  final String email;
   final String phone;
   final String balance;
   final bool isActive;
@@ -23,6 +24,7 @@ class NasabahEntity {
     required this.id,
     required this.idNasabah,
     required this.name,
+    this.email = '',
     required this.phone,
     required this.balance,
     required this.isActive,
@@ -43,6 +45,7 @@ class NasabahEntity {
 class NasabahRequest {
   final String kode;
   final String nama;
+  final String email;
   final String jenisKelamin; // UI label: 'Laki-laki' | 'Perempuan'
   final String tanggalLahir; // display format dd/MM/yyyy
   final String noHp; // may be national digits or +62 prefixed
@@ -51,6 +54,7 @@ class NasabahRequest {
   NasabahRequest({
     required this.kode,
     required this.nama,
+    required this.email,
     required this.jenisKelamin,
     required this.tanggalLahir,
     required this.noHp,

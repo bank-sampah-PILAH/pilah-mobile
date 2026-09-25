@@ -176,7 +176,11 @@ class NasabahCubit extends Cubit<NasabahState> {
       final query = _searchQuery.toLowerCase();
       final name = customer.name.toLowerCase();
       final phone = customer.phone.toLowerCase();
-      return matchesTab && (name.contains(query) || phone.contains(query));
+      final email = customer.email.toLowerCase();
+      return matchesTab &&
+          (name.contains(query) ||
+              phone.contains(query) ||
+              email.contains(query));
     }).toList();
 
     emit(NasabahLoaded(

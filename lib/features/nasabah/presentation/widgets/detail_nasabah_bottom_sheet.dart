@@ -49,6 +49,9 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
     final String balance = customerData['balance'] ?? 'Rp 0';
 
     final String idNasabah = customerData['idNasabah'] ?? 'NAS-0000';
+    final String email = (customerData['email'] as String?)?.isNotEmpty == true
+        ? customerData['email']
+        : '-';
     final String jenisKelamin = customerData['jenisKelamin'] ?? '-';
     final String tanggalLahir = customerData['tanggalLahir'] ?? '-';
     final String address = customerData['address'] ?? '-';
@@ -154,6 +157,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildInfoRow('ID Nasabah', idNasabah, isBold: true),
+                    const SizedBox(height: 16),
+                    _buildInfoRow('Email', email, isBold: true),
                     const SizedBox(height: 16),
                     _buildInfoRow(
                       'Jenis Kelamin',
