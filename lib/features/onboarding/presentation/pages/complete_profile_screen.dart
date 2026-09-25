@@ -123,7 +123,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final auth = authState.authEntity;
 
     if (auth.name.isNotEmpty) _nameController.text = auth.name;
-    if (auth.noHp.isNotEmpty) _phoneController.text = auth.noHp;
+    if (auth.noHp.isNotEmpty) {
+      _phoneController.text = _localPhoneDigits(auth.noHp);
+    }
     if (_isNasabah && auth.alamat.isNotEmpty) {
       _alamatController.text = auth.alamat;
     }
@@ -143,6 +145,17 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   String _displayDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+
+  /// Strips a country-code or leading-zero prefix from a saved phone number
+  /// so it fits the field's own digits-only, `8...`-starting format.
+  ///
+  /// The backend normalizes and stores `no_hp` as `+62{national}`
+  /// (`normalize_indonesian_phone`), but this field pairs a fixed `+62`
+  /// prefix widget with a validator expecting just the national digits —
+  /// prefilling the raw saved value doubles the prefix and the field can
+  /// never pass its own validation until the user deletes and retypes it.
+  String _localPhoneDigits(String noHp) =>
+      noHp.replaceFirst(RegExp(r'^\+?62'), '').replaceFirst(RegExp(r'^0'), '');
 
   @override
   void dispose() {

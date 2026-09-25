@@ -96,6 +96,30 @@ void main() {
     expect(find.text('20/05/1998'), findsOneWidget);
   });
 
+  testWidgets(
+      'strips the backend-normalized +62 prefix so the phone field holds '
+      'only the national digits its own validator expects', (tester) async {
+    // The backend stores no_hp as normalize_indonesian_phone's +62{national}
+    // form (see UserProfileSerializer.validate_no_hp), unlike the unprefixed
+    // fixture above. This is the shape /auth/me actually returns.
+    await _pumpScreen(
+      tester,
+      const AuthEntity(
+        id: 'user-1',
+        name: 'Nasabah PILAH',
+        email: 'nasabah@example.com',
+        photoUrl: '',
+        token: 'jwt',
+        nextStep: 'complete_profile',
+        role: 'nasabah',
+        noHp: '+6281234567890',
+      ),
+    );
+
+    expect(find.text('81234567890'), findsOneWidget);
+    expect(find.text('+6281234567890'), findsNothing);
+  });
+
   testWidgets('does not prefill alamat for a pengelola account',
       (tester) async {
     await _pumpScreen(
