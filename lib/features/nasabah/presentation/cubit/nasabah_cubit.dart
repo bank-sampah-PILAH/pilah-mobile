@@ -36,6 +36,9 @@ class NasabahCubit extends Cubit<NasabahState> {
 
   /// Halaman daftar nasabah yang sedang ditampilkan, hasil paginasi server.
   List<NasabahEntity> _items = [];
+  int _halaman = 1;
+  bool _hasMore = false;
+  bool _isLoadingMore = false;
 
   Timer? _jedaCari;
 
@@ -79,11 +82,38 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// so a real loading state is emitted regardless.
   Future<void> loadNasabah({bool silent = false}) async {
     if (!silent || state is! NasabahLoaded) emit(NasabahLoading());
+    _halaman = 1;
     final result = await getNasabahUseCase.execute(_params(1));
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
         _items = data.items;
+        _hasMore = data.hasMore;
+        _emitLoaded();
+      },
+    );
+  }
+
+  /// Menyambung halaman berikutnya ke daftar yang sudah tampil.
+  ///
+  /// Diam saja bila halaman terakhir sudah tercapai atau permintaan sebelumnya
+  /// masih berjalan, supaya menggulir cepat tidak memanggil API berkali-kali.
+  Future<void> loadMoreNasabah() async {
+    if (!_hasMore || _isLoadingMore || state is! NasabahLoaded) return;
+    _isLoadingMore = true;
+    _emitLoaded();
+
+    final berikutnya = _halaman + 1;
+    final result = await getNasabahUseCase.execute(_params(berikutnya));
+    _isLoadingMore = false;
+    result.fold(
+      // Halaman yang sudah tampil dipertahankan; kegagalan menyambung tidak
+      // boleh mengosongkan layar yang sedang dibaca pengurus.
+      (failure) => _emitLoaded(),
+      (data) {
+        _halaman = berikutnya;
+        _items = [..._items, ...data.items];
+        _hasMore = data.hasMore;
         _emitLoaded();
       },
     );
@@ -224,6 +254,8 @@ class NasabahCubit extends Cubit<NasabahState> {
       nasabahList: _items,
       isActiveTab: _isActiveTab,
       searchQuery: _searchQuery,
+      hasMore: _hasMore,
+      isLoadingMore: _isLoadingMore,
     ));
   }
 }
