@@ -25,12 +25,16 @@ class NasabahLoaded extends NasabahState {
   /// Halaman berikutnya sedang diambil; dipakai untuk pemuat di ujung daftar.
   final bool isLoadingMore;
 
+  /// Jumlah seluruh nasabah yang cocok di server, bukan yang sudah dimuat.
+  final int totalCount;
+
   const NasabahLoaded({
     required this.nasabahList,
     this.isActiveTab = true,
     this.searchQuery = '',
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.totalCount = 0,
   });
 
   bool get isMenungguTab => isActiveTab == null;
@@ -42,6 +46,7 @@ class NasabahLoaded extends NasabahState {
         searchQuery,
         hasMore,
         isLoadingMore,
+        totalCount,
       ];
 }
 

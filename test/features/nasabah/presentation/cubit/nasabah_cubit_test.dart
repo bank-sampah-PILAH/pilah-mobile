@@ -128,13 +128,6 @@ void main() {
     );
   });
 
-  List<NasabahEntity> seedData() => [
-        _nasabah('NAS-0001', status: 'approved'),
-        _nasabah('NAS-0002', status: 'approved', isActive: false),
-        _nasabah('NAS-0003', status: 'pending'),
-        _nasabah('NAS-0004', status: 'rejected', isActive: false),
-      ];
-
   group('tab filtering', () {
     // Penyaringan tab dilakukan server (PIL-214): menyaring di aplikasi hanya
     // akan menyaring halaman yang kebetulan sudah dimuat.

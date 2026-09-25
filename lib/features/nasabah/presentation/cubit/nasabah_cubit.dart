@@ -39,6 +39,8 @@ class NasabahCubit extends Cubit<NasabahState> {
   int _halaman = 1;
   bool _hasMore = false;
   bool _isLoadingMore = false;
+  int _totalCount = 0;
+  int _totalAktif = 0;
 
   Timer? _jedaCari;
 
@@ -64,8 +66,10 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
   bool? get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
-  int get activeCount =>
-      _items.where((n) => n.isActive && n.status == 'approved').length;
+  /// Jumlah nasabah aktif menurut server, bukan sebanyak yang sudah dimuat.
+  ///
+  /// Menghitung isi daftar akan salah begitu daftarnya berpaginasi.
+  int get activeCount => _totalAktif;
 
   /// Every active nasabah, independent of the nasabah page's active/inactive
   /// tab and search query. The Transaksi Baru picker reads this so its options
@@ -89,6 +93,10 @@ class NasabahCubit extends Cubit<NasabahState> {
       (data) {
         _items = data.items;
         _hasMore = data.hasMore;
+        _totalCount = data.totalCount;
+        if (_isActiveTab == true && _searchQuery.isEmpty) {
+          _totalAktif = data.totalCount;
+        }
         _emitLoaded();
       },
     );
@@ -114,6 +122,7 @@ class NasabahCubit extends Cubit<NasabahState> {
         _halaman = berikutnya;
         _items = [..._items, ...data.items];
         _hasMore = data.hasMore;
+        _totalCount = data.totalCount;
         _emitLoaded();
       },
     );
@@ -146,6 +155,7 @@ class NasabahCubit extends Cubit<NasabahState> {
           nasabahList: activeNasabah,
           isActiveTab: _isActiveTab,
           searchQuery: _searchQuery,
+          totalCount: _allNasabah.length,
         ));
       },
     );
@@ -256,6 +266,7 @@ class NasabahCubit extends Cubit<NasabahState> {
       searchQuery: _searchQuery,
       hasMore: _hasMore,
       isLoadingMore: _isLoadingMore,
+      totalCount: _totalCount,
     ));
   }
 }
