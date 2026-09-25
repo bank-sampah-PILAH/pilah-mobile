@@ -84,8 +84,8 @@ void main() {
           page: any(named: 'page'),
           status: any(named: 'status'),
           search: any(named: 'search'),
-        // Data source selalu async, jadi kegagalannya datang sebagai Future
-        // yang error, bukan lemparan sinkron.
+          // Data source selalu async, jadi kegagalannya datang sebagai Future
+          // yang error, bukan lemparan sinkron.
         )).thenAnswer((_) async => throw Exception('jaringan putus'));
 
     final hasil = await repository.getNasabah();

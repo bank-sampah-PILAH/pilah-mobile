@@ -138,9 +138,9 @@ void main() {
 
       await cubit.loadNasabah();
 
-      final params =
-          verify(() => getUseCase.execute(captureAny())).captured.single
-              as GetNasabahParams;
+      final params = verify(() => getUseCase.execute(captureAny()))
+          .captured
+          .single as GetNasabahParams;
       expect(params.status, 'aktif');
       expect((cubit.state as NasabahLoaded).nasabahList.map((n) => n.idNasabah),
           ['NAS-0001']);
@@ -222,7 +222,7 @@ void main() {
 
     test('reject calls reject use case with alasan', () async {
       when(() => getUseCase.execute(any()))
-        .thenAnswer((_) async => Right(_page(const [])));
+          .thenAnswer((_) async => Right(_page(const [])));
       when(() => rejectUseCase.execute(any(that: isA<DecideNasabahParams>())))
           .thenAnswer((_) async => const Right(null));
 

@@ -29,8 +29,9 @@ void main() {
       const GetNasabahParams(page: 4, status: 'ditolak', search: 'siti'),
     );
 
-    verify(() => repository.getNasabah(
-        page: 4, status: 'ditolak', search: 'siti')).called(1);
+    verify(() =>
+            repository.getNasabah(page: 4, status: 'ditolak', search: 'siti'))
+        .called(1);
   });
 
   test('GetNasabahUseCase falls back to the first aktif page without params',

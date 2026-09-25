@@ -66,6 +66,7 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
   bool? get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
+
   /// Jumlah nasabah aktif menurut server, bukan sebanyak yang sudah dimuat.
   ///
   /// Menghitung isi daftar akan salah begitu daftarnya berpaginasi.

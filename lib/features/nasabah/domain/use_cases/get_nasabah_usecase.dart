@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/domain/repositories/nasabah_repository.dart';
 
 @lazySingleton
+
 /// Penyaring satu halaman daftar nasabah (PIL-214).
 ///
 /// [status] memakai kosakata backend: `aktif`, `tidak_aktif`, `menunggu`.
