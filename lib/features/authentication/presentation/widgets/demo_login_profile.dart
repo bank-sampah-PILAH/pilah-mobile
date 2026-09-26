@@ -38,6 +38,15 @@ abstract final class DemoLoginProfiles {
     tokenPrefix: 'dev-nasabah',
   );
 
+  /// Always unregistered, unlike [customer] — for trying the
+  /// self-registration flow on demand, without a temporary seed change.
+  static const newNasabah = DemoLoginProfile(
+    label: 'Nasabah Baru (Pendaftaran)',
+    name: 'Nasabah Baru PILAH E2E',
+    email: 'nasabah.baru.demo@example.com',
+    tokenPrefix: 'dev-nasabah',
+  );
+
   static const superadmin = DemoLoginProfile(
     label: 'Superadmin',
     name: 'Superadmin PILAH E2E',
@@ -49,6 +58,7 @@ abstract final class DemoLoginProfiles {
     pengurus,
     pengelolaInduk,
     customer,
+    newNasabah,
     superadmin,
   ];
 
@@ -70,6 +80,12 @@ abstract final class DemoLoginProfiles {
           name: customer.name,
           email: environment.demoCustomerEmail,
           tokenPrefix: customer.tokenPrefix,
+        ),
+        DemoLoginProfile(
+          label: newNasabah.label,
+          name: newNasabah.name,
+          email: environment.demoNewNasabahEmail,
+          tokenPrefix: newNasabah.tokenPrefix,
         ),
         DemoLoginProfile(
           label: superadmin.label,

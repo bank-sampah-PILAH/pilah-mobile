@@ -24,6 +24,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_bar
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_approval_screen.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
@@ -173,13 +174,9 @@ class AppRouterConfig {
         builder: (context, state) => const SuperAdminDashboardScreen(),
       ),
       GoRoute(
-        path: RoleHandoffPage.registerNasabahRoute,
-        builder: (context, state) => const RoleHandoffPage(
-          title: 'Profil Nasabah Tersimpan',
-          message:
-              'Pendaftaran Nasabah akan dilanjutkan pada langkah berikutnya. Progres akun Anda tetap tersimpan.',
-          registrationInProgress: true,
-        ),
+        path: RegisterNasabahScreen.route,
+        name: RegisterNasabahScreen.route,
+        builder: (context, state) => const RegisterNasabahScreen(),
       ),
       GoRoute(
         path: RoleHandoffPage.nasabahDashboardRoute,

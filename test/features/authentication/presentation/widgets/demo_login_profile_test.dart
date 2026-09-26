@@ -23,6 +23,9 @@ class _StubEnvironment implements AppEnvironment {
   String get demoCustomerEmail => 'configured.customer@example.com';
 
   @override
+  String get demoNewNasabahEmail => 'configured.fresh@example.com';
+
+  @override
   String get demoSuperadminEmail => 'configured.superadmin@example.com';
 }
 
@@ -55,6 +58,10 @@ void main() {
         'dev-nasabah:nasabah.demo@example.com:Nasabah PILAH E2E',
       );
       expect(
+        DemoLoginProfiles.newNasabah.idToken,
+        'dev-nasabah:nasabah.baru.demo@example.com:Nasabah Baru PILAH E2E',
+      );
+      expect(
         DemoLoginProfiles.superadmin.idToken,
         'dev-superadmin:superadmin.demo@example.com:Superadmin PILAH E2E',
       );
@@ -67,6 +74,7 @@ void main() {
           'Pengurus',
           'Pengelola Induk',
           'Nasabah',
+          'Nasabah Baru (Pendaftaran)',
           'Superadmin',
         ],
       );
@@ -85,6 +93,10 @@ void main() {
       );
       expect(DemoLoginProfiles.customer.email, env['DEMO_CUSTOMER_EMAIL']);
       expect(
+        DemoLoginProfiles.newNasabah.email,
+        env['DEMO_NEW_NASABAH_EMAIL'],
+      );
+      expect(
         DemoLoginProfiles.superadmin.email,
         env['DEMO_SUPERADMIN_EMAIL'],
       );
@@ -100,6 +112,7 @@ void main() {
           'configured.pengurus@example.com',
           'configured.induk@example.com',
           'configured.customer@example.com',
+          'configured.fresh@example.com',
           'configured.superadmin@example.com',
         ],
       );
@@ -108,6 +121,7 @@ void main() {
         [
           'dev',
           'dev-pengelola-induk',
+          'dev-nasabah',
           'dev-nasabah',
           'dev-superadmin',
         ],

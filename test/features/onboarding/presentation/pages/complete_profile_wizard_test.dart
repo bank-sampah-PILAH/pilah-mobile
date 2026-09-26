@@ -177,15 +177,17 @@ void main() {
     });
   });
 
-  testWidgets('hides the bank registration stepper for Nasabah',
-      (tester) async {
+  testWidgets(
+      'shows the nasabah bank-picker stepper, not the pengelola wording, '
+      'for Nasabah', (tester) async {
     final cubit = OnboardingCubit(_MockDataSource());
     addTearDown(cubit.close);
 
     await _pumpScreen(tester, onboarding: cubit, role: 'nasabah');
 
     expect(find.text('Data Bank Sampah'), findsNothing);
-    expect(find.text('Profil Diri'), findsNothing);
+    expect(find.text('Pilih Bank Sampah'), findsOneWidget);
+    expect(find.text('Profil Diri'), findsOneWidget);
     expect(find.text('Simpan Profil & Lanjut'), findsOneWidget);
   });
 
