@@ -1,3 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -5,13 +8,14 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 class MainPage extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
-  const MainPage({
-    super.key,
-    required this.navigationShell,
-  });
+  const MainPage({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthenticationBloc>().state;
+    if (authState is Authenticated && authState.authEntity.role == 'nasabah') {
+      return navigationShell;
+    }
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
@@ -20,10 +24,14 @@ class MainPage extends StatelessWidget {
         selectedItemColor: AppColors.greenDark,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
-        selectedLabelStyle:
-            const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        unselectedLabelStyle:
-            const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+        selectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.normal,
+        ),
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {
           navigationShell.goBranch(
@@ -47,7 +55,7 @@ class MainPage extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.insert_drive_file_outlined),
             label: 'Laporan',
-          )
+          ),
         ],
       ),
     );
