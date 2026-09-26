@@ -17,7 +17,10 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
@@ -128,6 +131,18 @@ class AppRouterConfig {
         name: RiwayatPencairanPage.route,
         builder: (context, state) =>
             RiwayatPencairanPage(args: state.extra as RiwayatPencairanArgs?),
+      ),
+      GoRoute(
+        path: EditPencairanPage.route,
+        name: EditPencairanPage.route,
+        builder: (context, state) =>
+            EditPencairanPage(pencairan: state.extra! as Pencairan),
+      ),
+      GoRoute(
+        path: RevisiPencairanPage.route,
+        name: RevisiPencairanPage.route,
+        builder: (context, state) =>
+            RevisiPencairanPage(pencairanId: state.extra! as String),
       ),
       GoRoute(
         path: InviteGatePage.route,

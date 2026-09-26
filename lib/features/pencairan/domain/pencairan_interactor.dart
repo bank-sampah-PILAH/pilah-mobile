@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
 import 'model/pencairan.dart';
+import 'model/revisi_pencairan.dart';
 import 'model/riwayat_pencairan_filter.dart';
 import 'repository/pencairan_repository.dart';
 import 'use_cases/pencairan_use_cases.dart';
@@ -27,4 +28,16 @@ class PencairanInteractor implements PencairanUseCases {
     RiwayatPencairanFilter filter,
   ) =>
       _repository.getRiwayat(filter);
+
+  @override
+  Future<Either<NetworkException, Pencairan>> editPencairan(
+    EditPencairanRequest request,
+  ) =>
+      _repository.editPencairan(request);
+
+  @override
+  Future<Either<NetworkException, RiwayatRevisiPencairan>> getRevisi(
+    String id,
+  ) =>
+      _repository.getRevisi(id);
 }

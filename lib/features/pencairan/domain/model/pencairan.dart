@@ -31,6 +31,29 @@ class PencairanRequest extends Equatable {
   List<Object?> get props => [nasabahId, nominal, metode, tanggal, keterangan];
 }
 
+/// A pengurus correction of a recorded pencairan (PIL-230). Every field is
+/// sent; the backend rejects an edit that changes nothing.
+class EditPencairanRequest extends Equatable {
+  final String id;
+  final int nominal;
+  final MetodePencairan metode;
+  final DateTime tanggal;
+  final String keterangan;
+  final String alasan;
+
+  const EditPencairanRequest({
+    required this.id,
+    required this.nominal,
+    required this.metode,
+    required this.tanggal,
+    required this.keterangan,
+    required this.alasan,
+  });
+
+  @override
+  List<Object?> get props => [id, nominal, metode, tanggal, keterangan, alasan];
+}
+
 class Pencairan extends Equatable {
   final String id;
   final String nasabahId;
@@ -44,6 +67,12 @@ class Pencairan extends Equatable {
   final int saldoSesudah;
   final String dicatatOlehNama;
 
+  /// True once a pengurus has edited this pencairan (PIL-230).
+  final bool diperbarui;
+
+  /// Earliest tanggal an edit may set; null from a backend without edits.
+  final DateTime? tanggalEditMinimum;
+
   const Pencairan({
     required this.id,
     this.nasabahId = '',
@@ -56,6 +85,8 @@ class Pencairan extends Equatable {
     required this.saldoSebelum,
     required this.saldoSesudah,
     this.dicatatOlehNama = '',
+    this.diperbarui = false,
+    this.tanggalEditMinimum,
   });
 
   @override
@@ -71,5 +102,7 @@ class Pencairan extends Equatable {
         saldoSebelum,
         saldoSesudah,
         dicatatOlehNama,
+        diperbarui,
+        tanggalEditMinimum,
       ];
 }

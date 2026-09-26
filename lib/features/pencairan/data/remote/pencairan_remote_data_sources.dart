@@ -5,11 +5,14 @@ import '../../domain/model/pencairan.dart';
 import '../../domain/model/riwayat_pencairan_filter.dart';
 import '../model/mapper/pencairan_mapper.dart';
 import '../model/responses/pencairan_response.dart';
+import '../model/responses/revisi_pencairan_response.dart';
 
 abstract class PencairanRemoteDataSources {
   Future<int> getSaldo(String nasabahId);
   Future<PencairanResponse> createPencairan(PencairanRequest request);
   Future<List<PencairanResponse>> getRiwayat(RiwayatPencairanFilter filter);
+  Future<PencairanResponse> editPencairan(EditPencairanRequest request);
+  Future<RiwayatRevisiPencairanResponse> getRevisi(String id);
 }
 
 @LazySingleton(as: PencairanRemoteDataSources)
@@ -42,6 +45,29 @@ class PencairanRemoteDataSourceImpl implements PencairanRemoteDataSources {
       },
     );
     return PencairanResponse.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<PencairanResponse> editPencairan(EditPencairanRequest request) async {
+    final response = await _networkService.patch(
+      '$_path/${request.id}',
+      data: {
+        'nominal': request.nominal,
+        'metode': request.metode.name,
+        'tanggal': request.tanggal.toUtc().toIso8601String(),
+        'keterangan': request.keterangan.trim(),
+        'alasan': request.alasan.trim(),
+      },
+    );
+    return PencairanResponse.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<RiwayatRevisiPencairanResponse> getRevisi(String id) async {
+    final response = await _networkService.get('$_path/$id/riwayat');
+    return RiwayatRevisiPencairanResponse.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 
   @override

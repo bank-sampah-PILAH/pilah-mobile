@@ -208,4 +208,117 @@ void main() {
       });
     });
   });
+
+  group('edit support', () {
+    test('maps diperbarui and the earliest editable tanggal', () async {
+      when(() => network.get('/api/v1/pencairan',
+              queryParams: any(named: 'queryParams')))
+          .thenAnswer((_) async => _ok('/api/v1/pencairan', {
+                'count': 2,
+                'results': [
+                  {
+                    ..._pencairanJson(),
+                    'diperbarui': true,
+                    'tanggal_edit_minimum': '2026-09-15T03:15:00Z',
+                  },
+                  {..._pencairanJson(), 'id': 'p-2'},
+                ],
+              }));
+
+      final result =
+          await repository.getRiwayat(const RiwayatPencairanFilter());
+
+      final rows = result.getOrElse(() => throw 'expected Right');
+      expect(rows.first.diperbarui, isTrue);
+      expect(
+        rows.first.tanggalEditMinimum,
+        DateTime.utc(2026, 9, 15, 3, 15).toLocal(),
+      );
+      // Older backends omit both fields.
+      expect(rows.last.diperbarui, isFalse);
+      expect(rows.last.tanggalEditMinimum, isNull);
+    });
+  });
+
+  group('editPencairan', () {
+    test('patches every field with the alasan and maps the result', () async {
+      Map<String, dynamic>? sent;
+      when(() =>
+              network.patch('/api/v1/pencairan/p-1', data: any(named: 'data')))
+          .thenAnswer((invocation) async {
+        sent = invocation.namedArguments[#data] as Map<String, dynamic>;
+        return _ok('/api/v1/pencairan/p-1', {
+          ..._pencairanJson(),
+          'nominal': '150000.00',
+          'saldo_sesudah': '315600.00',
+          'diperbarui': true,
+        });
+      });
+
+      final result = await repository.editPencairan(
+        EditPencairanRequest(
+          id: 'p-1',
+          nominal: 150000,
+          metode: MetodePencairan.transfer,
+          tanggal: DateTime.utc(2026, 9, 21, 3, 15),
+          keterangan: '  Ditransfer  ',
+          alasan: '  Salah ketik  ',
+        ),
+      );
+
+      expect(sent, {
+        'nominal': 150000,
+        'metode': 'transfer',
+        'tanggal': '2026-09-21T03:15:00.000Z',
+        'keterangan': 'Ditransfer',
+        'alasan': 'Salah ketik',
+      });
+      final pencairan = result.getOrElse(() => throw 'expected Right');
+      expect(pencairan.nominal, 150000);
+      expect(pencairan.saldoSesudah, 315600);
+      expect(pencairan.diperbarui, isTrue);
+    });
+  });
+
+  group('getRevisi', () {
+    test('maps the current pencairan and its replaced versions', () async {
+      when(() => network.get('/api/v1/pencairan/p-1/riwayat')).thenAnswer(
+        (_) async => _ok('/api/v1/pencairan/p-1/riwayat', {
+          'pencairan': {
+            ..._pencairanJson(),
+            'nominal': '150000.00',
+            'diperbarui': true,
+          },
+          'revisi': [
+            {
+              'versi': 1,
+              'tanggal': '2026-09-22T03:15:00Z',
+              'nominal': '200000.00',
+              'metode': 'tunai',
+              'keterangan': 'Diambil pagi',
+              'saldo_sebelum': '465600.00',
+              'saldo_sesudah': '265600.00',
+              'alasan': 'Salah ketik nominal',
+              'diubah_oleh': 'u-1',
+              'diubah_oleh_nama': 'Ibu Sari',
+              'diubah_pada': '2026-09-22T05:00:00Z',
+            },
+          ],
+        }),
+      );
+
+      final result = await repository.getRevisi('p-1');
+
+      final riwayat = result.getOrElse(() => throw 'expected Right');
+      expect(riwayat.pencairan.nominal, 150000);
+      final versi = riwayat.revisi.single;
+      expect(versi.versi, 1);
+      expect(versi.nominal, 200000);
+      expect(versi.metode, MetodePencairan.tunai);
+      expect(versi.saldoSesudah, 265600);
+      expect(versi.alasan, 'Salah ketik nominal');
+      expect(versi.diubahOlehNama, 'Ibu Sari');
+      expect(versi.diubahPada, DateTime.utc(2026, 9, 22, 5).toLocal());
+    });
+  });
 }
