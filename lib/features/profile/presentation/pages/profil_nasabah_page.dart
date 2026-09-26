@@ -53,8 +53,7 @@ class ProfilNasabahPage extends StatelessWidget {
                                     style: NasabahStyle.text(15))
                               else
                                 NasabahResource<NasabahIdentity>(
-                                  key: ValueKey(
-                                      (auth!.id, auth.email, auth.token)),
+                                  key: ValueKey((auth!.id, auth.email)),
                                   load: () => di<NasabahRepository>().profile(),
                                   builder: (context, identity) => Column(
                                     crossAxisAlignment:
