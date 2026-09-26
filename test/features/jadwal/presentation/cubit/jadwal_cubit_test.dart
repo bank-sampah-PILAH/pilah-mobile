@@ -175,8 +175,8 @@ void main() {
     final existing = _existingSchedule();
     final transitionResult =
         Completer<Either<NetworkException, JadwalEntity>>();
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([existing]));
+    when(() => repository.getJadwal(page: 1, date: null))
+        .thenAnswer((_) async => Right(_page([existing])));
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) => transitionResult.future);
     final cubit = JadwalCubit(repository);
@@ -197,8 +197,8 @@ void main() {
     final existing = _existingSchedule();
     final transitionResult =
         Completer<Either<NetworkException, JadwalEntity>>();
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([existing]));
+    when(() => repository.getJadwal(page: 1, date: null))
+        .thenAnswer((_) async => Right(_page([existing])));
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) => transitionResult.future);
     final cubit = JadwalCubit(repository);
@@ -214,7 +214,10 @@ void main() {
 
     expect(await first, isNull);
     expect(await second, isNull);
-    expect(stateDuringRefresh, JadwalLoaded([existing], isTransitioning: true));
+    expect(
+      stateDuringRefresh,
+      JadwalLoaded([existing], isTransitioning: true, totalCount: 1),
+    );
     verify(() => repository.transition('schedule-1', 'terbitkan')).called(1);
   });
 
@@ -222,8 +225,8 @@ void main() {
       () async {
     final existing = _existingSchedule();
     final saveResult = Completer<Either<NetworkException, JadwalEntity>>();
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([existing]));
+    when(() => repository.getJadwal(page: 1, date: null))
+        .thenAnswer((_) async => Right(_page([existing])));
     when(() => repository.updateJadwal(existing))
         .thenAnswer((_) => saveResult.future);
     when(() => repository.transition('schedule-1', 'terbitkan'))
@@ -240,8 +243,11 @@ void main() {
 
     saveResult.complete(Right(existing));
     expect(await save, isNull);
-    expect(stateDuringRefresh, JadwalLoaded([existing], isSaving: true));
-    expect(cubit.state, JadwalLoaded([existing]));
+    expect(
+      stateDuringRefresh,
+      JadwalLoaded([existing], isSaving: true, totalCount: 1),
+    );
+    expect(cubit.state, JadwalLoaded([existing], totalCount: 1));
     verifyNever(() => repository.transition('schedule-1', 'terbitkan'));
   });
 
@@ -289,12 +295,12 @@ void main() {
     final transitionResult =
         Completer<Either<NetworkException, JadwalEntity>>();
     var loadCount = 0;
-    when(() => repository.getJadwal()).thenAnswer((_) async {
+    when(() => repository.getJadwal(page: 1, date: null)).thenAnswer((_) async {
       loadCount++;
       if (loadCount == 2) {
         return Left(GeneralException(message: 'offline'));
       }
-      return Right([existing]);
+      return Right(_page([existing]));
     });
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) => transitionResult.future);
@@ -315,19 +321,19 @@ void main() {
 
     expect(saveFailure, isA<GeneralException>());
     verifyNever(() => repository.createJadwal(newSchedule));
-    expect(cubit.state, JadwalLoaded([existing]));
+    expect(cubit.state, JadwalLoaded([existing], totalCount: 1));
   });
 
   test('ignores a schedule load that finishes after session reset', () async {
     final previous = _existingSchedule();
     final current = _existingSchedule(id: 'schedule-2');
     final previousResult =
-        Completer<Either<NetworkException, List<JadwalEntity>>>();
+        Completer<Either<NetworkException, JadwalPageResult>>();
     var loadCount = 0;
-    when(() => repository.getJadwal()).thenAnswer((_) async {
+    when(() => repository.getJadwal(page: 1, date: null)).thenAnswer((_) async {
       loadCount++;
       if (loadCount == 1) return previousResult.future;
-      return Right([current]);
+      return Right(_page([current]));
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
@@ -336,10 +342,10 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     cubit.reset();
     await cubit.loadJadwal();
-    previousResult.complete(Right([previous]));
+    previousResult.complete(Right(_page([previous])));
     await previousLoad;
 
-    expect(cubit.state, JadwalLoaded([current]));
+    expect(cubit.state, JadwalLoaded([current], totalCount: 1));
   });
 
   test('a stale save cannot clear the new session save lock', () async {
@@ -350,9 +356,9 @@ void main() {
     final currentSaveResult =
         Completer<Either<NetworkException, JadwalEntity>>();
     var loadCount = 0;
-    when(() => repository.getJadwal()).thenAnswer((_) async {
+    when(() => repository.getJadwal(page: 1, date: null)).thenAnswer((_) async {
       loadCount++;
-      return Right([loadCount == 1 ? previous : current]);
+      return Right(_page([loadCount == 1 ? previous : current]));
     });
     when(() => repository.updateJadwal(previous))
         .thenAnswer((_) => previousSaveResult.future);
@@ -371,13 +377,16 @@ void main() {
 
     previousSaveResult.complete(Right(previous));
     expect(await previousSave, isNull);
-    expect(cubit.state, JadwalLoaded([current], isSaving: true));
+    expect(
+      cubit.state,
+      JadwalLoaded([current], isSaving: true, totalCount: 1),
+    );
     await cubit.changeStatus('schedule-2', 'terbitkan');
     verifyNever(() => repository.transition('schedule-2', 'terbitkan'));
 
     currentSaveResult.complete(Right(current));
     expect(await currentSave, isNull);
-    expect(cubit.state, JadwalLoaded([current]));
+    expect(cubit.state, JadwalLoaded([current], totalCount: 1));
   });
 
   test('a refresh started before a transition cannot overwrite its reload',

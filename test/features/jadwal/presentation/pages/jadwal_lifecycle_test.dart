@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
@@ -15,13 +16,26 @@ import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 
+void _stubManagerLoads(_MockJadwalCubit cubit) {
+  when(() => cubit.loadJadwal(date: any(named: 'date')))
+      .thenAnswer((_) async {});
+  when(
+    () => cubit.loadCalendarDates(
+      startDate: any(named: 'startDate'),
+      endDate: any(named: 'endDate'),
+    ),
+  ).thenAnswer((_) async {});
+}
+
 void main() {
+  setUpAll(() => registerFallbackValue(DateTime(2000)));
+
   testWidgets('draft schedule can be published from the management list',
       (tester) async {
     final cubit = _MockJadwalCubit();
     final schedule = _schedule(status: 'draft');
     when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
-    when(() => cubit.loadJadwal()).thenAnswer((_) async {});
+    _stubManagerLoads(cubit);
     when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
 
     await tester.pumpWidget(
@@ -44,7 +58,7 @@ void main() {
     final cubit = _MockJadwalCubit();
     when(() => cubit.state)
         .thenReturn(JadwalLoaded([_schedule(status: 'draft')]));
-    when(() => cubit.loadJadwal()).thenAnswer((_) async {});
+    _stubManagerLoads(cubit);
     when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
 
     await tester.pumpWidget(
@@ -72,7 +86,7 @@ void main() {
     final cubit = _MockJadwalCubit();
     final schedule = _schedule(status: 'diterbitkan');
     when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
-    when(() => cubit.loadJadwal()).thenAnswer((_) async {});
+    _stubManagerLoads(cubit);
     when(() => cubit.changeStatus(any(), any())).thenAnswer(
       (_) async => GeneralException(message: 'offline'),
     );
@@ -112,7 +126,7 @@ void main() {
     final cubit = _MockJadwalCubit();
     final schedule = _schedule(status: 'diterbitkan');
     when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
-    when(() => cubit.loadJadwal()).thenAnswer((_) async {});
+    _stubManagerLoads(cubit);
     when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
 
     await tester.pumpWidget(
@@ -147,8 +161,14 @@ void main() {
     final repository = _MockJadwalRepository();
     final schedule = _schedule(status: 'draft');
     final transition = Completer<Either<NetworkException, JadwalEntity>>();
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([schedule]));
+    when(
+      () => repository.getJadwal(
+        page: 1,
+        date: DateUtils.dateOnly(DateTime.now()),
+      ),
+    ).thenAnswer((_) async => Right(_page([schedule])));
+    when(() => repository.getCalendarDates(any(), any()))
+        .thenAnswer((_) async => const Right(<DateTime>{}));
     when(() => repository.transition('jadwal-1', 'terbitkan'))
         .thenAnswer((_) => transition.future);
     final cubit = JadwalCubit(repository);
@@ -199,8 +219,14 @@ void main() {
     final repository = _MockJadwalRepository();
     final schedule = _schedule(status: 'draft');
     final save = Completer<Either<NetworkException, JadwalEntity>>();
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([schedule]));
+    when(
+      () => repository.getJadwal(
+        page: 1,
+        date: DateUtils.dateOnly(DateTime.now()),
+      ),
+    ).thenAnswer((_) async => Right(_page([schedule])));
+    when(() => repository.getCalendarDates(any(), any()))
+        .thenAnswer((_) async => const Right(<DateTime>{}));
     when(() => repository.updateJadwal(schedule))
         .thenAnswer((_) => save.future);
     final cubit = JadwalCubit(repository);
@@ -217,7 +243,7 @@ void main() {
     final saveResult = cubit.saveJadwal(schedule);
     await tester.pumpAndSettle();
 
-    expect(cubit.state, JadwalLoaded([schedule], isSaving: true));
+    expect(cubit.state, JadwalLoaded([schedule], isSaving: true, totalCount: 1));
     expect(
       tester
           .widget<FilledButton>(
@@ -251,8 +277,14 @@ void main() {
     final repository = _MockJadwalRepository();
     final schedule = _schedule(status: 'draft');
     final transition = Completer<Either<NetworkException, JadwalEntity>>();
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([schedule]));
+    when(
+      () => repository.getJadwal(
+        page: 1,
+        date: DateUtils.dateOnly(DateTime.now()),
+      ),
+    ).thenAnswer((_) async => Right(_page([schedule])));
+    when(() => repository.getCalendarDates(any(), any()))
+        .thenAnswer((_) async => const Right(<DateTime>{}));
     when(() => repository.transition('jadwal-1', 'terbitkan'))
         .thenAnswer((_) => transition.future);
     final cubit = JadwalCubit(repository);
@@ -285,6 +317,9 @@ void main() {
 }
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
+
+JadwalPageResult _page(List<JadwalEntity> items) =>
+    JadwalPageResult(items: items, totalCount: items.length, hasMore: false);
 
 JadwalEntity _schedule({required String status}) {
   final today = DateUtils.dateOnly(DateTime.now());
