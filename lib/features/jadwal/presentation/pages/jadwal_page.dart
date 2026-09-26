@@ -180,10 +180,10 @@ class _JadwalPageState extends State<JadwalPage> {
         builder: (context, state) => FloatingActionButton(
           heroTag: 'jadwal_page_fab',
           tooltip: 'Buat Jadwal',
-          onPressed: state is JadwalLoaded &&
-                  (state.isTransitioning || state.isSaving)
-              ? null
-              : () => _openForm(),
+          onPressed:
+              state is JadwalLoaded && (state.isTransitioning || state.isSaving)
+                  ? null
+                  : () => _openForm(),
           backgroundColor: AppColors.greenDark,
           child: const Icon(Icons.add, color: Colors.white),
         ),
@@ -204,8 +204,7 @@ class _JadwalPageState extends State<JadwalPage> {
 
           final loaded = state as JadwalLoaded;
           final isTransitioning = loaded.isTransitioning;
-          final isLifecycleActionDisabled =
-              isTransitioning || loaded.isSaving;
+          final isLifecycleActionDisabled = isTransitioning || loaded.isSaving;
           final items = List<JadwalEntity>.of(loaded.items)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
           final dayItems = items
