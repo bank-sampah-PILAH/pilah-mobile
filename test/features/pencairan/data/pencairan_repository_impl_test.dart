@@ -208,4 +208,35 @@ void main() {
       });
     });
   });
+
+  group('edit support', () {
+    test('maps diperbarui and the earliest editable tanggal', () async {
+      when(() => network.get('/api/v1/pencairan',
+              queryParams: any(named: 'queryParams')))
+          .thenAnswer((_) async => _ok('/api/v1/pencairan', {
+                'count': 2,
+                'results': [
+                  {
+                    ..._pencairanJson(),
+                    'diperbarui': true,
+                    'tanggal_edit_minimum': '2026-09-15T03:15:00Z',
+                  },
+                  {..._pencairanJson(), 'id': 'p-2'},
+                ],
+              }));
+
+      final result =
+          await repository.getRiwayat(const RiwayatPencairanFilter());
+
+      final rows = result.getOrElse(() => throw 'expected Right');
+      expect(rows.first.diperbarui, isTrue);
+      expect(
+        rows.first.tanggalEditMinimum,
+        DateTime.utc(2026, 9, 15, 3, 15).toLocal(),
+      );
+      // Older backends omit both fields.
+      expect(rows.last.diperbarui, isFalse);
+      expect(rows.last.tanggalEditMinimum, isNull);
+    });
+  });
 }
