@@ -11,4 +11,12 @@ class PencairanValidator {
     if (nominal > saldo) return 'Maksimal Rp ${formatRupiahId(saldo)}';
     return null;
   }
+
+  /// An edit can move saldo either way, so the backend's recompute is the
+  /// only authority on whether it is covered; locally, just a positive value.
+  static String? nominalEdit(int? nominal) {
+    if (nominal == null) return 'Nominal wajib diisi';
+    if (nominal <= 0) return 'Nominal harus lebih dari nol';
+    return null;
+  }
 }
