@@ -8,10 +8,10 @@ import 'package:pilah_mobile/services/di.dart';
 /// The discarding is the point. A token now survives logout (see
 /// `resetSessionScopedState`), so one tapped during a session with no way to
 /// redeem it would sit in the store and follow the *next* account signed in on
-/// this device into a bank sampah nobody invited them to. Non-pengelola roles
-/// cannot redeem invites because `POST /invites/accept` refuses them behind
-/// `IsPengelola`. Dropping the token on the first routing pass of their session
-/// is the narrowest place to catch it.
+/// this device into a bank sampah nobody invited them to. Superadmin and
+/// Pengelola Induk roles cannot redeem invites because `POST /invites/accept`
+/// refuses them behind `IsPengelola`. A missing role can be a partial auth
+/// response, so keep the token until the account is known.
 ///
 /// Returns `null` when there is nothing to redeem, or nothing here that can
 /// redeem it.
@@ -19,10 +19,11 @@ String? resolvePendingInvite({required String? step, required String? role}) {
   final store = di<InviteTokenStore>();
   if (!store.hasToken) return null;
 
-  // Role is checked ahead of the step: the backend currently accepts invites
-  // only for pengelola, so other roles must not spend the token on a request
-  // that will be rejected.
-  final target = role == 'pengelola' ? pendingInviteLocation(step) : null;
+  // The backend explicitly refuses these roles. Keep a token when the role is
+  // absent from a partial auth response so it can still be redeemed later.
+  final target = role == 'superadmin' || role == 'pengelola_induk'
+      ? null
+      : pendingInviteLocation(step);
   if (target == null) {
     store.clear();
     return null;

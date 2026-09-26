@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -10,6 +11,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 class RoleSelectionPage extends StatefulWidget {
   const RoleSelectionPage({super.key});
@@ -44,7 +46,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     if (registration != null) _registration = registration;
 
     if (state is Authenticated) {
-      context.go(locationForAuthStep(state.authEntity.nextStep));
+      context.go(locationForAuthStep(
+        state.authEntity.nextStep,
+        hasPendingInvite: di<InviteTokenStore>().hasToken,
+        role: state.authEntity.role,
+      ));
     } else if (state is GoogleRegistrationFailure) {
       AppNotification.showError(
         context,

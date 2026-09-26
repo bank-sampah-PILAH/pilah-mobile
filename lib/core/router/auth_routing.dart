@@ -26,11 +26,9 @@ String locationForAuthStep(
   String? role,
 }) {
   // A pending invite outranks the user's own onboarding step only for the
-  // backend-supported role. Other roles keep their own route and discard the
-  // token through [resolvePendingInvite].
-  if (hasPendingInvite &&
-      role == 'pengelola' &&
-      step != 'superadmin_dashboard') {
+  // backend-supported role. Known excluded roles keep their route and discard
+  // the token through [resolvePendingInvite].
+  if (hasPendingInvite && role == 'pengelola') {
     // A brand-new joiner whose profile isn't complete yet finishes it and
     // redeems the token together on the completion screen (invite mode).
     if (step == 'complete_profile') return completeProfileLocation;
