@@ -533,7 +533,8 @@ JadwalEntity _schedule({
   List<String> penerimaIds = const [],
   bool isOverlapping = false,
 }) {
-  final startsAt = start ?? DateTime.now().add(const Duration(hours: 1));
+  final startsAt =
+      start ?? DateUtils.dateOnly(DateTime.now()).add(const Duration(hours: 9));
   return JadwalEntity(
     id: id,
     bankSampahId: 'bank-1',
