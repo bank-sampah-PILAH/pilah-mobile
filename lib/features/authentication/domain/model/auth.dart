@@ -21,3 +21,39 @@ class AuthEntity {
     this.role,
   });
 }
+
+enum GoogleRegistrationRole {
+  nasabah('nasabah'),
+  pengelola('pengelola'),
+  pengelolaInduk('pengelola_induk');
+
+  const GoogleRegistrationRole(this.wireValue);
+
+  final String wireValue;
+}
+
+sealed class GoogleAuthOutcome {
+  const GoogleAuthOutcome();
+}
+
+class GoogleSession extends GoogleAuthOutcome {
+  final AuthEntity auth;
+
+  const GoogleSession(this.auth);
+}
+
+class GoogleRegistrationRequired extends GoogleAuthOutcome {
+  final String registrationToken;
+  final int expiresIn;
+  final String name;
+  final String email;
+  final String photoUrl;
+
+  const GoogleRegistrationRequired({
+    required this.registrationToken,
+    required this.expiresIn,
+    required this.name,
+    required this.email,
+    required this.photoUrl,
+  });
+}

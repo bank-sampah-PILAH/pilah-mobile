@@ -4,6 +4,7 @@ import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_
 import 'package:pilah_mobile/features/authentication/data/remote/model/mapper/auth_mapper.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/model/request/post_login_request.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/model/request/save_token_request.dart';
+import 'package:pilah_mobile/features/authentication/data/remote/model/responses/auth_response.dart';
 import 'package:pilah_mobile/features/authentication/data/remote/auth_remote_data_sources.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/repository/auth_repository.dart';
@@ -20,6 +21,18 @@ class AuthRepositoryImpl implements AuthRepository {
     this._localDataSources,
   );
 
+  Future<AuthEntity> _persistGoogleSession(Map<String, dynamic> payload) async {
+    final response = AuthResponse.fromJson(payload);
+    final entity = AuthMapper.mapResponseToDomain(response);
+    await _localDataSources.saveToken(
+      SaveTokenRequest(
+        accessToken: entity.token,
+        refreshToken: response.refreshToken,
+      ),
+    );
+    return entity;
+  }
+
   @override
   Future<Either<NetworkException, AuthEntity>> postLogin(
     String username,
@@ -33,21 +46,23 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<NetworkException, AuthEntity>> loginWithGoogle(
+  Future<Either<NetworkException, GoogleAuthOutcome>> loginWithGoogle(
       String idToken) async {
     try {
-      final response = await _remoteDataSources.loginWithGoogle(idToken);
-      final entity = AuthMapper.mapResponseToDomain(response);
-
-      // Save the JWT token to secure local storage
-      await _localDataSources.saveToken(
-        SaveTokenRequest(
-          accessToken: entity.token,
-          refreshToken: response.refreshToken,
-        ),
-      );
-
-      return Right(entity);
+      final payload = await _remoteDataSources.loginWithGoogle(idToken);
+      if (payload['registration_required'] == true) {
+        final profile = payload['google_profile'] as Map<String, dynamic>? ??
+            <String, dynamic>{};
+        return Right(GoogleRegistrationRequired(
+          registrationToken: payload['registration_token']?.toString() ?? '',
+          expiresIn: (payload['expires_in'] as num?)?.toInt() ?? 600,
+          name: profile['name']?.toString() ?? '',
+          email: profile['email']?.toString() ?? '',
+          photoUrl: profile['picture']?.toString() ?? '',
+        ));
+      }
+      final entity = await _persistGoogleSession(payload);
+      return Right(GoogleSession(entity));
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
     } catch (e) {
@@ -56,6 +71,25 @@ class AuthRepositoryImpl implements AuthRepository {
       // which the guard above would miss, crashing the login screen. Catch it
       // here and surface it like any other failure instead.
       return Left(GeneralException(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> registerGoogleUser({
+    required String registrationToken,
+    required GoogleRegistrationRole role,
+  }) async {
+    try {
+      final payload = await _remoteDataSources.registerGoogleUser(
+        registrationToken,
+        role.wireValue,
+      );
+      final entity = await _persistGoogleSession(payload);
+      return Right(entity);
+    } on Exception catch (error) {
+      return Left(NetworkException.handleException(error));
+    } catch (error) {
+      return Left(GeneralException(message: error.toString()));
     }
   }
 

@@ -14,7 +14,7 @@ class _StubEnvironment implements AppEnvironment {
   bool get supportsDemoLogin => true;
 
   @override
-  String get demoOperatorEmail => 'configured.operator@example.com';
+  String get demoPengurusEmail => 'configured.pengurus@example.com';
 
   @override
   String get demoPengelolaIndukEmail => 'configured.induk@example.com';
@@ -43,8 +43,8 @@ void main() {
   group('DemoLoginProfiles', () {
     test('uses backend-compatible tokens for every seeded local role', () {
       expect(
-        DemoLoginProfiles.operator.idToken,
-        'dev:pengurus.demo@example.com:Operator PILAH E2E',
+        DemoLoginProfiles.pengurus.idToken,
+        'dev:pengurus.demo@example.com:Pengurus PILAH E2E',
       );
       expect(
         DemoLoginProfiles.pengelolaInduk.idToken,
@@ -75,7 +75,10 @@ void main() {
     test('keeps seeded email constants aligned with the env example', () {
       final env = _readExampleEnv();
 
-      expect(DemoLoginProfiles.operator.email, env['DEMO_OPERATOR_EMAIL']);
+      expect(
+        DemoLoginProfiles.pengurus.email,
+        env['DEMO_PENGURUS_EMAIL'],
+      );
       expect(
         DemoLoginProfiles.pengelolaInduk.email,
         env['DEMO_PENGELOLA_INDUK_EMAIL'],
@@ -94,7 +97,7 @@ void main() {
       expect(
         profiles.map((profile) => profile.email),
         [
-          'configured.operator@example.com',
+          'configured.pengurus@example.com',
           'configured.induk@example.com',
           'configured.customer@example.com',
           'configured.superadmin@example.com',
@@ -102,7 +105,12 @@ void main() {
       );
       expect(
         profiles.map((profile) => profile.tokenPrefix),
-        ['dev', 'dev-pengelola-induk', 'dev-nasabah', 'dev-superadmin'],
+        [
+          'dev',
+          'dev-pengelola-induk',
+          'dev-nasabah',
+          'dev-superadmin',
+        ],
       );
     });
   });
