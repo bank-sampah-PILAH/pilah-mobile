@@ -19,14 +19,7 @@ void main() {
   testWidgets('draft schedule can be published from the management list',
       (tester) async {
     final cubit = _MockJadwalCubit();
-    final schedule = JadwalEntity(
-      id: 'jadwal-1',
-      bankSampahId: 'bank-1',
-      jenisKegiatan: 'penimbangan',
-      mulaiPada: DateTime.now().add(const Duration(days: 1)),
-      selesaiPada: DateTime.now().add(const Duration(days: 1, hours: 2)),
-      lokasi: 'Balai Warga',
-    );
+    final schedule = _schedule(status: 'draft');
     when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
     when(() => cubit.loadJadwal()).thenAnswer((_) async {});
     when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
@@ -293,12 +286,15 @@ void main() {
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
 
-JadwalEntity _schedule({required String status}) => JadwalEntity(
-      id: 'jadwal-1',
-      bankSampahId: 'bank-1',
-      jenisKegiatan: 'penimbangan',
-      mulaiPada: DateTime.utc(2026, 10, 10, 1),
-      selesaiPada: DateTime.utc(2026, 10, 10, 3),
-      lokasi: 'Balai Warga',
-      status: status,
-    );
+JadwalEntity _schedule({required String status}) {
+  final today = DateUtils.dateOnly(DateTime.now());
+  return JadwalEntity(
+    id: 'jadwal-1',
+    bankSampahId: 'bank-1',
+    jenisKegiatan: 'penimbangan',
+    mulaiPada: today.add(const Duration(hours: 9)),
+    selesaiPada: today.add(const Duration(hours: 11)),
+    lokasi: 'Balai Warga',
+    status: status,
+  );
+}
