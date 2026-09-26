@@ -125,11 +125,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                               color: AppColors.greenDark,
                               fontWeight: FontWeight.w600,
                             )),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Text('Daftar Akun', style: AppTextStyle.headline1),
                         const SizedBox(height: 8),
                         Text(
-                          'Pilih cara Anda menggunakan PILAH. Peran ini menentukan proses pendaftaran berikutnya.',
+                          'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
                           style: AppTextStyle.small.copyWith(
                             color: AppColors.grey100,
                             fontSize: 14,
@@ -146,16 +146,20 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                         const SizedBox(height: 32),
                         Text('Saya ingin mendaftar sebagai',
                             style: AppTextStyle.title1),
-                        const SizedBox(height: 12),
-                        for (final option in _roleOptions) ...[
+                        const SizedBox(height: 16),
+                        for (var index = 0;
+                            index < _roleOptions.length;
+                            index++) ...[
                           _RoleCard(
-                            option: option,
-                            selected: _selectedRole == option.value,
+                            option: _roleOptions[index],
+                            selected:
+                                _selectedRole == _roleOptions[index].value,
                             enabled: !isLoading,
-                            onTap: () =>
-                                setState(() => _selectedRole = option.value),
+                            onTap: () => setState(() =>
+                                _selectedRole = _roleOptions[index].value),
                           ),
-                          const SizedBox(height: 12),
+                          if (index < _roleOptions.length - 1)
+                            const SizedBox(height: 12),
                         ],
                       ],
                     ),
@@ -229,14 +233,15 @@ class _VerifiedIdentity extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.greenLight,
+        color: AppColors.cardOffWhite,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.grey200),
       ),
       child: Row(
         children: [
           const CircleAvatar(
             backgroundColor: Colors.white,
-            foregroundColor: AppColors.greenDark,
+            foregroundColor: AppColors.grey100,
             child: Icon(Icons.verified_user_outlined),
           ),
           const SizedBox(width: 12),
@@ -307,45 +312,61 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.greenLight : Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 76),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+    return Semantics(
+      label: '${option.title}. ${option.description}',
+      inMutuallyExclusiveGroup: true,
+      selected: selected,
+      enabled: enabled,
+      onTap: enabled ? onTap : null,
+      child: ExcludeSemantics(
+        child: Material(
+          color: selected ? AppColors.greenLight : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected ? AppColors.greenDark : AppColors.grey200,
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(option.icon, color: AppColors.greenDark, size: 28),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(option.title, style: AppTextStyle.headline3),
-                    const SizedBox(height: 4),
-                    Text(option.description,
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.grey100,
-                        )),
-                  ],
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 80),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: selected ? AppColors.greenDark : AppColors.grey200,
+                  width: selected ? 2 : 1,
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: selected ? AppColors.greenDark : AppColors.grey100,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(option.icon, color: AppColors.greenDark, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(option.title, style: AppTextStyle.headline3),
+                        const SizedBox(height: 4),
+                        Text(option.description,
+                            style: AppTextStyle.small.copyWith(
+                              color: AppColors.grey100,
+                              fontSize: 13,
+                            )),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      selected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                      color: selected ? AppColors.greenDark : AppColors.grey100,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
