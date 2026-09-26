@@ -64,6 +64,12 @@ import '../features/harga/domain/use_cases/deactivate_harga_usecase.dart'
 import '../features/harga/domain/use_cases/get_harga_usecase.dart' as _i1009;
 import '../features/harga/domain/use_cases/update_harga_usecase.dart' as _i240;
 import '../features/harga/presentation/cubit/harga_cubit.dart' as _i815;
+import '../features/jadwal/data/datasources/jadwal_remote_data_source.dart'
+    as _i915;
+import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
+    as _i928;
+import '../features/jadwal/domain/repositories/jadwal_repository.dart' as _i73;
+import '../features/jadwal/presentation/cubit/jadwal_cubit.dart' as _i942;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     as _i307;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart'
@@ -185,10 +191,14 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i377.DashboardRemoteDataSource>(
         () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i915.JadwalRemoteDataSource>(
+        () => _i915.JadwalRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1053.ProfileRemoteDataSource>(
         () => _i1053.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i24.AuthRemoteDataSources>(
         () => _i24.AuthRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i73.JadwalRepository>(
+        () => _i928.JadwalRepositoryImpl(gh<_i915.JadwalRemoteDataSource>()));
     gh.lazySingleton<_i960.HargaRemoteDataSource>(
         () => _i74.HargaRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i307.NasabahRemoteDataSource>(
@@ -212,6 +222,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i24.AuthRemoteDataSources>(),
           gh<_i981.AuthLocalDataSources>(),
         ));
+    gh.lazySingleton<_i942.JadwalCubit>(
+        () => _i942.JadwalCubit(gh<_i73.JadwalRepository>()));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
     gh.lazySingleton<_i449.ActivateNasabahUseCase>(
