@@ -10,6 +10,7 @@ abstract class PencairanRemoteDataSources {
   Future<int> getSaldo(String nasabahId);
   Future<PencairanResponse> createPencairan(PencairanRequest request);
   Future<List<PencairanResponse>> getRiwayat(RiwayatPencairanFilter filter);
+  Future<PencairanResponse> editPencairan(EditPencairanRequest request);
 }
 
 @LazySingleton(as: PencairanRemoteDataSources)
@@ -39,6 +40,21 @@ class PencairanRemoteDataSourceImpl implements PencairanRemoteDataSources {
         'tanggal': request.tanggal.toUtc().toIso8601String(),
         if (keterangan != null && keterangan.isNotEmpty)
           'keterangan': keterangan,
+      },
+    );
+    return PencairanResponse.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<PencairanResponse> editPencairan(EditPencairanRequest request) async {
+    final response = await _networkService.patch(
+      '$_path/${request.id}',
+      data: {
+        'nominal': request.nominal,
+        'metode': request.metode.name,
+        'tanggal': request.tanggal.toUtc().toIso8601String(),
+        'keterangan': request.keterangan.trim(),
+        'alasan': request.alasan.trim(),
       },
     );
     return PencairanResponse.fromJson(response.data as Map<String, dynamic>);

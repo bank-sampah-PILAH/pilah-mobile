@@ -12,4 +12,7 @@ abstract class PencairanUseCases {
   Future<Either<NetworkException, List<Pencairan>>> getRiwayat(
     RiwayatPencairanFilter filter,
   );
+  Future<Either<NetworkException, Pencairan>> editPencairan(
+    EditPencairanRequest request,
+  );
 }
