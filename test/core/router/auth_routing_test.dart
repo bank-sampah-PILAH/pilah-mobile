@@ -133,19 +133,46 @@ void main() {
         '/nasabah-dashboard',
       );
     });
+
+    test('a missing role does not enter the invite flow', () {
+      expect(
+        locationForAuthStep('dashboard', hasPendingInvite: true),
+        '/dashboard',
+      );
+    });
   });
 
   group('pendingInviteLocation', () {
     test('points at the screen that can actually spend the token', () {
-      expect(pendingInviteLocation('complete_profile'), '/complete-profile');
-      expect(pendingInviteLocation('dashboard'), '/invite-processing');
-      expect(pendingInviteLocation('approval_pending'), '/invite-processing');
-      expect(pendingInviteLocation(null), '/invite-processing');
+      expect(
+        pendingInviteLocation('complete_profile', role: 'pengelola'),
+        '/complete-profile',
+      );
+      expect(
+        pendingInviteLocation('dashboard', role: 'pengelola'),
+        '/invite-processing',
+      );
+      expect(
+        pendingInviteLocation('approval_pending', role: 'pengelola'),
+        '/invite-processing',
+      );
+      expect(
+        pendingInviteLocation(null, role: 'pengelola'),
+        '/invite-processing',
+      );
     });
 
     test('is null for a step that can never redeem an invite', () {
       // No route can redeem the token from a superadmin session.
-      expect(pendingInviteLocation('superadmin_dashboard'), isNull);
+      expect(
+        pendingInviteLocation('superadmin_dashboard', role: 'superadmin'),
+        isNull,
+      );
+      expect(
+        pendingInviteLocation('nasabah_dashboard', role: 'nasabah'),
+        isNull,
+      );
+      expect(pendingInviteLocation('dashboard', role: null), isNull);
     });
   });
 }

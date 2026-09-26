@@ -97,5 +97,22 @@ void main() {
       );
       expect(di<InviteTokenStore>().hasToken, isFalse);
     });
+
+    test('keeps the token when the role is missing or unknown', () {
+      for (final role in [null, 'future_role']) {
+        di<InviteTokenStore>().save('invite-token-abc');
+
+        expect(
+          resolvePendingInvite(step: 'dashboard', role: role),
+          isNull,
+        );
+        expect(
+          di<InviteTokenStore>().hasToken,
+          isTrue,
+          reason: 'the token should remain until the role is known',
+        );
+        di<InviteTokenStore>().clear();
+      }
+    });
   });
 }

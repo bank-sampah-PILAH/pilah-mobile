@@ -73,22 +73,22 @@ String locationForAuthStep(
   }
 }
 
-/// The screen that can actually redeem a pending invite for a user sitting at
-/// onboarding [step], or `null` when this session has no way to redeem one.
+/// The screen that can redeem a pending invite for a user at onboarding
+/// [step], or `null` when [role] cannot redeem one.
 ///
 /// Only two screens spend a token: the completion form (invite mode) and the
-/// invite gate. Any other destination means this account can never redeem it —
-/// and forcing a redirect there would pin the user to one screen for the rest
-/// of the session, since nothing would ever clear the token.
+/// invite gate. Only `pengelola` can use either screen for bank invites.
 ///
 /// Callers that want to *interrupt* the user for a pending invite (the router's
 /// top-level redirect, the resume watcher) should use this rather than
 /// [locationForAuthStep], which always has to answer with somewhere to go.
-String? pendingInviteLocation(String? step) {
+String? pendingInviteLocation(String? step, {required String? role}) {
+  if (role != 'pengelola') return null;
+
   final location = locationForAuthStep(
     step,
     hasPendingInvite: true,
-    role: 'pengelola',
+    role: role,
   );
   return location == completeProfileLocation ||
           location == inviteProcessingLocation
