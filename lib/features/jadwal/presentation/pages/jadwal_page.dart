@@ -509,47 +509,53 @@ class _ScheduleCard extends StatelessWidget {
             ),
           ),
           if (item.status == 'draft')
-            OverflowBar(
-              alignment: MainAxisAlignment.end,
-              spacing: 8,
-              children: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.greenDark,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: OverflowBar(
+                alignment: MainAxisAlignment.end,
+                spacing: 8,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.greenDark,
+                    ),
+                    onPressed: onCancel,
+                    child: const Text('Batalkan'),
                   ),
-                  onPressed: onCancel,
-                  child: const Text('Batalkan'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.greenDark,
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.greenDark,
+                    ),
+                    onPressed: onPublish,
+                    child: const Text('Terbitkan'),
                   ),
-                  onPressed: onPublish,
-                  child: const Text('Terbitkan'),
-                ),
-              ],
+                ],
+              ),
             ),
           if (item.status == 'diterbitkan')
-            OverflowBar(
-              alignment: MainAxisAlignment.end,
-              spacing: 8,
-              children: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.greenDark,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: OverflowBar(
+                alignment: MainAxisAlignment.end,
+                spacing: 8,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.greenDark,
+                    ),
+                    onPressed: onCancel,
+                    child: const Text('Batalkan'),
                   ),
-                  onPressed: onCancel,
-                  child: const Text('Batalkan'),
-                ),
-                FilledButton.tonal(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.greenLight,
-                    foregroundColor: AppColors.greenDark,
+                  FilledButton.tonal(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.greenLight,
+                      foregroundColor: AppColors.greenDark,
+                    ),
+                    onPressed: onComplete,
+                    child: const Text('Tandai Selesai'),
                   ),
-                  onPressed: onComplete,
-                  child: const Text('Tandai Selesai'),
-                ),
-              ],
+                ],
+              ),
             ),
         ],
       ),
