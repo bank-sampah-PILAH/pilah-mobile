@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +25,24 @@ class RoleHandoffPage extends StatelessWidget {
   static const registerNasabahRoute = '/register-nasabah';
   static const nasabahDashboardRoute = '/nasabah-dashboard';
   static const registerIndukRoute = '/register-bank-sampah-induk';
+  static const indukDashboardRoute = '/pengelola-induk-dashboard';
+
+  Future<void> _changeAccount(BuildContext context) async {
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {
+      if (!context.mounted) return;
+      AppNotification.showError(
+        context,
+        title: 'Ganti Akun Gagal',
+        message: 'Tidak dapat keluar dari akun Google. Silakan coba lagi.',
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    context.read<AuthenticationBloc>().add(LogoutRequested());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,9 +100,7 @@ class RoleHandoffPage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () => context
-                            .read<AuthenticationBloc>()
-                            .add(LogoutRequested()),
+                        onPressed: () => _changeAccount(context),
                         icon: const Icon(Icons.logout),
                         label: const Text('Keluar dan ganti akun'),
                         style: ElevatedButton.styleFrom(

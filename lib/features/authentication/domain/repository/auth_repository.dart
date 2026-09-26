@@ -13,7 +13,7 @@ abstract class AuthRepository {
 
   Future<Either<NetworkException, AuthEntity>> registerGoogleUser({
     required String registrationToken,
-    required String role,
+    required GoogleRegistrationRole role,
   });
 
   Future<Either<Exception, void>> saveToken(

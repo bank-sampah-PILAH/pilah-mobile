@@ -21,6 +21,18 @@ class AuthRepositoryImpl implements AuthRepository {
     this._localDataSources,
   );
 
+  Future<AuthEntity> _persistGoogleSession(Map<String, dynamic> payload) async {
+    final response = AuthResponse.fromJson(payload);
+    final entity = AuthMapper.mapResponseToDomain(response);
+    await _localDataSources.saveToken(
+      SaveTokenRequest(
+        accessToken: entity.token,
+        refreshToken: response.refreshToken,
+      ),
+    );
+    return entity;
+  }
+
   @override
   Future<Either<NetworkException, AuthEntity>> postLogin(
     String username,
@@ -49,17 +61,7 @@ class AuthRepositoryImpl implements AuthRepository {
           photoUrl: profile['picture']?.toString() ?? '',
         ));
       }
-      final response = AuthResponse.fromJson(payload);
-      final entity = AuthMapper.mapResponseToDomain(response);
-
-      // Save the JWT token to secure local storage
-      await _localDataSources.saveToken(
-        SaveTokenRequest(
-          accessToken: entity.token,
-          refreshToken: response.refreshToken,
-        ),
-      );
-
+      final entity = await _persistGoogleSession(payload);
       return Right(GoogleSession(entity));
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
@@ -75,21 +77,14 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<NetworkException, AuthEntity>> registerGoogleUser({
     required String registrationToken,
-    required String role,
+    required GoogleRegistrationRole role,
   }) async {
     try {
       final payload = await _remoteDataSources.registerGoogleUser(
         registrationToken,
-        role,
+        role.wireValue,
       );
-      final response = AuthResponse.fromJson(payload);
-      final entity = AuthMapper.mapResponseToDomain(response);
-      await _localDataSources.saveToken(
-        SaveTokenRequest(
-          accessToken: entity.token,
-          refreshToken: response.refreshToken,
-        ),
-      );
+      final entity = await _persistGoogleSession(payload);
       return Right(entity);
     } on Exception catch (error) {
       return Left(NetworkException.handleException(error));

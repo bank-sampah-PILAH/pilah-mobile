@@ -36,6 +36,7 @@ class LoginPage extends StatelessWidget {
             context.go(locationForAuthStep(
               state.authEntity.nextStep,
               hasPendingInvite: di<InviteTokenStore>().hasToken,
+              role: state.authEntity.role,
             ));
           } else if (state is GoogleRegistrationPending) {
             context.go(RoleSelectionPage.route);

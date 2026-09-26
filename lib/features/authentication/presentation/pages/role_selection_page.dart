@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -10,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 class RoleSelectionPage extends StatefulWidget {
   const RoleSelectionPage({super.key});
@@ -21,8 +24,9 @@ class RoleSelectionPage extends StatefulWidget {
 }
 
 class _RoleSelectionPageState extends State<RoleSelectionPage> {
-  String? _selectedRole;
+  GoogleRegistrationRole? _selectedRole;
   GoogleRegistrationRequired? _registration;
+  bool _isChangingAccount = false;
 
   @override
   void initState() {
@@ -44,7 +48,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     if (registration != null) _registration = registration;
 
     if (state is Authenticated) {
-      context.go(locationForAuthStep(state.authEntity.nextStep));
+      context.go(locationForAuthStep(
+        state.authEntity.nextStep,
+        hasPendingInvite: di<InviteTokenStore>().hasToken,
+        role: state.authEntity.role,
+      ));
     } else if (state is GoogleRegistrationFailure) {
       AppNotification.showError(
         context,
@@ -52,16 +60,35 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
         message: state.message,
       );
     } else if (state is GoogleRegistrationExpired) {
-      AppNotification.showError(
-        context,
-        title: 'Sesi Berakhir',
-        message: state.message,
-      );
       context.go(LoginPage.route);
+      AppNotification.afterNavigation(
+        (context) => AppNotification.showError(
+          context,
+          title: 'Sesi Berakhir',
+          message: state.message,
+        ),
+      );
     }
   }
 
-  void _changeAccount() {
+  Future<void> _changeAccount() async {
+    if (_isChangingAccount) return;
+    setState(() => _isChangingAccount = true);
+
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isChangingAccount = false);
+      AppNotification.showError(
+        context,
+        title: 'Ganti Akun Gagal',
+        message: 'Tidak dapat keluar dari akun Google. Silakan coba lagi.',
+      );
+      return;
+    }
+
+    if (!mounted) return;
     context
         .read<AuthenticationBloc>()
         .add(const ChangeGoogleAccountRequested());
@@ -98,11 +125,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                               color: AppColors.greenDark,
                               fontWeight: FontWeight.w600,
                             )),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Text('Daftar Akun', style: AppTextStyle.headline1),
                         const SizedBox(height: 8),
                         Text(
-                          'Pilih cara Anda menggunakan PILAH. Peran ini menentukan proses pendaftaran berikutnya.',
+                          'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
                           style: AppTextStyle.small.copyWith(
                             color: AppColors.grey100,
                             fontSize: 14,
@@ -112,21 +139,27 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                         _VerifiedIdentity(
                           name: registration.name,
                           email: registration.email,
-                          onChangeAccount: isLoading ? null : _changeAccount,
+                          onChangeAccount: isLoading || _isChangingAccount
+                              ? null
+                              : _changeAccount,
                         ),
                         const SizedBox(height: 32),
                         Text('Saya ingin mendaftar sebagai',
                             style: AppTextStyle.title1),
-                        const SizedBox(height: 12),
-                        for (final option in _roleOptions) ...[
+                        const SizedBox(height: 16),
+                        for (var index = 0;
+                            index < _roleOptions.length;
+                            index++) ...[
                           _RoleCard(
-                            option: option,
-                            selected: _selectedRole == option.value,
+                            option: _roleOptions[index],
+                            selected:
+                                _selectedRole == _roleOptions[index].value,
                             enabled: !isLoading,
-                            onTap: () =>
-                                setState(() => _selectedRole = option.value),
+                            onTap: () => setState(() =>
+                                _selectedRole = _roleOptions[index].value),
                           ),
-                          const SizedBox(height: 12),
+                          if (index < _roleOptions.length - 1)
+                            const SizedBox(height: 12),
                         ],
                       ],
                     ),
@@ -200,14 +233,15 @@ class _VerifiedIdentity extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.greenLight,
+        color: AppColors.cardOffWhite,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.grey200),
       ),
       child: Row(
         children: [
           const CircleAvatar(
             backgroundColor: Colors.white,
-            foregroundColor: AppColors.greenDark,
+            foregroundColor: AppColors.grey100,
             child: Icon(Icons.verified_user_outlined),
           ),
           const SizedBox(width: 12),
@@ -234,7 +268,7 @@ class _VerifiedIdentity extends StatelessWidget {
 }
 
 class _RoleOption {
-  final String value;
+  final GoogleRegistrationRole value;
   final String title;
   final String description;
   final IconData icon;
@@ -244,19 +278,19 @@ class _RoleOption {
 
 const _roleOptions = [
   _RoleOption(
-    'nasabah',
+    GoogleRegistrationRole.nasabah,
     'Nasabah',
     'Menabung sampah dan memantau saldo.',
     Icons.recycling_outlined,
   ),
   _RoleOption(
-    'pengelola',
+    GoogleRegistrationRole.pengelola,
     'Pengelola Bank Sampah',
     'Mengelola transaksi dan anggota bank sampah.',
     Icons.storefront_outlined,
   ),
   _RoleOption(
-    'pengelola_induk',
+    GoogleRegistrationRole.pengelolaInduk,
     'Pengelola Bank Sampah Induk',
     'Mendampingi unit-unit bank sampah.',
     Icons.account_balance_outlined,
@@ -278,45 +312,61 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.greenLight : Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 76),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+    return Semantics(
+      label: '${option.title}. ${option.description}',
+      inMutuallyExclusiveGroup: true,
+      selected: selected,
+      enabled: enabled,
+      onTap: enabled ? onTap : null,
+      child: ExcludeSemantics(
+        child: Material(
+          color: selected ? AppColors.greenLight : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected ? AppColors.greenDark : AppColors.grey200,
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(option.icon, color: AppColors.greenDark, size: 28),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(option.title, style: AppTextStyle.headline3),
-                    const SizedBox(height: 4),
-                    Text(option.description,
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.grey100,
-                        )),
-                  ],
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 80),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: selected ? AppColors.greenDark : AppColors.grey200,
+                  width: selected ? 2 : 1,
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: selected ? AppColors.greenDark : AppColors.grey100,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(option.icon, color: AppColors.greenDark, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(option.title, style: AppTextStyle.headline3),
+                        const SizedBox(height: 4),
+                        Text(option.description,
+                            style: AppTextStyle.small.copyWith(
+                              color: AppColors.grey100,
+                              fontSize: 13,
+                            )),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      selected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                      color: selected ? AppColors.greenDark : AppColors.grey100,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

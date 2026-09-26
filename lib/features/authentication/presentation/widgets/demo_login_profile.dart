@@ -17,9 +17,9 @@ class DemoLoginProfile {
 }
 
 abstract final class DemoLoginProfiles {
-  static const operator = DemoLoginProfile(
+  static const pengurus = DemoLoginProfile(
     label: 'Pengurus',
-    name: 'Operator PILAH E2E',
+    name: 'Pengurus PILAH E2E',
     email: 'pengurus.demo@example.com',
     tokenPrefix: 'dev',
   );
@@ -55,7 +55,7 @@ abstract final class DemoLoginProfiles {
   );
 
   static const all = <DemoLoginProfile>[
-    operator,
+    pengurus,
     pengelolaInduk,
     customer,
     newNasabah,
@@ -64,10 +64,10 @@ abstract final class DemoLoginProfiles {
 
   static List<DemoLoginProfile> forEnvironment(AppEnvironment environment) => [
         DemoLoginProfile(
-          label: operator.label,
-          name: operator.name,
-          email: environment.demoOperatorEmail,
-          tokenPrefix: operator.tokenPrefix,
+          label: pengurus.label,
+          name: pengurus.name,
+          email: environment.demoPengurusEmail,
+          tokenPrefix: pengurus.tokenPrefix,
         ),
         DemoLoginProfile(
           label: pengelolaInduk.label,

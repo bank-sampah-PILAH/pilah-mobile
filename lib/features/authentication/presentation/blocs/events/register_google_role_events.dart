@@ -1,7 +1,8 @@
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
 class RegisterGoogleRoleRequested extends AuthenticationEvent {
-  final String role;
+  final GoogleRegistrationRole role;
 
   const RegisterGoogleRoleRequested({required this.role});
 }

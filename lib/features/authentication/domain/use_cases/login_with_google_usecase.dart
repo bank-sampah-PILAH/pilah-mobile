@@ -18,7 +18,7 @@ class LoginWithGoogleUseCase extends UseCase<GoogleAuthOutcome, String> {
 
   Future<Either<NetworkException, AuthEntity>> register({
     required String registrationToken,
-    required String role,
+    required GoogleRegistrationRole role,
   }) {
     return _repository.registerGoogleUser(
       registrationToken: registrationToken,

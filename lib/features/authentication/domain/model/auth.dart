@@ -60,3 +60,13 @@ class GoogleRegistrationRequired extends GoogleAuthOutcome {
     required this.photoUrl,
   });
 }
+
+enum GoogleRegistrationRole {
+  nasabah('nasabah'),
+  pengelola('pengelola'),
+  pengelolaInduk('pengelola_induk');
+
+  const GoogleRegistrationRole(this.wireValue);
+
+  final String wireValue;
+}

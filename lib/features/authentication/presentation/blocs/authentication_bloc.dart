@@ -20,7 +20,6 @@ import 'events/register_google_role_events.dart';
 class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationStates> {
   final AuthenticationUseCases _useCases;
-  // ignore: unused_field - Will be re-enabled when backend API is ready
   final LoginWithGoogleUseCase _loginWithGoogleUseCase;
 
   AuthenticationBloc(this._useCases, this._loginWithGoogleUseCase)

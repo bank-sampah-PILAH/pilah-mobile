@@ -9,10 +9,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/features/authentication/presentation/pages/pengelola_induk_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
@@ -73,9 +73,9 @@ class AppRouterConfig {
       final authState = context.read<AuthenticationBloc>().state;
       if (authState is! Authenticated) return null;
 
-      // `null` means this account can't redeem an invite at all (superadmin) —
-      // in which case the token is dropped here rather than left to follow the
-      // next account onto this device. See [resolvePendingInvite].
+      // `null` means this account can't redeem an invite at all — in which
+      // case the token is dropped here rather than left to follow the next
+      // account onto this device. See [resolvePendingInvite].
       final target = resolvePendingInvite(
         step: authState.authEntity.nextStep,
         role: authState.authEntity.role,
@@ -197,9 +197,13 @@ class AppRouterConfig {
         ),
       ),
       GoRoute(
-        path: PengelolaIndukPage.route,
-        name: PengelolaIndukPage.route,
-        builder: (context, state) => const PengelolaIndukPage(),
+        path: RoleHandoffPage.indukDashboardRoute,
+        builder: (context, state) => const RoleHandoffPage(
+          title: 'Akun Pengelola Induk Siap',
+          message:
+              'Beranda Bank Sampah Induk sedang disiapkan. Data organisasi Anda sudah tersimpan.',
+          registrationInProgress: false,
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -239,6 +243,27 @@ class AppRouterConfig {
                 path: LaporanPage.route,
                 name: LaporanPage.route,
                 builder: (context, state) => const LaporanPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: JadwalPage.route,
+                name: JadwalPage.route,
+                builder: (context, state) =>
+                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
+                  builder: (context, authState) {
+                    if (authState is! Authenticated) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final auth = authState.authEntity;
+                    return JadwalPage(
+                      key: ValueKey(auth.id ?? auth.email),
+                      customerMode: auth.role != 'pengelola',
+                    );
+                  },
+                ),
               ),
             ],
           ),

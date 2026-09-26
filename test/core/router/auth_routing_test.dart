@@ -13,26 +13,56 @@ void main() {
       );
     });
 
-    test('the other onboarding steps are unchanged', () {
-      expect(locationForAuthStep('complete_profile'), '/complete-profile');
+    test('routes backend steps for all four roles', () {
+      // Pengurus is `pengelola` in the backend role enum.
       expect(
-          locationForAuthStep('register_bank_sampah'), '/register-bank-sampah');
-      expect(locationForAuthStep('approval_pending'), '/pending-approval');
+        locationForAuthStep('complete_profile', role: 'pengelola'),
+        '/complete-profile',
+      );
       expect(
-          locationForAuthStep('superadmin_dashboard'), '/superadmin-dashboard');
-      expect(locationForAuthStep('register_nasabah'), '/register-nasabah');
-      expect(locationForAuthStep('nasabah_dashboard'), '/nasabah-dashboard');
-      expect(locationForAuthStep('register_bank_sampah_induk'),
-          '/register-bank-sampah-induk');
+        locationForAuthStep('register_bank_sampah', role: 'pengelola'),
+        '/register-bank-sampah',
+      );
       expect(
-          locationForAuthStep('pengelola_induk_dashboard'), '/pengelola-induk');
-      expect(locationForAuthStep('dashboard'), '/dashboard');
+        locationForAuthStep('approval_pending', role: 'pengelola'),
+        '/pending-approval',
+      );
+      expect(
+        locationForAuthStep('dashboard', role: 'pengelola'),
+        '/dashboard',
+      );
+      expect(
+        locationForAuthStep('superadmin_dashboard', role: 'superadmin'),
+        '/superadmin-dashboard',
+      );
+      expect(
+        locationForAuthStep('register_nasabah', role: 'nasabah'),
+        '/register-nasabah',
+      );
+      expect(
+        locationForAuthStep('nasabah_dashboard', role: 'nasabah'),
+        '/nasabah-dashboard',
+      );
+      expect(
+        locationForAuthStep('register_bank_sampah_induk',
+            role: 'pengelola_induk'),
+        '/register-bank-sampah-induk',
+      );
+      expect(
+        locationForAuthStep('pengelola_induk_dashboard',
+            role: 'pengelola_induk'),
+        '/pengelola-induk-dashboard',
+      );
       expect(locationForAuthStep(null), '/dashboard');
     });
 
     test('an incomplete profile redeems the invite on the completion form', () {
       expect(
-        locationForAuthStep('complete_profile', hasPendingInvite: true),
+        locationForAuthStep(
+          'complete_profile',
+          hasPendingInvite: true,
+          role: 'pengelola',
+        ),
         '/complete-profile',
       );
     });
@@ -48,7 +78,11 @@ void main() {
         null
       ]) {
         expect(
-          locationForAuthStep(step, hasPendingInvite: true),
+          locationForAuthStep(
+            step,
+            hasPendingInvite: true,
+            role: 'pengelola',
+          ),
           '/invite-processing',
           reason: 'step "$step" must not swallow a pending invite',
         );
@@ -61,37 +95,84 @@ void main() {
       // dashboard used to leave the user there, so /invites/accept was never
       // called.
       expect(
-        locationForAuthStep('dashboard', hasPendingInvite: true),
+        locationForAuthStep(
+          'dashboard',
+          hasPendingInvite: true,
+          role: 'pengelola',
+        ),
         '/invite-processing',
       );
     });
 
     test('non-pengelola roles do not enter the invite flow', () {
       expect(
-        locationForAuthStep('superadmin_dashboard', hasPendingInvite: true),
+        locationForAuthStep(
+          'superadmin_dashboard',
+          hasPendingInvite: true,
+          role: 'superadmin',
+        ),
         '/superadmin-dashboard',
       );
       expect(
-        locationForAuthStep('pengelola_induk_dashboard',
-            hasPendingInvite: true),
-        '/pengelola-induk',
+        locationForAuthStep(
+          'pengelola_induk_dashboard',
+          hasPendingInvite: true,
+          role: 'pengelola_induk',
+        ),
+        '/pengelola-induk-dashboard',
+      );
+    });
+
+    test('an ineligible role keeps its own route while invite is pending', () {
+      expect(
+        locationForAuthStep(
+          'nasabah_dashboard',
+          hasPendingInvite: true,
+          role: 'nasabah',
+        ),
+        '/nasabah-dashboard',
+      );
+    });
+
+    test('a missing role does not enter the invite flow', () {
+      expect(
+        locationForAuthStep('dashboard', hasPendingInvite: true),
+        '/dashboard',
       );
     });
   });
 
   group('pendingInviteLocation', () {
     test('points at the screen that can actually spend the token', () {
-      expect(pendingInviteLocation('complete_profile'), '/complete-profile');
-      expect(pendingInviteLocation('dashboard'), '/invite-processing');
-      expect(pendingInviteLocation('approval_pending'), '/invite-processing');
-      expect(pendingInviteLocation('pengelola_induk_dashboard'), isNull);
-      expect(pendingInviteLocation(null), '/invite-processing');
+      expect(
+        pendingInviteLocation('complete_profile', role: 'pengelola'),
+        '/complete-profile',
+      );
+      expect(
+        pendingInviteLocation('dashboard', role: 'pengelola'),
+        '/invite-processing',
+      );
+      expect(
+        pendingInviteLocation('approval_pending', role: 'pengelola'),
+        '/invite-processing',
+      );
+      expect(
+        pendingInviteLocation(null, role: 'pengelola'),
+        '/invite-processing',
+      );
     });
 
-    test('is null for a session that can never redeem an invite', () {
-      // Nothing would ever clear the token for a superadmin, so redirecting
-      // them would pin the session to one screen for good.
-      expect(pendingInviteLocation('superadmin_dashboard'), isNull);
+    test('is null for a step that can never redeem an invite', () {
+      // No route can redeem the token from a superadmin session.
+      expect(
+        pendingInviteLocation('superadmin_dashboard', role: 'superadmin'),
+        isNull,
+      );
+      expect(
+        pendingInviteLocation('nasabah_dashboard', role: 'nasabah'),
+        isNull,
+      );
+      expect(pendingInviteLocation('dashboard', role: null), isNull);
     });
   });
 }
