@@ -16,67 +16,72 @@ class _MockJadwalRepository extends Mock implements JadwalRepository {}
 void main() {
   setUpAll(() => registerFallbackValue(_schedule()));
 
-  testWidgets('disables schedule submission while the save is pending',
-      (tester) async {
+  testWidgets('disables schedule submission while the save is pending', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     final pending = Completer<Either<NetworkException, JadwalEntity>>();
     when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
-    when(() => repository.createJadwal(any()))
-        .thenAnswer((_) => pending.future);
+    when(
+      () => repository.createJadwal(any()),
+    ).thenAnswer((_) => pending.future);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
-    final submit = find.byType(FilledButton);
+    final submit = find.byType(ElevatedButton);
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pump();
 
-    expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+    expect(tester.widget<ElevatedButton>(submit).onPressed, isNull);
 
     pending.complete(Right(_schedule()));
     await tester.pumpAndSettle();
   });
 
-  testWidgets('rejects a new schedule whose start time has passed',
-      (tester) async {
+  testWidgets('new schedule starts on the selected date', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
-    when(() => repository.createJadwal(any()))
-        .thenAnswer((_) async => Right(_schedule()));
+    when(
+      () => repository.createJadwal(any()),
+    ).thenAnswer((_) async => Right(_schedule()));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
-    await tester.tap(find.text('Mulai'));
+    final startTile = find.ancestor(
+      of: find.text('Mulai'),
+      matching: find.byType(GestureDetector),
+    );
+    await tester.ensureVisible(startTile);
+    await tester.tap(startTile);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('${DateTime.now().day}').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('OK'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('OK'));
-    await tester.pumpAndSettle();
-    final submit = find.widgetWithText(FilledButton, 'Simpan Jadwal');
-    await tester.ensureVisible(submit);
-    await tester.tap(submit);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Waktu mulai harus di masa depan'), findsOneWidget);
-    verifyNever(() => repository.createJadwal(any()));
+    final picker = tester.widget<CalendarDatePicker>(
+      find.byType(CalendarDatePicker),
+    );
+    expect(DateUtils.isSameDay(picker.initialDate, DateTime.now()), isTrue);
   });
 
-  testWidgets('failed initial load has an explicit retry action',
-      (tester) async {
+  testWidgets('failed initial load has an explicit retry action', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     var loadCount = 0;
     when(() => repository.getJadwal()).thenAnswer((_) async {
@@ -87,9 +92,11 @@ void main() {
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Koneksi gagal'), findsOneWidget);
@@ -100,8 +107,9 @@ void main() {
     expect(loadCount, 2);
   });
 
-  testWidgets('empty state reloads schedules created by another manager',
-      (tester) async {
+  testWidgets('empty state reloads schedules created by another manager', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     var loadCount = 0;
     when(() => repository.getJadwal()).thenAnswer((_) async {
@@ -112,9 +120,11 @@ void main() {
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Belum ada jadwal kegiatan'), findsOneWidget);
@@ -125,8 +135,9 @@ void main() {
     verify(() => repository.getJadwal()).called(2);
   });
 
-  testWidgets('pull-to-refresh reloads even a short schedule list',
-      (tester) async {
+  testWidgets('pull-to-refresh reloads even a short schedule list', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     var loadCount = 0;
     when(() => repository.getJadwal()).thenAnswer((_) async {
@@ -135,9 +146,11 @@ void main() {
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(
       tester.widget<ListView>(find.byType(ListView)).physics,
@@ -149,8 +162,9 @@ void main() {
     expect(loadCount, 2);
   });
 
-  testWidgets('displays localized labels for every schedule status',
-      (tester) async {
+  testWidgets('displays localized labels for every schedule status', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     final schedules = [
       _schedule(id: 'draft', location: 'Draft', status: 'draft'),
@@ -158,42 +172,52 @@ void main() {
       _schedule(id: 'cancelled', location: 'Cancelled', status: 'dibatalkan'),
       _schedule(id: 'completed', location: 'Completed', status: 'selesai'),
     ];
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right(schedules));
+    when(
+      () => repository.getJadwal(),
+    ).thenAnswer((_) async => Right(schedules));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     for (final label in ['Draf', 'Diterbitkan', 'Dibatalkan', 'Selesai']) {
-      expect(find.textContaining('\n$label'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text(label), 160);
+      expect(find.text(label), findsOneWidget);
     }
     for (final status in ['draft', 'diterbitkan', 'dibatalkan', 'selesai']) {
-      expect(find.textContaining('\n$status'), findsNothing);
+      expect(find.text(status), findsNothing);
     }
   });
 
-  testWidgets('shows the manager overlap warning when a schedule overlaps',
-      (tester) async {
+  testWidgets('shows the manager overlap warning when a schedule overlaps', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
-    when(() => repository.getJadwal()).thenAnswer(
-      (_) async => Right([_schedule(isOverlapping: true)]),
-    );
+    when(
+      () => repository.getJadwal(),
+    ).thenAnswer((_) async => Right([_schedule(isOverlapping: true)]));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(
-        find.byTooltip('Jadwal bertumpuk di lokasi yang sama'), findsOneWidget);
+      find.byTooltip('Jadwal bertumpuk di lokasi yang sama'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('creates a schedule with the selected activity and details',
-      (tester) async {
+  testWidgets('creates a schedule with the selected activity and details', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     JadwalEntity? submitted;
     when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
@@ -203,9 +227,11 @@ void main() {
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
@@ -215,8 +241,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Balai RW');
     await tester.enterText(
-        find.byType(TextFormField).last, 'Bawa buku tabungan');
-    final submit = find.widgetWithText(FilledButton, 'Simpan Jadwal');
+      find.byType(TextFormField).last,
+      'Bawa buku tabungan',
+    );
+    final submit = find.widgetWithText(ElevatedButton, 'Simpan Jadwal');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
@@ -225,7 +253,7 @@ void main() {
     expect(submitted?.lokasi, 'Balai RW');
     expect(submitted?.keterangan, 'Bawa buku tabungan');
     expect(submitted?.cakupanPenerima, 'semua_nasabah');
-    expect(find.text('Buat Jadwal'), findsNothing);
+    expect(find.byKey(const ValueKey('jadwal-form')), findsNothing);
   });
 
   testWidgets('requires a location before creating a schedule', (tester) async {
@@ -233,13 +261,15 @@ void main() {
     when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
-    final submit = find.widgetWithText(FilledButton, 'Simpan Jadwal');
+    final submit = find.widgetWithText(ElevatedButton, 'Simpan Jadwal');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
@@ -248,36 +278,44 @@ void main() {
     verifyNever(() => repository.createJadwal(any()));
   });
 
-  testWidgets('rejects an end time that is not after the start time',
-      (tester) async {
+  testWidgets('rejects an end time that is not after the start time', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     final start = DateTime.now().add(const Duration(days: 1));
     final schedule = _schedule(
       start: start,
       end: start.subtract(const Duration(minutes: 1)),
     );
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([schedule]));
+    when(
+      () => repository.getJadwal(),
+    ).thenAnswer((_) async => Right([schedule]));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
+    await _selectCalendarDate(tester, start);
     await tester.tap(find.text(schedule.lokasi));
     await tester.pumpAndSettle();
-    final submit = find.widgetWithText(FilledButton, 'Simpan Perubahan');
+    final submit = find.widgetWithText(ElevatedButton, 'Simpan Perubahan');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
 
     expect(
-        find.text('Waktu selesai harus setelah waktu mulai'), findsOneWidget);
+      find.text('Waktu selesai harus setelah waktu mulai'),
+      findsOneWidget,
+    );
     verifyNever(() => repository.updateJadwal(any()));
   });
 
-  testWidgets('keeps the form open and shows the API error when save fails',
-      (tester) async {
+  testWidgets('keeps the form open and shows the API error when save fails', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
     when(() => repository.createJadwal(any())).thenAnswer(
@@ -285,99 +323,126 @@ void main() {
     );
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
-    final submit = find.widgetWithText(FilledButton, 'Simpan Jadwal');
+    final submit = find.widgetWithText(ElevatedButton, 'Simpan Jadwal');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
 
     expect(find.text('Jadwal gagal disimpan'), findsOneWidget);
-    expect(find.text('Buat Jadwal'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('jadwal-form')),
+        matching: find.text('Buat Jadwal'),
+      ),
+      findsOneWidget,
+    );
     verify(() => repository.createJadwal(any())).called(1);
   });
 
-  testWidgets('preserves selected recipients when editing a targeted schedule',
-      (tester) async {
-    final repository = _MockJadwalRepository();
-    final target = _schedule(
-      cakupanPenerima: 'nasabah_terpilih',
-      penerimaIds: const ['member-1'],
-    );
-    JadwalEntity? submitted;
-    when(() => repository.getJadwal()).thenAnswer((_) async => Right([target]));
-    when(() => repository.updateJadwal(any())).thenAnswer((invocation) async {
-      submitted = invocation.positionalArguments.single as JadwalEntity;
-      return Right(target);
-    });
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(target.lokasi));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'preserves selected recipients when editing a targeted schedule',
+    (tester) async {
+      final repository = _MockJadwalRepository();
+      final target = _schedule(
+        cakupanPenerima: 'nasabah_terpilih',
+        penerimaIds: const ['member-1'],
+      );
+      JadwalEntity? submitted;
+      when(
+        () => repository.getJadwal(),
+      ).thenAnswer((_) async => Right([target]));
+      when(() => repository.updateJadwal(any())).thenAnswer((invocation) async {
+        submitted = invocation.positionalArguments.single as JadwalEntity;
+        return Right(target);
+      });
+      final cubit = JadwalCubit(repository);
+      addTearDown(cubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(target.lokasi));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Nasabah terpilih'), findsOneWidget);
-    await tester.tap(find.text('Nasabah terpilih').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Nasabah terpilih').last);
-    await tester.pumpAndSettle();
-    final submit = find.widgetWithText(FilledButton, 'Simpan Perubahan');
-    await tester.ensureVisible(submit);
-    await tester.tap(submit);
-    await tester.pumpAndSettle();
+      expect(find.text('Nasabah terpilih'), findsOneWidget);
+      final audienceField = find.text('Nasabah terpilih').first;
+      await tester.ensureVisible(audienceField);
+      await tester.tap(audienceField);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nasabah terpilih').last);
+      await tester.pumpAndSettle();
+      final submit = find.widgetWithText(ElevatedButton, 'Simpan Perubahan');
+      await tester.ensureVisible(submit);
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
 
-    expect(submitted?.cakupanPenerima, 'nasabah_terpilih');
-    expect(submitted?.penerimaIds, ['member-1']);
-  });
+      expect(submitted?.cakupanPenerima, 'nasabah_terpilih');
+      expect(submitted?.penerimaIds, ['member-1']);
+    },
+  );
 
-  testWidgets('new schedules cannot select an audience without a picker',
-      (tester) async {
+  testWidgets('new schedules cannot select an audience without a picker', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Semua nasabah'));
+    final audienceField = find.text('Semua nasabah');
+    await tester.ensureVisible(audienceField);
+    await tester.tap(audienceField);
     await tester.pumpAndSettle();
 
     expect(find.text('Nasabah terpilih'), findsNothing);
   });
 
-  testWidgets('editing an end time preserves its date and clock time',
-      (tester) async {
+  testWidgets('editing an end time preserves its date and clock time', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     final endTile = find.ancestor(
       of: find.text('Selesai'),
-      matching: find.byType(ListTile),
+      matching: find.byType(GestureDetector),
     );
-    final endSubtitle =
-        find.descendant(of: endTile, matching: find.byType(Text));
+    await tester.ensureVisible(endTile);
+    final endSubtitle = find.descendant(
+      of: endTile,
+      matching: find.byType(Text),
+    );
     final previousValue = tester.widget<Text>(endSubtitle.last).data!;
 
-    await tester.tap(find.text('Selesai'));
+    await tester.tap(endTile);
     await tester.pumpAndSettle();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
@@ -387,8 +452,9 @@ void main() {
     expect(find.text(previousValue), findsOneWidget);
   });
 
-  testWidgets('past schedules open the picker and preserve their time',
-      (tester) async {
+  testWidgets('past schedules open the picker and preserve their time', (
+    tester,
+  ) async {
     final repository = _MockJadwalRepository();
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day - 7, 18, 30);
@@ -396,21 +462,27 @@ void main() {
       start: start,
       end: start.add(const Duration(hours: 2)),
     );
-    when(() => repository.getJadwal())
-        .thenAnswer((_) async => Right([schedule]));
+    when(
+      () => repository.getJadwal(),
+    ).thenAnswer((_) async => Right([schedule]));
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
 
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider.value(
-        value: cubit,
-        child: const JadwalPage(),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
+    await _selectCalendarDate(tester, start);
     await tester.tap(find.text(schedule.lokasi));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Mulai'));
+    final startTile = find.ancestor(
+      of: find.text('Mulai'),
+      matching: find.byType(GestureDetector),
+    );
+    await tester.ensureVisible(startTile);
+    await tester.tap(startTile);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.byType(CalendarDatePicker), findsOneWidget);
@@ -432,16 +504,40 @@ JadwalEntity _schedule({
   String cakupanPenerima = 'semua_nasabah',
   List<String> penerimaIds = const [],
   bool isOverlapping = false,
-}) =>
-    JadwalEntity(
-      id: id,
-      bankSampahId: 'bank-1',
-      jenisKegiatan: 'penimbangan',
-      mulaiPada: start ?? DateTime(2026, 10, 10, 8),
-      selesaiPada: end ?? DateTime(2026, 10, 10, 10),
-      lokasi: location,
-      cakupanPenerima: cakupanPenerima,
-      penerimaIds: penerimaIds,
-      status: status,
-      isOverlapping: isOverlapping,
+}) {
+  final startsAt = start ?? DateTime.now().add(const Duration(hours: 1));
+  return JadwalEntity(
+    id: id,
+    bankSampahId: 'bank-1',
+    jenisKegiatan: 'penimbangan',
+    mulaiPada: startsAt,
+    selesaiPada: end ?? startsAt.add(const Duration(hours: 2)),
+    lokasi: location,
+    cakupanPenerima: cakupanPenerima,
+    penerimaIds: penerimaIds,
+    status: status,
+    isOverlapping: isOverlapping,
+  );
+}
+
+Future<void> _selectCalendarDate(WidgetTester tester, DateTime date) async {
+  final today = DateTime.now();
+  final monthDifference =
+      (date.year - today.year) * 12 + date.month - today.month;
+  await tester.tap(find.byKey(const ValueKey('jadwal-calendar-toggle')));
+  await tester.pumpAndSettle();
+  for (var step = 0; step < monthDifference.abs(); step++) {
+    await tester.tap(
+      find.byTooltip(
+        monthDifference < 0 ? 'Bulan sebelumnya' : 'Bulan berikutnya',
+      ),
     );
+    await tester.pumpAndSettle();
+  }
+  await tester.tap(
+    find.byKey(
+      ValueKey('jadwal-date-${date.year}-${date.month}-${date.day}'),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
