@@ -278,4 +278,46 @@ void main() {
       expect(pencairan.diperbarui, isTrue);
     });
   });
+
+  group('getRevisi', () {
+    test('maps the current pencairan and its replaced versions', () async {
+      when(() => network.get('/api/v1/pencairan/p-1/riwayat')).thenAnswer(
+        (_) async => _ok('/api/v1/pencairan/p-1/riwayat', {
+          'pencairan': {
+            ..._pencairanJson(),
+            'nominal': '150000.00',
+            'diperbarui': true,
+          },
+          'revisi': [
+            {
+              'versi': 1,
+              'tanggal': '2026-09-22T03:15:00Z',
+              'nominal': '200000.00',
+              'metode': 'tunai',
+              'keterangan': 'Diambil pagi',
+              'saldo_sebelum': '465600.00',
+              'saldo_sesudah': '265600.00',
+              'alasan': 'Salah ketik nominal',
+              'diubah_oleh': 'u-1',
+              'diubah_oleh_nama': 'Ibu Sari',
+              'diubah_pada': '2026-09-22T05:00:00Z',
+            },
+          ],
+        }),
+      );
+
+      final result = await repository.getRevisi('p-1');
+
+      final riwayat = result.getOrElse(() => throw 'expected Right');
+      expect(riwayat.pencairan.nominal, 150000);
+      final versi = riwayat.revisi.single;
+      expect(versi.versi, 1);
+      expect(versi.nominal, 200000);
+      expect(versi.metode, MetodePencairan.tunai);
+      expect(versi.saldoSesudah, 265600);
+      expect(versi.alasan, 'Salah ketik nominal');
+      expect(versi.diubahOlehNama, 'Ibu Sari');
+      expect(versi.diubahPada, DateTime.utc(2026, 9, 22, 5).toLocal());
+    });
+  });
 }
