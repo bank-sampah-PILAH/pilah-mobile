@@ -243,7 +243,8 @@ void main() {
   group('editPencairan', () {
     test('patches every field with the alasan and maps the result', () async {
       Map<String, dynamic>? sent;
-      when(() => network.patch('/api/v1/pencairan/p-1', data: any(named: 'data')))
+      when(() =>
+              network.patch('/api/v1/pencairan/p-1', data: any(named: 'data')))
           .thenAnswer((invocation) async {
         sent = invocation.namedArguments[#data] as Map<String, dynamic>;
         return _ok('/api/v1/pencairan/p-1', {
