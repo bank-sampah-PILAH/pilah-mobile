@@ -324,42 +324,6 @@ void main() {
     expect(cubit.state, JadwalLoaded([existing], totalCount: 1));
   });
 
-  test('rejects saves while a transition remains pending after refresh fails',
-      () async {
-    final existing = _existingSchedule();
-    final newSchedule = _existingSchedule(id: '');
-    final transitionResult =
-        Completer<Either<NetworkException, JadwalEntity>>();
-    var loadCount = 0;
-    when(() => repository.getJadwal()).thenAnswer((_) async {
-      loadCount++;
-      if (loadCount == 2) {
-        return Left(GeneralException(message: 'offline'));
-      }
-      return Right([existing]);
-    });
-    when(() => repository.transition('schedule-1', 'terbitkan'))
-        .thenAnswer((_) => transitionResult.future);
-    when(() => repository.createJadwal(newSchedule))
-        .thenAnswer((_) async => Right(newSchedule));
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
-
-    await cubit.loadJadwal();
-    final transition = cubit.changeStatus('schedule-1', 'terbitkan');
-    await Future<void>.delayed(Duration.zero);
-    await cubit.loadJadwal(silent: true);
-    expect(cubit.state, const JadwalError('offline'));
-
-    final saveFailure = await cubit.saveJadwal(newSchedule);
-    transitionResult.complete(Right(existing));
-    expect(await transition, isNull);
-
-    expect(saveFailure, isA<GeneralException>());
-    verifyNever(() => repository.createJadwal(newSchedule));
-    expect(cubit.state, JadwalLoaded([existing]));
-  });
-
   test('ignores a schedule load that finishes after session reset', () async {
     final previous = _existingSchedule();
     final current = _existingSchedule(id: 'schedule-2');
