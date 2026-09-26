@@ -42,12 +42,15 @@ void main() {
     final authenticationStates = StreamController<AuthenticationStates>();
     addTearDown(authenticationStates.close);
     final jadwalCubit = _MockJadwalCubit();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final startsAt = DateTime(today.year, today.month, today.day, 9).toUtc();
     final schedule = JadwalEntity(
       id: 'jadwal-1',
       bankSampahId: 'bank-1',
       jenisKegiatan: 'penimbangan',
-      mulaiPada: DateTime.utc(2026, 10, 10, 1),
-      selesaiPada: DateTime.utc(2026, 10, 10, 3),
+      mulaiPada: startsAt,
+      selesaiPada: startsAt.add(const Duration(hours: 2)),
       lokasi: 'Balai Warga',
       status: 'diterbitkan',
     );
@@ -57,7 +60,8 @@ void main() {
       initialState: AuthenticationLoading(),
     );
     when(() => jadwalCubit.state).thenReturn(JadwalLoaded([schedule]));
-    when(() => jadwalCubit.loadJadwal()).thenAnswer((_) async {});
+    when(() => jadwalCubit.loadJadwal(date: today)).thenAnswer((_) async {});
+    _stubCalendarLoad(jadwalCubit, today);
 
     final router = AppRouterConfig.getRouter();
     router.go(JadwalPage.route);
@@ -120,4 +124,19 @@ void main() {
     expect(find.text('Terbitkan'), findsNothing);
     expect(find.text('Tandai Selesai'), findsNothing);
   });
+}
+
+void _stubCalendarLoad(_MockJadwalCubit cubit, DateTime date) {
+  final first = DateTime(date.year, date.month, 1);
+  final offset = first.weekday - DateTime.monday;
+  final firstVisible = first.subtract(Duration(days: offset));
+  final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
+  final weekCount = (offset + daysInMonth + 6) ~/ 7;
+  final lastVisible = firstVisible.add(Duration(days: weekCount * 7 - 1));
+  when(
+    () => cubit.loadCalendarDates(
+      startDate: firstVisible,
+      endDate: lastVisible,
+    ),
+  ).thenAnswer((_) async {});
 }
