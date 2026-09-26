@@ -59,7 +59,7 @@ void main() {
     verify(() => network.post('/api/v1/jadwal/schedule-1/terbitkan')).called(1);
   });
 
-  test('loads every page of schedules', () async {
+  test('loads one page of schedules without draining the API', () async {
     final network = _MockNetworkService();
     final queries = <Map<String, dynamic>>[];
     when(() => network.get(
@@ -69,26 +69,54 @@ void main() {
       final query =
           invocation.namedArguments[#queryParams] as Map<String, dynamic>;
       queries.add(query);
-      final page = queries.length;
       return Response<Map<String, dynamic>>(
         requestOptions: RequestOptions(path: '/api/v1/jadwal'),
         data: {
-          'next': page == 1
-              ? 'https://api.pilah.test/api/v1/jadwal?page=2&page_size=100'
-              : null,
-          'results': [_schedule('schedule-$page')],
+          'count': 21,
+          'next': 'https://api.pilah.test/api/v1/jadwal?page=2&page_size=20',
+          'results': [_schedule('schedule-1')],
         },
       );
     });
 
-    final schedules = await JadwalRemoteDataSourceImpl(network).getJadwal();
+    final result = await JadwalRemoteDataSourceImpl(network).getJadwal(
+      page: 1,
+      date: DateTime(2026, 10, 10),
+    );
 
-    expect(
-        schedules.map((schedule) => schedule.id), ['schedule-1', 'schedule-2']);
+    expect(result.items.map((schedule) => schedule.id), ['schedule-1']);
+    expect(result.totalCount, 21);
+    expect(result.hasMore, isTrue);
     expect(queries, [
-      {'page_size': 100},
-      {'page_size': 100, 'page': 2},
+      {'page_size': 20, 'page': 1, 'date': '2026-10-10'},
     ]);
+  });
+
+  test('loads calendar date markers for a bounded range', () async {
+    final network = _MockNetworkService();
+    when(() => network.get(
+          '/api/v1/jadwal/calendar-dates',
+          queryParams: any(named: 'queryParams'),
+        )).thenAnswer((_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/api/v1/jadwal/calendar-dates'),
+          data: {
+            'dates': ['2026-10-10', '2026-10-12']
+          },
+        ));
+
+    final dates = await JadwalRemoteDataSourceImpl(network).getCalendarDates(
+      DateTime(2026, 10, 1),
+      DateTime(2026, 10, 31),
+    );
+
+    expect(dates, {DateTime(2026, 10, 10), DateTime(2026, 10, 12)});
+    verify(() => network.get(
+          '/api/v1/jadwal/calendar-dates',
+          queryParams: {
+            'start_date': '2026-10-01',
+            'end_date': '2026-10-31',
+          },
+        )).called(1);
   });
 }
 

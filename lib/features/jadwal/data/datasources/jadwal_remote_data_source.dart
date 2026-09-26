@@ -1,9 +1,11 @@
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
+import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 
 abstract class JadwalRemoteDataSource {
-  Future<List<JadwalModel>> getJadwal();
+  Future<JadwalPageModel> getJadwal({required int page, DateTime? date});
+  Future<Set<DateTime>> getCalendarDates(DateTime startDate, DateTime endDate);
   Future<JadwalModel> createJadwal(JadwalModel jadwal);
   Future<JadwalModel> updateJadwal(JadwalModel jadwal);
   Future<JadwalModel> transition(String id, String action);
@@ -16,23 +18,41 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   JadwalRemoteDataSourceImpl(this.networkService);
 
   @override
-  Future<List<JadwalModel>> getJadwal() async {
-    final schedules = <JadwalModel>[];
-    var page = 1;
-    while (true) {
-      final response = await networkService.get(
-        '/api/v1/jadwal',
-        queryParams: {'page_size': 100, if (page > 1) 'page': page},
-      );
-      final data = response.data as Map<String, dynamic>;
-      final results = data['results'] as List<dynamic>? ?? const [];
-      schedules.addAll(results.map(
-        (item) => JadwalModel.fromJson(item as Map<String, dynamic>),
-      ));
-      if (data['next'] == null) return schedules;
-      page++;
-    }
+  Future<JadwalPageModel> getJadwal({required int page, DateTime? date}) async {
+    final response = await networkService.get(
+      '/api/v1/jadwal',
+      queryParams: {
+        'page_size': 20,
+        'page': page,
+        if (date != null) 'date': _formatDate(date),
+      },
+    );
+    return JadwalPageModel.fromJson(response.data as Map<String, dynamic>);
   }
+
+  @override
+  Future<Set<DateTime>> getCalendarDates(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final response = await networkService.get(
+      '/api/v1/jadwal/calendar-dates',
+      queryParams: {
+        'start_date': _formatDate(startDate),
+        'end_date': _formatDate(endDate),
+      },
+    );
+    final data = response.data as Map<String, dynamic>;
+    return (data['dates'] as List<dynamic>? ?? const []).map((value) {
+      final date = DateTime.parse(value.toString());
+      return DateTime(date.year, date.month, date.day);
+    }).toSet();
+  }
+
+  String _formatDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   @override
   Future<JadwalModel> createJadwal(JadwalModel jadwal) async {

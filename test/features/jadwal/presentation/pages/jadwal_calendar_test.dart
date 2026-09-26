@@ -19,8 +19,19 @@ void main() {
     final now = DateTime.now();
     final scheduledDate = DateTime(now.year, now.month, 10);
     final schedule = _schedule(scheduledDate);
-    when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
-    when(() => cubit.loadJadwal()).thenAnswer((_) async {});
+    when(() => cubit.state).thenReturn(JadwalLoaded(
+      [schedule],
+      totalCount: 1,
+      scheduledDates: {scheduledDate},
+    ));
+    when(() => cubit.loadJadwal(
+          silent: false,
+          date: any(named: 'date'),
+        )).thenAnswer((_) async {});
+    when(() => cubit.loadCalendarDates(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        )).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       BlocProvider<JadwalCubit>.value(
@@ -76,7 +87,14 @@ void main() {
   testWidgets('empty selected date offers a create action', (tester) async {
     final cubit = _MockJadwalCubit();
     when(() => cubit.state).thenReturn(const JadwalLoaded([]));
-    when(() => cubit.loadJadwal()).thenAnswer((_) async {});
+    when(() => cubit.loadJadwal(
+          silent: false,
+          date: any(named: 'date'),
+        )).thenAnswer((_) async {});
+    when(() => cubit.loadCalendarDates(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        )).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       BlocProvider<JadwalCubit>.value(

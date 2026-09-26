@@ -1,9 +1,10 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
@@ -30,8 +31,9 @@ void main() {
   blocTest<JadwalCubit, JadwalState>(
     'reset clears the current schedule list',
     build: () {
-      when(() => repository.getJadwal())
-          .thenAnswer((_) async => Right([schedule]));
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([schedule])),
+      );
       return JadwalCubit(repository);
     },
     act: (cubit) async {
@@ -40,7 +42,7 @@ void main() {
     },
     expect: () => [
       const JadwalLoading(),
-      JadwalLoaded([schedule]),
+      JadwalLoaded([schedule], totalCount: 1),
       const JadwalInitial(),
     ],
   );
@@ -48,7 +50,7 @@ void main() {
   blocTest<JadwalCubit, JadwalState>(
     'emits an error when loading schedules fails',
     build: () {
-      when(() => repository.getJadwal()).thenAnswer(
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
         (_) async => Left(GeneralException(message: 'offline')),
       );
       return JadwalCubit(repository);
@@ -58,10 +60,66 @@ void main() {
   );
 
   blocTest<JadwalCubit, JadwalState>(
+    'appends the next schedule page only when requested',
+    build: () {
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([schedule], totalCount: 2, hasMore: true)),
+      );
+      when(() => repository.getJadwal(page: 2, date: null)).thenAnswer(
+        (_) async =>
+            Right(_page([_existingSchedule(id: 'schedule-2')], totalCount: 2)),
+      );
+      return JadwalCubit(repository);
+    },
+    act: (cubit) async {
+      await cubit.loadJadwal();
+      await cubit.loadNextPage();
+    },
+    expect: () => [
+      const JadwalLoading(),
+      JadwalLoaded([schedule], hasMore: true, totalCount: 2),
+      JadwalLoaded(
+        [schedule],
+        hasMore: true,
+        isLoadingMore: true,
+        totalCount: 2,
+      ),
+      JadwalLoaded(
+        [schedule, _existingSchedule(id: 'schedule-2')],
+        totalCount: 2,
+      ),
+    ],
+    verify: (_) {
+      verify(() => repository.getJadwal(page: 1, date: null)).called(1);
+      verify(() => repository.getJadwal(page: 2, date: null)).called(1);
+    },
+  );
+
+  blocTest<JadwalCubit, JadwalState>(
+    'uses the selected day when loading its agenda',
+    build: () {
+      final selectedDate = DateTime(2026, 10, 10);
+      when(() => repository.getJadwal(page: 1, date: selectedDate)).thenAnswer(
+        (_) async => Right(_page([schedule])),
+      );
+      return JadwalCubit(repository);
+    },
+    act: (cubit) => cubit.loadJadwal(date: DateTime(2026, 10, 10, 14)),
+    expect: () => [
+      JadwalLoaded(const [], isLoading: true),
+      JadwalLoaded([schedule], totalCount: 1),
+    ],
+    verify: (_) => verify(
+      () => repository.getJadwal(page: 1, date: DateTime(2026, 10, 10)),
+    ).called(1),
+  );
+
+  blocTest<JadwalCubit, JadwalState>(
     'restores the loaded schedules and returns a failed save',
     build: () {
-      when(() => repository.getJadwal())
-          .thenAnswer((_) async => Right([schedule]));
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([schedule])),
+      );
       when(() => repository.createJadwal(any())).thenAnswer(
         (_) async => Left(GeneralException(message: 'rejected')),
       );
@@ -73,19 +131,21 @@ void main() {
     },
     expect: () => [
       const JadwalLoading(),
-      JadwalLoaded([schedule]),
-      JadwalLoaded([schedule], isSaving: true),
-      JadwalLoaded([schedule]),
+      JadwalLoaded([schedule], totalCount: 1),
+      JadwalLoaded([schedule], isSaving: true, totalCount: 1),
+      JadwalLoaded([schedule], totalCount: 1),
     ],
-    verify: (_) => verify(() => repository.getJadwal()).called(1),
+    verify: (_) =>
+        verify(() => repository.getJadwal(page: 1, date: null)).called(1),
   );
 
   blocTest<JadwalCubit, JadwalState>(
     'uses update for existing schedules',
     build: () {
       final existing = _existingSchedule();
-      when(() => repository.getJadwal())
-          .thenAnswer((_) async => Right([existing]));
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([existing])),
+      );
       when(() => repository.updateJadwal(existing))
           .thenAnswer((_) async => Right(existing));
       return JadwalCubit(repository);
@@ -98,9 +158,9 @@ void main() {
       final existing = _existingSchedule();
       return [
         const JadwalLoading(),
-        JadwalLoaded([existing]),
-        JadwalLoaded([existing], isSaving: true),
-        JadwalLoaded([existing]),
+        JadwalLoaded([existing], totalCount: 1),
+        JadwalLoaded([existing], isSaving: true, totalCount: 1),
+        JadwalLoaded([existing], totalCount: 1),
       ];
     },
     verify: (_) {
@@ -122,7 +182,7 @@ void main() {
       isA<GeneralException>(),
     ),
     expect: () => [],
-    verify: (_) => verifyNever(() => repository.getJadwal()),
+    verify: (_) => verifyNever(() => repository.getJadwal(page: 1, date: null)),
   );
 
   blocTest<JadwalCubit, JadwalState>(
@@ -130,23 +190,26 @@ void main() {
     build: () {
       when(() => repository.transition('schedule-1', 'terbitkan'))
           .thenAnswer((_) async => Right(schedule));
-      when(() => repository.getJadwal())
-          .thenAnswer((_) async => Right([schedule]));
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([schedule])),
+      );
       return JadwalCubit(repository);
     },
     act: (cubit) => cubit.changeStatus('schedule-1', 'terbitkan'),
     expect: () => [
       const JadwalLoading(),
-      JadwalLoaded([schedule]),
+      JadwalLoaded([schedule], totalCount: 1),
     ],
-    verify: (_) => verify(() => repository.getJadwal()).called(1),
+    verify: (_) =>
+        verify(() => repository.getJadwal(page: 1, date: null)).called(1),
   );
 
   blocTest<JadwalCubit, JadwalState>(
     'loads schedules and reloads after creating one',
     build: () {
-      when(() => repository.getJadwal())
-          .thenAnswer((_) async => Right([schedule]));
+      when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+        (_) async => Right(_page([schedule])),
+      );
       when(() => repository.createJadwal(any()))
           .thenAnswer((_) async => Right(schedule));
       return JadwalCubit(repository);
@@ -157,19 +220,30 @@ void main() {
     },
     expect: () => [
       const JadwalLoading(),
-      JadwalLoaded([schedule]),
-      JadwalLoaded([schedule], isSaving: true),
-      JadwalLoaded([schedule]),
+      JadwalLoaded([schedule], totalCount: 1),
+      JadwalLoaded([schedule], isSaving: true, totalCount: 1),
+      JadwalLoaded([schedule], totalCount: 1),
     ],
     verify: (_) {
       verify(() => repository.createJadwal(schedule)).called(1);
-      verify(() => repository.getJadwal()).called(2);
+      verify(() => repository.getJadwal(page: 1, date: null)).called(2);
     },
   );
 }
 
-JadwalEntity _existingSchedule() => JadwalEntity(
-      id: 'schedule-1',
+JadwalPageResult _page(
+  List<JadwalEntity> items, {
+  int? totalCount,
+  bool hasMore = false,
+}) =>
+    JadwalPageResult(
+      items: items,
+      totalCount: totalCount ?? items.length,
+      hasMore: hasMore,
+    );
+
+JadwalEntity _existingSchedule({String id = 'schedule-1'}) => JadwalEntity(
+      id: id,
       bankSampahId: 'bank-1',
       jenisKegiatan: 'penimbangan',
       mulaiPada: DateTime.utc(2026, 10, 10, 1),

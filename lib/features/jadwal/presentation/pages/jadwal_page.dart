@@ -21,15 +21,55 @@ class JadwalPage extends StatefulWidget {
 class _JadwalPageState extends State<JadwalPage> {
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   bool _isMonthExpanded = false;
+  late final ScrollController _scrollController;
+  DateTime? _markerMonth;
 
   @override
   void initState() {
     super.initState();
-    context.read<JadwalCubit>().loadJadwal();
+    _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
+    context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
+    _loadCalendarDatesFor(_selectedDate);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_loadNextPageNearEnd)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _loadNextPageNearEnd() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.extentAfter > 320) {
+      return;
+    }
+    context.read<JadwalCubit>().loadNextPage();
+  }
+
+  void _loadCalendarDatesFor(DateTime date) {
+    final month = DateTime(date.year, date.month);
+    _markerMonth = month;
+    final first = DateTime(date.year, date.month, 1);
+    final offset = first.weekday - DateTime.monday;
+    final firstVisible = first.subtract(Duration(days: offset));
+    final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
+    final weekCount = (offset + daysInMonth + 6) ~/ 7;
+    final lastVisible = firstVisible.add(Duration(days: weekCount * 7 - 1));
+    context.read<JadwalCubit>().loadCalendarDates(
+          startDate: firstVisible,
+          endDate: lastVisible,
+        );
   }
 
   void _selectDate(DateTime date) {
-    setState(() => _selectedDate = DateUtils.dateOnly(date));
+    final selectedDate = DateUtils.dateOnly(date);
+    if (DateUtils.isSameDay(selectedDate, _selectedDate)) return;
+    setState(() => _selectedDate = selectedDate);
+    context.read<JadwalCubit>().loadJadwal(date: selectedDate);
+    final month = DateTime(selectedDate.year, selectedDate.month);
+    if (_markerMonth != month) _loadCalendarDatesFor(selectedDate);
   }
 
   void _navigateCalendar(int direction) {
@@ -100,11 +140,13 @@ class _JadwalPageState extends State<JadwalPage> {
             return _RetryableMessage(
               message: state.message,
               buttonLabel: 'Coba Lagi',
-              onPressed: () => context.read<JadwalCubit>().loadJadwal(),
+              onPressed: () =>
+                  context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
             );
           }
 
-          final items = List<JadwalEntity>.of((state as JadwalLoaded).items)
+          final loaded = state as JadwalLoaded;
+          final items = List<JadwalEntity>.of(loaded.items)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
           final dayItems = items
               .where(
@@ -114,20 +156,18 @@ class _JadwalPageState extends State<JadwalPage> {
                 ),
               )
               .toList();
-          final scheduledDates = items
-              .map((item) => DateUtils.dateOnly(item.mulaiPada.toLocal()))
-              .toSet();
-
           return RefreshIndicator(
-            onRefresh: () =>
-                context.read<JadwalCubit>().loadJadwal(silent: true),
+            onRefresh: () => context
+                .read<JadwalCubit>()
+                .loadJadwal(silent: true, date: _selectedDate),
             child: ListView(
+              controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
               children: [
                 JadwalCalendar(
                   selectedDate: _selectedDate,
-                  scheduledDates: scheduledDates,
+                  scheduledDates: loaded.scheduledDates,
                   isMonthExpanded: _isMonthExpanded,
                   onSelectDate: _selectDate,
                   onNavigate: _navigateCalendar,
@@ -149,7 +189,7 @@ class _JadwalPageState extends State<JadwalPage> {
                       ),
                     ),
                     Text(
-                      '${dayItems.length} jadwal',
+                      '${loaded.totalCount} jadwal',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,
@@ -159,11 +199,18 @@ class _JadwalPageState extends State<JadwalPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                if (dayItems.isEmpty)
+                if (loaded.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 28),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (dayItems.isEmpty)
                   _EmptyScheduleDay(
                     date: _selectedDate,
                     onCreate: _openForm,
-                    onRefresh: () => context.read<JadwalCubit>().loadJadwal(),
+                    onRefresh: () => context
+                        .read<JadwalCubit>()
+                        .loadJadwal(date: _selectedDate),
                   )
                 else
                   ...dayItems.map(
@@ -174,6 +221,30 @@ class _JadwalPageState extends State<JadwalPage> {
                         onTap: () => _openForm(item),
                       ),
                     ),
+                  ),
+                if (!loaded.isLoading && loaded.hasMore)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: loaded.loadingMoreError != null
+                        ? Center(
+                            child: TextButton.icon(
+                              onPressed:
+                                  context.read<JadwalCubit>().loadNextPage,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Coba muat lagi'),
+                            ),
+                          )
+                        : loaded.isLoadingMore
+                            ? const Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : const SizedBox(height: 1),
                   ),
               ],
             ),

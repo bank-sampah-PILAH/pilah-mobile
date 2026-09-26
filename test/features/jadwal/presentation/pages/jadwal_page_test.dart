@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -14,14 +15,17 @@ import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
 
 void main() {
-  setUpAll(() => registerFallbackValue(_schedule()));
+  setUpAll(() {
+    registerFallbackValue(_schedule());
+    registerFallbackValue(DateTime(2026, 10, 10));
+  });
 
   testWidgets('disables schedule submission while the save is pending', (
     tester,
   ) async {
     final repository = _MockJadwalRepository();
     final pending = Completer<Either<NetworkException, JadwalEntity>>();
-    when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
+    _stubJadwal(repository, const []);
     when(
       () => repository.createJadwal(any()),
     ).thenAnswer((_) => pending.future);
@@ -51,7 +55,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockJadwalRepository();
-    when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
+    _stubJadwal(repository, const []);
     when(
       () => repository.createJadwal(any()),
     ).thenAnswer((_) async => Right(_schedule()));
@@ -84,11 +88,15 @@ void main() {
   ) async {
     final repository = _MockJadwalRepository();
     var loadCount = 0;
-    when(() => repository.getJadwal()).thenAnswer((_) async {
+    _stubCalendarDates(repository);
+    when(() => repository.getJadwal(
+          page: any(named: 'page'),
+          date: any(named: 'date'),
+        )).thenAnswer((_) async {
       loadCount++;
       return loadCount == 1
           ? Left(GeneralException(message: 'Koneksi gagal'))
-          : const Right<NetworkException, List<JadwalEntity>>([]);
+          : Right(_page(const []));
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
@@ -112,11 +120,15 @@ void main() {
   ) async {
     final repository = _MockJadwalRepository();
     var loadCount = 0;
-    when(() => repository.getJadwal()).thenAnswer((_) async {
+    _stubCalendarDates(repository);
+    when(() => repository.getJadwal(
+          page: any(named: 'page'),
+          date: any(named: 'date'),
+        )).thenAnswer((_) async {
       loadCount++;
       return loadCount == 1
-          ? const Right<NetworkException, List<JadwalEntity>>([])
-          : Right<NetworkException, List<JadwalEntity>>([_schedule()]);
+          ? Right(_page(const []))
+          : Right(_page([_schedule()]));
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
@@ -132,7 +144,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Balai Warga'), findsOneWidget);
-    verify(() => repository.getJadwal()).called(2);
+    verify(() => repository.getJadwal(
+          page: any(named: 'page'),
+          date: any(named: 'date'),
+        )).called(2);
   });
 
   testWidgets('pull-to-refresh reloads even a short schedule list', (
@@ -140,9 +155,13 @@ void main() {
   ) async {
     final repository = _MockJadwalRepository();
     var loadCount = 0;
-    when(() => repository.getJadwal()).thenAnswer((_) async {
+    _stubCalendarDates(repository);
+    when(() => repository.getJadwal(
+          page: any(named: 'page'),
+          date: any(named: 'date'),
+        )).thenAnswer((_) async {
       loadCount++;
-      return Right([_schedule()]);
+      return Right(_page([_schedule()]));
     });
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
@@ -172,9 +191,7 @@ void main() {
       _schedule(id: 'cancelled', location: 'Cancelled', status: 'dibatalkan'),
       _schedule(id: 'completed', location: 'Completed', status: 'selesai'),
     ];
-    when(
-      () => repository.getJadwal(),
-    ).thenAnswer((_) async => Right(schedules));
+    _stubJadwal(repository, schedules);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -197,9 +214,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockJadwalRepository();
-    when(
-      () => repository.getJadwal(),
-    ).thenAnswer((_) async => Right([_schedule(isOverlapping: true)]));
+    _stubJadwal(repository, [_schedule(isOverlapping: true)]);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -220,7 +235,7 @@ void main() {
   ) async {
     final repository = _MockJadwalRepository();
     JadwalEntity? submitted;
-    when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
+    _stubJadwal(repository, const []);
     when(() => repository.createJadwal(any())).thenAnswer((invocation) async {
       submitted = invocation.positionalArguments.single as JadwalEntity;
       return Right(submitted!);
@@ -258,7 +273,7 @@ void main() {
 
   testWidgets('requires a location before creating a schedule', (tester) async {
     final repository = _MockJadwalRepository();
-    when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
+    _stubJadwal(repository, const []);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -287,9 +302,7 @@ void main() {
       start: start,
       end: start.subtract(const Duration(minutes: 1)),
     );
-    when(
-      () => repository.getJadwal(),
-    ).thenAnswer((_) async => Right([schedule]));
+    _stubJadwal(repository, [schedule]);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -317,7 +330,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockJadwalRepository();
-    when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
+    _stubJadwal(repository, const []);
     when(() => repository.createJadwal(any())).thenAnswer(
       (_) async => Left(GeneralException(message: 'Jadwal gagal disimpan')),
     );
@@ -357,9 +370,7 @@ void main() {
         penerimaIds: const ['member-1'],
       );
       JadwalEntity? submitted;
-      when(
-        () => repository.getJadwal(),
-      ).thenAnswer((_) async => Right([target]));
+      _stubJadwal(repository, [target]);
       when(() => repository.updateJadwal(any())).thenAnswer((invocation) async {
         submitted = invocation.positionalArguments.single as JadwalEntity;
         return Right(target);
@@ -396,7 +407,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockJadwalRepository();
-    when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
+    _stubJadwal(repository, const []);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -420,7 +431,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockJadwalRepository();
-    when(() => repository.getJadwal()).thenAnswer((_) async => const Right([]));
+    _stubJadwal(repository, const []);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -462,9 +473,7 @@ void main() {
       start: start,
       end: start.add(const Duration(hours: 2)),
     );
-    when(
-      () => repository.getJadwal(),
-    ).thenAnswer((_) async => Right([schedule]));
+    _stubJadwal(repository, [schedule]);
     final cubit = JadwalCubit(repository);
     addTearDown(cubit.close);
 
@@ -494,6 +503,25 @@ void main() {
     expect(find.textContaining('18:30'), findsNWidgets(2));
   });
 }
+
+void _stubJadwal(_MockJadwalRepository repository, List<JadwalEntity> items) {
+  _stubCalendarDates(repository);
+  when(() => repository.getJadwal(
+        page: any(named: 'page'),
+        date: any(named: 'date'),
+      )).thenAnswer((_) async => Right(_page(items)));
+}
+
+void _stubCalendarDates(_MockJadwalRepository repository) {
+  when(() => repository.getCalendarDates(any(), any()))
+      .thenAnswer((_) async => const Right({}));
+}
+
+JadwalPageResult _page(List<JadwalEntity> items) => JadwalPageResult(
+      items: items,
+      totalCount: items.length,
+      hasMore: false,
+    );
 
 JadwalEntity _schedule({
   String id = 'schedule-1',

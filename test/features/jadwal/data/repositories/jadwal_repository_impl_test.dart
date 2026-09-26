@@ -3,7 +3,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
+import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository_impl.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 
 class _MockJadwalRemoteDataSource extends Mock
     implements JadwalRemoteDataSource {}
@@ -20,21 +22,51 @@ void main() {
   });
 
   test('returns schedules from the remote source', () async {
-    when(() => remote.getJadwal()).thenAnswer((_) async => [_schedule()]);
+    when(() => remote.getJadwal(page: 1, date: null)).thenAnswer(
+      (_) async => JadwalPageModel(
+        items: [_schedule()],
+        totalCount: 1,
+        hasMore: false,
+      ),
+    );
 
-    final result = await repository.getJadwal();
+    final result = await repository.getJadwal(page: 1);
 
     expect(result.isRight(), isTrue);
-    expect(result.getOrElse(() => const []).single.id, 'schedule-1');
+    expect(
+        result
+            .getOrElse(() => const JadwalPageResult(
+                  items: [],
+                  totalCount: 0,
+                  hasMore: false,
+                ))
+            .items
+            .single
+            .id,
+        'schedule-1');
   });
 
   test('converts schedule-load exceptions to NetworkException', () async {
-    when(() => remote.getJadwal()).thenThrow(Exception('offline'));
+    when(() => remote.getJadwal(page: 1, date: null))
+        .thenThrow(Exception('offline'));
 
-    final result = await repository.getJadwal();
+    final result = await repository.getJadwal(page: 1);
 
     expect(result.fold((failure) => failure, (_) => null),
         isA<GeneralException>());
+  });
+
+  test('returns calendar markers from the remote source', () async {
+    when(() => remote.getCalendarDates(
+            DateTime(2026, 10, 1), DateTime(2026, 10, 31)))
+        .thenAnswer((_) async => {DateTime(2026, 10, 10)});
+
+    final result = await repository.getCalendarDates(
+      DateTime(2026, 10, 1),
+      DateTime(2026, 10, 31),
+    );
+
+    expect(result.getOrElse(() => const {}), {DateTime(2026, 10, 10)});
   });
 
   test('creates a schedule through the remote source', () async {
