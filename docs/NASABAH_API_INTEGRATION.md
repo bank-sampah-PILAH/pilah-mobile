@@ -1,5 +1,21 @@
 # PIL-225 / PIL-226 backend refactors and mobile integration
 
+## Mobile review dependency
+
+PIL-226 (PR #18) is stacked on PIL-225 (PR #19). Review and merge #19
+first, then retarget #18 to `staging`. The shared browser entrypoint and
+vendored passkeys runtime belong to #19; #18 adds the profile route and API
+integration without duplicating those web changes in its review diff.
+
+Both branches use Flutter 3.41.3, as pinned by `.fvmrc` and the CI/CD
+workflows. Run `flutter pub get --enforce-lockfile` before code generation.
+The old analyzer override is no longer needed with the updated base dependencies.
+
+The profile resource is keyed by account ID and email. A token refresh keeps
+the existing response; switching accounts creates a new request and discards
+pending results from the previous account. Use **Muat ulang** to explicitly
+refresh the profile within the same account.
+
 ## Backend commits
 
 - PIL-225: `31afd08` on `feature/pil-225`.
