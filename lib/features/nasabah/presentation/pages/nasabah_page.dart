@@ -122,7 +122,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                   final isActiveTab =
                       state is NasabahLoaded ? state.isActiveTab : true;
                   return NasabahFilterChips(
-                    isActiveTab: isActiveTab,
+                    activeTab: isActiveTab,
                     onTabChanged: (value) {
                       context.read<NasabahCubit>().setActiveTab(value);
                     },
@@ -162,15 +162,21 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                             );
                           }
                           return EmptyView(
-                            title: state.isActiveTab
-                                ? 'Belum Ada Nasabah'
-                                : 'Tidak Ada Nasabah Nonaktif',
-                            subtitle: state.isActiveTab
-                                ? 'Tekan tombol + untuk menambah nasabah pertama.'
-                                : 'Semua nasabah masih berstatus aktif.',
-                            icon: state.isActiveTab
-                                ? Icons.people_outline
-                                : Icons.person_off_outlined,
+                            title: state.isMenungguTab
+                                ? 'Tidak Ada Pengajuan'
+                                : state.isActiveTab!
+                                    ? 'Belum Ada Nasabah'
+                                    : 'Tidak Ada Nasabah Nonaktif',
+                            subtitle: state.isMenungguTab
+                                ? 'Belum ada pengajuan keanggotaan yang menunggu persetujuan.'
+                                : state.isActiveTab!
+                                    ? 'Tekan tombol + untuk menambah nasabah pertama.'
+                                    : 'Semua nasabah masih berstatus aktif.',
+                            icon: state.isMenungguTab
+                                ? Icons.hourglass_empty
+                                : state.isActiveTab!
+                                    ? Icons.people_outline
+                                    : Icons.person_off_outlined,
                           );
                         }
 
@@ -188,6 +194,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                               avatarColor: customer.avatarColor,
                               textColor: customer.textColor,
                               name: customer.name,
+                              email: customer.email,
                               phone: customer.phone,
                               balance: customer.balance,
                               id: customer.id,
@@ -196,6 +203,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                               tanggalLahir: customer.tanggalLahir,
                               tanggalDaftar: customer.tanggalDaftar,
                               address: customer.address,
+                              isPending: customer.status == 'pending',
                               nasabahCubit: context.read<NasabahCubit>(),
                             );
                           },

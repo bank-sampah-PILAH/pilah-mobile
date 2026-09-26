@@ -11,6 +11,7 @@ class NasabahModel extends NasabahEntity {
     required super.id,
     required super.idNasabah,
     required super.name,
+    required super.email,
     required super.phone,
     required super.balance,
     required super.isActive,
@@ -21,6 +22,7 @@ class NasabahModel extends NasabahEntity {
     required super.jenisKelamin,
     required super.tanggalLahir,
     required super.tanggalDaftar,
+    required super.status,
   });
 
   factory NasabahModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,7 @@ class NasabahModel extends NasabahEntity {
       id: json['id']?.toString() ?? '',
       idNasabah: json['kode']?.toString() ?? '',
       name: nama,
+      email: json['email']?.toString() ?? '',
       phone: json['no_hp']?.toString() ?? '',
       balance: formatRupiah(json['total_saldo']),
       isActive: json['is_active'] as bool? ?? true,
@@ -40,7 +43,20 @@ class NasabahModel extends NasabahEntity {
       jenisKelamin: genderLabel(json['jenis_kelamin']?.toString()),
       tanggalLahir: isoToDisplay(json['tanggal_lahir']?.toString()),
       tanggalDaftar: isoToDisplay(json['tanggal_daftar']?.toString()),
+      status: json['status']?.toString() ?? 'approved',
     );
+  }
+
+  /// UI label for the membership status (PIL-188).
+  String statusLabel() {
+    switch (status) {
+      case 'pending':
+        return 'Menunggu';
+      case 'rejected':
+        return 'Ditolak';
+      default:
+        return 'Disetujui';
+    }
   }
 
   /// Builds the request body for POST/PUT `/nasabah` from a [NasabahRequest].
@@ -48,6 +64,7 @@ class NasabahModel extends NasabahEntity {
     return {
       'kode': request.kode.trim(),
       'nama': request.nama.trim(),
+      'email': request.email.trim(),
       'jenis_kelamin': genderValue(request.jenisKelamin),
       'tanggal_lahir': displayToIso(request.tanggalLahir),
       'no_hp': request.noHp.trim(),

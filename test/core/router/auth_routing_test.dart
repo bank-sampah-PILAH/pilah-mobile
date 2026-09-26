@@ -20,6 +20,8 @@ void main() {
       expect(locationForAuthStep('approval_pending'), '/pending-approval');
       expect(
           locationForAuthStep('superadmin_dashboard'), '/superadmin-dashboard');
+      expect(
+          locationForAuthStep('pengelola_induk_dashboard'), '/pengelola-induk');
       expect(locationForAuthStep('dashboard'), '/dashboard');
       expect(locationForAuthStep(null), '/dashboard');
     });
@@ -60,10 +62,15 @@ void main() {
       );
     });
 
-    test('a superadmin is exempt — they belong to no bank sampah', () {
+    test('non-pengelola roles do not enter the invite flow', () {
       expect(
         locationForAuthStep('superadmin_dashboard', hasPendingInvite: true),
         '/superadmin-dashboard',
+      );
+      expect(
+        locationForAuthStep('pengelola_induk_dashboard',
+            hasPendingInvite: true),
+        '/pengelola-induk',
       );
     });
   });
@@ -73,6 +80,7 @@ void main() {
       expect(pendingInviteLocation('complete_profile'), '/complete-profile');
       expect(pendingInviteLocation('dashboard'), '/invite-processing');
       expect(pendingInviteLocation('approval_pending'), '/invite-processing');
+      expect(pendingInviteLocation('pengelola_induk_dashboard'), isNull);
       expect(pendingInviteLocation(null), '/invite-processing');
     });
 

@@ -7,4 +7,6 @@ abstract class NasabahRemoteDataSource {
   Future<NasabahModel> addNasabah(NasabahRequest request);
   Future<NasabahModel> updateNasabah(String id, NasabahRequest request);
   Future<void> setStatus(String id, bool isActive);
+  Future<void> approveNasabah(String id, String? catatan);
+  Future<void> rejectNasabah(String id, String? catatan);
 }

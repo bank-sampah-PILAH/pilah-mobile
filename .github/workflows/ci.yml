@@ -18,9 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Matches the local dev SDK (3.38.3 stable). Pin exactly so a new Flutter
-  # release can't silently change analyzer/test behavior under the gate.
-  FLUTTER_VERSION: "3.38.3"
+  # Matches the repository's `.fvmrc` (3.41.3 stable). Pin exactly so a new
+  # Flutter release can't silently change analyzer/test behavior under the gate.
+  FLUTTER_VERSION: "3.41.3"
 
 jobs:
   verify:
@@ -29,6 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # PR diff coverage compares against the actual stacked base branch.
+          fetch-depth: 0
 
       # Exact-version Flutter via the official versioned runner. The pub cache
       # is kept across runs so dependency downloads stay off the critical path.
@@ -37,6 +40,13 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install diff coverage tool
+        run: python -m pip install --disable-pip-version-check diff-cover==10.6.0
 
       # Java 17 for the Gradle side of the debug APK build.
       - uses: actions/setup-java@v4
@@ -93,6 +103,17 @@ jobs:
           echo "line coverage: ${pct}%"
           awk -v p="$pct" 'BEGIN { exit (p+0 >= 25 ? 0 : 1) }' \
             || { echo "::error::line coverage ${pct}% is below the 25% gate"; exit 1; }
+
+      # Report only executable lines changed by this PR. The base ref comes
+      # from GitHub so stacked PRs compare against their immediate parent.
+      - name: PR diff coverage (fail under 25%)
+        if: github.event_name == 'pull_request'
+        run: >-
+          diff-cover coverage/lcov.info
+          --compare-branch=origin/${{ github.base_ref }}
+          --fail-under=25
+          --total-percent-float
+          --show-uncovered
 
       # Lints the CI workflow files themselves (syntax, expression misuse,
       # invalid action inputs, shell scripts in run blocks). Cheap step at the

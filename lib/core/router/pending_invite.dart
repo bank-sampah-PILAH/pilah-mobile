@@ -10,7 +10,8 @@ import 'package:pilah_mobile/services/di.dart';
 /// redeem it would sit in the store and follow the *next* account signed in on
 /// this device into a bank sampah nobody invited them to. A superadmin session
 /// is exactly that: they belong to no bank sampah, and `POST /invites/accept`
-/// refuses them outright behind `IsPengelola`. Dropping the token on the first
+/// refuses them outright behind `IsPengelola`. Pengelola Induk cannot redeem
+/// bank invites either. Dropping the token on the first
 /// routing pass of their session is the narrowest place to catch it.
 ///
 /// Returns `null` when there is nothing to redeem, or nothing here that can
@@ -20,9 +21,11 @@ String? resolvePendingInvite({required String? step, required String? role}) {
   if (!store.hasToken) return null;
 
   // Role is checked ahead of the step: it is the backend's own answer, and it
-  // stays correct even if a superadmin's `next_step` is ever something other
+  // stays correct even if an exempt account's `next_step` is something other
   // than their dashboard.
-  final target = role == 'superadmin' ? null : pendingInviteLocation(step);
+  final target = role == 'superadmin' || role == 'pengelola_induk'
+      ? null
+      : pendingInviteLocation(step);
   if (target == null) {
     store.clear();
     return null;
