@@ -46,4 +46,15 @@ class PencairanRepositoryImpl implements PencairanRepository {
           .toList(),
     );
   }
+
+  @override
+  Future<Either<NetworkException, Pencairan>> editPencairan(
+    EditPencairanRequest request,
+  ) {
+    return apiCall<Pencairan>(
+      func: _remote.editPencairan(request),
+      mapper: (value) =>
+          PencairanMapper.mapResponseToDomain(value as PencairanResponse),
+    );
+  }
 }

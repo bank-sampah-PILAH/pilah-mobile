@@ -27,4 +27,10 @@ class PencairanInteractor implements PencairanUseCases {
     RiwayatPencairanFilter filter,
   ) =>
       _repository.getRiwayat(filter);
+
+  @override
+  Future<Either<NetworkException, Pencairan>> editPencairan(
+    EditPencairanRequest request,
+  ) =>
+      _repository.editPencairan(request);
 }
