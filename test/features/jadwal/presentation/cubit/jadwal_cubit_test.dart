@@ -484,7 +484,8 @@ void main() {
         JadwalLoaded([existing], totalCount: 1),
       ];
     },
-    verify: (_) => verify(() => repository.getJadwal(page: 1, date: null)).called(1),
+    verify: (_) =>
+        verify(() => repository.getJadwal(page: 1, date: null)).called(1),
   );
 
   blocTest<JadwalCubit, JadwalState>(

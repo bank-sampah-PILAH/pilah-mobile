@@ -243,7 +243,8 @@ void main() {
     final saveResult = cubit.saveJadwal(schedule);
     await tester.pumpAndSettle();
 
-    expect(cubit.state, JadwalLoaded([schedule], isSaving: true, totalCount: 1));
+    expect(
+        cubit.state, JadwalLoaded([schedule], isSaving: true, totalCount: 1));
     expect(
       tester
           .widget<FilledButton>(
