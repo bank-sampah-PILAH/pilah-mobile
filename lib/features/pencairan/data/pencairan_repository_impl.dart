@@ -5,8 +5,10 @@ import 'package:injectable/injectable.dart';
 
 import 'model/mapper/pencairan_mapper.dart';
 import 'model/responses/pencairan_response.dart';
+import 'model/responses/revisi_pencairan_response.dart';
 import 'remote/pencairan_remote_data_sources.dart';
 import '../domain/model/pencairan.dart';
+import '../domain/model/revisi_pencairan.dart';
 import '../domain/model/riwayat_pencairan_filter.dart';
 import '../domain/repository/pencairan_repository.dart';
 
@@ -55,6 +57,18 @@ class PencairanRepositoryImpl implements PencairanRepository {
       func: _remote.editPencairan(request),
       mapper: (value) =>
           PencairanMapper.mapResponseToDomain(value as PencairanResponse),
+    );
+  }
+
+  @override
+  Future<Either<NetworkException, RiwayatRevisiPencairan>> getRevisi(
+    String id,
+  ) {
+    return apiCall<RiwayatRevisiPencairan>(
+      func: _remote.getRevisi(id),
+      mapper: (value) => PencairanMapper.mapRiwayatRevisiToDomain(
+        value as RiwayatRevisiPencairanResponse,
+      ),
     );
   }
 }
