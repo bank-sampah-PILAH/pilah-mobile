@@ -44,6 +44,12 @@ class Pencairan extends Equatable {
   final int saldoSesudah;
   final String dicatatOlehNama;
 
+  /// True once a pengurus has edited this pencairan (PIL-230).
+  final bool diperbarui;
+
+  /// Earliest tanggal an edit may set; null from a backend without edits.
+  final DateTime? tanggalEditMinimum;
+
   const Pencairan({
     required this.id,
     this.nasabahId = '',
@@ -56,6 +62,8 @@ class Pencairan extends Equatable {
     required this.saldoSebelum,
     required this.saldoSesudah,
     this.dicatatOlehNama = '',
+    this.diperbarui = false,
+    this.tanggalEditMinimum,
   });
 
   @override
@@ -71,5 +79,7 @@ class Pencairan extends Equatable {
         saldoSebelum,
         saldoSesudah,
         dicatatOlehNama,
+        diperbarui,
+        tanggalEditMinimum,
       ];
 }

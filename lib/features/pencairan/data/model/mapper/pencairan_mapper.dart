@@ -15,6 +15,9 @@ class PencairanMapper {
       status: response.status,
       saldoSebelum: rupiah(response.saldoSebelum),
       saldoSesudah: rupiah(response.saldoSesudah),
+      diperbarui: response.diperbarui,
+      tanggalEditMinimum:
+          DateTime.tryParse(response.tanggalEditMinimum ?? '')?.toLocal(),
     );
   }
 
