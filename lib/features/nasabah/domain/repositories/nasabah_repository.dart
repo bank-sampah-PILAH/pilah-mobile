@@ -14,4 +14,12 @@ abstract class NasabahRepository {
   );
   Future<Either<NetworkException, void>> activateNasabah(String id);
   Future<Either<NetworkException, void>> deactivateNasabah(String id);
+  Future<Either<NetworkException, void>> approveNasabah(
+    String id, {
+    String? catatan,
+  });
+  Future<Either<NetworkException, void>> rejectNasabah(
+    String id, {
+    String? catatan,
+  });
 }

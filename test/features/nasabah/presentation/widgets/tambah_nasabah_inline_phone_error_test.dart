@@ -42,6 +42,7 @@ Widget _host(NasabahCubit cubit) => MaterialApp(
 Future<void> _fillValidForm(WidgetTester tester) async {
   await tester.enterText(find.byType(TextFormField).at(0), 'Budi Santoso');
   await tester.enterText(find.byType(TextFormField).at(1), 'NAS-0900');
+  await tester.enterText(find.byType(TextFormField).at(2), 'budi@example.com');
 
   await tester.tap(find.byType(DropdownButtonFormField<String>));
   await tester.pumpAndSettle();
@@ -49,14 +50,14 @@ Future<void> _fillValidForm(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   // Tanggal lahir is read-only and opens a date picker; any valid past date works.
-  await tester.tap(find.byType(TextFormField).at(2));
+  await tester.tap(find.byType(TextFormField).at(3));
   await tester.pumpAndSettle();
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
 
-  await tester.enterText(find.byType(TextFormField).at(3), '81234567890');
+  await tester.enterText(find.byType(TextFormField).at(4), '81234567890');
   await tester.enterText(
-      find.byType(TextFormField).at(4), 'Jl. Melati No. 3, RT 01/RW 02');
+      find.byType(TextFormField).at(5), 'Jl. Melati No. 3, RT 01/RW 02');
   await tester.pumpAndSettle();
 }
 
@@ -70,6 +71,7 @@ void main() {
     registerFallbackValue(NasabahRequest(
       kode: '',
       nama: '',
+      email: '',
       jenisKelamin: '',
       tanggalLahir: '',
       noHp: '',
@@ -148,7 +150,7 @@ void main() {
       await _submit(tester);
       expect(find.text(_duplicatePhoneMessage), findsOneWidget);
 
-      await tester.enterText(find.byType(TextFormField).at(3), '81234567899');
+      await tester.enterText(find.byType(TextFormField).at(4), '81234567899');
       await tester.pumpAndSettle();
 
       expect(find.text(_duplicatePhoneMessage), findsNothing);

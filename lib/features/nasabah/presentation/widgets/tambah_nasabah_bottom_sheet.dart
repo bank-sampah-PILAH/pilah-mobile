@@ -27,6 +27,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
 
   final _namaController = TextEditingController();
   final _idNasabahController = TextEditingController();
+  final _emailController = TextEditingController();
   final _tanggalLahirController = TextEditingController();
   final _whatsappController = TextEditingController();
   final _alamatController = TextEditingController();
@@ -38,11 +39,13 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   // drives a red border on the field; the message itself lives in the toast.
   bool _kodeHasError = false;
   String? _serverPhoneError;
+  String? _serverEmailError;
 
   @override
   void dispose() {
     _namaController.dispose();
     _idNasabahController.dispose();
+    _emailController.dispose();
     _tanggalLahirController.dispose();
     _whatsappController.dispose();
     _alamatController.dispose();
@@ -220,6 +223,38 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                 ),
                 const SizedBox(height: 20),
 
+                // Field: EMAIL (Google account email — used to sync the
+                // nasabah record when they log in later, PIL-154)
+                _buildLabel('EMAIL'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  onChanged: (_) {
+                    // Clear the backend duplicate error as soon as the email
+                    // is edited, mirroring the phone field behaviour.
+                    if (_serverEmailError != null) {
+                      setState(() => _serverEmailError = null);
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email wajib diisi.';
+                    }
+                    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    if (!regex.hasMatch(value.trim())) {
+                      return 'Format email tidak valid.';
+                    }
+                    if (_serverEmailError != null) return _serverEmailError;
+                    return null;
+                  },
+                  decoration: _buildInputDecoration(
+                    hintText: 'Contoh: budi@gmail.com',
+                  ),
+                ),
+                const SizedBox(height: 20),
+
                 // Field: TANGGAL LAHIR
                 _buildLabel('TANGGAL LAHIR'),
                 const SizedBox(height: 8),
@@ -385,6 +420,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     final request = NasabahRequest(
       kode: kode,
       nama: _namaController.text.trim(),
+      email: _emailController.text.trim(),
       jenisKelamin: _jenisKelamin ?? 'Laki-laki',
       tanggalLahir: _tanggalLahirController.text.trim(),
       noHp: '+62${_whatsappController.text.trim()}',
@@ -411,6 +447,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     // Anything we can't attribute to a field escalates to the global snackbar.
     final kodeError = error.fieldError(['kode']);
     final phoneError = error.fieldError(_phoneErrorKeys);
+    final emailError = error.fieldError(['email']);
 
     if (kodeError != null) {
       setState(() => _kodeHasError = true);
@@ -419,6 +456,13 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
         title: 'ID Nasabah Sudah Digunakan',
         message: kodeError,
       );
+      return;
+    }
+
+    if (emailError != null) {
+      // Full-width field: inline error like the phone field.
+      setState(() => _serverEmailError = emailError);
+      _formKey.currentState?.validate();
       return;
     }
 

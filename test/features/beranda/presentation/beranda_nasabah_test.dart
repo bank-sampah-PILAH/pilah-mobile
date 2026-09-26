@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -28,26 +29,35 @@ class _DashboardCubit extends MockCubit<DashboardState>
 class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
 
+class _Environment extends Mock implements AppEnvironment {}
+
 // First TDD slice: the landing screen and its entry points. Destination pages
 // and their data will be covered in subsequent slices, without inventing URLs.
 // The current session contract has no separate membership-status field:
 // dashboard + nasabah + active bank is the available onboarded-session fixture.
 AuthEntity _nasabah(String bankName) => AuthEntity(
-  id: 'nasabah-225',
-  name: 'Siti Aminah',
-  email: 'siti@example.test',
-  photoUrl: '',
-  token: 'test-token',
-  role: 'nasabah',
-  nextStep: 'dashboard',
-  bankSampahStatus: 'active',
-  bankSampahNama: bankName,
-);
+      id: 'nasabah-225',
+      name: 'Siti Aminah',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'test-token',
+      role: 'nasabah',
+      nextStep: 'dashboard',
+      bankSampahStatus: 'active',
+      bankSampahNama: bankName,
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final router = AppRouterConfig.getRouter();
   tearDownAll(router.dispose);
+
+  setUp(() {
+    final environment = _Environment();
+    when(() => environment.supportsDemoLogin).thenReturn(false);
+    di.registerSingleton<AppEnvironment>(environment);
+  });
+  tearDown(() => di.unregister<AppEnvironment>());
 
   Future<void> loginAsNasabah(
     WidgetTester tester, {
