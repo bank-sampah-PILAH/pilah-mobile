@@ -456,8 +456,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                 ),
 
-                // 2. Stepper Section (hidden in invite mode)
-                if (!_isInviteMode) ...[
+                // 2. Stepper Section (shown only when profile completion leads
+                // to the bank sampah registration form)
+                if (!_isInviteMode && _startsNewRegistration) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     decoration: BoxDecoration(
