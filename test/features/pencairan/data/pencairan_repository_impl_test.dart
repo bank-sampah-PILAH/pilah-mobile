@@ -239,4 +239,43 @@ void main() {
       expect(rows.last.tanggalEditMinimum, isNull);
     });
   });
+
+  group('editPencairan', () {
+    test('patches every field with the alasan and maps the result', () async {
+      Map<String, dynamic>? sent;
+      when(() => network.patch('/api/v1/pencairan/p-1', data: any(named: 'data')))
+          .thenAnswer((invocation) async {
+        sent = invocation.namedArguments[#data] as Map<String, dynamic>;
+        return _ok('/api/v1/pencairan/p-1', {
+          ..._pencairanJson(),
+          'nominal': '150000.00',
+          'saldo_sesudah': '315600.00',
+          'diperbarui': true,
+        });
+      });
+
+      final result = await repository.editPencairan(
+        EditPencairanRequest(
+          id: 'p-1',
+          nominal: 150000,
+          metode: MetodePencairan.transfer,
+          tanggal: DateTime.utc(2026, 9, 21, 3, 15),
+          keterangan: '  Ditransfer  ',
+          alasan: '  Salah ketik  ',
+        ),
+      );
+
+      expect(sent, {
+        'nominal': 150000,
+        'metode': 'transfer',
+        'tanggal': '2026-09-21T03:15:00.000Z',
+        'keterangan': 'Ditransfer',
+        'alasan': 'Salah ketik',
+      });
+      final pencairan = result.getOrElse(() => throw 'expected Right');
+      expect(pencairan.nominal, 150000);
+      expect(pencairan.saldoSesudah, 315600);
+      expect(pencairan.diperbarui, isTrue);
+    });
+  });
 }
