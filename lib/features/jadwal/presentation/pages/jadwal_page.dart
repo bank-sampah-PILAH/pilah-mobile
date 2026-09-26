@@ -119,10 +119,12 @@ class _JadwalPageState extends State<JadwalPage> {
         content: const Text('Jadwal yang dibatalkan tidak dapat dipulihkan.'),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Kembali'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Ya, batalkan'),
           ),
@@ -141,10 +143,12 @@ class _JadwalPageState extends State<JadwalPage> {
         content: const Text('Jadwal yang diselesaikan tidak dapat diubah.'),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Kembali'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Ya, selesaikan'),
           ),
