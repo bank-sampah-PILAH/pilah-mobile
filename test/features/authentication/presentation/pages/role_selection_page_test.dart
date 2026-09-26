@@ -2,12 +2,17 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
+    as google_sign_in;
 import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -15,8 +20,14 @@ class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
 
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
+class _MockGoogleSignInPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements google_sign_in.GoogleSignInPlatform {}
+
 void main() {
   late _MockAuthBloc auth;
+  late google_sign_in.GoogleSignInPlatform originalGoogleSignInPlatform;
+  late _MockGoogleSignInPlatform googleSignInPlatform;
   final registration = GoogleRegistrationRequired(
     registrationToken: 'signed-token',
     expiresIn: 600,
@@ -28,6 +39,12 @@ void main() {
   setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
 
   setUp(() {
+    originalGoogleSignInPlatform = google_sign_in.GoogleSignInPlatform.instance;
+    googleSignInPlatform = _MockGoogleSignInPlatform();
+    google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
+    when(() =>
+            googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
+        .thenAnswer((_) async {});
     auth = _MockAuthBloc();
     whenListen(
       auth,
@@ -36,7 +53,10 @@ void main() {
     );
   });
 
-  tearDown(() async => auth.close());
+  tearDown(() async {
+    google_sign_in.GoogleSignInPlatform.instance = originalGoogleSignInPlatform;
+    await auth.close();
+  });
 
   testWidgets('offers three non-Superadmin roles and submits the selection',
       (tester) async {
@@ -70,5 +90,38 @@ void main() {
     final event = verify(() => auth.add(captureAny())).captured.single
         as RegisterGoogleRoleRequested;
     expect(event.role, GoogleRegistrationRole.nasabah);
+  });
+
+  testWidgets('signs out of Google before changing accounts', (tester) async {
+    final router = GoRouter(
+      initialLocation: RoleSelectionPage.route,
+      routes: [
+        GoRoute(
+          path: RoleSelectionPage.route,
+          builder: (context, state) => BlocProvider<AuthenticationBloc>.value(
+            value: auth,
+            child: const RoleSelectionPage(),
+          ),
+        ),
+        GoRoute(
+          path: LoginPage.route,
+          builder: (context, state) => const Text('Login page'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.tap(find.text('Ganti akun'));
+    await tester.pumpAndSettle();
+
+    verify(() =>
+            googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
+        .called(1);
+    expect(find.text('Login page'), findsOneWidget);
+    expect(
+      verify(() => auth.add(captureAny())).captured.single,
+      isA<ChangeGoogleAccountRequested>(),
+    );
   });
 }

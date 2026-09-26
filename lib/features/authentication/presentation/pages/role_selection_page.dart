@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -25,6 +26,7 @@ class RoleSelectionPage extends StatefulWidget {
 class _RoleSelectionPageState extends State<RoleSelectionPage> {
   GoogleRegistrationRole? _selectedRole;
   GoogleRegistrationRequired? _registration;
+  bool _isChangingAccount = false;
 
   @override
   void initState() {
@@ -69,7 +71,24 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     }
   }
 
-  void _changeAccount() {
+  Future<void> _changeAccount() async {
+    if (_isChangingAccount) return;
+    setState(() => _isChangingAccount = true);
+
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isChangingAccount = false);
+      AppNotification.showError(
+        context,
+        title: 'Ganti Akun Gagal',
+        message: 'Tidak dapat keluar dari akun Google. Silakan coba lagi.',
+      );
+      return;
+    }
+
+    if (!mounted) return;
     context
         .read<AuthenticationBloc>()
         .add(const ChangeGoogleAccountRequested());
@@ -120,7 +139,9 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                         _VerifiedIdentity(
                           name: registration.name,
                           email: registration.email,
-                          onChangeAccount: isLoading ? null : _changeAccount,
+                          onChangeAccount: isLoading || _isChangingAccount
+                              ? null
+                              : _changeAccount,
                         ),
                         const SizedBox(height: 32),
                         Text('Saya ingin mendaftar sebagai',
