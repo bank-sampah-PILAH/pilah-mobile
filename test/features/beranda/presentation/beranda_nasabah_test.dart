@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'dart:async';
 import 'dart:ui' show SemanticsAction;
 
@@ -42,7 +44,7 @@ AuthEntity _nasabah(String bankName) => AuthEntity(
       photoUrl: '',
       token: 'test-token',
       role: 'nasabah',
-      nextStep: 'dashboard',
+      nextStep: 'nasabah_dashboard',
       bankSampahStatus: 'active',
       bankSampahNama: bankName,
     );
@@ -70,6 +72,8 @@ void main() {
     final invites = InviteTokenStore();
 
     di.registerSingleton<InviteTokenStore>(invites);
+    di.registerSingleton<NasabahRepository>(
+        PreviewNasabahRepository(bankName: bankName));
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
     whenListen(
       dashboard,
@@ -90,6 +94,7 @@ void main() {
       await dashboard.close();
       await activity.close();
       await di.unregister<InviteTokenStore>();
+      await di.unregister<NasabahRepository>();
       invites.dispose();
     });
 
@@ -155,9 +160,9 @@ void main() {
     });
 
     for (final entry in {
-      'Saldo': 'Informasi saldo Anda belum tersedia.',
-      'Riwayat Aktivitas': 'Informasi riwayat aktivitas Anda belum tersedia.',
-      'Detail Bank Sampah': 'Unit bank sampah Anda: Bank Sampah Melati',
+      'Saldo': 'Belum ada perubahan saldo.',
+      'Riwayat Aktivitas': 'Halaman 1',
+      'Detail Bank Sampah': 'Jl. Melati',
     }.entries) {
       testWidgets('ketuk ${entry.key} membuka informasi dan dapat ditutup', (
         tester,
