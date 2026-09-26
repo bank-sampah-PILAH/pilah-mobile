@@ -97,6 +97,8 @@ import '../features/pencairan/domain/use_cases/pencairan_use_cases.dart'
 import '../features/pencairan/presentation/blocs/edit_pencairan_cubit.dart'
     as _i41;
 import '../features/pencairan/presentation/blocs/pencairan_cubit.dart' as _i553;
+import '../features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart'
+    as _i42;
 import '../features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart'
     as _i8;
 import '../features/onboarding/data/datasources/onboarding_remote_data_source.dart'
@@ -323,6 +325,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i8.RiwayatPencairanCubit(gh<_i686.PencairanUseCases>()));
     gh.factory<_i41.EditPencairanCubit>(
         () => _i41.EditPencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.factory<_i42.RevisiPencairanCubit>(
+        () => _i42.RevisiPencairanCubit(gh<_i686.PencairanUseCases>()));
     return this;
   }
 }
