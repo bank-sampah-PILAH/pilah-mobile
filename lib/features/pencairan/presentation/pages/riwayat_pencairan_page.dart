@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -8,6 +9,8 @@ import '../../domain/model/pencairan.dart';
 import '../../domain/model/riwayat_pencairan_filter.dart';
 import '../blocs/riwayat_pencairan_cubit.dart';
 import '../blocs/riwayat_pencairan_state.dart';
+import 'edit_pencairan_page.dart';
+import 'revisi_pencairan_page.dart';
 
 /// Opens the riwayat for one nasabah; without args it covers the whole bank.
 class RiwayatPencairanArgs {
@@ -226,13 +229,33 @@ class _RiwayatItem extends StatelessWidget {
 
   const _RiwayatItem({required this.item});
 
+  /// Opens the edit form over the list and reloads the riwayat once saved,
+  /// since an edit can change this and later pencairan.
+  Future<void> _edit(BuildContext context) async {
+    final cubit = context.read<RiwayatPencairanCubit>();
+    final saved = await GoRouter.of(context)
+        .push<bool>(EditPencairanPage.route, extra: item);
+    if (saved == true && !cubit.isClosed) await cubit.load(cubit.state.filter);
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        builder: (_) => _DetailPencairanSheet(item: item),
+        builder: (sheetContext) => _DetailPencairanSheet(
+          item: item,
+          onEdit: () {
+            Navigator.of(sheetContext).pop();
+            _edit(context);
+          },
+          onRiwayatPerubahan: () {
+            Navigator.of(sheetContext).pop();
+            GoRouter.of(context)
+                .push<void>(RevisiPencairanPage.route, extra: item.id);
+          },
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -266,6 +289,7 @@ class _RiwayatItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(_statusLabel(item.status), style: AppTextStyle.small),
+                if (item.diperbarui) const _DiperbaruiLabel(),
               ],
             ),
           ],
@@ -275,10 +299,32 @@ class _RiwayatItem extends StatelessWidget {
   }
 }
 
+/// Marks a pencairan a pengurus has edited (PIL-230).
+class _DiperbaruiLabel extends StatelessWidget {
+  const _DiperbaruiLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'Diperbarui',
+      style: AppTextStyle.small.copyWith(
+        color: RiwayatPencairanView.emeraldPrimary,
+        fontStyle: FontStyle.italic,
+      ),
+    );
+  }
+}
+
 class _DetailPencairanSheet extends StatelessWidget {
   final Pencairan item;
+  final VoidCallback onEdit;
+  final VoidCallback onRiwayatPerubahan;
 
-  const _DetailPencairanSheet({required this.item});
+  const _DetailPencairanSheet({
+    required this.item,
+    required this.onEdit,
+    required this.onRiwayatPerubahan,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +335,14 @@ class _DetailPencairanSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Detail Pencairan', style: AppTextStyle.title1),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Detail Pencairan', style: AppTextStyle.title1),
+              ),
+              if (item.diperbarui) const _DiperbaruiLabel(),
+            ],
+          ),
           const SizedBox(height: 16),
           _row('Nasabah', item.nasabahNama),
           _row('Nominal', 'Rp ${formatRupiahId(item.nominal)}'),
@@ -308,6 +361,20 @@ class _DetailPencairanSheet extends StatelessWidget {
             'Dicatat oleh',
             item.dicatatOlehNama.isEmpty ? '-' : item.dicatatOlehNama,
           ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            key: const Key('edit-pencairan'),
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit),
+            label: const Text('Edit Pencairan'),
+          ),
+          if (item.diperbarui)
+            TextButton.icon(
+              key: const Key('riwayat-perubahan-pencairan'),
+              onPressed: onRiwayatPerubahan,
+              icon: const Icon(Icons.history),
+              label: const Text('Riwayat Perubahan'),
+            ),
         ],
       ),
     );
