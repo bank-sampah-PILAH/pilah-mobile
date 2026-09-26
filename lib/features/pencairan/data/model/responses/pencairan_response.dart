@@ -19,6 +19,8 @@ abstract class PencairanResponse with _$PencairanResponse {
     @Default('tercatat') String status,
     @JsonKey(name: 'saldo_sebelum') required String saldoSebelum,
     @JsonKey(name: 'saldo_sesudah') required String saldoSesudah,
+    @Default(false) bool diperbarui,
+    @JsonKey(name: 'tanggal_edit_minimum') String? tanggalEditMinimum,
   }) = _PencairanResponse;
 
   factory PencairanResponse.fromJson(Map<String, dynamic> json) =>
