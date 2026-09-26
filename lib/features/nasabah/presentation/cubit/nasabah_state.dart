@@ -19,16 +19,35 @@ class NasabahLoaded extends NasabahState {
   final bool? isActiveTab;
   final String searchQuery;
 
+  /// Masih ada halaman berikutnya di server (PIL-214).
+  final bool hasMore;
+
+  /// Halaman berikutnya sedang diambil; dipakai untuk pemuat di ujung daftar.
+  final bool isLoadingMore;
+
+  /// Jumlah seluruh nasabah yang cocok di server, bukan yang sudah dimuat.
+  final int totalCount;
+
   const NasabahLoaded({
     required this.nasabahList,
     this.isActiveTab = true,
     this.searchQuery = '',
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.totalCount = 0,
   });
 
   bool get isMenungguTab => isActiveTab == null;
 
   @override
-  List<Object?> get props => [nasabahList, isActiveTab, searchQuery];
+  List<Object?> get props => [
+        nasabahList,
+        isActiveTab,
+        searchQuery,
+        hasMore,
+        isLoadingMore,
+        totalCount,
+      ];
 }
 
 class NasabahError extends NasabahState {

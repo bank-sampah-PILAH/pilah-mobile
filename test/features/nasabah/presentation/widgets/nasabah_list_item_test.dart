@@ -6,14 +6,19 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
 class MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
+
+class MockGetActiveNasabahUseCase extends Mock
+    implements GetActiveNasabahUseCase {}
 
 class MockGetNasabahRingkasanUseCase extends Mock
     implements GetNasabahRingkasanUseCase {}
@@ -32,6 +37,10 @@ class MockApproveNasabahUseCase extends Mock implements ApproveNasabahUseCase {}
 
 class MockRejectNasabahUseCase extends Mock implements RejectNasabahUseCase {}
 
+/// Bungkus daftar nasabah menjadi satu halaman utuh (tanpa halaman lanjutan).
+HalamanNasabah _page(List<NasabahEntity> items) =>
+    HalamanNasabah(items: items, totalCount: items.length, hasMore: false);
+
 void main() {
   late MockGetNasabahUseCase getUseCase;
   late MockApproveNasabahUseCase approveUseCase;
@@ -46,9 +55,11 @@ void main() {
     getUseCase = MockGetNasabahUseCase();
     approveUseCase = MockApproveNasabahUseCase();
     rejectUseCase = MockRejectNasabahUseCase();
-    when(() => getUseCase.execute()).thenAnswer((_) async => const Right([]));
+    when(() => getUseCase.execute(any()))
+        .thenAnswer((_) async => Right(_page(const [])));
     cubit = NasabahCubit(
       getUseCase,
+      MockGetActiveNasabahUseCase(),
       MockGetNasabahRingkasanUseCase(),
       MockAddNasabahUseCase(),
       MockUpdateNasabahUseCase(),

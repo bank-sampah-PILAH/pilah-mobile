@@ -7,7 +7,6 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
@@ -39,11 +38,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   @override
   void initState() {
     super.initState();
-    // Both pickers on this page read app-scoped singletons that are otherwise
-    // only populated by the Harga and Nasabah pages. Load them here so the
-    // dropdowns have options even when arriving straight from the dashboard.
+    // The harga picker reads an app-scoped singleton that is otherwise only
+    // populated by the Harga page. Load it here so the dropdown has options
+    // even when arriving straight from the dashboard. The nasabah picker
+    // fetches its own list when it opens, so it needs no preload.
     context.read<HargaCubit>().loadHarga();
-    context.read<NasabahCubit>().loadNasabah();
 
     // The WhatsApp draft built on success renders the pengelola's saved
     // template, which lives in the app-scoped ProfileCubit and is otherwise only
@@ -110,7 +109,6 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // place rather than flashing skeletons behind the success sheet. Fire-and-
     // forget (not awaited), matching loadStats, so the success modal isn't blocked.
     context.read<DashboardCubit>().loadStats();
-    context.read<NasabahCubit>().loadNasabah();
     context.read<RecentActivityCubit>().load(silent: true);
     cubit.loadTransaksi(silent: true);
 

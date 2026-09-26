@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -6,6 +8,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
@@ -19,6 +22,7 @@ enum NasabahTab { aktif, tidakAktif, menunggu }
 @lazySingleton
 class NasabahCubit extends Cubit<NasabahState> {
   final GetNasabahUseCase getNasabahUseCase;
+  final GetActiveNasabahUseCase getActiveNasabahUseCase;
   final GetNasabahRingkasanUseCase getNasabahRingkasanUseCase;
   final AddNasabahUseCase addNasabahUseCase;
   final UpdateNasabahUseCase updateNasabahUseCase;
@@ -27,12 +31,29 @@ class NasabahCubit extends Cubit<NasabahState> {
   final ApproveNasabahUseCase approveNasabahUseCase;
   final RejectNasabahUseCase rejectNasabahUseCase;
 
+  /// Daftar untuk picker Transaksi Baru: seluruh nasabah aktif, tanpa paginasi.
   List<NasabahEntity> _allNasabah = [];
+
+  /// Halaman daftar nasabah yang sedang ditampilkan, hasil paginasi server.
+  List<NasabahEntity> _items = [];
+  int _halaman = 1;
+  bool _hasMore = false;
+  bool _isLoadingMore = false;
+  int _totalCount = 0;
+  int _totalAktif = 0;
+
+  Timer? _jedaCari;
+
   bool? _isActiveTab = true;
   String _searchQuery = '';
 
+  /// Jeda ketik sebelum pencarian dikirim, supaya satu kata tidak memicu
+  /// satu panggilan API per huruf.
+  static const Duration jedaPencarian = Duration(milliseconds: 300);
+
   NasabahCubit(
     this.getNasabahUseCase,
+    this.getActiveNasabahUseCase,
     this.getNasabahRingkasanUseCase,
     this.addNasabahUseCase,
     this.updateNasabahUseCase,
@@ -45,8 +66,11 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
   bool? get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
-  int get activeCount =>
-      _allNasabah.where((n) => n.isActive && n.status == 'approved').length;
+
+  /// Jumlah nasabah aktif menurut server, bukan sebanyak yang sudah dimuat.
+  ///
+  /// Menghitung isi daftar akan salah begitu daftarnya berpaginasi.
+  int get activeCount => _totalAktif;
 
   /// Every active nasabah, independent of the nasabah page's active/inactive
   /// tab and search query. The Transaksi Baru picker reads this so its options
@@ -63,24 +87,101 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// so a real loading state is emitted regardless.
   Future<void> loadNasabah({bool silent = false}) async {
     if (!silent || state is! NasabahLoaded) emit(NasabahLoading());
-    final result = await getNasabahUseCase.execute();
+    _halaman = 1;
+    final result = await getNasabahUseCase.execute(_params(1));
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
-        _allNasabah = data;
-        _emitFiltered();
+        _items = data.items;
+        _hasMore = data.hasMore;
+        _totalCount = data.totalCount;
+        if (_isActiveTab == true && _searchQuery.isEmpty) {
+          _totalAktif = data.totalCount;
+        }
+        _emitLoaded();
       },
     );
   }
 
-  void setActiveTab(bool? isActive) {
-    _isActiveTab = isActive;
-    _emitFiltered();
+  /// Menyambung halaman berikutnya ke daftar yang sudah tampil.
+  ///
+  /// Diam saja bila halaman terakhir sudah tercapai atau permintaan sebelumnya
+  /// masih berjalan, supaya menggulir cepat tidak memanggil API berkali-kali.
+  Future<void> loadMoreNasabah() async {
+    if (!_hasMore || _isLoadingMore || state is! NasabahLoaded) return;
+    _isLoadingMore = true;
+    _emitLoaded();
+
+    final berikutnya = _halaman + 1;
+    final result = await getNasabahUseCase.execute(_params(berikutnya));
+    _isLoadingMore = false;
+    result.fold(
+      // Halaman yang sudah tampil dipertahankan; kegagalan menyambung tidak
+      // boleh mengosongkan layar yang sedang dibaca pengurus.
+      (failure) => _emitLoaded(),
+      (data) {
+        _halaman = berikutnya;
+        _items = [..._items, ...data.items];
+        _hasMore = data.hasMore;
+        _totalCount = data.totalCount;
+        _emitLoaded();
+      },
+    );
   }
 
+  GetNasabahParams _params(int halaman) => GetNasabahParams(
+        page: halaman,
+        status: _statusParam,
+        // Server mengabaikan kata kunci di bawah dua huruf, jadi jangan dikirim.
+        search: _searchQuery.length >= 2 ? _searchQuery : null,
+      );
+
+  String get _statusParam {
+    if (_isActiveTab == null) return 'menunggu';
+    return _isActiveTab! ? 'aktif' : 'tidak_aktif';
+  }
+
+  /// Memuat seluruh nasabah aktif untuk picker Transaksi Baru.
+  ///
+  /// Dipisah dari [loadNasabah] karena halaman daftar nasabah berpaginasi,
+  /// sedangkan picker harus menampilkan semua pilihan sekaligus (PIL-214).
+  Future<void> loadActiveNasabah() async {
+    if (state is! NasabahLoaded) emit(NasabahLoading());
+    final result = await getActiveNasabahUseCase.execute();
+    result.fold(
+      (failure) => emit(NasabahError(failure.displayMessage)),
+      (data) {
+        _allNasabah = data.items;
+        emit(NasabahLoaded(
+          nasabahList: activeNasabah,
+          isActiveTab: _isActiveTab,
+          searchQuery: _searchQuery,
+          totalCount: _allNasabah.length,
+        ));
+      },
+    );
+  }
+
+  Future<void> setActiveTab(bool? isActive) async {
+    if (_isActiveTab == isActive) return;
+    _isActiveTab = isActive;
+    await loadNasabah();
+  }
+
+  /// Mengirim kata kunci ke server setelah pengurus berhenti mengetik.
+  ///
+  /// Pencarian harus dilakukan server karena menyaring di aplikasi hanya akan
+  /// menyaring halaman yang kebetulan sudah dimuat.
   void searchNasabah(String query) {
     _searchQuery = query;
-    _emitFiltered();
+    _jedaCari?.cancel();
+    _jedaCari = Timer(jedaPencarian, loadNasabah);
+  }
+
+  @override
+  Future<void> close() {
+    _jedaCari?.cancel();
+    return super.close();
   }
 
   /// Creates a nasabah. Returns `null` on success (list reloaded), otherwise the
@@ -159,34 +260,14 @@ class NasabahCubit extends Cubit<NasabahState> {
     emit(NasabahInitial());
   }
 
-  void _emitFiltered() {
-    final filtered = _allNasabah.where((customer) {
-      bool matchesTab;
-      if (_isActiveTab == null) {
-        // Menunggu tab: pending submissions only.
-        matchesTab = customer.status == 'pending';
-      } else {
-        // Active/inactive tabs cover approved memberships only; rejected rows
-        // (audit records) appear in no tab.
-        matchesTab =
-            customer.status == 'approved' && customer.isActive == _isActiveTab;
-      }
-      if (_searchQuery.isEmpty) return matchesTab;
-
-      final query = _searchQuery.toLowerCase();
-      final name = customer.name.toLowerCase();
-      final phone = customer.phone.toLowerCase();
-      final email = customer.email.toLowerCase();
-      return matchesTab &&
-          (name.contains(query) ||
-              phone.contains(query) ||
-              email.contains(query));
-    }).toList();
-
+  void _emitLoaded() {
     emit(NasabahLoaded(
-      nasabahList: filtered,
+      nasabahList: _items,
       isActiveTab: _isActiveTab,
       searchQuery: _searchQuery,
+      hasMore: _hasMore,
+      isLoadingMore: _isLoadingMore,
+      totalCount: _totalCount,
     ));
   }
 }

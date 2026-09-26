@@ -25,13 +25,11 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
   @override
   void initState() {
     super.initState();
-    // The picker can be opened before the nasabah page has ever run (straight
-    // from the dashboard), so fetch the list rather than relying on another
-    // route having populated the shared cubit.
-    final cubit = context.read<NasabahCubit>();
-    if (cubit.state is NasabahInitial) {
-      cubit.loadNasabah();
-    }
+    // Selalu ambil sendiri, bukan menumpang state cubit. Halaman nasabah bisa
+    // meninggalkan cubit dalam keadaan Loaded dengan daftar berpaginasi
+    // sementara daftar picker masih kosong, dan mengambil ulang di sini juga
+    // membuat saldo yang tampil selalu yang terbaru setelah ada setoran.
+    context.read<NasabahCubit>().loadActiveNasabah();
   }
 
   @override
