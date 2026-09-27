@@ -190,8 +190,7 @@ class AppRouterConfig {
           // 'rejected'), not as a first-time onboarding step. The screen reads
           // the flag to swap the stepper for a rejection notice.
           final authState = context.read<AuthenticationBloc>().state;
-          final isRejected =
-              authState is Authenticated &&
+          final isRejected = authState is Authenticated &&
               authState.authEntity.bankSampahStatus == 'rejected';
           return RegisterBankSampahScreen(isRejectedReapplication: isRejected);
         },
@@ -245,14 +244,14 @@ class AppRouterConfig {
                 name: DashboardPage.route,
                 builder: (context, state) =>
                     BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-                      builder: (context, authState) {
-                        if (authState is Authenticated &&
-                            authState.authEntity.role == 'nasabah') {
-                          return const BerandaNasabahPage();
-                        }
-                        return const DashboardPage();
-                      },
-                    ),
+                  builder: (context, authState) {
+                    if (authState is Authenticated &&
+                        authState.authEntity.role == 'nasabah') {
+                      return const BerandaNasabahPage();
+                    }
+                    return const DashboardPage();
+                  },
+                ),
               ),
             ],
           ),
