@@ -93,10 +93,24 @@ class ApprovalBankSampahListView extends StatelessWidget {
                       final membership = memberships[index];
                       return MembershipListItem(
                         membership: membership,
-                        onTap: () => context.push(
-                          ApprovalBankSampahDetailPage.route,
-                          extra: membership,
-                        ),
+                        onTap: () {
+                          context
+                              .push<bool>(
+                            ApprovalBankSampahDetailPage.route,
+                            extra: membership,
+                          )
+                              .then((changed) {
+                            // A successful appeal pops `true` (see
+                            // ApprovalBankSampahDetailView) — the membership
+                            // just moved back to pending, so the list needs
+                            // to reflect that instead of showing stale data.
+                            if (changed == true && context.mounted) {
+                              context
+                                  .read<NasabahApprovalCubit>()
+                                  .load(silent: true);
+                            }
+                          });
+                        },
                       );
                     },
                   );
