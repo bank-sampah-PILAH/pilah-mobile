@@ -185,6 +185,28 @@ void main() {
     expect(find.text('Ajukan Banding'), findsNothing);
   });
 
+  testWidgets('offers a show-more toggle for a long rejection reason',
+      (tester) async {
+    const rejected = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.rejected,
+      isActive: false,
+      alasanPenolakan:
+          'Dokumen kartu tanda penduduk yang Anda unggah sebelumnya buram '
+          'dan tidak terbaca, mohon diunggah ulang dengan foto yang lebih '
+          'jelas dan resolusi tinggi agar dapat kami verifikasi.',
+    );
+
+    await tester.pumpWidget(_wrap(rejected, cubit));
+    await tester.pump();
+
+    expect(find.text('Lihat Selengkapnya'), findsOneWidget);
+  });
+
   testWidgets(
       'appears above the Riwayat Persetujuan section when the membership is rejected',
       (tester) async {
