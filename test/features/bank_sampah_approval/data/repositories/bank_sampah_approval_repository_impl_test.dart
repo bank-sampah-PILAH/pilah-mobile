@@ -57,17 +57,28 @@ void main() {
   });
 
   test('appeals a membership through the remote source', () async {
-    when(() => remote.appeal('bank-1')).thenAnswer((_) async {});
+    when(() => remote.appeal('bank-1', pesan: any(named: 'pesan')))
+        .thenAnswer((_) async {});
 
     final result = await repository.appeal('bank-1');
 
     expect(result.isRight(), isTrue);
-    verify(() => remote.appeal('bank-1')).called(1);
+    verify(() => remote.appeal('bank-1', pesan: '')).called(1);
+  });
+
+  test('passes the appeal message through to the remote source', () async {
+    when(() => remote.appeal('bank-1', pesan: any(named: 'pesan')))
+        .thenAnswer((_) async {});
+
+    await repository.appeal('bank-1', pesan: 'Dokumen sudah lengkap');
+
+    verify(() => remote.appeal('bank-1', pesan: 'Dokumen sudah lengkap'))
+        .called(1);
   });
 
   test('maps an appeal failure to NetworkException, not a throw', () async {
-    when(() => remote.appeal('bank-1')).thenAnswer((_) async =>
-        throw DioException(
+    when(() => remote.appeal('bank-1', pesan: any(named: 'pesan'))).thenAnswer(
+        (_) async => throw DioException(
           requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
           response: Response(
             requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
