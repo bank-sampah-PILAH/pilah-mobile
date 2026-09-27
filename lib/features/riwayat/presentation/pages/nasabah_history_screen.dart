@@ -23,7 +23,14 @@ class NasabahHistoryScreen extends StatelessWidget {
           return Scaffold(
             backgroundColor: NasabahStyle.background,
             appBar: AppBar(
-              title: const Text('Riwayat'),
+              backgroundColor: NasabahStyle.background,
+              foregroundColor: NasabahStyle.ink,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              title: Text(
+                'Riwayat',
+                style: NasabahStyle.text(18, weight: FontWeight.w600),
+              ),
               leading: IconButton(
                 tooltip: 'Kembali ke Beranda',
                 icon: const Icon(Icons.arrow_back),

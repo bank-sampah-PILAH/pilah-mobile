@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 
@@ -70,35 +71,94 @@ class _RiwayatNasabahPageState extends State<RiwayatNasabahPage> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
-                Row(children: [
-                  const Expanded(
-                      child: Text('Riwayat Aktivitas',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w700))),
-                  IconButton(
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Riwayat Aktivitas',
+                        style: NasabahStyle.text(20, weight: FontWeight.w600),
+                      ),
+                    ),
+                    IconButton(
                       tooltip: 'Muat ulang',
                       onPressed: _loading ? null : () => _load(reset: true),
-                      icon: const Icon(Icons.refresh)),
-                ]),
+                      icon: const Icon(Icons.refresh),
+                      color: NasabahStyle.emerald,
+                    ),
+                  ],
+                ),
+                Text(
+                  'Daftar aktivitas yang tercatat pada keanggotaan ini.',
+                  style: NasabahStyle.text(13, color: NasabahStyle.muted),
+                ),
+                const SizedBox(height: 16),
                 if (_activities.isNotEmpty)
                   NasabahActivityList(activities: _activities),
                 if (_loading)
                   const Padding(
                       padding: EdgeInsets.all(24),
-                      child: Center(child: CircularProgressIndicator()))
+                      child: Center(
+                          child: CircularProgressIndicator(
+                              color: NasabahStyle.emerald)))
                 else if (_error != null) ...[
-                  Text(_error!, textAlign: TextAlign.center),
-                  TextButton(
-                      onPressed: () => _load(reset: _retryReset),
-                      child: const Text('Coba Lagi')),
+                  NasabahCard(
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_off_outlined,
+                            color: NasabahStyle.muted, size: 28),
+                        const SizedBox(height: 8),
+                        Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: NasabahStyle.text(13)),
+                        TextButton(
+                          onPressed: () => _load(reset: _retryReset),
+                          child: Text(
+                            'Coba Lagi',
+                            style: NasabahStyle.text(
+                              13,
+                              weight: FontWeight.w600,
+                              color: NasabahStyle.emerald,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ] else if (_activities.isEmpty)
-                  const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('Belum ada aktivitas',
-                          textAlign: TextAlign.center)),
+                  NasabahCard(
+                    child: Column(
+                      children: [
+                        const Icon(Icons.receipt_long_outlined,
+                            color: NasabahStyle.emerald, size: 28),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Belum ada aktivitas',
+                          textAlign: TextAlign.center,
+                          style: NasabahStyle.text(14, weight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (!_loading && _error == null && _hasNext)
-                  OutlinedButton(
-                      onPressed: () => _load(), child: const Text('Muat Lagi')),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: NasabahStyle.emerald,
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: () => _load(),
+                      icon: const Icon(Icons.expand_more),
+                      label: Text(
+                        'Muat Lagi',
+                        style: NasabahStyle.text(
+                          14,
+                          weight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
