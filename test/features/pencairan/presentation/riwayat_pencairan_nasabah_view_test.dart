@@ -14,11 +14,15 @@ import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_penca
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
 
-Pencairan _row() => Pencairan(
-      id: 'p-1',
+Pencairan _row({
+  String id = 'p-1',
+  String bankSampahNama = 'Bank Sampah Kenanga',
+}) =>
+    Pencairan(
+      id: id,
       nasabahId: 'n-1',
       nasabahNama: 'Ayu Nasabah',
-      bankSampahNama: 'Bank Sampah Kenanga',
+      bankSampahNama: bankSampahNama,
       nominal: 150000,
       metode: MetodePencairan.transfer,
       tanggal: DateTime(2026, 9, 27, 9, 5),
@@ -66,6 +70,22 @@ void main() {
     expect(find.text('Edit Pencairan'), findsNothing);
     expect(find.text('Riwayat Perubahan'), findsNothing);
     expect(find.text('Salah catat'), findsNothing);
+  });
+
+  testWidgets('renders multiple payouts in the history list', (tester) async {
+    when(() => useCases.getRiwayat(any())).thenAnswer(
+      (_) async => Right([
+        _row(),
+        _row(id: 'p-2', bankSampahNama: 'Bank Sampah BTH'),
+      ]),
+    );
+
+    await pumpView(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Card), findsNWidgets(2));
+    expect(find.text('Bank Sampah Kenanga'), findsOneWidget);
+    expect(find.text('Bank Sampah BTH'), findsOneWidget);
   });
 
   testWidgets('shows a loading indicator while history is being fetched',

@@ -250,6 +250,47 @@ void main() {
         'Bank Sampah Kenanga',
       ]);
     });
+
+    test('accepts a non-paginated list response', () async {
+      when(() => network.get('/api/v1/pencairan',
+          queryParams: any(named: 'queryParams'))).thenAnswer(
+        (_) async => _ok('/api/v1/pencairan', [_pencairanJson()]),
+      );
+
+      final result = await repository.getRiwayat(
+        const RiwayatPencairanFilter(periode: RiwayatPeriode.semua),
+      );
+
+      final rows = result.getOrElse(() => throw 'expected Right');
+      expect(rows, hasLength(1));
+      expect(rows.single.id, 'p-1');
+    });
+
+    test('stops when pagination links repeat an already loaded page', () async {
+      final requestedPages = <int>[];
+      when(() => network.get('/api/v1/pencairan',
+              queryParams: any(named: 'queryParams')))
+          .thenAnswer((invocation) async {
+        final queryParams =
+            invocation.namedArguments[#queryParams] as Map<String, dynamic>;
+        final page = queryParams['page'] as int? ?? 1;
+        requestedPages.add(page);
+        return _ok('/api/v1/pencairan', {
+          'count': 2,
+          'next': page == 1
+              ? 'https://api.test/api/v1/pencairan?page=2'
+              : 'https://api.test/api/v1/pencairan?page=1',
+          'results': [_pencairanJson()],
+        });
+      });
+
+      final result = await repository.getRiwayat(
+        const RiwayatPencairanFilter(periode: RiwayatPeriode.semua),
+      );
+
+      expect(result.isLeft(), isTrue);
+      expect(requestedPages, [1, 2]);
+    });
   });
 
   group('edit support', () {
