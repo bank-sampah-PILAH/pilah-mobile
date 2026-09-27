@@ -1,5 +1,7 @@
 /// Decision status of one entry in a membership's [ApprovalLogEntity] history.
-enum ApprovalLogStatus { approved, rejected }
+/// `appealed` is a nasabah-authored resubmission message (PIL-232), not a
+/// pengurus decision.
+enum ApprovalLogStatus { approved, rejected, appealed }
 
 /// One decision recorded against a membership application (from
 /// `riwayat_persetujuan` on `GET /nasabah/me`), newest-first as the backend
