@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
@@ -344,6 +345,64 @@ void main() {
     await enterNominal(tester, '100000');
 
     expect(find.text('Saldo nasabah tidak mencukupi'), findsNothing);
+  });
+
+  testWidgets(
+      'styles the METODE label like the other section labels (PILIH NASABAH)',
+      (tester) async {
+    await pumpView(tester);
+
+    final label = tester.widget<Text>(find.text('METODE'));
+    expect(label.style?.fontWeight, FontWeight.bold);
+    expect(label.style?.letterSpacing, 1.0);
+    expect(label.style?.fontSize, 10);
+  });
+
+  testWidgets('styles the metode chips like the app\'s other selector pills',
+      (tester) async {
+    await pumpView(tester);
+
+    final selected = tester.widget<Container>(
+      find.byKey(const Key('metode-chip-tunai')),
+    );
+    expect(
+      (selected.decoration as BoxDecoration).color,
+      AppColors.greenDark,
+    );
+
+    final unselected = tester.widget<Container>(
+      find.byKey(const Key('metode-chip-transfer')),
+    );
+    expect(
+      (unselected.decoration as BoxDecoration).color,
+      const Color(0xFFF3F4F6),
+    );
+  });
+
+  testWidgets('gives the nominal field the app\'s Poppins text style',
+      (tester) async {
+    await pumpView(tester);
+
+    final field =
+        tester.widget<TextField>(find.byKey(const Key('nominal-field')));
+    expect(field.style?.fontFamily, contains('Poppins'));
+  });
+
+  testWidgets('gives the keterangan field the app\'s Poppins text style',
+      (tester) async {
+    await pumpView(tester);
+
+    final field =
+        tester.widget<TextField>(find.byKey(const Key('keterangan-field')));
+    expect(field.style?.fontFamily, contains('Poppins'));
+  });
+
+  testWidgets('gives the tanggal value the app\'s Poppins text style',
+      (tester) async {
+    await pumpView(tester);
+
+    final text = tester.widget<Text>(find.text('22 September 2026'));
+    expect(text.style?.fontFamily, contains('Poppins'));
   });
 
   testWidgets('does not offer dates after today', (tester) async {
