@@ -5,13 +5,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
     implements NasabahApprovalCubit {}
+
+class _MockNasabahAppealCubit extends MockCubit<NasabahAppealState>
+    implements NasabahAppealCubit {}
 
 const _first = NasabahMembershipEntity(
   id: 'membership-1',
@@ -44,6 +50,18 @@ void main() {
     // would not be.
     when(() => cubit.state)
         .thenReturn(const NasabahApprovalLoaded([_first, _second]));
+
+    final appealCubit = _MockNasabahAppealCubit();
+    when(() => appealCubit.state).thenReturn(const NasabahAppealIdle());
+    if (di.isRegistered<NasabahAppealCubit>()) {
+      di.unregister<NasabahAppealCubit>();
+    }
+    di.registerFactory<NasabahAppealCubit>(() => appealCubit);
+    addTearDown(() {
+      if (di.isRegistered<NasabahAppealCubit>()) {
+        di.unregister<NasabahAppealCubit>();
+      }
+    });
 
     final router = GoRouter(
       initialLocation: ApprovalBankSampahListPage.route,
