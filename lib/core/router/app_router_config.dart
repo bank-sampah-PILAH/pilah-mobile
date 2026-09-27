@@ -24,6 +24,7 @@ import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencair
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
@@ -142,6 +143,10 @@ class AppRouterConfig {
             RiwayatPencairanPage(args: state.extra as RiwayatPencairanArgs?),
       ),
       GoRoute(
+        path: RiwayatPencairanNasabahPage.route,
+        builder: (context, state) => const RiwayatPencairanNasabahPage(),
+      ),
+      GoRoute(
         path: EditPencairanPage.route,
         name: EditPencairanPage.route,
         builder: (context, state) =>
@@ -214,6 +219,7 @@ class AppRouterConfig {
           message:
               'Beranda Nasabah sedang disiapkan. Akun dan keanggotaan Anda sudah tersimpan.',
           registrationInProgress: false,
+          showPayoutHistory: true,
         ),
       ),
       GoRoute(
