@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/widgets/activity_item.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 
 class RecentActivitySection extends StatelessWidget {
@@ -119,11 +119,13 @@ class RecentActivitySection extends StatelessWidget {
                     avatarColor: entries[i].trx.avatarColor,
                     avatarTextColor: entries[i].trx.textColor,
                     title: entries[i].trx.name,
-                    subtitle: entries[i].trx.subtitle,
+                    subtitleLines: [entries[i].trx.subtitle],
                     amount: entries[i].trx.amount,
-                    time: entries[i].trx.time != null
-                        ? '${_friendlyHeader(entries[i].header)}, ${entries[i].trx.time}'
-                        : _friendlyHeader(entries[i].header),
+                    trailingCaptions: [
+                      entries[i].trx.time != null
+                          ? '${_friendlyHeader(entries[i].header)}, ${entries[i].trx.time}'
+                          : _friendlyHeader(entries[i].header),
+                    ],
                   ),
                 ],
               ],

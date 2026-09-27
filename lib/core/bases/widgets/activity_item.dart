@@ -2,14 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
+/// A single row in a money-activity list (setoran, pencairan, …): avatar,
+/// title/subtitle on the left, amount/captions on the right. Shared so every
+/// riwayat screen renders the same shape instead of a bespoke Card per
+/// feature.
 class ActivityItem extends StatelessWidget {
   final String avatarText;
   final Color avatarColor;
   final Color avatarTextColor;
   final String title;
-  final String subtitle;
+
+  /// One [Text] per entry, rendered top to bottom under [title].
+  final List<String> subtitleLines;
   final String amount;
-  final String time;
+
+  /// Overrides the amount's color. Defaults to [AppColors.greenDark].
+  final Color? amountColor;
+
+  /// One [Text] per entry, rendered top to bottom under [amount].
+  final List<String> trailingCaptions;
+
+  /// An optional emphasized line under [trailingCaptions] (e.g. "Diperbarui").
+  /// Uses [amountColor] so it reads as part of the same amount/status group.
+  final String? badge;
 
   const ActivityItem({
     super.key,
@@ -17,13 +32,16 @@ class ActivityItem extends StatelessWidget {
     required this.avatarColor,
     required this.avatarTextColor,
     required this.title,
-    required this.subtitle,
+    required this.subtitleLines,
     required this.amount,
-    required this.time,
+    this.amountColor,
+    this.trailingCaptions = const [],
+    this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = amountColor ?? AppColors.greenDark;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
@@ -31,6 +49,7 @@ class ActivityItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 48,
@@ -60,33 +79,48 @@ class ActivityItem extends StatelessWidget {
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[600],
+                for (final line in subtitleLines) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    line,
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 amount,
                 style: AppTextStyle.small.copyWith(
-                  color: AppColors.greenDark,
+                  color: accentColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                time,
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[600],
+              for (final caption in trailingCaptions) ...[
+                const SizedBox(height: 4),
+                Text(
+                  caption,
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: Colors.grey[600],
+                  ),
                 ),
-              ),
+              ],
+              if (badge != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  badge!,
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: accentColor,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ],
           ),
         ],
