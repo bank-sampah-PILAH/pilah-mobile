@@ -55,4 +55,28 @@ void main() {
       isA<InternalServerErrorException>(),
     );
   });
+
+  test('appeals a membership through the remote source', () async {
+    when(() => remote.appeal('bank-1')).thenAnswer((_) async {});
+
+    final result = await repository.appeal('bank-1');
+
+    expect(result.isRight(), isTrue);
+    verify(() => remote.appeal('bank-1')).called(1);
+  });
+
+  test('maps an appeal failure to NetworkException, not a throw', () async {
+    when(() => remote.appeal('bank-1')).thenAnswer((_) async => throw DioException(
+          requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
+            statusCode: 400,
+          ),
+          type: DioExceptionType.badResponse,
+        ));
+
+    final result = await repository.appeal('bank-1');
+
+    expect(result.isLeft(), isTrue);
+  });
 }
