@@ -367,6 +367,10 @@ extension GetItInjectableX on _i174.GetIt {
               gh<_i686.PencairanUseCases>(),
               gh<_i67.ExportTransaksiUseCase>(),
             ));
+    gh.lazySingleton<_i200.RecentActivityCubit>(() => _i200.RecentActivityCubit(
+          gh<_i383.GetTransaksiUseCase>(),
+          gh<_i686.PencairanUseCases>(),
+        ));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),
@@ -374,8 +378,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i989.DeactivateHargaUseCase>(),
           gh<_i520.ActivateHargaUseCase>(),
         ));
-    gh.lazySingleton<_i200.RecentActivityCubit>(
-        () => _i200.RecentActivityCubit(gh<_i383.GetTransaksiUseCase>()));
     gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
           gh<_i268.GetBankSampahUseCase>(),
           gh<_i958.ApproveBankSampahUseCase>(),
