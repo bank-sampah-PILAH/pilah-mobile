@@ -131,6 +131,18 @@ void main() {
       expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
     });
 
+    testWidgets('nasabah tanpa akun: jenis kelamin dapat dipilih ulang',
+        (tester) async {
+      await pump(tester, _customerData(punyaAkun: false));
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Perempuan').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Perempuan'), findsOneWidget);
+    });
+
     testWidgets('data tanpa penanda penautan tetap dapat diubah sepenuhnya',
         (tester) async {
       await pump(tester, _customerData());

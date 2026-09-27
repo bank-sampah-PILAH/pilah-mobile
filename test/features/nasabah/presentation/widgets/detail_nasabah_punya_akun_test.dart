@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
 
 void main() {
   Map<String, dynamic> customerData({bool? punyaAkun}) => {
@@ -65,5 +66,35 @@ void main() {
 
       expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
     });
+  });
+
+  testWidgets('item daftar meneruskan penanda penautan ke sheet detail',
+      (tester) async {
+    // Penandanya berjalan dari daftar ke item lalu ke sheet; kalau sambungan
+    // itu putus, layar detail kembali tampak dapat disunting sepenuhnya.
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: NasabahListItem(
+          isActive: true,
+          initials: 'BS',
+          avatarColor: const Color(0xFFEAF5EC),
+          textColor: const Color(0xFF2F6B45),
+          name: 'Budi Santoso',
+          email: 'budi@example.com',
+          phone: '+628111111111',
+          balance: 'Rp 450.000',
+          idNasabah: 'NAS-0001',
+          jenisKelamin: 'Laki-laki',
+          tanggalLahir: '01/01/1990',
+          address: 'Jl. Mawar No. 12',
+          punyaAkun: true,
+        ),
+      ),
+    ));
+
+    await tester.tap(find.byType(NasabahListItem));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
   });
 }
