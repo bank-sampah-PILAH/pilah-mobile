@@ -77,15 +77,17 @@ void main() {
   });
 
   test('maps an appeal failure to NetworkException, not a throw', () async {
-    when(() => remote.appeal('bank-1', pesan: any(named: 'pesan'))).thenAnswer(
-        (_) async => throw DioException(
-          requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
-          response: Response(
-            requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
-            statusCode: 400,
-          ),
-          type: DioExceptionType.badResponse,
-        ));
+    when(() => remote.appeal('bank-1', pesan: any(named: 'pesan')))
+        .thenAnswer((_) async => throw DioException(
+              requestOptions:
+                  RequestOptions(path: '/api/v1/onboarding/nasabah'),
+              response: Response(
+                requestOptions:
+                    RequestOptions(path: '/api/v1/onboarding/nasabah'),
+                statusCode: 400,
+              ),
+              type: DioExceptionType.badResponse,
+            ));
 
     final result = await repository.appeal('bank-1');
 

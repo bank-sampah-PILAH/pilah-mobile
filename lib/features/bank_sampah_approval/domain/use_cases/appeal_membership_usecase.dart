@@ -23,8 +23,7 @@ class AppealMembershipParams {
 }
 
 @lazySingleton
-class AppealMembershipUseCase
-    implements UseCase<void, AppealMembershipParams> {
+class AppealMembershipUseCase implements UseCase<void, AppealMembershipParams> {
   final BankSampahApprovalRepository repository;
 
   AppealMembershipUseCase(this.repository);
