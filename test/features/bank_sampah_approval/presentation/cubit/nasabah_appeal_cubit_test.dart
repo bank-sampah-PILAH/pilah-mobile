@@ -37,7 +37,8 @@ void main() {
     'emits Submitting then Failure on failure',
     build: () {
       final failure = NetworkException.handleBadResponse(null);
-      when(() => useCase.execute('bank-1')).thenAnswer((_) async => Left(failure));
+      when(() => useCase.execute('bank-1'))
+          .thenAnswer((_) async => Left(failure));
       return cubit;
     },
     act: (cubit) => cubit.submit('bank-1'),

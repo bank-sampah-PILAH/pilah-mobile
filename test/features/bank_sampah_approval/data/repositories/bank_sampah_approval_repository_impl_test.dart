@@ -66,7 +66,8 @@ void main() {
   });
 
   test('maps an appeal failure to NetworkException, not a throw', () async {
-    when(() => remote.appeal('bank-1')).thenAnswer((_) async => throw DioException(
+    when(() => remote.appeal('bank-1')).thenAnswer((_) async =>
+        throw DioException(
           requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
           response: Response(
             requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
