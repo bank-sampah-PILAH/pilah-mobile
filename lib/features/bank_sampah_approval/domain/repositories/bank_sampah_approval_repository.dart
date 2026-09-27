@@ -6,5 +6,6 @@ abstract class BankSampahApprovalRepository {
   Future<Either<NetworkException, List<NasabahMembershipEntity>>>
       getMemberships();
 
-  Future<Either<NetworkException, void>> appeal(String bankSampahId);
+  Future<Either<NetworkException, void>> appeal(String bankSampahId,
+      {String pesan = ''});
 }

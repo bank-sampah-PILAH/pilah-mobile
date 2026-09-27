@@ -22,9 +22,10 @@ class BankSampahApprovalRepositoryImpl implements BankSampahApprovalRepository {
   }
 
   @override
-  Future<Either<NetworkException, void>> appeal(String bankSampahId) {
+  Future<Either<NetworkException, void>> appeal(String bankSampahId,
+      {String pesan = ''}) {
     return apiCall<void>(
-      func: remoteDataSource.appeal(bankSampahId),
+      func: remoteDataSource.appeal(bankSampahId, pesan: pesan),
       mapper: (_) {},
     );
   }
