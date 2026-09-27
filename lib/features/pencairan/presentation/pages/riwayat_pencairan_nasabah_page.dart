@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/pencairan.dart';
@@ -127,12 +127,16 @@ class _PencairanNasabahCard extends StatelessWidget {
     final tanggal = item.tanggal;
     final bankNama =
         item.bankSampahNama.isEmpty ? 'Bank Sampah' : item.bankSampahNama;
+    // Hashed by bank name — with multi-bank membership (PIL-280), a nasabah's
+    // records span more than one bank, and each one should be visually
+    // distinguishable rather than every row looking the same color.
+    final palette = avatarPaletteFor(bankNama);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: ActivityItem(
-        avatarText: _initialsOf(bankNama),
-        avatarColor: AppColors.greenLight,
-        avatarTextColor: AppColors.greenDark,
+        avatarText: initialsOf(bankNama),
+        avatarColor: palette.$1,
+        avatarTextColor: palette.$2,
         title: bankNama,
         subtitleLines: [
           item.metode.label,
@@ -150,10 +154,4 @@ class _PencairanNasabahCard extends StatelessWidget {
 
   String _time(DateTime tanggal) =>
       '${tanggal.hour.toString().padLeft(2, '0')}:${tanggal.minute.toString().padLeft(2, '0')}';
-}
-
-String _initialsOf(String name) {
-  final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-  if (parts.isEmpty) return 'NN';
-  return parts.take(2).map((p) => p[0].toUpperCase()).join();
 }

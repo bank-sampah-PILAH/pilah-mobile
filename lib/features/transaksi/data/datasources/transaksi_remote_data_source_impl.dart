@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -139,10 +139,10 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     final name = json['nasabah_nama']?.toString() ?? '-';
     final jenisUtama = json['jenis_sampah_utama']?.toString();
     final berat = WeightFormatter.formatKg(json['total_berat_kg']);
-    final palette = _avatarPaletteFor(name);
+    final palette = avatarPaletteFor(name);
     return TransaksiEntity(
       id: json['id']?.toString() ?? '',
-      initials: json['nasabah_inisial']?.toString() ?? _initialsOf(name),
+      initials: json['nasabah_inisial']?.toString() ?? initialsOf(name),
       avatarColor: palette.$1,
       textColor: palette.$2,
       name: name,
@@ -196,24 +196,4 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     return 'Rp ${buffer.toString()}';
   }
 
-  String _initialsOf(String name) {
-    final parts =
-        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return 'NN';
-    return parts.take(2).map((p) => p[0].toUpperCase()).join();
-  }
-
-  (Color, Color) _avatarPaletteFor(String name) {
-    if (name.isEmpty) return _avatarPalette.first;
-    return _avatarPalette[name.hashCode.abs() % _avatarPalette.length];
-  }
-
-  static const List<(Color, Color)> _avatarPalette = [
-    (Color(0xFFEAF5EC), Color(0xFF2F6B45)),
-    (Color(0xFFDBEAFE), Color(0xFF1E40AF)),
-    (Color(0xFFF3E8FF), Color(0xFF6B21A8)),
-    (Color(0xFFFFF8D6), Color(0xFFD4A017)),
-    (Color(0xFFFFEDD5), Color(0xFF9A3412)),
-    (Color(0xFFCCFBF1), Color(0xFF0F766E)),
-  ];
 }

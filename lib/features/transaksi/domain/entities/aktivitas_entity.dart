@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import 'transaksi_entity.dart';
@@ -10,9 +11,6 @@ enum ActivitasTipe { setoran, pencairan }
 /// while keeping the original typed record so a tap can still open that
 /// type's own detail sheet.
 class ActivitasEntity {
-  static const Color _emeraldPrimary = Color(0xFF006D44);
-  static const Color _emeraldLight = Color(0xFFEAF5EC);
-
   final ActivitasTipe tipe;
 
   /// Null only for a legacy record with no timestamp at all; sorts last.
@@ -68,31 +66,29 @@ class ActivitasEntity {
   }
 
   factory ActivitasEntity.fromPencairan(Pencairan p) {
+    // Same hash-based palette setoran avatars use, keyed by nasabah name —
+    // one avatar-coloring system across the whole merged feed, not two
+    // independently-colored ones (PIL-282).
+    final palette = avatarPaletteFor(p.nasabahNama);
     return ActivitasEntity(
       tipe: ActivitasTipe.pencairan,
       tanggal: p.tanggal,
-      avatarText: _initialsOf(p.nasabahNama),
-      avatarColor: _emeraldLight,
-      avatarTextColor: _emeraldPrimary,
+      avatarText: initialsOf(p.nasabahNama),
+      avatarColor: palette.$1,
+      avatarTextColor: palette.$2,
       title: p.nasabahNama,
       subtitleLines: [
         p.metode.label,
         if (p.keterangan.isNotEmpty) p.keterangan,
       ],
       amount: '-Rp ${_rupiah(p.nominal)}',
-      amountColor: _emeraldPrimary,
+      // No amountColor override: falls through to ActivityItem's own
+      // default (AppColors.greenDark), the same accent setoran rows use.
       trailingCaptions: [if (p.tanggal != null) _time(p.tanggal!)],
       badge: p.diperbarui ? 'Diperbarui' : null,
       searchTerm: p.nasabahNama,
       pencairan: p,
     );
-  }
-
-  static String _initialsOf(String name) {
-    final parts =
-        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return 'NN';
-    return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
 
   static String _time(DateTime tanggal) =>
