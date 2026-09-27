@@ -118,7 +118,7 @@ class NasabahHistoryScreen extends StatelessWidget {
                             Expanded(
                               child: RiwayatNasabahPage(
                                 key: ValueKey((
-                                  auth!.id,
+                                  auth.id,
                                   auth.email,
                                   auth.token,
                                   member,
