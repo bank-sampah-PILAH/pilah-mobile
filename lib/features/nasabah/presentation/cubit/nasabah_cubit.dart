@@ -41,6 +41,9 @@ class NasabahCubit extends Cubit<NasabahState> {
   bool _isLoadingMore = false;
   int _totalCount = 0;
   int _totalAktif = 0;
+  int _listRequestGeneration = 0;
+  int _activeCountRequestGeneration = 0;
+  bool _listNeedsReload = false;
 
   Timer? _jedaCari;
 
@@ -86,16 +89,26 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// keep: from [NasabahInitial] or [NasabahError] there is nothing on screen,
   /// so a real loading state is emitted regardless.
   Future<void> loadNasabah({bool silent = false}) async {
+    _jedaCari?.cancel();
+    final requestGeneration = ++_listRequestGeneration;
+    _listNeedsReload = false;
     if (!silent || state is! NasabahLoaded) emit(NasabahLoading());
     _halaman = 1;
+    _isLoadingMore = false;
+    final activeCountRequestGeneration =
+        _isActiveTab == true && _searchQuery.isEmpty
+            ? ++_activeCountRequestGeneration
+            : null;
     final result = await getNasabahUseCase.execute(_params(1));
+    if (isClosed || requestGeneration != _listRequestGeneration) return;
     result.fold(
       (failure) => emit(NasabahError(failure.displayMessage)),
       (data) {
         _items = data.items;
         _hasMore = data.hasMore;
         _totalCount = data.totalCount;
-        if (_isActiveTab == true && _searchQuery.isEmpty) {
+        if (activeCountRequestGeneration != null &&
+            activeCountRequestGeneration == _activeCountRequestGeneration) {
           _totalAktif = data.totalCount;
         }
         _emitLoaded();
@@ -108,12 +121,21 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// Diam saja bila halaman terakhir sudah tercapai atau permintaan sebelumnya
   /// masih berjalan, supaya menggulir cepat tidak memanggil API berkali-kali.
   Future<void> loadMoreNasabah() async {
-    if (!_hasMore || _isLoadingMore || state is! NasabahLoaded) return;
+    if (_listNeedsReload ||
+        !_hasMore ||
+        _isLoadingMore ||
+        state is! NasabahLoaded ||
+        (state as NasabahLoaded).isActiveTab != _isActiveTab ||
+        (state as NasabahLoaded).searchQuery != _searchQuery) {
+      return;
+    }
+    final requestGeneration = _listRequestGeneration;
     _isLoadingMore = true;
     _emitLoaded();
 
     final berikutnya = _halaman + 1;
     final result = await getNasabahUseCase.execute(_params(berikutnya));
+    if (isClosed || requestGeneration != _listRequestGeneration) return;
     _isLoadingMore = false;
     result.fold(
       // Halaman yang sudah tampil dipertahankan; kegagalan menyambung tidak
@@ -145,21 +167,31 @@ class NasabahCubit extends Cubit<NasabahState> {
   ///
   /// Dipisah dari [loadNasabah] karena halaman daftar nasabah berpaginasi,
   /// sedangkan picker harus menampilkan semua pilihan sekaligus (PIL-214).
-  Future<void> loadActiveNasabah() async {
-    if (state is! NasabahLoaded) emit(NasabahLoading());
+  Future<List<NasabahEntity>> loadActiveNasabah() async {
     final result = await getActiveNasabahUseCase.execute();
-    result.fold(
-      (failure) => emit(NasabahError(failure.displayMessage)),
-      (data) {
-        _allNasabah = data.items;
-        emit(NasabahLoaded(
-          nasabahList: activeNasabah,
-          isActiveTab: _isActiveTab,
-          searchQuery: _searchQuery,
-          totalCount: _allNasabah.length,
-        ));
-      },
+    return result.fold((failure) => throw failure, (data) {
+      _allNasabah = data.items;
+      return activeNasabah;
+    });
+  }
+
+  Future<void> _refreshActiveCount() async {
+    final requestGeneration = ++_activeCountRequestGeneration;
+    final result = await getNasabahUseCase.execute(
+      const GetNasabahParams(status: 'aktif'),
     );
+    if (isClosed || requestGeneration != _activeCountRequestGeneration) return;
+    result.fold((_) {}, (data) {
+      _totalAktif = data.totalCount;
+      if (state is NasabahLoaded) _emitLoaded();
+    });
+  }
+
+  Future<void> _reloadAfterMutation() async {
+    await loadNasabah();
+    if (_isActiveTab != true || _searchQuery.isNotEmpty) {
+      await _refreshActiveCount();
+    }
   }
 
   Future<void> setActiveTab(bool? isActive) async {
@@ -173,7 +205,11 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// Pencarian harus dilakukan server karena menyaring di aplikasi hanya akan
   /// menyaring halaman yang kebetulan sudah dimuat.
   void searchNasabah(String query) {
+    if (_searchQuery == query) return;
     _searchQuery = query;
+    _listRequestGeneration++;
+    _listNeedsReload = true;
+    _isLoadingMore = false;
     _jedaCari?.cancel();
     _jedaCari = Timer(jedaPencarian, loadNasabah);
   }
@@ -188,13 +224,10 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// [NetworkException] so the form can surface field-level backend errors.
   Future<NetworkException?> addNasabah(NasabahRequest request) async {
     final result = await addNasabahUseCase.execute(request);
-    return result.fold(
-      (failure) => failure,
-      (_) {
-        loadNasabah();
-        return null;
-      },
-    );
+    return result.fold((failure) async => failure, (_) async {
+      await _reloadAfterMutation();
+      return null;
+    });
   }
 
   /// Updates a nasabah. Returns `null` on success, otherwise the exception.
@@ -203,13 +236,10 @@ class NasabahCubit extends Cubit<NasabahState> {
     final result = await updateNasabahUseCase.execute(
       UpdateNasabahParams(id: id, request: request),
     );
-    return result.fold(
-      (failure) => failure,
-      (_) {
-        loadNasabah();
-        return null;
-      },
-    );
+    return result.fold((failure) async => failure, (_) async {
+      await _reloadAfterMutation();
+      return null;
+    });
   }
 
   /// Toggles active status. Returns `null` on success, otherwise the exception.
@@ -217,13 +247,10 @@ class NasabahCubit extends Cubit<NasabahState> {
     final result = activate
         ? await activateNasabahUseCase.execute(id)
         : await deactivateNasabahUseCase.execute(id);
-    return result.fold(
-      (failure) => failure,
-      (_) {
-        loadNasabah();
-        return null;
-      },
-    );
+    return result.fold((failure) async => failure, (_) async {
+      await _reloadAfterMutation();
+      return null;
+    });
   }
 
   /// Approves or rejects a pending membership submission (PIL-188). Returns
@@ -237,13 +264,10 @@ class NasabahCubit extends Cubit<NasabahState> {
     final result = approve
         ? await approveNasabahUseCase.execute(params)
         : await rejectNasabahUseCase.execute(params);
-    return result.fold(
-      (failure) => failure,
-      (_) {
-        loadNasabah();
-        return null;
-      },
-    );
+    return result.fold((failure) async => failure, (_) async {
+      await _reloadAfterMutation();
+      return null;
+    });
   }
 
   Future<NasabahRingkasan?> fetchRingkasan(String id) async {
@@ -254,7 +278,17 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// Clears cached data and resets to the initial state (used on logout, since
   /// this cubit is an app-scoped singleton that outlives a session).
   void reset() {
+    _jedaCari?.cancel();
+    _listRequestGeneration++;
+    _activeCountRequestGeneration++;
+    _listNeedsReload = false;
     _allNasabah = [];
+    _items = [];
+    _halaman = 1;
+    _hasMore = false;
+    _isLoadingMore = false;
+    _totalCount = 0;
+    _totalAktif = 0;
     _isActiveTab = true;
     _searchQuery = '';
     emit(NasabahInitial());

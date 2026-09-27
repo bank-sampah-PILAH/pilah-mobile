@@ -194,6 +194,39 @@ void main() {
 
       expect(cubit.activeCount, 37);
     });
+
+    test('refreshes the active total after approving from the pending tab',
+        () async {
+      var activeCountRequests = 0;
+      var pendingCountRequests = 0;
+      when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+        final params = invocation.positionalArguments.first as GetNasabahParams;
+        if (params.status == 'aktif') {
+          activeCountRequests++;
+          return Right(
+              _page(const [], totalCount: activeCountRequests == 1 ? 10 : 11));
+        }
+        pendingCountRequests++;
+        return Right(
+            _page(const [], totalCount: pendingCountRequests == 1 ? 2 : 1));
+      });
+      when(() => approveUseCase.execute(any(that: isA<DecideNasabahParams>())))
+          .thenAnswer((_) async => const Right(null));
+
+      await cubit.loadNasabah();
+      await cubit.setActiveTab(null);
+      await cubit.decideNasabah('NAS-0003', approve: true);
+
+      expect(cubit.activeCount, 11);
+      final state = cubit.state as NasabahLoaded;
+      expect(state.totalCount, 1);
+      final requests = verify(() => getUseCase.execute(captureAny()))
+          .captured
+          .cast<GetNasabahParams>();
+      expect(requests.map((params) => params.status),
+          ['aktif', 'menunggu', 'menunggu', 'aktif']);
+      expect(requests.last.search, isNull);
+    });
   });
 
   group('decideNasabah', () {

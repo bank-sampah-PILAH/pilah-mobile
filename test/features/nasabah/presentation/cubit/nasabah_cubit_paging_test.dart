@@ -1,4 +1,6 @@
-import 'package:dartz/dartz.dart' show Left, Right;
+import 'dart:async';
+
+import 'package:dartz/dartz.dart' show Either, Left, Right;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -89,14 +91,20 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  test('picker list comes from its own fetch, not the paged page list',
-      () async {
+  test('picker fetch leaves the nasabah page state intact', () async {
+    when(() => getUseCase.execute(any())).thenAnswer(
+      (_) async => Right(_page([_nasabah('NAS-0009')])),
+    );
     when(() => getActiveUseCase.execute()).thenAnswer(
       (_) async => Right(_page([_nasabah('NAS-0001'), _nasabah('NAS-0002')])),
     );
 
+    await cubit.loadNasabah();
+    final pageState = cubit.state;
+    clearInteractions(getUseCase);
     await cubit.loadActiveNasabah();
 
+    expect(cubit.state, same(pageState));
     expect(
       cubit.activeNasabah.map((n) => n.idNasabah),
       ['NAS-0001', 'NAS-0002'],
@@ -137,6 +145,80 @@ void main() {
     expect(state.nasabahList.map((n) => n.idNasabah),
         ['NAS-0001', 'NAS-0002', 'NAS-0003']);
     expect(state.hasMore, isFalse);
+  });
+
+  test('a late response from the previous tab cannot replace the new tab',
+      () async {
+    final activeResponse =
+        Completer<Either<NetworkException, HalamanNasabah>>();
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      if (params.status == 'aktif') return activeResponse.future;
+      return Future.value(Right(_page([_nasabah('NAS-INACTIVE')])));
+    });
+
+    final activeLoad = cubit.loadNasabah();
+    await cubit.setActiveTab(false);
+    activeResponse.complete(Right(_page([_nasabah('NAS-ACTIVE')])));
+    await activeLoad;
+
+    final state = cubit.state as NasabahLoaded;
+    expect(state.isActiveTab, isFalse);
+    expect(state.nasabahList.map((n) => n.idNasabah), ['NAS-INACTIVE']);
+  });
+
+  test('a late next-page response cannot append rows after switching tabs',
+      () async {
+    final nextPageResponse =
+        Completer<Either<NetworkException, HalamanNasabah>>();
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      if (params.status == 'aktif' && params.page == 2) {
+        return nextPageResponse.future;
+      }
+      if (params.status == 'aktif') {
+        return Future.value(
+            Right(_page([_nasabah('NAS-ACTIVE-1')], hasMore: true)));
+      }
+      return Future.value(Right(_page([_nasabah('NAS-INACTIVE')])));
+    });
+
+    await cubit.loadNasabah();
+    final nextPageLoad = cubit.loadMoreNasabah();
+    await cubit.setActiveTab(false);
+    nextPageResponse.complete(Right(_page([_nasabah('NAS-ACTIVE-2')])));
+    await nextPageLoad;
+
+    final state = cubit.state as NasabahLoaded;
+    expect(state.isActiveTab, isFalse);
+    expect(state.nasabahList.map((n) => n.idNasabah), ['NAS-INACTIVE']);
+  });
+
+  test('a late next-page response cannot append rows after searching',
+      () async {
+    final nextPageResponse =
+        Completer<Either<NetworkException, HalamanNasabah>>();
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      if (params.page == 2) return nextPageResponse.future;
+      if (params.search == 'Bu') {
+        return Future.value(Right(_page([_nasabah('NAS-BUDI')])));
+      }
+      return Future.value(
+          Right(_page([_nasabah('NAS-ACTIVE-1')], hasMore: true)));
+    });
+
+    await cubit.loadNasabah();
+    final nextPageLoad = cubit.loadMoreNasabah();
+    cubit.searchNasabah('Bu');
+    await Future<void>.delayed(
+        NasabahCubit.jedaPencarian + const Duration(milliseconds: 50));
+    nextPageResponse.complete(Right(_page([_nasabah('NAS-ACTIVE-2')])));
+    await nextPageLoad;
+
+    final state = cubit.state as NasabahLoaded;
+    expect(state.searchQuery, 'Bu');
+    expect(state.nasabahList.map((n) => n.idNasabah), ['NAS-BUDI']);
   });
 
   test('stays quiet once the last page has been reached', () async {
@@ -197,9 +279,12 @@ void main() {
       (_) async => Left(NetworkException(message: 'jaringan putus')),
     );
 
-    await cubit.loadActiveNasabah();
+    await expectLater(
+      cubit.loadActiveNasabah(),
+      throwsA(isA<NetworkException>()),
+    );
 
-    expect(cubit.state, isA<NasabahError>());
+    expect(cubit.state, isA<NasabahInitial>());
     expect(cubit.activeNasabah, isEmpty);
   });
 }

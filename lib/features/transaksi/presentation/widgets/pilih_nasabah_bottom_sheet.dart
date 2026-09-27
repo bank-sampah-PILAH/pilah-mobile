@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 
@@ -18,6 +19,7 @@ class PilihNasabahBottomSheet extends StatefulWidget {
 class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  late Future<List<NasabahEntity>> _nasabahFuture;
 
   // Emerald Eco System Tokens
   static const Color emeraldPrimary = Color(0xFF006D44);
@@ -29,7 +31,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
     // meninggalkan cubit dalam keadaan Loaded dengan daftar berpaginasi
     // sementara daftar picker masih kosong, dan mengambil ulang di sini juga
     // membuat saldo yang tampil selalu yang terbaru setelah ada setoran.
-    context.read<NasabahCubit>().loadActiveNasabah();
+    _nasabahFuture = context.read<NasabahCubit>().loadActiveNasabah();
   }
 
   @override
@@ -70,9 +72,10 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
 
             // List
             Expanded(
-              child: BlocBuilder<NasabahCubit, NasabahState>(
-                builder: (context, state) {
-                  if (state is NasabahLoading || state is NasabahInitial) {
+              child: FutureBuilder<List<NasabahEntity>>(
+                future: _nasabahFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
                     return const Center(
                       child: SizedBox(
                         height: 24,
@@ -82,10 +85,13 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                     );
                   }
 
-                  if (state is NasabahError) {
+                  if (snapshot.hasError) {
+                    final error = snapshot.error;
                     return Center(
                       child: Text(
-                        state.message,
+                        error is NetworkException
+                            ? error.displayMessage
+                            : error.toString(),
                         textAlign: TextAlign.center,
                         style: AppTextStyle.small
                             .copyWith(color: Colors.grey[500]),
@@ -97,9 +103,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                   // nasabah page's tab/search-filtered state, so every active
                   // nasabah stays selectable regardless of that page's last view.
                   final query = searchQuery.toLowerCase();
-                  final filteredCustomers = context
-                      .read<NasabahCubit>()
-                      .activeNasabah
+                  final filteredCustomers = (snapshot.data ?? [])
                       .where((customer) =>
                           customer.name.toLowerCase().contains(query))
                       .toList();
