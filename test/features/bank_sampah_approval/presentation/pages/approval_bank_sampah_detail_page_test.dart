@@ -181,7 +181,8 @@ void main() {
     expect(find.text('Ajukan Banding'), findsNothing);
   });
 
-  testWidgets('tapping the appeal button submits the bank sampah id',
+  testWidgets(
+      'appears above the Riwayat Persetujuan section when the membership is rejected',
       (tester) async {
     const rejected = NasabahMembershipEntity(
       id: 'membership-1',
@@ -193,12 +194,82 @@ void main() {
       isActive: false,
       alasanPenolakan: 'Dokumen tidak lengkap',
     );
-    when(() => cubit.submit('bank-1')).thenAnswer((_) async {});
+
+    await tester.pumpWidget(_wrap(rejected, cubit));
+
+    final buttonDy = tester.getTopLeft(find.text('Ajukan Banding')).dy;
+    final historyHeadingDy =
+        tester.getTopLeft(find.text('Riwayat Persetujuan')).dy;
+    expect(buttonDy, lessThan(historyHeadingDy));
+  });
+
+  testWidgets('tapping the appeal button opens a dialog asking for a message',
+      (tester) async {
+    const rejected = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.rejected,
+      isActive: false,
+      alasanPenolakan: 'Dokumen tidak lengkap',
+    );
 
     await tester.pumpWidget(_wrap(rejected, cubit));
     await tester.tap(find.text('Ajukan Banding'));
+    await tester.pumpAndSettle();
 
-    verify(() => cubit.submit('bank-1')).called(1);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('Kirim'), findsOneWidget);
+    expect(find.text('Batal'), findsOneWidget);
+  });
+
+  testWidgets('submits the entered message when the dialog is confirmed',
+      (tester) async {
+    const rejected = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.rejected,
+      isActive: false,
+      alasanPenolakan: 'Dokumen tidak lengkap',
+    );
+    when(() => cubit.submit('bank-1', pesan: 'Dokumen sudah lengkap'))
+        .thenAnswer((_) async {});
+
+    await tester.pumpWidget(_wrap(rejected, cubit));
+    await tester.tap(find.text('Ajukan Banding'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Dokumen sudah lengkap');
+    await tester.tap(find.text('Kirim'));
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.submit('bank-1', pesan: 'Dokumen sudah lengkap'))
+        .called(1);
+  });
+
+  testWidgets('does not submit when the dialog is cancelled', (tester) async {
+    const rejected = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.rejected,
+      isActive: false,
+      alasanPenolakan: 'Dokumen tidak lengkap',
+    );
+
+    await tester.pumpWidget(_wrap(rejected, cubit));
+    await tester.tap(find.text('Ajukan Banding'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => cubit.submit(any(), pesan: any(named: 'pesan')));
   });
 
   testWidgets('shows an error toast without popping when the appeal fails',
