@@ -13,7 +13,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/ap
 class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
     implements NasabahApprovalCubit {}
 
-const _membership = NasabahMembershipEntity(
+const _first = NasabahMembershipEntity(
   id: 'membership-1',
   bankSampahId: 'bank-1',
   bankSampahNama: 'Bank Sampah Sejahtera',
@@ -22,12 +22,26 @@ const _membership = NasabahMembershipEntity(
   isActive: true,
 );
 
+const _second = NasabahMembershipEntity(
+  id: 'membership-2',
+  bankSampahId: 'bank-2',
+  bankSampahNama: 'Bank Sampah Lestari',
+  bankSampahKota: 'Jakarta',
+  status: MembershipStatus.pending,
+  isActive: true,
+);
+
 void main() {
   testWidgets('tapping a list card pushes the detail route with the entity',
       (tester) async {
     final cubit = _MockNasabahApprovalCubit();
+    // Two memberships so the assertion can't be satisfied by the list page
+    // alone: if the push never happened, the second card's own text would
+    // still be onstage from the list, but the detail page's own widget
+    // (carrying the tapped entity) and its "Riwayat Persetujuan" section
+    // would not be.
     when(() => cubit.state)
-        .thenReturn(const NasabahApprovalLoaded([_membership]));
+        .thenReturn(const NasabahApprovalLoaded([_first, _second]));
 
     final router = GoRouter(
       initialLocation: ApprovalBankSampahListPage.route,
@@ -52,14 +66,15 @@ void main() {
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pump();
 
-    expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
+    expect(find.text('Bank Sampah Lestari'), findsOneWidget);
 
-    await tester.tap(find.text('Bank Sampah Sejahtera'));
+    await tester.tap(find.text('Bank Sampah Lestari'));
     await tester.pumpAndSettle();
 
-    // The detail page's AppBar title also reads the bank name, so the
-    // membership's city is the more specific signal that the right entity
-    // (not just a same-named stand-in) reached the detail page.
-    expect(find.text('Bandung'), findsOneWidget);
+    expect(find.text('Riwayat Persetujuan'), findsOneWidget);
+    final detailPage = tester.widget<ApprovalBankSampahDetailPage>(
+      find.byType(ApprovalBankSampahDetailPage),
+    );
+    expect(detailPage.membership.id, 'membership-2');
   });
 }

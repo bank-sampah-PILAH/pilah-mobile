@@ -36,27 +36,31 @@ void main() {
       bankSampahKota: 'Bandung',
       status: MembershipStatus.approved,
       isActive: true,
+      // Newest-first, exactly as the backend sends riwayat_persetujuan: the
+      // most recent decision (25 Sep, approved) comes before the older one
+      // (20 Sep, rejected). A test fixture in chronological order wouldn't
+      // catch an accidental re-sort into oldest-first.
       riwayat: [
-        ApprovalLogEntity(
-          status: ApprovalLogStatus.rejected,
-          catatan: 'Dokumen tidak lengkap',
-          createdAt: DateTime(2026, 9, 20, 10),
-        ),
         ApprovalLogEntity(
           status: ApprovalLogStatus.approved,
           catatan: 'Data lengkap',
           createdAt: DateTime(2026, 9, 25, 8),
+        ),
+        ApprovalLogEntity(
+          status: ApprovalLogStatus.rejected,
+          catatan: 'Dokumen tidak lengkap',
+          createdAt: DateTime(2026, 9, 20, 10),
         ),
       ],
     );
 
     await tester.pumpWidget(_wrap(membership));
 
-    expect(find.text('Dokumen tidak lengkap'), findsOneWidget);
     expect(find.text('Data lengkap'), findsOneWidget);
-    final firstDy = tester.getTopLeft(find.text('Dokumen tidak lengkap')).dy;
-    final secondDy = tester.getTopLeft(find.text('Data lengkap')).dy;
-    expect(firstDy, lessThan(secondDy));
+    expect(find.text('Dokumen tidak lengkap'), findsOneWidget);
+    final newestDy = tester.getTopLeft(find.text('Data lengkap')).dy;
+    final oldestDy = tester.getTopLeft(find.text('Dokumen tidak lengkap')).dy;
+    expect(newestDy, lessThan(oldestDy));
   });
 
   testWidgets('renders a waiting message with no timeline for an empty riwayat',

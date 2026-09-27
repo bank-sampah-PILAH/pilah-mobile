@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -24,12 +25,21 @@ class _MockAuthenticationBloc
 class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
     implements NasabahApprovalCubit {}
 
-const _membership = NasabahMembershipEntity(
+const _first = NasabahMembershipEntity(
   id: 'membership-1',
   bankSampahId: 'bank-1',
   bankSampahNama: 'Bank Sampah Sejahtera',
   bankSampahKota: 'Bandung',
   status: MembershipStatus.approved,
+  isActive: true,
+);
+
+const _second = NasabahMembershipEntity(
+  id: 'membership-2',
+  bankSampahId: 'bank-2',
+  bankSampahNama: 'Bank Sampah Lestari',
+  bankSampahKota: 'Jakarta',
+  status: MembershipStatus.pending,
   isActive: true,
 );
 
@@ -44,7 +54,7 @@ void main() {
 
     approvalCubit = _MockNasabahApprovalCubit();
     when(() => approvalCubit.state)
-        .thenReturn(const NasabahApprovalLoaded([_membership]));
+        .thenReturn(const NasabahApprovalLoaded([_first, _second]));
     when(() => approvalCubit.load(silent: any(named: 'silent')))
         .thenAnswer((_) async {});
     if (di.isRegistered<NasabahApprovalCubit>()) {
@@ -102,11 +112,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Approval Bank Sampah'), findsOneWidget);
-    expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
+    expect(find.text('Bank Sampah Lestari'), findsOneWidget);
 
-    await tester.tap(find.text('Bank Sampah Sejahtera'));
+    await tester.tap(find.text('Bank Sampah Lestari'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Bandung'), findsOneWidget);
+    expect(find.text('Riwayat Persetujuan'), findsOneWidget);
+    final detailPage = tester.widget<ApprovalBankSampahDetailPage>(
+      find.byType(ApprovalBankSampahDetailPage),
+    );
+    expect(detailPage.membership.id, 'membership-2');
   });
 }
