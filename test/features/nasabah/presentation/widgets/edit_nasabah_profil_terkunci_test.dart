@@ -1,8 +1,11 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
@@ -17,6 +20,18 @@ const _email = 2;
 const _tanggalLahir = 3;
 const _whatsapp = 4;
 const _alamat = 5;
+
+const _pesan403 = 'Nasabah dengan akun hanya bisa diubah pada data keanggotaan';
+
+/// Respons yang dikirim backend ketika profil nasabah berakun diubah
+/// (PIL-223): 403 dengan satu pesan pada kunci `error`.
+NetworkException _tolak403() => NetworkException.handleBadResponse(
+      Response(
+        requestOptions: RequestOptions(path: '/api/v1/nasabah/nasabah-1'),
+        statusCode: 403,
+        data: {'error': _pesan403},
+      ),
+    );
 
 Map<String, dynamic> _customerData({bool? punyaAkun}) => {
       'id': 'nasabah-1',
@@ -119,6 +134,54 @@ void main() {
     testWidgets('data tanpa penanda penautan tetap dapat diubah sepenuhnya',
         (tester) async {
       await pump(tester, _customerData());
+
+      expect(_aktif(tester, _nama), isTrue);
+      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
+    });
+  });
+
+  group('Penanda penautan yang sudah basi (PIL-206)', () {
+    setUpAll(() {
+      registerFallbackValue(NasabahRequest(
+        kode: '',
+        nama: '',
+        email: '',
+        jenisKelamin: '',
+        tanggalLahir: '',
+        noHp: '',
+        alamat: '',
+      ));
+    });
+
+    testWidgets('penolakan 403 mengunci form, bukan mengundang coba ulang',
+        (tester) async {
+      // Nasabah bisa menautkan akunnya setelah daftar dimuat, sehingga penanda
+      // di klien sudah basi dan form terbuka. Begitu server menolak, form harus
+      // ikut terkunci; membiarkannya terbuka mengundang pengurus mengetik ulang
+      // hasil yang sama.
+      when(() => cubit.updateNasabah(any(), any()))
+          .thenAnswer((_) async => _tolak403());
+
+      await pump(tester, _customerData(punyaAkun: false));
+      expect(_aktif(tester, _nama), isTrue);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
+      await tester.pumpAndSettle();
+
+      expect(_aktif(tester, _nama), isFalse);
+      expect(_aktif(tester, _nomorAnggota), isTrue);
+      expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+    });
+
+    testWidgets('kegagalan lain tidak ikut mengunci form', (tester) async {
+      // Hanya 403 profil yang berarti profilnya bukan milik pengurus. Galat
+      // lain, misalnya jaringan, harus tetap membolehkan perbaikan.
+      when(() => cubit.updateNasabah(any(), any()))
+          .thenAnswer((_) async => NetworkException(message: 'jaringan putus'));
+
+      await pump(tester, _customerData(punyaAkun: false));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
+      await tester.pumpAndSettle();
 
       expect(_aktif(tester, _nama), isTrue);
       expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
