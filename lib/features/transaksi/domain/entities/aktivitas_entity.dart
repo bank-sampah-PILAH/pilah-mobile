@@ -77,15 +77,15 @@ class ActivitasEntity {
       avatarColor: palette.$1,
       avatarTextColor: palette.$2,
       title: p.nasabahNama,
-      subtitleLines: [
-        p.metode.label,
-        if (p.keterangan.isNotEmpty) p.keterangan,
-      ],
+      // One line only, like setoran's subtitle — no separate keterangan line
+      // and no Diperbarui badge, so an edited pencairan reads the same as
+      // any other row in the merged feed (still visible in its own detail
+      // sheet, just not singled out here).
+      subtitleLines: [p.metode.label],
       amount: '-Rp ${_rupiah(p.nominal)}',
       // No amountColor override: falls through to ActivityItem's own
       // default (AppColors.greenDark), the same accent setoran rows use.
       trailingCaptions: [if (p.tanggal != null) _time(p.tanggal!)],
-      badge: p.diperbarui ? 'Diperbarui' : null,
       searchTerm: p.nasabahNama,
       pencairan: p,
     );
