@@ -74,14 +74,33 @@ class PencairanRemoteDataSourceImpl implements PencairanRemoteDataSources {
   Future<List<PencairanResponse>> getRiwayat(
     RiwayatPencairanFilter filter,
   ) async {
-    final response = await _networkService.get(
-      _path,
-      queryParams: filter.toQueryParams(),
-    );
-    final data = response.data;
-    final List<dynamic> rows = data is Map<String, dynamic>
-        ? (data['results'] as List? ?? const [])
-        : (data as List);
+    final queryParams = filter.toQueryParams();
+    final rows = <dynamic>[];
+    final requestedPages = <int>{};
+    var page = 1;
+
+    while (true) {
+      if (!requestedPages.add(page)) {
+        throw StateError('Pencairan pagination repeated page $page');
+      }
+      final response = await _networkService.get(
+        _path,
+        queryParams: page == 1 ? queryParams : {...queryParams, 'page': page},
+      );
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        rows.addAll(data as List);
+        break;
+      }
+
+      rows.addAll(data['results'] as List? ?? const []);
+      final next = data['next'];
+      if (next == null) break;
+
+      final nextPage = Uri.tryParse(next.toString())?.queryParameters['page'];
+      page = int.tryParse(nextPage ?? '') ?? page + 1;
+    }
+
     return rows
         .map((row) => PencairanResponse.fromJson(row as Map<String, dynamic>))
         .toList();
