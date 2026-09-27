@@ -111,7 +111,7 @@ void main() {
     await tester.tap(find.text('Berikutnya'));
     await tester.pumpAndSettle();
     expect(repository.pages, [('member-b', 1), ('member-b', 2)]);
-    expect(find.text('Rp 2'), findsOneWidget);
+    expect(find.text('+ Rp 2'), findsOneWidget);
     expect(find.text('Berikutnya'), findsNothing);
   });
 

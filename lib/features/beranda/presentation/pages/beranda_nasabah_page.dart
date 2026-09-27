@@ -360,7 +360,7 @@ class _BalanceCard extends StatelessWidget {
                   child: Text(
                     latestActivity == null
                         ? balance.updatedAt == null
-                            ? 'Belum ada perubahan saldo.'
+                            ? 'Saldo tabungan saat ini'
                             : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'
                         : '${_activityTitle(latestActivity!.type)} · ${nasabahDate(latestActivity!.date)}',
                     style: _text(
