@@ -152,6 +152,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       time: tanggal != null ? _formatTime(tanggal) : null,
       balance: '',
       items: const [],
+      tanggal: tanggal,
     );
   }
 

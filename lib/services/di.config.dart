@@ -164,6 +164,8 @@ import '../features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart
 import '../features/transaksi/domain/use_cases/get_transaksi_usecase.dart'
     as _i383;
 import '../features/transaksi/domain/use_cases/resend_wa_usecase.dart' as _i417;
+import '../features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart'
+    as _i454;
 import '../features/transaksi/presentation/cubit/transaksi_cubit.dart' as _i474;
 
 const String _dev = 'dev';
@@ -359,6 +361,12 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i700.RevisiPencairanCubit(gh<_i686.PencairanUseCases>()));
     gh.factory<_i8.RiwayatPencairanCubit>(
         () => _i8.RiwayatPencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.lazySingleton<_i454.RiwayatAktivitasCubit>(
+        () => _i454.RiwayatAktivitasCubit(
+              gh<_i383.GetTransaksiUseCase>(),
+              gh<_i686.PencairanUseCases>(),
+              gh<_i67.ExportTransaksiUseCase>(),
+            ));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),

@@ -1,0 +1,110 @@
+import 'package:flutter/material.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+
+import 'transaksi_entity.dart';
+
+enum ActivitasTipe { setoran, pencairan }
+
+/// A single row in the unified Riwayat Aktivitas feed (PIL-282): either a
+/// setoran or a pencairan, normalized to the shape `ActivityItem` renders,
+/// while keeping the original typed record so a tap can still open that
+/// type's own detail sheet.
+class ActivitasEntity {
+  static const Color _emeraldPrimary = Color(0xFF006D44);
+  static const Color _emeraldLight = Color(0xFFEAF5EC);
+
+  final ActivitasTipe tipe;
+
+  /// Null only for a legacy record with no timestamp at all; sorts last.
+  final DateTime? tanggal;
+
+  final String avatarText;
+  final Color avatarColor;
+  final Color avatarTextColor;
+  final String title;
+  final List<String> subtitleLines;
+  final String amount;
+  final Color? amountColor;
+  final List<String> trailingCaptions;
+  final String? badge;
+
+  /// The searchable name (nasabah), independent of how [title] is composed.
+  final String searchTerm;
+
+  final TransaksiEntity? transaksi;
+  final Pencairan? pencairan;
+
+  const ActivitasEntity({
+    required this.tipe,
+    required this.tanggal,
+    required this.avatarText,
+    required this.avatarColor,
+    required this.avatarTextColor,
+    required this.title,
+    required this.subtitleLines,
+    required this.amount,
+    this.amountColor,
+    this.trailingCaptions = const [],
+    this.badge,
+    required this.searchTerm,
+    this.transaksi,
+    this.pencairan,
+  });
+
+  factory ActivitasEntity.fromTransaksi(TransaksiEntity t) {
+    return ActivitasEntity(
+      tipe: ActivitasTipe.setoran,
+      tanggal: t.tanggal,
+      avatarText: t.initials,
+      avatarColor: t.avatarColor,
+      avatarTextColor: t.textColor,
+      title: t.name,
+      subtitleLines: [t.subtitle],
+      amount: t.amount,
+      trailingCaptions: [if (t.time != null) t.time!],
+      searchTerm: t.name,
+      transaksi: t,
+    );
+  }
+
+  factory ActivitasEntity.fromPencairan(Pencairan p) {
+    return ActivitasEntity(
+      tipe: ActivitasTipe.pencairan,
+      tanggal: p.tanggal,
+      avatarText: _initialsOf(p.nasabahNama),
+      avatarColor: _emeraldLight,
+      avatarTextColor: _emeraldPrimary,
+      title: p.nasabahNama,
+      subtitleLines: [
+        p.metode.label,
+        if (p.keterangan.isNotEmpty) p.keterangan,
+      ],
+      amount: '-Rp ${_rupiah(p.nominal)}',
+      amountColor: _emeraldPrimary,
+      trailingCaptions: [if (p.tanggal != null) _time(p.tanggal!)],
+      badge: p.diperbarui ? 'Diperbarui' : null,
+      searchTerm: p.nasabahNama,
+      pencairan: p,
+    );
+  }
+
+  static String _initialsOf(String name) {
+    final parts =
+        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return 'NN';
+    return parts.take(2).map((p) => p[0].toUpperCase()).join();
+  }
+
+  static String _time(DateTime tanggal) =>
+      '${tanggal.hour.toString().padLeft(2, '0')}:${tanggal.minute.toString().padLeft(2, '0')}';
+
+  static String _rupiah(int value) {
+    final digits = value.abs().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
+      buffer.write(digits[i]);
+    }
+    return buffer.toString();
+  }
+}

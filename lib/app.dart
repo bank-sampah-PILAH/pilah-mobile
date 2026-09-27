@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dar
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
@@ -46,6 +47,9 @@ class App extends StatelessWidget {
         ),
         BlocProvider<RecentActivityCubit>(
           create: (context) => di<RecentActivityCubit>(),
+        ),
+        BlocProvider<RiwayatAktivitasCubit>(
+          create: (context) => di<RiwayatAktivitasCubit>(),
         ),
         // Provided app-wide, not just under the Profile page: the transaksi
         // success flow reads the saved WhatsApp template from here to build the
@@ -169,6 +173,7 @@ void resetSessionScopedState(BuildContext context) {
   context.read<TransaksiCubit>().reset();
   context.read<DashboardCubit>().reset();
   context.read<RecentActivityCubit>().reset();
+  context.read<RiwayatAktivitasCubit>().reset();
   // Carries the previous bank sampah's WhatsApp template and, more sensitively,
   // any logo picked but not yet uploaded — a path into that user's gallery.
   context.read<ProfileCubit>().reset();

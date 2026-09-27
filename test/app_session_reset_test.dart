@@ -20,6 +20,8 @@ import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_enti
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -40,6 +42,9 @@ class _MockDashboardCubit extends MockCubit<DashboardState>
 class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
 
+class _MockRiwayatAktivitasCubit extends MockCubit<RiwayatAktivitasState>
+    implements RiwayatAktivitasCubit {}
+
 class _MockProfileCubit extends MockCubit<ProfileState>
     implements ProfileCubit {}
 
@@ -53,6 +58,7 @@ void main() {
   late _MockTransaksiCubit transaksi;
   late _MockDashboardCubit dashboard;
   late _MockRecentActivityCubit recentActivity;
+  late _MockRiwayatAktivitasCubit riwayatAktivitas;
   late _MockProfileCubit profile;
   // Real, not mocked: the draft it holds is the thing under test, and a mock
   // would only confirm that a method was called rather than that the data is
@@ -66,6 +72,7 @@ void main() {
     transaksi = _MockTransaksiCubit();
     dashboard = _MockDashboardCubit();
     recentActivity = _MockRecentActivityCubit();
+    riwayatAktivitas = _MockRiwayatAktivitasCubit();
     profile = _MockProfileCubit();
     onboarding = OnboardingCubit(_MockOnboardingDataSource());
     when(() => nasabah.state).thenReturn(NasabahInitial());
@@ -74,6 +81,8 @@ void main() {
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => dashboard.state).thenReturn(const DashboardState());
     when(() => recentActivity.state).thenReturn(RecentActivityInitial());
+    when(() => riwayatAktivitas.state)
+        .thenReturn(const RiwayatAktivitasState());
     when(() => profile.state).thenReturn(const ProfileState());
 
     if (di.isRegistered<InviteTokenStore>()) {
@@ -114,6 +123,7 @@ void main() {
           BlocProvider<TransaksiCubit>.value(value: transaksi),
           BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: recentActivity),
+          BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
           BlocProvider<ProfileCubit>.value(value: profile),
           BlocProvider<OnboardingCubit>.value(value: onboarding),
         ],
@@ -145,6 +155,7 @@ void main() {
     verify(() => transaksi.reset()).called(1);
     verify(() => dashboard.reset()).called(1);
     verify(() => recentActivity.reset()).called(1);
+    verify(() => riwayatAktivitas.reset()).called(1);
     verify(
       () => profile.reset(),
       // Holds the bank sampah's WhatsApp template and, more sensitively, any

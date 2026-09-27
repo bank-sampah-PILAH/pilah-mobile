@@ -27,6 +27,11 @@ class TransaksiEntity {
   final String balance;
   final List<ItemSetoranEntity> items;
 
+  /// The raw transaction timestamp, kept alongside the pre-formatted [time]
+  /// so callers that need to sort or merge across feeds (e.g. Riwayat
+  /// Aktivitas, PIL-282) aren't stuck re-parsing a display string.
+  final DateTime? tanggal;
+
   TransaksiEntity({
     this.id = '',
     required this.initials,
@@ -39,6 +44,7 @@ class TransaksiEntity {
     this.time,
     required this.balance,
     required this.items,
+    this.tanggal,
   });
 
   TransaksiEntity copyWith({bool? isWaSuccess}) {
@@ -54,6 +60,7 @@ class TransaksiEntity {
       time: time,
       balance: balance,
       items: items,
+      tanggal: tanggal,
     );
   }
 }
