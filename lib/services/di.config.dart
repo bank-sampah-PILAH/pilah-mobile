@@ -38,6 +38,8 @@ import '../features/authentication/domain/use_cases/login_with_google_usecase.da
     as _i934;
 import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
+import '../features/bank_sampah_approval/data/datasources/bank_sampah_approval_remote_data_source.dart'
+    as _i335;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
 import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
@@ -212,6 +214,9 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i915.JadwalRemoteDataSource>(
         () => _i915.JadwalRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i335.BankSampahApprovalRemoteDataSource>(() =>
+        _i335.BankSampahApprovalRemoteDataSourceImpl(
+            gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1053.ProfileRemoteDataSource>(
         () => _i1053.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i24.AuthRemoteDataSources>(
