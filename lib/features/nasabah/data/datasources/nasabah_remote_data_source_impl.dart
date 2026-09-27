@@ -12,21 +12,53 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
 
   static const String _path = '/api/v1/nasabah';
 
+  /// Batas `max_page_size` backend; dipakai picker yang menarik satu kali ambil.
+  static const int _batasPicker = 100;
+
   @override
-  Future<List<NasabahModel>> getNasabah() async {
-    // `status=semua` returns both active and inactive so the active/inactive
-    // tabs can be filtered client-side; page_size is maxed to fetch in one call.
+  Future<HalamanNasabah> getNasabah({
+    int page = 1,
+    String status = 'aktif',
+    String? search,
+  }) async {
+    // Penyaringan dilakukan server supaya paginasi tetap benar: menyaring di
+    // aplikasi hanya akan menyaring halaman yang kebetulan sudah dimuat.
+    // Ukuran halaman mengikuti default server, tidak dipaksa dari sini.
     final response = await networkService.get(
       _path,
-      queryParams: {'status': 'semua', 'page_size': 100},
+      queryParams: {
+        'status': status,
+        'page': page,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
     );
-    final data = response.data;
-    final List<dynamic> results = data is Map<String, dynamic>
-        ? (data['results'] as List? ?? [])
-        : (data as List);
-    return results
-        .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return _halaman(response.data);
+  }
+
+  @override
+  Future<HalamanNasabah> getActiveNasabah() async {
+    final response = await networkService.get(
+      _path,
+      queryParams: {'status': 'aktif', 'page_size': _batasPicker},
+    );
+    return _halaman(response.data);
+  }
+
+  /// Membaca bentuk paginasi DRF `{count, next, previous, results}`.
+  ///
+  /// Endpoint daftar nasabah selalu terpaginasi karena paginasi dipasang global
+  /// di backend, jadi tidak ada cabang untuk daftar polos.
+  HalamanNasabah _halaman(dynamic data) {
+    final amplop = data as Map<String, dynamic>;
+    final results = amplop['results'] as List? ?? [];
+    return HalamanNasabah(
+      items: results
+          .map((json) => NasabahModel.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      // `count` adalah total di server; `next` null berarti ini halaman akhir.
+      totalCount: (amplop['count'] as num?)?.toInt() ?? results.length,
+      hasMore: amplop['next'] != null,
+    );
   }
 
   @override

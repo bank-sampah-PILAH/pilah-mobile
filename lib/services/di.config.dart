@@ -85,6 +85,8 @@ import '../features/nasabah/domain/use_cases/approve_nasabah_usecase.dart'
     as _i66;
 import '../features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart'
     as _i850;
+import '../features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart'
+    as _i987;
 import '../features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart'
     as _i296;
 import '../features/nasabah/domain/use_cases/get_nasabah_usecase.dart' as _i789;
@@ -234,6 +236,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i66.ApproveNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i850.DeactivateNasabahUseCase>(
         () => _i850.DeactivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i987.GetActiveNasabahUseCase>(
+        () => _i987.GetActiveNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i296.GetNasabahRingkasanUseCase>(
         () => _i296.GetNasabahRingkasanUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i789.GetNasabahUseCase>(
@@ -283,10 +287,9 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i240.UpdateHargaUseCase>(
         () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
-        () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.lazySingleton<_i958.NasabahCubit>(() => _i958.NasabahCubit(
           gh<_i789.GetNasabahUseCase>(),
+          gh<_i987.GetActiveNasabahUseCase>(),
           gh<_i296.GetNasabahRingkasanUseCase>(),
           gh<_i532.AddNasabahUseCase>(),
           gh<_i524.UpdateNasabahUseCase>(),
@@ -295,6 +298,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i66.ApproveNasabahUseCase>(),
           gh<_i529.RejectNasabahUseCase>(),
         ));
+    gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
+        () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),

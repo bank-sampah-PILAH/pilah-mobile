@@ -338,9 +338,10 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                 TextFormField(
                   controller: _alamatController,
                   maxLines: 4,
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().runes.length < 10)
+                          ? 'Alamat minimal 10 karakter.'
+                          : null,
                   decoration: _buildInputDecoration(
                     hintText: 'Nama jalan, RT/RW, Kelurahan...',
                   ),
