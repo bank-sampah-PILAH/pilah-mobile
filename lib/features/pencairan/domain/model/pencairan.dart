@@ -58,6 +58,7 @@ class Pencairan extends Equatable {
   final String id;
   final String nasabahId;
   final String nasabahNama;
+  final String bankSampahNama;
   final int nominal;
   final MetodePencairan metode;
   final DateTime? tanggal;
@@ -77,6 +78,7 @@ class Pencairan extends Equatable {
     required this.id,
     this.nasabahId = '',
     required this.nasabahNama,
+    this.bankSampahNama = '',
     required this.nominal,
     required this.metode,
     required this.tanggal,
@@ -94,6 +96,7 @@ class Pencairan extends Equatable {
         id,
         nasabahId,
         nasabahNama,
+        bankSampahNama,
         nominal,
         metode,
         tanggal,

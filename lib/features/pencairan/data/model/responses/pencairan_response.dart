@@ -11,6 +11,7 @@ abstract class PencairanResponse with _$PencairanResponse {
     required String id,
     @JsonKey(name: 'nasabah_id') @Default('') String nasabahId,
     @JsonKey(name: 'nasabah_nama') @Default('') String nasabahNama,
+    @JsonKey(name: 'bank_sampah_nama') @Default('') String bankSampahNama,
     @JsonKey(name: 'dicatat_oleh_nama') @Default('') String dicatatOlehNama,
     String? tanggal,
     required String nominal,

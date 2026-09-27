@@ -9,6 +9,7 @@ class PencairanMapper {
       id: response.id,
       nasabahId: response.nasabahId,
       nasabahNama: response.nasabahNama,
+      bankSampahNama: response.bankSampahNama,
       dicatatOlehNama: response.dicatatOlehNama,
       nominal: rupiah(response.nominal),
       metode: MetodePencairan.fromApi(response.metode),
