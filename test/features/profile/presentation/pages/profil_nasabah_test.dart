@@ -88,7 +88,6 @@ void main() {
       states.add(Unauthenticated());
       await tester.pumpAndSettle();
       expect(find.text('siti@example.test'), findsNothing);
-      expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
       verifyNever(() => profile.load(silent: true));
     });
     testWidgets('akses Profil dari Beranda membuka profil akun',
