@@ -17,7 +17,9 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/na
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
+import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _MockAuthenticationBloc
@@ -69,6 +71,11 @@ void main() {
     }
     di.registerFactory<NasabahApprovalCubit>(() => approvalCubit);
 
+    if (di.isRegistered<NasabahRepository>()) {
+      di.unregister<NasabahRepository>();
+    }
+    di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+
     final appealCubit = _MockNasabahAppealCubit();
     when(() => appealCubit.state).thenReturn(const NasabahAppealIdle());
     if (di.isRegistered<NasabahAppealCubit>()) {
@@ -83,6 +90,9 @@ void main() {
     }
     if (di.isRegistered<NasabahApprovalCubit>()) {
       di.unregister<NasabahApprovalCubit>();
+    }
+    if (di.isRegistered<NasabahRepository>()) {
+      di.unregister<NasabahRepository>();
     }
     if (di.isRegistered<NasabahAppealCubit>()) {
       di.unregister<NasabahAppealCubit>();
@@ -123,9 +133,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Lihat Status Approval Bank Sampah'), findsOneWidget);
+    expect(find.text('Status Approval Bank Sampah'), findsOneWidget);
 
-    await tester.tap(find.text('Lihat Status Approval Bank Sampah'));
+    await tester.tap(find.text('Status Approval Bank Sampah'));
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Approval Bank Sampah'), findsOneWidget);
