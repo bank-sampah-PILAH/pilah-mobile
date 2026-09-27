@@ -30,7 +30,6 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
@@ -133,12 +132,6 @@ class AppRouterConfig {
         path: CatatPencairanPage.route,
         name: CatatPencairanPage.route,
         builder: (context, state) => const CatatPencairanPage(),
-      ),
-      GoRoute(
-        path: RiwayatPencairanPage.route,
-        name: RiwayatPencairanPage.route,
-        builder: (context, state) =>
-            RiwayatPencairanPage(args: state.extra as RiwayatPencairanArgs?),
       ),
       GoRoute(
         path: RiwayatPencairanNasabahPage.route,

@@ -1,3 +1,4 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -23,8 +24,13 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
+
+class _MockRiwayatAktivitasCubit extends MockCubit<RiwayatAktivitasState>
+    implements RiwayatAktivitasCubit {}
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -76,11 +82,17 @@ void main() {
   });
 
   late _MockUseCases useCases;
+  late _MockRiwayatAktivitasCubit riwayatAktivitasCubit;
 
   setUp(() {
     useCases = _MockUseCases();
     when(() => useCases.getSaldo('n-1'))
         .thenAnswer((_) async => const Right(465600));
+    riwayatAktivitasCubit = _MockRiwayatAktivitasCubit();
+    when(() => riwayatAktivitasCubit.state)
+        .thenReturn(const RiwayatAktivitasState());
+    when(() => riwayatAktivitasCubit.load(silent: any(named: 'silent')))
+        .thenAnswer((_) async {});
   });
 
   final customer = NasabahEntity(
@@ -101,13 +113,16 @@ void main() {
 
   Future<void> pumpView(WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        navigatorKey: rootNavigatorKey,
-        home: BlocProvider(
-          create: (_) => PencairanCubit(useCases),
-          child: CatatPencairanView(
-            initialCustomer: customer,
-            now: () => _now,
+      BlocProvider<RiwayatAktivitasCubit>.value(
+        value: riwayatAktivitasCubit,
+        child: MaterialApp(
+          navigatorKey: rootNavigatorKey,
+          home: BlocProvider(
+            create: (_) => PencairanCubit(useCases),
+            child: CatatPencairanView(
+              initialCustomer: customer,
+              now: () => _now,
+            ),
           ),
         ),
       ),
@@ -381,8 +396,12 @@ void main() {
       );
       addTearDown(router.dispose);
       await tester.pumpWidget(
-        BlocProvider<NasabahCubit>.value(
-          value: nasabahCubit,
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<NasabahCubit>.value(value: nasabahCubit),
+            BlocProvider<RiwayatAktivitasCubit>.value(
+                value: riwayatAktivitasCubit),
+          ],
           child: MaterialApp.router(routerConfig: router),
         ),
       );
