@@ -56,4 +56,18 @@ void main() {
       isA<NasabahApprovalError>(),
     ],
   );
+
+  blocTest<NasabahApprovalCubit, NasabahApprovalState>(
+    'silent reload skips the Loading state when data is already loaded',
+    build: () {
+      when(() => useCase.execute())
+          .thenAnswer((_) async => const Right([_membership]));
+      return cubit;
+    },
+    seed: () => const NasabahApprovalLoaded([]),
+    act: (cubit) => cubit.load(silent: true),
+    expect: () => [
+      const NasabahApprovalLoaded([_membership]),
+    ],
+  );
 }

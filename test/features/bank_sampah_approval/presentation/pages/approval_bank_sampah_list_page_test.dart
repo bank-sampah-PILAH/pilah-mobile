@@ -60,6 +60,19 @@ void main() {
     expect(find.text('Disetujui'), findsOneWidget);
   });
 
+  testWidgets('pulling to refresh reloads silently', (tester) async {
+    when(() => cubit.state)
+        .thenReturn(const NasabahApprovalLoaded([_pending, _approved]));
+    when(() => cubit.load(silent: any(named: 'silent')))
+        .thenAnswer((_) async {});
+
+    await tester.pumpWidget(_wrap(cubit));
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.load(silent: true)).called(1);
+  });
+
   testWidgets('renders EmptyView when there are no memberships',
       (tester) async {
     when(() => cubit.state).thenReturn(const NasabahApprovalLoaded([]));
