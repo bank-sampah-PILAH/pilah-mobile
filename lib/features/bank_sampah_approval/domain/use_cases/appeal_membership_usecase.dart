@@ -9,6 +9,17 @@ class AppealMembershipParams {
   final String pesan;
 
   const AppealMembershipParams({required this.bankSampahId, this.pesan = ''});
+
+  // Value equality so a mocktail `verify` can match params the cubit built
+  // against a fresh instance, instead of requiring the exact same object.
+  @override
+  bool operator ==(Object other) =>
+      other is AppealMembershipParams &&
+      other.bankSampahId == bankSampahId &&
+      other.pesan == pesan;
+
+  @override
+  int get hashCode => Object.hash(bankSampahId, pesan);
 }
 
 @lazySingleton

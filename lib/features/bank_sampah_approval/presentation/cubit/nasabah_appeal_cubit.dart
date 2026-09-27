@@ -14,9 +14,11 @@ class NasabahAppealCubit extends Cubit<NasabahAppealState> {
 
   NasabahAppealCubit(this.appealUseCase) : super(const NasabahAppealIdle());
 
-  Future<void> submit(String bankSampahId) async {
+  Future<void> submit(String bankSampahId, {String pesan = ''}) async {
     emit(const NasabahAppealSubmitting());
-    final result = await appealUseCase.execute(bankSampahId);
+    final result = await appealUseCase.execute(
+      AppealMembershipParams(bankSampahId: bankSampahId, pesan: pesan),
+    );
     result.fold(
       (failure) => emit(NasabahAppealFailure(failure.displayMessage)),
       (_) => emit(const NasabahAppealSuccess()),
