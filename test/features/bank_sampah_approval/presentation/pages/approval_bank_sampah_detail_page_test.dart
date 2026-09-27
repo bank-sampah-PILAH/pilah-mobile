@@ -15,6 +15,7 @@ void main() {
       bankSampahId: 'bank-1',
       bankSampahNama: 'Bank Sampah Sejahtera',
       bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
       status: MembershipStatus.rejected,
       isActive: false,
       alasanPenolakan: 'Dokumen tidak lengkap',
@@ -34,6 +35,7 @@ void main() {
       bankSampahId: 'bank-1',
       bankSampahNama: 'Bank Sampah Sejahtera',
       bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
       status: MembershipStatus.approved,
       isActive: true,
       // Newest-first, exactly as the backend sends riwayat_persetujuan: the
@@ -70,6 +72,7 @@ void main() {
       bankSampahId: 'bank-1',
       bankSampahNama: 'Bank Sampah Sejahtera',
       bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
       status: MembershipStatus.pending,
       isActive: true,
     );

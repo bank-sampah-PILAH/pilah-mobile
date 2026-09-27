@@ -30,6 +30,7 @@ const _first = NasabahMembershipEntity(
   bankSampahId: 'bank-1',
   bankSampahNama: 'Bank Sampah Sejahtera',
   bankSampahKota: 'Bandung',
+  bankSampahAlamat: 'Jl. Melati No. 5',
   status: MembershipStatus.approved,
   isActive: true,
 );
@@ -39,6 +40,7 @@ const _second = NasabahMembershipEntity(
   bankSampahId: 'bank-2',
   bankSampahNama: 'Bank Sampah Lestari',
   bankSampahKota: 'Jakarta',
+  bankSampahAlamat: 'Jl. Sudirman No. 20',
   status: MembershipStatus.pending,
   isActive: true,
 );

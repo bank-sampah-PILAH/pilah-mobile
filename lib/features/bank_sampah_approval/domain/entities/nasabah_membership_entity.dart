@@ -38,6 +38,7 @@ class NasabahMembershipEntity {
   final String bankSampahId;
   final String bankSampahNama;
   final String bankSampahKota;
+  final String bankSampahAlamat;
   final MembershipStatus status;
   final bool isActive;
 
@@ -53,6 +54,7 @@ class NasabahMembershipEntity {
     required this.bankSampahId,
     required this.bankSampahNama,
     required this.bankSampahKota,
+    required this.bankSampahAlamat,
     required this.status,
     required this.isActive,
     this.alasanPenolakan,
@@ -69,6 +71,7 @@ class NasabahMembershipEntity {
       bankSampahId: bank['id']?.toString() ?? '',
       bankSampahNama: bank['nama']?.toString() ?? '',
       bankSampahKota: bank['kota']?.toString() ?? '',
+      bankSampahAlamat: bank['alamat']?.toString() ?? '',
       status: MembershipStatus.values.byName(json['status'] as String),
       isActive: json['is_active'] as bool? ?? false,
       alasanPenolakan: json['alasan_penolakan']?.toString(),

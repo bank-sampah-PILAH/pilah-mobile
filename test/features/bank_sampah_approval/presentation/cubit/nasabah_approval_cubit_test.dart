@@ -16,6 +16,7 @@ const _membership = NasabahMembershipEntity(
   bankSampahId: 'bank-1',
   bankSampahNama: 'Bank Sampah Sejahtera',
   bankSampahKota: 'Bandung',
+  bankSampahAlamat: 'Jl. Merdeka No. 10',
   status: MembershipStatus.pending,
   isActive: true,
 );

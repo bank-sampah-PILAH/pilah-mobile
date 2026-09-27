@@ -24,6 +24,7 @@ void main() {
       bankSampahId: 'bank-1',
       bankSampahNama: 'Bank Sampah Sejahtera',
       bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
       status: MembershipStatus.approved,
       isActive: true,
     );
