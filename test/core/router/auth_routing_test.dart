@@ -41,7 +41,7 @@ void main() {
       );
       expect(
         locationForAuthStep('nasabah_dashboard', role: 'nasabah'),
-        '/nasabah-dashboard',
+        '/dashboard',
       );
       expect(
         locationForAuthStep('register_bank_sampah_induk',
@@ -130,7 +130,7 @@ void main() {
           hasPendingInvite: true,
           role: 'nasabah',
         ),
-        '/nasabah-dashboard',
+        '/dashboard',
       );
     });
 

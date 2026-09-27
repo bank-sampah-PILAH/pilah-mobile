@@ -46,8 +46,17 @@ class PreviewAuthenticationSession
   }
 
   @override
-  Future<Either<NetworkException, AuthEntity>> loginWithGoogle(
+  Future<Either<NetworkException, GoogleAuthOutcome>> loginWithGoogle(
       String idToken) async {
+    _hasSession = true;
+    return const Right(GoogleSession(auth));
+  }
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> registerGoogleUser({
+    required String registrationToken,
+    required GoogleRegistrationRole role,
+  }) async {
     _hasSession = true;
     return const Right(auth);
   }

@@ -213,13 +213,7 @@ class AppRouterConfig {
       ),
       GoRoute(
         path: RoleHandoffPage.nasabahDashboardRoute,
-        builder: (context, state) => const RoleHandoffPage(
-          title: 'Akun Nasabah Siap',
-          message:
-              'Beranda Nasabah sedang disiapkan. Akun dan keanggotaan Anda sudah tersimpan.',
-          registrationInProgress: false,
-          showPayoutHistory: true,
-        ),
+        redirect: (_, __) => '/dashboard',
       ),
       GoRoute(
         path: RoleHandoffPage.registerIndukRoute,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 
 const _emerald = Color(0xFF059669);
 const _ink = Color(0xFF0F172A);
@@ -20,7 +22,8 @@ class BerandaNasabahPage extends StatelessWidget {
         builder: (context, state) {
           final auth = state is Authenticated ? state.authEntity : null;
           final ready = auth?.role == 'nasabah' &&
-              auth?.nextStep == 'dashboard' &&
+              (auth?.nextStep == 'dashboard' ||
+                  auth?.nextStep == 'nasabah_dashboard') &&
               auth?.bankSampahStatus == 'active';
           final bankName = auth?.bankSampahNama?.trim();
           final unitName = bankName == null || bankName.isEmpty
@@ -83,6 +86,21 @@ class BerandaNasabahPage extends StatelessWidget {
                                   'Riwayat Aktivitas',
                                   'Informasi riwayat aktivitas Anda belum tersedia.',
                                 )),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push(
+                              RiwayatPencairanNasabahPage.route,
+                            ),
+                            icon: const Icon(Icons.receipt_long_outlined),
+                            label: const Text('Riwayat Nasabah'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              foregroundColor: _emerald,
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   ),

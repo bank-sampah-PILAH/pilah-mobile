@@ -50,7 +50,7 @@ String locationForAuthStep(
     case 'register_nasabah':
       return '/register-nasabah';
     case 'nasabah_dashboard':
-      return '/nasabah-dashboard';
+      return '/dashboard';
     case 'register_bank_sampah_induk':
       return '/register-bank-sampah-induk';
     case 'pengelola_induk_dashboard':

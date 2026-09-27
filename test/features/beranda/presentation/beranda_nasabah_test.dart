@@ -33,16 +33,16 @@ class _ActivityCubit extends MockCubit<RecentActivityState>
 // The current session contract has no separate membership-status field:
 // dashboard + nasabah + active bank is the available onboarded-session fixture.
 AuthEntity _nasabah(String bankName) => AuthEntity(
-  id: 'nasabah-225',
-  name: 'Siti Aminah',
-  email: 'siti@example.test',
-  photoUrl: '',
-  token: 'test-token',
-  role: 'nasabah',
-  nextStep: 'dashboard',
-  bankSampahStatus: 'active',
-  bankSampahNama: bankName,
-);
+      id: 'nasabah-225',
+      name: 'Siti Aminah',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'test-token',
+      role: 'nasabah',
+      nextStep: 'nasabah_dashboard',
+      bankSampahStatus: 'active',
+      bankSampahNama: bankName,
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -136,6 +136,30 @@ void main() {
         }
       });
     }
+
+    testWidgets(
+        'beranda menyediakan akses aktif ke Riwayat Nasabah (entry point PIL-280)',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await loginAsNasabah(tester);
+        await tester.scrollUntilVisible(find.text('Riwayat Nasabah'), 300);
+        await tester.pumpAndSettle();
+        final entry = find.text('Riwayat Nasabah');
+        expect(entry, findsOneWidget);
+        expect(
+          tester
+              .getSemantics(entry)
+              .getSemanticsData()
+              .hasAction(SemanticsAction.tap),
+          isTrue,
+          reason:
+              'Riwayat Nasabah harus bisa diakses, bukan sekadar teks statis',
+        );
+      } finally {
+        semantics.dispose();
+      }
+    });
 
     testWidgets('nasabah tidak melihat menu pengelola', (tester) async {
       await loginAsNasabah(tester);

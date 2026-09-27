@@ -99,7 +99,7 @@ void main() {
           builder: (_, __) => const RegisterNasabahScreen(),
         ),
         GoRoute(
-          path: '/nasabah-dashboard',
+          path: '/dashboard',
           builder: (_, __) => const Scaffold(body: Text('NASABAH DASHBOARD')),
         ),
       ],
