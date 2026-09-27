@@ -34,7 +34,6 @@ class _RoleShell extends StatelessWidget {
     final auth = context.watch<AuthenticationBloc>().state;
     final role = auth is Authenticated ? auth.authEntity.role : null;
     if (!RoleNavigationBar.supports(role)) {
-      if (navigationShell.currentIndex == 7) return const ProfilePage();
       return const Scaffold(
           body: Center(child: Text('Silakan masuk sebagai nasabah.')));
     }

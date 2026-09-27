@@ -18,11 +18,11 @@ class RoleNavigationBar extends StatelessWidget {
       role == 'pengelola' || role == 'pengelola_induk';
   static bool supports(String? role) => role == 'nasabah' || isStaff(role);
 
-  static List<int> branchIndicesFor(String? role) => destinationsFor(role)
+  static List<int> branchIndicesFor(String? role) => _destinationsFor(role)
       .map((destination) => destination.branchIndex)
       .toList(growable: false);
 
-  static List<_RoleDestination> destinationsFor(String? role) =>
+  static List<_RoleDestination> _destinationsFor(String? role) =>
       role == 'nasabah'
           ? _nasabahDestinations
           : isStaff(role)
@@ -31,7 +31,7 @@ class RoleNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final destinations = destinationsFor(role);
+    final destinations = _destinationsFor(role);
     if (destinations.isEmpty) return const SizedBox.shrink();
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,

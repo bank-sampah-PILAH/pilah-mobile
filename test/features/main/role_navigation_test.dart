@@ -42,6 +42,7 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
             '/customers',
             '/prices',
             '/reports',
+            '/schedule',
             '/history',
             '/bank',
             '/profile'
@@ -87,7 +88,13 @@ void main() {
     await tester.pumpAndSettle();
     states.add(session('pengelola'));
     await tester.pumpAndSettle();
-    expect(labels(tester), ['Dashboard', 'Nasabah', 'Harga', 'Laporan']);
+    expect(labels(tester), [
+      'Dashboard',
+      'Nasabah',
+      'Harga',
+      'Laporan',
+      'Jadwal',
+    ]);
     expect(router.routeInformationProvider.value.uri.path, '/home');
     expect(find.text('body:/history'), findsNothing);
   });
@@ -104,7 +111,13 @@ void main() {
   for (final role in ['pengelola', 'pengelola_induk']) {
     testWidgets('$role retains the staff navigation', (tester) async {
       await mount(tester, session(role));
-      expect(labels(tester), ['Dashboard', 'Nasabah', 'Harga', 'Laporan']);
+      expect(labels(tester), [
+        'Dashboard',
+        'Nasabah',
+        'Harga',
+        'Laporan',
+        'Jadwal',
+      ]);
     });
   }
 
