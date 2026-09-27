@@ -84,12 +84,12 @@ void main() {
     await tester.tap(find.text('Muat Lagi'));
     await tester.pumpAndSettle();
     expect(repository.requests, [('member-b', 1), ('member-b', 2)]);
-    expect(find.text('Rp 1'), findsOneWidget);
-    expect(find.text('Rp 2'), findsOneWidget);
+    expect(find.text('+ Rp 1'), findsOneWidget);
+    expect(find.text('+ Rp 2'), findsOneWidget);
     states.add(Unauthenticated());
     await tester.pumpAndSettle();
-    expect(find.text('Rp 1'), findsNothing);
-    expect(find.text('Rp 2'), findsNothing);
+    expect(find.text('+ Rp 1'), findsNothing);
+    expect(find.text('+ Rp 2'), findsNothing);
     expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
   });
 
