@@ -6,10 +6,11 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 abstract class BankSampahApprovalRemoteDataSource {
   Future<List<NasabahMembershipEntity>> getMemberships();
 
-  /// Resubmits a rejected membership for review (PIL-232's appeal action).
-  /// Reuses the existing onboarding reapply endpoint: the backend already
-  /// rejects this when the membership isn't currently rejected.
-  Future<void> appeal(String bankSampahId);
+  /// Resubmits a rejected membership for review (PIL-232's appeal action),
+  /// with an optional [pesan] explaining the appeal to the pengurus. Reuses
+  /// the existing onboarding reapply endpoint: the backend already rejects
+  /// this when the membership isn't currently rejected.
+  Future<void> appeal(String bankSampahId, {String pesan = ''});
 }
 
 @LazySingleton(as: BankSampahApprovalRemoteDataSource)
@@ -30,10 +31,10 @@ class BankSampahApprovalRemoteDataSourceImpl
   }
 
   @override
-  Future<void> appeal(String bankSampahId) async {
+  Future<void> appeal(String bankSampahId, {String pesan = ''}) async {
     await networkService.post(
       Endpoints.onboardingNasabah,
-      data: {'bank_sampah_id': bankSampahId},
+      data: {'bank_sampah_id': bankSampahId, 'pesan': pesan},
     );
   }
 }
