@@ -40,6 +40,10 @@ import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
 import '../features/bank_sampah_approval/data/datasources/bank_sampah_approval_remote_data_source.dart'
     as _i335;
+import '../features/bank_sampah_approval/data/repositories/bank_sampah_approval_repository_impl.dart'
+    as _i807;
+import '../features/bank_sampah_approval/domain/repositories/bank_sampah_approval_repository.dart'
+    as _i390;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
 import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
@@ -232,6 +236,9 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i183.ImagePicker>(),
           gh<_i183.ImageCropper>(),
         ));
+    gh.lazySingleton<_i390.BankSampahApprovalRepository>(() =>
+        _i807.BankSampahApprovalRepositoryImpl(
+            gh<_i335.BankSampahApprovalRemoteDataSource>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i244.OnboardingCubit>(
