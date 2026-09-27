@@ -132,8 +132,7 @@ class AppRouterConfig {
       GoRoute(
         path: CatatPencairanPage.route,
         name: CatatPencairanPage.route,
-        builder: (context, state) =>
-            CatatPencairanPage(args: state.extra! as CatatPencairanArgs),
+        builder: (context, state) => const CatatPencairanPage(),
       ),
       GoRoute(
         path: RiwayatPencairanPage.route,

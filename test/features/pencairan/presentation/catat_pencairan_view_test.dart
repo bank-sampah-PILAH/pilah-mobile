@@ -3,16 +3,51 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
+
+class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
+
+class _MockGetActiveNasabahUseCase extends Mock
+    implements GetActiveNasabahUseCase {}
+
+class _MockGetNasabahRingkasanUseCase extends Mock
+    implements GetNasabahRingkasanUseCase {}
+
+class _MockAddNasabahUseCase extends Mock implements AddNasabahUseCase {}
+
+class _MockUpdateNasabahUseCase extends Mock implements UpdateNasabahUseCase {}
+
+class _MockActivateNasabahUseCase extends Mock
+    implements ActivateNasabahUseCase {}
+
+class _MockDeactivateNasabahUseCase extends Mock
+    implements DeactivateNasabahUseCase {}
+
+class _MockApproveNasabahUseCase extends Mock
+    implements ApproveNasabahUseCase {}
+
+class _MockRejectNasabahUseCase extends Mock implements RejectNasabahUseCase {}
 
 final _now = DateTime(2026, 9, 22, 10);
 
@@ -48,6 +83,22 @@ void main() {
         .thenAnswer((_) async => const Right(465600));
   });
 
+  final customer = NasabahEntity(
+    id: 'n-1',
+    idNasabah: 'n-1',
+    name: 'Ahmad Ridwan',
+    phone: '08123456789',
+    balance: 'Rp 0',
+    isActive: true,
+    address: 'Jl. Melati',
+    initials: 'AR',
+    avatarColor: const Color(0xFFEAF5EC),
+    textColor: const Color(0xFF2F6B45),
+    jenisKelamin: 'Laki-laki',
+    tanggalLahir: '01/01/1990',
+    status: 'approved',
+  );
+
   Future<void> pumpView(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -55,8 +106,7 @@ void main() {
         home: BlocProvider(
           create: (_) => PencairanCubit(useCases),
           child: CatatPencairanView(
-            nasabahId: 'n-1',
-            nasabahNama: 'Ahmad Ridwan',
+            initialCustomer: customer,
             now: () => _now,
           ),
         ),
@@ -138,7 +188,7 @@ void main() {
     expect(sent.nominal, 200000);
     expect(sent.metode, MetodePencairan.transfer);
     expect(sent.tanggal, _now);
-    expect(find.text('Pencairan berhasil dicatat'), findsOneWidget);
+    expect(find.text('Pencairan Berhasil!'), findsOneWidget);
     expect(find.text('Rp 265.600'), findsWidgets);
 
     await tester.tap(find.text('Selesai'));
@@ -291,5 +341,88 @@ void main() {
       find.byType(DatePickerDialog),
     );
     expect(picker.lastDate, DateTime(2026, 9, 22));
+  });
+
+  group('nasabah picked inline', () {
+    late _MockGetNasabahUseCase getUseCase;
+    late _MockGetActiveNasabahUseCase getActiveUseCase;
+    late NasabahCubit nasabahCubit;
+
+    setUp(() {
+      getUseCase = _MockGetNasabahUseCase();
+      getActiveUseCase = _MockGetActiveNasabahUseCase();
+      nasabahCubit = NasabahCubit(
+        getUseCase,
+        getActiveUseCase,
+        _MockGetNasabahRingkasanUseCase(),
+        _MockAddNasabahUseCase(),
+        _MockUpdateNasabahUseCase(),
+        _MockActivateNasabahUseCase(),
+        _MockDeactivateNasabahUseCase(),
+        _MockApproveNasabahUseCase(),
+        _MockRejectNasabahUseCase(),
+      );
+    });
+
+    tearDown(() => nasabahCubit.close());
+
+    Future<void> pumpEmptyView(WidgetTester tester) async {
+      final router = GoRouter(
+        navigatorKey: rootNavigatorKey,
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, __) => BlocProvider(
+              create: (_) => PencairanCubit(useCases),
+              child: CatatPencairanView(now: () => _now),
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        BlocProvider<NasabahCubit>.value(
+          value: nasabahCubit,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows the picker and hides the form until a nasabah is picked',
+        (tester) async {
+      await pumpEmptyView(tester);
+
+      expect(find.text('Tap untuk pilih nasabah'), findsOneWidget);
+      expect(find.byKey(const Key('nominal-field')), findsNothing);
+      expect(find.byKey(const Key('submit-pencairan')), findsOneWidget);
+      expect(
+        tester
+            .widget<CustomPrimaryButton>(
+                find.byKey(const Key('submit-pencairan')))
+            .onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets('picking a nasabah loads saldo and reveals the form',
+        (tester) async {
+      when(() => getActiveUseCase.execute()).thenAnswer(
+        (_) async => Right(HalamanNasabah(
+          items: [customer],
+          totalCount: 1,
+          hasMore: false,
+        )),
+      );
+      await pumpEmptyView(tester);
+
+      await tester.tap(find.text('Tap untuk pilih nasabah'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ahmad Ridwan'));
+      await tester.pumpAndSettle();
+
+      verify(() => useCases.getSaldo('n-1')).called(1);
+      expect(find.byKey(const Key('nominal-field')), findsOneWidget);
+    });
   });
 }

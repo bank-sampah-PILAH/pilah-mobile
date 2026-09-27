@@ -151,14 +151,10 @@ void main() {
       ),
     );
 
-    router.go(CatatPencairanPage.route,
-        extra: const CatatPencairanArgs(
-          nasabahId: 'n-1',
-          nasabahNama: 'Ayu Nasabah',
-        ));
+    router.go(CatatPencairanPage.route);
     await tester.pumpAndSettle();
     expect(find.text('Catat Pencairan'), findsNWidgets(2));
-    expect(find.text('Ayu Nasabah'), findsOneWidget);
+    expect(find.text('Tap untuk pilih nasabah'), findsOneWidget);
 
     router.go(RiwayatPencairanPage.route);
     await tester.pumpAndSettle();
