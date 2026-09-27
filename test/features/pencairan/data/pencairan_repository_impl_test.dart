@@ -209,6 +209,47 @@ void main() {
         'page_size': 100,
       });
     });
+
+    test('loads every page of Nasabah history', () async {
+      final requestedPages = <int>[];
+      when(() => network.get('/api/v1/pencairan',
+              queryParams: any(named: 'queryParams')))
+          .thenAnswer((invocation) async {
+        final queryParams =
+            invocation.namedArguments[#queryParams] as Map<String, dynamic>;
+        final page = queryParams['page'] as int? ?? 1;
+        requestedPages.add(page);
+        return _ok('/api/v1/pencairan', {
+          'count': 2,
+          'next': page == 1
+              ? 'https://api.test/api/v1/pencairan?page=2&page_size=100'
+              : null,
+          'previous': page == 1
+              ? null
+              : 'https://api.test/api/v1/pencairan?page=1&page_size=100',
+          'results': [
+            {
+              ..._pencairanJson(),
+              if (page == 2) 'id': 'p-2',
+              'bank_sampah_nama':
+                  page == 1 ? 'Bank Sampah BTH' : 'Bank Sampah Kenanga',
+            },
+          ],
+        });
+      });
+
+      final result = await repository.getRiwayat(
+        const RiwayatPencairanFilter(periode: RiwayatPeriode.semua),
+      );
+
+      final rows = result.getOrElse(() => throw 'expected Right');
+      expect(requestedPages, [1, 2]);
+      expect(rows.map((row) => row.id), ['p-1', 'p-2']);
+      expect(rows.map((row) => row.bankSampahNama), [
+        'Bank Sampah BTH',
+        'Bank Sampah Kenanga',
+      ]);
+    });
   });
 
   group('edit support', () {
