@@ -103,12 +103,41 @@ void main() {
     });
   });
 
-  group('TambahNasabahBottomSheet duplicate phone', () {
+  group('TambahNasabahBottomSheet validation', () {
     late MockNasabahCubit cubit;
 
     setUp(() {
       cubit = MockNasabahCubit();
       when(() => cubit.state).thenReturn(const NasabahLoaded(nasabahList: []));
+    });
+
+    testWidgets('rejects short addresses before making the request',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      when(() => cubit.addNasabah(any()))
+          .thenAnswer((_) async => NetworkException.handleBadResponse(
+                Response(
+                  requestOptions: RequestOptions(path: '/api/v1/nasabah'),
+                  statusCode: 422,
+                  data: {
+                    'errors': {
+                      'alamat': ['Alamat wajib diisi'],
+                    },
+                  },
+                ),
+              ));
+
+      await tester.pumpWidget(_host(cubit));
+      await _fillValidForm(tester);
+      await tester.enterText(find.byType(TextFormField).at(5), 'JL. ngawi');
+      await _submit(tester);
+
+      expect(find.text('Alamat minimal 10 karakter.'), findsOneWidget);
+      verifyNever(() => cubit.addNasabah(any()));
     });
 
     testWidgets(
