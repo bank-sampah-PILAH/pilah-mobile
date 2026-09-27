@@ -55,7 +55,10 @@ class RecentActivityCubit extends Cubit<RecentActivityState> {
       },
       (groups) async {
         final pencairanResult = await pencairanUseCases.getRiwayat(
-          const RiwayatPencairanFilter(periode: RiwayatPeriode.semua),
+          const RiwayatPencairanFilter(
+            periode: RiwayatPeriode.semua,
+            limit: limit,
+          ),
         );
         if (isClosed) return;
 

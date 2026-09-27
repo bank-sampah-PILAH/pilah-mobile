@@ -299,6 +299,7 @@ void main() {
           .thenAnswer((invocation) async {
         final queryParams =
             invocation.namedArguments[#queryParams] as Map<String, dynamic>;
+        sentParams = queryParams;
         requestedPages.add(queryParams['page'] as int? ?? 1);
         return _ok('/api/v1/pencairan', {
           'count': 10,

@@ -19,10 +19,19 @@ class RiwayatPencairanFilter extends Equatable {
   final String? nasabahId;
   final String search;
 
+  /// Caps the result to the newest [limit] records and tells the data source
+  /// to stop after the first page instead of walking the whole history — the
+  /// backend already returns pencairan newest-first (`Pencairan.Meta.ordering
+  /// = ["-tanggal"]`), so a single page already holds the answer. Null means
+  /// "the whole matching history", the pre-existing behavior every riwayat
+  /// screen still relies on.
+  final int? limit;
+
   const RiwayatPencairanFilter({
     this.periode = RiwayatPeriode.semua,
     this.nasabahId,
     this.search = '',
+    this.limit,
   });
 
   RiwayatPencairanFilter copyWith({RiwayatPeriode? periode, String? search}) {
@@ -30,6 +39,7 @@ class RiwayatPencairanFilter extends Equatable {
       periode: periode ?? this.periode,
       nasabahId: nasabahId,
       search: search ?? this.search,
+      limit: limit,
     );
   }
 
@@ -39,10 +49,10 @@ class RiwayatPencairanFilter extends Equatable {
       if (periode.apiValue != null) 'periode': periode.apiValue,
       if (nasabahId != null) 'nasabah_id': nasabahId,
       if (search.isNotEmpty) 'search': search,
-      'page_size': 100,
+      'page_size': limit ?? 100,
     };
   }
 
   @override
-  List<Object?> get props => [periode, nasabahId, search];
+  List<Object?> get props => [periode, nasabahId, search, limit];
 }
