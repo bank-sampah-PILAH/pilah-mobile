@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
-import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 class MainPage extends StatelessWidget {
   const MainPage({super.key, required this.navigationShell});
