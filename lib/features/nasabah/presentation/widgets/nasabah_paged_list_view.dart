@@ -76,22 +76,7 @@ class NasabahPagedListView extends StatelessWidget {
 
           final customer = items[index];
           return NasabahListItem(
-            isActive: customer.isActive,
-            initials: customer.initials,
-            avatarColor: customer.avatarColor,
-            textColor: customer.textColor,
-            name: customer.name,
-            email: customer.email,
-            phone: customer.phone,
-            balance: customer.balance,
-            id: customer.id,
-            idNasabah: customer.idNasabah,
-            jenisKelamin: customer.jenisKelamin,
-            tanggalLahir: customer.tanggalLahir,
-            tanggalDaftar: customer.tanggalDaftar,
-            address: customer.address,
-            isPending: customer.status == 'pending',
-            punyaAkun: customer.punyaAkun,
+            nasabah: customer,
             nasabahCubit: nasabahCubit,
           );
         },

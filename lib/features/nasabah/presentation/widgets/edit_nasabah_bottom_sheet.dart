@@ -10,11 +10,12 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 class EditNasabahBottomSheet extends StatefulWidget {
-  final Map<String, dynamic> customerData;
+  /// Nasabah yang disunting, memakai entity domain apa adanya.
+  final NasabahEntity nasabah;
 
   const EditNasabahBottomSheet({
     super.key,
-    required this.customerData,
+    required this.nasabah,
   });
 
   @override
@@ -38,8 +39,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   /// hanya nomor anggota yang boleh disunting pengurus (PIL-223). Field
   /// dimatikan agar pengurus tidak mengetik data yang pasti ditolak 403.
   /// Default tidak terkunci: pemanggil lama belum mengirim penandanya.
-  bool get _profilTerkunci =>
-      _ditolakServer || (widget.customerData['punyaAkun'] as bool? ?? false);
+  bool get _profilTerkunci => _ditolakServer || widget.nasabah.punyaAkun;
 
   /// Server menolak perubahan profil walau penanda dari daftar belum
   /// menyatakannya. Nasabah dapat menautkan akunnya setelah daftar dimuat,
@@ -51,24 +51,22 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _namaController =
-        TextEditingController(text: widget.customerData['name'] ?? '');
+    _namaController = TextEditingController(text: widget.nasabah.name);
     _idNasabahController =
-        TextEditingController(text: widget.customerData['idNasabah'] ?? '');
-    _emailController =
-        TextEditingController(text: widget.customerData['email'] ?? '');
+        TextEditingController(text: widget.nasabah.idNasabah);
+    _emailController = TextEditingController(text: widget.nasabah.email);
 
     // Safely parse jenis kelamin
-    final jk = widget.customerData['jenisKelamin'];
+    final jk = widget.nasabah.jenisKelamin;
     if (jk == 'Laki-laki' || jk == 'Perempuan') {
       _jenisKelamin = jk;
     }
 
     _tanggalLahirController =
-        TextEditingController(text: widget.customerData['tanggalLahir'] ?? '');
+        TextEditingController(text: widget.nasabah.tanggalLahir);
 
     // Strip +62 safely
-    String phone = widget.customerData['phone'] ?? '';
+    String phone = widget.nasabah.phone;
     if (phone.isNotEmpty) {
       if (phone.startsWith('+62')) {
         phone = phone.substring(3);
@@ -80,8 +78,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     }
     _whatsappController = TextEditingController(text: phone);
 
-    _alamatController =
-        TextEditingController(text: widget.customerData['address'] ?? '');
+    _alamatController = TextEditingController(text: widget.nasabah.address);
   }
 
   @override
@@ -228,7 +225,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                                 final isDuplicate = list.any((e) =>
                                     e.idNasabah.trim().toLowerCase() ==
                                         value.trim().toLowerCase() &&
-                                    e.id != widget.customerData['id']);
+                                    e.id != widget.nasabah.id);
                                 if (isDuplicate) {
                                   return 'ID Nasabah ini sudah digunakan.';
                                 }
@@ -448,7 +445,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   Future<void> _handleSimpan() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final id = widget.customerData['id']?.toString() ?? '';
+    final id = widget.nasabah.id;
     if (id.isEmpty) return;
 
     setState(() => _isSaving = true);

@@ -73,15 +73,22 @@ void main() {
   Widget host() => MaterialApp(
         home: Scaffold(
           body: NasabahListItem(
-            isActive: true,
-            initials: 'B',
-            avatarColor: const Color(0xFFEAF5EC),
-            textColor: const Color(0xFF2F6B45),
-            name: 'Budi Santoso',
-            phone: '08123456789',
-            balance: 'Rp 0',
-            idNasabah: 'NAS-0001',
-            isPending: true,
+            // Pengajuan yang menunggu keputusan (PIL-188).
+            nasabah: NasabahEntity(
+              id: 'NAS-0001',
+              idNasabah: 'NAS-0001',
+              name: 'Budi Santoso',
+              phone: '08123456789',
+              balance: 'Rp 0',
+              isActive: true,
+              address: 'Jl. Melati',
+              initials: 'B',
+              avatarColor: const Color(0xFFEAF5EC),
+              textColor: const Color(0xFF2F6B45),
+              jenisKelamin: 'Laki-laki',
+              tanggalLahir: '01/01/1990',
+              status: 'pending',
+            ),
             nasabahCubit: cubit,
           ),
         ),

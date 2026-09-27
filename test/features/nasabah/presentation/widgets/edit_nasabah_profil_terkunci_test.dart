@@ -33,22 +33,30 @@ NetworkException _tolak403() => NetworkException.handleBadResponse(
       ),
     );
 
-Map<String, dynamic> _customerData({bool? punyaAkun}) => {
-      'id': 'nasabah-1',
-      'name': 'Budi Santoso',
-      'idNasabah': 'NAS-0001',
-      'email': 'budi@example.com',
-      'jenisKelamin': 'Laki-laki',
-      'tanggalLahir': '01/01/1990',
-      'phone': '+628111111111',
-      'address': 'Jl. Mawar No. 12',
-      if (punyaAkun != null) 'punyaAkun': punyaAkun,
-    };
+NasabahEntity _nasabah({bool punyaAkun = false, String status = 'approved'}) =>
+    NasabahEntity(
+      id: 'nasabah-1',
+      idNasabah: 'NAS-0001',
+      name: 'Budi Santoso',
+      email: 'budi@example.com',
+      phone: '+628111111111',
+      balance: 'Rp 450.000',
+      isActive: true,
+      address: 'Jl. Mawar No. 12',
+      initials: 'BS',
+      avatarColor: const Color(0xFFEAF5EC),
+      textColor: const Color(0xFF2F6B45),
+      jenisKelamin: 'Laki-laki',
+      tanggalLahir: '01/01/1990',
+      tanggalDaftar: '12/05/2026',
+      status: status,
+      punyaAkun: punyaAkun,
+    );
 
-Widget _host(NasabahCubit cubit, Map<String, dynamic> data) => MaterialApp(
+Widget _host(NasabahCubit cubit, NasabahEntity nasabah) => MaterialApp(
       home: BlocProvider<NasabahCubit>.value(
         value: cubit,
-        child: Scaffold(body: EditNasabahBottomSheet(customerData: data)),
+        child: Scaffold(body: EditNasabahBottomSheet(nasabah: nasabah)),
       ),
     );
 
@@ -69,19 +77,19 @@ void main() {
     when(() => cubit.state).thenReturn(const NasabahLoaded(nasabahList: []));
   });
 
-  Future<void> pump(WidgetTester tester, Map<String, dynamic> data) async {
+  Future<void> pump(WidgetTester tester, NasabahEntity nasabah) async {
     tester.view.physicalSize = const Size(1200, 2600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(_host(cubit, data));
+    await tester.pumpWidget(_host(cubit, nasabah));
   }
 
   group('Form ubah nasabah menghormati profil milik pemilik akun (PIL-206)',
       () {
     testWidgets('nasabah berakun: field profil global dimatikan',
         (tester) async {
-      await pump(tester, _customerData(punyaAkun: true));
+      await pump(tester, _nasabah(punyaAkun: true));
 
       expect(_aktif(tester, _nama), isFalse);
       expect(_aktif(tester, _email), isFalse);
@@ -102,21 +110,21 @@ void main() {
         (tester) async {
       // Nomor anggota adalah data keanggotaan milik bank sampah, jadi pengurus
       // harus tetap dapat memperbaikinya (PIL-223).
-      await pump(tester, _customerData(punyaAkun: true));
+      await pump(tester, _nasabah(punyaAkun: true));
 
       expect(_aktif(tester, _nomorAnggota), isTrue);
     });
 
     testWidgets('nasabah berakun: alasannya dijelaskan pada form',
         (tester) async {
-      await pump(tester, _customerData(punyaAkun: true));
+      await pump(tester, _nasabah(punyaAkun: true));
 
       expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
     });
 
     testWidgets('nasabah tanpa akun: seluruh field tetap dapat diubah',
         (tester) async {
-      await pump(tester, _customerData(punyaAkun: false));
+      await pump(tester, _nasabah(punyaAkun: false));
 
       for (final urutan in [
         _nama,
@@ -133,7 +141,7 @@ void main() {
 
     testWidgets('nasabah tanpa akun: jenis kelamin dapat dipilih ulang',
         (tester) async {
-      await pump(tester, _customerData(punyaAkun: false));
+      await pump(tester, _nasabah(punyaAkun: false));
 
       await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
@@ -145,7 +153,7 @@ void main() {
 
     testWidgets('data tanpa penanda penautan tetap dapat diubah sepenuhnya',
         (tester) async {
-      await pump(tester, _customerData());
+      await pump(tester, _nasabah());
 
       expect(_aktif(tester, _nama), isTrue);
       expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
@@ -174,7 +182,7 @@ void main() {
       when(() => cubit.updateNasabah(any(), any()))
           .thenAnswer((_) async => _tolak403());
 
-      await pump(tester, _customerData(punyaAkun: false));
+      await pump(tester, _nasabah(punyaAkun: false));
       expect(_aktif(tester, _nama), isTrue);
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
@@ -191,7 +199,7 @@ void main() {
       when(() => cubit.updateNasabah(any(), any()))
           .thenAnswer((_) async => NetworkException(message: 'jaringan putus'));
 
-      await pump(tester, _customerData(punyaAkun: false));
+      await pump(tester, _nasabah(punyaAkun: false));
       await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
       await tester.pumpAndSettle();
 
