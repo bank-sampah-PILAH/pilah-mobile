@@ -9,12 +9,27 @@ class _MockRepository extends Mock implements BankSampahApprovalRepository {}
 void main() {
   test('delegates to the repository with the bank sampah id', () async {
     final repository = _MockRepository();
-    when(() => repository.appeal('bank-1'))
+    when(() => repository.appeal('bank-1', pesan: any(named: 'pesan')))
         .thenAnswer((_) async => const Right(null));
 
-    final result = await AppealMembershipUseCase(repository).execute('bank-1');
+    final result = await AppealMembershipUseCase(repository)
+        .execute(const AppealMembershipParams(bankSampahId: 'bank-1'));
 
     expect(result.isRight(), isTrue);
-    verify(() => repository.appeal('bank-1')).called(1);
+    verify(() => repository.appeal('bank-1', pesan: '')).called(1);
+  });
+
+  test('delegates the appeal message to the repository', () async {
+    final repository = _MockRepository();
+    when(() => repository.appeal('bank-1', pesan: any(named: 'pesan')))
+        .thenAnswer((_) async => const Right(null));
+
+    await AppealMembershipUseCase(repository).execute(
+      const AppealMembershipParams(
+          bankSampahId: 'bank-1', pesan: 'Dokumen sudah lengkap'),
+    );
+
+    verify(() => repository.appeal('bank-1', pesan: 'Dokumen sudah lengkap'))
+        .called(1);
   });
 }
