@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart';
@@ -50,6 +51,7 @@ void main() {
   Future<void> pumpView(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        navigatorKey: rootNavigatorKey,
         home: BlocProvider(
           create: (_) => PencairanCubit(useCases),
           child: CatatPencairanView(
@@ -138,6 +140,86 @@ void main() {
     expect(sent.tanggal, _now);
     expect(find.text('Pencairan berhasil dicatat'), findsOneWidget);
     expect(find.text('Rp 265.600'), findsWidgets);
+
+    await tester.tap(find.text('Selesai'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('cancels the confirmation without creating a payout',
+      (tester) async {
+    await pumpView(tester);
+    await enterNominal(tester, '200000');
+    await tapSubmit(tester);
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => useCases.createPencairan(any()));
+    expect(find.byKey(const Key('submit-pencairan')), findsOneWidget);
+  });
+
+  testWidgets('retries loading saldo after the first request fails',
+      (tester) async {
+    when(() => useCases.getSaldo('n-1')).thenAnswer(
+      (_) async => Left(NotFoundException(message: 'Saldo tidak tersedia')),
+    );
+    await pumpView(tester);
+
+    expect(find.text('Gagal memuat saldo. Coba lagi'), findsOneWidget);
+    when(() => useCases.getSaldo('n-1'))
+        .thenAnswer((_) async => const Right(465600));
+    await tester.tap(find.text('Gagal memuat saldo. Coba lagi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rp 465.600'), findsOneWidget);
+    verify(() => useCases.getSaldo('n-1')).called(2);
+  });
+
+  testWidgets('keeps the selected date time when changing the payout date',
+      (tester) async {
+    when(() => useCases.createPencairan(any()))
+        .thenAnswer((_) async => const Right(_created));
+    await pumpView(tester);
+
+    await tester.tap(find.byKey(const Key('tanggal-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('21').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('21 September 2026'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('tanggal-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('22').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    await enterNominal(tester, '200000');
+    await tapSubmit(tester);
+    await tester.tap(find.text('Catat'));
+    await tester.pumpAndSettle();
+
+    final sent = verify(() => useCases.createPencairan(captureAny()))
+        .captured
+        .single as PencairanRequest;
+    expect(sent.tanggal, _now);
+  });
+
+  testWidgets('shows a notification for a non-field submission failure',
+      (tester) async {
+    when(() => useCases.createPencairan(any())).thenAnswer(
+      (_) async => Left(NetworkException(message: 'Layanan sedang sibuk')),
+    );
+    await pumpView(tester);
+
+    await enterNominal(tester, '200000');
+    await tapSubmit(tester);
+    await tester.tap(find.text('Catat'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Pencairan gagal'), findsOneWidget);
+    expect(find.text('Layanan sedang sibuk'), findsOneWidget);
   });
 
   testWidgets('shows a nominal rejected by the server under the field',

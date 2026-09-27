@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
@@ -168,6 +169,30 @@ void main() {
     await pumpView(tester);
 
     expect(find.text('Belum ada pencairan'), findsOneWidget);
+  });
+
+  testWidgets('shows an error and retries a failed history load',
+      (tester) async {
+    when(() => useCases.getRiwayat(any())).thenAnswer(
+      (_) async => Left(NotFoundException(message: 'Riwayat tidak tersedia')),
+    );
+    await pumpView(tester);
+
+    expect(find.text('Riwayat tidak tersedia'), findsOneWidget);
+    when(() => useCases.getRiwayat(any())).thenAnswer(
+      (_) async => Right([_row('p-3', DateTime(2026, 9, 22, 10))]),
+    );
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ahmad Ridwan'), findsOneWidget);
+  });
+
+  testWidgets('labels entries older than yesterday', (tester) async {
+    stubRows([_row('p-3', DateTime(2026, 9, 20, 8))]);
+    await pumpView(tester);
+
+    expect(find.text('2 HARI LALU'), findsOneWidget);
   });
 
   group('edit entry points', () {

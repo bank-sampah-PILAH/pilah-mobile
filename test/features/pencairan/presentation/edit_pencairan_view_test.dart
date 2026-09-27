@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
@@ -47,10 +48,15 @@ void main() {
   setUp(() => useCases = _MockUseCases());
 
   /// Opens the form from a parent route so the popped result can be read.
-  Future<List<Object?>> pumpView(WidgetTester tester) async {
+  Future<List<Object?>> pumpView(
+    WidgetTester tester, {
+    Pencairan? pencairan,
+  }) async {
     final results = <Object?>[];
+    final record = pencairan ?? _pencairan;
     await tester.pumpWidget(
       MaterialApp(
+        navigatorKey: rootNavigatorKey,
         home: Builder(
           builder: (context) => TextButton(
             onPressed: () async => results.add(
@@ -59,7 +65,7 @@ void main() {
                   builder: (_) => BlocProvider(
                     create: (_) => EditPencairanCubit(useCases),
                     child: EditPencairanView(
-                      pencairan: _pencairan,
+                      pencairan: record,
                       now: () => _now,
                     ),
                   ),
@@ -185,5 +191,108 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('submit-edit-pencairan')), findsOneWidget);
+  });
+
+  testWidgets('cancels the edit confirmation without sending a request',
+      (tester) async {
+    await pumpView(tester);
+    await tester.enterText(
+        find.byKey(const Key('alasan-field')), 'Salah ketik');
+    await tester.pump();
+    await tapSubmit(tester);
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => useCases.editPencairan(any()));
+    expect(find.text('Edit Pencairan'), findsOneWidget);
+  });
+
+  testWidgets('clamps an edit to the server minimum timestamp', (tester) async {
+    final pencairan = Pencairan(
+      id: 'p-1',
+      nasabahNama: 'Ahmad Ridwan',
+      nominal: 200000,
+      metode: MetodePencairan.tunai,
+      tanggal: DateTime(2026, 9, 21, 8),
+      keterangan: 'Diambil pagi',
+      status: 'tercatat',
+      saldoSebelum: 465600,
+      saldoSesudah: 265600,
+      tanggalEditMinimum: DateTime(2026, 9, 14, 9, 30),
+    );
+    when(() => useCases.editPencairan(any()))
+        .thenAnswer((_) async => Right(_pencairan));
+    final results = await pumpView(tester, pencairan: pencairan);
+
+    await tester.tap(find.byKey(const Key('tanggal-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('14').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('alasan-field')), 'Perbaikan');
+    await tester.pump();
+    await tapSubmit(tester);
+    await tester.tap(find.text('Simpan'));
+    await tester.pumpAndSettle();
+
+    final sent = verify(() => useCases.editPencairan(captureAny()))
+        .captured
+        .single as EditPencairanRequest;
+    expect(sent.tanggal, DateTime(2026, 9, 14, 9, 30));
+    expect(results, [true]);
+  });
+
+  testWidgets('clamps an edit date to now when the recorded time is later',
+      (tester) async {
+    final pencairan = Pencairan(
+      id: 'p-1',
+      nasabahNama: 'Ahmad Ridwan',
+      nominal: 200000,
+      metode: MetodePencairan.tunai,
+      tanggal: DateTime(2026, 9, 22, 23),
+      keterangan: 'Diambil pagi',
+      status: 'tercatat',
+      saldoSebelum: 465600,
+      saldoSesudah: 265600,
+      tanggalEditMinimum: DateTime(2026, 9, 14),
+    );
+    when(() => useCases.editPencairan(any()))
+        .thenAnswer((_) async => Right(_pencairan));
+    await pumpView(tester, pencairan: pencairan);
+
+    await tester.tap(find.byKey(const Key('tanggal-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('22').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('alasan-field')), 'Perbaikan');
+    await tester.pump();
+    await tapSubmit(tester);
+    await tester.tap(find.text('Simpan'));
+    await tester.pumpAndSettle();
+
+    final sent = verify(() => useCases.editPencairan(captureAny()))
+        .captured
+        .single as EditPencairanRequest;
+    expect(sent.tanggal, _now);
+  });
+
+  testWidgets('shows a notification for an edit failure without field errors',
+      (tester) async {
+    when(() => useCases.editPencairan(any())).thenAnswer(
+      (_) async => Left(NetworkException(message: 'Perubahan ditolak')),
+    );
+    await pumpView(tester);
+    await tester.enterText(
+        find.byKey(const Key('alasan-field')), 'Salah ketik');
+    await tester.pump();
+    await tapSubmit(tester);
+    await tester.tap(find.text('Simpan'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Perubahan gagal disimpan'), findsOneWidget);
+    expect(find.text('Perubahan ditolak'), findsOneWidget);
   });
 }
