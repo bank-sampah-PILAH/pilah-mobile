@@ -97,4 +97,88 @@ void main() {
     );
     expect(detailPage.membership.id, 'membership-2');
   });
+
+  testWidgets(
+      'reloads memberships silently when returning from detail with changes',
+      (tester) async {
+    final cubit = _MockNasabahApprovalCubit();
+    when(() => cubit.state).thenReturn(const NasabahApprovalLoaded([_first]));
+    when(() => cubit.load(silent: any(named: 'silent')))
+        .thenAnswer((_) async {});
+
+    // A stand-in detail route, not the real ApprovalBankSampahDetailPage: the
+    // detail page's own appeal-success-pops-true behaviour is already covered
+    // in approval_bank_sampah_detail_page_test.dart. This isolates the list
+    // page's own responsibility — reacting to whatever the pushed route pops
+    // with — from that collaborator.
+    final router = GoRouter(
+      initialLocation: ApprovalBankSampahListPage.route,
+      routes: [
+        GoRoute(
+          path: ApprovalBankSampahListPage.route,
+          builder: (context, state) => BlocProvider<NasabahApprovalCubit>.value(
+            value: cubit,
+            child: const ApprovalBankSampahListView(),
+          ),
+        ),
+        GoRoute(
+          path: ApprovalBankSampahDetailPage.route,
+          builder: (context, state) => TextButton(
+            onPressed: () => context.pop(true),
+            child: const Text('Fake Detail'),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pump();
+
+    await tester.tap(find.text('Bank Sampah Sejahtera'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fake Detail'));
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.load(silent: true)).called(1);
+  });
+
+  testWidgets('does not reload when returning from detail without changes',
+      (tester) async {
+    final cubit = _MockNasabahApprovalCubit();
+    when(() => cubit.state).thenReturn(const NasabahApprovalLoaded([_first]));
+    when(() => cubit.load(silent: any(named: 'silent')))
+        .thenAnswer((_) async {});
+
+    final router = GoRouter(
+      initialLocation: ApprovalBankSampahListPage.route,
+      routes: [
+        GoRoute(
+          path: ApprovalBankSampahListPage.route,
+          builder: (context, state) => BlocProvider<NasabahApprovalCubit>.value(
+            value: cubit,
+            child: const ApprovalBankSampahListView(),
+          ),
+        ),
+        GoRoute(
+          path: ApprovalBankSampahDetailPage.route,
+          builder: (context, state) => TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Fake Detail'),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pump();
+
+    await tester.tap(find.text('Bank Sampah Sejahtera'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fake Detail'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => cubit.load(silent: true));
+  });
 }
