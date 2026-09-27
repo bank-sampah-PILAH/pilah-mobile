@@ -247,6 +247,7 @@ void main() {
         .thenAnswer((_) async => const Right(_created));
     await pumpView(tester);
 
+    await tester.ensureVisible(find.byKey(const Key('tanggal-field')));
     await tester.tap(find.byKey(const Key('tanggal-field')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('21').last);
@@ -254,6 +255,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('21 September 2026'), findsOneWidget);
 
+    await tester.ensureVisible(find.byKey(const Key('tanggal-field')));
     await tester.tap(find.byKey(const Key('tanggal-field')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('22').last);
@@ -408,6 +410,7 @@ void main() {
   testWidgets('does not offer dates after today', (tester) async {
     await pumpView(tester);
 
+    await tester.ensureVisible(find.byKey(const Key('tanggal-field')));
     await tester.tap(find.byKey(const Key('tanggal-field')));
     await tester.pumpAndSettle();
 

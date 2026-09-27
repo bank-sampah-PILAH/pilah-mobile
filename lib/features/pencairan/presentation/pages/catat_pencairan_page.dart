@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -81,6 +82,42 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
   }
 
   int? get _nominal => int.tryParse(_nominalController.text);
+
+  /// Matches the "PILIH NASABAH" section label already on this screen, so
+  /// every section header in the form reads the same way.
+  Widget _buildLabel(String text) => Text(
+        text,
+        style: AppTextStyle.extraSmall.copyWith(
+          color: Colors.grey[500],
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.0,
+        ),
+      );
+
+  InputDecoration _buildInputDecoration({String? hintText}) => InputDecoration(
+        hintText: hintText,
+        hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+        filled: true,
+        fillColor: Colors.white,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      );
 
   void _onCustomerSelected(NasabahEntity customer) {
     setState(() => _selectedCustomer = customer);
@@ -241,6 +278,8 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                                 .loadSaldo(customer.id),
                           ),
                           const SizedBox(height: 24),
+                          _buildLabel('NOMINAL'),
+                          const SizedBox(height: 8),
                           TextField(
                             key: const Key('nominal-field'),
                             controller: _nominalController,
@@ -248,6 +287,8 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly
                             ],
+                            style: AppTextStyle.small
+                                .copyWith(color: Colors.black87),
                             onChanged: (_) {
                               // The server's rejection was about the old value.
                               context
@@ -255,50 +296,77 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                                   .clearNominalError();
                               setState(() {});
                             },
-                            decoration: InputDecoration(
-                              labelText: 'Nominal',
+                            decoration: _buildInputDecoration(
+                              hintText: 'Contoh: 50000',
+                            ).copyWith(
                               prefixText: 'Rp ',
-                              border: const OutlineInputBorder(),
+                              prefixStyle: AppTextStyle.small
+                                  .copyWith(color: Colors.black87),
                               errorText: localError ?? state.nominalError,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Text('Metode', style: AppTextStyle.small),
+                          _buildLabel('METODE'),
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
                             children: [
                               for (final metode in MetodePencairan.values)
-                                ChoiceChip(
-                                  label: Text(metode.label),
-                                  selected: _metode == metode,
-                                  onSelected: (_) =>
-                                      setState(() => _metode = metode),
+                                GestureDetector(
+                                  onTap: () => setState(() => _metode = metode),
+                                  child: Container(
+                                    key: Key('metode-chip-${metode.name}'),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: _metode == metode
+                                          ? AppColors.greenDark
+                                          : const Color(0xFFF3F4F6),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      metode.label,
+                                      style: AppTextStyle.small.copyWith(
+                                        color: _metode == metode
+                                            ? Colors.white
+                                            : const Color(0xFF6B7280),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                             ],
                           ),
                           const SizedBox(height: 16),
+                          _buildLabel('TANGGAL'),
+                          const SizedBox(height: 8),
                           InkWell(
                             key: const Key('tanggal-field'),
                             onTap: _pickTanggal,
                             child: InputDecorator(
-                              decoration: const InputDecoration(
-                                labelText: 'Tanggal',
-                                border: OutlineInputBorder(),
-                                suffixIcon: Icon(Icons.calendar_month),
+                              decoration: _buildInputDecoration().copyWith(
+                                suffixIcon: const Icon(Icons.calendar_month,
+                                    color: Colors.grey),
                               ),
-                              child: Text(formatTanggalId(_tanggal)),
+                              child: Text(
+                                formatTanggalId(_tanggal),
+                                style: AppTextStyle.small
+                                    .copyWith(color: Colors.black87),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
+                          _buildLabel('KETERANGAN (OPSIONAL)'),
+                          const SizedBox(height: 8),
                           TextField(
                             key: const Key('keterangan-field'),
                             controller: _keteranganController,
                             maxLength: 255,
                             maxLines: 2,
-                            decoration: const InputDecoration(
-                              labelText: 'Keterangan (opsional)',
-                              border: OutlineInputBorder(),
+                            style: AppTextStyle.small
+                                .copyWith(color: Colors.black87),
+                            decoration: _buildInputDecoration(
+                              hintText: 'Keterangan (opsional)',
                             ),
                           ),
                           const SizedBox(height: 8),
