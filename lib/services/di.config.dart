@@ -44,8 +44,12 @@ import '../features/bank_sampah_approval/data/repositories/bank_sampah_approval_
     as _i807;
 import '../features/bank_sampah_approval/domain/repositories/bank_sampah_approval_repository.dart'
     as _i390;
+import '../features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart'
+    as _i782;
 import '../features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart'
     as _i753;
+import '../features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart'
+    as _i243;
 import '../features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart'
     as _i359;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
@@ -261,6 +265,9 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i942.JadwalCubit>(
         () => _i942.JadwalCubit(gh<_i73.JadwalRepository>()));
+    gh.lazySingleton<_i782.AppealMembershipUseCase>(() =>
+        _i782.AppealMembershipUseCase(
+            gh<_i390.BankSampahApprovalRepository>()));
     gh.lazySingleton<_i753.GetNasabahMembershipsUseCase>(() =>
         _i753.GetNasabahMembershipsUseCase(
             gh<_i390.BankSampahApprovalRepository>()));
@@ -310,6 +317,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i417.ResendWaUseCase>(
         () => _i417.ResendWaUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.factory<_i243.NasabahAppealCubit>(
+        () => _i243.NasabahAppealCubit(gh<_i782.AppealMembershipUseCase>()));
     gh.lazySingleton<_i474.TransaksiCubit>(() => _i474.TransaksiCubit(
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i218.GetTransaksiDetailUseCase>(),
