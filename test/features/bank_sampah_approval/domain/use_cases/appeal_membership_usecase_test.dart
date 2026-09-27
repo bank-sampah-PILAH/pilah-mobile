@@ -7,6 +7,16 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appe
 class _MockRepository extends Mock implements BankSampahApprovalRepository {}
 
 void main() {
+  test('AppealMembershipParams has value equality', () {
+    const a = AppealMembershipParams(bankSampahId: 'bank-1', pesan: 'hi');
+    const b = AppealMembershipParams(bankSampahId: 'bank-1', pesan: 'hi');
+    const c = AppealMembershipParams(bankSampahId: 'bank-2', pesan: 'hi');
+
+    expect(a, equals(b));
+    expect(a.hashCode, equals(b.hashCode));
+    expect(a, isNot(equals(c)));
+  });
+
   test('delegates to the repository with the bank sampah id', () async {
     final repository = _MockRepository();
     when(() => repository.appeal('bank-1', pesan: any(named: 'pesan')))
