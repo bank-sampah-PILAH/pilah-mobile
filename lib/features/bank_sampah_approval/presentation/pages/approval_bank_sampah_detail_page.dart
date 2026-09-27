@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
@@ -173,8 +174,8 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              membership.alasanPenolakan ?? '-',
+            ExpandableText(
+              text: membership.alasanPenolakan ?? '-',
               style: AppTextStyle.small.copyWith(color: Colors.black87),
             ),
           ],
