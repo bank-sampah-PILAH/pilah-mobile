@@ -72,7 +72,11 @@ void main() {
 
     await tester.pumpWidget(_wrap(membership, cubit));
 
-    expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
+    // Once in the app bar, once on the bank sampah card — matching the list
+    // card's identity display (icon, name, kota · alamat).
+    expect(find.text('Bank Sampah Sejahtera'), findsNWidgets(2));
+    expect(find.byIcon(Icons.recycling), findsOneWidget);
+    expect(find.text('Bandung · Jl. Merdeka No. 10'), findsOneWidget);
     expect(find.text('Ditolak'), findsWidgets);
     expect(find.text('Dokumen tidak lengkap'), findsOneWidget);
   });
