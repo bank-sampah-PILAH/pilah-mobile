@@ -15,7 +15,9 @@ class RecentActivitySection extends StatelessWidget {
   String _dayLabel(DateTime? tanggal) {
     if (tanggal == null) return 'Lainnya';
     final today = now();
-    final diff = DateUtils.dateOnly(today).difference(DateUtils.dateOnly(tanggal)).inDays;
+    final diff = DateUtils.dateOnly(today)
+        .difference(DateUtils.dateOnly(tanggal))
+        .inDays;
     if (diff <= 0) return 'Hari ini';
     if (diff == 1) return 'Kemarin';
     return '$diff hari lalu';
@@ -85,7 +87,8 @@ class RecentActivitySection extends StatelessWidget {
 
             // The cubit has already merged setoran+pencairan, sorted them, and
             // capped the total at RecentActivityCubit.limit.
-            final items = state is RecentActivityLoaded ? state.items : const [];
+            final items =
+                state is RecentActivityLoaded ? state.items : const [];
 
             if (items.isEmpty) {
               return Padding(

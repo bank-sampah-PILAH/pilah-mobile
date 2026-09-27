@@ -47,8 +47,8 @@ Future<void> showPencairanDetailSheet(
       },
       onRiwayatPerubahan: () {
         Navigator.of(sheetContext).pop();
-        GoRouter.of(context).push<void>(RevisiPencairanPage.route,
-            extra: item.id);
+        GoRouter.of(context)
+            .push<void>(RevisiPencairanPage.route, extra: item.id);
       },
     ),
   );

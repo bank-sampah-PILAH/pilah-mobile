@@ -125,16 +125,14 @@ class _TransaksiChooserSheet extends StatelessWidget {
             icon: Icons.add_circle_outline,
             title: 'Catat Setoran',
             subtitle: 'Rekam setoran sampah dari nasabah',
-            onTap: () =>
-                Navigator.of(context).pop(_TransaksiChoice.setoran),
+            onTap: () => Navigator.of(context).pop(_TransaksiChoice.setoran),
           ),
           const SizedBox(height: 8),
           _ChoiceTile(
             icon: Icons.payments_outlined,
             title: 'Catat Pencairan',
             subtitle: 'Rekam pencairan saldo untuk nasabah',
-            onTap: () =>
-                Navigator.of(context).pop(_TransaksiChoice.pencairan),
+            onTap: () => Navigator.of(context).pop(_TransaksiChoice.pencairan),
           ),
         ],
       ),

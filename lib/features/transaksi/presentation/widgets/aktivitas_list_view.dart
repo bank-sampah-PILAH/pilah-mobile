@@ -89,7 +89,9 @@ class AktivitasListView extends StatelessWidget {
 
   String _dayHeader(DateTime? tanggal, DateTime today) {
     if (tanggal == null) return 'LAINNYA';
-    final diff = DateUtils.dateOnly(today).difference(DateUtils.dateOnly(tanggal)).inDays;
+    final diff = DateUtils.dateOnly(today)
+        .difference(DateUtils.dateOnly(tanggal))
+        .inDays;
     if (diff <= 0) return 'HARI INI';
     if (diff == 1) return 'KEMARIN';
     return '$diff HARI LALU';

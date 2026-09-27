@@ -535,7 +535,8 @@ class _PencairanBerhasilSheet extends StatelessWidget {
   Widget _row(String label, String value, {bool isPrimary = false}) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTextStyle.small.copyWith(color: Colors.grey[600])),
+          Text(label,
+              style: AppTextStyle.small.copyWith(color: Colors.grey[600])),
           Text(
             value,
             style: AppTextStyle.title1.copyWith(

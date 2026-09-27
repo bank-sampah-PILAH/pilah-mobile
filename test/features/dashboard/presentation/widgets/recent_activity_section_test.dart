@@ -110,8 +110,7 @@ void main() {
       expect(find.text('Coba Lagi'), findsNothing);
     });
 
-    testWidgets(
-        'renders every activity the cubit hands it, day label and all',
+    testWidgets('renders every activity the cubit hands it, day label and all',
         (tester) async {
       final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),

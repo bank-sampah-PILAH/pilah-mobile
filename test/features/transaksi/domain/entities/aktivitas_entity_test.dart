@@ -21,8 +21,7 @@ Pencairan _pencairan({
 
 void main() {
   group('ActivitasEntity.fromPencairan', () {
-    test('shows only the metode, matching setoran\'s single-line subtitle',
-        () {
+    test('shows only the metode, matching setoran\'s single-line subtitle', () {
       final entity =
           ActivitasEntity.fromPencairan(_pencairan(keterangan: 'Diambil pagi'));
 

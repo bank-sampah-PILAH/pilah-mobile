@@ -64,7 +64,8 @@ class RecentActivityCubit extends Cubit<RecentActivityState> {
 
         final setoranItems = [
           for (final group in groups)
-            for (final t in group.transactions) ActivitasEntity.fromTransaksi(t),
+            for (final t in group.transactions)
+              ActivitasEntity.fromTransaksi(t),
         ];
         // A failed pencairan fetch degrades to "setoran only" rather than
         // hiding a feed that did load.
@@ -73,8 +74,7 @@ class RecentActivityCubit extends Cubit<RecentActivityState> {
           (items) => items.map(ActivitasEntity.fromPencairan).toList(),
         );
 
-        final merged = [...setoranItems, ...pencairanItems]
-          ..sort((a, b) {
+        final merged = [...setoranItems, ...pencairanItems]..sort((a, b) {
             final da = a.tanggal;
             final db = b.tanggal;
             if (da == null && db == null) return 0;

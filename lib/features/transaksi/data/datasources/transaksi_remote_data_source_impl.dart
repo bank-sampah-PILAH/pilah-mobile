@@ -195,5 +195,4 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
     }
     return 'Rp ${buffer.toString()}';
   }
-
 }

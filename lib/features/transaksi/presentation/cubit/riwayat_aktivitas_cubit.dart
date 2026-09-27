@@ -60,7 +60,8 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
       emit(state.copyWith(status: AktivitasStatus.loading));
     }
 
-    final transaksiResult = await _getTransaksiUseCase.execute(_transaksiFilter());
+    final transaksiResult =
+        await _getTransaksiUseCase.execute(_transaksiFilter());
     await transaksiResult.fold(
       (failure) async {
         if (isClosed) return;
@@ -84,7 +85,8 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
 
         final setoranItems = [
           for (final group in groups)
-            for (final t in group.transactions) ActivitasEntity.fromTransaksi(t),
+            for (final t in group.transactions)
+              ActivitasEntity.fromTransaksi(t),
         ];
         final pencairanItems = pencairanResult?.fold(
               // A failed pencairan fetch degrades to "setoran only" rather
@@ -94,8 +96,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
             ) ??
             const <ActivitasEntity>[];
 
-        _all = [...setoranItems, ...pencairanItems]
-          ..sort((a, b) {
+        _all = [...setoranItems, ...pencairanItems]..sort((a, b) {
             final da = a.tanggal;
             final db = b.tanggal;
             if (da == null && db == null) return 0;

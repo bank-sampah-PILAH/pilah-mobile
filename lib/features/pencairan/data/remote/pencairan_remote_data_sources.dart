@@ -107,9 +107,8 @@ class PencairanRemoteDataSourceImpl implements PencairanRemoteDataSources {
     }
 
     final limit = filter.limit;
-    final limited = limit != null && rows.length > limit
-        ? rows.take(limit).toList()
-        : rows;
+    final limited =
+        limit != null && rows.length > limit ? rows.take(limit).toList() : rows;
     return limited
         .map((row) => PencairanResponse.fromJson(row as Map<String, dynamic>))
         .toList();

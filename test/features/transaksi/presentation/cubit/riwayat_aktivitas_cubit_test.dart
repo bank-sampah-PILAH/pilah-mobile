@@ -61,13 +61,13 @@ void main() {
     getTransaksi = _MockGetTransaksiUseCase();
     pencairanUseCases = _MockPencairanUseCases();
     exportTransaksi = _MockExportTransaksiUseCase();
-    cubit = RiwayatAktivitasCubit(getTransaksi, pencairanUseCases, exportTransaksi);
+    cubit =
+        RiwayatAktivitasCubit(getTransaksi, pencairanUseCases, exportTransaksi);
   });
 
   tearDown(() => cubit.close());
 
-  test('merges setoran and pencairan sorted by newest first',
-      () async {
+  test('merges setoran and pencairan sorted by newest first', () async {
     when(() => getTransaksi.execute(any())).thenAnswer(
       (_) async => Right([
         TransaksiGroupEntity(
@@ -87,8 +87,7 @@ void main() {
     expect(cubit.state.items[1].tipe, ActivitasTipe.setoran);
   });
 
-  test('degrades to setoran-only when the pencairan fetch fails',
-      () async {
+  test('degrades to setoran-only when the pencairan fetch fails', () async {
     when(() => getTransaksi.execute(any())).thenAnswer(
       (_) async => Right([
         TransaksiGroupEntity(
@@ -107,8 +106,7 @@ void main() {
     expect(cubit.state.items.single.title, 'Budi');
   });
 
-  test('surfaces a failure when the setoran fetch itself fails',
-      () async {
+  test('surfaces a failure when the setoran fetch itself fails', () async {
     when(() => getTransaksi.execute(any())).thenAnswer(
       (_) async => Left(NetworkException(message: 'Gagal memuat')),
     );
@@ -120,8 +118,7 @@ void main() {
     verifyNever(() => pencairanUseCases.getRiwayat(any()));
   });
 
-  test('skips the pencairan fetch for a custom setoran date range',
-      () async {
+  test('skips the pencairan fetch for a custom setoran date range', () async {
     when(() => getTransaksi.execute(any())).thenAnswer((_) async => Right([]));
 
     cubit.applyCustomRange(DateTime(2026, 1, 1), DateTime(2026, 1, 31));

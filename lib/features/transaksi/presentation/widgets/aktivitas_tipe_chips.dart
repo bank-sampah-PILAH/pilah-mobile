@@ -26,8 +26,9 @@ class AktivitasTipeChips extends StatelessWidget {
           children: [
             for (final entry in _labels.entries) ...[
               GestureDetector(
-                onTap: () =>
-                    context.read<RiwayatAktivitasCubit>().setTipeFilter(entry.key),
+                onTap: () => context
+                    .read<RiwayatAktivitasCubit>()
+                    .setTipeFilter(entry.key),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
