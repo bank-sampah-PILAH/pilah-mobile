@@ -83,18 +83,23 @@ class NasabahCubit extends Cubit<NasabahState> {
 
   /// Fetches the nasabah list, preserving the current tab and search query.
   ///
-  /// Pass [silent] to skip the [NasabahLoading] emit — pull-to-refresh already
-  /// shows a spinner, so the list should stay on screen instead of collapsing
-  /// into skeletons underneath it. [silent] only applies when there is data to
-  /// keep: from [NasabahInitial] or [NasabahError] there is nothing on screen,
-  /// so a real loading state is emitted regardless.
+  /// Existing rows stay visible while the first page reloads. Pass [silent]
+  /// when pull-to-refresh already shows its own indicator. Without loaded data,
+  /// a real [NasabahLoading] state is emitted.
   Future<void> loadNasabah({bool silent = false}) async {
     _jedaCari?.cancel();
     final requestGeneration = ++_listRequestGeneration;
     _listNeedsReload = false;
-    if (!silent || state is! NasabahLoaded) emit(NasabahLoading());
+    final hasLoadedList = state is NasabahLoaded;
     _halaman = 1;
     _isLoadingMore = false;
+    if (!silent || !hasLoadedList) {
+      if (hasLoadedList) {
+        _emitLoaded(isReloading: true);
+      } else {
+        emit(NasabahLoading(isActiveTab: _isActiveTab));
+      }
+    }
     final activeCountRequestGeneration =
         _isActiveTab == true && _searchQuery.isEmpty
             ? ++_activeCountRequestGeneration
@@ -125,6 +130,7 @@ class NasabahCubit extends Cubit<NasabahState> {
         !_hasMore ||
         _isLoadingMore ||
         state is! NasabahLoaded ||
+        (state as NasabahLoaded).isReloading ||
         (state as NasabahLoaded).isActiveTab != _isActiveTab ||
         (state as NasabahLoaded).searchQuery != _searchQuery) {
       return;
@@ -294,13 +300,14 @@ class NasabahCubit extends Cubit<NasabahState> {
     emit(NasabahInitial());
   }
 
-  void _emitLoaded() {
+  void _emitLoaded({bool isReloading = false}) {
     emit(NasabahLoaded(
       nasabahList: _items,
       isActiveTab: _isActiveTab,
       searchQuery: _searchQuery,
       hasMore: _hasMore,
       isLoadingMore: _isLoadingMore,
+      isReloading: isReloading,
       totalCount: _totalCount,
     ));
   }

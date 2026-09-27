@@ -70,6 +70,16 @@ void main() {
     expect(diminta, 0);
   });
 
+  testWidgets('hides the footer spinner until the next page is loading',
+      (tester) async {
+    await tester.pumpWidget(host(
+      items: List.generate(3, _nasabah),
+      hasMore: true,
+    ));
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
   testWidgets('shows a spinner at the end while the next page is loading',
       (tester) async {
     await tester.pumpWidget(host(

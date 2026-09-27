@@ -10,7 +10,14 @@ abstract class NasabahState extends Equatable {
 
 class NasabahInitial extends NasabahState {}
 
-class NasabahLoading extends NasabahState {}
+class NasabahLoading extends NasabahState {
+  final bool? isActiveTab;
+
+  const NasabahLoading({this.isActiveTab = true});
+
+  @override
+  List<Object?> get props => [isActiveTab];
+}
 
 class NasabahLoaded extends NasabahState {
   final List<NasabahEntity> nasabahList;
@@ -25,6 +32,9 @@ class NasabahLoaded extends NasabahState {
   /// Halaman berikutnya sedang diambil; dipakai untuk pemuat di ujung daftar.
   final bool isLoadingMore;
 
+  /// Halaman pertama sedang dimuat ulang sementara baris lama tetap terlihat.
+  final bool isReloading;
+
   /// Jumlah seluruh nasabah yang cocok di server, bukan yang sudah dimuat.
   final int totalCount;
 
@@ -34,6 +44,7 @@ class NasabahLoaded extends NasabahState {
     this.searchQuery = '',
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.isReloading = false,
     this.totalCount = 0,
   });
 
@@ -46,6 +57,7 @@ class NasabahLoaded extends NasabahState {
         searchQuery,
         hasMore,
         isLoadingMore,
+        isReloading,
         totalCount,
       ];
 }

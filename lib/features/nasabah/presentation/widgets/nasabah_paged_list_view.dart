@@ -51,13 +51,24 @@ class NasabahPagedListView extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           if (index >= items.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: SizedBox(
                   height: 24,
                   width: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: isLoadingMore
+                        ? const CircularProgressIndicator(
+                            key: ValueKey('loading'),
+                            strokeWidth: 2,
+                            semanticsLabel: 'Memuat nasabah berikutnya',
+                          )
+                        : const SizedBox.shrink(key: ValueKey('idle')),
+                  ),
                 ),
               ),
             );

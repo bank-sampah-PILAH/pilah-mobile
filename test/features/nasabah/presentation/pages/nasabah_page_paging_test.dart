@@ -1,8 +1,11 @@
-import 'package:dartz/dartz.dart' show Right;
+import 'dart:async';
+
+import 'package:dartz/dartz.dart' show Either, Right;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
@@ -106,6 +109,77 @@ void main() {
         .captured
         .cast<GetNasabahParams>();
     expect(params.map((p) => p.page), contains(2));
+    expect(find.text('Nasabah 21'), findsOneWidget);
+  });
+
+  testWidgets('keeps current rows and selection visible while switching tabs',
+      (tester) async {
+    final inactiveResponse =
+        Completer<Either<NetworkException, HalamanNasabah>>();
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      if (params.status == 'tidak_aktif') return inactiveResponse.future;
+      return Future.value(Right(_halaman(1)));
+    });
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    expect(find.text('Nasabah 1'), findsOneWidget);
+
+    await tester.tap(find.text('Tidak Aktif'));
+    await tester.pump();
+
+    expect(find.byType(NasabahPagedListView), findsOneWidget);
+    expect(find.text('Nasabah 1'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text('Tidak Aktif')).style?.color,
+      Colors.white,
+    );
+    expect(
+      tester.widget<Text>(find.text('Aktif')).style?.color,
+      isNot(Colors.white),
+    );
+
+    inactiveResponse.complete(Right(_halaman(2)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nasabah 21'), findsOneWidget);
+    expect(find.text('Nasabah 1'), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+
+  testWidgets('keeps the chosen tab selected during the initial load',
+      (tester) async {
+    final activeResponse =
+        Completer<Either<NetworkException, HalamanNasabah>>();
+    final inactiveResponse =
+        Completer<Either<NetworkException, HalamanNasabah>>();
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      return params.status == 'aktif'
+          ? activeResponse.future
+          : inactiveResponse.future;
+    });
+
+    await tester.pumpWidget(host());
+    await tester.tap(find.text('Tidak Aktif'));
+    await tester.pump();
+
+    expect(
+      tester.widget<Text>(find.text('Tidak Aktif')).style?.color,
+      Colors.white,
+    );
+    expect(
+      tester.widget<Text>(find.text('Aktif')).style?.color,
+      isNot(Colors.white),
+    );
+
+    inactiveResponse.complete(Right(_halaman(2)));
+    await tester.pumpAndSettle();
+    activeResponse.complete(Right(_halaman(1)));
+    await tester.pumpAndSettle();
+
     expect(find.text('Nasabah 21'), findsOneWidget);
   });
 }
