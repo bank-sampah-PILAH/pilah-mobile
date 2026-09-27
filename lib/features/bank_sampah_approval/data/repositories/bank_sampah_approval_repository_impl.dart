@@ -20,4 +20,12 @@ class BankSampahApprovalRepositoryImpl implements BankSampahApprovalRepository {
       mapper: (result) => (result as List).cast<NasabahMembershipEntity>(),
     );
   }
+
+  @override
+  Future<Either<NetworkException, void>> appeal(String bankSampahId) {
+    return apiCall<void>(
+      func: remoteDataSource.appeal(bankSampahId),
+      mapper: (_) {},
+    );
+  }
 }
