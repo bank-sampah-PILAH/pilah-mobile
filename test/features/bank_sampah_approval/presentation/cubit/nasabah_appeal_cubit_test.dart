@@ -22,7 +22,8 @@ void main() {
   blocTest<NasabahAppealCubit, NasabahAppealState>(
     'emits Submitting then Success on success',
     build: () {
-      when(() => useCase.execute('bank-1'))
+      when(() => useCase
+              .execute(const AppealMembershipParams(bankSampahId: 'bank-1')))
           .thenAnswer((_) async => const Right(null));
       return cubit;
     },
@@ -37,7 +38,8 @@ void main() {
     'emits Submitting then Failure on failure',
     build: () {
       final failure = NetworkException.handleBadResponse(null);
-      when(() => useCase.execute('bank-1'))
+      when(() => useCase
+              .execute(const AppealMembershipParams(bankSampahId: 'bank-1')))
           .thenAnswer((_) async => Left(failure));
       return cubit;
     },
@@ -46,5 +48,20 @@ void main() {
       const NasabahAppealSubmitting(),
       isA<NasabahAppealFailure>(),
     ],
+  );
+
+  blocTest<NasabahAppealCubit, NasabahAppealState>(
+    'forwards the appeal message to the use case',
+    build: () {
+      when(() => useCase.execute(const AppealMembershipParams(
+              bankSampahId: 'bank-1', pesan: 'Dokumen sudah lengkap')))
+          .thenAnswer((_) async => const Right(null));
+      return cubit;
+    },
+    act: (cubit) => cubit.submit('bank-1', pesan: 'Dokumen sudah lengkap'),
+    verify: (_) {
+      verify(() => useCase.execute(const AppealMembershipParams(
+          bankSampahId: 'bank-1', pesan: 'Dokumen sudah lengkap'))).called(1);
+    },
   );
 }
