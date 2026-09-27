@@ -55,11 +55,12 @@ void main() {
     await tester.pumpWidget(_wrap(cubit));
 
     expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
-    expect(find.text('Bandung'), findsOneWidget);
+    expect(find.text('Bandung · Jl. Melati No. 5'), findsOneWidget);
     expect(find.text('Menunggu'), findsOneWidget);
     expect(find.text('Bank Sampah Lestari'), findsOneWidget);
-    expect(find.text('Jakarta'), findsOneWidget);
+    expect(find.text('Jakarta · Jl. Sudirman No. 20'), findsOneWidget);
     expect(find.text('Disetujui'), findsOneWidget);
+    expect(find.byIcon(Icons.recycling), findsNWidgets(2));
   });
 
   testWidgets('pulling to refresh reloads silently', (tester) async {
