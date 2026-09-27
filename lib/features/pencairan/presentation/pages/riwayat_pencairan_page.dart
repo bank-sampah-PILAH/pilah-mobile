@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -258,45 +260,30 @@ class _RiwayatItem extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.nasabahNama, style: AppTextStyle.title1),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${item.metode.label} • ${_time(item.tanggal)}',
-                    style: AppTextStyle.small,
-                  ),
-                  if (item.keterangan.isNotEmpty)
-                    Text(item.keterangan, style: AppTextStyle.small),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'Rp ${formatRupiahId(item.nominal)}',
-                  style: AppTextStyle.title1.copyWith(
-                    color: RiwayatPencairanView.emeraldPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(_statusLabel(item.status), style: AppTextStyle.small),
-                if (item.diperbarui) const _DiperbaruiLabel(),
-              ],
-            ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        child: ActivityItem(
+          avatarText: _initialsOf(item.nasabahNama),
+          avatarColor: AppColors.greenLight,
+          avatarTextColor: RiwayatPencairanView.emeraldPrimary,
+          title: item.nasabahNama,
+          subtitleLines: [
+            '${item.metode.label} • ${_time(item.tanggal)}',
+            if (item.keterangan.isNotEmpty) item.keterangan,
           ],
+          amount: 'Rp ${formatRupiahId(item.nominal)}',
+          amountColor: RiwayatPencairanView.emeraldPrimary,
+          trailingCaptions: [_statusLabel(item.status)],
+          badge: item.diperbarui ? 'Diperbarui' : null,
         ),
       ),
     );
   }
+}
+
+String _initialsOf(String name) {
+  final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return 'NN';
+  return parts.take(2).map((p) => p[0].toUpperCase()).join();
 }
 
 /// Marks a pencairan a pengurus has edited (PIL-230).

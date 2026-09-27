@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/pencairan.dart';
@@ -125,84 +125,35 @@ class _PencairanNasabahCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tanggal = item.tanggal;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.grey200),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.bankSampahNama.isEmpty
-                            ? 'Bank Sampah'
-                            : item.bankSampahNama,
-                        style: AppTextStyle.title1.copyWith(fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        tanggal == null ? '-' : formatTanggalId(tanggal),
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.grey100,
-                        ),
-                      ),
-                      if (tanggal != null)
-                        Text(
-                          _time(tanggal),
-                          style: AppTextStyle.small.copyWith(
-                            color: AppColors.grey100,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Rp ${formatRupiahId(item.nominal)}',
-                      style: AppTextStyle.title1.copyWith(
-                        color: AppColors.greenDark,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (item.diperbarui)
-                      Text(
-                        'Diperbarui',
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(item.metode.label, style: AppTextStyle.small),
-            if (item.keterangan.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(item.keterangan, style: AppTextStyle.small),
-            ],
-          ],
-        ),
+    final bankNama =
+        item.bankSampahNama.isEmpty ? 'Bank Sampah' : item.bankSampahNama;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: ActivityItem(
+        avatarText: _initialsOf(bankNama),
+        avatarColor: AppColors.greenLight,
+        avatarTextColor: AppColors.greenDark,
+        title: bankNama,
+        subtitleLines: [
+          item.metode.label,
+          if (item.keterangan.isNotEmpty) item.keterangan,
+        ],
+        amount: 'Rp ${formatRupiahId(item.nominal)}',
+        trailingCaptions: [
+          tanggal == null ? '-' : formatTanggalId(tanggal),
+          if (tanggal != null) _time(tanggal),
+        ],
+        badge: item.diperbarui ? 'Diperbarui' : null,
       ),
     );
   }
 
   String _time(DateTime tanggal) =>
       '${tanggal.hour.toString().padLeft(2, '0')}:${tanggal.minute.toString().padLeft(2, '0')}';
+}
+
+String _initialsOf(String name) {
+  final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return 'NN';
+  return parts.take(2).map((p) => p[0].toUpperCase()).join();
 }
