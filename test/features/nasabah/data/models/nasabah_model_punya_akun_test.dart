@@ -15,15 +15,13 @@ void main() {
 
   group('NasabahModel status penautan akun (PIL-206)', () {
     test('nasabah yang tertaut ke akun ditandai punya akun', () {
-      final model =
-          NasabahModel.fromJson({...baseJson(), 'punya_akun': true});
+      final model = NasabahModel.fromJson({...baseJson(), 'punya_akun': true});
 
       expect(model.punyaAkun, isTrue);
     });
 
     test('nasabah yang belum tertaut ditandai tidak punya akun', () {
-      final model =
-          NasabahModel.fromJson({...baseJson(), 'punya_akun': false});
+      final model = NasabahModel.fromJson({...baseJson(), 'punya_akun': false});
 
       expect(model.punyaAkun, isFalse);
     });
