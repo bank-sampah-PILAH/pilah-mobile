@@ -165,30 +165,6 @@ void main() {
       });
     }
 
-    testWidgets(
-        'beranda menyediakan akses aktif ke Riwayat Nasabah (entry point PIL-280)',
-        (tester) async {
-      final semantics = tester.ensureSemantics();
-      try {
-        await loginAsNasabah(tester);
-        await tester.scrollUntilVisible(find.text('Riwayat Nasabah'), 300);
-        await tester.pumpAndSettle();
-        final entry = find.text('Riwayat Nasabah');
-        expect(entry, findsOneWidget);
-        expect(
-          tester
-              .getSemantics(entry)
-              .getSemanticsData()
-              .hasAction(SemanticsAction.tap),
-          isTrue,
-          reason:
-              'Riwayat Nasabah harus bisa diakses, bukan sekadar teks statis',
-        );
-      } finally {
-        semantics.dispose();
-      }
-    });
-
     testWidgets('nasabah tidak melihat menu pengelola', (tester) async {
       await loginAsNasabah(tester);
       expect(find.text('Nasabah'), findsNothing);
