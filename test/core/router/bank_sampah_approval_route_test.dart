@@ -133,9 +133,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Status Approval Bank Sampah'), findsOneWidget);
+    expect(find.text('Lihat Status Approval Bank Sampah'), findsOneWidget);
 
-    await tester.tap(find.text('Status Approval Bank Sampah'));
+    await tester.tap(find.text('Lihat Status Approval Bank Sampah'));
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Approval Bank Sampah'), findsOneWidget);
