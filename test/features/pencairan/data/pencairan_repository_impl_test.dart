@@ -21,6 +21,7 @@ Map<String, dynamic> _pencairanJson() => {
       'id': 'p-1',
       'nasabah_id': 'n-1',
       'nasabah_nama': 'Ahmad Ridwan',
+      'bank_sampah_nama': 'Bank Sampah BTH',
       'tanggal': '2026-09-22T03:15:00Z',
       'nominal': '200000.00',
       'metode': 'tunai',
@@ -185,6 +186,7 @@ void main() {
       expect(rows, hasLength(1));
       expect(rows.single.id, 'p-1');
       expect(rows.single.nasabahId, 'n-1');
+      expect(rows.single.bankSampahNama, 'Bank Sampah BTH');
       expect(rows.single.dicatatOlehNama, 'Ibu Sari');
       expect(rows.single.nominal, 200000);
     });
