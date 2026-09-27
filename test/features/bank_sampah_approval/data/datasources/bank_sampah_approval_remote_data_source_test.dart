@@ -61,4 +61,23 @@ void main() {
     expect(membership.riwayat[0].createdAt, DateTime.utc(2026, 9, 20, 10));
     expect(membership.riwayat[1].status, ApprovalLogStatus.approved);
   });
+
+  test('posts an appeal to onboarding/nasabah with the bank sampah id',
+      () async {
+    final network = _MockNetworkService();
+    when(() => network.post('/api/v1/onboarding/nasabah',
+        data: any(named: 'data'))).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
+        data: {'next_step': 'nasabah_dashboard'},
+      ),
+    );
+
+    await BankSampahApprovalRemoteDataSourceImpl(network).appeal('bank-1');
+
+    verify(() => network.post(
+          '/api/v1/onboarding/nasabah',
+          data: {'bank_sampah_id': 'bank-1'},
+        )).called(1);
+  });
 }
