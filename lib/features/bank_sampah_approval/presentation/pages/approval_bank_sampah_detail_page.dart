@@ -127,8 +127,7 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child:
-                    const Icon(Icons.recycling, color: AppColors.greenDark),
+                child: const Icon(Icons.recycling, color: AppColors.greenDark),
               ),
               const SizedBox(width: 16),
               Expanded(
