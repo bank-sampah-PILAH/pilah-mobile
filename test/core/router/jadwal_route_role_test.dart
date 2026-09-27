@@ -96,7 +96,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
+      expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
+      expect(find.text('Jadwal Bank Sampah'), findsNothing);
       expect(find.byType(FloatingActionButton), findsNothing);
       expect(find.text('Batalkan'), findsNothing);
       expect(find.text('Terbitkan'), findsNothing);
