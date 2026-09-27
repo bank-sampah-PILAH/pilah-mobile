@@ -32,7 +32,6 @@ class NasabahListItem extends StatelessWidget {
   String get name => nasabah.name;
   String get phone => nasabah.phone;
   String get balance => nasabah.balance;
-  String? get idNasabah => nasabah.idNasabah;
 
   /// Pending membership submission (PIL-188): renders a Menunggu badge and
   /// Setujui/Tolak actions instead of the detail toggle flow.

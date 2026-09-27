@@ -1,7 +1,14 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
 
 NasabahEntity _nasabah({bool punyaAkun = false, String status = 'approved'}) =>
@@ -23,6 +30,43 @@ NasabahEntity _nasabah({bool punyaAkun = false, String status = 'approved'}) =>
       status: status,
       punyaAkun: punyaAkun,
     );
+
+class _MockNasabahCubit extends MockCubit<NasabahState>
+    implements NasabahCubit {}
+
+/// Membuka sheet lewat `showModalBottomSheet` di dalam GoRouter, seperti pada
+/// aplikasi: tombol Edit memanggil `context.pop()` untuk menutup sheet ini
+/// sebelum membuka form, dan itu memerlukan router di atasnya.
+Widget _hostRute(NasabahEntity nasabah, NasabahCubit cubit) {
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => BlocProvider<NasabahCubit>.value(
+          value: cubit,
+          child: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => DetailNasabahBottomSheet(
+                    nasabah: nasabah,
+                    nasabahCubit: cubit,
+                  ),
+                ),
+                child: const Text('Buka detail'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+  return MaterialApp.router(routerConfig: router);
+}
 
 void main() {
   Widget host(NasabahEntity nasabah) => MaterialApp(
@@ -87,5 +131,51 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+  });
+
+  group('Aksi pada sheet detail membawa entity yang sama (PIL-206)', () {
+    late _MockNasabahCubit cubit;
+
+    setUp(() {
+      cubit = _MockNasabahCubit();
+      whenListen(
+        cubit,
+        const Stream<NasabahState>.empty(),
+        initialState: const NasabahLoaded(nasabahList: []),
+      );
+      when(() => cubit.fetchRingkasan(any())).thenAnswer((_) async => null);
+    });
+
+    Future<void> bukaDetail(WidgetTester tester, NasabahEntity nasabah) async {
+      tester.view.physicalSize = const Size(1200, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_hostRute(nasabah, cubit));
+      await tester.tap(find.text('Buka detail'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Edit Data membuka form dengan nasabah yang sama',
+        (tester) async {
+      await bukaDetail(tester, _nasabah(punyaAkun: true));
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Edit Data'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditNasabahBottomSheet), findsOneWidget);
+      // Form ikut mengetahui profilnya terkunci, tanpa map perantara.
+      expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+    });
+
+    testWidgets('Nonaktifkan meminta konfirmasi untuk nasabah itu',
+        (tester) async {
+      await bukaDetail(tester, _nasabah());
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Nonaktifkan'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Budi Santoso'), findsWidgets);
+    });
   });
 }

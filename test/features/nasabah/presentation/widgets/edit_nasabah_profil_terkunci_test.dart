@@ -72,9 +72,27 @@ bool _aktif(WidgetTester tester, int urutan) =>
 void main() {
   late MockNasabahCubit cubit;
 
+  setUpAll(() {
+    registerFallbackValue(NasabahRequest(
+      kode: '',
+      nama: '',
+      email: '',
+      jenisKelamin: '',
+      tanggalLahir: '',
+      noHp: '',
+      alamat: '',
+    ));
+  });
+
   setUp(() {
     cubit = MockNasabahCubit();
-    when(() => cubit.state).thenReturn(const NasabahLoaded(nasabahList: []));
+    // Form membaca cubit lewat `context.read` di dalam validator, dan
+    // BlocProvider ikut berlangganan streamnya.
+    whenListen(
+      cubit,
+      const Stream<NasabahState>.empty(),
+      initialState: const NasabahLoaded(nasabahList: []),
+    );
   });
 
   Future<void> pump(WidgetTester tester, NasabahEntity nasabah) async {
@@ -160,19 +178,39 @@ void main() {
     });
   });
 
-  group('Penanda penautan yang sudah basi (PIL-206)', () {
-    setUpAll(() {
-      registerFallbackValue(NasabahRequest(
-        kode: '',
-        nama: '',
-        email: '',
-        jenisKelamin: '',
-        tanggalLahir: '',
-        noHp: '',
-        alamat: '',
-      ));
-    });
+  testWidgets('nomor anggota yang dipakai nasabah lain ditolak di form',
+      (tester) async {
+    // Nomor anggota tetap milik pengurus, jadi validasi duplikatnya harus
+    // tetap berjalan dan tidak boleh menganggap nasabah ini duplikat dirinya.
+    when(() => cubit.state).thenReturn(NasabahLoaded(nasabahList: [
+      _nasabah(),
+      NasabahEntity(
+        id: 'nasabah-2',
+        idNasabah: 'NAS-0002',
+        name: 'Siti Aminah',
+        phone: '+628222222222',
+        balance: 'Rp 0',
+        isActive: true,
+        address: 'Jl. Melati No. 3',
+        initials: 'SA',
+        avatarColor: const Color(0xFFEAF5EC),
+        textColor: const Color(0xFF2F6B45),
+        jenisKelamin: 'Perempuan',
+        tanggalLahir: '02/02/1992',
+      ),
+    ]));
 
+    await pump(tester, _nasabah());
+    await tester.enterText(
+        find.byType(TextField).at(_nomorAnggota), 'NAS-0002');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ID Nasabah ini sudah digunakan.'), findsOneWidget);
+    verifyNever(() => cubit.updateNasabah(any(), any()));
+  });
+
+  group('Penanda penautan yang sudah basi (PIL-206)', () {
     testWidgets('penolakan 403 mengunci form, bukan mengundang coba ulang',
         (tester) async {
       // Nasabah bisa menautkan akunnya setelah daftar dimuat, sehingga penanda
