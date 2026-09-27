@@ -53,4 +53,20 @@ void main() {
     text = tester.widget<Text>(find.text(_longText));
     expect(text.maxLines, 2);
   });
+
+  testWidgets(
+      're-measures overflow when the text changes on an already-built widget',
+      (tester) async {
+    const key = Key('expandable');
+    await tester.pumpWidget(
+        _wrap(const ExpandableText(key: key, text: 'Data lengkap')));
+    await tester.pump();
+    expect(find.text('Lihat Selengkapnya'), findsNothing);
+
+    await tester
+        .pumpWidget(_wrap(const ExpandableText(key: key, text: _longText)));
+    await tester.pump();
+
+    expect(find.text('Lihat Selengkapnya'), findsOneWidget);
+  });
 }
