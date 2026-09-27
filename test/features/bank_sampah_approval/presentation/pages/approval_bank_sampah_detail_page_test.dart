@@ -201,6 +201,38 @@ void main() {
     verify(() => cubit.submit('bank-1')).called(1);
   });
 
+  testWidgets('shows an error toast without popping when the appeal fails',
+      (tester) async {
+    const rejected = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.rejected,
+      isActive: false,
+      alasanPenolakan: 'Dokumen tidak lengkap',
+    );
+    final states = StreamController<NasabahAppealState>();
+    addTearDown(states.close);
+    whenListen(cubit, states.stream, initialState: const NasabahAppealIdle());
+
+    await tester.pumpWidget(_wrap(rejected, cubit));
+
+    states.add(const NasabahAppealFailure('Bank sampah sedang tidak aktif'));
+    // The toast's entrance animation needs real pumped time, not just a
+    // frame — matches app_notification_test.dart's `_raise` helper.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(ApprovalBankSampahDetailView), findsOneWidget);
+    expect(find.text('Gagal Mengajukan Banding'), findsOneWidget);
+    expect(find.text('Bank sampah sedang tidak aktif'), findsOneWidget);
+
+    // Runs the toast's auto-dismiss timer out so none is left pending.
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('pops back to the previous route when the appeal succeeds',
       (tester) async {
     const rejected = NasabahMembershipEntity(
