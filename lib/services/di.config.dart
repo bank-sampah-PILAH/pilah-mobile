@@ -44,6 +44,10 @@ import '../features/bank_sampah_approval/data/repositories/bank_sampah_approval_
     as _i807;
 import '../features/bank_sampah_approval/domain/repositories/bank_sampah_approval_repository.dart'
     as _i390;
+import '../features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart'
+    as _i753;
+import '../features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart'
+    as _i359;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
 import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
@@ -257,8 +261,13 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i942.JadwalCubit>(
         () => _i942.JadwalCubit(gh<_i73.JadwalRepository>()));
+    gh.lazySingleton<_i753.GetNasabahMembershipsUseCase>(() =>
+        _i753.GetNasabahMembershipsUseCase(
+            gh<_i390.BankSampahApprovalRepository>()));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
+    gh.factory<_i359.NasabahApprovalCubit>(() =>
+        _i359.NasabahApprovalCubit(gh<_i753.GetNasabahMembershipsUseCase>()));
     gh.lazySingleton<_i449.ActivateNasabahUseCase>(
         () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i532.AddNasabahUseCase>(
