@@ -45,6 +45,12 @@ class _RoleShell extends StatelessWidget {
         navigationShell.currentIndex == 7) {
       return navigationShell;
     }
+    // Nasabah may open the existing read-only schedule route outside the tabs.
+    if (selected < 0 &&
+        role == 'nasabah' &&
+        navigationShell.currentIndex == 4) {
+      return navigationShell;
+    }
     if (selected < 0) {
       return Scaffold(
           body: Center(
