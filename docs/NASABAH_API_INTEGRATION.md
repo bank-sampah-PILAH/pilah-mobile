@@ -91,10 +91,10 @@ final profile = await api.profile(); // No membership required.
 
 ## Validation and limitations
 
-Backend refactor validation: PIL-225 67 tests; PIL-226 60 tests; lint and typing passed.
-Mobile validation: PIL-225 241 tests passed; PIL-226 248 tests passed. Flutter analysis
-reports no issues on either branch. One opt-in live test is skipped in each normal
-suite and was run separately against Django successfully.
+Earlier independent-branch counts (67/60 backend tests and 241/248 mobile tests)
+are historical. On the refreshed combined mobile stack, locked dependency
+resolution, code generation, formatting, and analysis pass; 593 tests pass, one
+optional live test is skipped, and line coverage is 58.8%.
 
 Mobile unit/widget tests cover payloads, errors, decimal display, membership choice,
 pagination, retry, stale session responses, API profile identity and routing.
