@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
@@ -33,6 +34,9 @@ class App extends StatelessWidget {
         ),
         BlocProvider<HargaCubit>(
           create: (context) => di<HargaCubit>(),
+        ),
+        BlocProvider<JadwalCubit>(
+          create: (context) => di<JadwalCubit>(),
         ),
         BlocProvider<TransaksiCubit>(
           create: (context) => di<TransaksiCubit>(),
@@ -161,6 +165,7 @@ class _PendingInviteResumeWatcherState
 void resetSessionScopedState(BuildContext context) {
   context.read<NasabahCubit>().reset();
   context.read<HargaCubit>().reset();
+  context.read<JadwalCubit>().reset();
   context.read<TransaksiCubit>().reset();
   context.read<DashboardCubit>().reset();
   context.read<RecentActivityCubit>().reset();

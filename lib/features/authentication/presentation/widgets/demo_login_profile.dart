@@ -17,9 +17,9 @@ class DemoLoginProfile {
 }
 
 abstract final class DemoLoginProfiles {
-  static const operator = DemoLoginProfile(
+  static const pengurus = DemoLoginProfile(
     label: 'Pengurus',
-    name: 'Operator PILAH E2E',
+    name: 'Pengurus PILAH E2E',
     email: 'pengurus.demo@example.com',
     tokenPrefix: 'dev',
   );
@@ -38,6 +38,15 @@ abstract final class DemoLoginProfiles {
     tokenPrefix: 'dev-nasabah',
   );
 
+  /// Always unregistered, unlike [customer] — for trying the
+  /// self-registration flow on demand, without a temporary seed change.
+  static const newNasabah = DemoLoginProfile(
+    label: 'Nasabah Baru (Pendaftaran)',
+    name: 'Nasabah Baru PILAH E2E',
+    email: 'nasabah.baru.demo@example.com',
+    tokenPrefix: 'dev-nasabah',
+  );
+
   static const superadmin = DemoLoginProfile(
     label: 'Superadmin',
     name: 'Superadmin PILAH E2E',
@@ -46,18 +55,19 @@ abstract final class DemoLoginProfiles {
   );
 
   static const all = <DemoLoginProfile>[
-    operator,
+    pengurus,
     pengelolaInduk,
     customer,
+    newNasabah,
     superadmin,
   ];
 
   static List<DemoLoginProfile> forEnvironment(AppEnvironment environment) => [
         DemoLoginProfile(
-          label: operator.label,
-          name: operator.name,
-          email: environment.demoOperatorEmail,
-          tokenPrefix: operator.tokenPrefix,
+          label: pengurus.label,
+          name: pengurus.name,
+          email: environment.demoPengurusEmail,
+          tokenPrefix: pengurus.tokenPrefix,
         ),
         DemoLoginProfile(
           label: pengelolaInduk.label,
@@ -70,6 +80,12 @@ abstract final class DemoLoginProfiles {
           name: customer.name,
           email: environment.demoCustomerEmail,
           tokenPrefix: customer.tokenPrefix,
+        ),
+        DemoLoginProfile(
+          label: newNasabah.label,
+          name: newNasabah.name,
+          email: environment.demoNewNasabahEmail,
+          tokenPrefix: newNasabah.tokenPrefix,
         ),
         DemoLoginProfile(
           label: superadmin.label,

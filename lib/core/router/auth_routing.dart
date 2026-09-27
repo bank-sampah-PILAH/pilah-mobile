@@ -18,13 +18,17 @@ const inviteProcessingLocation = '/invite-processing';
 /// so onboarding routing stays consistent.
 ///
 /// [hasPendingInvite] reports whether an invite token was captured from a deep
-/// link and is still waiting to be redeemed.
-String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
-  // A pending invite outranks the user's own onboarding step: they followed an
-  // invite link. Superadmins and Pengelola Induk cannot redeem bank invites.
-  if (hasPendingInvite &&
-      step != 'superadmin_dashboard' &&
-      step != 'pengelola_induk_dashboard') {
+/// link and is still waiting to be redeemed. [role] gates invite routing to
+/// the role accepted by the backend.
+String locationForAuthStep(
+  String? step, {
+  bool hasPendingInvite = false,
+  String? role,
+}) {
+  // A pending invite outranks the user's own onboarding step only for the
+  // backend-supported role. Known excluded roles keep their route and discard
+  // the token through [resolvePendingInvite].
+  if (hasPendingInvite && role == 'pengelola') {
     // A brand-new joiner whose profile isn't complete yet finishes it and
     // redeems the token together on the completion screen (invite mode).
     if (step == 'complete_profile') return completeProfileLocation;
@@ -43,8 +47,14 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
   switch (step) {
     case 'superadmin_dashboard':
       return '/superadmin-dashboard';
+    case 'register_nasabah':
+      return '/register-nasabah';
+    case 'nasabah_dashboard':
+      return '/nasabah-dashboard';
+    case 'register_bank_sampah_induk':
+      return '/register-bank-sampah-induk';
     case 'pengelola_induk_dashboard':
-      return '/pengelola-induk';
+      return '/pengelola-induk-dashboard';
     case 'complete_profile':
       return completeProfileLocation;
     case 'register_bank_sampah':
@@ -63,20 +73,23 @@ String locationForAuthStep(String? step, {bool hasPendingInvite = false}) {
   }
 }
 
-/// The screen that can actually redeem a pending invite for a user sitting at
-/// onboarding [step], or `null` when this session has no way to redeem one.
+/// The screen that can redeem a pending invite for a user at onboarding
+/// [step], or `null` when [role] cannot redeem one.
 ///
 /// Only two screens spend a token: the completion form (invite mode) and the
-/// invite gate. Any other destination means this account can never redeem it —
-/// today that includes superadmins and Pengelola Induk — and forcing
-/// a redirect there would pin the user to one screen for the rest of the
-/// session, since nothing would ever clear the token.
+/// invite gate. Only `pengelola` can use either screen for bank invites.
 ///
 /// Callers that want to *interrupt* the user for a pending invite (the router's
 /// top-level redirect, the resume watcher) should use this rather than
 /// [locationForAuthStep], which always has to answer with somewhere to go.
-String? pendingInviteLocation(String? step) {
-  final location = locationForAuthStep(step, hasPendingInvite: true);
+String? pendingInviteLocation(String? step, {required String? role}) {
+  if (role != 'pengelola') return null;
+
+  final location = locationForAuthStep(
+    step,
+    hasPendingInvite: true,
+    role: role,
+  );
   return location == completeProfileLocation ||
           location == inviteProcessingLocation
       ? location
