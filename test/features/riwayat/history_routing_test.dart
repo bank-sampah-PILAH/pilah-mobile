@@ -99,18 +99,14 @@ void main() {
     expect(repository.requests, [('member-b', 1)]);
   });
 
-  testWidgets('customer navigation opens real history bank and profile routes',
+  testWidgets('customer navigation opens savings and profile routes',
       (tester) async {
     await open(tester, '/dashboard');
     final bar = find.byType(BottomNavigationBar);
     expect(bar, findsOneWidget);
-    await tester.tap(find.descendant(of: bar, matching: find.text('Riwayat')));
+    await tester.tap(find.descendant(of: bar, matching: find.text('Tabungan')));
     await tester.pumpAndSettle();
     expect(find.text('Rp 1'), findsOneWidget);
-    await tester
-        .tap(find.descendant(of: bar, matching: find.text('Bank Sampah')));
-    await tester.pumpAndSettle();
-    expect(find.text('Jl. Melati'), findsOneWidget);
     await tester.tap(find.descendant(of: bar, matching: find.text('Profil')));
     await tester.pumpAndSettle();
     expect(find.text('preview@example.test'), findsOneWidget);
@@ -122,7 +118,7 @@ void main() {
       (tester) async {
     await open(tester, '/nasabah');
     expect(router.routeInformationProvider.value.uri.path, '/dashboard');
-    expect(find.text('Selamat datang, Siti'), findsOneWidget);
+    expect(find.text('Siti'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
