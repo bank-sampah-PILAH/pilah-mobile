@@ -77,7 +77,26 @@ void main() {
 
     verify(() => network.post(
           '/api/v1/onboarding/nasabah',
-          data: {'bank_sampah_id': 'bank-1'},
+          data: {'bank_sampah_id': 'bank-1', 'pesan': ''},
+        )).called(1);
+  });
+
+  test('posts the appeal message when one is given', () async {
+    final network = _MockNetworkService();
+    when(() => network.post('/api/v1/onboarding/nasabah',
+        data: any(named: 'data'))).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/api/v1/onboarding/nasabah'),
+        data: {'next_step': 'nasabah_dashboard'},
+      ),
+    );
+
+    await BankSampahApprovalRemoteDataSourceImpl(network)
+        .appeal('bank-1', pesan: 'Dokumen sudah lengkap');
+
+    verify(() => network.post(
+          '/api/v1/onboarding/nasabah',
+          data: {'bank_sampah_id': 'bank-1', 'pesan': 'Dokumen sudah lengkap'},
         )).called(1);
   });
 }
