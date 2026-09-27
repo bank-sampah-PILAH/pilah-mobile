@@ -2,10 +2,10 @@
 
 ## Mobile review dependency
 
-PIL-226 (PR #18) is stacked on PIL-225 (PR #19). Review and merge #19
-first, then retarget #18 to `staging`. The shared browser entrypoint and
-vendored passkeys runtime belong to #19; #18 adds the profile route and API
-integration without duplicating those web changes in its review diff.
+The mobile PRs form this stack: PIL-225 (#19) → PIL-226 (#18) → PIL-227
+(#28) → PIL-228 (#29) → PIL-232 (#35). PR #19 targets `feature/pil-280`;
+each later PR targets the preceding PR branch. The shared browser entrypoint
+and vendored passkeys runtime belong to #19, and are inherited by #18.
 
 Both branches use Flutter 3.41.3, as pinned by `.fvmrc` and the CI/CD
 workflows. Run `flutter pub get --enforce-lockfile` before code generation.
@@ -106,13 +106,13 @@ profile, and unauthorized access. It is skipped in normal tests unless supplied
 
 Potential issues / remaining delivery work:
 
-- No deployment, push, or merge was performed. Hosted/mobile-device connectivity,
-  CORS and production sign-in were not exercised by the local HTTP checks.
-- PIL-225 mobile integration lives on `codex/pil-225-api-integration`, based on the
-  existing home feature. PIL-226 also includes the shared home integration so it
-  can run both screens. Reconcile shared files when combining the feature branches.
-- History currently contains the deposit transaction model supported by these
-  backend branches; withdrawal integration remains separate.
+- Production deployment, hosted/mobile-device connectivity, CORS and production
+  sign-in were not exercised by the local HTTP checks.
+- Prototype comparison: the home page still needs its upcoming-schedule card;
+  history lists deposits but the prototype also filters withdrawals; profile
+  shows read-only identity but omits WhatsApp, address and membership summary.
+  Confirm these scope gaps against the written acceptance spec before calling the
+  screens design-complete.
 - Expired sessions show a sign-in message. This work does not add automatic token
   refresh or a new logout flow. Membership selection is in memory, not persisted.
 - Page-number history can shift if new transactions arrive between requests.
