@@ -98,6 +98,14 @@ void main() {
 
     expect(find.text('Riwayat Pencairan'), findsOneWidget);
     verify(() => useCases.getRiwayat(any())).called(1);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RiwayatPencairanNasabahPage(key: UniqueKey()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Riwayat Pencairan'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
