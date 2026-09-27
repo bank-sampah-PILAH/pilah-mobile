@@ -291,6 +291,37 @@ void main() {
       expect(result.isLeft(), isTrue);
       expect(requestedPages, [1, 2]);
     });
+
+    test('a limited request stops after the first page', () async {
+      final requestedPages = <int>[];
+      when(() => network.get('/api/v1/pencairan',
+              queryParams: any(named: 'queryParams')))
+          .thenAnswer((invocation) async {
+        final queryParams =
+            invocation.namedArguments[#queryParams] as Map<String, dynamic>;
+        requestedPages.add(queryParams['page'] as int? ?? 1);
+        return _ok('/api/v1/pencairan', {
+          'count': 10,
+          // A real "more pages exist" response — proves the loop stops
+          // because of the limit, not because there was nothing left.
+          'next': 'https://api.test/api/v1/pencairan?page=2',
+          'results': [
+            _pencairanJson(),
+            {..._pencairanJson(), 'id': 'p-2'},
+            {..._pencairanJson(), 'id': 'p-3'},
+          ],
+        });
+      });
+
+      final result = await repository.getRiwayat(
+        const RiwayatPencairanFilter(periode: RiwayatPeriode.semua, limit: 2),
+      );
+
+      expect(requestedPages, [1]);
+      expect(sentParams!['page_size'], 2);
+      final rows = result.getOrElse(() => throw 'expected Right');
+      expect(rows.map((r) => r.id), ['p-1', 'p-2']);
+    });
   });
 
   group('edit support', () {

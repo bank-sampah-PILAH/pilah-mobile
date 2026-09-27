@@ -94,7 +94,8 @@ void main() {
       );
     });
 
-    test('also asks for the whole pencairan history', () async {
+    test('asks pencairan for only the newest few, not the whole history',
+        () async {
       when(() => getTransaksi.execute(any()))
           .thenAnswer((_) async => Right(oneGroup));
 
@@ -104,6 +105,12 @@ void main() {
           .captured
           .single as RiwayatPencairanFilter;
       expect(filter.periode, RiwayatPeriode.semua);
+      expect(
+        filter.limit,
+        RecentActivityCubit.limit,
+        reason: 'a null limit makes the data source walk every page of the '
+            'bank\'s lifetime pencairan history just to show 3 rows',
+      );
     });
 
     test('asks the backend for only as many setoran rows as it shows',
