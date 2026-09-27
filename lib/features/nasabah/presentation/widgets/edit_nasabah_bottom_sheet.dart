@@ -39,7 +39,12 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   /// dimatikan agar pengurus tidak mengetik data yang pasti ditolak 403.
   /// Default tidak terkunci: pemanggil lama belum mengirim penandanya.
   bool get _profilTerkunci =>
-      widget.customerData['punyaAkun'] as bool? ?? false;
+      _ditolakServer || (widget.customerData['punyaAkun'] as bool? ?? false);
+
+  /// Server menolak perubahan profil walau penanda dari daftar belum
+  /// menyatakannya. Nasabah dapat menautkan akunnya setelah daftar dimuat,
+  /// sehingga penanda itu boleh basi; keputusan server yang menentukan.
+  bool _ditolakServer = false;
   String? _serverKodeError;
   String? _serverEmailError;
 
@@ -470,6 +475,13 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
         message: 'Perubahan data nasabah berhasil disimpan.',
       );
       return;
+    }
+
+    // 403 pada endpoint ini hanya berarti satu hal: profilnya milik pemilik
+    // akun (PIL-223). Kunci formnya supaya pengurus tidak mengetik ulang hasil
+    // yang sama, dan biarkan nomor anggota tetap dapat diperbaiki.
+    if (error.response?.statusCode == 403) {
+      setState(() => _ditolakServer = true);
     }
 
     final fields = error.fieldErrors();
