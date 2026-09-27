@@ -6,8 +6,6 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class DetailNasabahBottomSheet extends StatefulWidget {
@@ -217,73 +215,6 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
               ),
               const SizedBox(height: 24),
 
-              // Only active members can be paid out; the backend enforces
-              // the same rule.
-              if (isActive && customerData['id'] != null) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _catatPencairan(
-                      nasabahId: customerData['id'].toString(),
-                      nasabahNama: name,
-                    ),
-                    icon: const Icon(Icons.payments_outlined,
-                        size: 18, color: Colors.white),
-                    label: const Text('Catat Pencairan'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DetailNasabahBottomSheet.emeraldPrimary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                      textStyle: AppTextStyle.title1.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // History stays viewable after a nasabah is deactivated.
-              if (customerData['id'] != null) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      final router = GoRouter.of(context);
-                      Navigator.of(context).pop();
-                      router.push(
-                        RiwayatPencairanPage.route,
-                        extra: RiwayatPencairanArgs(
-                          nasabahId: customerData['id'].toString(),
-                          nasabahNama: name,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                    label: const Text('Riwayat Pencairan'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: DetailNasabahBottomSheet.emeraldPrimary,
-                      side: const BorderSide(
-                          color: DetailNasabahBottomSheet.emeraldPrimary),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: AppTextStyle.title1.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
               // Action Buttons
               Row(
                 children: [
@@ -363,25 +294,6 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
         ),
       ),
     );
-  }
-
-  /// Closes this sheet, opens the pencairan form, and refreshes the list's
-  /// saldo once a pencairan was recorded.
-  Future<void> _catatPencairan({
-    required String nasabahId,
-    required String nasabahNama,
-  }) async {
-    final router = GoRouter.of(context);
-    final nasabahCubit = widget.nasabahCubit;
-    Navigator.of(context).pop();
-    final recorded = await router.push<bool>(
-      CatatPencairanPage.route,
-      extra: CatatPencairanArgs(
-        nasabahId: nasabahId,
-        nasabahNama: nasabahNama,
-      ),
-    );
-    if (recorded == true) await nasabahCubit?.loadNasabah(silent: true);
   }
 
   Widget _buildRingkasanRow() {
