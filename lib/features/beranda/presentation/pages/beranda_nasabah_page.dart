@@ -174,7 +174,8 @@ class _HomeSessionState extends State<_HomeSession> {
                               onPressed: () => context.push(
                                 RiwayatPencairanNasabahPage.route,
                               ),
-                              icon: const Icon(Icons.account_balance_wallet_outlined),
+                              icon: const Icon(
+                                  Icons.account_balance_wallet_outlined),
                               label: const Text('Riwayat Pencairan'),
                             ),
                           ]),
