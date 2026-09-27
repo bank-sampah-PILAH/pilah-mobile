@@ -56,7 +56,7 @@ void main() {
     await tester.tap(find.byTooltip('Muat ulang'));
     await tester.pumpAndSettle();
     expect(find.textContaining('12.500'), findsNothing);
-    expect(find.text('Rp 999.999.999.999,99'), findsOneWidget);
+    expect(find.text('+ Rp 999.999.999.999,99'), findsOneWidget);
   });
 
   testWidgets('a response arriving after disposal does not update the page',
