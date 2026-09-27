@@ -329,7 +329,7 @@ void main() {
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     router.push('/detail');
     await tester.pumpAndSettle();
-    expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
+    expect(find.text('Bank Sampah Sejahtera'), findsNWidgets(2));
 
     states.add(const NasabahAppealSuccess());
     await tester.pumpAndSettle();

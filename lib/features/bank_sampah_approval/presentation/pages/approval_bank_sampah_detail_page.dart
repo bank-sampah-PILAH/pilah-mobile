@@ -118,14 +118,48 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.greenDark.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child:
+                    const Icon(Icons.recycling, color: AppColors.greenDark),
+              ),
+              const SizedBox(width: 16),
               Expanded(
-                child: Text(
-                  membership.bankSampahKota,
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      membership.bankSampahNama,
+                      style: AppTextStyle.title1.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      [membership.bankSampahKota, membership.bankSampahAlamat]
+                          .where((part) => part.trim().isNotEmpty)
+                          .join(' · '),
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.grey[500],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 8),
               MembershipStatusBadge(status: membership.status),
             ],
           ),
@@ -228,8 +262,7 @@ class _AppealMessageDialogState extends State<_AppealMessageDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text(
         'Ajukan Banding',
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
