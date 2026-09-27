@@ -148,6 +148,8 @@ void main() {
         try {
           await loginAsNasabah(tester);
           final entry = find.text(label);
+          await tester.scrollUntilVisible(entry, 200);
+          await tester.pumpAndSettle();
           expect(entry, findsOneWidget);
           await tester.ensureVisible(entry);
           await tester.pumpAndSettle();
@@ -181,7 +183,7 @@ void main() {
         tester,
       ) async {
         await loginAsNasabah(tester);
-        await tester.ensureVisible(find.text(entry.key));
+        await tester.scrollUntilVisible(find.text(entry.key), 200);
         await tester.pumpAndSettle();
         await tester.tap(find.text(entry.key));
         await tester.pumpAndSettle();
