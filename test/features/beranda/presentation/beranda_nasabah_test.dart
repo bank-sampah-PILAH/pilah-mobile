@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -27,6 +28,31 @@ class _DashboardCubit extends MockCubit<DashboardState>
 
 class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
+
+class _TestAppEnvironment implements AppEnvironment {
+  const _TestAppEnvironment();
+
+  @override
+  String get baseUrl => 'https://example.test';
+
+  @override
+  bool get supportsDemoLogin => false;
+
+  @override
+  String get demoPengurusEmail => '';
+
+  @override
+  String get demoPengelolaIndukEmail => '';
+
+  @override
+  String get demoCustomerEmail => '';
+
+  @override
+  String get demoNewNasabahEmail => '';
+
+  @override
+  String get demoSuperadminEmail => '';
+}
 
 // First TDD slice: the landing screen and its entry points. Destination pages
 // and their data will be covered in subsequent slices, without inventing URLs.
@@ -59,6 +85,7 @@ void main() {
     final activity = _ActivityCubit();
     final invites = InviteTokenStore();
 
+    di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
     whenListen(
@@ -79,6 +106,7 @@ void main() {
       await auth.close();
       await dashboard.close();
       await activity.close();
+      await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       invites.dispose();
     });
