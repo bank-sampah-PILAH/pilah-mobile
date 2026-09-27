@@ -95,7 +95,7 @@ void main() {
 
   testWidgets('direct history resolves the active membership', (tester) async {
     await open(tester, '/riwayat');
-    expect(find.text('Rp 1'), findsOneWidget);
+    expect(find.text('+ Rp 1'), findsOneWidget);
     expect(repository.requests, [('member-b', 1)]);
   });
 
@@ -106,7 +106,7 @@ void main() {
     expect(bar, findsOneWidget);
     await tester.tap(find.descendant(of: bar, matching: find.text('Tabungan')));
     await tester.pumpAndSettle();
-    expect(find.text('Rp 1'), findsOneWidget);
+    expect(find.text('+ Rp 1'), findsOneWidget);
     await tester.tap(find.descendant(of: bar, matching: find.text('Profil')));
     await tester.pumpAndSettle();
     expect(find.text('preview@example.test'), findsOneWidget);
