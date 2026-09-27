@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 
 /// Keeps each role's labels and router branch destinations together.
 class RoleNavigationBar extends StatelessWidget {
@@ -33,24 +34,32 @@ class RoleNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final destinations = _destinationsFor(role);
     if (destinations.isEmpty) return const SizedBox.shrink();
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: AppColors.greenDark,
-      unselectedItemColor: Colors.grey,
-      showUnselectedLabels: true,
-      selectedLabelStyle:
-          const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-      unselectedLabelStyle: const TextStyle(fontSize: 12),
-      currentIndex: currentIndex,
-      onTap: onSelected,
-      items: [
-        for (final destination in destinations)
-          BottomNavigationBarItem(
-            icon: Icon(destination.icon),
-            label: destination.label,
-          ),
-      ],
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.cardOffWhite,
+        border: Border(top: BorderSide(color: AppColors.grey200)),
+      ),
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppColors.cardOffWhite,
+        selectedItemColor: AppColors.greenDark,
+        unselectedItemColor: AppColors.grey100,
+        showUnselectedLabels: true,
+        selectedLabelStyle: AppTextStyle.extraSmall.copyWith(
+          color: AppColors.greenDark,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: AppTextStyle.extraSmall,
+        currentIndex: currentIndex,
+        onTap: onSelected,
+        items: [
+          for (final destination in destinations)
+            BottomNavigationBarItem(
+              icon: Icon(destination.icon),
+              label: destination.label,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -67,8 +76,8 @@ class _RoleDestination {
 // customer history, customer bank, profile.
 const _nasabahDestinations = <_RoleDestination>[
   _RoleDestination(0, Icons.home_outlined, 'Beranda'),
-  _RoleDestination(5, Icons.history, 'Riwayat'),
-  _RoleDestination(6, Icons.storefront_outlined, 'Bank Sampah'),
+  _RoleDestination(5, Icons.account_balance_wallet_outlined, 'Tabungan'),
+  _RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
   _RoleDestination(7, Icons.person_outline, 'Profil'),
 ];
 

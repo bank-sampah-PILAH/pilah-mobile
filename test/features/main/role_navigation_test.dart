@@ -84,7 +84,7 @@ void main() {
     addTearDown(states.close);
     final router =
         await mount(tester, session('nasabah'), states: states.stream);
-    await tester.tap(find.text('Riwayat'));
+    await tester.tap(find.text('Tabungan'));
     await tester.pumpAndSettle();
     states.add(session('pengelola'));
     await tester.pumpAndSettle();
@@ -102,7 +102,7 @@ void main() {
     'nasabah receives customer destinations rather than staff menus',
     (tester) async {
       await mount(tester, session('nasabah'));
-      expect(labels(tester), ['Beranda', 'Riwayat', 'Bank Sampah', 'Profil']);
+      expect(labels(tester), ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
       expect(find.text('Nasabah'), findsNothing);
       expect(find.text('Laporan'), findsNothing);
     },
@@ -125,8 +125,8 @@ void main() {
     tester,
   ) async {
     final router = await mount(tester, session('nasabah'));
-    expect(find.text('Riwayat'), findsOneWidget);
-    await tester.tap(find.text('Riwayat'));
+    expect(find.text('Tabungan'), findsOneWidget);
+    await tester.tap(find.text('Tabungan'));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/history');
     expect(find.text('body:/history'), findsOneWidget);
