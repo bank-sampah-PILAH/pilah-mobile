@@ -20,6 +20,7 @@ void main() {
               'id': 'bank-1',
               'nama': 'Bank Sampah Sejahtera',
               'kota': 'Bandung',
+              'alamat': 'Jl. Merdeka No. 10',
             },
             'status': 'pending',
             'is_active': true,
@@ -50,6 +51,7 @@ void main() {
     expect(membership.bankSampahId, 'bank-1');
     expect(membership.bankSampahNama, 'Bank Sampah Sejahtera');
     expect(membership.bankSampahKota, 'Bandung');
+    expect(membership.bankSampahAlamat, 'Jl. Merdeka No. 10');
     expect(membership.status, MembershipStatus.pending);
     expect(membership.isActive, isTrue);
     expect(membership.alasanPenolakan, isNull);
