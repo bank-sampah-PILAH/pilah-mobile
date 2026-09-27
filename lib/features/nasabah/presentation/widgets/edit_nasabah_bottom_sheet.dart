@@ -33,6 +33,13 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
 
   String? _jenisKelamin;
   bool _isSaving = false;
+
+  /// Profil global milik pemilik akun begitu keanggotaan tertaut, sehingga
+  /// hanya nomor anggota yang boleh disunting pengurus (PIL-223). Field
+  /// dimatikan agar pengurus tidak mengetik data yang pasti ditolak 403.
+  /// Default tidak terkunci: pemanggil lama belum mengirim penandanya.
+  bool get _profilTerkunci =>
+      widget.customerData['punyaAkun'] as bool? ?? false;
   String? _serverKodeError;
   String? _serverEmailError;
 
@@ -169,6 +176,10 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     height: 1.4,
                   ),
                 ),
+                if (_profilTerkunci) ...[
+                  const SizedBox(height: 16),
+                  _buildKeteranganProfilTerkunci(),
+                ],
                 const SizedBox(height: 24),
 
                 // Field 1: NAMA LENGKAP
@@ -176,6 +187,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _namaController,
+                  enabled: !_profilTerkunci,
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
@@ -251,11 +263,13 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                                 child: Text(value),
                               );
                             }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                _jenisKelamin = newValue;
-                              });
-                            },
+                            onChanged: _profilTerkunci
+                                ? null
+                                : (newValue) {
+                                    setState(() {
+                                      _jenisKelamin = newValue;
+                                    });
+                                  },
                           ),
                         ],
                       ),
@@ -269,6 +283,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailController,
+                  enabled: !_profilTerkunci,
                   keyboardType: TextInputType.emailAddress,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   onChanged: (_) {
@@ -298,6 +313,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _tanggalLahirController,
+                  enabled: !_profilTerkunci,
                   readOnly: true,
                   onTap: _selectDate,
                   validator: (value) => (value == null || value.trim().isEmpty)
@@ -317,6 +333,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _whatsappController,
+                  enabled: !_profilTerkunci,
                   keyboardType: TextInputType.phone,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   inputFormatters: [
@@ -367,6 +384,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _alamatController,
+                  enabled: !_profilTerkunci,
                   maxLines: 4,
                   validator: (value) =>
                       (value == null || value.trim().runes.length < 10)
@@ -467,6 +485,51 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       context,
       title: 'Gagal Menyimpan',
       message: error.displayMessage,
+    );
+  }
+
+  /// Menjelaskan mengapa sebagian field tidak dapat disunting.
+  ///
+  /// Penjelasan tampilan saja; penolakannya tetap diputuskan server pada
+  /// setiap permintaan (PIL-223, OWASP A01 Broken Access Control).
+  Widget _buildKeteranganProfilTerkunci() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.lock_outline, size: 18, color: Color(0xFF006D44)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Profil dikelola oleh nasabah',
+                  style: AppTextStyle.title1.copyWith(
+                    color: const Color(0xFF006D44),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nasabah ini sudah punya akun, jadi hanya nomor anggota yang dapat diubah di sini.',
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
