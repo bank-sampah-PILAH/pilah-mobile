@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
@@ -18,6 +21,31 @@ Widget _wrap(NasabahMembershipEntity membership, NasabahAppealCubit cubit) =>
         child: ApprovalBankSampahDetailView(membership: membership),
       ),
     );
+
+/// A minimal two-route GoRouter (matching the style already used in
+/// `approval_bank_sampah_navigation_test.dart`) so a real `context.pop(true)`
+/// on appeal success can be exercised and observed by checking which route
+/// is left onstage, rather than just asserting the `Navigator` popped —
+/// the list page relies on that `true` result to decide whether to reload.
+GoRouter _routerWithDetail(
+    NasabahMembershipEntity membership, NasabahAppealCubit cubit) {
+  return GoRouter(
+    initialLocation: '/list',
+    routes: [
+      GoRoute(
+        path: '/list',
+        builder: (context, state) => const Text('Daftar Approval'),
+      ),
+      GoRoute(
+        path: '/detail',
+        builder: (context, state) => BlocProvider<NasabahAppealCubit>.value(
+          value: cubit,
+          child: ApprovalBankSampahDetailView(membership: membership),
+        ),
+      ),
+    ],
+  );
+}
 
 void main() {
   late _MockNasabahAppealCubit cubit;
@@ -171,5 +199,35 @@ void main() {
     await tester.tap(find.text('Ajukan Banding'));
 
     verify(() => cubit.submit('bank-1')).called(1);
+  });
+
+  testWidgets('pops back to the previous route when the appeal succeeds',
+      (tester) async {
+    const rejected = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka No. 10',
+      status: MembershipStatus.rejected,
+      isActive: false,
+      alasanPenolakan: 'Dokumen tidak lengkap',
+    );
+    final states = StreamController<NasabahAppealState>();
+    addTearDown(states.close);
+    whenListen(cubit, states.stream, initialState: const NasabahAppealIdle());
+    final router = _routerWithDetail(rejected, cubit);
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    router.push('/detail');
+    await tester.pumpAndSettle();
+    expect(find.text('Bank Sampah Sejahtera'), findsOneWidget);
+
+    states.add(const NasabahAppealSuccess());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Daftar Approval'), findsOneWidget);
+    expect(find.byType(ApprovalBankSampahDetailView), findsNothing);
   });
 }
