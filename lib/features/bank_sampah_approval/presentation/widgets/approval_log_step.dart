@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
@@ -105,8 +106,8 @@ class ApprovalLogStep extends StatelessWidget {
                   ),
                   if (entry.catatan.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      entry.catatan,
+                    ExpandableText(
+                      text: entry.catatan,
                       style:
                           AppTextStyle.small.copyWith(color: Colors.grey[600]),
                     ),

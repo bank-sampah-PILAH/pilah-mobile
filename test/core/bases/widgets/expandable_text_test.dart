@@ -17,6 +17,9 @@ void main() {
   testWidgets('hides the toggle when the text fits within the line limit',
       (tester) async {
     await tester.pumpWidget(_wrap(const ExpandableText(text: 'Data lengkap')));
+    // Overflow is measured a frame after first layout (see the widget's doc
+    // comment on why it can't be done during build under IntrinsicHeight).
+    await tester.pump();
 
     expect(find.text('Lihat Selengkapnya'), findsNothing);
   });
@@ -24,6 +27,7 @@ void main() {
   testWidgets('shows a truncated toggle when the text overflows the limit',
       (tester) async {
     await tester.pumpWidget(_wrap(const ExpandableText(text: _longText)));
+    await tester.pump();
 
     expect(find.text('Lihat Selengkapnya'), findsOneWidget);
     final text = tester.widget<Text>(find.text(_longText));
@@ -33,6 +37,7 @@ void main() {
   testWidgets('expands and collapses when the toggle is tapped',
       (tester) async {
     await tester.pumpWidget(_wrap(const ExpandableText(text: _longText)));
+    await tester.pump();
 
     await tester.tap(find.text('Lihat Selengkapnya'));
     await tester.pump();

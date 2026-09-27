@@ -46,6 +46,7 @@ void main() {
         body: ApprovalLogStep(entry: entry, isLast: true),
       ),
     ));
+    await tester.pump();
 
     expect(find.text('Lihat Selengkapnya'), findsOneWidget);
   });
