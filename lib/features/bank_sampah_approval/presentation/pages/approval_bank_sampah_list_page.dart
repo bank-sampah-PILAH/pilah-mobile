@@ -14,10 +14,8 @@ import 'package:pilah_mobile/services/di.dart';
 /// Nasabah-facing list of the caller's own bank sampah memberships and their
 /// approval status (PIL-232).
 ///
-/// Pushed rather than tab-hosted: the real dashboard entry point is a
-/// deferred follow-up (PIL-225 is still an open, unmerged PR), so this is
-/// reached from a temporary entry point on the nasabah's post-onboarding
-/// landing page instead.
+/// Reachable from the stable nasabah dashboard, including sessions whose
+/// membership is pending or rejected and cannot load dashboard data.
 class ApprovalBankSampahListPage extends StatelessWidget {
   const ApprovalBankSampahListPage({super.key});
 
