@@ -19,7 +19,9 @@ const _monthNames = [
 ];
 
 /// Formats [dateTimeUtc] (assumed UTC, as parsed from the backend) in the
-/// viewer's local time as `d MMM yyyy`, e.g. `20 Sep 2026`.
+/// viewer's local time as `d MMM yyyy · HH:mm:ss`, e.g.
+/// `20 Sep 2026 · 09:05:03` — a membership can be appealed and decided more
+/// than once in the same day, so the date alone doesn't distinguish entries.
 ///
 /// Deliberately hand-rolled rather than `intl`'s `DateFormat`: nothing else in
 /// this app initialises an `id_ID` locale, and pulling one in just for this
@@ -27,7 +29,10 @@ const _monthNames = [
 /// `initializeDateFormatting` first.
 String formatApprovalLogDate(DateTime dateTimeUtc) {
   final local = dateTimeUtc.toLocal();
-  return '${local.day} ${_monthNames[local.month - 1]} ${local.year}';
+  String two(int value) => value.toString().padLeft(2, '0');
+  final date = '${local.day} ${_monthNames[local.month - 1]} ${local.year}';
+  final time = '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
+  return '$date · $time';
 }
 
 /// One entry in the approval history timeline: an icon+colour per decision,
