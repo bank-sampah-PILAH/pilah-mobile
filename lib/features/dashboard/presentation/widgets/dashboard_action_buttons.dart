@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 
 class DashboardActionButtons extends StatelessWidget {
   const DashboardActionButtons({super.key});
@@ -83,27 +86,77 @@ class DashboardActionButtons extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => context.push(RiwayatPencairanPage.route),
-          icon: const Icon(Icons.receipt_long_outlined,
-              color: AppColors.greenDark, size: 20),
-          label: Text(
-            'Riwayat Pencairan',
-            style: AppTextStyle.small.copyWith(
-              color: AppColors.black,
-              fontWeight: FontWeight.w600,
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _catatPencairan(context),
+                icon: const Icon(Icons.payments_outlined,
+                    color: AppColors.greenDark, size: 20),
+                label: Text(
+                  'Catat Pencairan',
+                  style: AppTextStyle.small.copyWith(
+                    color: AppColors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  backgroundColor: Colors.white,
+                ),
+              ),
             ),
-          ),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => context.push(RiwayatPencairanPage.route),
+                icon: const Icon(Icons.receipt_long_outlined,
+                    color: AppColors.greenDark, size: 20),
+                label: Text(
+                  'Riwayat Pencairan',
+                  style: AppTextStyle.small.copyWith(
+                    color: AppColors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  backgroundColor: Colors.white,
+                ),
+              ),
             ),
-            side: BorderSide(color: Colors.grey.shade300),
-            backgroundColor: Colors.white,
-          ),
+          ],
         ),
       ],
+    );
+  }
+
+  /// Picks an active nasabah from the same sheet Setoran Baru uses, then opens
+  /// the pencairan form for them — a beranda entry point that previously only
+  /// existed from a Nasabah's own detail screen (PIL-282).
+  Future<void> _catatPencairan(BuildContext context) async {
+    final selected = await showModalBottomSheet<NasabahEntity>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const PilihNasabahBottomSheet(),
+    );
+    if (selected == null || !context.mounted) return;
+    context.push(
+      CatatPencairanPage.route,
+      extra: CatatPencairanArgs(
+        nasabahId: selected.id,
+        nasabahNama: selected.name,
+      ),
     );
   }
 }
