@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Shared visual tokens for the nasabah screens.
 abstract final class NasabahStyle {
-  static const emerald = Color(0xFF059669);
-  static const ink = Color(0xFF0F172A);
-  static const muted = Color(0xFF64748B);
-  static const line = Color(0xFFE2E8F0);
-  static const background = Color(0xFFF8FAFC);
-  static const emeraldLight = Color(0xFFD1FAE5);
-  static const emeraldDark = Color(0xFF047857);
+  static const emerald = AppColors.greenDark;
+  static const ink = AppColors.black;
+  static const muted = AppColors.grey100;
+  static const line = AppColors.grey200;
+  static const background = Colors.white;
+  static const emeraldLight = AppColors.greenLight;
+  static const emeraldDark = AppColors.greenDark;
   static const maxWidth = 600.0;
 
   static TextStyle text(
@@ -18,13 +20,14 @@ abstract final class NasabahStyle {
     double height = 1.45,
     bool tabularFigures = false,
   }) =>
-      TextStyle(
-        fontFamily: 'PlusJakartaSans',
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        height: height,
-        fontFeatures:
-            tabularFigures ? const [FontFeature.tabularFigures()] : null,
+      GoogleFonts.poppins(
+        textStyle: TextStyle(
+          fontSize: size,
+          fontWeight: weight,
+          color: color,
+          height: height,
+          fontFeatures:
+              tabularFigures ? const [FontFeature.tabularFigures()] : null,
+        ),
       );
 }

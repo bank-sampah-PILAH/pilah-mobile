@@ -129,7 +129,7 @@ void main() {
     old.complete(await PreviewNasabahRepository().home());
     await tester.pumpAndSettle();
     expect(find.text('Rp 12.500,50'), findsNothing);
-    expect(find.text('Selamat datang, Budi'), findsOneWidget);
+    expect(find.text('Budi'), findsOneWidget);
   });
   testWidgets('open details hide private data after logout', (tester) async {
     final states = StreamController<AuthenticationStates>();

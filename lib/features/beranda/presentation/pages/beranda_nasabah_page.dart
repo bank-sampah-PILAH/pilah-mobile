@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
@@ -83,104 +84,166 @@ class _HomeSessionState extends State<_HomeSession> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
-        appBar: AppBar(
-            title: const Text('PILAH'),
-            backgroundColor: const Color(0xFFF8FAFC),
-            actions: [
-              IconButton(
-                  tooltip: 'Profil',
-                  onPressed: () => context.go(AppLocations.profile),
-                  icon: const Icon(Icons.account_circle_outlined))
-            ]),
+        backgroundColor: NasabahStyle.background,
         body: SafeArea(
             child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
-                  child: ListView(padding: const EdgeInsets.all(16), children: [
-                    const Text('Beranda',
-                        style: TextStyle(
-                            fontFamily: 'PlusJakartaSans',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    Text('Selamat datang, ${widget.name}'),
-                    TextButton(
-                        onPressed: () => _select(null),
-                        child: const Text('Pilih ulang bank sampah')),
-                    NasabahResource<NasabahHome>(
-                      key: ValueKey(_selectionVersion),
-                      load: () =>
-                          widget.repository.home(membershipId: _membershipId),
-                      onSelect: _select,
-                      builder: (context, home) => Column(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    children: [
+                      _HomeHeader(
+                        name: widget.name,
+                        onOpenProfile: () => context.go(AppLocations.profile),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Beranda', style: _text(12, color: _muted)),
+                      const SizedBox(height: 16),
+                      NasabahResource<NasabahHome>(
+                        key: ValueKey(_selectionVersion),
+                        load: () => widget.repository.home(
+                          membershipId: _membershipId,
+                        ),
+                        onSelect: _select,
+                        builder: (context, home) => Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _BalanceCard(
-                              balance: home.balance,
-                              onOpen: () => _details(
-                                  'Saldo',
-                                  NasabahResource<NasabahBalance>(
-                                      load: () => widget.repository
-                                          .balance(home.membershipId),
-                                      builder: (_, balance) => Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Column(children: [
-                                            Text(nasabahRupiah(balance.amount),
-                                                style: const TextStyle(
-                                                    fontSize: 28,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                            Text(balance.updatedAt == null
-                                                ? 'Belum ada perubahan saldo.'
-                                                : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'),
-                                          ])))),
-                            ),
-                            const SizedBox(height: 20),
                             _BankUnitCard(
                               unitName: home.bank.name,
+                              onSelect: () => _select(null),
                               onOpen: () => _details(
-                                  'Detail Bank Sampah',
-                                  NasabahResource<NasabahBank>(
-                                      load: () => widget.repository
-                                          .bank(home.membershipId),
-                                      builder: (_, bank) => Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Column(children: [
-                                            Text(bank.name),
-                                            Text(bank.address.isEmpty
-                                                ? 'Alamat belum tersedia'
-                                                : bank.address),
-                                            Text(bank.city),
-                                            Text(bank.phone.isEmpty
-                                                ? 'Kontak belum tersedia'
-                                                : bank.phone),
-                                          ])))),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text('Aktivitas Terbaru',
-                                style: TextStyle(
-                                    fontSize: 17, fontWeight: FontWeight.w600)),
-                            NasabahActivityList(activities: home.activities),
-                            OutlinedButton(
-                                onPressed: () => _details(
-                                    'Riwayat Aktivitas',
-                                    _History(
-                                        repository: widget.repository,
-                                        membershipId: home.membershipId)),
-                                child: const Text('Riwayat Aktivitas')),
-                            OutlinedButton.icon(
-                              onPressed: () => context.push(
-                                RiwayatPencairanNasabahPage.route,
+                                'Detail Bank Sampah',
+                                NasabahResource<NasabahBank>(
+                                  load: () =>
+                                      widget.repository.bank(home.membershipId),
+                                  builder: (_, bank) => Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(children: [
+                                      Text(bank.name),
+                                      Text(bank.address.isEmpty
+                                          ? 'Alamat belum tersedia'
+                                          : bank.address),
+                                      Text(bank.city),
+                                      Text(bank.phone.isEmpty
+                                          ? 'Kontak belum tersedia'
+                                          : bank.phone),
+                                    ]),
+                                  ),
+                                ),
                               ),
-                              icon: const Icon(
-                                  Icons.account_balance_wallet_outlined),
-                              label: const Text('Riwayat Pencairan'),
                             ),
-                          ]),
-                    ),
-                  ]),
+                            const SizedBox(height: 12),
+                            _BalanceCard(
+                              balance: home.balance,
+                              bankName: home.bank.name,
+                              latestActivity: home.activities.isEmpty
+                                  ? null
+                                  : home.activities.first,
+                              onOpen: () => _details(
+                                'Saldo',
+                                NasabahResource<NasabahBalance>(
+                                  load: () => widget.repository
+                                      .balance(home.membershipId),
+                                  builder: (_, balance) => Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(children: [
+                                      Text(nasabahRupiah(balance.amount),
+                                          style: _text(
+                                            28,
+                                            weight: FontWeight.w700,
+                                          )),
+                                      Text(balance.updatedAt == null
+                                          ? 'Belum ada perubahan saldo.'
+                                          : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'),
+                                    ]),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _details(
+                                      'Riwayat Aktivitas',
+                                      _History(
+                                        repository: widget.repository,
+                                        membershipId: home.membershipId,
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.history),
+                                    label: const Text('Riwayat Aktivitas'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: _emerald,
+                                      minimumSize: const Size.fromHeight(48),
+                                      side: const BorderSide(
+                                          color: NasabahStyle.line),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: FilledButton.icon(
+                                    onPressed: () => context.push(
+                                      RiwayatPencairanNasabahPage.route,
+                                    ),
+                                    icon: const Icon(Icons.south_west),
+                                    label: const Text('Pencairan'),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: _emerald,
+                                      minimumSize: const Size.fromHeight(48),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            _SectionHeading(
+                              title: 'Jadwal Terdekat',
+                              onAll: () => context.go(JadwalPage.route),
+                            ),
+                            const SizedBox(height: 8),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => context.go(JadwalPage.route),
+                              child: _card(
+                                child: Row(children: [
+                                  const Icon(Icons.calendar_month_outlined,
+                                      color: _emerald),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Lihat jadwal kegiatan bank sampah Anda.',
+                                      style: _text(13, color: _muted),
+                                    ),
+                                  ),
+                                  const Icon(Icons.chevron_right,
+                                      color: _muted),
+                                ]),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _SectionHeading(
+                              title: 'Terbaru',
+                              onAll: () => _details(
+                                'Riwayat Aktivitas',
+                                _History(
+                                  repository: widget.repository,
+                                  membershipId: home.membershipId,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            NasabahActivityList(
+                              activities: home.activities.take(1).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ))),
       );
 }
@@ -232,37 +295,50 @@ Widget _card({required Widget child}) =>
     NasabahCard(raised: true, child: child);
 
 class _BalanceCard extends StatelessWidget {
-  const _BalanceCard({required this.balance, required this.onOpen});
+  const _BalanceCard({
+    required this.balance,
+    required this.bankName,
+    required this.latestActivity,
+    required this.onOpen,
+  });
   final NasabahBalance balance;
+  final String bankName;
+  final NasabahActivity? latestActivity;
   final VoidCallback onOpen;
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF059669), Color(0xFF047857)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
+          color: _emerald,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  size: 20,
-                  color: Color(0xFFD1FAE5),
+                Expanded(
+                  child: Text(
+                    'SALDO DI ${bankName.toUpperCase()}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _text(
+                      11,
+                      weight: FontWeight.w600,
+                      color: NasabahStyle.emeraldLight,
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'SALDO TABUNGAN',
-                  style: _text(
-                    11,
-                    weight: FontWeight.w600,
-                    color: const Color(0xFFD1FAE5),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0x22FFFFFF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 20,
+                    color: NasabahStyle.emeraldLight,
                   ),
                 ),
               ],
@@ -282,12 +358,14 @@ class _BalanceCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    balance.updatedAt == null
-                        ? 'Belum ada perubahan saldo'
-                        : 'Diperbarui ${nasabahDate(balance.updatedAt!)}',
+                    latestActivity == null
+                        ? balance.updatedAt == null
+                            ? 'Belum ada perubahan saldo.'
+                            : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'
+                        : '${_activityTitle(latestActivity!.type)} · ${nasabahDate(latestActivity!.date)}',
                     style: _text(
-                      13,
-                      color: const Color(0xFFD1FAE5),
+                      12,
+                      color: NasabahStyle.emeraldLight,
                     ),
                   ),
                 ),
@@ -317,9 +395,14 @@ class _BalanceCard extends StatelessWidget {
 }
 
 class _BankUnitCard extends StatelessWidget {
-  const _BankUnitCard({required this.unitName, required this.onOpen});
+  const _BankUnitCard({
+    required this.unitName,
+    required this.onOpen,
+    required this.onSelect,
+  });
   final String unitName;
   final VoidCallback onOpen;
+  final VoidCallback onSelect;
   @override
   Widget build(BuildContext context) => _card(
         child: Column(
@@ -327,42 +410,56 @@ class _BankUnitCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.storefront_outlined,
-                  color: _emerald,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: NasabahStyle.emeraldLight,
                   child: Text(
-                    'BANK SAMPAH UNIT',
+                    'BS',
                     style: _text(
                       11,
                       weight: FontWeight.w600,
-                      color: _muted,
+                      color: _emerald,
                     ),
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('KEANGGOTAAN AKTIF',
+                          style: _text(10,
+                              weight: FontWeight.w500, color: _muted)),
+                      Text(
+                        unitName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _text(14, weight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Pilih ulang bank sampah',
+                  onPressed: onSelect,
+                  icon: const Icon(Icons.expand_more),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              unitName,
-              style: _text(17, weight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton(
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   alignment: Alignment.centerLeft,
                 ),
                 onPressed: onOpen,
                 child: Text(
                   'Detail Bank Sampah',
                   style: _text(
-                    13,
+                    12,
                     weight: FontWeight.w600,
                     color: _emerald,
                   ),
@@ -373,3 +470,73 @@ class _BankUnitCard extends StatelessWidget {
         ),
       );
 }
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.name, required this.onOpenProfile});
+  final String name;
+  final VoidCallback onOpenProfile;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_greeting(), style: _text(12, color: _muted)),
+                Text(
+                  name.isEmpty ? 'Nasabah' : name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _text(18, weight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            tooltip: 'Profil',
+            onPressed: onOpenProfile,
+            icon: CircleAvatar(
+              radius: 19,
+              backgroundColor: NasabahStyle.emeraldLight,
+              child: Text(
+                name.isEmpty ? 'N' : name.characters.first.toUpperCase(),
+                style: _text(14,
+                    weight: FontWeight.w600, color: NasabahStyle.emeraldDark),
+              ),
+            ),
+          ),
+        ],
+      );
+}
+
+String _greeting() {
+  final hour = DateTime.now().hour;
+  if (hour < 11) return 'Selamat pagi';
+  if (hour < 15) return 'Selamat siang';
+  if (hour < 18) return 'Selamat sore';
+  return 'Selamat malam';
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title, this.onAll});
+  final String title;
+  final VoidCallback? onAll;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(
+              child: Text(title, style: _text(17, weight: FontWeight.w600))),
+          if (onAll != null)
+            TextButton(onPressed: onAll, child: const Text('Semua')),
+        ],
+      );
+}
+
+String _activityTitle(String type) => switch (type.toLowerCase()) {
+      'setoran' => 'Setoran',
+      'pencairan' => 'Pencairan',
+      _ => type,
+    };
