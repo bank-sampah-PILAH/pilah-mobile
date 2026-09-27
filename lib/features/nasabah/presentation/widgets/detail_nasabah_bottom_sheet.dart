@@ -59,6 +59,11 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
         (customerData['tanggalDaftar'] as String?)?.isNotEmpty == true
             ? customerData['tanggalDaftar']
             : '-';
+    // Profil nasabah berakun dimiliki pemilik akun dan berlaku lintas bank
+    // sampah, jadi pengurus hanya memegang data keanggotaannya (PIL-223).
+    // Tanpa penanda ini, pengurus baru tahu batas itu dari 403 setelah mengisi
+    // form. Default tidak terkunci: pemanggil lama belum mengirim penandanya.
+    final bool punyaAkun = customerData['punyaAkun'] as bool? ?? false;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -213,6 +218,10 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                   ],
                 ),
               ),
+              if (punyaAkun) ...[
+                const SizedBox(height: 16),
+                _buildProfilDikelolaNasabah(),
+              ],
               const SizedBox(height: 24),
 
               // Action Buttons
@@ -292,6 +301,55 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Keterangan bahwa profil ini milik pemilik akun, bukan pengurus.
+  ///
+  /// Sekadar penjelasan tampilan: batasnya tetap ditegakkan server pada setiap
+  /// permintaan (PIL-223), bukan oleh layar ini.
+  Widget _buildProfilDikelolaNasabah() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DetailNasabahBottomSheet.mintTint,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.lock_outline,
+            size: 18,
+            color: DetailNasabahBottomSheet.emeraldPrimary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Profil dikelola oleh nasabah',
+                  style: AppTextStyle.title1.copyWith(
+                    color: DetailNasabahBottomSheet.emeraldPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pengurus hanya dapat mengubah nomor anggota dan status keanggotaan.',
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

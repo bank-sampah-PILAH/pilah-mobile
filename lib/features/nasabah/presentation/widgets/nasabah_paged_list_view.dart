@@ -91,6 +91,7 @@ class NasabahPagedListView extends StatelessWidget {
             tanggalDaftar: customer.tanggalDaftar,
             address: customer.address,
             isPending: customer.status == 'pending',
+            punyaAkun: customer.punyaAkun,
             nasabahCubit: nasabahCubit,
           );
         },

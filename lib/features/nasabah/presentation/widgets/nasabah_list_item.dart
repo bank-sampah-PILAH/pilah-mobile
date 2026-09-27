@@ -26,6 +26,11 @@ class NasabahListItem extends StatelessWidget {
   /// Pending membership submission (PIL-188): renders a Menunggu badge and
   /// Setujui/Tolak actions instead of the detail toggle flow.
   final bool isPending;
+
+  /// Keanggotaan sudah tertaut ke akun nasabah, sehingga profilnya dikelola
+  /// pemilik akun dan hanya data keanggotaan yang boleh diubah pengurus.
+  final bool punyaAkun;
+
   final NasabahCubit? nasabahCubit;
 
   const NasabahListItem({
@@ -45,6 +50,7 @@ class NasabahListItem extends StatelessWidget {
     this.tanggalDaftar,
     this.address,
     this.isPending = false,
+    this.punyaAkun = false,
     this.nasabahCubit,
   });
 
@@ -72,6 +78,7 @@ class NasabahListItem extends StatelessWidget {
           'tanggalLahir': tanggalLahir,
           'tanggalDaftar': tanggalDaftar,
           'address': address,
+          'punyaAkun': punyaAkun,
         },
         nasabahCubit: nasabahCubit,
       ),
