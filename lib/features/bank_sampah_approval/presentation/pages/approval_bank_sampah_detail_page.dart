@@ -41,8 +41,14 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
 
   const ApprovalBankSampahDetailView({super.key, required this.membership});
 
-  void _appeal(BuildContext context) {
-    context.read<NasabahAppealCubit>().submit(membership.bankSampahId);
+  Future<void> _appeal(BuildContext context) async {
+    final cubit = context.read<NasabahAppealCubit>();
+    final pesan = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => _AppealMessageDialog(),
+    );
+    if (pesan == null) return;
+    cubit.submit(membership.bankSampahId, pesan: pesan);
   }
 
   @override
@@ -81,16 +87,16 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
               children: [
                 _buildStatusCard(),
                 const SizedBox(height: 24),
+                if (membership.status == MembershipStatus.rejected) ...[
+                  _buildAppealButton(context),
+                  const SizedBox(height: 24),
+                ],
                 Text(
                   'Riwayat Persetujuan',
                   style: AppTextStyle.title1.copyWith(fontSize: 16),
                 ),
                 const SizedBox(height: 16),
                 _buildHistory(),
-                if (membership.status == MembershipStatus.rejected) ...[
-                  const SizedBox(height: 24),
-                  _buildAppealButton(context),
-                ],
               ],
             ),
           ),
@@ -198,6 +204,55 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Collects the nasabah's appeal message before an appeal is submitted.
+/// Pops `null` on cancel, or the entered text (possibly empty — the backend
+/// treats a blank message as optional) on confirm.
+class _AppealMessageDialog extends StatefulWidget {
+  @override
+  State<_AppealMessageDialog> createState() => _AppealMessageDialogState();
+}
+
+class _AppealMessageDialogState extends State<_AppealMessageDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        'Ajukan Banding',
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+      ),
+      content: TextField(
+        controller: _controller,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.greenDark),
+          child: const Text('Kirim'),
+        ),
+      ],
     );
   }
 }
