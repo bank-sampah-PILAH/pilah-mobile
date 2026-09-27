@@ -5,7 +5,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 /// Read model: maps the PILAH `NasabahSerializer` JSON to [NasabahEntity].
 ///
 /// Backend keys: id, kode, nama, jenis_kelamin, tanggal_lahir, no_hp, alamat,
-/// tanggal_daftar, is_active, total_saldo, created_at.
+/// tanggal_daftar, is_active, total_saldo, punya_akun, created_at.
 class NasabahModel extends NasabahEntity {
   NasabahModel({
     required super.id,
@@ -23,6 +23,7 @@ class NasabahModel extends NasabahEntity {
     required super.tanggalLahir,
     required super.tanggalDaftar,
     required super.status,
+    required super.punyaAkun,
   });
 
   factory NasabahModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +45,7 @@ class NasabahModel extends NasabahEntity {
       tanggalLahir: isoToDisplay(json['tanggal_lahir']?.toString()),
       tanggalDaftar: isoToDisplay(json['tanggal_daftar']?.toString()),
       status: json['status']?.toString() ?? 'approved',
+      punyaAkun: json['punya_akun'] as bool? ?? false,
     );
   }
 

@@ -20,6 +20,14 @@ class NasabahEntity {
   /// Defaults to approved so legacy payloads keep behaving.
   final String status;
 
+  /// Apakah keanggotaan ini sudah tertaut ke akun nasabah (PIL-206).
+  ///
+  /// Profil global milik pemilik akun, jadi begitu bernilai `true` pengurus
+  /// hanya boleh mengubah nomor anggota dan status keanggotaan; backend
+  /// menolak perubahan profil dengan 403 (PIL-223). Default `false` supaya
+  /// payload yang belum membawa field ini tidak mengunci nasabah tanpa akun.
+  final bool punyaAkun;
+
   NasabahEntity({
     required this.id,
     required this.idNasabah,
@@ -36,6 +44,7 @@ class NasabahEntity {
     required this.tanggalLahir,
     this.tanggalDaftar = '',
     this.status = 'approved',
+    this.punyaAkun = false,
   });
 }
 
