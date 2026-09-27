@@ -13,11 +13,16 @@ class CompleteProfileRequest {
   /// Local number digits (e.g. `81234567890`); the backend normalizes it.
   final String noHp;
 
+  /// Required for a nasabah account, ignored by the backend for every other
+  /// role. Empty when this account isn't nasabah.
+  final String alamat;
+
   const CompleteProfileRequest({
     required this.nama,
     required this.jenisKelamin,
     required this.tanggalLahir,
     required this.noHp,
+    this.alamat = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -25,6 +30,7 @@ class CompleteProfileRequest {
         'jenis_kelamin': jenisKelamin,
         'tanggal_lahir': tanggalLahir,
         'no_hp': noHp,
+        if (alamat.trim().isNotEmpty) 'alamat': alamat,
       };
 }
 
@@ -44,6 +50,91 @@ class RegisterBankSampahRequest {
     required this.noHpPic,
     required this.fotoKegiatanPath,
   });
+}
+
+/// A bank sampah a calon nasabah can apply to join, as listed by
+/// `GET /bank-sampah` (PIL-204's picker).
+class BankSampahDirectoryEntity {
+  final String id;
+  final String nama;
+  final String alamat;
+  final String kota;
+  final String fotoLogo;
+
+  const BankSampahDirectoryEntity({
+    required this.id,
+    required this.nama,
+    required this.alamat,
+    required this.kota,
+    required this.fotoLogo,
+  });
+
+  factory BankSampahDirectoryEntity.fromJson(Map<String, dynamic> json) =>
+      BankSampahDirectoryEntity(
+        id: json['id']?.toString() ?? '',
+        nama: json['nama']?.toString() ?? '',
+        alamat: (json['alamat'] as String?) ?? '',
+        kota: (json['kota'] as String?) ?? '',
+        fotoLogo: (json['foto_logo'] as String?) ?? '',
+      );
+}
+
+/// One row from `GET /nasabah/me`: a calon/active nasabah's own membership.
+/// Used by the bank-sampah picker (PIL-204) to show what's already joined
+/// and lock further registrations under the current one-membership-per-
+/// nasabah scope.
+class NasabahMembershipEntity {
+  final String id;
+  final String bankSampahId;
+  final String bankSampahNama;
+  final String bankSampahKota;
+
+  /// Backend enum value: `pending`, `approved`, or `rejected`.
+  final String status;
+  final bool isActive;
+
+  const NasabahMembershipEntity({
+    required this.id,
+    required this.bankSampahId,
+    required this.bankSampahNama,
+    required this.bankSampahKota,
+    required this.status,
+    required this.isActive,
+  });
+
+  factory NasabahMembershipEntity.fromJson(Map<String, dynamic> json) {
+    final bank = json['bank_sampah'] as Map<String, dynamic>? ?? const {};
+    return NasabahMembershipEntity(
+      id: json['id']?.toString() ?? '',
+      bankSampahId: bank['id']?.toString() ?? '',
+      bankSampahNama: bank['nama']?.toString() ?? '',
+      bankSampahKota: bank['kota']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      isActive: json['is_active'] as bool? ?? false,
+    );
+  }
+}
+
+/// Input for `POST /onboarding/nasabah`: a calon nasabah applying to join
+/// [bankSampahId]. `nama`/`jenis_kelamin`/`tanggal_lahir`/`no_hp`/`alamat`
+/// are not asked for again here — the backend copies them from the profile
+/// completed on the shared `complete_profile` step.
+class RegisterNasabahRequest {
+  final String bankSampahId;
+
+  const RegisterNasabahRequest({required this.bankSampahId});
+
+  Map<String, dynamic> toJson() => {'bank_sampah_id': bankSampahId};
+
+  // Value equality so a mocktail `verify` can match a request rebuilt from
+  // form state against the fresh instance the screen actually sent, instead
+  // of requiring the exact same object reference.
+  @override
+  bool operator ==(Object other) =>
+      other is RegisterNasabahRequest && other.bankSampahId == bankSampahId;
+
+  @override
+  int get hashCode => bankSampahId.hashCode;
 }
 
 /// Outcome of an onboarding step: the backend's next routing hint, plus the

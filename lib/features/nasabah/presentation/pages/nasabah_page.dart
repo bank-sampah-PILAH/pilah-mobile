@@ -6,7 +6,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
@@ -119,8 +119,11 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                   return true;
                 },
                 builder: (context, state) {
-                  final isActiveTab =
-                      state is NasabahLoaded ? state.isActiveTab : true;
+                  final isActiveTab = state is NasabahLoaded
+                      ? state.isActiveTab
+                      : state is NasabahLoading
+                          ? state.isActiveTab
+                          : context.read<NasabahCubit>().isActiveTab;
                   return NasabahFilterChips(
                     activeTab: isActiveTab,
                     onTabChanged: (value) {
@@ -153,59 +156,72 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                       if (state is NasabahLoaded) {
                         final customers = state.nasabahList;
 
+                        final Widget content;
                         if (customers.isEmpty) {
                           if (state.searchQuery.isNotEmpty) {
-                            return const EmptyView(
+                            content = const EmptyView(
                               title: 'Nasabah Tidak Ditemukan',
                               subtitle: 'Coba kata kunci yang berbeda',
                               icon: Icons.search_off,
                             );
+                          } else {
+                            content = EmptyView(
+                              title: state.isMenungguTab
+                                  ? 'Tidak Ada Pengajuan'
+                                  : state.isActiveTab!
+                                      ? 'Belum Ada Nasabah'
+                                      : 'Tidak Ada Nasabah Nonaktif',
+                              subtitle: state.isMenungguTab
+                                  ? 'Belum ada pengajuan keanggotaan yang menunggu persetujuan.'
+                                  : state.isActiveTab!
+                                      ? 'Tekan tombol + untuk menambah nasabah pertama.'
+                                      : 'Semua nasabah masih berstatus aktif.',
+                              icon: state.isMenungguTab
+                                  ? Icons.hourglass_empty
+                                  : state.isActiveTab!
+                                      ? Icons.people_outline
+                                      : Icons.person_off_outlined,
+                            );
                           }
-                          return EmptyView(
-                            title: state.isMenungguTab
-                                ? 'Tidak Ada Pengajuan'
-                                : state.isActiveTab!
-                                    ? 'Belum Ada Nasabah'
-                                    : 'Tidak Ada Nasabah Nonaktif',
-                            subtitle: state.isMenungguTab
-                                ? 'Belum ada pengajuan keanggotaan yang menunggu persetujuan.'
-                                : state.isActiveTab!
-                                    ? 'Tekan tombol + untuk menambah nasabah pertama.'
-                                    : 'Semua nasabah masih berstatus aktif.',
-                            icon: state.isMenungguTab
-                                ? Icons.hourglass_empty
-                                : state.isActiveTab!
-                                    ? Icons.people_outline
-                                    : Icons.person_off_outlined,
+                        } else {
+                          content = NasabahPagedListView(
+                            items: customers,
+                            hasMore: state.hasMore,
+                            isLoadingMore: state.isLoadingMore,
+                            onLoadMore: () =>
+                                context.read<NasabahCubit>().loadMoreNasabah(),
+                            nasabahCubit: context.read<NasabahCubit>(),
                           );
                         }
 
-                        return ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(bottom: 80),
-                          itemCount: customers.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final customer = customers[index];
-                            return NasabahListItem(
-                              isActive: customer.isActive,
-                              initials: customer.initials,
-                              avatarColor: customer.avatarColor,
-                              textColor: customer.textColor,
-                              name: customer.name,
-                              phone: customer.phone,
-                              balance: customer.balance,
-                              id: customer.id,
-                              idNasabah: customer.idNasabah,
-                              jenisKelamin: customer.jenisKelamin,
-                              tanggalLahir: customer.tanggalLahir,
-                              tanggalDaftar: customer.tanggalDaftar,
-                              address: customer.address,
-                              isPending: customer.status == 'pending',
-                              nasabahCubit: context.read<NasabahCubit>(),
-                            );
-                          },
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            content,
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              child: SizedBox(
+                                height: 2,
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  switchInCurve: Curves.easeOut,
+                                  switchOutCurve: Curves.easeIn,
+                                  child: state.isReloading
+                                      ? LinearProgressIndicator(
+                                          key: const ValueKey('reloading'),
+                                          minHeight: 2,
+                                          color: AppColors.greenDark,
+                                          backgroundColor: AppColors.greenLight,
+                                        )
+                                      : const SizedBox.shrink(
+                                          key: ValueKey('idle'),
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ],
                         );
                       }
 

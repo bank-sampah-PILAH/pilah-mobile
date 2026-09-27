@@ -13,10 +13,26 @@ class NasabahRepositoryImpl implements NasabahRepository {
   NasabahRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<NetworkException, List<NasabahEntity>>> getNasabah() {
-    return apiCall<List<NasabahEntity>>(
-      func: remoteDataSource.getNasabah(),
-      mapper: (result) => (result as List).cast<NasabahEntity>(),
+  Future<Either<NetworkException, HalamanNasabah>> getNasabah({
+    int page = 1,
+    String status = 'aktif',
+    String? search,
+  }) {
+    return apiCall<HalamanNasabah>(
+      func: remoteDataSource.getNasabah(
+        page: page,
+        status: status,
+        search: search,
+      ),
+      mapper: (result) => result as HalamanNasabah,
+    );
+  }
+
+  @override
+  Future<Either<NetworkException, HalamanNasabah>> getActiveNasabah() {
+    return apiCall<HalamanNasabah>(
+      func: remoteDataSource.getActiveNasabah(),
+      mapper: (result) => result as HalamanNasabah,
     );
   }
 

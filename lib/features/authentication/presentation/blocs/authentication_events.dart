@@ -1,1 +1,3 @@
-abstract class AuthenticationEvent {}
+abstract class AuthenticationEvent {
+  const AuthenticationEvent();
+}

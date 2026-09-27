@@ -9,7 +9,9 @@ import 'model/responses/auth_response.dart';
 
 abstract class AuthRemoteDataSources {
   Future<AuthResponse> postLogin(PostLoginRequest request);
-  Future<AuthResponse> loginWithGoogle(String idToken);
+  Future<Map<String, dynamic>> loginWithGoogle(String idToken);
+  Future<Map<String, dynamic>> registerGoogleUser(
+      String registrationToken, String role);
 
   /// Restores the current session from the persisted bearer token.
   Future<AuthEntity> getMe();
@@ -32,12 +34,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
   }
 
   @override
-  Future<AuthResponse> loginWithGoogle(String idToken) async {
+  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
     final response = await networkService.post(
       Endpoints.loginWithGoogle,
       data: {'id_token': idToken},
     );
-    return AuthResponse.fromJson(response.data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> registerGoogleUser(
+      String registrationToken, String role) async {
+    final response = await networkService.post(
+      Endpoints.registerGoogleUser,
+      data: {'registration_token': registrationToken, 'role': role},
+    );
+    return response.data as Map<String, dynamic>;
   }
 
   @override

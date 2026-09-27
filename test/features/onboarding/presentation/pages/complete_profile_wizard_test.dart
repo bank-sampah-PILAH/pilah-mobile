@@ -30,7 +30,8 @@ const _draft = CompleteProfileRequest(
 /// An account partway through onboarding. [bankSampahStatus] is what decides
 /// whether finishing this form starts a new registration or routes on a verdict
 /// only the backend can give.
-AuthEntity _account({String? bankSampahStatus}) => AuthEntity(
+AuthEntity _account({String? bankSampahStatus, String role = 'pengelola'}) =>
+    AuthEntity(
       id: 'user-1',
       name: 'Sari',
       email: 'sari@example.com',
@@ -38,20 +39,21 @@ AuthEntity _account({String? bankSampahStatus}) => AuthEntity(
       token: 'jwt',
       nextStep: 'complete_profile',
       bankSampahStatus: bankSampahStatus,
-      role: 'pengelola',
+      role: role,
     );
 
 Future<void> _pumpScreen(
   WidgetTester tester, {
   required OnboardingCubit onboarding,
   String? bankSampahStatus,
+  String role = 'pengelola',
 }) async {
   final auth = _MockAuthBloc();
   whenListen(
     auth,
     const Stream<AuthenticationStates>.empty(),
     initialState: Authenticated(
-      authEntity: _account(bankSampahStatus: bankSampahStatus),
+      authEntity: _account(bankSampahStatus: bankSampahStatus, role: role),
     ),
   );
 
@@ -173,6 +175,20 @@ void main() {
 
       expect(find.widgetWithText(TextFormField, 'Sari Dewi'), findsNothing);
     });
+  });
+
+  testWidgets(
+      'shows the nasabah bank-picker stepper, not the pengelola wording, '
+      'for Nasabah', (tester) async {
+    final cubit = OnboardingCubit(_MockDataSource());
+    addTearDown(cubit.close);
+
+    await _pumpScreen(tester, onboarding: cubit, role: 'nasabah');
+
+    expect(find.text('Data Bank Sampah'), findsNothing);
+    expect(find.text('Pilih Bank Sampah'), findsOneWidget);
+    expect(find.text('Profil Diri'), findsOneWidget);
+    expect(find.text('Simpan Profil & Lanjut'), findsOneWidget);
   });
 
   group('the deferred profile call', () {

@@ -11,6 +11,8 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activi
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
@@ -26,6 +28,8 @@ class _MockNasabahCubit extends MockCubit<NasabahState>
     implements NasabahCubit {}
 
 class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
+
+class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 
 class _MockTransaksiCubit extends MockCubit<TransaksiState>
     implements TransaksiCubit {}
@@ -45,6 +49,7 @@ class _MockOnboardingDataSource extends Mock
 void main() {
   late _MockNasabahCubit nasabah;
   late _MockHargaCubit harga;
+  late _MockJadwalCubit jadwal;
   late _MockTransaksiCubit transaksi;
   late _MockDashboardCubit dashboard;
   late _MockRecentActivityCubit recentActivity;
@@ -57,6 +62,7 @@ void main() {
   setUp(() {
     nasabah = _MockNasabahCubit();
     harga = _MockHargaCubit();
+    jadwal = _MockJadwalCubit();
     transaksi = _MockTransaksiCubit();
     dashboard = _MockDashboardCubit();
     recentActivity = _MockRecentActivityCubit();
@@ -64,6 +70,7 @@ void main() {
     onboarding = OnboardingCubit(_MockOnboardingDataSource());
     when(() => nasabah.state).thenReturn(NasabahInitial());
     when(() => harga.state).thenReturn(HargaInitial());
+    when(() => jadwal.state).thenReturn(const JadwalInitial());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => dashboard.state).thenReturn(const DashboardState());
     when(() => recentActivity.state).thenReturn(RecentActivityInitial());
@@ -103,6 +110,7 @@ void main() {
         providers: [
           BlocProvider<NasabahCubit>.value(value: nasabah),
           BlocProvider<HargaCubit>.value(value: harga),
+          BlocProvider<JadwalCubit>.value(value: jadwal),
           BlocProvider<TransaksiCubit>.value(value: transaksi),
           BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: recentActivity),
@@ -133,6 +141,7 @@ void main() {
     // Only the invite token is exempt; the session cubits still reset.
     verify(() => nasabah.reset()).called(1);
     verify(() => harga.reset()).called(1);
+    verify(() => jadwal.reset()).called(1);
     verify(() => transaksi.reset()).called(1);
     verify(() => dashboard.reset()).called(1);
     verify(() => recentActivity.reset()).called(1);
