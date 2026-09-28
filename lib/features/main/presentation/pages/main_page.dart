@@ -92,8 +92,9 @@ class _ShellContent extends StatelessWidget {
     // Whether the cubit has actually confirmed limited access, as opposed to
     // `limitedNasabah` defaulting true while the initial load is still
     // pending. Only a confirmed status may discard the current route.
-    final confirmedLimitedNasabah =
-        role == 'nasabah' && approval is NasabahApprovalLoaded && limitedNasabah;
+    final confirmedLimitedNasabah = role == 'nasabah' &&
+        approval is NasabahApprovalLoaded &&
+        limitedNasabah;
     final branches = RoleNavigationBar.branchIndicesFor(role,
         limitedNasabah: limitedNasabah);
     final selected = branches.indexOf(navigationShell.currentIndex);
