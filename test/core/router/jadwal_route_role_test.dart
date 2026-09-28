@@ -52,7 +52,16 @@ void main() {
     final jadwalCubit = _MockJadwalCubit();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final startsAt = DateTime(today.year, today.month, today.day, 9).toUtc();
+    final selectedDate = today.add(const Duration(days: 2));
+    final dateParam = '${selectedDate.year.toString().padLeft(4, '0')}-'
+        '${selectedDate.month.toString().padLeft(2, '0')}-'
+        '${selectedDate.day.toString().padLeft(2, '0')}';
+    final startsAt = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      9,
+    ).toUtc();
     final schedule = JadwalEntity(
       id: 'jadwal-1',
       bankSampahId: 'bank-1',
@@ -69,10 +78,13 @@ void main() {
     );
     when(() => jadwalCubit.state).thenReturn(JadwalLoaded([schedule]));
     when(() => jadwalCubit.loadJadwal(date: today)).thenAnswer((_) async {});
+    when(() => jadwalCubit.loadJadwal(date: selectedDate))
+        .thenAnswer((_) async {});
     _stubCalendarLoad(jadwalCubit, today);
+    _stubCalendarLoad(jadwalCubit, selectedDate);
 
     final router = AppRouterConfig.getRouter();
-    router.go(JadwalPage.route);
+    router.go('${JadwalPage.route}?date=$dateParam');
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
@@ -125,11 +137,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    router.go(JadwalPage.route);
+    router.go('${JadwalPage.route}?date=$dateParam');
     await tester.pumpAndSettle();
 
     expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
     expect(find.text('Balai Warga'), findsOneWidget);
+    verify(() => jadwalCubit.loadJadwal(date: selectedDate)).called(1);
     expect(find.byType(FloatingActionButton), findsNothing);
     expect(find.text('Batalkan'), findsNothing);
     expect(find.text('Terbitkan'), findsNothing);
