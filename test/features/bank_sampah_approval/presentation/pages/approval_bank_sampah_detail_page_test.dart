@@ -137,6 +137,34 @@ void main() {
     expect(find.text('Menunggu verifikasi pengurus'), findsOneWidget);
   });
 
+  testWidgets('long decision notes fit a 375px phone without overflow',
+      (tester) async {
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final membership = NasabahMembershipEntity(
+      id: 'membership-1',
+      bankSampahId: 'bank-1',
+      bankSampahNama: 'Bank Sampah Sejahtera',
+      bankSampahKota: 'Bandung',
+      bankSampahAlamat: 'Jl. Merdeka',
+      status: MembershipStatus.pending,
+      isActive: true,
+      riwayat: [
+        ApprovalLogEntity(
+          status: ApprovalLogStatus.appealed,
+          catatan:
+              'Dokumen dan alamat sudah saya perbaiki untuk pengajuan ulang.',
+          createdAt: DateTime(2026, 9, 25, 8),
+        ),
+      ],
+    );
+    await tester.pumpWidget(_wrap(membership, cubit));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows the appeal button only when the membership is rejected',
       (tester) async {
     const rejected = NasabahMembershipEntity(
