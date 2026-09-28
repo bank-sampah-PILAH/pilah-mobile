@@ -38,6 +38,16 @@ void main() {
       lokasi: 'Balai Warga',
       status: 'diterbitkan',
     );
+    final farDate = today.add(const Duration(days: 12));
+    final far = JadwalEntity(
+      id: 'far',
+      bankSampahId: 'bank-1',
+      jenisKegiatan: 'Jadwal Jauh',
+      mulaiPada: DateTime(farDate.year, farDate.month, farDate.day, 10),
+      selesaiPada: DateTime(farDate.year, farDate.month, farDate.day, 11),
+      lokasi: 'Balai Warga',
+      status: 'diterbitkan',
+    );
     final nearestDate = today.add(const Duration(days: 2));
     final nearest = JadwalEntity(
       id: 'nearest',
@@ -63,15 +73,15 @@ void main() {
 
     when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => Right(JadwalPageResult(
-        items: [ongoing],
-        totalCount: 3,
+        items: [ongoing, far],
+        totalCount: 4,
         hasMore: true,
       )),
     );
     when(() => jadwalRepository.getJadwal(page: 2, date: null)).thenAnswer(
       (_) async => Right(JadwalPageResult(
-        items: [nearest, later],
-        totalCount: 3,
+        items: [later, nearest],
+        totalCount: 4,
         hasMore: false,
       )),
     );
@@ -124,6 +134,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('Penimbangan'), 240);
     expect(find.text('Penimbangan'), findsOneWidget);
     expect(find.text('Pengumpulan'), findsNothing);
+    expect(find.text('Jadwal Jauh'), findsNothing);
     expect(find.text('Balai Warga'), findsOneWidget);
     await tester.tap(find.text('Penimbangan'));
     await tester.pumpAndSettle();

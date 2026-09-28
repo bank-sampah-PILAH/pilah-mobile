@@ -333,7 +333,11 @@ class _HomeSessionState extends State<_HomeSession> {
 
 Future<JadwalEntity?> _loadNearestSchedule() async {
   final repository = di<JadwalRepository>();
+  final now = DateTime.now();
+  JadwalEntity? nearest;
   var pageNumber = 1;
+  // ponytail: scans every upcoming page; add a server-side nearest query if
+  // volume hurts homepage load time.
   while (true) {
     final result = await repository.getJadwal(page: pageNumber);
     final page = result.fold(
@@ -341,12 +345,14 @@ Future<JadwalEntity?> _loadNearestSchedule() async {
       (page) => page,
     );
     for (final schedule in page.items) {
+      final start = schedule.mulaiPada.toLocal();
       if (schedule.isPublished &&
-          !schedule.mulaiPada.toLocal().isBefore(DateTime.now())) {
-        return schedule;
+          !start.isBefore(now) &&
+          (nearest == null || start.isBefore(nearest.mulaiPada.toLocal()))) {
+        nearest = schedule;
       }
     }
-    if (page.items.isEmpty || !page.hasMore) return null;
+    if (page.items.isEmpty || !page.hasMore) return nearest;
     pageNumber++;
   }
 }
