@@ -22,6 +22,7 @@ const _whatsapp = 4;
 const _alamat = 5;
 
 const _pesan403 = 'Nasabah dengan akun hanya bisa diubah pada data keanggotaan';
+const _pesan403NonAktif = 'Nasabah nonaktif tidak bisa diedit';
 
 /// Respons yang dikirim backend ketika profil nasabah berakun diubah
 /// (PIL-223): 403 dengan satu pesan pada kunci `error`.
@@ -30,6 +31,17 @@ NetworkException _tolak403() => NetworkException.handleBadResponse(
         requestOptions: RequestOptions(path: '/api/v1/nasabah/nasabah-1'),
         statusCode: 403,
         data: {'error': _pesan403},
+      ),
+    );
+
+/// Respons 403 lain pada endpoint yang sama: nasabah nonaktif, dikirim
+/// sebelum `profil_terkunci` sempat diperiksa (pilah-be/api/views.py:487-488).
+/// Beda alasan, sama-sama 403; klien harus membedakannya lewat pesannya.
+NetworkException _tolak403NonAktif() => NetworkException.handleBadResponse(
+      Response(
+        requestOptions: RequestOptions(path: '/api/v1/nasabah/nasabah-1'),
+        statusCode: 403,
+        data: {'error': _pesan403NonAktif},
       ),
     );
 
@@ -229,6 +241,24 @@ void main() {
       expect(_aktif(tester, _nama), isFalse);
       expect(_aktif(tester, _nomorAnggota), isTrue);
       expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+    });
+
+    testWidgets(
+        '403 nasabah nonaktif tidak mengunci form sebagai profil berakun',
+        (tester) async {
+      // pilah-be memeriksa is_active sebelum profil_terkunci (views.py:487-488)
+      // dan memakai 403 untuk keduanya. Nasabah nonaktif tanpa akun bukan
+      // profil berakun; menyamakan keduanya lewat status code saja salah
+      // mengunci field dan salah menjelaskan alasannya ke pengurus.
+      when(() => cubit.updateNasabah(any(), any()))
+          .thenAnswer((_) async => _tolak403NonAktif());
+
+      await pump(tester, _nasabah(punyaAkun: false));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
+      await tester.pumpAndSettle();
+
+      expect(_aktif(tester, _nama), isTrue);
+      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
     });
 
     testWidgets('kegagalan lain tidak ikut mengunci form', (tester) async {
