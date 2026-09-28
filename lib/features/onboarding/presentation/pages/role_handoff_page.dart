@@ -9,17 +9,20 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 
 class RoleHandoffPage extends StatelessWidget {
   final String title;
   final String message;
   final bool registrationInProgress;
+  final bool showPayoutHistory;
 
   const RoleHandoffPage({
     super.key,
     required this.title,
     required this.message,
     required this.registrationInProgress,
+    this.showPayoutHistory = false,
   });
 
   static const registerNasabahRoute = '/register-nasabah';
@@ -97,6 +100,23 @@ class RoleHandoffPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    if (showPayoutHistory) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push(
+                            RiwayatPencairanNasabahPage.route,
+                          ),
+                          icon: const Icon(Icons.receipt_long_outlined),
+                          label: const Text('Riwayat Nasabah'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(48),
+                            foregroundColor: AppColors.greenDark,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(

@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -108,5 +109,57 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('LOGIN'), findsOneWidget);
+  });
+
+  testWidgets('opens Nasabah history from the Nasabah landing page',
+      (tester) async {
+    final auth = _MockAuthBloc();
+    addTearDown(auth.close);
+    final states = StreamController<AuthenticationStates>();
+    addTearDown(states.close);
+    whenListen(
+      auth,
+      states.stream,
+      initialState: Authenticated(
+        authEntity: const AuthEntity(
+          name: 'Ayu Lestari',
+          email: 'ayu@example.com',
+          photoUrl: '',
+          token: 'jwt',
+          role: 'nasabah',
+        ),
+      ),
+    );
+
+    final router = GoRouter(
+      initialLocation: RoleHandoffPage.nasabahDashboardRoute,
+      routes: [
+        GoRoute(
+          path: RoleHandoffPage.nasabahDashboardRoute,
+          builder: (_, __) => const RoleHandoffPage(
+            title: 'Akun Nasabah Siap',
+            message: 'Beranda Nasabah sedang disiapkan.',
+            registrationInProgress: false,
+            showPayoutHistory: true,
+          ),
+        ),
+        GoRoute(
+          path: RiwayatPencairanNasabahPage.route,
+          builder: (_, __) => const Scaffold(body: Text('Riwayat Pencairan')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      BlocProvider<AuthenticationBloc>.value(
+        value: auth,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.tap(find.text('Riwayat Nasabah'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Riwayat Pencairan'), findsOneWidget);
   });
 }

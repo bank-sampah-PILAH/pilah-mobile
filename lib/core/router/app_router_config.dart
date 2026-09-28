@@ -19,6 +19,12 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
@@ -125,6 +131,34 @@ class AppRouterConfig {
         builder: (context, state) => const TransaksiBaruPage(),
       ),
       GoRoute(
+        path: CatatPencairanPage.route,
+        name: CatatPencairanPage.route,
+        builder: (context, state) =>
+            CatatPencairanPage(args: state.extra! as CatatPencairanArgs),
+      ),
+      GoRoute(
+        path: RiwayatPencairanPage.route,
+        name: RiwayatPencairanPage.route,
+        builder: (context, state) =>
+            RiwayatPencairanPage(args: state.extra as RiwayatPencairanArgs?),
+      ),
+      GoRoute(
+        path: RiwayatPencairanNasabahPage.route,
+        builder: (context, state) => const RiwayatPencairanNasabahPage(),
+      ),
+      GoRoute(
+        path: EditPencairanPage.route,
+        name: EditPencairanPage.route,
+        builder: (context, state) =>
+            EditPencairanPage(pencairan: state.extra! as Pencairan),
+      ),
+      GoRoute(
+        path: RevisiPencairanPage.route,
+        name: RevisiPencairanPage.route,
+        builder: (context, state) =>
+            RevisiPencairanPage(pencairanId: state.extra! as String),
+      ),
+      GoRoute(
         path: InviteGatePage.route,
         name: InviteGatePage.route,
         pageBuilder: (context, state) => MaterialPage(
@@ -185,6 +219,7 @@ class AppRouterConfig {
           message:
               'Beranda Nasabah sedang disiapkan. Akun dan keanggotaan Anda sudah tersimpan.',
           registrationInProgress: false,
+          showPayoutHistory: true,
         ),
       ),
       GoRoute(
