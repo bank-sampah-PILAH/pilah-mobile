@@ -130,6 +130,44 @@ void main() {
     expect(identity.alamat, '');
   });
 
+  test('updateProfile patches only the given fields and returns the result',
+      () async {
+    when(() => network.patch('/api/v1/nasabah/me/profil',
+        data: {'nama': 'New name', 'no_hp': '0811'})).thenAnswer((_) async =>
+        Response(data: {
+          'id': 'u',
+          'nama': 'New name',
+          'email': 'api@example.test',
+          'no_hp': '0811',
+          'jenis_kelamin': '',
+          'tanggal_lahir': null,
+          'alamat': '',
+          'role': 'nasabah'
+        }, requestOptions: RequestOptions(path: '/api/v1/nasabah/me/profil')));
+    final identity = await repository.updateProfile(
+        nama: 'New name', noHp: '0811');
+    expect(identity.name, 'New name');
+    expect(identity.noHp, '0811');
+    verify(() => network.patch('/api/v1/nasabah/me/profil',
+        data: {'nama': 'New name', 'no_hp': '0811'})).called(1);
+  });
+
+  test('updateProfile surfaces a validation error on 400', () async {
+    when(() => network.patch(any(), data: any(named: 'data')))
+        .thenThrow(DioException(
+            requestOptions: RequestOptions(),
+            response: Response(
+                requestOptions: RequestOptions(),
+                statusCode: 400,
+                data: {
+                  'no_hp': ['Nomor HP tidak valid.']
+                })));
+    await expectLater(
+        repository.updateProfile(noHp: 'bad'),
+        throwsA(isA<NasabahApiException>()
+            .having((e) => e.message, 'message', isNot(contains('no_hp')))));
+  });
+
   test('422 parses membership choices from backend errors envelope', () async {
     when(() => network.get(any(), queryParams: any(named: 'queryParams')))
         .thenThrow(DioException(
