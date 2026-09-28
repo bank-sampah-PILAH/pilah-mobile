@@ -38,6 +38,20 @@ import '../features/authentication/domain/use_cases/login_with_google_usecase.da
     as _i934;
 import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
+import '../features/bank_sampah_approval/data/datasources/bank_sampah_approval_remote_data_source.dart'
+    as _i335;
+import '../features/bank_sampah_approval/data/repositories/bank_sampah_approval_repository_impl.dart'
+    as _i807;
+import '../features/bank_sampah_approval/domain/repositories/bank_sampah_approval_repository.dart'
+    as _i390;
+import '../features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart'
+    as _i782;
+import '../features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart'
+    as _i753;
+import '../features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart'
+    as _i243;
+import '../features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart'
+    as _i359;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
 import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
@@ -212,6 +226,9 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i915.JadwalRemoteDataSource>(
         () => _i915.JadwalRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i335.BankSampahApprovalRemoteDataSource>(() =>
+        _i335.BankSampahApprovalRemoteDataSourceImpl(
+            gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1053.ProfileRemoteDataSource>(
         () => _i1053.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i24.AuthRemoteDataSources>(
@@ -227,6 +244,9 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i183.ImagePicker>(),
           gh<_i183.ImageCropper>(),
         ));
+    gh.lazySingleton<_i390.BankSampahApprovalRepository>(() =>
+        _i807.BankSampahApprovalRepositoryImpl(
+            gh<_i335.BankSampahApprovalRemoteDataSource>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i244.OnboardingCubit>(
@@ -245,8 +265,16 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i942.JadwalCubit>(
         () => _i942.JadwalCubit(gh<_i73.JadwalRepository>()));
+    gh.lazySingleton<_i782.AppealMembershipUseCase>(() =>
+        _i782.AppealMembershipUseCase(
+            gh<_i390.BankSampahApprovalRepository>()));
+    gh.lazySingleton<_i753.GetNasabahMembershipsUseCase>(() =>
+        _i753.GetNasabahMembershipsUseCase(
+            gh<_i390.BankSampahApprovalRepository>()));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
+    gh.factory<_i359.NasabahApprovalCubit>(() =>
+        _i359.NasabahApprovalCubit(gh<_i753.GetNasabahMembershipsUseCase>()));
     gh.lazySingleton<_i449.ActivateNasabahUseCase>(
         () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i532.AddNasabahUseCase>(
@@ -289,6 +317,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i417.ResendWaUseCase>(
         () => _i417.ResendWaUseCase(gh<_i1031.TransaksiRepository>()));
+    gh.factory<_i243.NasabahAppealCubit>(
+        () => _i243.NasabahAppealCubit(gh<_i782.AppealMembershipUseCase>()));
     gh.lazySingleton<_i474.TransaksiCubit>(() => _i474.TransaksiCubit(
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i218.GetTransaksiDetailUseCase>(),

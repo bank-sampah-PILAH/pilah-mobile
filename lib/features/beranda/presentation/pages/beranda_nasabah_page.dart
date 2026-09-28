@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -99,7 +100,26 @@ class _HomeSessionState extends State<_HomeSession> {
                       ),
                       const SizedBox(height: 12),
                       Text('Beranda', style: _text(12, color: _muted)),
-                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => context.push(
+                            ApprovalBankSampahListPage.route,
+                          ),
+                          icon: const Icon(Icons.fact_check_outlined, size: 16),
+                          label: Text(
+                            'Lihat Status Approval Bank Sampah',
+                            style: _text(12,
+                                weight: FontWeight.w600, color: _emerald),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: _emerald,
+                            padding: EdgeInsets.zero,
+                            alignment: Alignment.centerLeft,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       NasabahResource<NasabahHome>(
                         key: ValueKey(_selectionVersion),
                         load: () => widget.repository.home(

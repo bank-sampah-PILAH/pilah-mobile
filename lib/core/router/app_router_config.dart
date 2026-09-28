@@ -1,6 +1,9 @@
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -213,6 +216,18 @@ class AppRouterConfig {
         redirect: (_, __) => '/dashboard',
       ),
       GoRoute(
+        path: ApprovalBankSampahListPage.route,
+        name: ApprovalBankSampahListPage.route,
+        builder: (context, state) => const ApprovalBankSampahListPage(),
+      ),
+      GoRoute(
+        path: ApprovalBankSampahDetailPage.route,
+        name: ApprovalBankSampahDetailPage.route,
+        builder: (context, state) => ApprovalBankSampahDetailPage(
+          membership: state.extra as NasabahMembershipEntity,
+        ),
+      ),
+      GoRoute(
         path: RoleHandoffPage.registerIndukRoute,
         builder: (context, state) => const RoleHandoffPage(
           title: 'Profil Pengelola Induk Tersimpan',
@@ -341,7 +356,12 @@ class AppRouterConfig {
       LaporanPage.route,
       TransaksiBaruPage.route
     };
-    final customerPaths = {AppLocations.history, AppLocations.customerBank};
+    final customerPaths = {
+      AppLocations.history,
+      AppLocations.customerBank,
+      ApprovalBankSampahListPage.route,
+      ApprovalBankSampahDetailPage.route,
+    };
     final protected = staffPaths.contains(path) ||
         customerPaths.contains(path) ||
         path == AppLocations.dashboard ||
