@@ -166,13 +166,12 @@ class _HomeSessionState extends State<_HomeSession> {
                               children: [
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () => _details(
-                                      'Riwayat Aktivitas',
-                                      _History(
-                                        repository: widget.repository,
-                                        membershipId: home.membershipId,
-                                      ),
-                                    ),
+                                    onPressed: () => context.push(Uri(
+                                      path: AppLocations.history,
+                                      queryParameters: {
+                                        'keanggotaan_id': home.membershipId,
+                                      },
+                                    ).toString()),
                                     icon: const Icon(Icons.history),
                                     label: const Text('Riwayat Aktivitas'),
                                     style: OutlinedButton.styleFrom(
@@ -227,13 +226,12 @@ class _HomeSessionState extends State<_HomeSession> {
                             const SizedBox(height: 24),
                             _SectionHeading(
                               title: 'Terbaru',
-                              onAll: () => _details(
-                                'Riwayat Aktivitas',
-                                _History(
-                                  repository: widget.repository,
-                                  membershipId: home.membershipId,
-                                ),
-                              ),
+                              onAll: () => context.push(Uri(
+                                path: AppLocations.history,
+                                queryParameters: {
+                                  'keanggotaan_id': home.membershipId,
+                                },
+                              ).toString()),
                             ),
                             const SizedBox(height: 8),
                             NasabahActivityList(
@@ -246,37 +244,6 @@ class _HomeSessionState extends State<_HomeSession> {
                   ),
                 ))),
       );
-}
-
-class _History extends StatefulWidget {
-  const _History({required this.repository, required this.membershipId});
-  final NasabahRepository repository;
-  final String membershipId;
-  @override
-  State<_History> createState() => _HistoryState();
-}
-
-class _HistoryState extends State<_History> {
-  int _page = 1;
-  @override
-  Widget build(BuildContext context) => Column(children: [
-        NasabahResource<NasabahHistory>(
-            key: ValueKey(_page),
-            load: () =>
-                widget.repository.history(widget.membershipId, page: _page),
-            builder: (_, history) => Column(children: [
-                  NasabahActivityList(activities: history.activities),
-                  if (history.hasNext)
-                    TextButton(
-                        onPressed: () => setState(() => _page++),
-                        child: const Text('Berikutnya')),
-                ])),
-        Text('Halaman $_page'),
-        if (_page > 1)
-          TextButton(
-              onPressed: () => setState(() => _page--),
-              child: const Text('Sebelumnya')),
-      ]);
 }
 
 const _emerald = NasabahStyle.emerald;
