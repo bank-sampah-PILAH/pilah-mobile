@@ -11,7 +11,9 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 
-/// Refreshes read-only identity from the nasabah API without requiring membership.
+/// Shows the nasabah's own profile and lets them edit the fields the backend
+/// allows (nama, no_hp, jenis_kelamin, tanggal_lahir, alamat). Email, role and
+/// id are always read-only.
 class ProfilNasabahPage extends StatelessWidget {
   const ProfilNasabahPage({super.key});
 
@@ -241,6 +243,15 @@ class _ProfileBodyState extends State<_ProfileBody> {
       initialDate: _tanggalLahir ?? DateTime(now.year - 20),
       firstDate: DateTime(1900),
       lastDate: now,
+      // The app theme's primary is teal-blue; this screen speaks emerald.
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: NasabahStyle.emerald,
+              onPrimary: Colors.white),
+        ),
+        child: child!,
+      ),
     );
     if (picked != null) setState(() => _tanggalLahir = picked);
   }
@@ -450,16 +461,16 @@ class _ProfileEditForm extends StatelessWidget {
           TextField(
               controller: namaCtrl,
               style: NasabahStyle.text(15),
-              decoration: const InputDecoration(
-                  isDense: true, border: OutlineInputBorder())),
+              cursorColor: NasabahStyle.emerald,
+              decoration: NasabahStyle.input()),
           const SizedBox(height: 16),
           _fieldLabel('NOMOR HP'),
           TextField(
               controller: noHpCtrl,
               keyboardType: TextInputType.phone,
               style: NasabahStyle.text(15),
-              decoration: const InputDecoration(
-                  isDense: true, border: OutlineInputBorder())),
+              cursorColor: NasabahStyle.emerald,
+              decoration: NasabahStyle.input()),
           const SizedBox(height: 16),
           _fieldLabel('JENIS KELAMIN'),
           Row(children: [
@@ -476,7 +487,8 @@ class _ProfileEditForm extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
                   border: Border.all(color: NasabahStyle.line),
-                  borderRadius: BorderRadius.circular(4)),
+                  borderRadius:
+                      BorderRadius.circular(NasabahStyle.inputRadius)),
               child: Row(children: [
                 const Icon(Icons.calendar_today_outlined,
                     size: 18, color: NasabahStyle.emerald),
@@ -495,8 +507,8 @@ class _ProfileEditForm extends StatelessWidget {
               controller: alamatCtrl,
               maxLines: 3,
               style: NasabahStyle.text(15),
-              decoration: const InputDecoration(
-                  isDense: true, border: OutlineInputBorder())),
+              cursorColor: NasabahStyle.emerald,
+              decoration: NasabahStyle.input()),
           if (error != null) ...[
             const SizedBox(height: 12),
             Text(error!,
