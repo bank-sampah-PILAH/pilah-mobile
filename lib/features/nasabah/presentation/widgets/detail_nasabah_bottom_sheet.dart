@@ -9,12 +9,14 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confi
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class DetailNasabahBottomSheet extends StatefulWidget {
-  final Map<String, dynamic> customerData;
+  /// Nasabah yang ditampilkan, memakai entity domain apa adanya.
+  final NasabahEntity nasabah;
+
   final NasabahCubit? nasabahCubit;
 
   const DetailNasabahBottomSheet({
     super.key,
-    required this.customerData,
+    required this.nasabah,
     this.nasabahCubit,
   });
 
@@ -33,32 +35,34 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
   @override
   void initState() {
     super.initState();
-    final id = widget.customerData['id']?.toString();
-    if (id != null && id.isNotEmpty && widget.nasabahCubit != null) {
+    final id = widget.nasabah.id;
+    if (id.isNotEmpty && widget.nasabahCubit != null) {
       _ringkasanFuture = widget.nasabahCubit!.fetchRingkasan(id);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final customerData = widget.customerData;
-    final bool isActive = customerData['isActive'] ?? true;
-    final String initials = customerData['initials'] ?? 'NN';
-    final String name = customerData['name'] ?? 'Unknown';
-    final String phone = customerData['phone'] ?? '-';
-    final String balance = customerData['balance'] ?? 'Rp 0';
-
-    final String idNasabah = customerData['idNasabah'] ?? 'NAS-0000';
-    final String email = (customerData['email'] as String?)?.isNotEmpty == true
-        ? customerData['email']
-        : '-';
-    final String jenisKelamin = customerData['jenisKelamin'] ?? '-';
-    final String tanggalLahir = customerData['tanggalLahir'] ?? '-';
-    final String address = customerData['address'] ?? '-';
+    final nasabah = widget.nasabah;
+    final bool isActive = nasabah.isActive;
+    final String initials = nasabah.initials;
+    final String name = nasabah.name;
+    final String phone = nasabah.phone;
+    final String balance = nasabah.balance;
+    final String idNasabah = nasabah.idNasabah;
+    final String email = nasabah.email.isNotEmpty ? nasabah.email : '-';
+    final String jenisKelamin =
+        nasabah.jenisKelamin.isNotEmpty ? nasabah.jenisKelamin : '-';
+    final String tanggalLahir =
+        nasabah.tanggalLahir.isNotEmpty ? nasabah.tanggalLahir : '-';
+    final String address = nasabah.address.isNotEmpty ? nasabah.address : '-';
     final String tanggalDaftar =
-        (customerData['tanggalDaftar'] as String?)?.isNotEmpty == true
-            ? customerData['tanggalDaftar']
-            : '-';
+        nasabah.tanggalDaftar.isNotEmpty ? nasabah.tanggalDaftar : '-';
+    // Profil nasabah berakun dimiliki pemilik akun dan berlaku lintas bank
+    // sampah, jadi pengurus hanya memegang data keanggotaannya (PIL-223).
+    // Tanpa penanda ini, pengurus baru tahu batas itu dari 403 setelah mengisi
+    // form. Default tidak terkunci: payload lama belum membawa penandanya.
+    final bool punyaAkun = nasabah.punyaAkun;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -213,6 +217,10 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                   ],
                 ),
               ),
+              if (punyaAkun) ...[
+                const SizedBox(height: 16),
+                _buildProfilDikelolaNasabah(),
+              ],
               const SizedBox(height: 24),
 
               // Action Buttons
@@ -227,8 +235,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                           useRootNavigator: true,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (context) => EditNasabahBottomSheet(
-                              customerData: customerData),
+                          builder: (context) =>
+                              EditNasabahBottomSheet(nasabah: nasabah),
                         );
                       },
                       icon: const Icon(Icons.edit, size: 18),
@@ -260,7 +268,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                           builder: (context) => NasabahConfirmationDialog(
                             isActivating: !isActive,
                             customerName: name,
-                            customerId: customerData['id'] ?? idNasabah,
+                            customerId:
+                                nasabah.id.isNotEmpty ? nasabah.id : idNasabah,
                             nasabahCubit: widget.nasabahCubit!,
                           ),
                         );
@@ -292,6 +301,55 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Keterangan bahwa profil ini milik pemilik akun, bukan pengurus.
+  ///
+  /// Sekadar penjelasan tampilan: batasnya tetap ditegakkan server pada setiap
+  /// permintaan (PIL-223), bukan oleh layar ini.
+  Widget _buildProfilDikelolaNasabah() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DetailNasabahBottomSheet.mintTint,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.lock_outline,
+            size: 18,
+            color: DetailNasabahBottomSheet.emeraldPrimary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Profil dikelola oleh nasabah',
+                  style: AppTextStyle.title1.copyWith(
+                    color: DetailNasabahBottomSheet.emeraldPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pengurus hanya dapat mengubah nomor anggota dan status keanggotaan.',
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

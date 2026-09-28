@@ -2,51 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class NasabahListItem extends StatelessWidget {
-  final bool isActive;
-  final String initials;
-  final Color avatarColor;
-  final Color textColor;
-  final String name;
-  final String email;
-  final String phone;
-  final String balance;
-  final String? id;
-  final String? idNasabah;
-  final String? jenisKelamin;
-  final String? tanggalLahir;
-  final String? tanggalDaftar;
-  final String? address;
+  /// Satu nasabah sebagaimana dikembalikan API, dipakai apa adanya.
+  ///
+  /// Sebelumnya widget ini menerima dua belas parameter lepas lalu menyusunnya
+  /// kembali menjadi `Map<String, dynamic>` untuk sheet detail. Bentuk itu
+  /// membuat setiap field baru harus ditambahkan di empat tempat dan
+  /// kesalahan namanya baru terlihat saat dijalankan.
+  final NasabahEntity nasabah;
 
-  /// Pending membership submission (PIL-188): renders a Menunggu badge and
-  /// Setujui/Tolak actions instead of the detail toggle flow.
-  final bool isPending;
   final NasabahCubit? nasabahCubit;
 
   const NasabahListItem({
     super.key,
-    required this.isActive,
-    required this.initials,
-    required this.avatarColor,
-    required this.textColor,
-    required this.name,
-    this.email = '',
-    required this.phone,
-    required this.balance,
-    this.id,
-    this.idNasabah,
-    this.jenisKelamin,
-    this.tanggalLahir,
-    this.tanggalDaftar,
-    this.address,
-    this.isPending = false,
+    required this.nasabah,
     this.nasabahCubit,
   });
+
+  bool get isActive => nasabah.isActive;
+  String get initials => nasabah.initials;
+  Color get avatarColor => nasabah.avatarColor;
+  Color get textColor => nasabah.textColor;
+  String get name => nasabah.name;
+  String get phone => nasabah.phone;
+  String get balance => nasabah.balance;
+
+  /// Pending membership submission (PIL-188): renders a Menunggu badge and
+  /// Setujui/Tolak actions instead of the detail toggle flow.
+  bool get isPending => nasabah.status == 'pending';
+
+  /// Pengenal yang dipakai untuk memanggil API; jatuh ke nomor anggota bila
+  /// payload belum membawa id, sebagaimana perilaku sebelumnya.
+  String get _idUntukApi =>
+      nasabah.id.isNotEmpty ? nasabah.id : nasabah.idNasabah;
 
   void _onTap(BuildContext context) {
     if (isPending) {
@@ -59,20 +53,7 @@ class NasabahListItem extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DetailNasabahBottomSheet(
-        customerData: {
-          'id': id,
-          'isActive': isActive,
-          'initials': initials,
-          'name': name,
-          'email': email,
-          'phone': phone,
-          'balance': balance,
-          'idNasabah': idNasabah,
-          'jenisKelamin': jenisKelamin,
-          'tanggalLahir': tanggalLahir,
-          'tanggalDaftar': tanggalDaftar,
-          'address': address,
-        },
+        nasabah: nasabah,
         nasabahCubit: nasabahCubit,
       ),
     );
@@ -94,7 +75,7 @@ class NasabahListItem extends StatelessWidget {
     );
     if (catatan == null) return;
     final error = await cubit.decideNasabah(
-      id ?? idNasabah ?? '',
+      _idUntukApi,
       approve: !reject,
       catatan: catatan,
     );
