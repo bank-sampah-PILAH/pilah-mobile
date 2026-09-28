@@ -70,6 +70,24 @@ void main() {
     await request;
   });
 
+  test('a slower earlier status response cannot overwrite a refresh', () async {
+    final first =
+        Completer<Either<NetworkException, List<NasabahMembershipEntity>>>();
+    final latest =
+        Completer<Either<NetworkException, List<NasabahMembershipEntity>>>();
+    var calls = 0;
+    when(() => useCase.execute())
+        .thenAnswer((_) => (++calls == 1 ? first : latest).future);
+    final earlierRequest = cubit.load();
+    final refresh = cubit.load(silent: true);
+    latest.complete(const Right([]));
+    await refresh;
+    first.complete(const Right([_membership]));
+    await earlierRequest;
+    expect(cubit.state, const NasabahApprovalLoaded([]));
+    await cubit.close();
+  });
+
   blocTest<NasabahApprovalCubit, NasabahApprovalState>(
     'silent reload skips the Loading state when data is already loaded',
     build: () {
