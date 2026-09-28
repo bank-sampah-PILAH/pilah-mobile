@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_membership_content.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -17,13 +19,32 @@ class NasabahBankPage extends StatelessWidget {
         builder: (context, state) {
           final auth = state is Authenticated ? state.authEntity : null;
           return Scaffold(
-            appBar: AppBar(title: const Text('Detail Bank Sampah')),
-            body: auth?.role != 'nasabah'
-                ? const Center(child: Text('Silakan masuk sebagai nasabah.'))
-                : NasabahMembershipContent(
-                    key: ValueKey((auth!.id, auth.email, auth.token)),
-                    builder: (id) => _NasabahBankBody(membershipId: id),
-                  ),
+            backgroundColor: NasabahStyle.background,
+            appBar: AppBar(
+              backgroundColor: NasabahStyle.background,
+              surfaceTintColor: Colors.transparent,
+              title: Text('Detail Bank Sampah',
+                  style: NasabahStyle.text(20, weight: FontWeight.w700)),
+            ),
+            body: SafeArea(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
+                  child: auth?.role != 'nasabah'
+                      ? Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text('Silakan masuk sebagai nasabah.',
+                              style: NasabahStyle.text(15)),
+                        )
+                      : NasabahMembershipContent(
+                          key: ValueKey((auth!.id, auth.email, auth.token)),
+                          builder: (id) => _NasabahBankBody(membershipId: id),
+                        ),
+                ),
+              ),
+            ),
           );
         },
       );
@@ -52,17 +73,7 @@ class _NasabahBankBodyState extends State<_NasabahBankBody> {
               key: ValueKey(widget.membershipId),
               load: () => di<NasabahRepository>().bank(widget.membershipId),
               registerReload: (reload) => _reload = reload,
-              builder: (_, bank) => Column(children: [
-                Text(bank.name,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                Text(bank.address.isEmpty
-                    ? 'Alamat belum tersedia'
-                    : bank.address),
-                Text(bank.city),
-                Text(bank.phone.isEmpty ? 'Kontak belum tersedia' : bank.phone),
-              ]),
+              builder: (_, bank) => NasabahBankDetail(bank: bank),
             ),
           ],
         ),
