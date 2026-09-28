@@ -59,13 +59,13 @@ class _CurrentStatusStep extends StatelessWidget {
           Icons.hourglass_top_rounded,
           const Color(0xFF9A6400),
           'Menunggu verifikasi pengurus',
-          'Pengurus sedang meninjau pengajuanmu.',
+          'Pengurus sedang meninjau pengajuan Anda.',
         ),
       MembershipStatus.approved => (
           Icons.check_rounded,
           NasabahStyle.emerald,
           'Keanggotaan disetujui',
-          'Kamu sudah bisa menggunakan layanan bank sampah.',
+          'Anda sudah bisa menggunakan layanan bank sampah.',
         ),
       MembershipStatus.rejected => (
           Icons.close_rounded,
