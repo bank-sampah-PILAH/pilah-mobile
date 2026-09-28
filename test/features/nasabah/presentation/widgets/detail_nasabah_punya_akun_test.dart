@@ -80,10 +80,10 @@ void main() {
         (tester) async {
       await tester.pumpWidget(host(_nasabah(punyaAkun: true)));
 
-      expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+      expect(find.text('Email dikelola oleh nasabah'), findsOneWidget);
       expect(
         find.text(
-          'Pengurus hanya dapat mengubah nomor anggota dan status keanggotaan.',
+          'Pengurus dapat memperbaiki data lain, tetapi tidak emailnya.',
         ),
         findsOneWidget,
       );
@@ -104,7 +104,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(host(_nasabah(punyaAkun: false)));
 
-      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
+      expect(find.text('Email dikelola oleh nasabah'), findsNothing);
     });
 
     testWidgets('data tanpa penanda penautan dianggap belum tertaut',
@@ -113,7 +113,7 @@ void main() {
       // membuat pengurus kehilangan kendali atas nasabah tanpa akun.
       await tester.pumpWidget(host(_nasabah()));
 
-      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
+      expect(find.text('Email dikelola oleh nasabah'), findsNothing);
     });
   });
 
@@ -130,7 +130,7 @@ void main() {
     await tester.tap(find.byType(NasabahListItem));
     await tester.pumpAndSettle();
 
-    expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+    expect(find.text('Email dikelola oleh nasabah'), findsOneWidget);
   });
 
   group('Aksi pada sheet detail membawa entity yang sama (PIL-206)', () {
@@ -165,7 +165,7 @@ void main() {
 
       expect(find.byType(EditNasabahBottomSheet), findsOneWidget);
       // Form ikut mengetahui profilnya terkunci, tanpa map perantara.
-      expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+      expect(find.text('Email dikelola oleh nasabah'), findsOneWidget);
     });
 
     testWidgets('Nonaktifkan meminta konfirmasi untuk nasabah itu',
