@@ -25,6 +25,19 @@ import 'package:pilah_mobile/services/di.dart';
 class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
 
+/// Counts calls to [home] so a pull-to-refresh test can assert the load ran
+/// again, without caring how many times the widget tree rebuilds.
+class _CountingNasabahRepository extends PreviewNasabahRepository {
+  _CountingNasabahRepository({required super.bankName});
+  int homeCalls = 0;
+
+  @override
+  Future<NasabahHome> home({String? membershipId}) {
+    homeCalls++;
+    return super.home(membershipId: membershipId);
+  }
+}
+
 class _DashboardCubit extends MockCubit<DashboardState>
     implements DashboardCubit {}
 
@@ -80,6 +93,7 @@ void main() {
   Future<void> loginAsNasabah(
     WidgetTester tester, {
     String bankName = 'Bank Sampah Melati',
+    NasabahRepository? repository,
   }) async {
     final auth = _AuthBloc();
     final sessions = StreamController<AuthenticationStates>();
@@ -90,7 +104,7 @@ void main() {
     di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
-        PreviewNasabahRepository(bankName: bankName));
+        repository ?? PreviewNasabahRepository(bankName: bankName));
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
     whenListen(
       dashboard,
@@ -216,5 +230,24 @@ void main() {
         expect(find.text(otherBank), findsNothing);
       });
     }
+
+    testWidgets('menarik layar ke bawah memuat ulang beranda (PIL-285)',
+        (tester) async {
+      final repository =
+          _CountingNasabahRepository(bankName: 'Bank Sampah Melati');
+      await loginAsNasabah(tester, repository: repository);
+      expect(repository.homeCalls, 1);
+      expect(find.byTooltip('Muat ulang'), findsNothing,
+          reason: 'the manual refresh button is replaced by pull-to-refresh');
+
+      unawaited(
+        tester
+            .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+            .show(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.homeCalls, 2);
+    });
   });
 }

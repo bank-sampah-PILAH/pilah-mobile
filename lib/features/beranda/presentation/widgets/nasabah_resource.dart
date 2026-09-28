@@ -5,27 +5,47 @@ import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 
 /// Owns one request. Re-key on session/selection changes to discard stale data.
+///
+/// Has no refresh affordance of its own — pull-to-refresh lives on the page's
+/// own scrollable (see `AppRefreshIndicator` usages at each call site), which
+/// needs a way to trigger a reload here. [registerReload] is that hand-off: the
+/// state calls it once, in [initState], with a `reload()` closure the page can
+/// store and invoke later from its `RefreshIndicator.onRefresh`.
 class NasabahResource<T> extends StatefulWidget {
   const NasabahResource(
-      {super.key, required this.load, required this.builder, this.onSelect});
+      {super.key,
+      required this.load,
+      required this.builder,
+      this.onSelect,
+      this.registerReload});
   final Future<T> Function() load;
   final Widget Function(BuildContext, T) builder;
   final ValueChanged<String>? onSelect;
+  final void Function(Future<void> Function() reload)? registerReload;
   @override
-  State<NasabahResource<T>> createState() => _NasabahResourceState<T>();
+  State<NasabahResource<T>> createState() => NasabahResourceState<T>();
 }
 
-class _NasabahResourceState<T> extends State<NasabahResource<T>> {
+class NasabahResourceState<T> extends State<NasabahResource<T>> {
   late Future<T> _request;
   @override
   void initState() {
     super.initState();
     _request = widget.load();
+    widget.registerReload?.call(reload);
   }
 
-  void _reload() => setState(() {
-        _request = widget.load();
-      });
+  /// Reloads and returns a future that settles once the new request does, so
+  /// a caller (typically a page-level `RefreshIndicator.onRefresh`) can await
+  /// it and keep its spinner up for the right duration.
+  Future<void> reload() {
+    final future = widget.load();
+    setState(() {
+      _request = future;
+    });
+    return future;
+  }
+
   @override
   Widget build(BuildContext context) => FutureBuilder<T>(
         future: _request,
@@ -53,19 +73,11 @@ class _NasabahResourceState<T> extends State<NasabahResource<T>> {
                             onPressed: () => widget.onSelect!(choice.id),
                             child: Text(choice.bankName)),
                     TextButton(
-                        onPressed: _reload, child: const Text('Coba lagi')),
+                        onPressed: reload, child: const Text('Coba lagi')),
                   ],
                 ));
           }
-          return Column(mainAxisSize: MainAxisSize.min, children: [
-            Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                    tooltip: 'Muat ulang',
-                    onPressed: _reload,
-                    icon: const Icon(Icons.refresh))),
-            widget.builder(context, snapshot.data as T),
-          ]);
+          return widget.builder(context, snapshot.data as T);
         },
       );
 }

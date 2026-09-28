@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
@@ -44,6 +45,7 @@ class _HomeSession extends StatefulWidget {
 class _HomeSessionState extends State<_HomeSession> {
   String? _membershipId;
   int _selectionVersion = 0;
+  Future<void> Function()? _reload;
   void _select(String? id) => setState(() {
         _membershipId = id;
         _selectionVersion++;
@@ -91,176 +93,182 @@ class _HomeSessionState extends State<_HomeSession> {
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                    children: [
-                      _HomeHeader(
-                        name: widget.name,
-                        onOpenProfile: () => context.go(AppLocations.profile),
-                      ),
-                      const SizedBox(height: 12),
-                      Text('Beranda', style: _text(12, color: _muted)),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () => context.push(
-                            ApprovalBankSampahListPage.route,
-                          ),
-                          icon: const Icon(Icons.fact_check_outlined, size: 16),
-                          label: Text(
-                            'Lihat Status Approval Bank Sampah',
-                            style: _text(12,
-                                weight: FontWeight.w600, color: _emerald),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: _emerald,
-                            padding: EdgeInsets.zero,
-                            alignment: Alignment.centerLeft,
+                  child: AppRefreshIndicator(
+                    onRefresh: () => _reload?.call() ?? Future<void>.value(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      children: [
+                        _HomeHeader(
+                          name: widget.name,
+                          onOpenProfile: () => context.go(AppLocations.profile),
+                        ),
+                        const SizedBox(height: 12),
+                        Text('Beranda', style: _text(12, color: _muted)),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => context.push(
+                              ApprovalBankSampahListPage.route,
+                            ),
+                            icon:
+                                const Icon(Icons.fact_check_outlined, size: 16),
+                            label: Text(
+                              'Lihat Status Approval Bank Sampah',
+                              style: _text(12,
+                                  weight: FontWeight.w600, color: _emerald),
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: _emerald,
+                              padding: EdgeInsets.zero,
+                              alignment: Alignment.centerLeft,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      NasabahResource<NasabahHome>(
-                        key: ValueKey(_selectionVersion),
-                        load: () => widget.repository.home(
-                          membershipId: _membershipId,
-                        ),
-                        onSelect: _select,
-                        builder: (context, home) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _BankUnitCard(
-                              unitName: home.bank.name,
-                              onSelect: () => _select(null),
-                              onOpen: () => _details(
-                                'Detail Bank Sampah',
-                                NasabahResource<NasabahBank>(
-                                  load: () =>
-                                      widget.repository.bank(home.membershipId),
-                                  builder: (_, bank) => Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(children: [
-                                      Text(bank.name),
-                                      Text(bank.address.isEmpty
-                                          ? 'Alamat belum tersedia'
-                                          : bank.address),
-                                      Text(bank.city),
-                                      Text(bank.phone.isEmpty
-                                          ? 'Kontak belum tersedia'
-                                          : bank.phone),
-                                    ]),
+                        const SizedBox(height: 8),
+                        NasabahResource<NasabahHome>(
+                          key: ValueKey(_selectionVersion),
+                          load: () => widget.repository.home(
+                            membershipId: _membershipId,
+                          ),
+                          onSelect: _select,
+                          registerReload: (reload) => _reload = reload,
+                          builder: (context, home) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _BankUnitCard(
+                                unitName: home.bank.name,
+                                onSelect: () => _select(null),
+                                onOpen: () => _details(
+                                  'Detail Bank Sampah',
+                                  NasabahResource<NasabahBank>(
+                                    load: () => widget.repository
+                                        .bank(home.membershipId),
+                                    builder: (_, bank) => Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(children: [
+                                        Text(bank.name),
+                                        Text(bank.address.isEmpty
+                                            ? 'Alamat belum tersedia'
+                                            : bank.address),
+                                        Text(bank.city),
+                                        Text(bank.phone.isEmpty
+                                            ? 'Kontak belum tersedia'
+                                            : bank.phone),
+                                      ]),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            _BalanceCard(
-                              balance: home.balance,
-                              bankName: home.bank.name,
-                              latestActivity: home.activities.isEmpty
-                                  ? null
-                                  : home.activities.first,
-                              onOpen: () => _details(
-                                'Saldo',
-                                NasabahResource<NasabahBalance>(
-                                  load: () => widget.repository
-                                      .balance(home.membershipId),
-                                  builder: (_, balance) => Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(children: [
-                                      Text(nasabahRupiah(balance.amount),
-                                          style: _text(
-                                            28,
-                                            weight: FontWeight.w700,
-                                          )),
-                                      Text(balance.updatedAt == null
-                                          ? 'Belum ada perubahan saldo.'
-                                          : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'),
-                                    ]),
+                              const SizedBox(height: 12),
+                              _BalanceCard(
+                                balance: home.balance,
+                                bankName: home.bank.name,
+                                latestActivity: home.activities.isEmpty
+                                    ? null
+                                    : home.activities.first,
+                                onOpen: () => _details(
+                                  'Saldo',
+                                  NasabahResource<NasabahBalance>(
+                                    load: () => widget.repository
+                                        .balance(home.membershipId),
+                                    builder: (_, balance) => Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(children: [
+                                        Text(nasabahRupiah(balance.amount),
+                                            style: _text(
+                                              28,
+                                              weight: FontWeight.w700,
+                                            )),
+                                        Text(balance.updatedAt == null
+                                            ? 'Belum ada perubahan saldo.'
+                                            : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'),
+                                      ]),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () => context.push(Uri(
-                                      path: AppLocations.history,
-                                      queryParameters: {
-                                        'keanggotaan_id': home.membershipId,
-                                      },
-                                    ).toString()),
-                                    icon: const Icon(Icons.history),
-                                    label: const Text('Riwayat Aktivitas'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: _emerald,
-                                      minimumSize: const Size.fromHeight(48),
-                                      side: const BorderSide(
-                                          color: NasabahStyle.line),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: FilledButton.icon(
-                                    onPressed: () => context.push(
-                                      RiwayatPencairanNasabahPage.route,
-                                    ),
-                                    icon: const Icon(Icons.south_west),
-                                    label: const Text('Pencairan'),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: _emerald,
-                                      minimumSize: const Size.fromHeight(48),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            _SectionHeading(
-                              title: 'Jadwal Terdekat',
-                              onAll: () => context.go(JadwalPage.route),
-                            ),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () => context.go(JadwalPage.route),
-                              child: _card(
-                                child: Row(children: [
-                                  const Icon(Icons.calendar_month_outlined,
-                                      color: _emerald),
-                                  const SizedBox(width: 12),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
                                   Expanded(
-                                    child: Text(
-                                      'Lihat jadwal kegiatan bank sampah Anda.',
-                                      style: _text(13, color: _muted),
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => context.push(Uri(
+                                        path: AppLocations.history,
+                                        queryParameters: {
+                                          'keanggotaan_id': home.membershipId,
+                                        },
+                                      ).toString()),
+                                      icon: const Icon(Icons.history),
+                                      label: const Text('Riwayat Aktivitas'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: _emerald,
+                                        minimumSize: const Size.fromHeight(48),
+                                        side: const BorderSide(
+                                            color: NasabahStyle.line),
+                                      ),
                                     ),
                                   ),
-                                  const Icon(Icons.chevron_right,
-                                      color: _muted),
-                                ]),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      onPressed: () => context.push(
+                                        RiwayatPencairanNasabahPage.route,
+                                      ),
+                                      icon: const Icon(Icons.south_west),
+                                      label: const Text('Pencairan'),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: _emerald,
+                                        minimumSize: const Size.fromHeight(48),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 24),
-                            _SectionHeading(
-                              title: 'Terbaru',
-                              onAll: () => context.push(Uri(
-                                path: AppLocations.history,
-                                queryParameters: {
-                                  'keanggotaan_id': home.membershipId,
-                                },
-                              ).toString()),
-                            ),
-                            const SizedBox(height: 8),
-                            NasabahActivityList(
-                              activities: home.activities.take(1).toList(),
-                            ),
-                          ],
+                              const SizedBox(height: 24),
+                              _SectionHeading(
+                                title: 'Jadwal Terdekat',
+                                onAll: () => context.go(JadwalPage.route),
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => context.go(JadwalPage.route),
+                                child: _card(
+                                  child: Row(children: [
+                                    const Icon(Icons.calendar_month_outlined,
+                                        color: _emerald),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'Lihat jadwal kegiatan bank sampah Anda.',
+                                        style: _text(13, color: _muted),
+                                      ),
+                                    ),
+                                    const Icon(Icons.chevron_right,
+                                        color: _muted),
+                                  ]),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              _SectionHeading(
+                                title: 'Terbaru',
+                                onAll: () => context.push(Uri(
+                                  path: AppLocations.history,
+                                  queryParameters: {
+                                    'keanggotaan_id': home.membershipId,
+                                  },
+                                ).toString()),
+                              ),
+                              const SizedBox(height: 8),
+                              NasabahActivityList(
+                                activities: home.activities.take(1).toList(),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ))),
       );
