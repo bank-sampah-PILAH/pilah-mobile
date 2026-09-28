@@ -38,6 +38,7 @@ class NasabahResourceState<T> extends State<NasabahResource<T>> {
   /// a caller (typically a page-level `RefreshIndicator.onRefresh`) can await
   /// it and keep its spinner up for the right duration.
   Future<void> reload() {
+    if (!mounted) return Future<void>.value();
     final future = widget.load();
     setState(() {
       _request = future;

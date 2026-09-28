@@ -302,6 +302,8 @@ class AppRouterConfig {
                     return JadwalPage(
                       key: ValueKey(auth.id ?? auth.email),
                       customerMode: auth.role != 'pengelola',
+                      initialDate: DateTime.tryParse(
+                          state.uri.queryParameters['date'] ?? ''),
                     );
                   },
                 ),

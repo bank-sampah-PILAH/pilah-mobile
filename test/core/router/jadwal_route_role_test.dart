@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -52,7 +53,16 @@ void main() {
     final jadwalCubit = _MockJadwalCubit();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final startsAt = DateTime(today.year, today.month, today.day, 9).toUtc();
+    final selectedDate = today.add(const Duration(days: 2));
+    final dateParam = '${selectedDate.year.toString().padLeft(4, '0')}-'
+        '${selectedDate.month.toString().padLeft(2, '0')}-'
+        '${selectedDate.day.toString().padLeft(2, '0')}';
+    final startsAt = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      9,
+    ).toUtc();
     final schedule = JadwalEntity(
       id: 'jadwal-1',
       bankSampahId: 'bank-1',
@@ -69,10 +79,14 @@ void main() {
     );
     when(() => jadwalCubit.state).thenReturn(JadwalLoaded([schedule]));
     when(() => jadwalCubit.loadJadwal(date: today)).thenAnswer((_) async {});
+    when(() => jadwalCubit.loadNextPage()).thenAnswer((_) async {});
+    when(() => jadwalCubit.loadJadwal(date: selectedDate))
+        .thenAnswer((_) async {});
     _stubCalendarLoad(jadwalCubit, today);
+    _stubCalendarLoad(jadwalCubit, selectedDate);
 
     final router = AppRouterConfig.getRouter();
-    router.go(JadwalPage.route);
+    router.go('${JadwalPage.route}?date=$dateParam');
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
@@ -125,15 +139,70 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    router.go(JadwalPage.route);
+    router.go('${JadwalPage.route}?date=$dateParam');
     await tester.pumpAndSettle();
 
     expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
     expect(find.text('Balai Warga'), findsOneWidget);
+    verify(() => jadwalCubit.loadJadwal(date: selectedDate)).called(1);
     expect(find.byType(FloatingActionButton), findsNothing);
     expect(find.text('Batalkan'), findsNothing);
     expect(find.text('Terbitkan'), findsNothing);
     expect(find.text('Tandai Selesai'), findsNothing);
+
+    final nextDate = selectedDate.add(const Duration(days: 1));
+    final nextDateParam = '${nextDate.year.toString().padLeft(4, '0')}-'
+        '${nextDate.month.toString().padLeft(2, '0')}-'
+        '${nextDate.day.toString().padLeft(2, '0')}';
+    when(() => jadwalCubit.loadJadwal(date: nextDate)).thenAnswer((_) async {});
+    _stubCalendarLoad(jadwalCubit, nextDate);
+    router.go('${JadwalPage.route}?date=$nextDateParam');
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(formatJadwalDayHeading(nextDate, today: today)),
+      findsOneWidget,
+    );
+    verify(() => jadwalCubit.loadJadwal(date: nextDate)).called(1);
+
+    final manualDate = DateTime(
+      nextDate.year,
+      nextDate.month,
+      nextDate.day == 15 ? 16 : 15,
+    );
+    when(() => jadwalCubit.loadJadwal(date: manualDate))
+        .thenAnswer((_) async {});
+    await tester.tap(find.byKey(const ValueKey('jadwal-calendar-toggle')));
+    await tester.pumpAndSettle();
+    final manualDateCell = find.byKey(ValueKey(
+      'jadwal-date-${manualDate.year}-${manualDate.month}-${manualDate.day}',
+    ));
+    await tester.ensureVisible(manualDateCell);
+    await tester.tap(manualDateCell);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(formatJadwalDayHeading(manualDate, today: today)),
+      findsOneWidget,
+    );
+
+    authenticationStates.add(
+      Authenticated(
+        authEntity: const AuthEntity(
+          id: 'nasabah-1',
+          name: 'Nasabah',
+          email: 'nasabah@example.com',
+          photoUrl: '',
+          token: 'token',
+          role: 'nasabah',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text(formatJadwalDayHeading(nextDate, today: today)),
+      findsOneWidget,
+    );
+    verify(() => jadwalCubit.loadJadwal(date: nextDate)).called(1);
   });
 }
 

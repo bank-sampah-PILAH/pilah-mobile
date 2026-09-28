@@ -12,15 +12,16 @@ import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calenda
 class JadwalPage extends StatefulWidget {
   static const route = '/jadwal';
   final bool customerMode;
+  final DateTime? initialDate;
 
-  const JadwalPage({super.key, this.customerMode = false});
+  const JadwalPage({super.key, this.customerMode = false, this.initialDate});
 
   @override
   State<JadwalPage> createState() => _JadwalPageState();
 }
 
 class _JadwalPageState extends State<JadwalPage> {
-  DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
+  late DateTime _selectedDate;
   bool _isMonthExpanded = false;
   late final ScrollController _scrollController;
   DateTime? _markerMonth;
@@ -28,9 +29,21 @@ class _JadwalPageState extends State<JadwalPage> {
   @override
   void initState() {
     super.initState();
+    _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
     context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
     _loadCalendarDatesFor(_selectedDate);
+  }
+
+  @override
+  void didUpdateWidget(covariant JadwalPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final requestedDate = widget.initialDate;
+    if (requestedDate != null) {
+      _selectDate(requestedDate);
+    } else if (oldWidget.initialDate != null) {
+      _selectDate(DateTime.now());
+    }
   }
 
   @override

@@ -1,11 +1,8 @@
-import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
-import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
-import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'dart:async';
-import 'package:dartz/dartz.dart';
 import 'dart:ui' show SemanticsAction;
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,14 +16,19 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
+import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -50,6 +52,8 @@ class _DashboardCubit extends MockCubit<DashboardState>
 
 class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
+
+class _JadwalRepository extends Mock implements JadwalRepository {}
 
 class _PayoutUseCases extends Mock implements PencairanUseCases {}
 
@@ -109,16 +113,26 @@ void main() {
     final sessions = StreamController<AuthenticationStates>();
     final dashboard = _DashboardCubit();
     final activity = _ActivityCubit();
+    final jadwalRepository = _JadwalRepository();
     final invites = InviteTokenStore();
     final payoutUseCases = _PayoutUseCases();
     when(() => payoutUseCases.getRiwayat(any())).thenAnswer(
       (_) async => const Right<NetworkException, List<Pencairan>>([]),
     );
 
+    when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
+      (_) async => Right(const JadwalPageResult(
+        items: [],
+        totalCount: 0,
+        hasMore: false,
+      )),
+    );
+
     di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
         repository ?? PreviewNasabahRepository(bankName: bankName));
+    di.registerSingleton<JadwalRepository>(jadwalRepository);
     di.registerFactory<RiwayatPencairanCubit>(
       () => RiwayatPencairanCubit(payoutUseCases),
     );
@@ -145,6 +159,7 @@ void main() {
       await di.unregister<InviteTokenStore>();
       await di.unregister<RiwayatPencairanCubit>();
       await di.unregister<NasabahRepository>();
+      await di.unregister<JadwalRepository>();
       invites.dispose();
     });
 
