@@ -105,4 +105,60 @@ void main() {
     expect(find.text('17/05/1998'), findsOneWidget);
     expect(find.text('Jl. Melati No. 1'), findsOneWidget);
   });
+
+  testWidgets(
+      'menyunting nomor HP dan menyimpan mengirim body parsial yang benar',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+
+    final noHpField = find.widgetWithText(TextField, '081234567890');
+    expect(noHpField, findsOneWidget);
+    await tester.enterText(noHpField, '089900001111');
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updateCalls.single, {'no_hp': '089900001111'});
+  });
+
+  testWidgets('penyimpanan yang berhasil menampilkan nilai baru',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+
+    final noHpField = find.widgetWithText(TextField, '081234567890');
+    await tester.enterText(noHpField, '089900001111');
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('089900001111'), findsOneWidget);
+    expect(find.text('Simpan Perubahan'), findsNothing);
+  });
+
+  testWidgets(
+      'kesalahan validasi saat menyimpan ditampilkan tanpa membuat halaman crash',
+      (tester) async {
+    await open(tester);
+    repository.failNextUpdateWith =
+        const NasabahApiException('Nomor HP tidak valid.');
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+
+    final noHpField = find.widgetWithText(TextField, '081234567890');
+    await tester.enterText(noHpField, 'bukan-nomor');
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Nomor HP tidak valid.'), findsOneWidget);
+    expect(find.text('Simpan Perubahan'), findsOneWidget);
+  });
 }
