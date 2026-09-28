@@ -9,6 +9,12 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
+/// Pesan 403 yang berarti profilnya milik pemilik akun (PIL-223). Endpoint
+/// ini juga membalas 403 untuk nasabah nonaktif dengan pesan lain, jadi
+/// status code sendirian tidak cukup untuk mengunci form.
+const _pesanProfilTerkunci =
+    'Nasabah dengan akun hanya bisa diubah pada data keanggotaan';
+
 class EditNasabahBottomSheet extends StatefulWidget {
   /// Nasabah yang disunting, memakai entity domain apa adanya.
   final NasabahEntity nasabah;
@@ -474,10 +480,12 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       return;
     }
 
-    // 403 pada endpoint ini hanya berarti satu hal: profilnya milik pemilik
-    // akun (PIL-223). Kunci formnya supaya pengurus tidak mengetik ulang hasil
-    // yang sama, dan biarkan nomor anggota tetap dapat diperbaiki.
-    if (error.response?.statusCode == 403) {
+    // 403 pada endpoint ini punya dua penyebab: nasabah nonaktif (diperiksa
+    // lebih dulu di pilah-be) dan profil milik pemilik akun (PIL-223).
+    // Hanya pesan yang kedua berarti profilnya terkunci; menyamakan keduanya
+    // lewat status code saja mengunci nasabah nonaktif tanpa akun juga.
+    if (error.response?.statusCode == 403 &&
+        error.displayMessage == _pesanProfilTerkunci) {
       setState(() => _ditolakServer = true);
     }
 
