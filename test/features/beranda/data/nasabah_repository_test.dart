@@ -108,6 +108,13 @@ void main() {
     expect((await repository.bank('b')).logoUrl, isNull);
   });
 
+  test('bank details carry the organization type for unit/induk labelling',
+      () async {
+    respond('/api/v1/nasabah/me/bank-sampah',
+        {'nama': 'Mawar', 'jenis_organisasi': 'unit'});
+    expect((await repository.bank('b')).organizationType, 'unit');
+  });
+
   test('profile uses nasabah endpoint without membership parameters', () async {
     respond('/api/v1/nasabah/me/profil', {
       'id': 'u',
