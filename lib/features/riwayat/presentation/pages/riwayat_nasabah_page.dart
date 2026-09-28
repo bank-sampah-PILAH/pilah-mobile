@@ -3,13 +3,21 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/widgets/nasabah_setoran_detail_sheet.dart';
 
 typedef HistoryLoader = Future<NasabahHistory> Function(int page);
+typedef HistoryDetailLoader = Future<NasabahSetoranDetail> Function(
+    String transactionId);
 
 class RiwayatNasabahPage extends StatefulWidget {
-  const RiwayatNasabahPage({super.key, required this.loadPage});
+  const RiwayatNasabahPage({
+    super.key,
+    required this.loadPage,
+    required this.loadDetail,
+  });
 
   final HistoryLoader loadPage;
+  final HistoryDetailLoader loadDetail;
 
   @override
   State<RiwayatNasabahPage> createState() => _RiwayatNasabahPageState();
@@ -27,6 +35,18 @@ class _RiwayatNasabahPageState extends State<RiwayatNasabahPage> {
   void initState() {
     super.initState();
     _load(reset: true);
+  }
+
+  void _showDetail(NasabahActivity activity) {
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => NasabahSetoranDetailSheet(
+        loadDetail: () => widget.loadDetail(activity.id),
+      ),
+    );
   }
 
   Future<void> _load({bool reset = false}) async {
@@ -75,7 +95,7 @@ class _RiwayatNasabahPageState extends State<RiwayatNasabahPage> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Riwayat Aktivitas',
+                        'Riwayat Setoran',
                         style: NasabahStyle.text(20, weight: FontWeight.w600),
                       ),
                     ),
@@ -93,7 +113,10 @@ class _RiwayatNasabahPageState extends State<RiwayatNasabahPage> {
                 ),
                 const SizedBox(height: 16),
                 if (_activities.isNotEmpty)
-                  NasabahActivityList(activities: _activities),
+                  NasabahActivityList(
+                    activities: _activities,
+                    onTap: _showDetail,
+                  ),
                 if (_loading)
                   const Padding(
                       padding: EdgeInsets.all(24),

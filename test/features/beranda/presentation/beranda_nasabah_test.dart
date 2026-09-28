@@ -1,16 +1,14 @@
-import 'package:dartz/dartz.dart';
-import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
-import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
-import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'dart:async';
 import 'dart:ui' show SemanticsAction;
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -18,12 +16,19 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
+import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -49,6 +54,8 @@ class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
+
+class _PayoutUseCases extends Mock implements PencairanUseCases {}
 
 class _TestAppEnvironment implements AppEnvironment {
   const _TestAppEnvironment();
@@ -95,6 +102,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final router = AppRouterConfig.getRouter();
   tearDownAll(router.dispose);
+  setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
 
   Future<void> loginAsNasabah(
     WidgetTester tester, {
@@ -107,6 +115,10 @@ void main() {
     final activity = _ActivityCubit();
     final jadwalRepository = _JadwalRepository();
     final invites = InviteTokenStore();
+    final payoutUseCases = _PayoutUseCases();
+    when(() => payoutUseCases.getRiwayat(any())).thenAnswer(
+      (_) async => const Right<NetworkException, List<Pencairan>>([]),
+    );
 
     when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => Right(const JadwalPageResult(
@@ -121,6 +133,9 @@ void main() {
     di.registerSingleton<NasabahRepository>(
         repository ?? PreviewNasabahRepository(bankName: bankName));
     di.registerSingleton<JadwalRepository>(jadwalRepository);
+    di.registerFactory<RiwayatPencairanCubit>(
+      () => RiwayatPencairanCubit(payoutUseCases),
+    );
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
     whenListen(
       dashboard,
@@ -142,6 +157,7 @@ void main() {
       await activity.close();
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
+      await di.unregister<RiwayatPencairanCubit>();
       await di.unregister<NasabahRepository>();
       await di.unregister<JadwalRepository>();
       invites.dispose();
@@ -178,30 +194,51 @@ void main() {
       expect(find.text('Beranda'), findsWidgets);
     });
 
-    for (final label in ['Saldo', 'Riwayat Aktivitas', 'Detail Bank Sampah']) {
-      testWidgets('beranda menyediakan akses aktif ke $label', (tester) async {
-        final semantics = tester.ensureSemantics();
-        try {
-          await loginAsNasabah(tester);
-          final entry = find.text(label);
-          await tester.scrollUntilVisible(entry, 200);
-          await tester.pumpAndSettle();
-          expect(entry, findsOneWidget);
-          await tester.ensureVisible(entry);
-          await tester.pumpAndSettle();
-          expect(
-            tester
-                .getSemantics(entry)
-                .getSemanticsData()
-                .hasAction(SemanticsAction.tap),
-            isTrue,
-            reason: '$label harus bisa diakses, bukan sekadar teks statis',
-          );
-        } finally {
-          semantics.dispose();
-        }
-      });
-    }
+    testWidgets('saldo card is tappable and opens Tabungan', (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await loginAsNasabah(tester);
+        final amount = find.text('Rp 12.500,50');
+        await tester.scrollUntilVisible(amount, 200);
+        await tester.pumpAndSettle();
+        expect(find.text('Riwayat Aktivitas'), findsNothing);
+        expect(find.text('Pencairan'), findsNothing);
+        expect(
+          tester
+              .getSemantics(amount)
+              .getSemanticsData()
+              .hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+        await tester.tap(amount);
+        await tester.pumpAndSettle();
+        expect(find.text('Tabungan Saya'), findsOneWidget);
+        expect(find.text('Riwayat Setoran'), findsOneWidget);
+      } finally {
+        semantics.dispose();
+      }
+    });
+
+    testWidgets('beranda menyediakan akses aktif ke Detail Bank Sampah',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await loginAsNasabah(tester);
+        final entry = find.text('Detail Bank Sampah');
+        await tester.scrollUntilVisible(entry, 200);
+        await tester.pumpAndSettle();
+        expect(entry, findsOneWidget);
+        expect(
+          tester
+              .getSemantics(entry)
+              .getSemanticsData()
+              .hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+      } finally {
+        semantics.dispose();
+      }
+    });
 
     testWidgets('nasabah tidak melihat menu pengelola', (tester) async {
       await loginAsNasabah(tester);
@@ -211,8 +248,6 @@ void main() {
     });
 
     for (final entry in {
-      'Saldo': 'Belum ada perubahan saldo.',
-      'Riwayat Aktivitas': 'Belum ada aktivitas',
       'Detail Bank Sampah': 'Jl. Melati',
     }.entries) {
       testWidgets('ketuk ${entry.key} membuka informasi dan dapat ditutup', (
@@ -224,13 +259,9 @@ void main() {
         await tester.tap(find.text(entry.key));
         await tester.pumpAndSettle();
         expect(find.text(entry.value), findsOneWidget);
-        if (entry.key == 'Riwayat Aktivitas') {
-          await tester.tap(find.byTooltip('Kembali ke Beranda'));
-        } else {
-          await tester.ensureVisible(find.text('Tutup'));
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Tutup'));
-        }
+        await tester.ensureVisible(find.text('Tutup'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Tutup'));
         await tester.pumpAndSettle();
         expect(find.text(entry.value), findsNothing);
         await tester.scrollUntilVisible(find.text('Beranda'), -300);

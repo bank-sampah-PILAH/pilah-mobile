@@ -13,7 +13,6 @@ import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resou
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 
@@ -170,63 +169,12 @@ class _HomeSessionState extends State<_HomeSession> {
                                 latestActivity: home.activities.isEmpty
                                     ? null
                                     : home.activities.first,
-                                onOpen: () => _details(
-                                  'Saldo',
-                                  NasabahResource<NasabahBalance>(
-                                    load: () => widget.repository
-                                        .balance(home.membershipId),
-                                    builder: (_, balance) => Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(children: [
-                                        Text(nasabahRupiah(balance.amount),
-                                            style: _text(
-                                              28,
-                                              weight: FontWeight.w700,
-                                            )),
-                                        Text(balance.updatedAt == null
-                                            ? 'Belum ada perubahan saldo.'
-                                            : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'),
-                                      ]),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => context.push(Uri(
-                                        path: AppLocations.history,
-                                        queryParameters: {
-                                          'keanggotaan_id': home.membershipId,
-                                        },
-                                      ).toString()),
-                                      icon: const Icon(Icons.history),
-                                      label: const Text('Riwayat Aktivitas'),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: _emerald,
-                                        minimumSize: const Size.fromHeight(48),
-                                        side: const BorderSide(
-                                            color: NasabahStyle.line),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: FilledButton.icon(
-                                      onPressed: () => context.push(
-                                        RiwayatPencairanNasabahPage.route,
-                                      ),
-                                      icon: const Icon(Icons.south_west),
-                                      label: const Text('Pencairan'),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: _emerald,
-                                        minimumSize: const Size.fromHeight(48),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                onOpen: () => context.push(Uri(
+                                  path: AppLocations.history,
+                                  queryParameters: {
+                                    'keanggotaan_id': home.membershipId,
+                                  },
+                                ).toString()),
                               ),
                               const SizedBox(height: 24),
                               _SectionHeading(
@@ -393,90 +341,67 @@ class _BalanceCard extends StatelessWidget {
   final NasabahActivity? latestActivity;
   final VoidCallback onOpen;
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: _emerald,
+  Widget build(BuildContext context) => Material(
+        color: _emerald,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onOpen,
           borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    'SALDO DI ${bankName.toUpperCase()}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _text(
-                      11,
-                      weight: FontWeight.w600,
-                      color: NasabahStyle.emeraldLight,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'SALDO DI ${bankName.toUpperCase()}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _text(
+                          11,
+                          weight: FontWeight.w600,
+                          color: NasabahStyle.emeraldLight,
+                        ),
+                      ),
                     ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0x22FFFFFF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 20,
+                        color: NasabahStyle.emeraldLight,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  nasabahRupiah(balance.amount),
+                  style: _text(
+                    28,
+                    weight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1.22,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0x22FFFFFF),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 20,
-                    color: NasabahStyle.emeraldLight,
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  latestActivity == null
+                      ? balance.updatedAt == null
+                          ? 'Saldo tabungan saat ini'
+                          : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'
+                      : '${_activityTitle(latestActivity!.type)} · ${nasabahDate(latestActivity!.date)}',
+                  style: _text(12, color: NasabahStyle.emeraldLight),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              nasabahRupiah(balance.amount),
-              style: _text(
-                28,
-                weight: FontWeight.w700,
-                color: Colors.white,
-                height: 1.22,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    latestActivity == null
-                        ? balance.updatedAt == null
-                            ? 'Saldo tabungan saat ini'
-                            : 'Diperbarui ${nasabahDate(balance.updatedAt!)}'
-                        : '${_activityTitle(latestActivity!.type)} · ${nasabahDate(latestActivity!.date)}',
-                    style: _text(
-                      12,
-                      color: NasabahStyle.emeraldLight,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: const Color(0x22000000),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: onOpen,
-                  child: Text(
-                    'Saldo',
-                    style: _text(
-                      13,
-                      weight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       );
 }

@@ -38,8 +38,11 @@ class _JadwalPageState extends State<JadwalPage> {
   @override
   void didUpdateWidget(covariant JadwalPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!DateUtils.isSameDay(oldWidget.initialDate, widget.initialDate)) {
-      _selectDate(widget.initialDate ?? DateTime.now());
+    final requestedDate = widget.initialDate;
+    if (requestedDate != null) {
+      _selectDate(requestedDate);
+    } else if (oldWidget.initialDate != null) {
+      _selectDate(DateTime.now());
     }
   }
 

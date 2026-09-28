@@ -54,6 +54,16 @@ Future<void> showPencairanDetailSheet(
   );
 }
 
+Future<void> showNasabahPencairanDetailSheet(
+  BuildContext context,
+  Pencairan item,
+) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _DetailPencairanSheet(item: item),
+    );
+
 /// Marks a pencairan a pengurus has edited (PIL-230).
 class DiperbaruiLabel extends StatelessWidget {
   const DiperbaruiLabel({super.key});
@@ -72,13 +82,13 @@ class DiperbaruiLabel extends StatelessWidget {
 
 class _DetailPencairanSheet extends StatelessWidget {
   final Pencairan item;
-  final VoidCallback onEdit;
-  final VoidCallback onRiwayatPerubahan;
+  final VoidCallback? onEdit;
+  final VoidCallback? onRiwayatPerubahan;
 
   const _DetailPencairanSheet({
     required this.item,
-    required this.onEdit,
-    required this.onRiwayatPerubahan,
+    this.onEdit,
+    this.onRiwayatPerubahan,
   });
 
   @override
@@ -117,13 +127,14 @@ class _DetailPencairanSheet extends StatelessWidget {
             item.dicatatOlehNama.isEmpty ? '-' : item.dicatatOlehNama,
           ),
           const SizedBox(height: 16),
-          OutlinedButton.icon(
-            key: const Key('edit-pencairan'),
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit),
-            label: const Text('Edit Pencairan'),
-          ),
-          if (item.diperbarui)
+          if (onEdit != null)
+            OutlinedButton.icon(
+              key: const Key('edit-pencairan'),
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit Pencairan'),
+            ),
+          if (item.diperbarui && onRiwayatPerubahan != null)
             TextButton.icon(
               key: const Key('riwayat-perubahan-pencairan'),
               onPressed: onRiwayatPerubahan,

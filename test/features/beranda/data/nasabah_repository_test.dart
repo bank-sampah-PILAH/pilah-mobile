@@ -73,6 +73,38 @@ void main() {
         queryParams: {'keanggotaan_id': 'member-b', 'page': 2})).called(1);
   });
 
+  test('setoran detail is loaded for the selected membership', () async {
+    const id = '6b4c70b3-fd54-481b-a0a7-cbe06695fd83';
+    const path = '/api/v1/nasabah/me/riwayat/$id';
+    respond(path, {
+      'id': id,
+      'tanggal': '2026-09-23T09:00:00Z',
+      'tipe': 'setoran',
+      'total_nilai': '5000.00',
+      'catatan': 'Setoran rutin',
+      'saldo_setelah_transaksi': '15000.00',
+      'items': [
+        {
+          'id': 'item-1',
+          'jenis_sampah_id': 'kind-1',
+          'nama_sampah_snapshot': 'Plastik PET',
+          'harga_snapshot': '5000.00',
+          'berat': '1.000',
+          'subtotal': '5000.00',
+        },
+      ],
+    });
+
+    final detail = await repository.setoranDetail('member-b', id);
+
+    expect(detail.amount, '5000.00');
+    expect(detail.balanceAfter, '15000.00');
+    expect(detail.items.single.name, 'Plastik PET');
+    expect(detail.items.single.weight, '1.000');
+    verify(() => network.get(path, queryParams: {'keanggotaan_id': 'member-b'}))
+        .called(1);
+  });
+
   test('balance and bank details are scoped to selected membership', () async {
     respond('/api/v1/nasabah/me/saldo',
         {'total_saldo': '0.00', 'updated_at': null});

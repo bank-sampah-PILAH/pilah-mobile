@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_activity_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 
@@ -39,6 +38,7 @@ class NasabahResourceState<T> extends State<NasabahResource<T>> {
   /// a caller (typically a page-level `RefreshIndicator.onRefresh`) can await
   /// it and keep its spinner up for the right duration.
   Future<void> reload() {
+    if (!mounted) return Future<void>.value();
     final future = widget.load();
     setState(() {
       _request = future;
@@ -95,81 +95,34 @@ String nasabahDate(DateTime date) {
 }
 
 class NasabahActivityList extends StatelessWidget {
-  const NasabahActivityList({super.key, required this.activities});
+  const NasabahActivityList({
+    super.key,
+    required this.activities,
+    this.onTap,
+  });
+
   final List<NasabahActivity> activities;
+  final ValueChanged<NasabahActivity>? onTap;
 
   @override
   Widget build(BuildContext context) => activities.isEmpty
       ? const NasabahCard(
           child: Center(child: Text('Belum ada aktivitas.')),
         )
-      : Column(children: [
-          for (final item in activities)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: NasabahCard(
-                padding: 12,
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.greenLight,
-                      child: Icon(
-                        item.type.toLowerCase() == 'pencairan'
-                            ? Icons.south_west
-                            : Icons.recycling_outlined,
-                        size: 18,
-                        color: AppColors.greenDark,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _activityTitle(item.type),
-                            style: NasabahStyle.text(
-                              14,
-                              weight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            '${nasabahDate(item.date)} · ${_time(item.date)}',
-                            style: NasabahStyle.text(
-                              12,
-                              color: NasabahStyle.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${item.type.toLowerCase() == 'pencairan' ? '− ' : '+ '}${nasabahRupiah(item.amount)}',
-                      style: NasabahStyle.text(
-                        13,
-                        weight: FontWeight.w600,
-                        color: item.type.toLowerCase() == 'pencairan'
-                            ? Colors.red.shade700
-                            : AppColors.greenDark,
-                        tabularFigures: true,
-                      ),
-                    ),
-                  ],
-                ),
+      : Column(
+          children: [
+            for (final item in activities)
+              NasabahActivityCard(
+                title: switch (item.type.toLowerCase()) {
+                  'setoran' => 'Setoran',
+                  'pencairan' => 'Pencairan',
+                  _ => item.type,
+                },
+                date: item.date,
+                amount: nasabahRupiah(item.amount),
+                isWithdrawal: item.type.toLowerCase() == 'pencairan',
+                onTap: onTap == null ? null : () => onTap!(item),
               ),
-            )
-        ]);
-}
-
-String _activityTitle(String type) => switch (type.toLowerCase()) {
-      'setoran' => 'Setoran',
-      'pencairan' => 'Pencairan tunai',
-      _ => type,
-    };
-
-String _time(DateTime date) {
-  final local = date.toLocal();
-  return '${local.hour.toString().padLeft(2, '0')}.${local.minute.toString().padLeft(2, '0')}';
+          ],
+        );
 }

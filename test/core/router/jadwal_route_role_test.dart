@@ -79,6 +79,7 @@ void main() {
     );
     when(() => jadwalCubit.state).thenReturn(JadwalLoaded([schedule]));
     when(() => jadwalCubit.loadJadwal(date: today)).thenAnswer((_) async {});
+    when(() => jadwalCubit.loadNextPage()).thenAnswer((_) async {});
     when(() => jadwalCubit.loadJadwal(date: selectedDate))
         .thenAnswer((_) async {});
     _stubCalendarLoad(jadwalCubit, today);
@@ -158,6 +159,45 @@ void main() {
     router.go('${JadwalPage.route}?date=$nextDateParam');
     await tester.pumpAndSettle();
 
+    expect(
+      find.text(formatJadwalDayHeading(nextDate, today: today)),
+      findsOneWidget,
+    );
+    verify(() => jadwalCubit.loadJadwal(date: nextDate)).called(1);
+
+    final manualDate = DateTime(
+      nextDate.year,
+      nextDate.month,
+      nextDate.day == 15 ? 16 : 15,
+    );
+    when(() => jadwalCubit.loadJadwal(date: manualDate))
+        .thenAnswer((_) async {});
+    await tester.tap(find.byKey(const ValueKey('jadwal-calendar-toggle')));
+    await tester.pumpAndSettle();
+    final manualDateCell = find.byKey(ValueKey(
+      'jadwal-date-${manualDate.year}-${manualDate.month}-${manualDate.day}',
+    ));
+    await tester.ensureVisible(manualDateCell);
+    await tester.tap(manualDateCell);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(formatJadwalDayHeading(manualDate, today: today)),
+      findsOneWidget,
+    );
+
+    authenticationStates.add(
+      Authenticated(
+        authEntity: const AuthEntity(
+          id: 'nasabah-1',
+          name: 'Nasabah',
+          email: 'nasabah@example.com',
+          photoUrl: '',
+          token: 'token',
+          role: 'nasabah',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
     expect(
       find.text(formatJadwalDayHeading(nextDate, today: today)),
       findsOneWidget,

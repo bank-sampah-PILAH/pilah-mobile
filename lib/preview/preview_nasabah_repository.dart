@@ -45,4 +45,8 @@ class PreviewNasabahRepository implements NasabahRepository {
   @override
   Future<NasabahHistory> history(String membershipId, {int page = 1}) async =>
       const NasabahHistory([], false);
+  @override
+  Future<NasabahSetoranDetail> setoranDetail(
+          String membershipId, String transactionId) =>
+      throw UnsupportedError('No preview setoran details');
 }
