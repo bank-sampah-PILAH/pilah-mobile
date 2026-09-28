@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
@@ -27,7 +27,7 @@ class NasabahModel extends NasabahEntity {
 
   factory NasabahModel.fromJson(Map<String, dynamic> json) {
     final nama = (json['nama'] as String?)?.trim() ?? '';
-    final palette = _avatarPaletteFor(nama);
+    final palette = avatarPaletteFor(nama);
     return NasabahModel(
       id: json['id']?.toString() ?? '',
       idNasabah: json['kode']?.toString() ?? '',
@@ -86,13 +86,6 @@ class NasabahModel extends NasabahEntity {
     return 'Rp $sign${buffer.toString()}';
   }
 
-  static String initialsOf(String name) {
-    final parts =
-        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return 'NN';
-    return parts.take(2).map((p) => p[0].toUpperCase()).join();
-  }
-
   /// Maps the backend gender value to the UI label used by the dropdowns.
   static String genderLabel(String? value) {
     switch (value) {
@@ -133,20 +126,6 @@ class NasabahModel extends NasabahEntity {
     final year = parts[2];
     return '$year-$month-$day';
   }
-
-  static (Color, Color) _avatarPaletteFor(String name) {
-    if (name.isEmpty) return _avatarPalette.first;
-    return _avatarPalette[name.hashCode.abs() % _avatarPalette.length];
-  }
-
-  static const List<(Color, Color)> _avatarPalette = [
-    (Color(0xFFEAF5EC), Color(0xFF2F6B45)), // green
-    (Color(0xFFDBEAFE), Color(0xFF1E40AF)), // blue
-    (Color(0xFFF3E8FF), Color(0xFF6B21A8)), // purple
-    (Color(0xFFFFF8D6), Color(0xFFD4A017)), // yellow
-    (Color(0xFFFFEDD5), Color(0xFF9A3412)), // orange
-    (Color(0xFFCCFBF1), Color(0xFF0F766E)), // teal
-  ];
 }
 
 extension NasabahRingkasanMapper on NasabahRingkasan {

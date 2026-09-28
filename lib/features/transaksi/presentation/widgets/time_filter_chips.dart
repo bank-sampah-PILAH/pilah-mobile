@@ -4,11 +4,15 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/file_downloader.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
+/// Period chips, custom range, and setoran-only export for the unified
+/// Riwayat Aktivitas screen (PIL-282). Export and the custom range operate
+/// on setoran regardless of the type filter — pencairan has no backend
+/// support for either.
 class TimeFilterChips extends StatelessWidget {
   const TimeFilterChips({super.key});
 
@@ -20,18 +24,13 @@ class TimeFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TransaksiCubit, TransaksiState>(
-      buildWhen: (previous, current) {
-        if (previous is TransaksiLoaded && current is TransaksiLoaded) {
-          return previous.periode != current.periode ||
-              previous.dariTanggal != current.dariTanggal ||
-              previous.sampaiTanggal != current.sampaiTanggal;
-        }
-        return true;
-      },
+    return BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
+      buildWhen: (previous, current) =>
+          previous.periode != current.periode ||
+          previous.dariTanggal != current.dariTanggal ||
+          previous.sampaiTanggal != current.sampaiTanggal,
       builder: (context, state) {
-        final activePeriode =
-            state is TransaksiLoaded ? state.periode : 'bulan_ini';
+        final activePeriode = state.periode;
         return Row(
           children: [
             for (final entry in _chips.entries) ...[
@@ -48,7 +47,7 @@ class TimeFilterChips extends StatelessWidget {
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
                   builder: (_) => BlocProvider.value(
-                    value: context.read<TransaksiCubit>(),
+                    value: context.read<RiwayatAktivitasCubit>(),
                     child: const FilterTanggalBottomSheet(),
                   ),
                 );
@@ -116,7 +115,7 @@ class TimeFilterChips extends StatelessWidget {
   /// Download and putting "Bagikan" on the confirmation covers both, and asks
   /// nothing of the majority who only wanted the file.
   Future<void> _onExport(BuildContext context) async {
-    final cubit = context.read<TransaksiCubit>();
+    final cubit = context.read<RiwayatAktivitasCubit>();
 
     final loading = AppNotification.showLoading(
       context,
@@ -176,7 +175,7 @@ class TimeFilterChips extends StatelessWidget {
     final bool isSelected = activePeriode == periode;
     return GestureDetector(
       onTap: () {
-        context.read<TransaksiCubit>().setPeriode(periode);
+        context.read<RiwayatAktivitasCubit>().setPeriode(periode);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

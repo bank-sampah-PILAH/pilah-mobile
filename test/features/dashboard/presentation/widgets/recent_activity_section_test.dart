@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 
 /// Stands in for the real cubit so the widget can be driven through each state
@@ -23,7 +25,10 @@ class _StubRecentActivityCubit extends Cubit<RecentActivityState>
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-TransaksiEntity _trx(String name) => TransaksiEntity(
+final _today = DateTime(2026, 9, 22, 12);
+
+ActivitasEntity _trx(String name, {DateTime? tanggal}) =>
+    ActivitasEntity.fromTransaksi(TransaksiEntity(
       id: name,
       initials: name.substring(0, 2).toUpperCase(),
       avatarColor: const Color(0xFF000000),
@@ -34,14 +39,30 @@ TransaksiEntity _trx(String name) => TransaksiEntity(
       isWaSuccess: true,
       balance: '',
       items: const [],
-    );
+      tanggal: tanggal,
+    ));
+
+ActivitasEntity _pencairan(String name, DateTime tanggal) =>
+    ActivitasEntity.fromPencairan(Pencairan(
+      id: name,
+      nasabahNama: name,
+      nominal: 50000,
+      metode: MetodePencairan.tunai,
+      tanggal: tanggal,
+      keterangan: '',
+      status: 'tercatat',
+      saldoSebelum: 100000,
+      saldoSesudah: 50000,
+    ));
 
 Widget _host(RecentActivityCubit cubit) {
   return MaterialApp(
     home: Scaffold(
       body: BlocProvider<RecentActivityCubit>.value(
         value: cubit,
-        child: const SingleChildScrollView(child: RecentActivitySection()),
+        child: SingleChildScrollView(
+          child: RecentActivitySection(now: () => _today),
+        ),
       ),
     ),
   );
@@ -89,15 +110,12 @@ void main() {
       expect(find.text('Coba Lagi'), findsNothing);
     });
 
-    testWidgets(
-        'renders every transaction the cubit hands it, day label and all',
+    testWidgets('renders every activity the cubit hands it, day label and all',
         (tester) async {
       final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
-        TransaksiGroupEntity(header: 'HARI INI', transactions: [_trx('Budi')]),
-        TransaksiGroupEntity(
-          header: '12 HARI LALU',
-          transactions: [_trx('Sari'), _trx('Andi')],
-        ),
+        _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
+        _trx('Sari', tanggal: DateTime(2026, 9, 10, 9)),
+        _trx('Andi', tanggal: DateTime(2026, 9, 10, 8)),
       ]));
       addTearDown(cubit.close);
 
@@ -113,6 +131,19 @@ void main() {
       );
       expect(find.text('Hari ini'), findsOneWidget);
       expect(find.text('12 hari lalu'), findsNWidgets(2));
+    });
+
+    testWidgets('renders a pencairan row alongside setoran', (tester) async {
+      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+        _pencairan('Ani Wijaya', DateTime(2026, 9, 22, 10)),
+        _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
+      ]));
+      addTearDown(cubit.close);
+
+      await tester.pumpWidget(_host(cubit));
+
+      expect(find.text('Ani Wijaya'), findsOneWidget);
+      expect(find.text('Budi'), findsOneWidget);
     });
   });
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
@@ -83,7 +84,7 @@ void main() {
     await pumpView(tester);
     await tester.pumpAndSettle();
 
-    expect(find.byType(Card), findsNWidgets(2));
+    expect(find.byType(ActivityItem), findsNWidgets(2));
     expect(find.text('Bank Sampah Kenanga'), findsOneWidget);
     expect(find.text('Bank Sampah BTH'), findsOneWidget);
   });

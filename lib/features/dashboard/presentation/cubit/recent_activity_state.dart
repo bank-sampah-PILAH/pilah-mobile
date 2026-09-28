@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 
 abstract class RecentActivityState extends Equatable {
   const RecentActivityState();
@@ -13,15 +13,14 @@ class RecentActivityInitial extends RecentActivityState {}
 class RecentActivityLoading extends RecentActivityState {}
 
 class RecentActivityLoaded extends RecentActivityState {
-  /// The latest transactions, still grouped by day so each one can be labelled
-  /// ("Hari ini", "Kemarin", …). Already trimmed to at most
-  /// `RecentActivityCubit.limit` transactions in total.
-  final List<TransaksiGroupEntity> groups;
+  /// The latest activity — setoran and pencairan merged, newest first.
+  /// Already trimmed to at most `RecentActivityCubit.limit` entries (PIL-282).
+  final List<ActivitasEntity> items;
 
-  const RecentActivityLoaded(this.groups);
+  const RecentActivityLoaded(this.items);
 
   @override
-  List<Object?> get props => [groups];
+  List<Object?> get props => [items];
 }
 
 class RecentActivityError extends RecentActivityState {

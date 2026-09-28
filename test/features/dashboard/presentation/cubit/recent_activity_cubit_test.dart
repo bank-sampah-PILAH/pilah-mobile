@@ -5,15 +5,20 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 
 class _MockGetTransaksi extends Mock implements GetTransaksiUseCase {}
 
+class _MockPencairanUseCases extends Mock implements PencairanUseCases {}
+
 class _FakeFilter extends Fake implements TransaksiFilter {}
 
-TransaksiEntity _trx(String name) => TransaksiEntity(
+TransaksiEntity _trx(String name, {DateTime? tanggal}) => TransaksiEntity(
       id: name,
       initials: 'XX',
       avatarColor: const Color(0xFF000000),
@@ -24,27 +29,45 @@ TransaksiEntity _trx(String name) => TransaksiEntity(
       isWaSuccess: true,
       balance: '',
       items: const [],
+      tanggal: tanggal,
     );
 
-/// Flattened names, in order, of whatever the cubit is currently holding.
-List<String> _names(RecentActivityState state) => [
-      for (final group in (state as RecentActivityLoaded).groups)
-        for (final trx in group.transactions) trx.name,
-    ];
+Pencairan _pencairan(String name, DateTime tanggal) => Pencairan(
+      id: name,
+      nasabahNama: name,
+      nominal: 50000,
+      metode: MetodePencairan.tunai,
+      tanggal: tanggal,
+      keterangan: '',
+      status: 'tercatat',
+      saldoSebelum: 100000,
+      saldoSesudah: 50000,
+    );
+
+/// Titles, in order, of whatever the cubit is currently holding.
+List<String> _titles(RecentActivityState state) =>
+    (state as RecentActivityLoaded).items.map((e) => e.title).toList();
 
 void main() {
   late _MockGetTransaksi getTransaksi;
+  late _MockPencairanUseCases pencairanUseCases;
   late RecentActivityCubit cubit;
 
   final oneGroup = [
     TransaksiGroupEntity(header: 'HARI INI', transactions: [_trx('Budi')]),
   ];
 
-  setUpAll(() => registerFallbackValue(_FakeFilter()));
+  setUpAll(() {
+    registerFallbackValue(_FakeFilter());
+    registerFallbackValue(const RiwayatPencairanFilter());
+  });
 
   setUp(() {
     getTransaksi = _MockGetTransaksi();
-    cubit = RecentActivityCubit(getTransaksi);
+    pencairanUseCases = _MockPencairanUseCases();
+    when(() => pencairanUseCases.getRiwayat(any()))
+        .thenAnswer((_) async => const Right([]));
+    cubit = RecentActivityCubit(getTransaksi, pencairanUseCases);
   });
 
   tearDown(() => cubit.close());
@@ -71,7 +94,27 @@ void main() {
       );
     });
 
-    test('asks the backend for only as many rows as it shows', () async {
+    test('asks pencairan for only the newest few, not the whole history',
+        () async {
+      when(() => getTransaksi.execute(any()))
+          .thenAnswer((_) async => Right(oneGroup));
+
+      await cubit.load();
+
+      final filter = verify(() => pencairanUseCases.getRiwayat(captureAny()))
+          .captured
+          .single as RiwayatPencairanFilter;
+      expect(filter.periode, RiwayatPeriode.semua);
+      expect(
+        filter.limit,
+        RecentActivityCubit.limit,
+        reason: 'a null limit makes the data source walk every page of the '
+            'bank\'s lifetime pencairan history just to show 3 rows',
+      );
+    });
+
+    test('asks the backend for only as many setoran rows as it shows',
+        () async {
       when(() => getTransaksi.execute(any()))
           .thenAnswer((_) async => Right(oneGroup));
 
@@ -83,31 +126,36 @@ void main() {
       expect(filter.pageSize, RecentActivityCubit.limit);
     });
 
-    test('keeps only the latest few when the backend returns more', () async {
+    test('merges setoran and pencairan, newest first, capped at the limit',
+        () async {
       when(() => getTransaksi.execute(any())).thenAnswer((_) async => Right([
             TransaksiGroupEntity(
               header: 'HARI INI',
-              transactions: [_trx('Budi'), _trx('Sari')],
-            ),
-            TransaksiGroupEntity(
-              header: 'KEMARIN',
-              transactions: [_trx('Andi'), _trx('Rina')],
-            ),
-            TransaksiGroupEntity(
-              header: '4 HARI LALU',
-              transactions: [_trx('Dewi')],
+              transactions: [
+                _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
+                _trx('Sari', tanggal: DateTime(2026, 9, 22, 8)),
+              ],
             ),
           ]));
+      when(() => pencairanUseCases.getRiwayat(any())).thenAnswer(
+        (_) async => Right([_pencairan('Ani', DateTime(2026, 9, 22, 10))]),
+      );
 
       await cubit.load();
 
-      expect(_names(cubit.state), ['Budi', 'Sari', 'Andi']);
-      expect(
-        (cubit.state as RecentActivityLoaded).groups.map((g) => g.header),
-        ['HARI INI', 'KEMARIN'],
-        reason: 'the day grouping has to survive the trim — it is what labels '
-            'each row',
+      expect(_titles(cubit.state), ['Ani', 'Budi', 'Sari']);
+    });
+
+    test('degrades to setoran-only when the pencairan fetch fails', () async {
+      when(() => getTransaksi.execute(any()))
+          .thenAnswer((_) async => Right(oneGroup));
+      when(() => pencairanUseCases.getRiwayat(any())).thenAnswer(
+        (_) async => Left(NetworkException(message: 'boom')),
       );
+
+      await cubit.load();
+
+      expect(_titles(cubit.state), ['Budi']);
     });
 
     test('a failure surfaces as an error, not an empty list', () async {
@@ -118,6 +166,7 @@ void main() {
 
       expect(cubit.state, isA<RecentActivityError>());
       expect((cubit.state as RecentActivityError).message, 'boom');
+      verifyNever(() => pencairanUseCases.getRiwayat(any()));
     });
   });
 

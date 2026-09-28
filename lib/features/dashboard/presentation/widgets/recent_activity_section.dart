@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/widgets/activity_item.dart';
-import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 
 class RecentActivitySection extends StatelessWidget {
-  const RecentActivitySection({super.key});
+  final DateTime Function() now;
 
-  String _friendlyHeader(String header) {
-    switch (header) {
-      case 'HARI INI':
-        return 'Hari ini';
-      case 'KEMARIN':
-        return 'Kemarin';
-      default:
-        final lower = header.toLowerCase();
-        return lower.isEmpty
-            ? lower
-            : '${lower[0].toUpperCase()}${lower.substring(1)}';
-    }
+  const RecentActivitySection({super.key, this.now = DateTime.now});
+
+  String _dayLabel(DateTime? tanggal) {
+    if (tanggal == null) return 'Lainnya';
+    final today = now();
+    final diff = DateUtils.dateOnly(today)
+        .difference(DateUtils.dateOnly(tanggal))
+        .inDays;
+    if (diff <= 0) return 'Hari ini';
+    if (diff == 1) return 'Kemarin';
+    return '$diff hari lalu';
   }
 
   @override
@@ -87,18 +85,12 @@ class RecentActivitySection extends StatelessWidget {
               );
             }
 
-            // Flatten the groups, keeping the day label from each one. The
-            // cubit has already capped the total at RecentActivityCubit.limit.
-            final entries = <({TransaksiEntity trx, String header})>[];
-            if (state is RecentActivityLoaded) {
-              for (final group in state.groups) {
-                for (final trx in group.transactions) {
-                  entries.add((trx: trx, header: group.header));
-                }
-              }
-            }
+            // The cubit has already merged setoran+pencairan, sorted them, and
+            // capped the total at RecentActivityCubit.limit.
+            final items =
+                state is RecentActivityLoaded ? state.items : const [];
 
-            if (entries.isEmpty) {
+            if (items.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
@@ -112,18 +104,23 @@ class RecentActivitySection extends StatelessWidget {
 
             return Column(
               children: [
-                for (var i = 0; i < entries.length; i++) ...[
+                for (var i = 0; i < items.length; i++) ...[
                   if (i > 0) const SizedBox(height: 12),
                   ActivityItem(
-                    avatarText: entries[i].trx.initials,
-                    avatarColor: entries[i].trx.avatarColor,
-                    avatarTextColor: entries[i].trx.textColor,
-                    title: entries[i].trx.name,
-                    subtitle: entries[i].trx.subtitle,
-                    amount: entries[i].trx.amount,
-                    time: entries[i].trx.time != null
-                        ? '${_friendlyHeader(entries[i].header)}, ${entries[i].trx.time}'
-                        : _friendlyHeader(entries[i].header),
+                    avatarText: items[i].avatarText,
+                    avatarColor: items[i].avatarColor,
+                    avatarTextColor: items[i].avatarTextColor,
+                    title: items[i].title,
+                    subtitleLines: items[i].subtitleLines,
+                    amount: items[i].amount,
+                    amountColor: items[i].amountColor,
+                    trailingCaptions: [
+                      if (items[i].trailingCaptions.isNotEmpty)
+                        '${_dayLabel(items[i].tanggal)}, ${items[i].trailingCaptions.first}'
+                      else
+                        _dayLabel(items[i].tanggal),
+                    ],
+                    badge: items[i].badge,
                   ),
                 ],
               ],

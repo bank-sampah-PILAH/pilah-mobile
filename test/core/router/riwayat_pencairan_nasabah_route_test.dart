@@ -21,7 +21,6 @@ import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_penca
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -151,18 +150,10 @@ void main() {
       ),
     );
 
-    router.go(CatatPencairanPage.route,
-        extra: const CatatPencairanArgs(
-          nasabahId: 'n-1',
-          nasabahNama: 'Ayu Nasabah',
-        ));
+    router.go(CatatPencairanPage.route);
     await tester.pumpAndSettle();
     expect(find.text('Catat Pencairan'), findsNWidgets(2));
-    expect(find.text('Ayu Nasabah'), findsOneWidget);
-
-    router.go(RiwayatPencairanPage.route);
-    await tester.pumpAndSettle();
-    expect(find.text('Belum ada pencairan'), findsOneWidget);
+    expect(find.text('Tap untuk pilih nasabah'), findsOneWidget);
 
     router.go(EditPencairanPage.route, extra: _pencairan);
     await tester.pumpAndSettle();

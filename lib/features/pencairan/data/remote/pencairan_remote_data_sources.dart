@@ -94,6 +94,11 @@ class PencairanRemoteDataSourceImpl implements PencairanRemoteDataSources {
       }
 
       rows.addAll(data['results'] as List? ?? const []);
+      // A caller that only wants the newest few (the dashboard preview, PIL-282)
+      // stops here: the backend already orders pencairan newest-first, so the
+      // first page already holds the answer and walking the rest of the
+      // history would only be thrown away.
+      if (filter.limit != null) break;
       final next = data['next'];
       if (next == null) break;
 
@@ -101,7 +106,10 @@ class PencairanRemoteDataSourceImpl implements PencairanRemoteDataSources {
       page = int.tryParse(nextPage ?? '') ?? page + 1;
     }
 
-    return rows
+    final limit = filter.limit;
+    final limited =
+        limit != null && rows.length > limit ? rows.take(limit).toList() : rows;
+    return limited
         .map((row) => PencairanResponse.fromJson(row as Map<String, dynamic>))
         .toList();
   }
