@@ -12,8 +12,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.d
 /// Pesan 403 yang berarti profilnya milik pemilik akun (PIL-223). Endpoint
 /// ini juga membalas 403 untuk nasabah nonaktif dengan pesan lain, jadi
 /// status code sendirian tidak cukup untuk mengunci form.
-const _pesanProfilTerkunci =
-    'Nasabah dengan akun hanya bisa diubah pada data keanggotaan';
+const _pesanEmailTerkunci = 'Email nasabah dengan akun tidak dapat diubah';
 
 class EditNasabahBottomSheet extends StatefulWidget {
   /// Nasabah yang disunting, memakai entity domain apa adanya.
@@ -45,7 +44,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   /// hanya nomor anggota yang boleh disunting pengurus (PIL-223). Field
   /// dimatikan agar pengurus tidak mengetik data yang pasti ditolak 403.
   /// Default tidak terkunci: pemanggil lama belum mengirim penandanya.
-  bool get _profilTerkunci => _ditolakServer || widget.nasabah.punyaAkun;
+  bool get _emailTerkunci => _ditolakServer || widget.nasabah.punyaAkun;
 
   /// Server menolak perubahan profil walau penanda dari daftar belum
   /// menyatakannya. Nasabah dapat menautkan akunnya setelah daftar dimuat,
@@ -184,9 +183,9 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     height: 1.4,
                   ),
                 ),
-                if (_profilTerkunci) ...[
+                if (_emailTerkunci) ...[
                   const SizedBox(height: 16),
-                  _buildKeteranganProfilTerkunci(),
+                  _buildKeteranganEmailTerkunci(),
                 ],
                 const SizedBox(height: 24),
 
@@ -195,7 +194,6 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _namaController,
-                  enabled: !_profilTerkunci,
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
@@ -271,13 +269,11 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                                 child: Text(value),
                               );
                             }).toList(),
-                            onChanged: _profilTerkunci
-                                ? null
-                                : (newValue) {
-                                    setState(() {
-                                      _jenisKelamin = newValue;
-                                    });
-                                  },
+                            onChanged: (newValue) {
+                              setState(() {
+                                _jenisKelamin = newValue;
+                              });
+                            },
                           ),
                         ],
                       ),
@@ -291,7 +287,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailController,
-                  enabled: !_profilTerkunci,
+                  enabled: !_emailTerkunci,
                   keyboardType: TextInputType.emailAddress,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   onChanged: (_) {
@@ -321,7 +317,6 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _tanggalLahirController,
-                  enabled: !_profilTerkunci,
                   readOnly: true,
                   onTap: _selectDate,
                   validator: (value) => (value == null || value.trim().isEmpty)
@@ -341,7 +336,6 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _whatsappController,
-                  enabled: !_profilTerkunci,
                   keyboardType: TextInputType.phone,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   inputFormatters: [
@@ -392,7 +386,6 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _alamatController,
-                  enabled: !_profilTerkunci,
                   maxLines: 4,
                   validator: (value) =>
                       (value == null || value.trim().runes.length < 10)
@@ -485,7 +478,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     // Hanya pesan yang kedua berarti profilnya terkunci; menyamakan keduanya
     // lewat status code saja mengunci nasabah nonaktif tanpa akun juga.
     if (error.response?.statusCode == 403 &&
-        error.displayMessage == _pesanProfilTerkunci) {
+        error.displayMessage == _pesanEmailTerkunci) {
       setState(() => _ditolakServer = true);
     }
 
@@ -509,7 +502,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   ///
   /// Penjelasan tampilan saja; penolakannya tetap diputuskan server pada
   /// setiap permintaan (PIL-223, OWASP A01 Broken Access Control).
-  Widget _buildKeteranganProfilTerkunci() {
+  Widget _buildKeteranganEmailTerkunci() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -527,7 +520,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Profil dikelola oleh nasabah',
+                  'Email dikelola oleh nasabah',
                   style: AppTextStyle.title1.copyWith(
                     color: const Color(0xFF006D44),
                     fontWeight: FontWeight.bold,
@@ -536,7 +529,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Nasabah ini sudah punya akun, jadi hanya nomor anggota yang dapat diubah di sini.',
+                  'Nasabah ini sudah punya akun. Emailnya menjadi kunci masuk, jadi hanya itu yang tidak dapat diubah.',
                   style: AppTextStyle.small.copyWith(
                     color: Colors.black87,
                     height: 1.4,
