@@ -9,6 +9,7 @@ import 'package:google_sign_in_platform_interface/google_sign_in_platform_interf
     as google_sign_in;
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
@@ -16,7 +17,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -144,8 +144,10 @@ void main() {
           ),
         ),
         GoRoute(
-          path: RiwayatPencairanNasabahPage.route,
-          builder: (_, __) => const Scaffold(body: Text('Riwayat Pencairan')),
+          path: AppLocations.history,
+          builder: (_, state) => Scaffold(
+            body: Text('Tabungan ${state.uri.queryParameters['filter']}'),
+          ),
         ),
       ],
     );
@@ -160,6 +162,6 @@ void main() {
     await tester.tap(find.text('Riwayat Nasabah'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Riwayat Pencairan'), findsOneWidget);
+    expect(find.text('Tabungan pencairan'), findsOneWidget);
   });
 }
