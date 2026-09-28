@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/na
 @injectable
 class NasabahApprovalCubit extends Cubit<NasabahApprovalState> {
   final GetNasabahMembershipsUseCase getMembershipsUseCase;
+  int _loadVersion = 0;
 
   NasabahApprovalCubit(this.getMembershipsUseCase)
       : super(const NasabahApprovalInitial());
@@ -21,11 +22,12 @@ class NasabahApprovalCubit extends Cubit<NasabahApprovalState> {
   /// already-loaded list stays on screen instead of collapsing into skeletons
   /// underneath the refresh spinner — mirrors [NasabahCubit.loadNasabah].
   Future<void> load({bool silent = false}) async {
+    final version = ++_loadVersion;
     if (!silent || state is! NasabahApprovalLoaded) {
       emit(const NasabahApprovalLoading());
     }
     final result = await getMembershipsUseCase.execute();
-    if (isClosed) return;
+    if (isClosed || version != _loadVersion) return;
     result.fold(
       (failure) => emit(NasabahApprovalError(failure.displayMessage)),
       (memberships) => emit(NasabahApprovalLoaded(memberships)),
