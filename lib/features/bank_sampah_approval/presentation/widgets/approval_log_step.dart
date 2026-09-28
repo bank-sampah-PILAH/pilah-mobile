@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 
 const _monthNames = [
@@ -36,12 +36,7 @@ String formatApprovalLogDate(DateTime dateTimeUtc) {
   return '$date · $time';
 }
 
-/// One entry in the approval history timeline: an icon+colour per decision,
-/// a connecting line to the next entry, the catatan text and the date.
-///
-/// Adapts the step visual from `pending_approval_screen.dart`'s `_buildStep`
-/// (circle + connecting line + title/subtitle) to render an actual decision
-/// log entry instead of a fixed onboarding stage.
+/// One recorded decision in the chronological membership timeline.
 class ApprovalLogStep extends StatelessWidget {
   final ApprovalLogEntity entry;
   final bool isLast;
@@ -68,48 +63,36 @@ class ApprovalLogStep extends StatelessWidget {
           Column(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 child: Center(
-                  child: Icon(icon, color: Colors.white, size: 18),
+                  child: Icon(icon, color: Colors.white, size: 16),
                 ),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 2, color: Colors.grey.shade300),
+                  child: Container(width: 2, color: NasabahStyle.line),
                 ),
             ],
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 24.0),
+              padding: const EdgeInsets.only(bottom: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        title,
-                        style: AppTextStyle.small.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        formatApprovalLogDate(entry.createdAt),
-                        style: AppTextStyle.extraSmall,
-                      ),
-                    ],
-                  ),
+                  Text(title,
+                      style: NasabahStyle.text(14, weight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(formatApprovalLogDate(entry.createdAt),
+                      style: NasabahStyle.text(12, color: NasabahStyle.muted)),
                   if (entry.catatan.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     ExpandableText(
                       text: entry.catatan,
-                      style:
-                          AppTextStyle.small.copyWith(color: Colors.grey[600]),
+                      style: NasabahStyle.text(13),
                     ),
                   ],
                 ],

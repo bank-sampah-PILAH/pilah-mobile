@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,6 +59,34 @@ void main() {
       isA<NasabahApprovalError>(),
     ],
   );
+
+  test('ignores a response after the session shell closes', () async {
+    final pending =
+        Completer<Either<NetworkException, List<NasabahMembershipEntity>>>();
+    when(() => useCase.execute()).thenAnswer((_) => pending.future);
+    final request = cubit.load();
+    await cubit.close();
+    pending.complete(const Right([_membership]));
+    await request;
+  });
+
+  test('a slower earlier status response cannot overwrite a refresh', () async {
+    final first =
+        Completer<Either<NetworkException, List<NasabahMembershipEntity>>>();
+    final latest =
+        Completer<Either<NetworkException, List<NasabahMembershipEntity>>>();
+    var calls = 0;
+    when(() => useCase.execute())
+        .thenAnswer((_) => (++calls == 1 ? first : latest).future);
+    final earlierRequest = cubit.load();
+    final refresh = cubit.load(silent: true);
+    latest.complete(const Right([]));
+    await refresh;
+    first.complete(const Right([_membership]));
+    await earlierRequest;
+    expect(cubit.state, const NasabahApprovalLoaded([]));
+    await cubit.close();
+  });
 
   blocTest<NasabahApprovalCubit, NasabahApprovalState>(
     'silent reload skips the Loading state when data is already loaded',

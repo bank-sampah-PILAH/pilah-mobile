@@ -9,30 +9,37 @@ class RoleNavigationBar extends StatelessWidget {
     required this.role,
     required this.currentIndex,
     required this.onSelected,
+    this.limitedNasabah = false,
   });
 
   final String? role;
   final int currentIndex;
   final ValueChanged<int> onSelected;
+  final bool limitedNasabah;
 
   static bool isStaff(String? role) =>
       role == 'pengelola' || role == 'pengelola_induk';
   static bool supports(String? role) => role == 'nasabah' || isStaff(role);
 
-  static List<int> branchIndicesFor(String? role) => _destinationsFor(role)
-      .map((destination) => destination.branchIndex)
-      .toList(growable: false);
+  static List<int> branchIndicesFor(String? role,
+          {bool limitedNasabah = false}) =>
+      _destinationsFor(role, limitedNasabah: limitedNasabah)
+          .map((destination) => destination.branchIndex)
+          .toList(growable: false);
 
-  static List<_RoleDestination> _destinationsFor(String? role) =>
+  static List<_RoleDestination> _destinationsFor(String? role,
+          {bool limitedNasabah = false}) =>
       role == 'nasabah'
-          ? _nasabahDestinations
+          ? limitedNasabah
+              ? _limitedNasabahDestinations
+              : _nasabahDestinations
           : isStaff(role)
               ? _staffDestinations
               : const [];
 
   @override
   Widget build(BuildContext context) {
-    final destinations = _destinationsFor(role);
+    final destinations = _destinationsFor(role, limitedNasabah: limitedNasabah);
     if (destinations.isEmpty) return const SizedBox.shrink();
     return Container(
       decoration: const BoxDecoration(
@@ -78,6 +85,11 @@ const _nasabahDestinations = <_RoleDestination>[
   _RoleDestination(0, Icons.home_outlined, 'Beranda'),
   _RoleDestination(5, Icons.account_balance_wallet_outlined, 'Tabungan'),
   _RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
+  _RoleDestination(7, Icons.person_outline, 'Profil'),
+];
+
+const _limitedNasabahDestinations = <_RoleDestination>[
+  _RoleDestination(0, Icons.home_outlined, 'Beranda'),
   _RoleDestination(7, Icons.person_outline, 'Profil'),
 ];
 

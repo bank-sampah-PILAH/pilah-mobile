@@ -19,6 +19,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calenda
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import '../../support/approved_membership.dart';
 
 class _MockAuthenticationBloc
     extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -46,6 +47,8 @@ void main() {
     }
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
     addTearDown(() => di.unregister<NasabahRepository>());
+    final approval = registerApprovedMembership();
+    addTearDown(() => unregisterApprovedMembership(approval));
 
     final authenticationBloc = _MockAuthenticationBloc();
     final authenticationStates = StreamController<AuthenticationStates>();

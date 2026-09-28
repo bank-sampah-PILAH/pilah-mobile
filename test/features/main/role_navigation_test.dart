@@ -9,10 +9,37 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 class MockAuth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
+
+class MockApproval extends MockCubit<NasabahApprovalState>
+    implements NasabahApprovalCubit {}
+
+const pending = NasabahMembershipEntity(
+  id: 'application-1',
+  bankSampahId: 'bank-1',
+  bankSampahNama: 'Bank Sampah Melati',
+  bankSampahKota: 'Bandung',
+  bankSampahAlamat: 'Jl. Melati',
+  status: MembershipStatus.pending,
+  isActive: true,
+);
+
+const approved = NasabahMembershipEntity(
+  id: 'application-1',
+  bankSampahId: 'bank-1',
+  bankSampahNama: 'Bank Sampah Melati',
+  bankSampahKota: 'Bandung',
+  bankSampahAlamat: 'Jl. Melati',
+  status: MembershipStatus.approved,
+  isActive: true,
+);
 
 Authenticated session(String role) => Authenticated(
       authEntity: AuthEntity(
@@ -26,13 +53,30 @@ Authenticated session(String role) => Authenticated(
     );
 
 Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
-    {Stream<AuthenticationStates>? states}) async {
+    {Stream<AuthenticationStates>? states,
+    NasabahApprovalState approvalState =
+        const NasabahApprovalLoaded([approved]),
+    Stream<NasabahApprovalState>? approvalStates,
+    MockApproval? approvalCubit,
+    String initialLocation = '/home',
+    bool settle = true}) async {
+  final approval = approvalCubit ?? MockApproval();
+  when(() => approval.load(silent: any(named: 'silent')))
+      .thenAnswer((_) async {});
+  whenListen(
+      approval, approvalStates ?? const Stream<NasabahApprovalState>.empty(),
+      initialState: approvalState);
+  di.registerFactory<NasabahApprovalCubit>(() => approval);
+  addTearDown(() async {
+    await di.unregister<NasabahApprovalCubit>();
+    await approval.close();
+  });
   final auth = MockAuth();
   when(() => auth.state).thenReturn(state);
   when(() => auth.stream).thenAnswer((_) => const Stream.empty());
   if (states != null) whenListen(auth, states, initialState: state);
   final router = GoRouter(
-    initialLocation: '/home',
+    initialLocation: initialLocation,
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => MainPage(navigationShell: shell),
@@ -58,6 +102,10 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
         ],
       ),
       GoRoute(
+        path: '/approval-bank-sampah/detail',
+        builder: (_, __) => const Text('application details'),
+      ),
+      GoRoute(
         path: '/login',
         builder: (_, __) => const Center(child: Text('login page')),
       ),
@@ -71,7 +119,12 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
       child: MaterialApp.router(routerConfig: router),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+    await tester.pump();
+  }
   return router;
 }
 
@@ -124,6 +177,96 @@ void main() {
       ]);
     });
   }
+
+  testWidgets('pending membership shows status home with only Home and Profile',
+      (tester) async {
+    final approval = MockApproval();
+    await mount(tester, session('nasabah'),
+        approvalState: const NasabahApprovalLoaded([pending]),
+        approvalCubit: approval);
+    expect(labels(tester), ['Beranda', 'Profil']);
+    expect(find.text('Bank Sampah Melati'), findsWidgets);
+    expect(find.text('Pengajuan dikirim'), findsOneWidget);
+    expect(find.text('Menunggu verifikasi pengurus'), findsOneWidget);
+    expect(find.text('body:/home'), findsNothing);
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    expect(find.text('body:/profile'), findsOneWidget);
+    await tester.tap(find.text('Beranda'));
+    await tester.pumpAndSettle();
+    verify(() => approval.load(silent: true)).called(1);
+    await tester.tap(find.text('Lihat detail pengajuan'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('application details'), findsOneWidget);
+  });
+
+  testWidgets('a rejected application explains the next step', (tester) async {
+    await mount(tester, session('nasabah'),
+        approvalState: const NasabahApprovalLoaded([
+          NasabahMembershipEntity(
+            id: 'application-1',
+            bankSampahId: 'bank-1',
+            bankSampahNama: 'Bank Sampah Melati',
+            bankSampahKota: 'Bandung',
+            bankSampahAlamat: 'Jl. Melati',
+            status: MembershipStatus.rejected,
+            isActive: false,
+          ),
+        ]));
+    expect(labels(tester), ['Beranda', 'Profil']);
+    expect(find.text('Pengajuan belum disetujui'), findsOneWidget);
+    expect(find.textContaining('ajukan banding'), findsOneWidget);
+  });
+
+  testWidgets('pending membership cannot open an old Tabungan route',
+      (tester) async {
+    final router = await mount(tester, session('nasabah'),
+        approvalState: const NasabahApprovalLoaded([pending]));
+    router.go('/history');
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+    expect(find.text('body:/history'), findsNothing);
+  });
+
+  testWidgets('status error offers retry without exposing savings',
+      (tester) async {
+    await mount(tester, session('nasabah'),
+        approvalState: const NasabahApprovalError('Tidak dapat memuat status'));
+    expect(labels(tester), ['Beranda', 'Profil']);
+    expect(find.text('Tidak dapat memuat status'), findsOneWidget);
+    expect(find.text('Coba lagi'), findsOneWidget);
+    expect(find.text('body:/home'), findsNothing);
+  });
+
+  testWidgets('approval restores full navigation after refreshing the status',
+      (tester) async {
+    final updates = StreamController<NasabahApprovalState>.broadcast();
+    addTearDown(updates.close);
+    await mount(tester, session('nasabah'),
+        approvalState: const NasabahApprovalLoaded([pending]),
+        approvalStates: updates.stream);
+    updates.add(const NasabahApprovalLoaded([approved]));
+    await tester.pumpAndSettle();
+    expect(labels(tester), ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
+    expect(find.text('body:/home'), findsOneWidget);
+  });
+
+  testWidgets(
+      'a deep link opened while approval status is still loading is not '
+      'discarded once membership turns out to be active', (tester) async {
+    final approvalStates = StreamController<NasabahApprovalState>.broadcast();
+    addTearDown(approvalStates.close);
+    final router = await mount(tester, session('nasabah'),
+        initialLocation: '/history',
+        approvalState: const NasabahApprovalLoading(),
+        approvalStates: approvalStates.stream,
+        settle: false);
+    approvalStates.add(const NasabahApprovalLoaded([approved]));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/history');
+    expect(find.text('body:/history'), findsOneWidget);
+  });
 
   testWidgets('customer history selection updates the shell and selected tab', (
     tester,

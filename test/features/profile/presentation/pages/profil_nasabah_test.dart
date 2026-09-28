@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 import 'package:pilah_mobile/services/di.dart';
+import '../../../../support/approved_membership.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -57,6 +58,7 @@ void main() {
     NasabahRepository? repository,
   }) async {
     final auth = _Auth();
+    final approval = registerApprovedMembership();
     profile = _Profile();
     final invites = InviteTokenStore();
     final environment = _Environment();
@@ -84,6 +86,7 @@ void main() {
     addTearDown(() async {
       await auth.close();
       await profile.close();
+      await unregisterApprovedMembership(approval);
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       await di.unregister<NasabahRepository>();
