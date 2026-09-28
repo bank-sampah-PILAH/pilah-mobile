@@ -57,7 +57,9 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     NasabahApprovalState approvalState =
         const NasabahApprovalLoaded([approved]),
     Stream<NasabahApprovalState>? approvalStates,
-    MockApproval? approvalCubit}) async {
+    MockApproval? approvalCubit,
+    String initialLocation = '/home',
+    bool settle = true}) async {
   final approval = approvalCubit ?? MockApproval();
   when(() => approval.load(silent: any(named: 'silent')))
       .thenAnswer((_) async {});
@@ -74,7 +76,7 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
   when(() => auth.stream).thenAnswer((_) => const Stream.empty());
   if (states != null) whenListen(auth, states, initialState: state);
   final router = GoRouter(
-    initialLocation: '/home',
+    initialLocation: initialLocation,
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => MainPage(navigationShell: shell),
@@ -117,7 +119,12 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
       child: MaterialApp.router(routerConfig: router),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+    await tester.pump();
+  }
   return router;
 }
 
@@ -243,6 +250,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(labels(tester), ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
     expect(find.text('body:/home'), findsOneWidget);
+  });
+
+  testWidgets(
+      'a deep link opened while approval status is still loading is not '
+      'discarded once membership turns out to be active', (tester) async {
+    final approvalStates = StreamController<NasabahApprovalState>.broadcast();
+    addTearDown(approvalStates.close);
+    final router = await mount(tester, session('nasabah'),
+        initialLocation: '/history',
+        approvalState: const NasabahApprovalLoading(),
+        approvalStates: approvalStates.stream,
+        settle: false);
+    approvalStates.add(const NasabahApprovalLoaded([approved]));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/history');
+    expect(find.text('body:/history'), findsOneWidget);
   });
 
   testWidgets('customer history selection updates the shell and selected tab', (

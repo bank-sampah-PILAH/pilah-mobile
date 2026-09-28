@@ -89,10 +89,15 @@ class _ShellContent extends StatelessWidget {
             approval.memberships.any((membership) =>
                 membership.status == MembershipStatus.approved &&
                 membership.isActive));
+    // Whether the cubit has actually confirmed limited access, as opposed to
+    // `limitedNasabah` defaulting true while the initial load is still
+    // pending. Only a confirmed status may discard the current route.
+    final confirmedLimitedNasabah =
+        role == 'nasabah' && approval is NasabahApprovalLoaded && limitedNasabah;
     final branches = RoleNavigationBar.branchIndicesFor(role,
         limitedNasabah: limitedNasabah);
     final selected = branches.indexOf(navigationShell.currentIndex);
-    if (limitedNasabah && selected < 0) {
+    if (confirmedLimitedNasabah && selected < 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
       });
