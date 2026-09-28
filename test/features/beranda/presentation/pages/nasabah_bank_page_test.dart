@@ -17,15 +17,10 @@ class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
 
 class _Repository extends PreviewNasabahRepository {
+  _Repository(this.fixture);
+  final NasabahBank fixture;
   @override
-  Future<NasabahBank> bank(String membershipId) async => const NasabahBank(
-        'Bank Sampah Melati',
-        'Jl. Melati No. 3',
-        'Depok',
-        '081234567890',
-        logoUrl: 'https://example.test/media/logo.png',
-        organizationType: 'unit',
-      );
+  Future<NasabahBank> bank(String membershipId) async => fixture;
 }
 
 /// Counts calls to [bank] so a pull-to-refresh test can assert the load ran
@@ -39,6 +34,15 @@ class _CountingNasabahRepository extends PreviewNasabahRepository {
     return super.bank(membershipId);
   }
 }
+
+const _melati = NasabahBank(
+  'Bank Sampah Melati',
+  'Jl. Melati No. 3',
+  'Depok',
+  '081234567890',
+  logoUrl: 'https://example.test/media/logo.png',
+  organizationType: 'unit',
+);
 
 Authenticated _session() => Authenticated(
         authEntity: const AuthEntity(
@@ -65,13 +69,17 @@ void main() {
     await di.unregister<NasabahRepository>();
   });
 
-  testWidgets('shows the bank logo, name, address, city and phone', (
-    tester,
-  ) async {
-    di.registerSingleton<NasabahRepository>(_Repository());
+  Future<void> open(WidgetTester tester, NasabahBank fixture) async {
+    di.registerSingleton<NasabahRepository>(_Repository(fixture));
     await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
         value: auth, child: const MaterialApp(home: NasabahBankPage())));
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('shows the bank logo, name, address, city and phone', (
+    tester,
+  ) async {
+    await open(tester, _melati);
 
     expect(find.text('Bank Sampah Melati'), findsOneWidget);
     expect(find.text('Jl. Melati No. 3'), findsOneWidget);
@@ -84,6 +92,32 @@ void main() {
             (widget.image as NetworkImage).url ==
                 'https://example.test/media/logo.png'),
         findsOneWidget);
+  });
+
+  testWidgets('labels a unit bank sampah', (tester) async {
+    await open(tester, _melati);
+    expect(find.text('Unit Bank Sampah'), findsOneWidget);
+  });
+
+  testWidgets('shows no organization label for a standalone (mandiri) bank',
+      (tester) async {
+    await open(
+        tester,
+        const NasabahBank('Bank Sampah Mandiri', 'Jl. Mandiri', 'Bogor', '0800',
+            organizationType: 'mandiri'));
+    expect(find.text('Unit Bank Sampah'), findsNothing);
+    expect(find.text('Bank Sampah Induk'), findsNothing);
+  });
+
+  testWidgets('falls back to an initial from the bank name without a logo', (
+    tester,
+  ) async {
+    await open(
+        tester,
+        const NasabahBank(
+            'Bank Sampah Melati', 'Jl. Melati No. 3', 'Depok', '081234567890',
+            organizationType: 'unit'));
+    expect(find.text('M'), findsOneWidget);
   });
 
   testWidgets('menarik layar ke bawah memuat ulang detail bank (PIL-285)',
