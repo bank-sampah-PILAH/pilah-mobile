@@ -14,15 +14,28 @@ class NasabahApiException implements Exception {
 }
 
 class NasabahIdentity {
-  const NasabahIdentity(this.id, this.name, this.email, this.role);
+  const NasabahIdentity(this.id, this.name, this.email, this.role,
+      {this.noHp = '',
+      this.jenisKelamin = '',
+      this.tanggalLahir,
+      this.alamat = ''});
   factory NasabahIdentity.fromJson(Map<String, dynamic> json) =>
       NasabahIdentity(
         json['id'] as String,
         json['nama'] as String,
         json['email'] as String,
         json['role'] as String,
+        noHp: json['no_hp'] as String? ?? '',
+        jenisKelamin: json['jenis_kelamin'] as String? ?? '',
+        tanggalLahir: json['tanggal_lahir'] == null
+            ? null
+            : DateTime.parse(json['tanggal_lahir'] as String),
+        alamat: json['alamat'] as String? ?? '',
       );
   final String id, name, email, role;
+  // Editable by the nasabah via updateProfile; id/email/role never are.
+  final String noHp, jenisKelamin, alamat;
+  final DateTime? tanggalLahir;
 }
 
 class NasabahBalance {
