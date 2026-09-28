@@ -3,18 +3,23 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
+
+class _Environment extends Mock implements AppEnvironment {}
 
 class _Repository extends PreviewNasabahRepository {
   final requests = <(String, int)>[];
@@ -42,6 +47,9 @@ void main() {
     auth = _Auth();
     states = StreamController<AuthenticationStates>.broadcast();
     di.registerSingleton<NasabahRepository>(repository);
+    final environment = _Environment();
+    when(() => environment.supportsDemoLogin).thenReturn(false);
+    di.registerSingleton<AppEnvironment>(environment);
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
     whenListen(auth, states.stream,
         initialState: Authenticated(
@@ -60,6 +68,7 @@ void main() {
     await auth.close();
     di<InviteTokenStore>().dispose();
     await di.unregister<InviteTokenStore>();
+    await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
   });
   Future<void> open(WidgetTester tester, String path) async {
@@ -90,7 +99,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('+ Rp 1'), findsNothing);
     expect(find.text('+ Rp 2'), findsNothing);
-    expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, LoginPage.route);
   });
 
   testWidgets('direct history resolves the active membership', (tester) async {

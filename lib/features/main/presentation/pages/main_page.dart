@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
 
 class MainPage extends StatelessWidget {
@@ -13,13 +14,20 @@ class MainPage extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocListener<AuthenticationBloc, AuthenticationStates>(
         listenWhen: (previous, current) {
+          if (current is Unauthenticated) return true;
           final oldRole =
               previous is Authenticated ? previous.authEntity.role : null;
           final newRole =
               current is Authenticated ? current.authEntity.role : null;
           return oldRole != newRole && RoleNavigationBar.supports(newRole);
         },
-        listener: (_, __) => navigationShell.goBranch(0, initialLocation: true),
+        listener: (context, state) {
+          if (state is Unauthenticated) {
+            context.go(LoginPage.route);
+            return;
+          }
+          navigationShell.goBranch(0, initialLocation: true);
+        },
         child: _RoleShell(navigationShell: navigationShell),
       );
 }

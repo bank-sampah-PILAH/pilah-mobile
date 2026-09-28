@@ -57,6 +57,10 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
             ),
         ],
       ),
+      GoRoute(
+        path: '/login',
+        builder: (_, __) => const Center(child: Text('login page')),
+      ),
     ],
   );
   addTearDown(router.dispose);
@@ -146,6 +150,24 @@ void main() {
       expect(find.byType(BottomNavigationBar), findsNothing);
     });
   }
+
+  testWidgets('staff logout returns to login instead of the signed-out shell', (
+    tester,
+  ) async {
+    final states = StreamController<AuthenticationStates>.broadcast();
+    addTearDown(states.close);
+    final router =
+        await mount(tester, session('pengelola'), states: states.stream);
+
+    states.add(AuthenticationLoading());
+    await tester.pump();
+    states.add(Unauthenticated());
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, '/login');
+    expect(find.text('login page'), findsOneWidget);
+    expect(find.text('Silakan masuk sebagai nasabah.'), findsNothing);
+  });
 
   testWidgets('signed-out session cannot display privileged navigation', (
     tester,

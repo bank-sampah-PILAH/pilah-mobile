@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -22,6 +23,8 @@ class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
 
 class _Profile extends MockCubit<ProfileState> implements ProfileCubit {}
 
+class _Environment extends Mock implements AppEnvironment {}
+
 // Proposed first slice for PIL-226, not an external ticket specification.
 // Editing personal details, membership APIs, and logout are separate slices.
 void main() {
@@ -42,6 +45,9 @@ void main() {
     final auth = _Auth();
     profile = _Profile();
     final invites = InviteTokenStore();
+    final environment = _Environment();
+    when(() => environment.supportsDemoLogin).thenReturn(false);
+    di.registerSingleton<AppEnvironment>(environment);
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
         PreviewNasabahRepository(name: apiName ?? name, email: email));
@@ -64,6 +70,7 @@ void main() {
     addTearDown(() async {
       await auth.close();
       await profile.close();
+      await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       await di.unregister<NasabahRepository>();
       invites.dispose();
@@ -88,6 +95,7 @@ void main() {
       states.add(Unauthenticated());
       await tester.pumpAndSettle();
       expect(find.text('siti@example.test'), findsNothing);
+      expect(router.routeInformationProvider.value.uri.path, '/login');
       verifyNever(() => profile.load(silent: true));
     });
     testWidgets('akses Profil dari Beranda membuka profil akun',
