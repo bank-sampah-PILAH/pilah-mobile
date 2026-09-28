@@ -124,6 +124,23 @@ void main() {
     expect(repository.updateCalls.single, {'no_hp': '089900001111'});
   });
 
+  testWidgets('memilih Laki-laki pada kontrol jenis kelamin dan menyimpan',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Laki-laki'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Laki-laki'));
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updateCalls.single, {'jenis_kelamin': 'laki-laki'});
+  });
+
   testWidgets('penyimpanan yang berhasil menampilkan nilai baru',
       (tester) async {
     await open(tester);
