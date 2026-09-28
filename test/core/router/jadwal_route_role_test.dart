@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -147,6 +148,21 @@ void main() {
     expect(find.text('Batalkan'), findsNothing);
     expect(find.text('Terbitkan'), findsNothing);
     expect(find.text('Tandai Selesai'), findsNothing);
+
+    final nextDate = selectedDate.add(const Duration(days: 1));
+    final nextDateParam = '${nextDate.year.toString().padLeft(4, '0')}-'
+        '${nextDate.month.toString().padLeft(2, '0')}-'
+        '${nextDate.day.toString().padLeft(2, '0')}';
+    when(() => jadwalCubit.loadJadwal(date: nextDate)).thenAnswer((_) async {});
+    _stubCalendarLoad(jadwalCubit, nextDate);
+    router.go('${JadwalPage.route}?date=$nextDateParam');
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(formatJadwalDayHeading(nextDate, today: today)),
+      findsOneWidget,
+    );
+    verify(() => jadwalCubit.loadJadwal(date: nextDate)).called(1);
   });
 }
 

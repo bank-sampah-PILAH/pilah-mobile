@@ -36,6 +36,14 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   @override
+  void didUpdateWidget(covariant JadwalPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!DateUtils.isSameDay(oldWidget.initialDate, widget.initialDate)) {
+      _selectDate(widget.initialDate ?? DateTime.now());
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController
       ..removeListener(_loadNextPageNearEnd)
