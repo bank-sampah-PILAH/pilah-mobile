@@ -10,6 +10,8 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/ap
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -47,6 +49,15 @@ class _HomeSessionState extends State<_HomeSession> {
   String? _membershipId;
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
+  Future<void> Function()? _reloadSchedule;
+
+  Future<void> _refresh() async {
+    await Future.wait([
+      _reload?.call() ?? Future<void>.value(),
+      _reloadSchedule?.call() ?? Future<void>.value(),
+    ]);
+  }
+
   void _select(String? id) => setState(() {
         _membershipId = id;
         _selectionVersion++;
@@ -95,7 +106,7 @@ class _HomeSessionState extends State<_HomeSession> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: AppRefreshIndicator(
-                    onRefresh: () => _reload?.call() ?? Future<void>.value(),
+                    onRefresh: _refresh,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -223,24 +234,78 @@ class _HomeSessionState extends State<_HomeSession> {
                                 onAll: () => context.go(JadwalPage.route),
                               ),
                               const SizedBox(height: 8),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(16),
-                                onTap: () => context.go(JadwalPage.route),
-                                child: _card(
-                                  child: Row(children: [
-                                    const Icon(Icons.calendar_month_outlined,
-                                        color: _emerald),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        'Lihat jadwal kegiatan bank sampah Anda.',
-                                        style: _text(13, color: _muted),
-                                      ),
+                              NasabahResource<JadwalEntity?>(
+                                load: _loadNearestSchedule,
+                                registerReload: (reload) =>
+                                    _reloadSchedule = reload,
+                                builder: (context, schedule) {
+                                  if (schedule == null) {
+                                    return _card(
+                                      child: Row(children: [
+                                        const Icon(
+                                          Icons.calendar_month_outlined,
+                                          color: _emerald,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Belum ada jadwal mendatang.',
+                                            style: _text(13, color: _muted),
+                                          ),
+                                        ),
+                                      ]),
+                                    );
+                                  }
+                                  final start = schedule.mulaiPada.toLocal();
+                                  return InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap: () => context.go(Uri(
+                                      path: JadwalPage.route,
+                                      queryParameters: {
+                                        'date': _scheduleDateParam(start),
+                                      },
+                                    ).toString()),
+                                    child: _card(
+                                      child: Row(children: [
+                                        const Icon(
+                                          Icons.calendar_month_outlined,
+                                          color: _emerald,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                schedule.jenisKegiatan,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: _text(14,
+                                                    weight: FontWeight.w600),
+                                              ),
+                                              Text(
+                                                '${nasabahDate(start)} · ${_scheduleTime(start)}',
+                                                style: _text(12, color: _muted),
+                                              ),
+                                              if (schedule.lokasi.isNotEmpty)
+                                                Text(
+                                                  schedule.lokasi,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style:
+                                                      _text(12, color: _muted),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.chevron_right,
+                                            color: _muted),
+                                      ]),
                                     ),
-                                    const Icon(Icons.chevron_right,
-                                        color: _muted),
-                                  ]),
-                                ),
+                                  );
+                                },
                               ),
                               const SizedBox(height: 24),
                               _SectionHeading(
@@ -265,6 +330,35 @@ class _HomeSessionState extends State<_HomeSession> {
                 ))),
       );
 }
+
+Future<JadwalEntity?> _loadNearestSchedule() async {
+  final repository = di<JadwalRepository>();
+  var pageNumber = 1;
+  while (true) {
+    final result = await repository.getJadwal(page: pageNumber);
+    final page = result.fold(
+      (failure) => throw NasabahApiException(failure.displayMessage),
+      (page) => page,
+    );
+    for (final schedule in page.items) {
+      if (schedule.isPublished &&
+          !schedule.mulaiPada.toLocal().isBefore(DateTime.now())) {
+        return schedule;
+      }
+    }
+    if (page.items.isEmpty || !page.hasMore) return null;
+    pageNumber++;
+  }
+}
+
+String _scheduleDateParam(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
+
+String _scheduleTime(DateTime date) =>
+    '${date.hour.toString().padLeft(2, '0')}.'
+    '${date.minute.toString().padLeft(2, '0')}';
 
 const _emerald = NasabahStyle.emerald;
 const _ink = NasabahStyle.ink;

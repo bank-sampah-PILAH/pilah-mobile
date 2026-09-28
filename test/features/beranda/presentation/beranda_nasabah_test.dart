@@ -1,3 +1,4 @@
+import 'package:dartz/dartz.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -21,6 +22,8 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cub
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -44,6 +47,8 @@ class _DashboardCubit extends MockCubit<DashboardState>
 
 class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
+
+class _JadwalRepository extends Mock implements JadwalRepository {}
 
 class _TestAppEnvironment implements AppEnvironment {
   const _TestAppEnvironment();
@@ -100,12 +105,22 @@ void main() {
     final sessions = StreamController<AuthenticationStates>();
     final dashboard = _DashboardCubit();
     final activity = _ActivityCubit();
+    final jadwalRepository = _JadwalRepository();
     final invites = InviteTokenStore();
+
+    when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
+      (_) async => Right(const JadwalPageResult(
+        items: [],
+        totalCount: 0,
+        hasMore: false,
+      )),
+    );
 
     di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
         repository ?? PreviewNasabahRepository(bankName: bankName));
+    di.registerSingleton<JadwalRepository>(jadwalRepository);
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
     whenListen(
       dashboard,
@@ -128,6 +143,7 @@ void main() {
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       await di.unregister<NasabahRepository>();
+      await di.unregister<JadwalRepository>();
       invites.dispose();
     });
 

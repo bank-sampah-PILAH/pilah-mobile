@@ -27,6 +27,17 @@ void main() {
     final auth = _Auth();
     final jadwalRepository = _JadwalRepository();
     final today = DateUtils.dateOnly(DateTime.now());
+    final ongoingDate = today.subtract(const Duration(days: 1));
+    final ongoing = JadwalEntity(
+      id: 'ongoing',
+      bankSampahId: 'bank-1',
+      jenisKegiatan: 'Sedang berlangsung',
+      mulaiPada:
+          DateTime(ongoingDate.year, ongoingDate.month, ongoingDate.day, 10),
+      selesaiPada: today.add(const Duration(days: 1)),
+      lokasi: 'Balai Warga',
+      status: 'diterbitkan',
+    );
     final nearestDate = today.add(const Duration(days: 2));
     final nearest = JadwalEntity(
       id: 'nearest',
@@ -52,8 +63,15 @@ void main() {
 
     when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => Right(JadwalPageResult(
+        items: [ongoing],
+        totalCount: 3,
+        hasMore: true,
+      )),
+    );
+    when(() => jadwalRepository.getJadwal(page: 2, date: null)).thenAnswer(
+      (_) async => Right(JadwalPageResult(
         items: [nearest, later],
-        totalCount: 2,
+        totalCount: 3,
         hasMore: false,
       )),
     );

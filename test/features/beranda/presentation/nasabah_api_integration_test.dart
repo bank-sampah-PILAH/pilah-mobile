@@ -1,21 +1,27 @@
 import 'dart:async';
+import 'package:dartz/dartz.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
+
+class _JadwalRepository extends Mock implements JadwalRepository {}
 
 class _Repository extends PreviewNasabahRepository {
   final selections = <String?>[];
@@ -57,13 +63,24 @@ Authenticated session(String id) => Authenticated(
 void main() {
   late _Repository repository;
   late _Auth auth;
+  late _JadwalRepository jadwalRepository;
   setUp(() {
     repository = _Repository();
     auth = _Auth();
+    jadwalRepository = _JadwalRepository();
+    when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
+      (_) async => Right(const JadwalPageResult(
+        items: [],
+        totalCount: 0,
+        hasMore: false,
+      )),
+    );
     di.registerSingleton<NasabahRepository>(repository);
+    di.registerSingleton<JadwalRepository>(jadwalRepository);
   });
   tearDown(() async {
     await di.unregister<NasabahRepository>();
+    await di.unregister<JadwalRepository>();
     await auth.close();
   });
   Future<void> open(WidgetTester tester,
