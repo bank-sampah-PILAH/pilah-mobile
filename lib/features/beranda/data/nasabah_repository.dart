@@ -169,17 +169,14 @@ class NasabahRepository {
       if (noHp != null) 'no_hp': noHp,
       if (jenisKelamin != null) 'jenis_kelamin': jenisKelamin,
       if (tanggalLahir != null)
-        'tanggal_lahir':
-            '${tanggalLahir.year.toString().padLeft(4, '0')}-'
-                '${tanggalLahir.month.toString().padLeft(2, '0')}-'
-                '${tanggalLahir.day.toString().padLeft(2, '0')}',
+        'tanggal_lahir': '${tanggalLahir.year.toString().padLeft(4, '0')}-'
+            '${tanggalLahir.month.toString().padLeft(2, '0')}-'
+            '${tanggalLahir.day.toString().padLeft(2, '0')}',
       if (alamat != null) 'alamat': alamat,
     };
     try {
-      final response =
-          await network.patch('$_base/profil', data: body);
-      return NasabahIdentity.fromJson(
-          response.data as Map<String, dynamic>);
+      final response = await network.patch('$_base/profil', data: body);
+      return NasabahIdentity.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (error) {
       final status = error.response?.statusCode;
       throw NasabahApiException(switch (status) {

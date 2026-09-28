@@ -132,9 +132,11 @@ void main() {
 
   test('updateProfile patches only the given fields and returns the result',
       () async {
-    when(() => network.patch('/api/v1/nasabah/me/profil',
-        data: {'nama': 'New name', 'no_hp': '0811'})).thenAnswer((_) async =>
-        Response(data: {
+    when(
+        () => network.patch('/api/v1/nasabah/me/profil', data: {
+              'nama': 'New name',
+              'no_hp': '0811'
+            })).thenAnswer((_) async => Response(data: {
           'id': 'u',
           'nama': 'New name',
           'email': 'api@example.test',
@@ -144,8 +146,8 @@ void main() {
           'alamat': '',
           'role': 'nasabah'
         }, requestOptions: RequestOptions(path: '/api/v1/nasabah/me/profil')));
-    final identity = await repository.updateProfile(
-        nama: 'New name', noHp: '0811');
+    final identity =
+        await repository.updateProfile(nama: 'New name', noHp: '0811');
     expect(identity.name, 'New name');
     expect(identity.noHp, '0811');
     verify(() => network.patch('/api/v1/nasabah/me/profil',
@@ -154,26 +156,27 @@ void main() {
 
   test('updateProfile sends tanggal_lahir as a plain date, not a datetime',
       () async {
-    when(() => network.patch('/api/v1/nasabah/me/profil',
-            data: {'tanggal_lahir': '1998-05-17'}))
-        .thenAnswer((_) async => Response(data: {
-              'id': 'u',
-              'nama': 'API name',
-              'email': 'api@example.test',
-              'no_hp': '',
-              'jenis_kelamin': '',
-              'tanggal_lahir': '1998-05-17',
-              'alamat': '',
-              'role': 'nasabah'
-            }, requestOptions: RequestOptions(path: '/api/v1/nasabah/me/profil')));
+    when(
+        () => network.patch('/api/v1/nasabah/me/profil', data: {
+              'tanggal_lahir': '1998-05-17'
+            })).thenAnswer((_) async => Response(data: {
+          'id': 'u',
+          'nama': 'API name',
+          'email': 'api@example.test',
+          'no_hp': '',
+          'jenis_kelamin': '',
+          'tanggal_lahir': '1998-05-17',
+          'alamat': '',
+          'role': 'nasabah'
+        }, requestOptions: RequestOptions(path: '/api/v1/nasabah/me/profil')));
     await repository.updateProfile(tanggalLahir: DateTime(1998, 5, 17));
     verify(() => network.patch('/api/v1/nasabah/me/profil',
         data: {'tanggal_lahir': '1998-05-17'})).called(1);
   });
 
   test('updateProfile surfaces a validation error on 400', () async {
-    when(() => network.patch(any(), data: any(named: 'data')))
-        .thenThrow(DioException(
+    when(() => network.patch(any(), data: any(named: 'data'))).thenThrow(
+        DioException(
             requestOptions: RequestOptions(),
             response: Response(
                 requestOptions: RequestOptions(),

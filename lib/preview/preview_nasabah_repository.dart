@@ -28,8 +28,8 @@ class PreviewNasabahRepository implements NasabahRepository {
     String? alamat,
   }) async {
     final current = await profile();
-    return NasabahIdentity('preview-nasabah', nama ?? current.name, email,
-        'nasabah',
+    return NasabahIdentity(
+        'preview-nasabah', nama ?? current.name, email, 'nasabah',
         noHp: noHp ?? current.noHp,
         jenisKelamin: jenisKelamin ?? current.jenisKelamin,
         tanggalLahir: tanggalLahir ?? current.tanggalLahir,

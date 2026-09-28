@@ -65,8 +65,8 @@ void main() {
   Future<void> open(WidgetTester tester, {NasabahIdentity? identity}) async {
     auth = _Auth();
     repository = _Repository(identity ??
-        const NasabahIdentity('u', 'Siti Aminah', 'siti@example.test',
-            'nasabah',
+        const NasabahIdentity(
+            'u', 'Siti Aminah', 'siti@example.test', 'nasabah',
             noHp: '081234567890',
             jenisKelamin: 'perempuan',
             alamat: 'Jl. Melati No. 1'));
@@ -94,8 +94,8 @@ void main() {
   testWidgets('profil menampilkan semua bidang profil dari respons server',
       (tester) async {
     await open(tester,
-        identity: NasabahIdentity('u', 'Siti Aminah', 'siti@example.test',
-            'nasabah',
+        identity: NasabahIdentity(
+            'u', 'Siti Aminah', 'siti@example.test', 'nasabah',
             noHp: '081234567890',
             jenisKelamin: 'perempuan',
             tanggalLahir: DateTime(1998, 5, 17),

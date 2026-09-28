@@ -246,9 +246,9 @@ class _ProfileBodyState extends State<_ProfileBody> {
       // The app theme's primary is teal-blue; this screen speaks emerald.
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: NasabahStyle.emerald,
-              onPrimary: Colors.white),
+          colorScheme: Theme.of(context)
+              .colorScheme
+              .copyWith(primary: NasabahStyle.emerald, onPrimary: Colors.white),
         ),
         child: child!,
       ),
@@ -271,10 +271,9 @@ class _ProfileBodyState extends State<_ProfileBody> {
         noHp: noHp != _identity.noHp ? noHp : null,
         jenisKelamin:
             _jenisKelamin != _identity.jenisKelamin ? _jenisKelamin : null,
-        tanggalLahir:
-            _sameDate(_tanggalLahir, _identity.tanggalLahir)
-                ? null
-                : _tanggalLahir,
+        tanggalLahir: _sameDate(_tanggalLahir, _identity.tanggalLahir)
+            ? null
+            : _tanggalLahir,
         alamat: alamat != _identity.alamat ? alamat : null,
       );
       if (!mounted) return;
@@ -352,9 +351,8 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
   @override
-  Widget build(BuildContext context) => Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+  Widget build(BuildContext context) =>
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(icon, color: NasabahStyle.emerald),
         const SizedBox(width: 12),
         Expanded(
@@ -460,7 +458,8 @@ class _ProfileEditForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => NasabahCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _fieldLabel('NAMA LENGKAP'),
           TextField(
               controller: namaCtrl,
@@ -487,8 +486,7 @@ class _ProfileEditForm extends StatelessWidget {
           InkWell(
             onTap: onPickTanggalLahir,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
                   border: Border.all(color: NasabahStyle.line),
                   borderRadius:
@@ -516,8 +514,7 @@ class _ProfileEditForm extends StatelessWidget {
           if (error != null) ...[
             const SizedBox(height: 12),
             Text(error!,
-                style:
-                    NasabahStyle.text(13, color: Colors.red.shade700)),
+                style: NasabahStyle.text(13, color: Colors.red.shade700)),
           ],
           const SizedBox(height: 20),
           Row(children: [

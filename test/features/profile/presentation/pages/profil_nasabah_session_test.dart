@@ -115,7 +115,7 @@ void main() {
     sessions.add(Unauthenticated());
     await tester.pumpAndSettle();
     expect(find.text('Bob'), findsNothing);
-    expect(find.text('Silakan masuk untuk melihat profil Anda.'),
-        findsOneWidget);
+    expect(
+        find.text('Silakan masuk untuk melihat profil Anda.'), findsOneWidget);
   });
 }
