@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 
 /// Refreshes read-only identity from the nasabah API without requiring membership.
 class ProfilNasabahPage extends StatelessWidget {
@@ -21,6 +22,9 @@ class ProfilNasabahPage extends StatelessWidget {
       context.go(AppLocations.dashboard);
     }
   }
+
+  void _logout(BuildContext context) =>
+      context.read<AuthenticationBloc>().add(LogoutRequested());
 
   @override
   Widget build(BuildContext context) =>
@@ -67,6 +71,9 @@ class ProfilNasabahPage extends StatelessWidget {
                                       const SizedBox(height: 12),
                                       _AccountCard(
                                           email: identity.email.trim()),
+                                      const SizedBox(height: 24),
+                                      _LogoutCard(
+                                          onLogout: () => _logout(context)),
                                     ],
                                   ),
                                 ),
@@ -125,5 +132,48 @@ class _AccountCard extends StatelessWidget {
           Text(email.isEmpty ? 'Email belum tersedia' : email,
               style: NasabahStyle.text(15)),
         ])),
+      ]));
+}
+
+class _LogoutCard extends StatelessWidget {
+  const _LogoutCard({required this.onLogout});
+  final VoidCallback onLogout;
+  @override
+  Widget build(BuildContext context) => NasabahCard(
+      padding: 20,
+      radius: 20,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                  color: NasabahStyle.emeraldLight, shape: BoxShape.circle),
+              child: const Icon(Icons.logout,
+                  color: NasabahStyle.emeraldDark, size: 20)),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text('Keluar dari Akun',
+                    style:
+                        NasabahStyle.text(15, weight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text('Anda perlu masuk kembali untuk mengakses akun ini.',
+                    style: NasabahStyle.text(13, color: NasabahStyle.muted)),
+              ])),
+        ]),
+        const SizedBox(height: 16),
+        SizedBox(
+            height: 46,
+            child: OutlinedButton(
+                onPressed: onLogout,
+                style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: NasabahStyle.line),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))),
+                child: Text('Keluar',
+                    style:
+                        NasabahStyle.text(15, weight: FontWeight.w600)))),
       ]));
 }
