@@ -154,4 +154,47 @@ class NasabahRepository {
 
   Future<NasabahIdentity> profile() async =>
       NasabahIdentity.fromJson(await _get('profil'));
+
+  /// Patches only the fields the nasabah is allowed to edit. `id`, `email`
+  /// and `role` are never sent — the backend rejects them anyway.
+  Future<NasabahIdentity> updateProfile({
+    String? nama,
+    String? noHp,
+    String? jenisKelamin,
+    DateTime? tanggalLahir,
+    String? alamat,
+  }) async {
+    final body = {
+      if (nama != null) 'nama': nama,
+      if (noHp != null) 'no_hp': noHp,
+      if (jenisKelamin != null) 'jenis_kelamin': jenisKelamin,
+      if (tanggalLahir != null)
+        'tanggal_lahir':
+            '${tanggalLahir.year.toString().padLeft(4, '0')}-'
+                '${tanggalLahir.month.toString().padLeft(2, '0')}-'
+                '${tanggalLahir.day.toString().padLeft(2, '0')}',
+      if (alamat != null) 'alamat': alamat,
+    };
+    try {
+      final response =
+          await network.patch('$_base/profil', data: body);
+      return NasabahIdentity.fromJson(
+          response.data as Map<String, dynamic>);
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      throw NasabahApiException(switch (status) {
+        400 || 422 => 'Data tidak valid. Periksa isian Anda.',
+        401 => 'Sesi berakhir. Silakan masuk kembali.',
+        403 =>
+          'Akses belum tersedia. Pastikan akun, keanggotaan, dan bank sampah aktif.',
+        404 => 'Data tidak ditemukan. Muat ulang atau pilih keanggotaan lain.',
+        _ => 'Perubahan gagal disimpan. Periksa koneksi dan coba lagi.',
+      });
+    } catch (_) {
+      // Covers non-Dio failures such as the request timeout wrapper in
+      // NetworkService, so a save never crashes the page.
+      throw const NasabahApiException(
+          'Perubahan gagal disimpan. Periksa koneksi dan coba lagi.');
+    }
+  }
 }

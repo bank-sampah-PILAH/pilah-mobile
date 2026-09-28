@@ -20,6 +20,23 @@ class PreviewNasabahRepository implements NasabahRepository {
   Future<NasabahIdentity> profile() async =>
       NasabahIdentity('preview-nasabah', name, email, 'nasabah');
   @override
+  Future<NasabahIdentity> updateProfile({
+    String? nama,
+    String? noHp,
+    String? jenisKelamin,
+    DateTime? tanggalLahir,
+    String? alamat,
+  }) async {
+    final current = await profile();
+    return NasabahIdentity('preview-nasabah', nama ?? current.name, email,
+        'nasabah',
+        noHp: noHp ?? current.noHp,
+        jenisKelamin: jenisKelamin ?? current.jenisKelamin,
+        tanggalLahir: tanggalLahir ?? current.tanggalLahir,
+        alamat: alamat ?? current.alamat);
+  }
+
+  @override
   Future<NasabahBalance> balance(String membershipId) async =>
       const NasabahBalance('12500.50', null);
   @override
