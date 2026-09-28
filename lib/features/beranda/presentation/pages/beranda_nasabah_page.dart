@@ -8,6 +8,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
@@ -145,17 +146,8 @@ class _HomeSessionState extends State<_HomeSession> {
                                     load: () => widget.repository
                                         .bank(home.membershipId),
                                     builder: (_, bank) => Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(children: [
-                                        Text(bank.name),
-                                        Text(bank.address.isEmpty
-                                            ? 'Alamat belum tersedia'
-                                            : bank.address),
-                                        Text(bank.city),
-                                        Text(bank.phone.isEmpty
-                                            ? 'Kontak belum tersedia'
-                                            : bank.phone),
-                                      ]),
+                                      padding: const EdgeInsets.only(top: 16),
+                                      child: NasabahBankDetail(bank: bank),
                                     ),
                                   ),
                                 ),

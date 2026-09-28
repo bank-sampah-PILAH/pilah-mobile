@@ -211,6 +211,8 @@ void main() {
         if (entry.key == 'Riwayat Aktivitas') {
           await tester.tap(find.byTooltip('Kembali ke Beranda'));
         } else {
+          await tester.ensureVisible(find.text('Tutup'));
+          await tester.pumpAndSettle();
           await tester.tap(find.text('Tutup'));
         }
         await tester.pumpAndSettle();
