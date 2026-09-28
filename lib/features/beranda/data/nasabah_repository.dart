@@ -56,7 +56,7 @@ class NasabahBalance {
 
 class NasabahBank {
   const NasabahBank(this.name, this.address, this.city, this.phone,
-      {this.logoUrl});
+      {this.logoUrl, this.organizationType});
   factory NasabahBank.fromJson(Map<String, dynamic> json,
           {String Function() origin = _noOrigin}) =>
       NasabahBank(
@@ -65,9 +65,13 @@ class NasabahBank {
         json['kota'] as String? ?? '',
         json['no_hp_pic'] as String? ?? '',
         logoUrl: resolveMediaUrl(json['foto_logo'] as String?, origin),
+        organizationType: json['jenis_organisasi'] as String?,
       );
   final String name, address, city, phone;
   final String? logoUrl;
+  // 'mandiri' | 'induk' | 'unit' — only worth a label when it tells the
+  // nasabah something about the bank's place in a network (unit/induk).
+  final String? organizationType;
 }
 
 class NasabahActivity {
