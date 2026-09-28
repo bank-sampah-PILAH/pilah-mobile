@@ -8,7 +8,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/approval_log_step.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_status_badge.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -97,7 +97,7 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
                   style: AppTextStyle.title1.copyWith(fontSize: 16),
                 ),
                 const SizedBox(height: 16),
-                _buildHistory(),
+                MembershipApprovalTimeline(membership: membership),
               ],
             ),
           ),
@@ -118,6 +118,18 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            switch (membership.status) {
+              MembershipStatus.pending => 'Pengajuan sedang ditinjau',
+              MembershipStatus.approved => 'Keanggotaan aktif',
+              MembershipStatus.rejected => 'Pengajuan belum disetujui',
+            },
+            style: AppTextStyle.title1.copyWith(
+              color: AppColors.greenDark,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Container(
@@ -181,25 +193,6 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-
-  Widget _buildHistory() {
-    if (membership.riwayat.isEmpty) {
-      return Text(
-        'Menunggu keputusan pengurus',
-        style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
-      );
-    }
-
-    return Column(
-      children: [
-        for (var i = 0; i < membership.riwayat.length; i++)
-          ApprovalLogStep(
-            entry: membership.riwayat[i],
-            isLast: i == membership.riwayat.length - 1,
-          ),
-      ],
     );
   }
 
