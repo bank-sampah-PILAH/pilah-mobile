@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,6 +59,16 @@ void main() {
       isA<NasabahApprovalError>(),
     ],
   );
+
+  test('ignores a response after the session shell closes', () async {
+    final pending =
+        Completer<Either<NetworkException, List<NasabahMembershipEntity>>>();
+    when(() => useCase.execute()).thenAnswer((_) => pending.future);
+    final request = cubit.load();
+    await cubit.close();
+    pending.complete(const Right([_membership]));
+    await request;
+  });
 
   blocTest<NasabahApprovalCubit, NasabahApprovalState>(
     'silent reload skips the Loading state when data is already loaded',
