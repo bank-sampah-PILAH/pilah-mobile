@@ -24,6 +24,8 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
@@ -32,6 +34,9 @@ class _MockUseCases extends Mock implements PencairanUseCases {}
 
 class _MockRiwayatAktivitasCubit extends MockCubit<RiwayatAktivitasState>
     implements RiwayatAktivitasCubit {}
+
+class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
+    implements RecentActivityCubit {}
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -84,6 +89,7 @@ void main() {
 
   late _MockUseCases useCases;
   late _MockRiwayatAktivitasCubit riwayatAktivitasCubit;
+  late _MockRecentActivityCubit recentActivityCubit;
 
   setUp(() {
     useCases = _MockUseCases();
@@ -93,6 +99,10 @@ void main() {
     when(() => riwayatAktivitasCubit.state)
         .thenReturn(const RiwayatAktivitasState());
     when(() => riwayatAktivitasCubit.load(silent: any(named: 'silent')))
+        .thenAnswer((_) async {});
+    recentActivityCubit = _MockRecentActivityCubit();
+    when(() => recentActivityCubit.state).thenReturn(RecentActivityInitial());
+    when(() => recentActivityCubit.load(silent: any(named: 'silent')))
         .thenAnswer((_) async {});
   });
 
@@ -114,8 +124,12 @@ void main() {
 
   Future<void> pumpView(WidgetTester tester) async {
     await tester.pumpWidget(
-      BlocProvider<RiwayatAktivitasCubit>.value(
-        value: riwayatAktivitasCubit,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<RiwayatAktivitasCubit>.value(
+              value: riwayatAktivitasCubit),
+          BlocProvider<RecentActivityCubit>.value(value: recentActivityCubit),
+        ],
         child: MaterialApp(
           navigatorKey: rootNavigatorKey,
           home: BlocProvider(
@@ -206,6 +220,7 @@ void main() {
     expect(sent.tanggal, _now);
     expect(find.text('Pencairan Berhasil!'), findsOneWidget);
     expect(find.text('Rp 265.600'), findsWidgets);
+    verify(() => recentActivityCubit.load(silent: true)).called(1);
 
     await tester.tap(find.text('Selesai'));
     await tester.pumpAndSettle();
