@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
@@ -191,6 +192,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
         if (state.submitStatus == SubmitStatus.success &&
             state.created != null) {
           context.read<RiwayatAktivitasCubit>().load(silent: true);
+          context.read<RecentActivityCubit>().load(silent: true);
           _showBerhasil(state.created!);
         } else if (state.errorMessage != null &&
             state.saldoStatus != SaldoStatus.failure) {
