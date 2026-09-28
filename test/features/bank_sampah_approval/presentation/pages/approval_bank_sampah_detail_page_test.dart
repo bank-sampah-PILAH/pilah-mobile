@@ -81,7 +81,7 @@ void main() {
     expect(find.text('Dokumen tidak lengkap'), findsOneWidget);
   });
 
-  testWidgets('renders riwayat entries in the order the backend sent them',
+  testWidgets('renders riwayat chronologically after the submitted step',
       (tester) async {
     final membership = NasabahMembershipEntity(
       id: 'membership-1',
@@ -91,10 +91,8 @@ void main() {
       bankSampahAlamat: 'Jl. Merdeka No. 10',
       status: MembershipStatus.approved,
       isActive: true,
-      // Newest-first, exactly as the backend sends riwayat_persetujuan: the
-      // most recent decision (25 Sep, approved) comes before the older one
-      // (20 Sep, rejected). A test fixture in chronological order wouldn't
-      // catch an accidental re-sort into oldest-first.
+      // The API sends newest-first; the timeline should read top-to-bottom in
+      // chronological order for a clear application history.
       riwayat: [
         ApprovalLogEntity(
           status: ApprovalLogStatus.approved,
@@ -113,12 +111,15 @@ void main() {
 
     expect(find.text('Data lengkap'), findsOneWidget);
     expect(find.text('Dokumen tidak lengkap'), findsOneWidget);
+    expect(find.text('Pengajuan dikirim'), findsOneWidget);
+    expect(find.text('Keanggotaan disetujui'), findsNothing,
+        reason: 'the final decision already appears in the approval history');
     final newestDy = tester.getTopLeft(find.text('Data lengkap')).dy;
     final oldestDy = tester.getTopLeft(find.text('Dokumen tidak lengkap')).dy;
-    expect(newestDy, lessThan(oldestDy));
+    expect(oldestDy, lessThan(newestDy));
   });
 
-  testWidgets('renders a waiting message with no timeline for an empty riwayat',
+  testWidgets('shows submitted and current waiting steps for a new application',
       (tester) async {
     const membership = NasabahMembershipEntity(
       id: 'membership-1',
@@ -132,7 +133,8 @@ void main() {
 
     await tester.pumpWidget(_wrap(membership, cubit));
 
-    expect(find.text('Menunggu keputusan pengurus'), findsOneWidget);
+    expect(find.text('Pengajuan dikirim'), findsOneWidget);
+    expect(find.text('Menunggu verifikasi pengurus'), findsOneWidget);
   });
 
   testWidgets('shows the appeal button only when the membership is rejected',
