@@ -87,6 +87,53 @@ class NasabahActivity {
   final DateTime date;
 }
 
+class NasabahSetoranItem {
+  const NasabahSetoranItem({
+    required this.name,
+    required this.weight,
+    required this.price,
+    required this.subtotal,
+  });
+
+  factory NasabahSetoranItem.fromJson(Map<String, dynamic> json) =>
+      NasabahSetoranItem(
+        name: json['nama_sampah_snapshot'] as String,
+        weight: json['berat'] as String,
+        price: json['harga_snapshot'] as String,
+        subtotal: json['subtotal'] as String,
+      );
+
+  final String name, weight, price, subtotal;
+}
+
+class NasabahSetoranDetail {
+  const NasabahSetoranDetail({
+    required this.date,
+    required this.type,
+    required this.amount,
+    required this.note,
+    required this.balanceAfter,
+    required this.items,
+  });
+
+  factory NasabahSetoranDetail.fromJson(Map<String, dynamic> json) =>
+      NasabahSetoranDetail(
+        date: DateTime.parse(json['tanggal'] as String),
+        type: json['tipe'] as String,
+        amount: json['total_nilai'] as String,
+        note: json['catatan'] as String? ?? '',
+        balanceAfter: json['saldo_setelah_transaksi'] as String,
+        items: (json['items'] as List)
+            .map((item) =>
+                NasabahSetoranItem.fromJson(item as Map<String, dynamic>))
+            .toList(),
+      );
+
+  final DateTime date;
+  final String type, amount, note, balanceAfter;
+  final List<NasabahSetoranItem> items;
+}
+
 class NasabahHome {
   const NasabahHome(this.identity, this.membershipId, this.bank, this.balance,
       this.activities);
@@ -168,6 +215,14 @@ class NasabahRepository {
             .toList(),
         json['next'] != null);
   }
+
+  Future<NasabahSetoranDetail> setoranDetail(
+    String membershipId,
+    String transactionId,
+  ) async =>
+      NasabahSetoranDetail.fromJson(
+        await _get('riwayat/$transactionId', membershipId: membershipId),
+      );
 
   Future<NasabahIdentity> profile() async =>
       NasabahIdentity.fromJson(await _get('profil'));

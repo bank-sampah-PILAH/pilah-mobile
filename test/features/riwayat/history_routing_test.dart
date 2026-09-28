@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -13,6 +15,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -20,6 +26,8 @@ class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
 
 class _Environment extends Mock implements AppEnvironment {}
+
+class _PayoutUseCases extends Mock implements PencairanUseCases {}
 
 class _Repository extends PreviewNasabahRepository {
   final requests = <(String, int)>[];
@@ -39,18 +47,27 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final router = AppRouterConfig.getRouter();
   tearDownAll(router.dispose);
+  setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
   late _Repository repository;
   late _Auth auth;
+  late _PayoutUseCases payoutUseCases;
   late StreamController<AuthenticationStates> states;
   setUp(() {
     repository = _Repository();
     auth = _Auth();
+    payoutUseCases = _PayoutUseCases();
+    when(() => payoutUseCases.getRiwayat(any())).thenAnswer(
+      (_) async => const Right<NetworkException, List<Pencairan>>([]),
+    );
     states = StreamController<AuthenticationStates>.broadcast();
     di.registerSingleton<NasabahRepository>(repository);
     final environment = _Environment();
     when(() => environment.supportsDemoLogin).thenReturn(false);
     di.registerSingleton<AppEnvironment>(environment);
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
+    di.registerFactory<RiwayatPencairanCubit>(
+      () => RiwayatPencairanCubit(payoutUseCases),
+    );
     whenListen(auth, states.stream,
         initialState: Authenticated(
           authEntity: const AuthEntity(
@@ -68,6 +85,7 @@ void main() {
     await auth.close();
     di<InviteTokenStore>().dispose();
     await di.unregister<InviteTokenStore>();
+    await di.unregister<RiwayatPencairanCubit>();
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
   });
@@ -81,15 +99,19 @@ void main() {
   }
 
   testWidgets(
-      'home opens a history route with its membership and appends pages',
+      'balance card opens Tabungan on Setoran and keeps membership while paging',
       (tester) async {
     await open(tester, '/dashboard');
-    await tester.ensureVisible(find.text('Riwayat Aktivitas'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Riwayat Aktivitas'));
+    expect(find.text('Riwayat Aktivitas'), findsNothing);
+    expect(find.text('Pencairan'), findsNothing);
+    await tester.ensureVisible(find.text('Rp 12.500,50'));
+    await tester.tap(find.text('Rp 12.500,50'));
     await tester.pumpAndSettle();
     expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
         '/riwayat');
+    expect(
+        DefaultTabController.of(tester.element(find.byType(TabBar))).index, 0);
+    expect(find.text('Riwayat Setoran'), findsOneWidget);
     await tester.tap(find.text('Muat Lagi'));
     await tester.pumpAndSettle();
     expect(repository.requests, [('member-b', 1), ('member-b', 2)]);
@@ -100,6 +122,21 @@ void main() {
     expect(find.text('+ Rp 1'), findsNothing);
     expect(find.text('+ Rp 2'), findsNothing);
     expect(router.routeInformationProvider.value.uri.path, LoginPage.route);
+  });
+
+  testWidgets('pencairan tab is selectable and can be deep-linked',
+      (tester) async {
+    await open(tester, '/riwayat?keanggotaan_id=member-b&filter=pencairan');
+
+    expect(
+        DefaultTabController.of(tester.element(find.byType(TabBar))).index, 1);
+    expect(find.text('Riwayat Pencairan'), findsOneWidget);
+    expect(find.text('Belum ada riwayat pencairan'), findsOneWidget);
+    verify(() => payoutUseCases.getRiwayat(any())).called(1);
+
+    await tester.tap(find.text('Setoran'));
+    await tester.pumpAndSettle();
+    expect(find.text('Riwayat Setoran'), findsOneWidget);
   });
 
   testWidgets('direct history resolves the active membership', (tester) async {

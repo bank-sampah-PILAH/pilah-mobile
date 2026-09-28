@@ -30,7 +30,6 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
@@ -132,10 +131,6 @@ class AppRouterConfig {
         path: CatatPencairanPage.route,
         name: CatatPencairanPage.route,
         builder: (context, state) => const CatatPencairanPage(),
-      ),
-      GoRoute(
-        path: RiwayatPencairanNasabahPage.route,
-        builder: (context, state) => const RiwayatPencairanNasabahPage(),
       ),
       GoRoute(
         path: EditPencairanPage.route,
@@ -318,6 +313,8 @@ class AppRouterConfig {
                 path: AppLocations.history,
                 builder: (_, state) => NasabahHistoryScreen(
                       membershipId: state.uri.queryParameters['keanggotaan_id'],
+                      initialPencairan:
+                          state.uri.queryParameters['filter'] == 'pencairan',
                     )),
           ]),
           StatefulShellBranch(routes: [

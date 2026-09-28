@@ -15,8 +15,33 @@ Map<String, dynamic> activity(String id, String amount) => {
       'total_nilai': amount,
     };
 
-Widget host(HistoryLoader loader) => MaterialApp(
-      home: Scaffold(body: RiwayatNasabahPage(loadPage: loader)),
+NasabahSetoranDetail setoranDetail() => NasabahSetoranDetail(
+      date: DateTime.parse('2026-09-23T08:00:00+07:00'),
+      type: 'setoran',
+      amount: '12500.00',
+      note: 'Setoran rutin',
+      balanceAfter: '25000.00',
+      items: const [
+        NasabahSetoranItem(
+          name: 'Plastik PET',
+          weight: '1.000',
+          price: '12500.00',
+          subtotal: '12500.00',
+        ),
+      ],
+    );
+
+Widget host(
+  HistoryLoader loader, {
+  Future<NasabahSetoranDetail> Function(String)? loadDetail,
+}) =>
+    MaterialApp(
+      home: Scaffold(
+        body: RiwayatNasabahPage(
+          loadPage: loader,
+          loadDetail: loadDetail ?? (_) async => setoranDetail(),
+        ),
+      ),
     );
 
 void main() {
@@ -90,7 +115,7 @@ void main() {
   testWidgets('an empty response has an explicit empty state', (tester) async {
     await tester.pumpWidget(host((_) async => page([])));
     await tester.pumpAndSettle();
-    expect(find.text('Riwayat Aktivitas'), findsOneWidget);
+    expect(find.text('Riwayat Setoran'), findsOneWidget);
     expect(find.text('Belum ada aktivitas'), findsOneWidget);
     expect(find.text('Coba Lagi'), findsNothing);
   });
@@ -127,6 +152,32 @@ void main() {
       expect(find.textContaining('12.500'), findsOneWidget);
     },
   );
+
+  testWidgets('tapping a setoran opens its itemized detail sheet', (
+    tester,
+  ) async {
+    String? requestedId;
+    await tester.pumpWidget(
+      host(
+        (_) async => page([activity('transaction-1', '12500.00')]),
+        loadDetail: (id) async {
+          requestedId = id;
+          return setoranDetail();
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Setoran'));
+    await tester.pumpAndSettle();
+
+    expect(requestedId, 'transaction-1');
+    expect(find.text('Detail Setoran'), findsOneWidget);
+    expect(find.text('Plastik PET'), findsOneWidget);
+    expect(find.text('1.000 kg'), findsOneWidget);
+    expect(find.text('Rp 12.500'), findsNWidgets(3));
+    expect(find.text('Setoran rutin'), findsOneWidget);
+  });
 
   testWidgets('loads the next page without replacing earlier activities', (
     tester,

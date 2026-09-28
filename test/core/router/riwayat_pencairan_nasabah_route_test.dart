@@ -20,7 +20,6 @@ import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencai
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/riwayat_pencairan_nasabah_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -66,46 +65,6 @@ void main() {
     if (di.isRegistered<RevisiPencairanCubit>()) {
       await di.unregister<RevisiPencairanCubit>();
     }
-  });
-
-  testWidgets('router opens the Nasabah payout history page', (tester) async {
-    final useCases = _MockUseCases();
-    when(() => useCases.getRiwayat(any())).thenAnswer(
-        (_) async => const Right<NetworkException, List<Pencairan>>([]));
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(useCases),
-    );
-
-    final authBloc = _MockAuthenticationBloc();
-    whenListen(
-      authBloc,
-      const Stream<AuthenticationStates>.empty(),
-      initialState: AuthenticationLoading(),
-    );
-
-    final router = AppRouterConfig.getRouter();
-    router.go(RiwayatPencairanNasabahPage.route);
-
-    await tester.pumpWidget(
-      BlocProvider<AuthenticationBloc>.value(
-        value: authBloc,
-        child: MaterialApp.router(routerConfig: router),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(find.text('Riwayat Pencairan'), findsOneWidget);
-    verify(() => useCases.getRiwayat(any())).called(1);
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: RiwayatPencairanNasabahPage(key: UniqueKey()),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Riwayat Pencairan'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('router builds every pengurus payout page with its extra',
