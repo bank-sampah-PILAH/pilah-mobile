@@ -12,6 +12,9 @@ abstract final class NasabahStyle {
   static const emeraldLight = AppColors.greenLight;
   static const emeraldDark = AppColors.greenDark;
   static const maxWidth = 600.0;
+  // Shared caption color for the small caps labels above a card value
+  // (e.g. "EMAIL", "NOMOR HP"). Kept as one token so every card agrees.
+  static const labelMuted = Color(0xFF64748B);
 
   static TextStyle text(
     double size, {
