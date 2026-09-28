@@ -219,7 +219,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
               ),
               if (punyaAkun) ...[
                 const SizedBox(height: 16),
-                _buildProfilDikelolaNasabah(),
+                _buildEmailDikelolaNasabah(),
               ],
               const SizedBox(height: 24),
 
@@ -305,11 +305,12 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
     );
   }
 
-  /// Keterangan bahwa profil ini milik pemilik akun, bukan pengurus.
+  /// Keterangan bahwa email ini kunci masuk pemilik akun, bukan data yang
+  /// boleh diganti pengurus.
   ///
   /// Sekadar penjelasan tampilan: batasnya tetap ditegakkan server pada setiap
   /// permintaan (PIL-223), bukan oleh layar ini.
-  Widget _buildProfilDikelolaNasabah() {
+  Widget _buildEmailDikelolaNasabah() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -331,7 +332,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Profil dikelola oleh nasabah',
+                  'Email dikelola oleh nasabah',
                   style: AppTextStyle.title1.copyWith(
                     color: DetailNasabahBottomSheet.emeraldPrimary,
                     fontWeight: FontWeight.bold,
@@ -340,7 +341,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Pengurus hanya dapat mengubah nomor anggota dan status keanggotaan.',
+                  'Pengurus dapat memperbaiki data lain, tetapi tidak emailnya.',
                   style: AppTextStyle.small.copyWith(
                     color: Colors.black87,
                     height: 1.4,

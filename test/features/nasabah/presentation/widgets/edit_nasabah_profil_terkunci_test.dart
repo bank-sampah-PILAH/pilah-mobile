@@ -21,7 +21,7 @@ const _tanggalLahir = 3;
 const _whatsapp = 4;
 const _alamat = 5;
 
-const _pesan403 = 'Nasabah dengan akun hanya bisa diubah pada data keanggotaan';
+const _pesan403 = 'Email nasabah dengan akun tidak dapat diubah';
 const _pesan403NonAktif = 'Nasabah nonaktif tidak bisa diedit';
 
 /// Respons yang dikirim backend ketika profil nasabah berakun diubah
@@ -117,22 +117,24 @@ void main() {
 
   group('Form ubah nasabah menghormati profil milik pemilik akun (PIL-206)',
       () {
-    testWidgets('nasabah berakun: field profil global dimatikan',
-        (tester) async {
+    testWidgets('nasabah berakun: hanya email yang dimatikan', (tester) async {
       await pump(tester, _nasabah(punyaAkun: true));
 
-      expect(_aktif(tester, _nama), isFalse);
+      // Client meminta pengurus tetap dapat memperbaiki data nasabah di
+      // lapangan; hanya email yang terkunci sebagai kunci penautan akun
+      // (PIL-288 merevisi PIL-223).
       expect(_aktif(tester, _email), isFalse);
-      expect(_aktif(tester, _tanggalLahir), isFalse);
-      expect(_aktif(tester, _whatsapp), isFalse);
-      expect(_aktif(tester, _alamat), isFalse);
+      expect(_aktif(tester, _nama), isTrue);
+      expect(_aktif(tester, _tanggalLahir), isTrue);
+      expect(_aktif(tester, _whatsapp), isTrue);
+      expect(_aktif(tester, _alamat), isTrue);
       expect(
         tester
             .widget<DropdownButtonFormField<String>>(
                 find.byType(DropdownButtonFormField<String>))
             .onChanged,
-        isNull,
-        reason: 'jenis kelamin juga profil global',
+        isNotNull,
+        reason: 'jenis kelamin bukan kunci penautan, jadi tetap bisa diubah',
       );
     });
 
@@ -149,7 +151,7 @@ void main() {
         (tester) async {
       await pump(tester, _nasabah(punyaAkun: true));
 
-      expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+      expect(find.text('Email dikelola oleh nasabah'), findsOneWidget);
     });
 
     testWidgets('nasabah tanpa akun: seluruh field tetap dapat diubah',
@@ -166,7 +168,7 @@ void main() {
       ]) {
         expect(_aktif(tester, urutan), isTrue);
       }
-      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
+      expect(find.text('Email dikelola oleh nasabah'), findsNothing);
     });
 
     testWidgets('nasabah tanpa akun: jenis kelamin dapat dipilih ulang',
@@ -186,7 +188,7 @@ void main() {
       await pump(tester, _nasabah());
 
       expect(_aktif(tester, _nama), isTrue);
-      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
+      expect(find.text('Email dikelola oleh nasabah'), findsNothing);
     });
   });
 
@@ -233,14 +235,15 @@ void main() {
           .thenAnswer((_) async => _tolak403());
 
       await pump(tester, _nasabah(punyaAkun: false));
-      expect(_aktif(tester, _nama), isTrue);
+      expect(_aktif(tester, _email), isTrue);
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
       await tester.pumpAndSettle();
 
-      expect(_aktif(tester, _nama), isFalse);
+      expect(_aktif(tester, _email), isFalse);
+      expect(_aktif(tester, _nama), isTrue);
       expect(_aktif(tester, _nomorAnggota), isTrue);
-      expect(find.text('Profil dikelola oleh nasabah'), findsOneWidget);
+      expect(find.text('Email dikelola oleh nasabah'), findsOneWidget);
     });
 
     testWidgets(
@@ -258,7 +261,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_aktif(tester, _nama), isTrue);
-      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
+      expect(find.text('Email dikelola oleh nasabah'), findsNothing);
     });
 
     testWidgets('kegagalan lain tidak ikut mengunci form', (tester) async {
@@ -272,7 +275,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_aktif(tester, _nama), isTrue);
-      expect(find.text('Profil dikelola oleh nasabah'), findsNothing);
+      expect(find.text('Email dikelola oleh nasabah'), findsNothing);
     });
   });
 }
