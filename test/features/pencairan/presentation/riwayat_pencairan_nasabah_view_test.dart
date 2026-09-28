@@ -163,4 +163,25 @@ void main() {
 
     verify(() => useCases.getRiwayat(any())).called(2);
   });
+
+  testWidgets('refreshing keeps the list on screen with a spinner below it',
+      (tester) async {
+    await pumpView(tester);
+    await tester.pumpAndSettle();
+    final reload = Completer<Either<NetworkException, List<Pencairan>>>();
+    when(() => useCases.getRiwayat(any())).thenAnswer((_) => reload.future);
+
+    await tester.tap(find.byTooltip('Muat ulang'));
+    await tester.pump();
+
+    expect(find.text('Pencairan'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    reload.complete(Right([_row(), _row(id: 'p-2')]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pencairan'), findsNWidgets(2));
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    verify(() => useCases.getRiwayat(any())).called(2);
+  });
 }
