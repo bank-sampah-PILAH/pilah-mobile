@@ -156,8 +156,7 @@ class _LogoutCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 Text('Keluar dari Akun',
-                    style:
-                        NasabahStyle.text(15, weight: FontWeight.w600)),
+                    style: NasabahStyle.text(15, weight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text('Anda perlu masuk kembali untuk mengakses akun ini.',
                     style: NasabahStyle.text(13, color: NasabahStyle.muted)),
@@ -173,7 +172,6 @@ class _LogoutCard extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12))),
                 child: Text('Keluar',
-                    style:
-                        NasabahStyle.text(15, weight: FontWeight.w600)))),
+                    style: NasabahStyle.text(15, weight: FontWeight.w600)))),
       ]));
 }

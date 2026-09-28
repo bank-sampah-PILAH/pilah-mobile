@@ -4,10 +4,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -58,9 +60,17 @@ void main() {
     await di.unregister<NasabahRepository>();
   });
 
-  Future<void> open(WidgetTester tester) =>
-      tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-          value: auth, child: const MaterialApp(home: ProfilNasabahPage())));
+  Future<void> open(WidgetTester tester) async {
+    final router = GoRouter(initialLocation: '/profile', routes: [
+      GoRoute(path: '/profile', builder: (_, __) => const ProfilNasabahPage()),
+      GoRoute(
+          path: LoginPage.route,
+          builder: (_, __) => const Scaffold(body: Text('LOGIN'))),
+    ]);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
+        value: auth, child: MaterialApp.router(routerConfig: router)));
+  }
 
   testWidgets('token refresh retains profile and does not repeat the request',
       (tester) async {
@@ -98,6 +108,10 @@ void main() {
     expect(find.text('Bob'), findsOneWidget);
     expect(find.text('Alice'), findsNothing);
 
+    // Navigating to LoginPage on logout is MainPage's shell listener's job
+    // (see lib/features/main/presentation/pages/main_page.dart); this page,
+    // built standalone here with no shell above it, just falls back to its
+    // own "please sign in" copy once the session drops.
     sessions.add(Unauthenticated());
     await tester.pumpAndSettle();
     expect(find.text('Bob'), findsNothing);

@@ -4,14 +4,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -23,15 +21,15 @@ class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 Authenticated _session() => Authenticated(
-    authEntity: const AuthEntity(
-  id: 'nasabah-284',
-  name: 'Siti Aminah',
-  email: 'siti@example.test',
-  photoUrl: '',
-  token: 'test-token',
-  role: 'nasabah',
-  nextStep: 'dashboard',
-));
+        authEntity: const AuthEntity(
+      id: 'nasabah-284',
+      name: 'Siti Aminah',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'test-token',
+      role: 'nasabah',
+      nextStep: 'dashboard',
+    ));
 
 void main() {
   setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
@@ -65,31 +63,15 @@ void main() {
     await tester.tap(logoutButton);
     await tester.pump();
 
-    verify(() => auth
-        .add(any<AuthenticationEvent>(that: isA<LogoutRequested>()))).called(1);
+    verify(() =>
+            auth.add(any<AuthenticationEvent>(that: isA<LogoutRequested>())))
+        .called(1);
   });
 
-  testWidgets('returns to login once logout is confirmed by Unauthenticated',
-      (tester) async {
-    final router = GoRouter(
-      initialLocation: '/profile',
-      routes: [
-        GoRoute(
-            path: '/profile', builder: (_, __) => const ProfilNasabahPage()),
-        GoRoute(
-            path: LoginPage.route,
-            builder: (_, __) => const Scaffold(body: Text('LOGIN'))),
-      ],
-    );
-    addTearDown(router.dispose);
-
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: MaterialApp.router(routerConfig: router)));
-    await tester.pumpAndSettle();
-
-    states.add(Unauthenticated());
-    await tester.pumpAndSettle();
-
-    expect(find.text('LOGIN'), findsOneWidget);
-  });
+  // Post-logout navigation to LoginPage is MainPage's shell listener's job
+  // (lib/features/main/presentation/pages/main_page.dart), not this page's —
+  // covered by profil_nasabah_test.dart's real-router assertion and by
+  // role_navigation_test.dart. This page's only job on Unauthenticated is to
+  // stop treating the session as a nasabah session, which the tests above
+  // and in profil_nasabah_test.dart already cover.
 }
