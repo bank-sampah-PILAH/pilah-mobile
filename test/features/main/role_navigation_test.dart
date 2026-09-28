@@ -54,12 +54,15 @@ Authenticated session(String role) => Authenticated(
 
 Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     {Stream<AuthenticationStates>? states,
-    NasabahApprovalState approvalState = const NasabahApprovalLoaded([approved]),
-    Stream<NasabahApprovalState>? approvalStates}) async {
-  final approval = MockApproval();
+    NasabahApprovalState approvalState =
+        const NasabahApprovalLoaded([approved]),
+    Stream<NasabahApprovalState>? approvalStates,
+    MockApproval? approvalCubit}) async {
+  final approval = approvalCubit ?? MockApproval();
   when(() => approval.load(silent: any(named: 'silent')))
       .thenAnswer((_) async {});
-  whenListen(approval, approvalStates ?? const Stream<NasabahApprovalState>.empty(),
+  whenListen(
+      approval, approvalStates ?? const Stream<NasabahApprovalState>.empty(),
       initialState: approvalState);
   di.registerFactory<NasabahApprovalCubit>(() => approval);
   addTearDown(() async {
@@ -170,17 +173,43 @@ void main() {
 
   testWidgets('pending membership shows status home with only Home and Profile',
       (tester) async {
-    final router = await mount(tester, session('nasabah'),
-        approvalState: const NasabahApprovalLoaded([pending]));
+    final approval = MockApproval();
+    await mount(tester, session('nasabah'),
+        approvalState: const NasabahApprovalLoaded([pending]),
+        approvalCubit: approval);
     expect(labels(tester), ['Beranda', 'Profil']);
     expect(find.text('Bank Sampah Melati'), findsWidgets);
     expect(find.text('Pengajuan dikirim'), findsOneWidget);
     expect(find.text('Menunggu verifikasi pengurus'), findsOneWidget);
     expect(find.text('body:/home'), findsNothing);
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    expect(find.text('body:/profile'), findsOneWidget);
+    await tester.tap(find.text('Beranda'));
+    await tester.pumpAndSettle();
+    verify(() => approval.load(silent: true)).called(1);
     await tester.tap(find.text('Lihat detail pengajuan'));
     await tester.pumpAndSettle();
-    expect(router.routeInformationProvider.value.uri.path,
-        '/approval-bank-sampah/detail');
+    expect(tester.takeException(), isNull);
+    expect(find.text('application details'), findsOneWidget);
+  });
+
+  testWidgets('a rejected application explains the next step', (tester) async {
+    await mount(tester, session('nasabah'),
+        approvalState: const NasabahApprovalLoaded([
+          NasabahMembershipEntity(
+            id: 'application-1',
+            bankSampahId: 'bank-1',
+            bankSampahNama: 'Bank Sampah Melati',
+            bankSampahKota: 'Bandung',
+            bankSampahAlamat: 'Jl. Melati',
+            status: MembershipStatus.rejected,
+            isActive: false,
+          ),
+        ]));
+    expect(labels(tester), ['Beranda', 'Profil']);
+    expect(find.text('Pengajuan belum disetujui'), findsOneWidget);
+    expect(find.textContaining('ajukan banding'), findsOneWidget);
   });
 
   testWidgets('pending membership cannot open an old Tabungan route',

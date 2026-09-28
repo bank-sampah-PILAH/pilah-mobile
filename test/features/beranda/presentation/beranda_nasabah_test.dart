@@ -30,6 +30,7 @@ import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_c
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import '../../../support/approved_membership.dart';
 
 class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -128,6 +129,7 @@ void main() {
       )),
     );
 
+    final approval = registerApprovedMembership();
     di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
@@ -155,6 +157,7 @@ void main() {
       await auth.close();
       await dashboard.close();
       await activity.close();
+      await unregisterApprovedMembership(approval);
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       await di.unregister<RiwayatPencairanCubit>();

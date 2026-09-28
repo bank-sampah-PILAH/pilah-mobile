@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
@@ -21,6 +22,7 @@ import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_c
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import '../../support/approved_membership.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -52,8 +54,10 @@ void main() {
   late _Auth auth;
   late _PayoutUseCases payoutUseCases;
   late StreamController<AuthenticationStates> states;
+  late NasabahApprovalCubit approval;
   setUp(() {
     repository = _Repository();
+    approval = registerApprovedMembership();
     auth = _Auth();
     payoutUseCases = _PayoutUseCases();
     when(() => payoutUseCases.getRiwayat(any())).thenAnswer(
@@ -83,6 +87,7 @@ void main() {
   tearDown(() async {
     await states.close();
     await auth.close();
+    await unregisterApprovedMembership(approval);
     di<InviteTokenStore>().dispose();
     await di.unregister<InviteTokenStore>();
     await di.unregister<RiwayatPencairanCubit>();
