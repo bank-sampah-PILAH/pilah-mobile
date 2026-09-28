@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'dart:async';
 import 'dart:ui' show SemanticsAction;
@@ -210,6 +211,8 @@ void main() {
         if (entry.key == 'Riwayat Aktivitas') {
           await tester.tap(find.byTooltip('Kembali ke Beranda'));
         } else {
+          await tester.ensureVisible(find.text('Tutup'));
+          await tester.pumpAndSettle();
           await tester.tap(find.text('Tutup'));
         }
         await tester.pumpAndSettle();
@@ -220,6 +223,23 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+    testWidgets(
+        'Detail Bank Sampah sheet renders the shared bank detail widget', (
+      tester,
+    ) async {
+      await loginAsNasabah(tester);
+      await tester.scrollUntilVisible(find.text('Detail Bank Sampah'), 200);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Detail Bank Sampah'));
+      await tester.pumpAndSettle();
+      expect(find.byType(NasabahBankDetail), findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byType(NasabahBankDetail),
+              matching: find.text('Jl. Melati')),
+          findsOneWidget);
+    });
+
     for (final bankName in ['Bank Sampah Melati', 'Bank Sampah Kenanga']) {
       testWidgets('menampilkan unit milik akun: $bankName', (tester) async {
         await loginAsNasabah(tester, bankName: bankName);

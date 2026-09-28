@@ -1,11 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 
 class _Network extends Mock implements NetworkService {}
+
+class _Environment extends Mock implements AppEnvironment {}
 
 void main() {
   late _Network network;
@@ -80,6 +83,36 @@ void main() {
       verify(() => network.get('/api/v1/nasabah/me/$path',
           queryParams: {'keanggotaan_id': 'b'})).called(1);
     }
+  });
+
+  test('bank details resolve a relative logo against the API origin', () async {
+    final environment = _Environment();
+    when(() => environment.baseUrl).thenReturn('https://example.test');
+    when(() => network.environment).thenReturn(environment);
+    respond('/api/v1/nasabah/me/bank-sampah', {
+      'nama': 'Mawar',
+      'foto_logo': '/media/bank_sampah/logo/mawar.png',
+    });
+    final bank = await repository.bank('b');
+    expect(
+        bank.logoUrl, 'https://example.test/media/bank_sampah/logo/mawar.png');
+  });
+
+  test('bank details leave an absolute logo untouched and empty logo null',
+      () async {
+    respond('/api/v1/nasabah/me/bank-sampah',
+        {'nama': 'Mawar', 'foto_logo': 'https://cdn.example.test/logo.png'});
+    expect((await repository.bank('b')).logoUrl,
+        'https://cdn.example.test/logo.png');
+    respond('/api/v1/nasabah/me/bank-sampah', {'nama': 'Mawar'});
+    expect((await repository.bank('b')).logoUrl, isNull);
+  });
+
+  test('bank details carry the organization type for unit/induk labelling',
+      () async {
+    respond('/api/v1/nasabah/me/bank-sampah',
+        {'nama': 'Mawar', 'jenis_organisasi': 'unit'});
+    expect((await repository.bank('b')).organizationType, 'unit');
   });
 
   test('profile uses nasabah endpoint without membership parameters', () async {

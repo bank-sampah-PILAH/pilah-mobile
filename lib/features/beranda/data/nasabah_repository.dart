@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/media/media_url.dart';
+
+String _noOrigin() => '';
 
 class MembershipChoice {
   const MembershipChoice(this.id, this.bankName);
@@ -52,14 +55,23 @@ class NasabahBalance {
 }
 
 class NasabahBank {
-  const NasabahBank(this.name, this.address, this.city, this.phone);
-  factory NasabahBank.fromJson(Map<String, dynamic> json) => NasabahBank(
+  const NasabahBank(this.name, this.address, this.city, this.phone,
+      {this.logoUrl, this.organizationType});
+  factory NasabahBank.fromJson(Map<String, dynamic> json,
+          {String Function() origin = _noOrigin}) =>
+      NasabahBank(
         json['nama'] as String,
         json['alamat'] as String? ?? '',
         json['kota'] as String? ?? '',
         json['no_hp_pic'] as String? ?? '',
+        logoUrl: resolveMediaUrl(json['foto_logo'] as String?, origin),
+        organizationType: json['jenis_organisasi'] as String?,
       );
   final String name, address, city, phone;
+  final String? logoUrl;
+  // 'mandiri' | 'induk' | 'unit' — only worth a label when it tells the
+  // nasabah something about the bank's place in a network (unit/induk).
+  final String? organizationType;
 }
 
 class NasabahActivity {
@@ -78,10 +90,13 @@ class NasabahActivity {
 class NasabahHome {
   const NasabahHome(this.identity, this.membershipId, this.bank, this.balance,
       this.activities);
-  factory NasabahHome.fromJson(Map<String, dynamic> json) => NasabahHome(
+  factory NasabahHome.fromJson(Map<String, dynamic> json,
+          {String Function() origin = _noOrigin}) =>
+      NasabahHome(
         NasabahIdentity.fromJson(json['user'] as Map<String, dynamic>),
         (json['keanggotaan'] as Map<String, dynamic>)['id'] as String,
-        NasabahBank.fromJson(json['bank_sampah'] as Map<String, dynamic>),
+        NasabahBank.fromJson(json['bank_sampah'] as Map<String, dynamic>,
+            origin: origin),
         NasabahBalance.fromJson(json['saldo'] as Map<String, dynamic>),
         (json['aktivitas_terbaru'] as List)
             .map((v) => NasabahActivity.fromJson(v as Map<String, dynamic>))
@@ -138,11 +153,13 @@ class NasabahRepository {
   }
 
   Future<NasabahHome> home({String? membershipId}) async =>
-      NasabahHome.fromJson(await _get('beranda', membershipId: membershipId));
+      NasabahHome.fromJson(await _get('beranda', membershipId: membershipId),
+          origin: () => network.environment.baseUrl);
   Future<NasabahBalance> balance(String membershipId) async =>
       NasabahBalance.fromJson(await _get('saldo', membershipId: membershipId));
   Future<NasabahBank> bank(String membershipId) async => NasabahBank.fromJson(
-      await _get('bank-sampah', membershipId: membershipId));
+      await _get('bank-sampah', membershipId: membershipId),
+      origin: () => network.environment.baseUrl);
   Future<NasabahHistory> history(String membershipId, {int page = 1}) async {
     final json = await _get('riwayat', membershipId: membershipId, page: page);
     return NasabahHistory(
