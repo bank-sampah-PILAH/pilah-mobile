@@ -15,6 +15,8 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _MockAuthenticationBloc
@@ -38,6 +40,12 @@ void main() {
   });
 
   testWidgets('unknown roles fail closed on the jadwal route', (tester) async {
+    if (di.isRegistered<NasabahRepository>()) {
+      di.unregister<NasabahRepository>();
+    }
+    di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    addTearDown(() => di.unregister<NasabahRepository>());
+
     final authenticationBloc = _MockAuthenticationBloc();
     final authenticationStates = StreamController<AuthenticationStates>();
     addTearDown(authenticationStates.close);
@@ -96,7 +104,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
+      expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
+      expect(find.text('Jadwal Bank Sampah'), findsNothing);
       expect(find.byType(FloatingActionButton), findsNothing);
       expect(find.text('Batalkan'), findsNothing);
       expect(find.text('Terbitkan'), findsNothing);
@@ -115,6 +124,8 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    router.go(JadwalPage.route);
     await tester.pumpAndSettle();
 
     expect(find.text('Jadwal Bank Sampah'), findsOneWidget);

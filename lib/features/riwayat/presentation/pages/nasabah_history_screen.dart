@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_membership_content.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/riwayat_nasabah_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -43,92 +44,89 @@ class NasabahHistoryScreen extends StatelessWidget {
             body: SafeArea(
               child: auth?.role != 'nasabah'
                   ? const Center(child: Text('Silakan masuk sebagai nasabah.'))
-                  : member == null || member.isEmpty
-                      ? Center(
-                          child: TextButton(
-                            onPressed: () => context.go(AppLocations.dashboard),
-                            child: const Text('Pilih bank sampah dari Beranda'),
+                  : NasabahMembershipContent(
+                      key: ValueKey((auth!.id, auth.email, auth.token, member)),
+                      membershipId: member,
+                      builder: (id) => Column(
+                        children: [
+                          NasabahResource<NasabahBalance>(
+                            key: ValueKey((
+                              'balance',
+                              auth.id,
+                              auth.email,
+                              auth.token,
+                              id,
+                            )),
+                            load: () => di<NasabahRepository>().balance(id),
+                            builder: (_, balance) => Container(
+                              margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: NasabahStyle.emerald,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'SALDO TABUNGAN',
+                                          style: NasabahStyle.text(
+                                            11,
+                                            weight: FontWeight.w600,
+                                            color: NasabahStyle.emeraldLight,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          nasabahRupiah(balance.amount),
+                                          style: NasabahStyle.text(
+                                            24,
+                                            weight: FontWeight.w700,
+                                            color: Colors.white,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                        Text(
+                                          balance.updatedAt == null
+                                              ? 'Saldo saat ini'
+                                              : 'Diperbarui ${nasabahDate(balance.updatedAt!)}',
+                                          style: NasabahStyle.text(
+                                            12,
+                                            color: NasabahStyle.emeraldLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        )
-                      : Column(
-                          children: [
-                            NasabahResource<NasabahBalance>(
+                          Expanded(
+                            child: RiwayatNasabahPage(
                               key: ValueKey((
-                                auth!.id,
+                                auth.id,
                                 auth.email,
                                 auth.token,
-                                member,
+                                id,
                               )),
-                              load: () =>
-                                  di<NasabahRepository>().balance(member),
-                              builder: (_, balance) => Container(
-                                margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: NasabahStyle.emerald,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'SALDO TABUNGAN',
-                                            style: NasabahStyle.text(
-                                              11,
-                                              weight: FontWeight.w600,
-                                              color: NasabahStyle.emeraldLight,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            nasabahRupiah(balance.amount),
-                                            style: NasabahStyle.text(
-                                              24,
-                                              weight: FontWeight.w700,
-                                              color: Colors.white,
-                                              height: 1.25,
-                                            ),
-                                          ),
-                                          Text(
-                                            balance.updatedAt == null
-                                                ? 'Saldo saat ini'
-                                                : 'Diperbarui ${nasabahDate(balance.updatedAt!)}',
-                                            style: NasabahStyle.text(
-                                              12,
-                                              color: NasabahStyle.emeraldLight,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Icon(
-                                      Icons.account_balance_wallet_outlined,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              loadPage: (page) => di<NasabahRepository>()
+                                  .history(id, page: page),
                             ),
-                            Expanded(
-                              child: RiwayatNasabahPage(
-                                key: ValueKey((
-                                  auth.id,
-                                  auth.email,
-                                  auth.token,
-                                  member,
-                                )),
-                                loadPage: (page) => di<NasabahRepository>()
-                                    .history(member, page: page),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                    ),
             ),
           );
         },
