@@ -84,8 +84,11 @@ void main() {
     expect(find.text('Alice'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
-    await tester.tap(find.byTooltip('Muat ulang'));
+    unawaited(
+      tester.state<RefreshIndicatorState>(find.byType(RefreshIndicator)).show(),
+    );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     expect(repository.requests, hasLength(2));
     repository.requests.last.complete(const NasabahIdentity(
         'a', 'Alice updated', 'a@example.test', 'nasabah'));

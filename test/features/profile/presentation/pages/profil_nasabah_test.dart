@@ -25,6 +25,19 @@ class _Profile extends MockCubit<ProfileState> implements ProfileCubit {}
 
 class _Environment extends Mock implements AppEnvironment {}
 
+/// Counts calls to [profile] so a pull-to-refresh test can assert the load
+/// ran again, without caring how many times the widget tree rebuilds.
+class _CountingNasabahRepository extends PreviewNasabahRepository {
+  _CountingNasabahRepository({required super.name, required super.email});
+  int profileCalls = 0;
+
+  @override
+  Future<NasabahIdentity> profile() {
+    profileCalls++;
+    return super.profile();
+  }
+}
+
 // Proposed first slice for PIL-226, not an external ticket specification.
 // Editing personal details, membership APIs, and logout are separate slices.
 void main() {
@@ -41,6 +54,7 @@ void main() {
     String? apiName,
     bool membershipActive = true,
     Stream<AuthenticationStates>? states,
+    NasabahRepository? repository,
   }) async {
     final auth = _Auth();
     profile = _Profile();
@@ -49,7 +63,7 @@ void main() {
     when(() => environment.supportsDemoLogin).thenReturn(false);
     di.registerSingleton<AppEnvironment>(environment);
     di.registerSingleton<InviteTokenStore>(invites);
-    di.registerSingleton<NasabahRepository>(
+    di.registerSingleton<NasabahRepository>(repository ??
         PreviewNasabahRepository(name: apiName ?? name, email: email));
     whenListen(auth, states ?? const Stream<AuthenticationStates>.empty(),
         initialState: Authenticated(
@@ -157,6 +171,27 @@ void main() {
         (tester) async {
       await openProfile(tester);
       verifyNever(() => profile.load(silent: true));
+    });
+
+    testWidgets('menarik layar ke bawah memuat ulang profil (PIL-285)',
+        (tester) async {
+      final repository = _CountingNasabahRepository(
+        name: 'Siti Aminah',
+        email: 'siti@example.test',
+      );
+      await openProfile(tester, repository: repository);
+      expect(repository.profileCalls, 1);
+      expect(find.byTooltip('Muat ulang'), findsNothing,
+          reason: 'the manual refresh button is replaced by pull-to-refresh');
+
+      unawaited(
+        tester
+            .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+            .show(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.profileCalls, 2);
     });
   });
 }

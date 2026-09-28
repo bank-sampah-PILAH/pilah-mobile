@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
+import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
@@ -46,30 +48,55 @@ class ProfilNasabahPage extends StatelessWidget {
                   onPressed: () => _back(context)),
             ),
             body: SafeArea(
-                child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                            maxWidth: NasabahStyle.maxWidth),
-                        child: ListView(
-                            padding: const EdgeInsets.all(16),
-                            children: [
-                              if (auth?.role != 'nasabah')
-                                Text('Silakan masuk untuk melihat profil Anda.',
-                                    style: NasabahStyle.text(15))
-                              else
-                                NasabahResource<NasabahIdentity>(
-                                  key: ValueKey((auth!.id, auth.email)),
-                                  load: () => di<NasabahRepository>().profile(),
-                                  builder: (context, identity) => _ProfileBody(
-                                      key: ObjectKey(identity),
-                                      identity: identity,
-                                      onLogout: () => _logout(context)),
-                                ),
-                            ])))),
+                child: _ProfilNasabahBody(
+                    auth: auth, onLogout: () => _logout(context))),
           );
         },
       );
+}
+
+/// Owns the reload handle across rebuilds so a pull can reach the
+/// [NasabahResource] below without the page itself managing a request.
+class _ProfilNasabahBody extends StatefulWidget {
+  const _ProfilNasabahBody({required this.auth, required this.onLogout});
+  final AuthEntity? auth;
+  final VoidCallback onLogout;
+  @override
+  State<_ProfilNasabahBody> createState() => _ProfilNasabahBodyState();
+}
+
+class _ProfilNasabahBodyState extends State<_ProfilNasabahBody> {
+  Future<void> Function()? _reload;
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = widget.auth;
+    return Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
+            child: AppRefreshIndicator(
+              onRefresh: () => _reload?.call() ?? Future<void>.value(),
+              child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (auth?.role != 'nasabah')
+                      Text('Silakan masuk untuk melihat profil Anda.',
+                          style: NasabahStyle.text(15))
+                    else
+                      NasabahResource<NasabahIdentity>(
+                        key: ValueKey((auth!.id, auth.email)),
+                        load: () => di<NasabahRepository>().profile(),
+                        registerReload: (reload) => _reload = reload,
+                        builder: (context, identity) => _ProfileBody(
+                            key: ObjectKey(identity),
+                            identity: identity,
+                            onLogout: widget.onLogout),
+                      ),
+                  ]),
+            )));
+  }
 }
 
 class _IdentityCard extends StatelessWidget {
