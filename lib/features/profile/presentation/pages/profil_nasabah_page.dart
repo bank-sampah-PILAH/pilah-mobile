@@ -253,6 +253,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
         child: child!,
       ),
     );
+    if (!mounted) return;
     if (picked != null) setState(() => _tanggalLahir = picked);
   }
 
@@ -276,6 +277,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                 : _tanggalLahir,
         alamat: alamat != _identity.alamat ? alamat : null,
       );
+      if (!mounted) return;
       setState(() {
         _identity = updated;
         _editing = false;
@@ -283,11 +285,13 @@ class _ProfileBodyState extends State<_ProfileBody> {
       });
       _resetFields();
     } on NasabahApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         _saving = false;
         _error = e.message;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _saving = false;
         _error = 'Perubahan gagal disimpan. Periksa koneksi dan coba lagi.';
