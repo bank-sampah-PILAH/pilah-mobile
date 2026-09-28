@@ -63,7 +63,7 @@ class NasabahBankDetail extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.location_city_outlined,
                   label: 'KOTA',
-                  value: bank.city.isEmpty ? 'Kota belum tercatat' : bank.city,
+                  value: bank.city.isEmpty ? 'Kota belum tersedia' : bank.city,
                 ),
                 const Divider(height: 1, color: NasabahStyle.line),
                 _InfoRow(
@@ -129,11 +129,20 @@ class _BankLogo extends StatelessWidget {
         radius: _diameter / 2,
         backgroundColor: NasabahStyle.emeraldLight,
         child: Text(
-          name.isEmpty ? 'B' : name.characters.first.toUpperCase(),
+          _initialOf(name),
           style: NasabahStyle.text(28,
               weight: FontWeight.w700, color: NasabahStyle.emeraldDark),
         ),
       );
+
+  // Most bank sampah names are literally "Bank Sampah <place>", which would
+  // otherwise render every missing-logo fallback as the same "B".
+  static String _initialOf(String name) {
+    final stripped =
+        name.replaceFirst(RegExp(r'^bank sampah\s+', caseSensitive: false), '');
+    final letters = stripped.isEmpty ? name : stripped;
+    return letters.isEmpty ? 'B' : letters.characters.first.toUpperCase();
+  }
 }
 
 class _InfoRow extends StatelessWidget {
