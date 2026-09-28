@@ -94,6 +94,102 @@ void main() {
         queryParams: <String, dynamic>{})).called(1);
   });
 
+  test('profile parses the full editable-field contract', () async {
+    respond('/api/v1/nasabah/me/profil', {
+      'id': 'u',
+      'nama': 'API name',
+      'email': 'api@example.test',
+      'no_hp': '081234567890',
+      'jenis_kelamin': 'perempuan',
+      'tanggal_lahir': '1998-05-17',
+      'alamat': 'Jl. Melati No. 1',
+      'role': 'nasabah'
+    });
+    final identity = await repository.profile();
+    expect(identity.noHp, '081234567890');
+    expect(identity.jenisKelamin, 'perempuan');
+    expect(identity.tanggalLahir, DateTime(1998, 5, 17));
+    expect(identity.alamat, 'Jl. Melati No. 1');
+  });
+
+  test('profile tolerates null/empty optional fields', () async {
+    respond('/api/v1/nasabah/me/profil', {
+      'id': 'u',
+      'nama': 'API name',
+      'email': 'api@example.test',
+      'no_hp': '',
+      'jenis_kelamin': '',
+      'tanggal_lahir': null,
+      'alamat': '',
+      'role': 'nasabah'
+    });
+    final identity = await repository.profile();
+    expect(identity.noHp, '');
+    expect(identity.jenisKelamin, '');
+    expect(identity.tanggalLahir, isNull);
+    expect(identity.alamat, '');
+  });
+
+  test('updateProfile patches only the given fields and returns the result',
+      () async {
+    when(
+        () => network.patch('/api/v1/nasabah/me/profil', data: {
+              'nama': 'New name',
+              'no_hp': '0811'
+            })).thenAnswer((_) async => Response(data: {
+          'id': 'u',
+          'nama': 'New name',
+          'email': 'api@example.test',
+          'no_hp': '0811',
+          'jenis_kelamin': '',
+          'tanggal_lahir': null,
+          'alamat': '',
+          'role': 'nasabah'
+        }, requestOptions: RequestOptions(path: '/api/v1/nasabah/me/profil')));
+    final identity =
+        await repository.updateProfile(nama: 'New name', noHp: '0811');
+    expect(identity.name, 'New name');
+    expect(identity.noHp, '0811');
+    verify(() => network.patch('/api/v1/nasabah/me/profil',
+        data: {'nama': 'New name', 'no_hp': '0811'})).called(1);
+  });
+
+  test('updateProfile sends tanggal_lahir as a plain date, not a datetime',
+      () async {
+    when(
+        () => network.patch('/api/v1/nasabah/me/profil', data: {
+              'tanggal_lahir': '1998-05-17'
+            })).thenAnswer((_) async => Response(data: {
+          'id': 'u',
+          'nama': 'API name',
+          'email': 'api@example.test',
+          'no_hp': '',
+          'jenis_kelamin': '',
+          'tanggal_lahir': '1998-05-17',
+          'alamat': '',
+          'role': 'nasabah'
+        }, requestOptions: RequestOptions(path: '/api/v1/nasabah/me/profil')));
+    await repository.updateProfile(tanggalLahir: DateTime(1998, 5, 17));
+    verify(() => network.patch('/api/v1/nasabah/me/profil',
+        data: {'tanggal_lahir': '1998-05-17'})).called(1);
+  });
+
+  test('updateProfile surfaces a validation error on 400', () async {
+    when(() => network.patch(any(), data: any(named: 'data'))).thenThrow(
+        DioException(
+            requestOptions: RequestOptions(),
+            response: Response(
+                requestOptions: RequestOptions(),
+                statusCode: 400,
+                data: {
+                  'no_hp': ['Nomor HP tidak valid.']
+                })));
+    await expectLater(
+        repository.updateProfile(noHp: 'bad'),
+        throwsA(isA<NasabahApiException>()
+            .having((e) => e.message, 'message', isNot(contains('no_hp')))));
+  });
+
   test('422 parses membership choices from backend errors envelope', () async {
     when(() => network.get(any(), queryParams: any(named: 'queryParams')))
         .thenThrow(DioException(
