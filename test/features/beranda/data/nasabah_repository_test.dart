@@ -94,6 +94,42 @@ void main() {
         queryParams: <String, dynamic>{})).called(1);
   });
 
+  test('profile parses the full editable-field contract', () async {
+    respond('/api/v1/nasabah/me/profil', {
+      'id': 'u',
+      'nama': 'API name',
+      'email': 'api@example.test',
+      'no_hp': '081234567890',
+      'jenis_kelamin': 'perempuan',
+      'tanggal_lahir': '1998-05-17',
+      'alamat': 'Jl. Melati No. 1',
+      'role': 'nasabah'
+    });
+    final identity = await repository.profile();
+    expect(identity.noHp, '081234567890');
+    expect(identity.jenisKelamin, 'perempuan');
+    expect(identity.tanggalLahir, DateTime(1998, 5, 17));
+    expect(identity.alamat, 'Jl. Melati No. 1');
+  });
+
+  test('profile tolerates null/empty optional fields', () async {
+    respond('/api/v1/nasabah/me/profil', {
+      'id': 'u',
+      'nama': 'API name',
+      'email': 'api@example.test',
+      'no_hp': '',
+      'jenis_kelamin': '',
+      'tanggal_lahir': null,
+      'alamat': '',
+      'role': 'nasabah'
+    });
+    final identity = await repository.profile();
+    expect(identity.noHp, '');
+    expect(identity.jenisKelamin, '');
+    expect(identity.tanggalLahir, isNull);
+    expect(identity.alamat, '');
+  });
+
   test('422 parses membership choices from backend errors envelope', () async {
     when(() => network.get(any(), queryParams: any(named: 'queryParams')))
         .thenThrow(DioException(
