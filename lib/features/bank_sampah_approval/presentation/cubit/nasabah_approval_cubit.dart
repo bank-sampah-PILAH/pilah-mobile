@@ -25,6 +25,7 @@ class NasabahApprovalCubit extends Cubit<NasabahApprovalState> {
       emit(const NasabahApprovalLoading());
     }
     final result = await getMembershipsUseCase.execute();
+    if (isClosed) return;
     result.fold(
       (failure) => emit(NasabahApprovalError(failure.displayMessage)),
       (memberships) => emit(NasabahApprovalLoaded(memberships)),
