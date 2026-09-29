@@ -485,6 +485,62 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    testWidgets('submitting before picking a nasabah asks for one',
+        (tester) async {
+      await pumpEmptyView(tester);
+      expect(find.text('Nasabah harus dipilih'), findsNothing);
+
+      await tapSubmit(tester);
+
+      expect(find.text('Nasabah harus dipilih'), findsOneWidget);
+      verifyNever(() => useCases.createPencairan(any()));
+    });
+
+    testWidgets('the back arrow returns to the previous screen',
+        (tester) async {
+      final router = GoRouter(
+        navigatorKey: rootNavigatorKey,
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, _) => Scaffold(
+              body: TextButton(
+                onPressed: () => context.push('/catat'),
+                child: const Text('beranda'),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/catat',
+            builder: (_, __) => BlocProvider(
+              create: (_) => PencairanCubit(useCases),
+              child: CatatPencairanView(now: () => _now),
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<NasabahCubit>.value(value: nasabahCubit),
+            BlocProvider<RiwayatAktivitasCubit>.value(
+                value: riwayatAktivitasCubit),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.tap(find.text('beranda'));
+      await tester.pumpAndSettle();
+      expect(find.text('Catat Pencairan'), findsWidgets);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(find.text('beranda'), findsOneWidget);
+      expect(find.byKey(const Key('submit-pencairan')), findsNothing);
+    });
+
     testWidgets('shows the picker and hides the form until a nasabah is picked',
         (tester) async {
       await pumpEmptyView(tester);
