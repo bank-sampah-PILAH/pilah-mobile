@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,14 +12,14 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 
-NasabahEntity _nasabah() => NasabahEntity(
+NasabahEntity _nasabah({bool isActive = true}) => NasabahEntity(
       id: 'nasabah-1',
       idNasabah: 'NAS-0001',
       name: 'Budi Santoso',
       email: 'budi@example.com',
       phone: '+628111111111',
       balance: 'Rp 450.000',
-      isActive: true,
+      isActive: isActive,
       address: 'Jl. Mawar No. 12',
       initials: 'BS',
       avatarColor: const Color(0xFFEAF5EC),
@@ -45,7 +47,7 @@ NasabahRingkasan _ringkasan({List<String> berbeda = const []}) =>
 class _MockNasabahCubit extends MockCubit<NasabahState>
     implements NasabahCubit {}
 
-Widget _host(NasabahCubit cubit) {
+Widget _host(NasabahCubit cubit, {bool isActive = true}) {
   final router = GoRouter(
     initialLocation: '/',
     routes: [
@@ -61,7 +63,7 @@ Widget _host(NasabahCubit cubit) {
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
                   builder: (_) => DetailNasabahBottomSheet(
-                    nasabah: _nasabah(),
+                    nasabah: _nasabah(isActive: isActive),
                     nasabahCubit: cubit,
                   ),
                 ),
@@ -88,13 +90,14 @@ void main() {
     );
   });
 
-  Future<void> bukaDetail(WidgetTester tester, NasabahRingkasan r) async {
+  Future<void> bukaDetail(WidgetTester tester, NasabahRingkasan r,
+      {bool isActive = true}) async {
     tester.view.physicalSize = const Size(1200, 3000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     when(() => cubit.fetchRingkasan(any())).thenAnswer((_) async => r);
-    await tester.pumpWidget(_host(cubit));
+    await tester.pumpWidget(_host(cubit, isActive: isActive));
     await tester.tap(find.text('Buka detail'));
     await tester.pumpAndSettle();
   }
@@ -155,6 +158,40 @@ void main() {
 
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('tombol nonaktif selama menyamakan agar tidak terkirim dua kali',
+        (tester) async {
+      final selesai = Completer<NetworkException?>();
+      when(() => cubit.sinkronProfil(any())).thenAnswer((_) => selesai.future);
+      await bukaDetail(tester, _ringkasan(berbeda: ['no_hp']));
+
+      await tester.tap(find.text('Samakan dengan data akun'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Samakan'));
+      await tester.pump();
+
+      final tombol = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Samakan dengan data akun'),
+      );
+      expect(tombol.onPressed, isNull);
+
+      selesai.complete(null);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('nasabah nonaktif tetap melihat bedanya tanpa tombol samakan',
+        (tester) async {
+      // Backend selalu menjawab 403 untuk nasabah nonaktif; jangan menawarkan
+      // aksi yang pasti gagal.
+      await bukaDetail(tester, _ringkasan(berbeda: ['no_hp']), isActive: false);
+
+      expect(find.text('Data akun berbeda'), findsOneWidget);
+      expect(find.text('+628999999999'), findsOneWidget);
+      expect(find.text('Samakan dengan data akun'), findsNothing);
     });
 
     testWidgets('membatalkan tidak mengubah catatan', (tester) async {
