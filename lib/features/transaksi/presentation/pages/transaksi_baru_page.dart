@@ -21,6 +21,15 @@ import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
+/// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
+@visibleForTesting
+bool jenisSampahSudahAda(
+    List<Map<String, dynamic>> setoranItems, int index, String? newId) {
+  return setoranItems.asMap().entries.any((e) =>
+      e.key != index && e.value['jenis_sampah_id'] == newId);
+}
+
 class TransaksiBaruPage extends StatefulWidget {
   const TransaksiBaruPage({super.key});
 
@@ -383,17 +392,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                 setoranItems[index]['jenis'] == null,
                             errorText: 'Pilih jenis sampah',
                             onChanged: (updatedItem) {
-                              // Satu jenis sampah hanya boleh muncul sekali
-                              // (CPBI-08): backend menggabungkan item jenis
-                              // sama, jadi UI mencegahnya sejak awal.
                               final newId =
                                   updatedItem['jenis_sampah_id'] as String?;
-                              final bool duplicateExists = setoranItems
-                                  .asMap()
-                                  .entries
-                                  .any((e) =>
-                                      e.key != index &&
-                                      e.value['jenis_sampah_id'] == newId);
+                              final bool duplicateExists = jenisSampahSudahAda(
+                                  setoranItems, index, newId);
                               if (duplicateExists) {
                                 AppNotification.showWarning(
                                   context,

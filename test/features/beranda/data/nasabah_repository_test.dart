@@ -105,6 +105,26 @@ void main() {
         .called(1);
   });
 
+  test('setoran detail keeps balance when backend sends a JSON number',
+      () async {
+    const id = '9a2c70b3-fd54-481b-a0a7-cbe06695fd83';
+    final path = '/api/v1/nasabah/me/riwayat/$id';
+    respond(path, {
+      'id': id,
+      'tanggal': '2026-09-23T09:00:00Z',
+      'tipe': 'setoran',
+      'total_nilai': '5000.00',
+      'saldo_setelah_transaksi': 15000.0,
+      'items': [],
+    });
+
+    final detail = await repository.setoranDetail('member-b', id);
+
+    expect(detail.balanceAfter, '15000.00');
+    verify(() => network.get(path, queryParams: {'keanggotaan_id': 'member-b'}))
+        .called(1);
+  });
+
   test('balance and bank details are scoped to selected membership', () async {
     respond('/api/v1/nasabah/me/saldo',
         {'total_saldo': '0.00', 'updated_at': null});
