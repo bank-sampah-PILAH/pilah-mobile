@@ -23,11 +23,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
 /// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
+/// Jenis belum dipilih (null) tidak dianggap duplikat: kartu kosong lebih dari
+/// satu tidak saling bertabrakan dan edit berat di kartu kosong tetap lolos.
 @visibleForTesting
 bool jenisSampahSudahAda(
     List<Map<String, dynamic>> setoranItems, int index, String? newId) {
-  return setoranItems.asMap().entries.any((e) =>
-      e.key != index && e.value['jenis_sampah_id'] == newId);
+  if (newId == null) return false;
+  return setoranItems
+      .asMap()
+      .entries
+      .any((e) => e.key != index && e.value['jenis_sampah_id'] == newId);
 }
 
 class TransaksiBaruPage extends StatefulWidget {
@@ -401,7 +406,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                   context,
                                   title: 'Jenis Sudah Dipilih',
                                   message:
-                                      'Jenis sampah ini sudah ada di daftar item. Ubah bobat pada item yang sudah ada.',
+                                      'Jenis sampah ini sudah ada di daftar item. Ubah berat pada item yang sudah ada.',
                                 );
                                 return;
                               }

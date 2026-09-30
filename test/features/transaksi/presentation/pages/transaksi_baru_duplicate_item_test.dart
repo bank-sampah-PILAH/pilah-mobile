@@ -11,14 +11,20 @@ void main() {
     expect(jenisSampahSudahAda(items, 0, 'kind-2'), isTrue);
   });
 
-  test('jenis sampah duplicate check treats an empty id as shared', () {
+  test('jenis sampah duplicate check ignores blank (null) ids', () {
     final items = [
       {'jenis_sampah_id': null},
       {'jenis_sampah_id': 'kind-2'},
     ];
     // Belum dipilih: null tidak boleh menghalangi item lain.
     expect(jenisSampahSudahAda(items, 0, null), isFalse);
-    // Dua item kosong memilih jenis yang sama-sama belum diisi pun terdeteksi.
-    expect(jenisSampahSudahAda([{'jenis_sampah_id': null}, {'jenis_sampah_id': null}], 0, null), isTrue);
+    // Kartu kosong lebih dari satu tidak saling bertabrakan, jadi edit berat
+    // di kartu yang belum memilih jenis tetap tersimpan (review P2 PR 54).
+    expect(
+        jenisSampahSudahAda([
+          {'jenis_sampah_id': null},
+          {'jenis_sampah_id': null}
+        ], 0, null),
+        isFalse);
   });
 }
