@@ -29,10 +29,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activi
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
-import 'package:pilah_mobile/features/nasabah/domain/use_cases/sinkron_profil_nasabah_usecase.dart';
-
-class _MockSinkronProfilNasabahUseCase extends Mock
-    implements SinkronProfilNasabahUseCase {}
+import '../../../support/mock_sinkron_profil_nasabah_use_case.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
 
@@ -457,7 +454,7 @@ void main() {
         _MockDeactivateNasabahUseCase(),
         _MockApproveNasabahUseCase(),
         _MockRejectNasabahUseCase(),
-        _MockSinkronProfilNasabahUseCase(),
+        MockSinkronProfilNasabahUseCase(),
       );
     });
 

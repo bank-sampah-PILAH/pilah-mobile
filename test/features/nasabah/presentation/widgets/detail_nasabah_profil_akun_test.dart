@@ -160,7 +160,8 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('tombol nonaktif selama menyamakan agar tidak terkirim dua kali',
+    testWidgets(
+        'tombol nonaktif selama menyamakan agar tidak terkirim dua kali',
         (tester) async {
       final selesai = Completer<NetworkException?>();
       when(() => cubit.sinkronProfil(any())).thenAnswer((_) => selesai.future);

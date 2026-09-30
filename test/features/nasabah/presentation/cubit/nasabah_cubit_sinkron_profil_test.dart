@@ -11,14 +11,11 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasaba
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/domain/use_cases/sinkron_profil_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
-
-class _MockSinkronProfilNasabahUseCase extends Mock
-    implements SinkronProfilNasabahUseCase {}
 
 class _MockGetActive extends Mock implements GetActiveNasabahUseCase {}
 
@@ -41,12 +38,12 @@ HalamanNasabah _kosong() =>
 
 void main() {
   late _MockGetNasabahUseCase getUseCase;
-  late _MockSinkronProfilNasabahUseCase sinkronUseCase;
+  late MockSinkronProfilNasabahUseCase sinkronUseCase;
   late NasabahCubit cubit;
 
   setUp(() {
     getUseCase = _MockGetNasabahUseCase();
-    sinkronUseCase = _MockSinkronProfilNasabahUseCase();
+    sinkronUseCase = MockSinkronProfilNasabahUseCase();
     when(() => getUseCase.execute(any()))
         .thenAnswer((_) async => Right(_kosong()));
     cubit = NasabahCubit(
