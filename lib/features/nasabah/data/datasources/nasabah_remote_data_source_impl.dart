@@ -64,11 +64,8 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   @override
   Future<NasabahRingkasan> getNasabahRingkasan(String id) async {
     final response = await networkService.get('$_path/$id');
-    final ringkasan =
-        (response.data as Map<String, dynamic>)['ringkasan_transaksi']
-                as Map<String, dynamic>? ??
-            <String, dynamic>{};
-    return NasabahRingkasanMapper.fromJson(ringkasan);
+    return NasabahRingkasanMapper.fromJson(
+        response.data as Map<String, dynamic>);
   }
 
   @override
