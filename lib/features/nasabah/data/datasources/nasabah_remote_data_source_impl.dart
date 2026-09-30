@@ -87,6 +87,11 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   }
 
   @override
+  Future<void> sinkronProfil(String id) async {
+    await networkService.post('$_path/$id/sinkron-profil');
+  }
+
+  @override
   Future<void> setStatus(String id, bool isActive) async {
     await networkService
         .patch('$_path/$id/status', data: {'is_active': isActive});

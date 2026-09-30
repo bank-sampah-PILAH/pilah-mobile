@@ -21,6 +21,9 @@ abstract class NasabahRemoteDataSource {
   Future<NasabahModel> addNasabah(NasabahRequest request);
   Future<NasabahModel> updateNasabah(String id, NasabahRequest request);
   Future<void> setStatus(String id, bool isActive);
+
+  /// Salin profil akun nasabah ke catatan bank sampah ini (satu arah).
+  Future<void> sinkronProfil(String id);
   Future<void> approveNasabah(String id, String? catatan);
   Future<void> rejectNasabah(String id, String? catatan);
 }

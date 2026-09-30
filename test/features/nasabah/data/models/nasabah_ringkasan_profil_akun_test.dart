@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/nasabah/data/models/nasabah_model.dart';
-import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
 Map<String, dynamic> _detailJson({
   Map<String, dynamic>? profilAkun,

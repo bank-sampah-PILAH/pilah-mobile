@@ -17,6 +17,10 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_us
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/sinkron_profil_nasabah_usecase.dart';
+
+class _MockSinkronProfilNasabahUseCase extends Mock
+    implements SinkronProfilNasabahUseCase {}
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -86,6 +90,7 @@ void main() {
       _MockDeactivateNasabahUseCase(),
       _MockApproveNasabahUseCase(),
       _MockRejectNasabahUseCase(),
+      _MockSinkronProfilNasabahUseCase(),
     );
   });
 

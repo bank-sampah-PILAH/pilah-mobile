@@ -106,6 +106,8 @@ import '../features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart'
 import '../features/nasabah/domain/use_cases/get_nasabah_usecase.dart' as _i789;
 import '../features/nasabah/domain/use_cases/reject_nasabah_usecase.dart'
     as _i529;
+import '../features/nasabah/domain/use_cases/sinkron_profil_nasabah_usecase.dart'
+    as _i727;
 import '../features/nasabah/domain/use_cases/update_nasabah_usecase.dart'
     as _i524;
 import '../features/nasabah/presentation/cubit/nasabah_cubit.dart' as _i958;
@@ -293,6 +295,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i529.RejectNasabahUseCase>(
         () => _i529.RejectNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i727.SinkronProfilNasabahUseCase>(
+        () => _i727.SinkronProfilNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i524.UpdateNasabahUseCase>(
         () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
@@ -340,6 +344,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i240.UpdateHargaUseCase>(
         () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
+        () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.lazySingleton<_i958.NasabahCubit>(() => _i958.NasabahCubit(
           gh<_i789.GetNasabahUseCase>(),
           gh<_i987.GetActiveNasabahUseCase>(),
@@ -350,9 +356,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i850.DeactivateNasabahUseCase>(),
           gh<_i66.ApproveNasabahUseCase>(),
           gh<_i529.RejectNasabahUseCase>(),
+          gh<_i727.SinkronProfilNasabahUseCase>(),
         ));
-    gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
-        () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.factory<_i41.EditPencairanCubit>(
         () => _i41.EditPencairanCubit(gh<_i686.PencairanUseCases>()));
     gh.factory<_i553.PencairanCubit>(
