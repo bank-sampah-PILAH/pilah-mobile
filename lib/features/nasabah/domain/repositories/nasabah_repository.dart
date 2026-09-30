@@ -17,6 +17,7 @@ abstract class NasabahRepository {
     String id,
     NasabahRequest request,
   );
+  Future<Either<NetworkException, void>> sinkronProfilNasabah(String id);
   Future<Either<NetworkException, void>> activateNasabah(String id);
   Future<Either<NetworkException, void>> deactivateNasabah(String id);
   Future<Either<NetworkException, void>> approveNasabah(

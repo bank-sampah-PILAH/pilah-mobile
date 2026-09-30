@@ -71,17 +71,47 @@ class NasabahRequest {
   });
 }
 
-/// Transaction summary returned by the nasabah detail endpoint
-/// (`ringkasan_transaksi`).
+/// Profil yang diisikan nasabah sendiri pada akunnya. Terpisah dari catatan
+/// bank sampah ([NasabahEntity]), yang boleh disunting pengurus. Nilainya sudah
+/// dalam bentuk tampilan (label jenis kelamin, tanggal dd/MM/yyyy).
+class NasabahProfilAkun {
+  final String nama;
+  final String jenisKelamin;
+  final String tanggalLahir;
+  final String alamat;
+  final String noHp;
+
+  const NasabahProfilAkun({
+    required this.nama,
+    required this.jenisKelamin,
+    required this.tanggalLahir,
+    required this.alamat,
+    required this.noHp,
+  });
+}
+
+/// Extras returned by the nasabah detail endpoint: the transaction summary
+/// (`ringkasan_transaksi`) and, for a membership linked to an account, the
+/// nasabah's own profile plus which of its fields differ from this bank
+/// sampah's record.
 class NasabahRingkasan {
   final int jumlahTransaksi;
   final String totalKg;
   final String? tanggalTransaksiTerakhir;
 
+  /// `null` untuk nasabah tanpa akun.
+  final NasabahProfilAkun? profilAkun;
+
+  /// Kunci backend dari field yang berbeda: `nama`, `jenis_kelamin`,
+  /// `tanggal_lahir`, `alamat`, `no_hp`.
+  final List<String> profilBerbeda;
+
   NasabahRingkasan({
     required this.jumlahTransaksi,
     required this.totalKg,
     this.tanggalTransaksiTerakhir,
+    this.profilAkun,
+    this.profilBerbeda = const [],
   });
 }
 

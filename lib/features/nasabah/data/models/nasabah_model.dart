@@ -131,12 +131,30 @@ class NasabahModel extends NasabahEntity {
 }
 
 extension NasabahRingkasanMapper on NasabahRingkasan {
+  /// [json] adalah seluruh respons `GET /nasabah/{id}`.
   static NasabahRingkasan fromJson(Map<String, dynamic> json) {
+    final ringkasan =
+        json['ringkasan_transaksi'] as Map<String, dynamic>? ?? const {};
+    final akun = json['profil_akun'] as Map<String, dynamic>?;
     return NasabahRingkasan(
-      jumlahTransaksi: (json['jumlah_transaksi'] as num?)?.toInt() ?? 0,
-      totalKg: WeightFormatter.formatKg(json['total_kg']),
+      jumlahTransaksi: (ringkasan['jumlah_transaksi'] as num?)?.toInt() ?? 0,
+      totalKg: WeightFormatter.formatKg(ringkasan['total_kg']),
       tanggalTransaksiTerakhir: NasabahModel.isoToDisplay(
-          json['tanggal_transaksi_terakhir']?.toString()),
+          ringkasan['tanggal_transaksi_terakhir']?.toString()),
+      profilAkun: akun == null
+          ? null
+          : NasabahProfilAkun(
+              nama: akun['nama']?.toString() ?? '',
+              jenisKelamin:
+                  NasabahModel.genderLabel(akun['jenis_kelamin']?.toString()),
+              tanggalLahir:
+                  NasabahModel.isoToDisplay(akun['tanggal_lahir']?.toString()),
+              alamat: akun['alamat']?.toString() ?? '',
+              noHp: akun['no_hp']?.toString() ?? '',
+            ),
+      profilBerbeda: (json['profil_berbeda'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 }

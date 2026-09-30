@@ -64,11 +64,8 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   @override
   Future<NasabahRingkasan> getNasabahRingkasan(String id) async {
     final response = await networkService.get('$_path/$id');
-    final ringkasan =
-        (response.data as Map<String, dynamic>)['ringkasan_transaksi']
-                as Map<String, dynamic>? ??
-            <String, dynamic>{};
-    return NasabahRingkasanMapper.fromJson(ringkasan);
+    return NasabahRingkasanMapper.fromJson(
+        response.data as Map<String, dynamic>);
   }
 
   @override
@@ -87,6 +84,11 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
       data: NasabahModel.toPayload(request),
     );
     return NasabahModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> sinkronProfil(String id) async {
+    await networkService.post('$_path/$id/sinkron-profil');
   }
 
   @override

@@ -66,6 +66,16 @@ class NasabahRepositoryImpl implements NasabahRepository {
   }
 
   @override
+  Future<Either<NetworkException, void>> sinkronProfilNasabah(String id) async {
+    try {
+      await remoteDataSource.sinkronProfil(id);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
+
+  @override
   Future<Either<NetworkException, void>> activateNasabah(String id) async {
     try {
       await remoteDataSource.setStatus(id, true);

@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasaba
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/sinkron_profil_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
@@ -30,6 +31,7 @@ class NasabahCubit extends Cubit<NasabahState> {
   final DeactivateNasabahUseCase deactivateNasabahUseCase;
   final ApproveNasabahUseCase approveNasabahUseCase;
   final RejectNasabahUseCase rejectNasabahUseCase;
+  final SinkronProfilNasabahUseCase sinkronProfilNasabahUseCase;
 
   /// Daftar untuk picker Transaksi Baru: seluruh nasabah aktif, tanpa paginasi.
   List<NasabahEntity> _allNasabah = [];
@@ -64,6 +66,7 @@ class NasabahCubit extends Cubit<NasabahState> {
     this.deactivateNasabahUseCase,
     this.approveNasabahUseCase,
     this.rejectNasabahUseCase,
+    this.sinkronProfilNasabahUseCase,
   ) : super(NasabahInitial());
 
   /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
@@ -270,6 +273,16 @@ class NasabahCubit extends Cubit<NasabahState> {
     final result = approve
         ? await approveNasabahUseCase.execute(params)
         : await rejectNasabahUseCase.execute(params);
+    return result.fold((failure) async => failure, (_) async {
+      await _reloadAfterMutation();
+      return null;
+    });
+  }
+
+  /// Menyamakan catatan nasabah dengan profil akunnya sendiri. Returns `null`
+  /// on success (list reloaded), otherwise the [NetworkException].
+  Future<NetworkException?> sinkronProfil(String id) async {
+    final result = await sinkronProfilNasabahUseCase.execute(id);
     return result.fold((failure) async => failure, (_) async {
       await _reloadAfterMutation();
       return null;
