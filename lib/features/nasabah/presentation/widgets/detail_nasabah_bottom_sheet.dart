@@ -33,6 +33,9 @@ class DetailNasabahBottomSheet extends StatefulWidget {
 class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
   Future<NasabahRingkasan?>? _ringkasanFuture;
 
+  /// Menyamakan sedang berjalan; tombolnya nonaktif supaya tidak terkirim dua kali.
+  bool _isSyncing = false;
+
   @override
   void initState() {
     super.initState();
@@ -432,22 +435,28 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                       _nilaiAkun(akun, field),
                     ),
                   ),
-                const SizedBox(height: 4),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: widget.nasabahCubit == null ? null : _samakan,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.orange[800],
-                      side: BorderSide(color: Colors.orange[400]!),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                // Backend selalu menolak nasabah nonaktif (403), jadi bedanya
+                // tetap ditampilkan sebagai informasi tetapi tanpa aksi.
+                if (widget.nasabah.isActive) ...[
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: widget.nasabahCubit == null || _isSyncing
+                          ? null
+                          : _samakan,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange[800],
+                        side: BorderSide(color: Colors.orange[400]!),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
+                      child: const Text('Samakan dengan data akun'),
                     ),
-                    child: const Text('Samakan dengan data akun'),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -483,8 +492,10 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
     // The root overlay outlives this sheet, so it hosts the notification.
     final overlayContext = Navigator.of(context, rootNavigator: true).context;
     final sheetContext = context;
+    setState(() => _isSyncing = true);
     final error = await widget.nasabahCubit!.sinkronProfil(widget.nasabah.id);
     if (!mounted || !sheetContext.mounted) return;
+    setState(() => _isSyncing = false);
 
     if (error == null) {
       sheetContext.pop();
