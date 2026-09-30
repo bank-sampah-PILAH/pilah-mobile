@@ -122,7 +122,9 @@ class NasabahSetoranDetail {
         type: json['tipe'] as String,
         amount: json['total_nilai'] as String,
         note: json['catatan'] as String? ?? '',
-        balanceAfter: json['saldo_setelah_transaksi'] as String,
+        balanceAfter: json['saldo_setelah_transaksi'] is num
+            ? (json['saldo_setelah_transaksi'] as num).toStringAsFixed(2)
+            : json['saldo_setelah_transaksi'] as String,
         items: (json['items'] as List)
             .map((item) =>
                 NasabahSetoranItem.fromJson(item as Map<String, dynamic>))
