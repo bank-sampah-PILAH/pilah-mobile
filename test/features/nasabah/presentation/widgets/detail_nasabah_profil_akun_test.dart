@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
@@ -131,6 +132,29 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => cubit.sinkronProfil('nasabah-1')).called(1);
+    });
+
+    testWidgets('gagal menyamakan: sheet tetap terbuka agar bisa dicoba lagi',
+        (tester) async {
+      when(() => cubit.sinkronProfil(any())).thenAnswer(
+        (_) async => NetworkException.handleBadResponse(null),
+      );
+      await bukaDetail(tester, _ringkasan(berbeda: ['no_hp']));
+
+      await tester.tap(find.text('Samakan dengan data akun'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Samakan'));
+      // Bukan pumpAndSettle: notifikasi hilang sendiri setelah beberapa detik,
+      // dan kita ingin melihatnya sebelum itu.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      verify(() => cubit.sinkronProfil('nasabah-1')).called(1);
+      expect(find.text('Data akun berbeda'), findsOneWidget);
+      expect(find.text('Gagal'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('membatalkan tidak mengubah catatan', (tester) async {
