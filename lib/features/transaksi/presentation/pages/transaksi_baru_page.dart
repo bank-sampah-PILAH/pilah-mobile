@@ -383,6 +383,26 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                 setoranItems[index]['jenis'] == null,
                             errorText: 'Pilih jenis sampah',
                             onChanged: (updatedItem) {
+                              // Satu jenis sampah hanya boleh muncul sekali
+                              // (CPBI-08): backend menggabungkan item jenis
+                              // sama, jadi UI mencegahnya sejak awal.
+                              final newId =
+                                  updatedItem['jenis_sampah_id'] as String?;
+                              final bool duplicateExists = setoranItems
+                                  .asMap()
+                                  .entries
+                                  .any((e) =>
+                                      e.key != index &&
+                                      e.value['jenis_sampah_id'] == newId);
+                              if (duplicateExists) {
+                                AppNotification.showWarning(
+                                  context,
+                                  title: 'Jenis Sudah Dipilih',
+                                  message:
+                                      'Jenis sampah ini sudah ada di daftar item. Ubah bobat pada item yang sudah ada.',
+                                );
+                                return;
+                              }
                               setState(() {
                                 setoranItems[index] = updatedItem;
                               });
