@@ -417,8 +417,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Yang nasabah isikan pada akunnya berikut ini. Catatan Anda '
-                  'tidak berubah sampai Anda menyamakannya.',
+                  'Nasabah ini memiliki data berbeda dari catatan yang anda miliki.',
                   style: AppTextStyle.small.copyWith(
                     color: Colors.black87,
                     height: 1.4,
