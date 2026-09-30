@@ -40,8 +40,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   String? _jenisKelamin;
   bool _isSaving = false;
 
-  /// Profil global milik pemilik akun begitu keanggotaan tertaut, sehingga
-  /// hanya nomor anggota yang boleh disunting pengurus (PIL-223). Field
+  /// Email menjadi kunci penautan ke akun begitu keanggotaan tertaut, jadi
+  /// hanya field itu yang tidak boleh disunting pengurus (PIL-288). Field
   /// dimatikan agar pengurus tidak mengetik data yang pasti ditolak 403.
   /// Default tidak terkunci: pemanggil lama belum mengirim penandanya.
   bool get _emailTerkunci => _ditolakServer || widget.nasabah.punyaAkun;

@@ -58,10 +58,10 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
     final String address = nasabah.address.isNotEmpty ? nasabah.address : '-';
     final String tanggalDaftar =
         nasabah.tanggalDaftar.isNotEmpty ? nasabah.tanggalDaftar : '-';
-    // Profil nasabah berakun dimiliki pemilik akun dan berlaku lintas bank
-    // sampah, jadi pengurus hanya memegang data keanggotaannya (PIL-223).
-    // Tanpa penanda ini, pengurus baru tahu batas itu dari 403 setelah mengisi
-    // form. Default tidak terkunci: payload lama belum membawa penandanya.
+    // Email nasabah berakun menjadi kunci penautan ke akunnya dan tidak dapat
+    // diubah pengurus (PIL-288). Tanpa penanda ini, pengurus baru tahu batas
+    // itu dari 403 setelah mengisi form. Default tidak terkunci: payload lama
+    // belum membawa penandanya.
     final bool punyaAkun = nasabah.punyaAkun;
 
     return Padding(
