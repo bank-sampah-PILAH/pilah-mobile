@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -221,6 +222,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                 const SizedBox(height: 16),
                 _buildEmailDikelolaNasabah(),
               ],
+              if (punyaAkun) _buildProfilAkunBerbeda(),
               const SizedBox(height: 24),
 
               // Action Buttons
@@ -353,6 +355,152 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
         ],
       ),
     );
+  }
+
+  /// Labels for the backend keys of `profil_berbeda`.
+  static const Map<String, String> _labelField = {
+    'nama': 'Nama',
+    'jenis_kelamin': 'Jenis kelamin',
+    'tanggal_lahir': 'Tanggal lahir',
+    'alamat': 'Alamat',
+    'no_hp': 'Nomor HP',
+  };
+
+  String _nilaiAkun(NasabahProfilAkun akun, String field) {
+    final value = switch (field) {
+      'nama' => akun.nama,
+      'jenis_kelamin' => akun.jenisKelamin,
+      'tanggal_lahir' => akun.tanggalLahir,
+      'alamat' => akun.alamat,
+      'no_hp' => akun.noHp,
+      _ => '',
+    };
+    return value.isNotEmpty ? value : '-';
+  }
+
+  /// Catatan pengurus dan profil akun nasabah terpisah. Bila nasabah mengisi
+  /// hal yang berbeda, tunjukkan bedanya dan tawarkan untuk menyamakan.
+  Widget _buildProfilAkunBerbeda() {
+    return FutureBuilder<NasabahRingkasan?>(
+      future: _ringkasanFuture,
+      builder: (context, snapshot) {
+        final ringkasan = snapshot.data;
+        final akun = ringkasan?.profilAkun;
+        final berbeda = ringkasan?.profilBerbeda ?? const <String>[];
+        if (akun == null || berbeda.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.sync_problem,
+                        size: 18, color: Colors.orange[700]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Data akun berbeda',
+                      style: AppTextStyle.title1.copyWith(
+                        color: Colors.orange[800],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Yang nasabah isikan pada akunnya berikut ini. Catatan Anda '
+                  'tidak berubah sampai Anda menyamakannya.',
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final field in berbeda)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _buildInfoRow(
+                      _labelField[field] ?? field,
+                      _nilaiAkun(akun, field),
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: widget.nasabahCubit == null ? null : _samakan,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange[800],
+                      side: BorderSide(color: Colors.orange[400]!),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Samakan dengan data akun'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _samakan() async {
+    final nama = widget.nasabah.name;
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Samakan dengan data akun?'),
+        content: Text(
+          'Catatan $nama di bank sampah ini akan diganti dengan data yang '
+          'nasabah isikan pada akunnya. Anda tetap dapat menyuntingnya lagi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Samakan'),
+          ),
+        ],
+      ),
+    );
+    if (konfirmasi != true || !mounted) return;
+
+    // The root overlay outlives this sheet, so it hosts the notification.
+    final overlayContext = Navigator.of(context, rootNavigator: true).context;
+    final sheetContext = context;
+    final error = await widget.nasabahCubit!.sinkronProfil(widget.nasabah.id);
+    if (!mounted || !sheetContext.mounted) return;
+
+    if (error == null) {
+      sheetContext.pop();
+      AppNotification.showSuccess(
+        overlayContext,
+        title: 'Data disamakan',
+        message: 'Catatan $nama sekarang sama dengan data akunnya.',
+      );
+    } else {
+      AppNotification.showError(
+        overlayContext,
+        title: 'Gagal',
+        message: error.displayMessage,
+      );
+    }
   }
 
   Widget _buildRingkasanRow() {
