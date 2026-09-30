@@ -82,7 +82,7 @@ void main() {
       'tipe': 'setoran',
       'total_nilai': '5000.00',
       'catatan': 'Setoran rutin',
-      'saldo_setelah_transaksi': '15000.00',
+      'saldo_setelah_transaksi': 15000.0,
       'items': [
         {
           'id': 'item-1',
