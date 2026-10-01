@@ -217,6 +217,12 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Tabungan Saya'), findsOneWidget);
         expect(find.text('Riwayat Setoran'), findsOneWidget);
+        expect(
+          tester
+              .widget<BottomNavigationBar>(find.byType(BottomNavigationBar))
+              .currentIndex,
+          1,
+        );
       } finally {
         semantics.dispose();
       }
@@ -267,9 +273,13 @@ void main() {
         await tester.tap(find.text('Tutup'));
         await tester.pumpAndSettle();
         expect(find.text(entry.value), findsNothing);
-        await tester.scrollUntilVisible(find.text('Beranda'), -300);
-        await tester.pumpAndSettle();
-        expect(find.text('Beranda'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.text('Beranda'),
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       });
     }

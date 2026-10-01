@@ -4,6 +4,7 @@ import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
@@ -180,19 +181,21 @@ class _JadwalPageState extends State<JadwalPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          widget.customerMode ? 'Jadwal Bank Sampah' : 'Jadwal Kegiatan',
-          style: AppTextStyle.headline1.copyWith(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-      ),
+      appBar: widget.customerMode
+          ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
+          : AppBar(
+              title: Text(
+                'Jadwal Kegiatan',
+                style: AppTextStyle.headline1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
+              ),
+              backgroundColor: Colors.white,
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+            ),
       floatingActionButton: widget.customerMode
           ? null
           : BlocBuilder<JadwalCubit, JadwalState>(

@@ -4,9 +4,8 @@ import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resou
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -19,14 +18,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 class ProfilNasabahPage extends StatelessWidget {
   const ProfilNasabahPage({super.key});
 
-  void _back(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go(AppLocations.dashboard);
-    }
-  }
-
   void _logout(BuildContext context) =>
       context.read<AuthenticationBloc>().add(LogoutRequested());
 
@@ -37,16 +28,7 @@ class ProfilNasabahPage extends StatelessWidget {
           final auth = state is Authenticated ? state.authEntity : null;
           return Scaffold(
             backgroundColor: NasabahStyle.background,
-            appBar: AppBar(
-              backgroundColor: NasabahStyle.background,
-              surfaceTintColor: Colors.transparent,
-              title: Text('Profil',
-                  style: NasabahStyle.text(20, weight: FontWeight.w700)),
-              leading: IconButton(
-                  tooltip: 'Kembali ke Beranda',
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => _back(context)),
-            ),
+            appBar: const NasabahPageAppBar(title: 'Profil'),
             body: SafeArea(
                 child: _ProfilNasabahBody(
                     auth: auth, onLogout: () => _logout(context))),

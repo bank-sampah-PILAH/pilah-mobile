@@ -2,6 +2,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -99,6 +100,26 @@ class _HomeSessionState extends State<_HomeSession> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: NasabahStyle.background,
+        appBar: NasabahPageAppBar(
+          title: 'Beranda',
+          actions: [
+            IconButton(
+              tooltip: 'Profil',
+              onPressed: () => context.go(AppLocations.profile),
+              icon: CircleAvatar(
+                radius: 19,
+                backgroundColor: NasabahStyle.emeraldLight,
+                child: Text(
+                  widget.name.isEmpty
+                      ? 'N'
+                      : widget.name.characters.first.toUpperCase(),
+                  style: _text(14,
+                      weight: FontWeight.w600, color: NasabahStyle.emeraldDark),
+                ),
+              ),
+            ),
+          ],
+        ),
         body: SafeArea(
             child: Align(
                 alignment: Alignment.topCenter,
@@ -110,12 +131,8 @@ class _HomeSessionState extends State<_HomeSession> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                       children: [
-                        _HomeHeader(
-                          name: widget.name,
-                          onOpenProfile: () => context.go(AppLocations.profile),
-                        ),
+                        _HomeGreeting(name: widget.name),
                         const SizedBox(height: 12),
-                        Text('Beranda', style: _text(12, color: _muted)),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
@@ -169,7 +186,7 @@ class _HomeSessionState extends State<_HomeSession> {
                                 latestActivity: home.activities.isEmpty
                                     ? null
                                     : home.activities.first,
-                                onOpen: () => context.push(Uri(
+                                onOpen: () => context.go(Uri(
                                   path: AppLocations.history,
                                   queryParameters: {
                                     'keanggotaan_id': home.membershipId,
@@ -258,7 +275,7 @@ class _HomeSessionState extends State<_HomeSession> {
                               const SizedBox(height: 24),
                               _SectionHeading(
                                 title: 'Terbaru',
-                                onAll: () => context.push(Uri(
+                                onAll: () => context.go(Uri(
                                   path: AppLocations.history,
                                   queryParameters: {
                                     'keanggotaan_id': home.membershipId,
@@ -483,41 +500,20 @@ class _BankUnitCard extends StatelessWidget {
       );
 }
 
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.name, required this.onOpenProfile});
+class _HomeGreeting extends StatelessWidget {
+  const _HomeGreeting({required this.name});
   final String name;
-  final VoidCallback onOpenProfile;
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_greeting(), style: _text(12, color: _muted)),
-                Text(
-                  name.isEmpty ? 'Nasabah' : name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: _text(18, weight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          IconButton(
-            tooltip: 'Profil',
-            onPressed: onOpenProfile,
-            icon: CircleAvatar(
-              radius: 19,
-              backgroundColor: NasabahStyle.emeraldLight,
-              child: Text(
-                name.isEmpty ? 'N' : name.characters.first.toUpperCase(),
-                style: _text(14,
-                    weight: FontWeight.w600, color: NasabahStyle.emeraldDark),
-              ),
-            ),
+          Text(_greeting(), style: _text(12, color: _muted)),
+          Text(
+            name.isEmpty ? 'Nasabah' : name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _text(18, weight: FontWeight.w600),
           ),
         ],
       );
