@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -35,6 +37,19 @@ bool jenisSampahSudahAda(
       .any((e) => e.key != index && e.value['jenis_sampah_id'] == newId);
 }
 
+@visibleForTesting
+String newTransaksiIdempotencyKey() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex = bytes
+      .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+      .join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+}
+
 class TransaksiBaruPage extends StatefulWidget {
   const TransaksiBaruPage({super.key});
 
@@ -49,6 +64,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
   bool _isSaving = false;
+  String? _idempotencyKey;
 
   @override
   void initState() {
@@ -87,8 +103,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       return;
     }
 
+    final idempotencyKey = _idempotencyKey ?? newTransaksiIdempotencyKey();
+    _idempotencyKey = idempotencyKey;
     final request = TransaksiRequest(
       nasabahId: selectedCustomer!.id,
+      idempotencyKey: idempotencyKey,
       items: setoranItems
           .map((item) => ItemSetoranRequest(
                 jenisSampahId: item['jenis_sampah_id'] as String,
@@ -128,6 +147,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     context.read<RiwayatAktivitasCubit>().load(silent: true);
 
     final created = result.created!;
+    _idempotencyKey = null;
 
     // Built here, before the sheet opens, so the draft is a snapshot of what was
     // actually submitted rather than of whatever the form holds by the time the
