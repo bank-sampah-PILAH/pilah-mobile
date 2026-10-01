@@ -88,7 +88,11 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       if (request.catatan != null && request.catatan!.trim().isNotEmpty)
         'catatan': request.catatan!.trim(),
     };
-    final response = await networkService.post(_path, data: body);
+    final response = await networkService.post(
+      _path,
+      data: body,
+      headers: {'Idempotency-Key': request.idempotencyKey},
+    );
     final json = response.data as Map<String, dynamic>;
     final items = json['items'] as List? ?? [];
     return TransaksiCreated(

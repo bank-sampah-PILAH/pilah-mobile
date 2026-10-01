@@ -87,10 +87,14 @@ class ItemSetoranRequest {
 class TransaksiRequest {
   final String nasabahId;
   final List<ItemSetoranRequest> items;
+  final String idempotencyKey;
   final String? catatan;
 
   TransaksiRequest(
-      {required this.nasabahId, required this.items, this.catatan});
+      {required this.nasabahId,
+      required this.items,
+      required this.idempotencyKey,
+      this.catatan});
 }
 
 /// Result of creating a transaction, using backend-authoritative totals.

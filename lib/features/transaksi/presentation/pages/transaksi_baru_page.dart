@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -21,6 +23,32 @@ import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
+/// menggabungkan item jenis sama, jadi UI mencegahnya sejak awal.
+/// Jenis belum dipilih (null) tidak dianggap duplikat: kartu kosong lebih dari
+/// satu tidak saling bertabrakan dan edit berat di kartu kosong tetap lolos.
+@visibleForTesting
+bool jenisSampahSudahAda(
+    List<Map<String, dynamic>> setoranItems, int index, String? newId) {
+  if (newId == null) return false;
+  return setoranItems
+      .asMap()
+      .entries
+      .any((e) => e.key != index && e.value['jenis_sampah_id'] == newId);
+}
+
+@visibleForTesting
+String newTransaksiIdempotencyKey() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex =
+      bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+}
+
 class TransaksiBaruPage extends StatefulWidget {
   const TransaksiBaruPage({super.key});
 
@@ -35,6 +63,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
   bool _isSaving = false;
+  String? _idempotencyKey;
 
   @override
   void initState() {
@@ -73,8 +102,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       return;
     }
 
+    final idempotencyKey = _idempotencyKey ?? newTransaksiIdempotencyKey();
+    _idempotencyKey = idempotencyKey;
     final request = TransaksiRequest(
       nasabahId: selectedCustomer!.id,
+      idempotencyKey: idempotencyKey,
       items: setoranItems
           .map((item) => ItemSetoranRequest(
                 jenisSampahId: item['jenis_sampah_id'] as String,
@@ -114,6 +146,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     context.read<RiwayatAktivitasCubit>().load(silent: true);
 
     final created = result.created!;
+    _idempotencyKey = null;
 
     // Built here, before the sheet opens, so the draft is a snapshot of what was
     // actually submitted rather than of whatever the form holds by the time the
@@ -383,6 +416,19 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                 setoranItems[index]['jenis'] == null,
                             errorText: 'Pilih jenis sampah',
                             onChanged: (updatedItem) {
+                              final newId =
+                                  updatedItem['jenis_sampah_id'] as String?;
+                              final bool duplicateExists = jenisSampahSudahAda(
+                                  setoranItems, index, newId);
+                              if (duplicateExists) {
+                                AppNotification.showWarning(
+                                  context,
+                                  title: 'Jenis Sudah Dipilih',
+                                  message:
+                                      'Jenis sampah ini sudah ada di daftar item. Ubah berat pada item yang sudah ada.',
+                                );
+                                return;
+                              }
                               setState(() {
                                 setoranItems[index] = updatedItem;
                               });
