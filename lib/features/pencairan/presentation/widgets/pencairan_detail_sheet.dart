@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 
 import '../../domain/model/pencairan.dart';
 import '../pages/edit_pencairan_page.dart';
 import '../pages/revisi_pencairan_page.dart';
-
-const _emeraldPrimary = Color(0xFF006D44);
 
 String _time(DateTime? tanggal) {
   if (tanggal == null) return '-';
@@ -38,7 +36,9 @@ Future<void> showPencairanDetailSheet(
 
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
+    backgroundColor: Colors.transparent,
     builder: (sheetContext) => _DetailPencairanSheet(
       item: item,
       onEdit: () {
@@ -60,7 +60,9 @@ Future<void> showNasabahPencairanDetailSheet(
 ) =>
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => _DetailPencairanSheet(item: item),
     );
 
@@ -72,10 +74,8 @@ class DiperbaruiLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'Diperbarui',
-      style: AppTextStyle.small.copyWith(
-        color: _emeraldPrimary,
-        fontStyle: FontStyle.italic,
-      ),
+      style: NasabahStyle.text(12, color: NasabahStyle.emerald)
+          .copyWith(fontStyle: FontStyle.italic),
     );
   }
 }
@@ -94,54 +94,86 @@ class _DetailPencairanSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tanggal = item.tanggal;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text('Detail Pencairan', style: AppTextStyle.title1),
-              ),
-              if (item.diperbarui) const DiperbaruiLabel(),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _row('Nasabah', item.nasabahNama),
-          _row('Nominal', 'Rp ${formatRupiahId(item.nominal)}'),
-          _row('Metode', item.metode.label),
-          _row(
-            'Tanggal',
-            tanggal == null
-                ? '-'
-                : '${formatTanggalId(tanggal)}, ${_time(tanggal)}',
-          ),
-          _row('Status', _statusLabel(item.status)),
-          _row('Keterangan', item.keterangan.isEmpty ? '-' : item.keterangan),
-          _row('Saldo sebelum', 'Rp ${formatRupiahId(item.saldoSebelum)}'),
-          _row('Saldo sesudah', 'Rp ${formatRupiahId(item.saldoSesudah)}'),
-          _row(
-            'Dicatat oleh',
-            item.dicatatOlehNama.isEmpty ? '-' : item.dicatatOlehNama,
-          ),
-          const SizedBox(height: 16),
-          if (onEdit != null)
-            OutlinedButton.icon(
-              key: const Key('edit-pencairan'),
-              onPressed: onEdit,
-              icon: const Icon(Icons.edit),
-              label: const Text('Edit Pencairan'),
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: NasabahStyle.background,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: NasabahStyle.line,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Detail Pencairan',
+                        style: NasabahStyle.text(20, weight: FontWeight.w600),
+                      ),
+                    ),
+                    if (item.diperbarui) const DiperbaruiLabel(),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _row('Nasabah', item.nasabahNama),
+                _row('Nominal', 'Rp ${formatRupiahId(item.nominal)}'),
+                _row('Metode', item.metode.label),
+                _row(
+                  'Tanggal',
+                  tanggal == null
+                      ? '-'
+                      : '${formatTanggalId(tanggal)}, ${_time(tanggal)}',
+                ),
+                _row('Status', _statusLabel(item.status)),
+                _row(
+                  'Keterangan',
+                  item.keterangan.isEmpty ? '-' : item.keterangan,
+                ),
+                _row(
+                    'Saldo sebelum', 'Rp ${formatRupiahId(item.saldoSebelum)}'),
+                _row(
+                    'Saldo sesudah', 'Rp ${formatRupiahId(item.saldoSesudah)}'),
+                _row(
+                  'Dicatat oleh',
+                  item.dicatatOlehNama.isEmpty ? '-' : item.dicatatOlehNama,
+                ),
+                const SizedBox(height: 16),
+                if (onEdit != null)
+                  OutlinedButton.icon(
+                    key: const Key('edit-pencairan'),
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit Pencairan'),
+                  ),
+                if (item.diperbarui && onRiwayatPerubahan != null)
+                  TextButton.icon(
+                    key: const Key('riwayat-perubahan-pencairan'),
+                    onPressed: onRiwayatPerubahan,
+                    icon: const Icon(Icons.history),
+                    label: const Text('Riwayat Perubahan'),
+                  ),
+              ],
             ),
-          if (item.diperbarui && onRiwayatPerubahan != null)
-            TextButton.icon(
-              key: const Key('riwayat-perubahan-pencairan'),
-              onPressed: onRiwayatPerubahan,
-              icon: const Icon(Icons.history),
-              label: const Text('Riwayat Perubahan'),
-            ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -149,15 +181,20 @@ class _DetailPencairanSheet extends StatelessWidget {
   Widget _row(String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: AppTextStyle.small),
-            const SizedBox(width: 16),
-            Flexible(
+            Expanded(
+              child: Text(
+                label,
+                style: NasabahStyle.text(13, color: NasabahStyle.muted),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
               child: Text(
                 value,
                 textAlign: TextAlign.end,
-                style: AppTextStyle.title1,
+                style: NasabahStyle.text(13, weight: FontWeight.w500),
               ),
             ),
           ],
