@@ -39,8 +39,9 @@ Future<GoRouter> pumpRouted(
 /// running the toast's auto-dismiss timer (which `pumpAndSettle` would).
 Future<void> pumpToast(WidgetTester tester) async {
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 100));
-  await tester.pump(const Duration(seconds: 1));
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
 }
 
 /// Runs any toast's auto-dismiss timer out so no timer is pending at the end.

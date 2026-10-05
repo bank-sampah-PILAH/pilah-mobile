@@ -67,6 +67,10 @@ class StubApi implements HttpClientAdapter {
   final requests = <RecordedRequest>[];
   final _routes = <String, ResponseBody Function(RequestOptions)>{};
 
+  /// When set, every answer takes this long to arrive, so a test can observe
+  /// the loading frames a real network would produce.
+  Duration? latency;
+
   RecordedRequest get last => requests.last;
 
   /// Answers `METHOD path` with a JSON body.
@@ -121,6 +125,7 @@ class StubApi implements HttpClientAdapter {
       options.data,
       Map<String, dynamic>.from(options.headers),
     ));
+    if (latency != null) await Future<void>.delayed(latency!);
     final route = _routes['${options.method} ${options.uri.path}'];
     if (route == null) {
       return ResponseBody.fromString(
