@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -104,6 +105,25 @@ void main() {
       child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
+  }
+
+  // The greeting follows the clock, so each time of day is checked against a
+  // fixed one and the result does not depend on when the suite runs.
+  const greetings = {
+    5: 'Selamat pagi',
+    12: 'Selamat siang',
+    16: 'Selamat sore',
+    20: 'Selamat malam',
+  };
+  for (final entry in greetings.entries) {
+    testWidgets('greets ${entry.value.toLowerCase()} at ${entry.key}:00',
+        (tester) async {
+      await withClock(Clock.fixed(DateTime(2026, 10, 6, entry.key)), () async {
+        await pumpHome(tester, _HomeRepository(null, const []));
+
+        expect(find.text(entry.value), findsOneWidget);
+      });
+    });
   }
 
   testWidgets('the balance card names the latest activity and its date',

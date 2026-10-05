@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -857,7 +858,7 @@ class _JadwalFormState extends State<_JadwalForm> {
       selectedDate.day,
       9,
     );
-    final now = DateTime.now();
+    final now = clock.now();
     if (!DateUtils.isSameDay(selectedDate, now) || preferred.isAfter(now)) {
       return preferred;
     }

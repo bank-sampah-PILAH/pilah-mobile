@@ -3,6 +3,7 @@ import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -520,7 +521,7 @@ class _HomeGreeting extends StatelessWidget {
 }
 
 String _greeting() {
-  final hour = DateTime.now().hour;
+  final hour = clock.now().hour;
   if (hour < 11) return 'Selamat pagi';
   if (hour < 15) return 'Selamat siang';
   if (hour < 18) return 'Selamat sore';

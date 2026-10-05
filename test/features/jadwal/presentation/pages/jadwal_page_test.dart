@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,6 +82,68 @@ void main() {
       find.byType(CalendarDatePicker),
     );
     expect(DateUtils.isSameDay(picker.initialDate, DateTime.now()), isTrue);
+  });
+
+  // The suggested start depends on the current time, so each case runs against
+  // a fixed clock on the day the page selects.
+  final suggestedStarts = <String, ({int hour, int minute, String expected})>{
+    'is 09:00 when it is still before 09:00': (
+      hour: 7,
+      minute: 30,
+      expected: '09:00',
+    ),
+    'moves to the next full hour after 09:00': (
+      hour: 10,
+      minute: 20,
+      expected: '11:00',
+    ),
+    'is a minute from now when the next hour falls on another day': (
+      hour: 23,
+      minute: 30,
+      expected: '23:31',
+    ),
+  };
+  for (final entry in suggestedStarts.entries) {
+    testWidgets('new schedule start ${entry.key}', (tester) async {
+      final today = DateUtils.dateOnly(DateTime.now());
+      final fakeNow = DateTime(
+        today.year,
+        today.month,
+        today.day,
+        entry.value.hour,
+        entry.value.minute,
+      );
+      await withClock(Clock.fixed(fakeNow), () async {
+        final cubit = await _pumpNewScheduleForm(tester);
+        addTearDown(cubit.close);
+
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('jadwal-mulai')),
+            matching: find.textContaining(entry.value.expected),
+          ),
+          findsOneWidget,
+        );
+      });
+    });
+  }
+
+  testWidgets('new schedule for a later day starts at 09:00', (tester) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final fakeNow = DateTime(today.year, today.month, today.day, 15);
+    await withClock(Clock.fixed(fakeNow.add(const Duration(days: 3))),
+        () async {
+      final cubit = await _pumpNewScheduleForm(tester);
+      addTearDown(cubit.close);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('jadwal-mulai')),
+          matching: find.textContaining('09:00'),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   testWidgets('failed initial load has an explicit retry action', (
@@ -547,6 +610,21 @@ JadwalEntity _schedule({
     status: status,
     isOverlapping: isOverlapping,
   );
+}
+
+Future<JadwalCubit> _pumpNewScheduleForm(WidgetTester tester) async {
+  final repository = _MockJadwalRepository();
+  _stubJadwal(repository, const []);
+  final cubit = JadwalCubit(repository);
+  await tester.pumpWidget(
+    MaterialApp(
+      home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byType(FloatingActionButton));
+  await tester.pumpAndSettle();
+  return cubit;
 }
 
 Future<void> _selectCalendarDate(WidgetTester tester, DateTime date) async {
