@@ -4,13 +4,15 @@ import 'package:go_router/go_router.dart';
 
 /// Pumps [home] inside a `MaterialApp.router` so widgets that call
 /// `context.pop()` / `context.push()` work. Extra [routes] can be registered to
-/// observe navigation; each renders its path as text.
+/// observe navigation; each renders its path as text. With [pushed], [home] is
+/// pushed on top of a root page so it has somewhere to pop back to.
 Future<GoRouter> pumpRouted(
   WidgetTester tester,
   Widget home, {
   List<String> extraRoutes = const [],
   Widget Function(Widget child)? wrap,
   Size? size,
+  bool pushed = false,
 }) async {
   if (size != null) {
     tester.view.physicalSize = size;
@@ -20,7 +22,12 @@ Future<GoRouter> pumpRouted(
   }
   final router = GoRouter(
     routes: [
-      GoRoute(path: '/', builder: (_, __) => home),
+      GoRoute(
+        path: '/',
+        builder: (_, __) =>
+            pushed ? const Scaffold(body: Text('route:/')) : home,
+      ),
+      if (pushed) GoRoute(path: '/page', builder: (_, __) => home),
       for (final path in extraRoutes)
         GoRoute(
           path: path,
@@ -32,6 +39,10 @@ Future<GoRouter> pumpRouted(
   final app = MaterialApp.router(routerConfig: router);
   await tester.pumpWidget(wrap == null ? app : wrap(app));
   await tester.pump();
+  if (pushed) {
+    router.push('/page');
+    await tester.pumpAndSettle();
+  }
   return router;
 }
 
