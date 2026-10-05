@@ -318,4 +318,25 @@ void main() {
     await mount(tester, Unauthenticated());
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
+
+  testWidgets('an active nasabah may read the schedule outside the tabs',
+      (tester) async {
+    await mount(tester, session('nasabah'), initialLocation: '/schedule');
+
+    expect(find.text('body:/schedule'), findsOneWidget);
+    expect(find.text('Kembali ke Beranda'), findsNothing);
+  });
+
+  testWidgets('a branch outside the role navigation offers a way back home',
+      (tester) async {
+    final router =
+        await mount(tester, session('pengelola'), initialLocation: '/history');
+
+    expect(find.text('body:/history'), findsNothing);
+    await tester.tap(find.text('Kembali ke Beranda'));
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+    expect(find.text('body:/home'), findsOneWidget);
+  });
 }

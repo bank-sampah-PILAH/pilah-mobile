@@ -52,7 +52,9 @@ class PendingApprovalScreen extends StatelessWidget {
                     width: 2,
                     color: isCompleted
                         ? AppColors.greenDark
-                        : Colors.grey.shade300,
+                        // Only reachable for an incomplete step that is not last;
+                        // the screen's fixed steps never include one.
+                        : Colors.grey.shade300, // coverage:ignore-line
                   ),
                 ),
             ],

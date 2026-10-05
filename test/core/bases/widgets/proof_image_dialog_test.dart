@@ -1,12 +1,8 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/painting.dart' show debugNetworkImageHttpClientProvider;
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
+
+import '../../../support/fake_image_download.dart';
 
 /// Pumps a host with a button that opens the dialog for [imageUrl].
 ///
@@ -119,8 +115,7 @@ void main() {
 
     testWidgets('shows progress while the photo downloads, then the photo',
         (tester) async {
-      final body = _FakeBody(base64Decode(_onePixelPng));
-      debugNetworkImageHttpClientProvider = () => _FakeClient(body);
+      final body = FakeImageDownload.install();
       // Reset inside the body: the framework checks painting debug variables
       // before group tear-downs run.
 
@@ -141,68 +136,7 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('Gagal memuat gambar'), findsNothing);
-      debugNetworkImageHttpClientProvider = null;
+      FakeImageDownload.uninstall();
     });
   });
-}
-
-const _onePixelPng =
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-
-/// A response body the test releases in two steps.
-class _FakeBody {
-  _FakeBody(this.bytes);
-
-  final Uint8List bytes;
-  final controller = StreamController<List<int>>();
-
-  void sendFirstHalf() => controller.add(bytes.sublist(0, bytes.length ~/ 2));
-
-  void finish() {
-    controller.add(bytes.sublist(bytes.length ~/ 2));
-    controller.close();
-  }
-}
-
-class _FakeClient extends Fake implements HttpClient {
-  _FakeClient(this.body);
-
-  final _FakeBody body;
-
-  @override
-  set autoUncompress(bool value) {}
-
-  @override
-  Future<HttpClientRequest> getUrl(Uri url) async => _FakeRequest(body);
-}
-
-class _FakeRequest extends Fake implements HttpClientRequest {
-  _FakeRequest(this.body);
-
-  final _FakeBody body;
-
-  @override
-  Future<HttpClientResponse> close() async => _FakeResponse(body);
-}
-
-class _FakeResponse extends Fake implements HttpClientResponse {
-  _FakeResponse(this.body);
-
-  final _FakeBody body;
-
-  @override
-  int get statusCode => 200;
-
-  @override
-  int get contentLength => body.bytes.length;
-
-  @override
-  HttpClientResponseCompressionState get compressionState =>
-      HttpClientResponseCompressionState.notCompressed;
-
-  @override
-  StreamSubscription<List<int>> listen(void Function(List<int>)? onData,
-          {Function? onError, void Function()? onDone, bool? cancelOnError}) =>
-      body.controller.stream.listen(onData,
-          onError: onError, onDone: onDone, cancelOnError: cancelOnError);
 }
