@@ -319,7 +319,7 @@ void main() {
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
 
-  testWidgets('an active nasabah may read the schedule outside the tabs',
+  testWidgets('an active nasabah opens the schedule tab',
       (tester) async {
     await mount(tester, session('nasabah'), initialLocation: '/schedule');
 
