@@ -19,6 +19,10 @@ const _expectedMessage = 'Halo Budi Susanto 👋\n'
 
 void main() {
   group('normalizeWaPhone', () {
+    test('prefixes bare national digits with the country code', () {
+      expect(normalizeWaPhone('81234567890'), '6281234567890');
+    });
+
     test('swaps a national leading 0 for the country code', () {
       expect(normalizeWaPhone('081234567890'), '6281234567890');
     });
