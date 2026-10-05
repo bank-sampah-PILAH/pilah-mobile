@@ -1,3 +1,6 @@
+// coverage:ignore-file
+// Process entrypoint: real dotenv, Firebase, Google Sign-In and runApp bootstrap; not
+// runnable in a unit-test VM.
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
