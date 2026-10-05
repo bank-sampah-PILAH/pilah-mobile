@@ -63,3 +63,13 @@ Future<void> settleToasts(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 7));
   await tester.pumpAndSettle();
 }
+
+/// Lets real asynchronous work (file I/O, which fake-async cannot advance) run
+/// to completion, interleaving frames so the UI reacts to each result.
+Future<void> pumpReal(WidgetTester tester, {int rounds = 6}) async {
+  for (var i = 0; i < rounds; i++) {
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
