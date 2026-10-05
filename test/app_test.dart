@@ -72,13 +72,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  String location() => AppRouterConfig.getRouter()
-      .routerDelegate
-      .currentConfiguration
-      .uri
-      .path;
+  String location() =>
+      AppRouterConfig.getRouter().routerDelegate.currentConfiguration.uri.path;
 
-  testWidgets('starts the router and lands a signed-in pengelola on the '
+  testWidgets(
+      'starts the router and lands a signed-in pengelola on the '
       'dashboard', (tester) async {
     shell.signedInAsRole('pengelola', bankStatus: 'active');
     await boot(tester);

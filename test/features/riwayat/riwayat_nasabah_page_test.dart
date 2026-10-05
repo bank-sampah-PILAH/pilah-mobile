@@ -230,7 +230,8 @@ void main() {
   });
 
   group('setoran detail sheet', () {
-    testWidgets('explains an API failure and requests the detail again on retry', (
+    testWidgets(
+        'explains an API failure and requests the detail again on retry', (
       tester,
     ) async {
       var calls = 0;

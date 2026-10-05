@@ -319,8 +319,7 @@ void main() {
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
 
-  testWidgets('an active nasabah opens the schedule tab',
-      (tester) async {
+  testWidgets('an active nasabah opens the schedule tab', (tester) async {
     await mount(tester, session('nasabah'), initialLocation: '/schedule');
 
     expect(find.text('body:/schedule'), findsOneWidget);
