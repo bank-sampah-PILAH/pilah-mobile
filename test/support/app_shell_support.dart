@@ -131,7 +131,10 @@ class AppShell {
       // The pencairan and superadmin cubits are closed by the pages that own
       // them (BlocProvider.create), and closing them again never completes.
     ]) {
-      await close();
+      // Not awaited, for the same reason as [states]: a cubit the app's own
+      // BlocProvider is already closing only finishes once the torn-down tree
+      // has released its listeners.
+      unawaited(close());
     }
   }
 
