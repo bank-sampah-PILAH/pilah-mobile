@@ -178,4 +178,101 @@ void main() {
     expect(find.text('Nomor HP tidak valid.'), findsOneWidget);
     expect(find.text('Simpan Perubahan'), findsOneWidget);
   });
+
+  testWidgets('batal membuang perubahan dan kembali ke tampilan profil',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, '081234567890'), '0899');
+
+    await tester.ensureVisible(find.text('Batal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simpan Perubahan'), findsNothing);
+    expect(find.text('081234567890'), findsOneWidget);
+    expect(repository.updateCalls, isEmpty);
+  });
+
+  testWidgets('memilih tanggal lahir lalu menyimpan mengirimnya',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pilih tanggal lahir'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Pilih tanggal lahir'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pilih tanggal lahir'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih tanggal lahir'), findsNothing);
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updateCalls.single.keys, ['tanggal_lahir']);
+  });
+
+  testWidgets('membatalkan pemilih tanggal tidak mengubah apa pun',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Pilih tanggal lahir'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pilih tanggal lahir'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih tanggal lahir'), findsOneWidget);
+  });
+
+  testWidgets('galat tak terduga menampilkan pesan umum', (tester) async {
+    await open(tester);
+    repository.failNextUpdateWith = StateError('putus');
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, '081234567890'), '0899');
+
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Perubahan gagal disimpan. Periksa koneksi dan coba lagi.'),
+        findsOneWidget);
+  });
+
+  testWidgets('tanggal lahir yang tidak diubah tidak ikut dikirim',
+      (tester) async {
+    await open(tester,
+        identity: NasabahIdentity(
+            'u', 'Siti Aminah', 'siti@example.test', 'nasabah',
+            noHp: '081234567890',
+            jenisKelamin: 'perempuan',
+            tanggalLahir: DateTime(1998, 5, 17),
+            alamat: 'Jl. Melati No. 1'));
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, '081234567890'), '0899');
+
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updateCalls.single, {'no_hp': '0899'});
+  });
 }
