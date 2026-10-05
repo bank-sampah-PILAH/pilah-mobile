@@ -90,6 +90,15 @@ class StubApi implements HttpClientAdapter {
         );
   }
 
+  /// Re-answers an existing byte route with another status.
+  void status(String method, String path, int code) {
+    final inner = _routes['${method.toUpperCase()} $path']!;
+    _routes['${method.toUpperCase()} $path'] = (options) {
+      final body = inner(options);
+      return ResponseBody(body.stream, code, headers: body.headers);
+    };
+  }
+
   /// Makes `METHOD path` fail at the transport level.
   void fail(String method, String path,
       [DioExceptionType type = DioExceptionType.connectionTimeout]) {
