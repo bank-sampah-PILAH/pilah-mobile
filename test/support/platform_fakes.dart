@@ -53,8 +53,13 @@ class FakeSharePlatform extends SharePlatform with MockPlatformInterfaceMixin {
   }
 }
 
+/// `SharePlus.instance` captures `SharePlatform.instance` the first time it is
+/// read, so the fake has to be one object per test isolate: a fresh fake per
+/// test would never be the one the app talks to.
+final FakeSharePlatform _share = FakeSharePlatform();
+
 FakeSharePlatform installFakeSharePlatform() {
-  final fake = FakeSharePlatform();
-  SharePlatform.instance = fake;
-  return fake;
+  SharePlatform.instance = _share;
+  _share.shared.clear();
+  return _share;
 }

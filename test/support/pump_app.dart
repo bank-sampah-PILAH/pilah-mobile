@@ -60,7 +60,11 @@ Future<void> pumpToast(WidgetTester tester) async {
 
 /// Runs any toast's auto-dismiss timer out so no timer is pending at the end.
 Future<void> settleToasts(WidgetTester tester) async {
-  await tester.pump(const Duration(seconds: 7));
+  // In steps: a toast's dismiss timer only starts once its slide-in has
+  // finished, so one long jump would leave that timer still pending.
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(seconds: 3));
+  }
   await tester.pumpAndSettle();
 }
 
@@ -70,6 +74,17 @@ Future<void> pumpReal(WidgetTester tester, {int rounds = 6}) async {
   for (var i = 0; i < rounds; i++) {
     await tester
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+/// Pumps (letting real I/O run between frames) until [finder] matches, or fails
+/// after [limit] rounds. For flows that mix fake-async timers with file I/O.
+Future<void> pumpUntilFound(WidgetTester tester, Finder finder,
+    {int limit = 60}) async {
+  for (var i = 0; i < limit && finder.evaluate().isEmpty; i++) {
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 30)));
     await tester.pump(const Duration(milliseconds: 100));
   }
 }
