@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 
 /// Pumps [home] inside a `MaterialApp.router` so widgets that call
 /// `context.pop()` / `context.push()` work. Extra [routes] can be registered to
@@ -21,6 +22,8 @@ Future<GoRouter> pumpRouted(
     addTearDown(tester.view.resetDevicePixelRatio);
   }
   final router = GoRouter(
+    // The app's root key, so `AppNotification.afterNavigation` finds a navigator.
+    navigatorKey: rootNavigatorKey,
     routes: [
       GoRoute(
         path: '/',
