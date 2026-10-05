@@ -21,10 +21,14 @@ String? resolvePendingInvite({required String? step, required String? role}) {
 
   if (role == 'pengelola') {
     final target = pendingInviteLocation(step, role: role);
+    // coverage:ignore-start
+    // Defensive: for role 'pengelola' pendingInviteLocation always resolves to
+    // one of the two redeeming screens, so this cannot be reached today.
     if (target == null) {
       store.clear();
       return null;
     }
+    // coverage:ignore-end
     return target;
   }
 

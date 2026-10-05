@@ -9,7 +9,10 @@ import 'package:pilah_mobile/features/authentication/domain/use_cases/authentica
 import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/check_session_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_refresh_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
@@ -269,6 +272,105 @@ void main() {
         expect: () => [
           isA<AuthenticationLoading>(),
           isA<AuthenticationFailure>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'fails when the server answers with no usable Google outcome',
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken))
+              .thenAnswer((_) async => const Right(null));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(
+          name: tName,
+          email: tEmail,
+          photoUrl: tPhotoUrl,
+          idToken: tIdToken,
+        )),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<AuthenticationFailure>().having(
+              (f) => f.message, 'message', 'Invalid response from server'),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'lets the user retry the role after a failed submission',
+        build: () {
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: GoogleRegistrationRole.nasabah,
+              )).thenAnswer((_) async => Right(tAuthEntity));
+          return bloc;
+        },
+        seed: () => GoogleRegistrationFailure(
+            registration: registration, message: 'Network failed'),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
+          isA<Authenticated>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'ignores a role submission when no registration is pending',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
+        ),
+        expect: () => <dynamic>[],
+      );
+    });
+
+    group('session', () {
+      blocTest<AuthenticationBloc, dynamic>(
+        'drops a stale session when the user can no longer be fetched',
+        build: () {
+          when(() => mockUseCases.hasSession()).thenAnswer((_) async => true);
+          when(() => mockUseCases.getMe()).thenAnswer(
+              (_) async => Left(GeneralException(message: 'expired')));
+          when(() => mockUseCases.logout())
+              .thenAnswer((_) async => const Right(null));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(CheckSessionRequested()),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<Unauthenticated>(),
+        ],
+        verify: (_) => verify(() => mockUseCases.logout()).called(1),
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'refreshing the user keeps the current state when the fetch fails',
+        build: () {
+          when(() => mockUseCases.getMe()).thenAnswer(
+              (_) async => Left(GeneralException(message: 'offline')));
+          return bloc;
+        },
+        seed: () => Authenticated(authEntity: tAuth),
+        act: (bloc) => bloc.add(RefreshUserRequested()),
+        expect: () => <dynamic>[],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'logging out ends in Unauthenticated',
+        build: () {
+          when(() => mockUseCases.logout())
+              .thenAnswer((_) async => const Right(null));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LogoutRequested()),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<Unauthenticated>(),
         ],
       );
     });
