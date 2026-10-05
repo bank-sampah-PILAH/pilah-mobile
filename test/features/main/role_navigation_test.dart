@@ -339,4 +339,12 @@ void main() {
     expect(router.routeInformationProvider.value.uri.path, '/home');
     expect(find.text('body:/home'), findsOneWidget);
   });
+
+  testWidgets('staff may open their profile outside the five destinations',
+      (tester) async {
+    await mount(tester, session('pengelola'), initialLocation: '/profile');
+
+    expect(find.text('body:/profile'), findsOneWidget);
+    expect(find.text('Kembali ke Beranda'), findsNothing);
+  });
 }
