@@ -844,7 +844,11 @@ class _JadwalFormState extends State<_JadwalForm> {
   }
 
   DateTime _defaultStartTime(DateTime? date) {
+    // coverage:ignore-start
+    // Defensive: _openForm always passes the selected date for a new schedule
+    // and an existing one carries its own start time.
     if (date == null) return DateTime.now().add(const Duration(days: 1));
+    // coverage:ignore-end
 
     final selectedDate = DateUtils.dateOnly(date);
     final preferred = DateTime(
