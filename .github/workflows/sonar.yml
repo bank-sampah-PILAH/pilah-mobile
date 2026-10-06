@@ -72,4 +72,4 @@ jobs:
             -Dsonar.sources=lib
             -Dsonar.dart.coverage.lcov.reportPath=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
-            -Dsonar.scanner.internal.autoProvisionJRE=false
+            -Dsonar.scanner.skipJreProvisioning=true
