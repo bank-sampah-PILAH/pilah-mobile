@@ -66,6 +66,15 @@ jobs:
       - name: Run tests with coverage
         run: flutter test --coverage
 
+      # Java 21 for the scanner engine: with skipJreProvisioning the CLI never
+      # calls api.sonarcloud.io/analysis/jres (GitHub runner IPs get a
+      # deterministic 403 from SonarCloud's CDN), it just runs on this JDK.
+      - name: Set up Java 21 (scanner engine)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v8.3.0
         env:
@@ -77,3 +86,4 @@ jobs:
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.scanner.skipJreProvisioning=true
