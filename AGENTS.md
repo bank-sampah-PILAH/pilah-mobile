@@ -21,6 +21,18 @@
 
 - Run `flutter analyze`.
 - Run `flutter test`.
+- For mobile code changes, also build the Android debug APK with
+  `flutter build apk --debug` and the web release with
+  `flutter build web --release`.
+- For web UI changes, use Playwright to QA both a desktop-sized browser and a
+  mobile-sized browser viewport. Mobile viewport emulation checks responsive
+  web UI only; it does not verify native mobile behavior.
+- Web UI is supported only for Super Admin, Pengurus, and Pengurus Induk. Do
+  not describe or imply Nasabah web support.
+- For UI changes, save proof screenshots locally under
+  `artifacts/pr-<PR_NUMBER>/`. Skip screenshots for non-UI changes, and do not
+  commit screenshots or other artifacts. In the PR description, say when UI
+  screenshots do not apply.
 - Do not commit `.env`, Firebase credentials, build output, or generated local
   runtime files.
 
@@ -32,3 +44,5 @@
   feature or fix branches in sibling `pilah-mobile-worktrees` directories.
 - Use the local `.agents/skills/lgtm` skill with the global `lgtm` workflow for
   merge and cleanup.
+- Keep the canonical checkout's detached submodule worktree untouched; make
+  changes, commits, pushes, and PRs from the designated sibling worktree.
