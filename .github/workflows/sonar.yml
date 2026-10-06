@@ -39,6 +39,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Java 21 for the Sonar scanner engine: ci.yml's Temurin 17 is too old
+      # for the engine, and the JRE bootstrap endpoint that would fetch 21
+      # 403s from some IPs — install 21 and skip provisioning instead.
+      - uses: actions/setup-java@v4
+        id: java21
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -65,11 +74,10 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SCANNER_OPTS: >
+            -Dsonar.scanner.skipJreProvisioning=true
+            -Dsonar.scanner.javaExePath=${{ steps.java21.outputs.path }}/bin/java
         with:
-          # Pin pre-6.x scanner: 6.2.1's JRE/engine bootstrap gets 403 from
-          # SonarCloud's CDN/WAF on many IPs (GitHub runners included);
-          # 5.0.1 talks straight to sonarcloud.io and submits fine.
-          scannerVersion: 5.0.1.3006
           args: >
             -Dsonar.organization=bank-sampah-pilah
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
