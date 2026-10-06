@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -18,7 +18,14 @@ import 'google_sign_in_web_button_stub.dart'
 class LoginButton extends StatelessWidget {
   final bool isLoading;
 
-  const LoginButton({super.key, this.isLoading = false});
+  @visibleForTesting
+  final bool? isWebOverride;
+
+  const LoginButton({
+    super.key,
+    this.isLoading = false,
+    @visibleForTesting this.isWebOverride,
+  });
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
     try {
@@ -63,7 +70,7 @@ class LoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) {
+    if (isWebOverride ?? kIsWeb) {
       return web_sign_in.buildWebGoogleSignInButton(
         isLoading: isLoading,
         onAuthenticated: (user) => _submitGoogleUser(context, user),

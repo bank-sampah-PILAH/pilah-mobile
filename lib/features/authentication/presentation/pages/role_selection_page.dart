@@ -110,11 +110,12 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
       listener: _listen,
       builder: (context, state) {
         final isLoading = state is GoogleRegistrationSubmitting;
-        final roleOptions = kIsWeb
-            ? _roleOptions
-                .where((option) => isSupportedWebRole(option.value.wireValue))
-                .toList()
-            : _roleOptions;
+        final roleOptions = _roleOptions
+            .where((option) => isRoleSupportedOnPlatform(
+                  option.value.wireValue,
+                  isWeb: kIsWeb,
+                ))
+            .toList();
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(

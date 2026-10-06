@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -128,4 +129,17 @@ void main() {
     expect(find.text(googleSignInFallbackMessage), findsNothing);
     verifyNever(() => auth.add(any()));
   });
+
+  testWidgets('uses the platform web button adapter when requested',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: LoginButton(isWebOverride: true),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isA<UnsupportedError>());
+  }, skip: kIsWeb);
 }

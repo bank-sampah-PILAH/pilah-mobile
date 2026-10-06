@@ -13,6 +13,56 @@ void main() {
     });
   });
 
+  group('isRoleSupportedOnPlatform', () {
+    test('filters unsupported web roles only on web', () {
+      expect(isRoleSupportedOnPlatform('pengelola', isWeb: true), isTrue);
+      expect(isRoleSupportedOnPlatform('nasabah', isWeb: true), isFalse);
+      expect(isRoleSupportedOnPlatform('nasabah', isWeb: false), isTrue);
+    });
+  });
+
+  group('webRoleRedirect', () {
+    test('redirects unsupported roles but leaves supported roles and login',
+        () {
+      expect(
+        webRoleRedirect(
+          isWeb: true,
+          path: '/dashboard',
+          loginPath: '/login',
+          role: 'nasabah',
+        ),
+        '/login',
+      );
+      expect(
+        webRoleRedirect(
+          isWeb: true,
+          path: '/dashboard',
+          loginPath: '/login',
+          role: 'pengelola',
+        ),
+        isNull,
+      );
+      expect(
+        webRoleRedirect(
+          isWeb: true,
+          path: '/login',
+          loginPath: '/login',
+          role: 'nasabah',
+        ),
+        isNull,
+      );
+      expect(
+        webRoleRedirect(
+          isWeb: false,
+          path: '/dashboard',
+          loginPath: '/login',
+          role: 'nasabah',
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('locationForAuthStep', () {
     test('a rejected registration routes to the registration form (re-apply)',
         () {

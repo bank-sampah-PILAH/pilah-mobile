@@ -1,5 +1,5 @@
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +27,10 @@ class App extends StatelessWidget {
   // The constructor line is only credited when the first coverage report merged
   // for this file happens to be from the test that builds `const App()` (the
   // merge keeps the first value seen), so it is excluded to stay deterministic.
-  const App({super.key}); // coverage:ignore-line
+  @visibleForTesting
+  final bool? isWebOverride;
+
+  const App({super.key, @visibleForTesting this.isWebOverride}); // coverage:ignore-line
 
   // This widget is the root of your application.
   @override
@@ -85,7 +88,7 @@ class App extends StatelessWidget {
         listener: (context, state) => resetSessionScopedState(context),
         child: BlocListener<AuthenticationBloc, AuthenticationStates>(
           listenWhen: (previous, current) =>
-              kIsWeb &&
+              (isWebOverride ?? kIsWeb) &&
               current is Authenticated &&
               !isSupportedWebRole(current.authEntity.role),
           listener: (context, state) {

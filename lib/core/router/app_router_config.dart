@@ -347,9 +347,13 @@ class AppRouterConfig {
     final state = context.read<AuthenticationBloc>().state;
     if (state is! Authenticated) return null;
     final role = state.authEntity.role;
-    if (kIsWeb && path != LoginPage.route && !isSupportedWebRole(role)) {
-      return LoginPage.route;
-    }
+    final webRedirect = webRoleRedirect(
+      isWeb: kIsWeb,
+      path: path,
+      loginPath: LoginPage.route,
+      role: role,
+    );
+    if (webRedirect != null) return webRedirect;
     final staffPaths = {
       NasabahPage.route,
       HargaPage.route,
