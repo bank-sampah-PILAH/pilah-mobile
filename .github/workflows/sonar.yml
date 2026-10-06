@@ -10,6 +10,11 @@
 # ones. No SONAR_HOST_URL: the action defaults to sonarcloud.io unless
 # pointing at self-hosted. Auth is the SONAR_TOKEN repo secret (Execute
 # Analysis scope).
+#
+# v8 bundles Scanner CLI 8.x: embedded Java 21 JRE (no JRE provisioning) and
+# JDK-native HTTP client. The CLI 6.x okhttp client gets 403 from SonarCloud's
+# CDN on api.sonarcloud.io bootstrap calls (TLS-fingerprint WAF rule) —
+# 8.x resolves that by construction.
 name: SonarCloud
 
 on:
@@ -39,15 +44,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Java 21 for the Sonar scanner engine: ci.yml's Temurin 17 is too old
-      # for the engine, and the JRE bootstrap endpoint that would fetch 21
-      # 403s from some IPs — install 21 and skip provisioning instead.
-      - uses: actions/setup-java@v4
-        id: java21
-        with:
-          distribution: temurin
-          java-version: "21"
-
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -71,17 +67,13 @@ jobs:
         run: flutter test --coverage
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_SCANNER_OPTS: >
-            -Dsonar.scanner.skipJreProvisioning=true
-            -Dsonar.scanner.javaExePath=${{ steps.java21.outputs.path }}/bin/java
-            -Djdk.tls.client.protocols=TLSv1.2
         with:
           args: >
             -Dsonar.organization=bank-sampah-pilah
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
-            -Dsonar.dart.coverage.lcov.reportPath=coverage/lcov.info
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
