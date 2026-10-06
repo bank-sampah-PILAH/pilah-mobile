@@ -106,24 +106,30 @@ Run the checks documented by the repository first. If none are documented, detec
 - Python: run configured formatter, linter, type checker, and test commands; prefer project scripts or `pyproject.toml` tooling.
 - Other projects: use their documented formatter, linter, build, and test commands.
 
-For mobile code or behavior changes, run `flutter analyze` and `flutter test`,
-then build both targets:
+For mobile code or behavior changes, first follow `AGENTS.md` to provision the
+ignored Android Firebase config; never use dummy config or commit it. If the
+file is unavailable, stop and report the blocker. Then run `flutter analyze`
+and `flutter test`, and build both targets:
 
 ```bash
 flutter build apk --debug -t lib/main_development.dart
 flutter build web --release -t lib/main_development.dart
 ```
 
-For web UI changes, start the development web server with
-`flutter run -d web-server --web-hostname 127.0.0.1 --web-port 7357 -t lib/main_development.dart`
+For web UI changes, after the release build succeeds, serve `build/web` from
+this repository with Python's standard-library server:
+`python3 -m http.server 7357 --bind 127.0.0.1 --directory build/web`
 (use a free port if needed), then use Playwright to check desktop-sized and
-mobile-sized browser viewports. Mobile viewport emulation verifies responsive
-web UI only, not native mobile behavior. Web support is limited to Super Admin,
+mobile-sized browser viewports. Both entrypoints skip Firebase initialization
+on web because no current web flow uses Firebase; add FlutterFire web options
+before introducing a Firebase-backed web feature. Mobile viewport emulation
+verifies responsive web UI only, not native mobile behavior. Web support is limited to Super Admin,
 Pengurus, and Pengurus Induk; do not claim Nasabah web support. For user-visible
 web UI changes, save proof screenshots locally under
-`artifacts/pr-<PR_NUMBER>/` for affected roles and viewports. Skip screenshots
-for non-UI changes, do not commit artifacts, and state in the PR description
-when screenshots do not apply. For documentation-only changes, run the
+`artifacts/pr-<PR_NUMBER>/` for affected roles and viewports. Before the PR
+number exists, keep captures outside the repository and move them after PR
+creation. Skip screenshots for non-UI changes, do not commit artifacts, and
+state in the PR description when screenshots do not apply. For documentation-only changes, run the
 repository's documentation checks and `git diff --check`; skip Flutter
 analyze/tests, builds, browser checks, and screenshots.
 

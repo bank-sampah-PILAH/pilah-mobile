@@ -16,6 +16,12 @@
 
 - This project uses Flutter 3.41.3 and Dart 3.11.1.
 - Add local environment values from `.env.example` before running the app.
+  `GOOGLE_SERVER_CLIENT_ID` must be a Web OAuth client ID; pass it as web's
+  `clientId` and native's `serverClientId`.
+- Android builds also require ignored `android/app/google-services.json`.
+  CI materializes it from the `GOOGLE_SERVICES_JSON` secret; use an authorized
+  local Firebase config, never log or commit it, and ask a maintainer to
+  provision it if missing.
 - Run `flutter pub get` and the documented code generation command when
   generated sources are needed.
 
@@ -31,11 +37,14 @@
   mobile-sized browser viewport. Mobile viewport emulation checks responsive
   web UI only; it does not verify native mobile behavior.
 - Web UI is supported only for Super Admin, Pengurus, and Pengurus Induk. Do
-  not describe or imply Nasabah web support.
+  not describe or imply Nasabah web support. Current web entrypoints skip
+  Firebase initialization because no web-supported flow uses Firebase; add
+  FlutterFire web options before introducing a Firebase-backed web flow.
 - For user-visible Flutter web UI changes, capture Playwright screenshots for
   affected supported roles and viewports under `artifacts/pr-<PR_NUMBER>/`.
-  Skip screenshots for non-UI changes, do not commit artifacts, and say in the
-  PR description when UI screenshots do not apply.
+  Before the PR number exists, save captures outside the repository and move
+  them after PR creation. Skip screenshots for non-UI changes, do not commit
+  artifacts, and say in the PR description when UI screenshots do not apply.
 - Do not commit `.env`, Firebase credentials, build output, or generated local
   runtime files.
 
