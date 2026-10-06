@@ -13,6 +13,10 @@ const completeProfileLocation = '/complete-profile';
 /// profile, then routes onward.
 const inviteProcessingLocation = '/invite-processing';
 
+const _webSupportedRoles = {'superadmin', 'pengelola', 'pengelola_induk'};
+
+bool isSupportedWebRole(String? role) => _webSupportedRoles.contains(role);
+
 /// Maps the backend `user_state` / `next_step` value to the route a signed-in
 /// user should land on. Shared by the splash (session restore) and login flows
 /// so onboarding routing stays consistent.

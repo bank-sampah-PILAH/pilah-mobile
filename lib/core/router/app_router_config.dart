@@ -5,9 +5,11 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
@@ -345,6 +347,9 @@ class AppRouterConfig {
     final state = context.read<AuthenticationBloc>().state;
     if (state is! Authenticated) return null;
     final role = state.authEntity.role;
+    if (kIsWeb && path != LoginPage.route && !isSupportedWebRole(role)) {
+      return LoginPage.route;
+    }
     final staffPaths = {
       NasabahPage.route,
       HargaPage.route,

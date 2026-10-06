@@ -2,6 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 
 void main() {
+  group('isSupportedWebRole', () {
+    test('allows only roles supported by the web app', () {
+      for (final role in ['superadmin', 'pengelola', 'pengelola_induk']) {
+        expect(isSupportedWebRole(role), isTrue);
+      }
+      for (final role in ['nasabah', 'unknown', null]) {
+        expect(isSupportedWebRole(role), isFalse);
+      }
+    });
+  });
+
   group('locationForAuthStep', () {
     test('a rejected registration routes to the registration form (re-apply)',
         () {
