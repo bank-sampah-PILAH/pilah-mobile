@@ -66,6 +66,11 @@ jobs:
       - name: Run tests with coverage
         run: flutter test --coverage
 
+      - name: Run web-specific widget tests
+        run: >-
+          flutter test --platform chrome
+          test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
+
       # Java 21 for the scanner engine: with skipJreProvisioning the CLI never
       # calls api.sonarcloud.io/analysis/jres (GitHub runner IPs get a
       # deterministic 403 from SonarCloud's CDN), it just runs on this JDK.
@@ -81,6 +86,9 @@ jobs:
       # itself). First attempt gets continue-on-error, second attempt runs
       # only on failure — a fresh connection usually gets through. Keep both
       # arg blocks identical.
+      # Flutter's VM lcov run cannot instrument conditional web code or main_*
+      # entrypoints. Chrome tests run separately; keep these files analyzed but
+      # out of the VM line-coverage metric.
       - name: SonarCloud Scan
         id: sonar_scan
         continue-on-error: true
@@ -94,6 +102,7 @@ jobs:
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.coverage.exclusions=**/main_*.dart,**/google_sign_in_web_button.dart
             -Dsonar.scanner.skipJreProvisioning=true
 
       - name: SonarCloud Scan (retry)
@@ -108,4 +117,5 @@ jobs:
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.coverage.exclusions=**/main_*.dart,**/google_sign_in_web_button.dart
             -Dsonar.scanner.skipJreProvisioning=true

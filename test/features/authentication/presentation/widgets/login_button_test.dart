@@ -27,6 +27,8 @@ class _MockGoogleSignInPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements google_sign_in.GoogleSignInPlatform {}
 
+class _MockGoogleSignInAccount extends Mock implements GoogleSignInAccount {}
+
 void main() {
   late _MockAuthBloc auth;
   late google_sign_in.GoogleSignInPlatform originalGoogleSignInPlatform;
@@ -142,4 +144,57 @@ void main() {
 
     expect(tester.takeException(), isA<UnsupportedError>());
   }, skip: kIsWeb);
+
+  testWidgets('routes web sign-in and error callbacks through the login button',
+      (tester) async {
+    final user = _MockGoogleSignInAccount();
+    when(() => user.authentication)
+        .thenReturn(const GoogleSignInAuthentication(idToken: 'web-id-token'));
+    when(() => user.displayName).thenReturn('Ayu Lestari');
+    when(() => user.email).thenReturn('ayu@example.com');
+    when(() => user.photoUrl).thenReturn('https://example.com/ayu.png');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<AuthenticationBloc>.value(
+          value: auth,
+          child: Scaffold(
+            body: LoginButton(
+              isWebOverride: true,
+              webButtonBuilderOverride: ({
+                required bool isLoading,
+                required ValueChanged<GoogleSignInAccount> onAuthenticated,
+                required ValueChanged<Object> onError,
+              }) =>
+                  Column(
+                children: [
+                  TextButton(
+                    onPressed: () => onAuthenticated(user),
+                    child: const Text('simulate web sign-in'),
+                  ),
+                  TextButton(
+                    onPressed: () => onError(Exception('private OAuth detail')),
+                    child: const Text('simulate web error'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('simulate web sign-in'));
+    await tester.pump();
+    final event = verify(() => auth.add(captureAny())).captured.single
+        as LoginWithGoogleRequested;
+    expect(event.email, 'ayu@example.com');
+    expect(event.idToken, 'web-id-token');
+
+    await tester.tap(find.text('simulate web error'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text(googleSignInFallbackMessage), findsOneWidget);
+    expect(find.text('private OAuth detail'), findsNothing);
+  });
 }

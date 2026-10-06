@@ -9,22 +9,31 @@ Widget buildWebGoogleSignInButton({
   required bool isLoading,
   required ValueChanged<GoogleSignInAccount> onAuthenticated,
   required ValueChanged<Object> onError,
+  @visibleForTesting
+  Stream<GoogleSignInAuthenticationEvent>? authenticationEvents,
+  @visibleForTesting Widget Function()? buttonBuilder,
 }) =>
     _WebGoogleSignInButton(
       isLoading: isLoading,
       onAuthenticated: onAuthenticated,
       onError: onError,
+      authenticationEvents: authenticationEvents,
+      buttonBuilder: buttonBuilder,
     );
 
 class _WebGoogleSignInButton extends StatefulWidget {
   final bool isLoading;
   final ValueChanged<GoogleSignInAccount> onAuthenticated;
   final ValueChanged<Object> onError;
+  final Stream<GoogleSignInAuthenticationEvent>? authenticationEvents;
+  final Widget Function()? buttonBuilder;
 
   const _WebGoogleSignInButton({
     required this.isLoading,
     required this.onAuthenticated,
     required this.onError,
+    this.authenticationEvents,
+    this.buttonBuilder,
   });
 
   @override
@@ -38,8 +47,9 @@ class _WebGoogleSignInButtonState extends State<_WebGoogleSignInButton> {
   @override
   void initState() {
     super.initState();
-    _authenticationSubscription =
-        GoogleSignIn.instance.authenticationEvents.listen(
+    _authenticationSubscription = (widget.authenticationEvents ??
+            GoogleSignIn.instance.authenticationEvents)
+        .listen(
       _onAuthenticationEvent,
       onError: (Object error) {
         if (mounted) widget.onError(error);
@@ -69,14 +79,15 @@ class _WebGoogleSignInButtonState extends State<_WebGoogleSignInButton> {
     }
 
     return Center(
-      child: google_sign_in_web.renderButton(
-        configuration: google_sign_in_web.GSIButtonConfiguration(
-          theme: google_sign_in_web.GSIButtonTheme.outline,
-          size: google_sign_in_web.GSIButtonSize.large,
-          text: google_sign_in_web.GSIButtonText.signinWith,
-          locale: 'id',
-        ),
-      ),
+      child: widget.buttonBuilder?.call() ??
+          google_sign_in_web.renderButton(
+            configuration: google_sign_in_web.GSIButtonConfiguration(
+              theme: google_sign_in_web.GSIButtonTheme.outline,
+              size: google_sign_in_web.GSIButtonSize.large,
+              text: google_sign_in_web.GSIButtonText.signinWith,
+              locale: 'id',
+            ),
+          ),
     );
   }
 }

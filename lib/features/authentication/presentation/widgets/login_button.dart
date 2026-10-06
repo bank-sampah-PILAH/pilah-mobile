@@ -15,16 +15,26 @@ import 'google_sign_in_web_button_stub.dart'
     if (dart.library.js_interop) 'google_sign_in_web_button.dart'
     as web_sign_in;
 
+typedef WebGoogleSignInButtonBuilder = Widget Function({
+  required bool isLoading,
+  required ValueChanged<GoogleSignInAccount> onAuthenticated,
+  required ValueChanged<Object> onError,
+});
+
 class LoginButton extends StatelessWidget {
   final bool isLoading;
 
   @visibleForTesting
   final bool? isWebOverride;
 
+  @visibleForTesting
+  final WebGoogleSignInButtonBuilder? webButtonBuilderOverride;
+
   const LoginButton({
     super.key,
     this.isLoading = false,
     @visibleForTesting this.isWebOverride,
+    @visibleForTesting this.webButtonBuilderOverride,
   });
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
@@ -71,7 +81,9 @@ class LoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isWebOverride ?? kIsWeb) {
-      return web_sign_in.buildWebGoogleSignInButton(
+      final buildWebButton =
+          webButtonBuilderOverride ?? web_sign_in.buildWebGoogleSignInButton;
+      return buildWebButton(
         isLoading: isLoading,
         onAuthenticated: (user) => _submitGoogleUser(context, user),
         onError: (error) => _showGoogleSignInError(context, error),
