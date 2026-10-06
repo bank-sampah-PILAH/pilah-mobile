@@ -1,16 +1,23 @@
-# SonarQube analysis. Reports to the selfhosted instance at
-# https://sonar.heraldoarman.com (Community Edition — no branch support,
-# so the report destination is switched per git branch):
-#   main    -> project pilah-mobile
-#   staging -> project pilah-mobile-staging
-#   any other branch / PR base -> pilah-mobile-staging (report-only, non-gating)
-name: SonarQube
+# SonarCloud analysis. Reports to sonarcloud.io, org `bank-sampah-pilah`,
+# project `bank-sampah-PILAH_pilah-mobile`. Lives separately from ci.yml
+# because ci.yml is the lean merge gate; this workflow pays for a second
+# Flutter setup + test run to produce the lcov report Sonar imports.
+#
+# SonarCloud owns branch handling natively: the scanner auto-detects
+# sonar.branch.* / sonar.pullrequest.* from the Actions environment, so every
+# branch and PR gets its own analysis without per-branch project keys. Branch
+# params must NOT be set manually here — SonarCloud rejects user-supplied
+# ones. No SONAR_HOST_URL: the action defaults to sonarcloud.io unless
+# pointing at self-hosted. Auth is the SONAR_TOKEN repo secret (Execute
+# Analysis scope).
+name: SonarCloud
 
 on:
   push:
     branches:
       - main
       - staging
+      - feature/**
   pull_request:
 
 concurrency:
@@ -19,32 +26,49 @@ concurrency:
 
 jobs:
   sonar:
-    name: SonarQube analysis
+    name: SonarCloud analysis
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # Matches the repository's `.fvmrc` — same pin as ci.yml.
+      FLUTTER_VERSION: "3.41.3"
     steps:
       # fetch-depth: 0 so new-code detection can diff against the target branch.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Pick project key & token by branch
-        id: pick
-        run: |
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "key=pilah-mobile" >> "$GITHUB_OUTPUT"
-          else
-            echo "key=pilah-mobile-staging" >> "$GITHUB_OUTPUT"
-          fi
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
 
-      - name: SonarQube Scan
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # .env is gitignored (loaded via flutter_dotenv) but declared as an
+      # asset in pubspec.yaml — tests fail without it. Same trick as ci.yml.
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      # *.freezed.dart / *.g.dart are gitignored — must be generated before
+      # tests run. These are also covered by the sonar exclusions below.
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
-          SONAR_TOKEN: ${{ steps.pick.outputs.key == 'pilah-mobile' && secrets.SONAR_TOKEN || secrets.SONAR_TOKEN_STAGING }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=${{ steps.pick.outputs.key }}
+            -Dsonar.organization=bank-sampah-pilah
+            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
+            -Dsonar.dart.coverage.lcov.reportPath=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
