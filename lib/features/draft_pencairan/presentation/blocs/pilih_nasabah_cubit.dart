@@ -57,8 +57,15 @@ class PilihNasabahCubit extends Cubit<PilihNasabahState> {
   }
 
   /// Everyone who can be paid out, whatever the search is showing.
-  Future<void> pilihSemua() async {
-    final result = await _useCases.getKandidat();
+  Future<void> pilihSemua() => _selectFromServer(const {});
+
+  /// Everyone with at least [saldoMin] rupiah.
+  Future<void> pilihSaldoMin(int saldoMin) =>
+      _selectFromServer({'saldoMin': saldoMin});
+
+  Future<void> _selectFromServer(Map<String, int> filter) async {
+    final result =
+        await _useCases.getKandidat(saldoMin: filter['saldoMin'] ?? 0);
     result.fold(
       (failure) =>
           emit(state.copyWith(errorMessage: () => failure.displayMessage)),
@@ -68,6 +75,25 @@ class PilihNasabahCubit extends Cubit<PilihNasabahState> {
         errorMessage: () => null,
       )),
     );
+  }
+
+  /// Adds everyone the current search shows.
+  void pilihHasilPencarian() => emit(state.copyWith(
+        selectedIds: {
+          ...state.selectedIds,
+          ...state.kandidat.map((k) => k.id),
+        },
+      ));
+
+  /// Flips every nasabah on screen: picked become unpicked and the reverse.
+  void balikkan() {
+    final shown = state.kandidat.map((k) => k.id).toSet();
+    emit(state.copyWith(
+      selectedIds: {
+        ...state.selectedIds.difference(shown),
+        ...shown.difference(state.selectedIds),
+      },
+    ));
   }
 
   void kosongkan() => emit(state.copyWith(selectedIds: {}));

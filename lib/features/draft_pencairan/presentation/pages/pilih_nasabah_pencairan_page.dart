@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -62,6 +63,40 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
     });
   }
 
+  Future<void> _askSaldoMin() async {
+    final cubit = context.read<PilihNasabahCubit>();
+    final controller = TextEditingController();
+    final saldoMin = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Pilih berdasarkan saldo'),
+        content: TextField(
+          key: const Key('saldo-min-field'),
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(
+            labelText: 'Saldo minimal',
+            prefixText: 'Rp ',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext)
+                .pop(int.tryParse(controller.text) ?? 0),
+            child: const Text('Pilih'),
+          ),
+        ],
+      ),
+    );
+    if (saldoMin != null && saldoMin > 0) await cubit.pilihSaldoMin(saldoMin);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PilihNasabahCubit>();
@@ -94,7 +129,7 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
                   onChanged: _onSearch,
                 ),
               ),
-              const _QuickSelects(),
+              _QuickSelects(onSaldoMin: _askSaldoMin),
               Expanded(child: _List(state: state)),
             ],
           ),
@@ -108,7 +143,9 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
 }
 
 class _QuickSelects extends StatelessWidget {
-  const _QuickSelects();
+  final VoidCallback onSaldoMin;
+
+  const _QuickSelects({required this.onSaldoMin});
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +161,24 @@ class _QuickSelects extends StatelessWidget {
             label: 'Pilih semua',
             selected: false,
             onTap: cubit.pilihSemua,
+          ),
+          PencairanChip(
+            key: const Key('pilih-hasil'),
+            label: 'Hasil pencarian',
+            selected: false,
+            onTap: cubit.pilihHasilPencarian,
+          ),
+          PencairanChip(
+            key: const Key('pilih-saldo-min'),
+            label: 'Saldo minimal…',
+            selected: false,
+            onTap: onSaldoMin,
+          ),
+          PencairanChip(
+            key: const Key('balikkan'),
+            label: 'Balikkan',
+            selected: false,
+            onTap: cubit.balikkan,
           ),
           PencairanChip(
             key: const Key('kosongkan'),
