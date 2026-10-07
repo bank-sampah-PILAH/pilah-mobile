@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
 import '../../../support/pump_app.dart';
 
@@ -50,6 +51,16 @@ void main() {
       ],
     );
   }
+
+  testWidgets('has the pencairan header with a back button and pill filters',
+      (tester) async {
+    await pump(tester, const []);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('kembali')), findsOneWidget);
+    expect(find.text('Pencairan'), findsOneWidget);
+    expect(find.byType(PencairanChip), findsNWidgets(4));
+  });
 
   testWidgets('shows each draft with its status, size, total and who made it',
       (tester) async {

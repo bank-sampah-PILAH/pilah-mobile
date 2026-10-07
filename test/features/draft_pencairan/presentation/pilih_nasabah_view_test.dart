@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
@@ -11,6 +12,7 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_n
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
 class _MockUseCases extends Mock implements DraftPencairanUseCases {}
 
@@ -69,6 +71,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('has the pencairan header with a back button', (tester) async {
+    await pump(tester);
+
+    expect(find.byKey(const Key('kembali')), findsOneWidget);
+    expect(find.text('Pilih Nasabah'), findsOneWidget);
+    expect(find.byType(PencairanChip), findsWidgets,
+        reason: 'quick selects are pills');
+  });
+
   testWidgets('lists each nasabah with their code and saldo', (tester) async {
     await pump(tester);
 
@@ -83,7 +94,7 @@ void main() {
 
     expect(
         tester
-            .widget<ElevatedButton>(find.byKey(const Key('lanjut')))
+            .widget<CustomPrimaryButton>(find.byKey(const Key('lanjut')))
             .onPressed,
         isNull);
 
@@ -94,7 +105,7 @@ void main() {
     expect(find.textContaining('Rp 50.000'), findsWidgets);
     expect(
         tester
-            .widget<ElevatedButton>(find.byKey(const Key('lanjut')))
+            .widget<CustomPrimaryButton>(find.byKey(const Key('lanjut')))
             .onPressed,
         isNotNull);
   });
