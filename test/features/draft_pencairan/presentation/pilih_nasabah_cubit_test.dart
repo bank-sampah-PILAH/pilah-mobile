@@ -89,19 +89,33 @@ void main() {
     expect(cubit.state.kandidat, [_budi], reason: 'the visible list is kept');
   });
 
-  test('select all that cannot reach the server says why and keeps the picks',
-      () async {
+  test('select the search results adds only what is shown', () async {
     cubit.toggle('n-1');
-    when(() => repository.getKandidat(
-          search: '',
-          urutan: KandidatUrutan.namaAZ,
-          saldoMin: 0,
-        )).thenAnswer((_) async => Left(ConnectionTimeOutException()));
+    answer(search: 'i', rows: [_budi, _citra]);
+    await cubit.setSearch('i');
 
-    await cubit.pilihSemua();
+    cubit.pilihHasilPencarian();
 
-    expect(cubit.state.errorMessage, isNotNull);
-    expect(cubit.state.selectedIds, {'n-1'});
+    expect(cubit.state.selectedIds, {'n-1', 'n-2', 'n-3'});
+  });
+
+  test('select by minimum saldo adds those who have at least that much',
+      () async {
+    answer(saldoMin: 200000, rows: [_ahmad, _citra]);
+
+    await cubit.pilihSaldoMin(200000);
+
+    expect(cubit.state.selectedIds, {'n-1', 'n-3'});
+    verify(() => repository.getKandidat(
+        search: '', urutan: KandidatUrutan.namaAZ, saldoMin: 200000)).called(1);
+  });
+
+  test('invert flips the picks within the list on screen', () {
+    cubit.toggle('n-1');
+
+    cubit.balikkan();
+
+    expect(cubit.state.selectedIds, {'n-2', 'n-3'});
   });
 
   test('clear drops every pick', () {
