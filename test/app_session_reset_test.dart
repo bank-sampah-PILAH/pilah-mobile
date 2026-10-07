@@ -4,7 +4,10 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
+    as google_sign_in;
 import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -65,9 +68,15 @@ class _MockAuthenticationBloc
     extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
 
+class _MockGoogleSignInPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements google_sign_in.GoogleSignInPlatform {}
+
 class _FakeAuthenticationEvent extends Fake implements AuthenticationEvent {}
 
 void main() {
+  setUpAll(() => registerFallbackValue(_FakeAuthenticationEvent()));
+
   late _MockAuthenticationBloc authenticationBloc;
   late StreamController<AuthenticationStates> authenticationStates;
   late _MockNasabahCubit nasabah;
@@ -209,6 +218,29 @@ void main() {
 
   testWidgets('logs out and warns when a web session has an unsupported role',
       (tester) async {
+    final originalGoogleSignInPlatform =
+        google_sign_in.GoogleSignInPlatform.instance;
+    final googleSignInPlatform = _MockGoogleSignInPlatform();
+    google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
+    final googleSignOut = Completer<void>();
+    final callOrder = <String>[];
+    when(() =>
+            googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
+        .thenAnswer((_) {
+      callOrder.add('Google sign-out');
+      return googleSignOut.future;
+    });
+    when(() => authenticationBloc.add(any())).thenAnswer((invocation) {
+      if (invocation.positionalArguments.single is LogoutRequested) {
+        callOrder.add('PILAH logout');
+      }
+    });
+    addTearDown(() {
+      if (!googleSignOut.isCompleted) googleSignOut.complete();
+      google_sign_in.GoogleSignInPlatform.instance =
+          originalGoogleSignInPlatform;
+    });
+
     await tester.pumpWidget(App(isWebOverride: true));
     final router = AppRouterConfig.getRouter();
     addTearDown(router.dispose);
@@ -231,6 +263,15 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+    expect(callOrder, ['Google sign-out', 'PILAH logout']);
+    verify(() =>
+            googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
+        .called(1);
+    googleSignOut.complete();
+    await tester.pump();
+    await tester.pump();
+
     for (var i = 0;
         i < 10 && find.text('Akses web tidak tersedia').evaluate().isEmpty;
         i++) {
@@ -239,8 +280,8 @@ void main() {
 
     final events = verify(() => authenticationBloc.add(captureAny())).captured;
     expect(events.whereType<LogoutRequested>(), hasLength(1));
-    expect(find.text('Akses web tidak tersedia'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    expect(find.text('Akses web tidak tersedia'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
