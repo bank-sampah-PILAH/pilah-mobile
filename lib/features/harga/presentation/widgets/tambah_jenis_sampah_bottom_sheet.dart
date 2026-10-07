@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart'
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,8 +17,15 @@ class TambahJenisSampahBottomSheet extends StatefulWidget {
   final HargaEntity? initialData;
   final HargaCubit? hargaCubit;
 
-  const TambahJenisSampahBottomSheet(
-      {super.key, this.initialData, this.hargaCubit});
+  /// Sumber waktu "sekarang", dapat diganti di test.
+  final DateTime Function() now;
+
+  const TambahJenisSampahBottomSheet({
+    super.key,
+    this.initialData,
+    this.hargaCubit,
+    this.now = DateTime.now,
+  });
 
   @override
   State<TambahJenisSampahBottomSheet> createState() =>
@@ -233,6 +241,12 @@ class _TambahJenisSampahBottomSheetState
                     color: Colors.grey[500],
                   ),
                 ),
+                if (isEditMode) ...[
+                  const SizedBox(height: 16),
+                  _buildRingkasanHarga(widget.initialData!),
+                  const SizedBox(height: 12),
+                  _buildPeringatanTidakSurut(),
+                ],
                 const SizedBox(height: 32),
 
                 // Button
@@ -430,6 +444,80 @@ class _TambahJenisSampahBottomSheetState
       context,
       title: 'Gagal Menyimpan',
       message: error.displayMessage,
+    );
+  }
+
+  /// Nilai yang dihitung sistem, bukan input, sehingga berlatar abu (SDS 5.1).
+  Widget _buildRingkasanHarga(HargaEntity jenis) {
+    final berlakuMulai = jenis.berlakuMulai;
+    final terjadwal = jenis.hargaTerjadwal;
+    final keterangan = AppTextStyle.small.copyWith(color: Colors.grey[600]);
+    final nilai = AppTextStyle.title1.copyWith(
+      color: Colors.black87,
+      fontWeight: FontWeight.w600,
+      fontSize: 14,
+    );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Harga saat ini', style: keterangan),
+          const SizedBox(height: 2),
+          Text(
+            berlakuMulai == null
+                ? 'Rp ${formatRupiahId(jenis.price)}/kg'
+                : 'Rp ${formatRupiahId(jenis.price)}/kg sejak '
+                    '${formatTanggalId(berlakuMulai.toLocal())}',
+            style: nilai,
+          ),
+          if (terjadwal != null) ...[
+            const SizedBox(height: 8),
+            Text('Harga terjadwal', style: keterangan),
+            const SizedBox(height: 2),
+            Text(
+              'Rp ${formatRupiahId(terjadwal.harga)}/kg mulai '
+              '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+              style: nilai,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Peringatan BR-03 pada P-03; kuning menandakan peringatan (SDS 5.1).
+  Widget _buildPeringatanTidakSurut() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.avatarYellow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: AppColors.avatarYellowText,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Perubahan harga tidak berlaku surut. Setoran yang sudah '
+              'tercatat tetap memakai harga lama.',
+              style: AppTextStyle.small.copyWith(color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
