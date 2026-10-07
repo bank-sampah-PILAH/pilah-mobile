@@ -329,4 +329,25 @@ void main() {
 
     expect(result.left, isA<ConflictException>());
   });
+
+  test('exportDraft downloads the file named by the server', () async {
+    api.onBytes('GET', '$_path/d-1/export', [
+      37,
+      80,
+      68,
+      70
+    ], headers: {
+      'content-disposition': [
+        'attachment; filename="PILAH_Draft_Pencairan_cair.pdf"',
+      ],
+    });
+
+    final export = (await buildDraftPencairanUseCases(api)
+            .exportDraft('d-1', ExportBerkas.pdf))
+        .right;
+
+    expect(api.last.query, {'berkas': 'pdf'});
+    expect(export.filename, 'PILAH_Draft_Pencairan_cair.pdf');
+    expect(export.bytes, Uint8List.fromList([37, 80, 68, 70]));
+  });
 }
