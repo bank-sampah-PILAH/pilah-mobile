@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
@@ -235,5 +237,26 @@ void main() {
     final result = await buildDraftPencairanUseCases(api).confirmDraft('d-1');
 
     expect(result.left, isA<ConflictException>());
+  });
+
+  test('exportDraft downloads the file named by the server', () async {
+    api.onBytes('GET', '$_path/d-1/export', [
+      37,
+      80,
+      68,
+      70
+    ], headers: {
+      'content-disposition': [
+        'attachment; filename="PILAH_Draft_Pencairan_cair.pdf"',
+      ],
+    });
+
+    final export = (await buildDraftPencairanUseCases(api)
+            .exportDraft('d-1', ExportBerkas.pdf))
+        .right;
+
+    expect(api.last.query, {'berkas': 'pdf'});
+    expect(export.filename, 'PILAH_Draft_Pencairan_cair.pdf');
+    expect(export.bytes, Uint8List.fromList([37, 80, 68, 70]));
   });
 }

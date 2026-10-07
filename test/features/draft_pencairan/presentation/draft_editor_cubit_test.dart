@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
@@ -209,6 +210,7 @@ void persistenceTests() {
   setUpAll(() {
     registerFallbackValue(
         const DraftInput(potonganDefault: Potongan.nol, items: []));
+    registerFallbackValue(ExportBerkas.pdf);
   });
 
   setUp(() {
@@ -589,6 +591,49 @@ void lifecycleTests() {
 
       expect(editor.state.status, DraftStatus.draft);
       expect(editor.state.errorMessage, 'Draft sudah dikonfirmasi');
+    });
+  });
+
+  group('exporting', () {
+    test('hands back the file for a saved draft', () async {
+      final file = DraftExport(bytes: Uint8List(3), filename: 'draft.pdf');
+      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+          .thenAnswer((_) async => Right(file));
+
+      final result = await editor.export(ExportBerkas.pdf);
+
+      expect(result, same(file));
+      expect(editor.state.phase, EditorPhase.idle);
+    });
+
+    test('a confirmed draft can still be exported', () async {
+      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
+      when(() => useCases.exportDraft('d-1', ExportBerkas.xlsx)).thenAnswer(
+          (_) async =>
+              Right(DraftExport(bytes: Uint8List(1), filename: 'a.xlsx')));
+      await editor.confirm();
+
+      expect(editor.state.canExport, isTrue);
+      expect(await editor.export(ExportBerkas.xlsx), isNotNull);
+    });
+
+    test('is refused while there are unsaved edits, so the file matches',
+        () async {
+      editor.setNama('Baru');
+
+      expect(editor.state.canExport, isFalse);
+      expect(await editor.export(ExportBerkas.pdf), isNull);
+      verifyNever(() => useCases.exportDraft(any(), any()));
+    });
+
+    test('a failed download reports a message and returns nothing', () async {
+      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+          .thenAnswer((_) async => Left(ConnectionTimeOutException()));
+
+      expect(await editor.export(ExportBerkas.pdf), isNull);
+      expect(editor.state.errorMessage, isNotNull);
+      expect(editor.state.phase, EditorPhase.idle);
     });
   });
 }

@@ -11,6 +11,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
@@ -72,6 +73,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(
         const DraftInput(potonganDefault: Potongan.nol, items: []));
+    registerFallbackValue(ExportBerkas.pdf);
   });
 
   setUp(() => useCases = _MockUseCases());
@@ -884,11 +886,72 @@ void main() {
       expect(find.text('Dikonfirmasi'), findsWidgets);
     });
 
-    testWidgets('the editor has no menu: cancelling lives on the list',
+    testWidgets('the header has a labelled Ekspor button, not a three-dot menu',
         (tester) async {
       await pumpSaved(tester);
 
       expect(find.byKey(const Key('menu-editor')), findsNothing);
+      expect(find.text('Ekspor'), findsOneWidget);
+      expect(find.byIcon(Icons.download_outlined), findsOneWidget);
+    });
+
+    testWidgets('Ekspor opens a white card with PDF and Excel rows',
+        (tester) async {
+      await pumpSaved(tester);
+
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('ekspor-pdf')), findsOneWidget);
+      expect(find.byKey(const Key('ekspor-xlsx')), findsOneWidget);
+      expect(find.text('PDF'), findsOneWidget);
+      expect(find.text('Excel'), findsOneWidget);
+      expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.table_chart_outlined), findsOneWidget);
+      expect(find.text('Batalkan draft'), findsNothing);
+      final menu = tester.widget<Material>(find
+          .ancestor(
+              of: find.byKey(const Key('ekspor-pdf')),
+              matching: find.byType(Material))
+          .first);
+      expect(menu.color, Colors.white);
+      expect(menu.surfaceTintColor, Colors.transparent);
+    });
+
+    testWidgets('a new draft has nothing to export yet', (tester) async {
+      await pumpNew(tester);
+
+      expect(find.byKey(const Key('menu-ekspor')), findsNothing);
+    });
+
+    testWidgets('export asks the server for the chosen format', (tester) async {
+      // Never answers: the download itself is covered at the cubit level, and
+      // an answer would bring the save-and-share toasts into a layout test.
+      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftExport>>().future);
+      await pumpSaved(tester);
+
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ekspor-pdf')));
+      await tester.pump();
+
+      verify(() => useCases.exportDraft('d-1', ExportBerkas.pdf)).called(1);
+      expect(cubit.state.phase, EditorPhase.exporting);
+    });
+
+    testWidgets('export is held back while there are unsaved edits',
+        (tester) async {
+      await pumpSaved(tester);
+      cubit.setNama('Belum disimpan');
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('ekspor-pdf')), findsNothing);
+      verifyNever(() => useCases.exportDraft(any(), any()));
     });
   });
 
