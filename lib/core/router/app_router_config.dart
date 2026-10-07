@@ -198,6 +198,12 @@ class AppRouterConfig {
       GoRoute(
         path: RegisterNasabahScreen.route,
         name: RegisterNasabahScreen.route,
+        redirect: (_, __) => isRoleSupportedOnPlatform(
+          'nasabah',
+          isWeb: kIsWeb,
+        )
+            ? null
+            : LoginPage.route,
         builder: (context, state) => const RegisterNasabahScreen(),
       ),
       GoRoute(
