@@ -38,28 +38,33 @@ class _Environment extends Mock implements AppEnvironment {}
 class _PayoutUseCases extends Mock implements PencairanUseCases {}
 
 class _Repository extends PreviewNasabahRepository {
-  final requests = <(String, int)>[];
   @override
   Future<NasabahHome> home({String? membershipId}) =>
       super.home(membershipId: 'member-b');
-  @override
-  Future<NasabahHistory> history(String membershipId, {int page = 1}) async {
-    requests.add((membershipId, page));
-    return NasabahHistory([
-      NasabahActivity('t$page', DateTime(2026, 9, 23), 'setoran', '$page.00'),
-    ], page == 1);
-  }
 }
 
-/// Adapts the preview repository's history to the riwayat datasource, so the
-/// routed screens and the cubit read the same test rows.
+/// Serves the routed history screen: the same fixture rows the old
+/// repository override held, now one layer down, behind the cubit.
 class _RiwayatRemoteSource implements RiwayatRemoteDataSource {
-  _RiwayatRemoteSource(this._repo);
-  final _Repository _repo;
+  _RiwayatRemoteSource(
+    Object _, {
+    List<List<NasabahActivity>> pages = const [],
+  }) : pagesList = pages;
+
+  final List<List<NasabahActivity>> pagesList;
+  final requests = <(String, int)>[];
 
   @override
-  Future<RiwayatHistory> history(String membershipId, {int page = 1}) =>
-      _repo.history(membershipId, page: page);
+  Future<RiwayatHistory> history(String membershipId, {int page = 1}) async {
+    requests.add((membershipId, page));
+    final rows = pagesList.isNotEmpty && pagesList.length >= page
+        ? pagesList[page - 1]
+        : const <NasabahActivity>[];
+    return RiwayatHistory(
+      List.of(rows),
+      page <= pagesList.length - 1,
+    );
+  }
 
   @override
   Future<RiwayatSetoranDetail> setoranDetail(
@@ -77,6 +82,7 @@ void main() {
   tearDownAll(router.dispose);
   setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
   late _Repository repository;
+  late _RiwayatRemoteSource riwayatSource;
   late _Auth auth;
   late _PayoutUseCases payoutUseCases;
   late StreamController<AuthenticationStates> states;
@@ -93,9 +99,19 @@ void main() {
     di.registerSingleton<NasabahRepository>(repository);
     // The history screen now loads setoran rows through RiwayatHistoryCubit;
     // back it with the same preview-backed repository so the rows render.
-    di.registerFactory<RiwayatRemoteDataSource>(
-      () => _RiwayatRemoteSource(repository),
+    riwayatSource = _RiwayatRemoteSource(
+      repository,
+      pages: [
+        [
+          NasabahActivity('t1', DateTime(2026, 9, 23), 'setoran', '1.00'),
+          NasabahActivity('t2', DateTime(2026, 9, 22), 'setoran', '2.00'),
+        ],
+        [
+          NasabahActivity('t3', DateTime(2026, 9, 21), 'setoran', '3.00'),
+        ],
+      ],
     );
+    di.registerFactory<RiwayatRemoteDataSource>(() => riwayatSource);
     di.registerLazySingleton<RiwayatRepository>(
       () => RiwayatRepositoryImpl(di<RiwayatRemoteDataSource>()),
     );
@@ -162,7 +178,7 @@ void main() {
     expect(find.text('Riwayat Setoran'), findsOneWidget);
     await tester.tap(find.text('Muat Lagi'));
     await tester.pumpAndSettle();
-    expect(repository.requests, [('member-b', 1), ('member-b', 2)]);
+    expect(riwayatSource.requests, [('member-b', 1), ('member-b', 2)]);
     expect(find.text('+ Rp 1'), findsOneWidget);
     expect(find.text('+ Rp 2'), findsOneWidget);
     states.add(Unauthenticated());
@@ -190,7 +206,7 @@ void main() {
   testWidgets('direct history resolves the active membership', (tester) async {
     await open(tester, '/riwayat');
     expect(find.text('+ Rp 1'), findsOneWidget);
-    expect(repository.requests, [('member-b', 1)]);
+    expect(riwayatSource.requests, [('member-b', 1)]);
   });
 
   testWidgets('customer navigation opens savings and profile routes',

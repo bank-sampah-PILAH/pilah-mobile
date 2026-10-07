@@ -39,12 +39,6 @@ void main() {
       expect(home.activities.length, 5);
       expect((await repository.bank(home.membershipId)).name, 'Smoke Melati');
       expect((await repository.balance(home.membershipId)).amount, '12500.50');
-      final first = await repository.history(home.membershipId);
-      final second = await repository.history(home.membershipId, page: 2);
-      expect(first.activities.length, 20);
-      expect(first.hasNext, isTrue);
-      expect(second.activities.length, 1);
-      expect(second.hasNext, isFalse);
     }
     when(() => tokens.accessToken).thenReturn('');
     await expectLater(

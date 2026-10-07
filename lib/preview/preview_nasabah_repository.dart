@@ -42,15 +42,4 @@ class PreviewNasabahRepository implements NasabahRepository {
   @override
   Future<NasabahBank> bank(String membershipId) async =>
       NasabahBank(bankName, 'Jl. Melati', 'Depok', '08123456789');
-  @override
-  Future<NasabahHistory> history(String membershipId, {int page = 1}) async =>
-      const NasabahHistory([], false);
-  @override
-  Future<NasabahSetoranDetail> setoranDetail(
-          String membershipId, String transactionId) =>
-      throw UnsupportedError('No preview setoran details');
-
-  @override
-  Future<NasabahExport> exportPdf(String membershipId) =>
-      throw UnsupportedError('No preview PDF export');
 }

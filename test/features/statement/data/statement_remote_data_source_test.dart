@@ -4,26 +4,22 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
-import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/statement/data/remote/statement_remote_data_sources.dart';
 
 class _Network extends Mock implements NetworkService {}
 
 void main() {
   late _Network network;
-  late NasabahRepository repository;
+  late StatementRemoteDataSourceImpl source;
 
   setUp(() {
     network = _Network();
-    repository = NasabahRepository(network);
+    source = StatementRemoteDataSourceImpl(network);
   });
 
-  Response pdfResponse(
-    List<int> bytes, {
-    String? contentDisposition,
-    Object? data,
-  }) =>
+  Response pdfResponse(List<int> bytes, {String? contentDisposition}) =>
       Response(
-        data: data ?? Uint8List.fromList(bytes),
+        data: Uint8List.fromList(bytes),
         requestOptions: RequestOptions(path: '/pdf'),
         headers: contentDisposition == null
             ? null
@@ -42,7 +38,7 @@ void main() {
               'attachment; filename="Riwayat_Aktivitas_NSB-1.pdf"'),
     );
 
-    final export = await repository.exportPdf('member-b');
+    final export = await source.exportPdf('member-b');
 
     expect(export.bytes, [0x25, 0x50, 0x44, 0x46]);
     expect(export.filename, 'Riwayat_Aktivitas_NSB-1.pdf');
@@ -52,25 +48,20 @@ void main() {
 
   test('a stripped Content-Disposition header falls back to a fixed filename',
       () async {
-    when(() => network.getBytes('/api/v1/nasabah/me/riwayat/export-pdf',
-        queryParams: any(named: 'queryParams'))).thenAnswer(
-      (_) async => pdfResponse([1]),
-    );
+    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => pdfResponse([1]));
 
-    final export = await repository.exportPdf('member-b');
-
-    expect(export.filename, 'Riwayat_Aktivitas.pdf');
+    expect(
+        (await source.exportPdf('member-b')).filename, 'Riwayat_Aktivitas.pdf');
   });
 
   test('a quoted filename is unquoted', () async {
-    when(() => network.getBytes('/api/v1/nasabah/me/riwayat/export-pdf',
-        queryParams: any(named: 'queryParams'))).thenAnswer(
-      (_) async => pdfResponse([1],
-          contentDisposition: 'attachment; filename="Riwayat_Aktivitas_X.pdf"'),
-    );
+    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => pdfResponse([1],
+            contentDisposition:
+                'attachment; filename="Riwayat_Aktivitas_X.pdf"'));
 
-    final export = await repository.exportPdf('member-b');
-
-    expect(export.filename, 'Riwayat_Aktivitas_X.pdf');
+    expect((await source.exportPdf('member-b')).filename,
+        'Riwayat_Aktivitas_X.pdf');
   });
 }

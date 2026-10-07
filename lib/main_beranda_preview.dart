@@ -71,7 +71,7 @@ class _PreviewRiwayatRepository implements RiwayatRepository {
     String membershipId, {
     int page = 1,
   }) async =>
-      Right(const RiwayatHistory([], false));
+      const Right<NetworkException, RiwayatHistory>(RiwayatHistory([], false));
 
   @override
   Future<Either<NetworkException, RiwayatSetoranDetail>> setoranDetail(
