@@ -83,6 +83,11 @@ fi
   this step or assume `git worktree add` includes ignored files.
 - If either the branch or worktree path already exists, stop and ask for a different name. Never reuse or delete it automatically.
 - Perform all implementation, tests, commits, pushes, and PR/MR commands from the new worktree.
+- For this mobile repository, leave the canonical checkout's detached submodule
+  worktree untouched. Do all implementation, validation, commits, pushes, and
+  PR operations in the new sibling worktree.
+- If work also touches `pilah-be`, follow the workspace `multi-ship` skill and
+  use the same issue-derived branch across both repositories.
 
 ## 3. Understand and implement
 
@@ -100,6 +105,33 @@ Run the checks documented by the repository first. If none are documented, detec
 - Rust: run `cargo fmt --check`, `cargo check`, `cargo test`, and configured clippy checks.
 - Python: run configured formatter, linter, type checker, and test commands; prefer project scripts or `pyproject.toml` tooling.
 - Other projects: use their documented formatter, linter, build, and test commands.
+
+For mobile code or behavior changes, first follow `AGENTS.md` to provision the
+ignored Android Firebase config; never use dummy config or commit it. If the
+file is unavailable, stop and report the blocker. Then run `flutter analyze`
+and `flutter test`, and build both targets:
+
+```bash
+flutter build apk --debug -t lib/main_development.dart
+flutter build web --release -t lib/main_development.dart
+```
+
+For web UI changes, after the release build succeeds, serve `build/web` from
+this repository with Python's standard-library server:
+`python3 -m http.server 7357 --bind 127.0.0.1 --directory build/web`
+(use a free port if needed), then use Playwright to check desktop-sized and
+mobile-sized browser viewports. Both entrypoints skip Firebase initialization
+on web because no current web flow uses Firebase; add FlutterFire web options
+before introducing a Firebase-backed web feature. Mobile viewport emulation
+verifies responsive web UI only, not native mobile behavior. Web support is limited to Super Admin,
+Pengurus, and Pengurus Induk; do not claim Nasabah web support. For user-visible
+web UI changes, save proof screenshots locally under
+`artifacts/pr-<PR_NUMBER>/` for affected roles and viewports. Before the PR
+number exists, keep captures outside the repository and move them after PR
+creation. Skip screenshots for non-UI changes, do not commit artifacts, and
+state in the PR description when screenshots do not apply. For documentation-only changes, run the
+repository's documentation checks and `git diff --check`; skip Flutter
+analyze/tests, builds, browser checks, and screenshots.
 
 Fix failures caused by the implementation and rerun the failed checks. Do not bypass hooks or use `--no-verify`. Record the exact successful validation commands for the final response. If a check cannot run because a required tool or service is unavailable, stop before committing and report the blocker.
 
