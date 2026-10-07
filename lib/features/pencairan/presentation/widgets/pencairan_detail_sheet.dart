@@ -135,6 +135,10 @@ class _DetailPencairanSheet extends StatelessWidget {
                 const SizedBox(height: 16),
                 _row('Nasabah', item.nasabahNama),
                 _row('Nominal', 'Rp ${formatRupiahId(item.nominal)}'),
+                if (item.potongan > 0) ...[
+                  _row('Potongan', 'Rp ${formatRupiahId(item.potongan)}'),
+                  _row('Dibayar', 'Rp ${formatRupiahId(item.dibayar)}'),
+                ],
                 _row('Metode', item.metode.label),
                 _row(
                   'Tanggal',
