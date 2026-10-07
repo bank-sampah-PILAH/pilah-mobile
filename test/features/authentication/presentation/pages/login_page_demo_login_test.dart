@@ -64,7 +64,8 @@ void main() {
     expect(find.text('Masuk dengan akun demo'), findsNothing);
   });
 
-  testWidgets('uses a centered max-width layout on desktop', (tester) async {
+  testWidgets('uses the desktop layout and shows demo login when enabled',
+      (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1440, 960);
     addTearDown(tester.view.resetPhysicalSize);
@@ -74,7 +75,7 @@ void main() {
       MaterialApp(
         home: BlocProvider<AuthenticationBloc>.value(
           value: auth,
-          child: const LoginPage(debugShowDemoLogin: false),
+          child: const LoginPage(debugShowDemoLogin: true),
         ),
       ),
     );
@@ -82,6 +83,7 @@ void main() {
 
     final desktopContent = find.byKey(const ValueKey('desktop-login-content'));
     expect(find.text('Masuk ke akun Anda'), findsOneWidget);
+    expect(find.text('Masuk dengan akun demo'), findsOneWidget);
     expect(tester.getSize(desktopContent).width, 1120);
     expect(tester.takeException(), isNull);
   });
