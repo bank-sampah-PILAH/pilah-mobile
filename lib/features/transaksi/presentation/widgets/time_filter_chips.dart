@@ -20,7 +20,6 @@ class TimeFilterChips extends StatelessWidget {
     'Minggu Ini': 'minggu_ini',
     'Bulan Ini': 'bulan_ini',
     'Bulan Lalu': 'bulan_lalu',
-    '1 Bulan': '1_bulan',
     '3 Bulan': '3_bulan',
     '6 Bulan': '6_bulan',
     '12 Bulan': '12_bulan',
