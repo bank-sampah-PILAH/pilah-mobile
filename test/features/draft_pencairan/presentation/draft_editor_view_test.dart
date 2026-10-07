@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import '../../../support/pump_app.dart';
@@ -89,6 +91,25 @@ void main() {
   }
 
   group('a new draft', () {
+    testWidgets(
+        'looks like the rest of pencairan: back button and labelled sections',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(find.byKey(const Key('kembali')), findsOneWidget);
+      expect(find.text('Pencairan Baru'), findsOneWidget);
+      for (final label in [
+        'NAMA PENCAIRAN',
+        'UNTUK SEMUA NASABAH',
+        'RINGKASAN',
+        'NASABAH (3)',
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      expect(find.byType(PencairanSummaryCard), findsOneWidget);
+      expect(find.byType(PencairanCard), findsWidgets);
+    });
+
     testWidgets('shows everyone picked with the totals', (tester) async {
       await pumpNew(tester);
 
@@ -186,7 +207,7 @@ void main() {
       expect(find.text('Nominal melebihi saldo nasabah'), findsOneWidget);
       expect(
           tester
-              .widget<ElevatedButton>(find.byKey(const Key('simpan')))
+              .widget<CustomPrimaryButton>(find.byKey(const Key('simpan')))
               .onPressed,
           isNull);
     });
@@ -246,7 +267,7 @@ void main() {
       expect(find.textContaining('Ibu Sari'), findsWidgets);
       expect(
           tester
-              .widget<ElevatedButton>(find.byKey(const Key('simpan')))
+              .widget<CustomPrimaryButton>(find.byKey(const Key('simpan')))
               .onPressed,
           isNull,
           reason: 'nothing left to save');
@@ -345,7 +366,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('kembali')));
     await tester.pumpAndSettle();
 
     expect(find.text('Buang perubahan?'), findsOneWidget);
@@ -353,7 +374,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DraftEditorView), findsOneWidget);
 
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('kembali')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Buang'));
     await tester.pumpAndSettle();
