@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -196,13 +197,43 @@ void main() {
     expect(drafts.single.totalDibayar, 138500);
   });
 
-  test('cancelDraft posts to the cancel action', () async {
+  test('confirmDraft and cancelDraft post to their actions', () async {
+    api.on('POST', '$_path/d-1/konfirmasi',
+        json: draftJson(status: 'dikonfirmasi'));
     api.on('POST', '$_path/d-1/batalkan',
         json: draftJson(status: 'dibatalkan'));
+    final useCases = buildDraftPencairanUseCases(api);
 
-    final cancelled =
-        (await buildDraftPencairanUseCases(api).cancelDraft('d-1')).right;
+    final confirmed = (await useCases.confirmDraft('d-1')).right;
+    final cancelled = (await useCases.cancelDraft('d-1')).right;
 
+    expect(confirmed.status, DraftStatus.dikonfirmasi);
     expect(cancelled.status, DraftStatus.dibatalkan);
+  });
+
+  test('a stale confirmation surfaces the per-item field errors', () async {
+    api.on('POST', '$_path/d-1/konfirmasi', status: 422, json: {
+      'errors': {
+        'items[1].nominal': ['Saldo nasabah tidak mencukupi'],
+      },
+    });
+
+    final result = await buildDraftPencairanUseCases(api).confirmDraft('d-1');
+
+    final failure = result.left;
+    expect(failure, isA<UnprocessableEntityException>());
+    expect(
+        (failure as UnprocessableEntityException)
+            .fieldError(['items[1].nominal']),
+        'Saldo nasabah tidak mencukupi');
+  });
+
+  test('a second confirmation is a conflict', () async {
+    api.on('POST', '$_path/d-1/konfirmasi',
+        status: 409, json: {'error': 'Draft sudah dikonfirmasi'});
+
+    final result = await buildDraftPencairanUseCases(api).confirmDraft('d-1');
+
+    expect(result.left, isA<ConflictException>());
   });
 }
