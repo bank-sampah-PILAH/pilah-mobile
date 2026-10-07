@@ -178,4 +178,22 @@ void main() {
       expect(find.text('Laporan'), findsOneWidget);
     });
   });
+  testWidgets('legacy activity without captions uses its day label',
+      (tester) async {
+    final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      ActivitasEntity(
+          tipe: ActivitasTipe.setoran,
+          tanggal: _today,
+          avatarText: 'AB',
+          avatarColor: Colors.green,
+          avatarTextColor: Colors.white,
+          title: 'Legacy',
+          subtitleLines: const [],
+          amount: '+Rp 1.000',
+          searchTerm: 'Legacy')
+    ]));
+    addTearDown(cubit.close);
+    await tester.pumpWidget(_host(cubit));
+    expect(find.text('Hari ini'), findsOneWidget);
+  });
 }

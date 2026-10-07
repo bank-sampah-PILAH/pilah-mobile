@@ -179,4 +179,42 @@ void main() {
 
     verify(() => cubit.load(silent: true)).called(1);
   });
+  testWidgets('initial failure retry requests the first page', (tester) async {
+    when(() => cubit.load()).thenAnswer((_) async {});
+    await pumpList(
+        tester,
+        const RiwayatAktivitasState(
+            status: AktivitasStatus.failure, errorMessage: 'offline'));
+    await tester.tap(find.text('Coba Lagi'));
+    verify(() => cubit.load()).called(1);
+  });
+
+  testWidgets('loading the next page preserves existing rows', (tester) async {
+    await pumpList(
+        tester,
+        RiwayatAktivitasState(
+            status: AktivitasStatus.loaded,
+            loadingMore: true,
+            items: [_setoran('Siti', _now)]));
+    expect(find.text('Siti'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  for (final error in <String?>[null, 'Halaman berikutnya gagal']) {
+    testWidgets('next-page action retains rows and retries: $error',
+        (tester) async {
+      when(() => cubit.loadMore()).thenAnswer((_) async {});
+      await pumpList(
+          tester,
+          RiwayatAktivitasState(
+              status: AktivitasStatus.loaded,
+              hasNext: true,
+              errorMessage: error,
+              items: [_setoran('Siti', _now)]));
+      expect(find.text('Siti'), findsOneWidget);
+      if (error != null) expect(find.text(error), findsOneWidget);
+      await tester.tap(find.text(error == null ? 'Muat Lagi' : 'Coba Lagi'));
+      verify(() => cubit.loadMore()).called(1);
+    });
+  }
 }

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/utils/file_downloader.dart';
+import 'package:pilah_mobile/core/utils/report_file_action.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Shared period controls for the unified activity feed. XLSX still exports
 /// setoran until PIL-248 extends the existing export endpoint.
@@ -143,37 +142,12 @@ class TimeFilterChips extends StatelessWidget {
       return;
     }
 
-    final SavedFile saved;
-    try {
-      saved = await FileDownloader.save(
-        filename: export!.filename,
-        bytes: export.bytes,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      AppNotification.showError(
-        context,
-        title: 'Gagal Menyimpan',
-        message: 'Gagal menyimpan laporan: $e',
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-    AppNotification.showSuccess(
+    await saveReportFile(
       context,
-      title: 'Berhasil',
-      message: 'Laporan berhasil disimpan ke folder ${saved.folder}',
-      actionLabel: 'Bagikan',
-      // share_plus copies whatever path it is handed into its own cache before
-      // handing out a content:// URI, so the saved file is shareable straight
-      // from Download — no second copy to keep in sync.
-      onAction: () => SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(saved.path)],
-          text: 'Laporan Transaksi PILAH',
-        ),
-      ),
+      filename: export!.filename,
+      bytes: export.bytes,
+      successMessage: (folder) => 'Laporan berhasil disimpan ke folder $folder',
+      shareText: 'Laporan Transaksi PILAH',
     );
   }
 

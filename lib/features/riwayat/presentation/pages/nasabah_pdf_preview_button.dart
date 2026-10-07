@@ -9,9 +9,11 @@ import 'package:pilah_mobile/services/di.dart';
 /// activity statement through [StatementExportCubit] and opens the in-app
 /// preview; from there the user downloads or shares it.
 class NasabahPdfPreviewButton extends StatelessWidget {
-  const NasabahPdfPreviewButton({super.key, required this.membershipId});
+  const NasabahPdfPreviewButton(
+      {super.key, required this.membershipId, this.previewViewer});
 
   final String membershipId;
+  final Widget? previewViewer;
 
   Future<void> _openPreview(BuildContext context) async {
     final cubit = di<StatementExportCubit>();
@@ -40,7 +42,8 @@ class NasabahPdfPreviewButton extends StatelessWidget {
     final navigator = Navigator.of(context, rootNavigator: true);
     await navigator.push(
       MaterialPageRoute<void>(
-        builder: (_) => NasabahPdfPreviewPage(export: export),
+        builder: (_) =>
+            NasabahPdfPreviewPage(export: export, viewer: previewViewer),
       ),
     );
     await loading.dismiss();
