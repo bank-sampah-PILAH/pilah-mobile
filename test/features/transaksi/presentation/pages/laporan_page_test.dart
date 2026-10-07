@@ -96,6 +96,9 @@ void main() {
     expect(find.text('Semua'), findsOneWidget);
     expect(find.text('Setoran'), findsOneWidget);
     expect(find.text('Pencairan'), findsOneWidget);
+    expect(find.text('22/09/2026'), findsNWidgets(2));
+    expect(find.text('08:00'), findsOneWidget);
+    expect(find.text('10:00'), findsOneWidget);
   });
 
   testWidgets('the Pencairan filter hides setoran rows', (tester) async {
