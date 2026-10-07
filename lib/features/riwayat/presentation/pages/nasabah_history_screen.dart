@@ -91,18 +91,7 @@ class NasabahHistoryScreen extends StatelessWidget {
           final member = membershipId;
           return Scaffold(
             backgroundColor: NasabahStyle.background,
-            appBar: NasabahPageAppBar(
-              title: 'Tabungan Saya',
-              actions: [
-                if (auth?.role == 'nasabah' && member != null)
-                  IconButton(
-                    tooltip: 'Unduh PDF',
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    color: NasabahStyle.ink,
-                    onPressed: () => _exportPdf(context, member),
-                  ),
-              ],
-            ),
+            appBar: const NasabahPageAppBar(title: 'Tabungan Saya'),
             body: SafeArea(
               child: auth?.role != 'nasabah'
                   ? const Center(child: Text('Silakan masuk sebagai nasabah.'))
@@ -165,10 +154,25 @@ class NasabahHistoryScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Icon(
-                                    Icons.account_balance_wallet_outlined,
-                                    color: Colors.white,
-                                    size: 24,
+                                  TextButton.icon(
+                                    onPressed: () => _exportPdf(context, id),
+                                    style: TextButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.white.withValues(alpha: 0.18),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    icon: const Icon(Icons.picture_as_pdf_outlined,
+                                        size: 16),
+                                    label: Text('Unduh PDF',
+                                        style: NasabahStyle.text(
+                                          12,
+                                          weight: FontWeight.w600,
+                                        )),
                                   ),
                                 ],
                               ),
