@@ -1,3 +1,7 @@
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
+import 'draft_pencairan_support.dart';
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -100,6 +104,11 @@ class AppShell {
         () => RevisiPencairanCubit(useCases));
     di.registerFactory<RiwayatPencairanCubit>(
         () => RiwayatPencairanCubit(useCases));
+    final draftUseCases = buildDraftPencairanUseCases(api);
+    di.registerFactory<DraftListCubit>(() => DraftListCubit(draftUseCases));
+    di.registerFactory<PilihNasabahCubit>(
+        () => PilihNasabahCubit(draftUseCases));
+    di.registerFactory<DraftEditorCubit>(() => DraftEditorCubit(draftUseCases));
     _approval = registerApprovedMembership();
   }
 
@@ -112,6 +121,9 @@ class AppShell {
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<DraftListCubit>();
+    await di.unregister<PilihNasabahCubit>();
+    await di.unregister<DraftEditorCubit>();
     final approval = _approval;
     if (approval != null) await unregisterApprovedMembership(approval);
     // Not awaited: with listeners attached a broadcast controller's close()
