@@ -21,17 +21,26 @@ class TransaksiFilter {
   /// Null leaves it to the caller's default — only the dashboard's short
   /// preview list narrows it.
   final int? pageSize;
+  final int page;
+  final String? tipe;
+  final String? search;
 
   const TransaksiFilter({
     this.periode = 'bulan_ini',
     this.dariTanggal,
     this.sampaiTanggal,
     this.pageSize,
+    this.page = 1,
+    this.tipe,
+    this.search,
   });
 
   /// Every transaction ever, newest first — no date filter of any kind.
   const TransaksiFilter.semua({this.pageSize})
       : periode = periodeSemua,
+        page = 1,
+        tipe = null,
+        search = null,
         dariTanggal = null,
         sampaiTanggal = null;
 
@@ -39,6 +48,10 @@ class TransaksiFilter {
 
   Map<String, dynamic> toQueryParams() {
     final params = <String, dynamic>{'periode': periode};
+    if (tipe != null) params['tipe'] = tipe;
+    if (search != null && search!.trim().isNotEmpty) {
+      params['search'] = search!.trim();
+    }
     if (isCustom) {
       if (dariTanggal != null) {
         params['dari_tanggal'] = _iso(dariTanggal!);

@@ -172,14 +172,20 @@ import '../features/transaksi/data/datasources/transaksi_remote_data_source.dart
     as _i881;
 import '../features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart'
     as _i659;
+import '../features/transaksi/data/repositories/aktivitas_repository_impl.dart'
+    as _i694;
 import '../features/transaksi/data/repositories/transaksi_repository_impl.dart'
     as _i1041;
+import '../features/transaksi/domain/repositories/aktivitas_repository.dart'
+    as _i184;
 import '../features/transaksi/domain/repositories/transaksi_repository.dart'
     as _i1031;
 import '../features/transaksi/domain/use_cases/add_transaksi_usecase.dart'
     as _i839;
 import '../features/transaksi/domain/use_cases/export_transaksi_usecase.dart'
     as _i67;
+import '../features/transaksi/domain/use_cases/get_aktivitas_usecase.dart'
+    as _i646;
 import '../features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart'
     as _i218;
 import '../features/transaksi/domain/use_cases/get_transaksi_usecase.dart'
@@ -237,6 +243,10 @@ extension GetItInjectableX on _i174.GetIt {
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
         ));
+    gh.lazySingleton<_i184.AktivitasRepository>(
+        () => _i694.AktivitasRepositoryImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i646.GetAktivitasUseCase>(
+        () => _i646.GetAktivitasUseCase(gh<_i184.AktivitasRepository>()));
     gh.lazySingleton<_i247.OnboardingRemoteDataSource>(
         () => _i247.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1037.PencairanRemoteDataSources>(
@@ -381,6 +391,11 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i240.UpdateHargaUseCase>(
         () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i454.RiwayatAktivitasCubit>(
+        () => _i454.RiwayatAktivitasCubit(
+              gh<_i646.GetAktivitasUseCase>(),
+              gh<_i67.ExportTransaksiUseCase>(),
+            ));
     gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
         () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
     gh.lazySingleton<_i958.NasabahCubit>(() => _i958.NasabahCubit(
@@ -407,12 +422,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i216.GetRiwayatHistoryUseCase>(),
           gh<_i216.GetRiwayatSetoranDetailUseCase>(),
         ));
-    gh.lazySingleton<_i454.RiwayatAktivitasCubit>(
-        () => _i454.RiwayatAktivitasCubit(
-              gh<_i383.GetTransaksiUseCase>(),
-              gh<_i686.PencairanUseCases>(),
-              gh<_i67.ExportTransaksiUseCase>(),
-            ));
     gh.lazySingleton<_i200.RecentActivityCubit>(() => _i200.RecentActivityCubit(
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i686.PencairanUseCases>(),

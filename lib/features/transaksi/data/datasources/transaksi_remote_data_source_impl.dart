@@ -40,7 +40,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       final tanggal =
           DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal();
       final header = _bucketHeader(tanggal, today);
-      final entity = _mapListItem(json, tanggal);
+      final entity = mapListItem(json, tanggal);
       if (!groups.containsKey(header)) {
         groups[header] = [];
         order.add(header);
@@ -139,7 +139,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
 
   // ---- mapping helpers ----------------------------------------------------
 
-  TransaksiEntity _mapListItem(Map<String, dynamic> json, DateTime? tanggal) {
+  TransaksiEntity mapListItem(Map<String, dynamic> json, DateTime? tanggal) {
     final name = json['nasabah_nama']?.toString() ?? '-';
     final jenisUtama = json['jenis_sampah_utama']?.toString();
     final berat = WeightFormatter.formatKg(json['total_berat_kg']);

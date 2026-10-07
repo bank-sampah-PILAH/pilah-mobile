@@ -1,184 +1,123 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
-import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
-import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
-import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
-import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
-
+import '../../domain/entities/aktivitas_entity.dart';
+import '../../domain/entities/transaksi_filter.dart';
+import '../../domain/use_cases/export_transaksi_usecase.dart';
+import '../../domain/use_cases/get_aktivitas_usecase.dart';
 import 'riwayat_aktivitas_state.dart';
 
-/// Backs the unified Riwayat Aktivitas screen (PIL-282): setoran and
-/// pencairan merged into one chronological feed for the same period, with a
-/// client-side type filter and search. Kept separate from [TransaksiCubit],
-/// which still owns creating a setoran and the transaction detail sheet.
+/// One server-paginated feed, scoped by period, type and search.
 @lazySingleton
 class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
-  final GetTransaksiUseCase _getTransaksiUseCase;
-  final PencairanUseCases _pencairanUseCases;
-  final ExportTransaksiUseCase _exportTransaksiUseCase;
+  RiwayatAktivitasCubit(this._getAktivitas, this._export)
+      : super(const RiwayatAktivitasState());
+  final GetAktivitasUseCase _getAktivitas;
+  final ExportTransaksiUseCase _export;
+  int _generation = 0;
+  int _page = 0;
 
-  List<ActivitasEntity> _all = [];
-  String _periode = 'bulan_ini';
-  DateTime? _dariTanggal;
-  DateTime? _sampaiTanggal;
-  AktivitasTipeFilter _tipeFilter = AktivitasTipeFilter.semua;
-  String _search = '';
-
-  RiwayatAktivitasCubit(
-    this._getTransaksiUseCase,
-    this._pencairanUseCases,
-    this._exportTransaksiUseCase,
-  ) : super(const RiwayatAktivitasState());
-
-  TransaksiFilter _transaksiFilter() => TransaksiFilter(
-        periode: _periode,
-        dariTanggal: _dariTanggal,
-        sampaiTanggal: _sampaiTanggal,
+  TransaksiFilter _filter(int page) => TransaksiFilter(
+        periode: state.periode,
+        dariTanggal: state.dariTanggal,
+        sampaiTanggal: state.sampaiTanggal,
+        tipe: state.tipeFilter.name,
+        search: state.search,
+        page: page,
       );
 
-  /// The matching pencairan period, or null when the current periode has no
-  /// pencairan equivalent (a custom setoran date range).
-  RiwayatPeriode? _riwayatPeriode() {
-    switch (_periode) {
-      case 'bulan_ini':
-        return RiwayatPeriode.bulanIni;
-      case 'bulan_lalu':
-        return RiwayatPeriode.bulanLalu;
-      default:
-        return null;
-    }
-  }
-
-  /// Fetches both feeds for the current periode and merges them.
-  ///
-  /// Pass [silent] to skip the loading emit — pull-to-refresh already shows a
-  /// spinner, so the list should stay on screen rather than collapse under it.
   Future<void> load({bool silent = false}) async {
-    if (!silent || state.status != AktivitasStatus.loaded) {
-      emit(state.copyWith(status: AktivitasStatus.loading));
-    }
-
-    final transaksiResult =
-        await _getTransaksiUseCase.execute(_transaksiFilter());
-    await transaksiResult.fold(
-      (failure) async {
-        if (isClosed) return;
-        emit(RiwayatAktivitasState(
+    final generation = ++_generation;
+    _page = 0;
+    emit(state.copyWith(
+        status: silent && state.items.isNotEmpty
+            ? AktivitasStatus.loaded
+            : AktivitasStatus.loading,
+        hasNext: false,
+        loadingMore: false));
+    final result = await _getAktivitas.execute(_filter(1));
+    if (isClosed || generation != _generation) return;
+    result.fold(
+      (failure) => emit(state.copyWith(
           status: AktivitasStatus.failure,
-          periode: _periode,
-          dariTanggal: _dariTanggal,
-          sampaiTanggal: _sampaiTanggal,
-          tipeFilter: _tipeFilter,
-          search: _search,
-          errorMessage: failure.displayMessage,
-        ));
-      },
-      (groups) async {
-        final riwayatPeriode = _riwayatPeriode();
-        final pencairanResult = riwayatPeriode == null
-            ? null
-            : await _pencairanUseCases
-                .getRiwayat(RiwayatPencairanFilter(periode: riwayatPeriode));
-        if (isClosed) return;
-
-        final setoranItems = [
-          for (final group in groups)
-            for (final t in group.transactions)
-              ActivitasEntity.fromTransaksi(t),
-        ];
-        final pencairanItems = pencairanResult?.fold(
-              // A failed pencairan fetch degrades to "setoran only" rather
-              // than hiding a feed that did load.
-              (_) => const <ActivitasEntity>[],
-              (items) => items.map(ActivitasEntity.fromPencairan).toList(),
-            ) ??
-            const <ActivitasEntity>[];
-
-        _all = [...setoranItems, ...pencairanItems]..sort((a, b) {
-            final da = a.tanggal;
-            final db = b.tanggal;
-            if (da == null && db == null) return 0;
-            if (da == null) return 1;
-            if (db == null) return -1;
-            return db.compareTo(da);
-          });
-        _emitFiltered();
+          items: [],
+          errorMessage: failure.displayMessage)),
+      (page) {
+        _page = 1;
+        emit(state.copyWith(
+            status: AktivitasStatus.loaded,
+            items: page.items,
+            hasNext: page.hasNext));
       },
     );
   }
 
-  void setPeriode(String periode) {
-    if (_periode == periode && _dariTanggal == null && _sampaiTanggal == null) {
+  Future<void> loadMore() async {
+    if (!state.hasNext ||
+        state.loadingMore ||
+        state.status != AktivitasStatus.loaded) {
       return;
     }
-    _periode = periode;
-    _dariTanggal = null;
-    _sampaiTanggal = null;
+    final generation = _generation;
+    emit(state.copyWith(loadingMore: true));
+    final result = await _getAktivitas.execute(_filter(_page + 1));
+    if (isClosed || generation != _generation) return;
+    result.fold(
+      (failure) => emit(state.copyWith(
+          loadingMore: false, errorMessage: failure.displayMessage)),
+      (page) {
+        _page++;
+        final ids = state.items.map(_key).toSet();
+        emit(state.copyWith(items: [
+          ...state.items,
+          ...page.items.where((item) => ids.add(_key(item)))
+        ], hasNext: page.hasNext, loadingMore: false));
+      },
+    );
+  }
+
+  String _key(ActivitasEntity item) =>
+      '${item.tipe.name}:${item.transaksi?.id ?? item.pencairan?.id}';
+
+  void setPeriode(String periode) {
+    if (state.periode == periode && state.dariTanggal == null) return;
+    emit(RiwayatAktivitasState(
+        periode: periode, tipeFilter: state.tipeFilter, search: state.search));
     load();
   }
 
   void applyCustomRange(DateTime start, DateTime end) {
-    _periode = 'custom';
-    _dariTanggal = start;
-    _sampaiTanggal = end;
+    emit(RiwayatAktivitasState(
+        periode: 'custom',
+        dariTanggal: start,
+        sampaiTanggal: end,
+        tipeFilter: state.tipeFilter,
+        search: state.search));
     load();
   }
 
   void setTipeFilter(AktivitasTipeFilter tipe) {
-    _tipeFilter = tipe;
-    _emitFiltered();
+    if (state.tipeFilter == tipe) return;
+    emit(state.copyWith(tipeFilter: tipe, items: []));
+    load();
   }
 
   void search(String query) {
-    _search = query;
-    _emitFiltered();
+    if (state.search == query.trim()) return;
+    emit(state.copyWith(search: query.trim(), items: []));
+    load();
   }
 
-  /// Downloads the setoran-only XLSX export for the current period. Returns
-  /// the file bytes on success, otherwise a user-facing error message.
+  /// XLSX expansion to include payouts is owned by PIL-248.
   Future<({TransaksiExport? export, String? error})> exportTransaksi() async {
-    final result = await _exportTransaksiUseCase.execute(_transaksiFilter());
+    final result = await _export.execute(_filter(1));
     return result.fold(
-      (failure) => (export: null, error: failure.displayMessage),
-      (data) => (export: data, error: null),
-    );
+        (failure) => (export: null, error: failure.displayMessage),
+        (data) => (export: data, error: null));
   }
 
-  /// Clears cached data and resets to the initial state (used on logout, since
-  /// this cubit is an app-scoped singleton that outlives a session).
   void reset() {
-    _all = [];
-    _periode = 'bulan_ini';
-    _dariTanggal = null;
-    _sampaiTanggal = null;
-    _tipeFilter = AktivitasTipeFilter.semua;
-    _search = '';
+    _generation++;
+    _page = 0;
     emit(const RiwayatAktivitasState());
-  }
-
-  void _emitFiltered() {
-    final query = _search.trim().toLowerCase();
-    final filtered = _all.where((item) {
-      final matchesTipe = switch (_tipeFilter) {
-        AktivitasTipeFilter.semua => true,
-        AktivitasTipeFilter.setoran => item.tipe == ActivitasTipe.setoran,
-        AktivitasTipeFilter.pencairan => item.tipe == ActivitasTipe.pencairan,
-      };
-      if (!matchesTipe) return false;
-      if (query.isEmpty) return true;
-      return item.searchTerm.toLowerCase().contains(query);
-    }).toList();
-
-    emit(RiwayatAktivitasState(
-      status: AktivitasStatus.loaded,
-      items: filtered,
-      periode: _periode,
-      dariTanggal: _dariTanggal,
-      sampaiTanggal: _sampaiTanggal,
-      tipeFilter: _tipeFilter,
-      search: _search,
-    ));
   }
 }

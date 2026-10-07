@@ -52,14 +52,15 @@ class _LaporanPageBodyState extends State<_LaporanPageBody> {
                   // Header
                   Row(
                     children: [
-                      Text(
+                      Expanded(
+                          child: Text(
                         'Riwayat Aktivitas',
                         style: AppTextStyle.headline1.copyWith(
                           color: Colors.black87,
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
                         ),
-                      ),
+                      )),
                     ],
                   ),
                   const SizedBox(height: 16),
