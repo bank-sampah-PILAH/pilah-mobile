@@ -49,4 +49,8 @@ class PreviewNasabahRepository implements NasabahRepository {
   Future<NasabahSetoranDetail> setoranDetail(
           String membershipId, String transactionId) =>
       throw UnsupportedError('No preview setoran details');
+
+  @override
+  Future<NasabahExport> exportPdf(String membershipId) =>
+      throw UnsupportedError('No preview PDF export');
 }

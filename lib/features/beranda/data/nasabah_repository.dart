@@ -164,6 +164,13 @@ class NasabahHistory {
   final bool hasNext;
 }
 
+/// A downloaded PDF: raw bytes plus the filename the server picked.
+class NasabahExport {
+  const NasabahExport({required this.bytes, required this.filename});
+  final List<int> bytes;
+  final String filename;
+}
+
 /// Uses the application's authenticated transport, never the management APIs.
 class NasabahRepository {
   NasabahRepository(this.network);
@@ -216,6 +223,31 @@ class NasabahRepository {
             .map((v) => NasabahActivity.fromJson(v as Map<String, dynamic>))
             .toList(),
         json['next'] != null);
+  }
+
+  /// Downloads the activity-statement PDF (PIL-315): the backend renders it
+  /// with the member's bank and saldo, so the pass-through only forwards
+  /// auth. `Content-Disposition` carries the filename for the saved copy.
+  Future<NasabahExport> exportPdf(String membershipId) async {
+    final response = await network.getBytes(
+      '$_base/riwayat/export-pdf',
+      queryParams: {'keanggotaan_id': membershipId},
+    );
+    return NasabahExport(
+      bytes: (response.data as List).cast<int>(),
+      filename: _attachmentName(response),
+    );
+  }
+
+  /// Filename from `Content-Disposition: attachment; filename="x.pdf"`, with
+  /// a fixed default — the backend always sends the header, but a proxy
+  /// stripping it must not defeat the save.
+  static String _attachmentName(Response response) {
+    final header = response.headers.value('content-disposition');
+    final match = header == null
+        ? null
+        : RegExp(r'filename="?([^";]+)"?$').firstMatch(header);
+    return match?.group(1) ?? 'Riwayat_Aktivitas.pdf';
   }
 
   Future<NasabahSetoranDetail> setoranDetail(

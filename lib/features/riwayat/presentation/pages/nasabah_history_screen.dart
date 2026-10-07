@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/utils/file_downloader.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -10,6 +14,7 @@ import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resou
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_history_tab.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/riwayat_nasabah_page.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Re-key history on account or membership changes to discard stale responses.
 class NasabahHistoryScreen extends StatelessWidget {
@@ -21,6 +26,63 @@ class NasabahHistoryScreen extends StatelessWidget {
   final String? membershipId;
   final bool initialPencairan;
 
+  /// Downloads the activity PDF (PIL-315), saves it to Download and offers
+  /// sharing — the same flow the XLSX export uses, so both exports behave
+  /// identically app-wide.
+  Future<void> _exportPdf(BuildContext context, String membershipId) async {
+    final loading = AppNotification.showLoading(
+      context,
+      title: 'Informasi',
+      message: 'Menyiapkan laporan PDF...',
+    );
+    final NasabahExport export;
+    try {
+      export = await di<NasabahRepository>().exportPdf(membershipId);
+    } on NasabahApiException catch (error) {
+      await loading.dismiss();
+      if (!context.mounted) return;
+      AppNotification.showError(
+        context,
+        title: 'Gagal',
+        message: error.message == 'Data gagal dimuat. Periksa koneksi dan coba lagi.'
+            ? 'Laporan PDF gagal dibuat. Coba lagi nanti.'
+            : error.message,
+      );
+      return;
+    }
+    await loading.dismiss();
+
+    final SavedFile saved;
+    try {
+      saved = await FileDownloader.save(
+        filename: export.filename,
+        bytes: Uint8List.fromList(export.bytes),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      AppNotification.showError(
+        context,
+        title: 'Gagal Menyimpan',
+        message: 'Gagal menyimpan laporan: $e',
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    AppNotification.showSuccess(
+      context,
+      title: 'Berhasil',
+      message: 'Laporan PDF tersimpan di folder ${saved.folder}',
+      actionLabel: 'Bagikan',
+      onAction: () => SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(saved.path)],
+          text: 'Laporan Riwayat Aktivitas PILAH',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<AuthenticationBloc, AuthenticationStates>(
@@ -29,7 +91,18 @@ class NasabahHistoryScreen extends StatelessWidget {
           final member = membershipId;
           return Scaffold(
             backgroundColor: NasabahStyle.background,
-            appBar: const NasabahPageAppBar(title: 'Tabungan Saya'),
+            appBar: NasabahPageAppBar(
+              title: 'Tabungan Saya',
+              actions: [
+                if (auth?.role == 'nasabah' && member != null)
+                  IconButton(
+                    tooltip: 'Unduh PDF',
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    color: NasabahStyle.ink,
+                    onPressed: () => _exportPdf(context, member),
+                  ),
+              ],
+            ),
             body: SafeArea(
               child: auth?.role != 'nasabah'
                   ? const Center(child: Text('Silakan masuk sebagai nasabah.'))
