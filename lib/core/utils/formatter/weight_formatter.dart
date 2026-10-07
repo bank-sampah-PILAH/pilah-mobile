@@ -15,7 +15,7 @@
 /// This shapes display text only. Domain values, cubit state, and API DTOs keep
 /// their `double`/dot-decimal form; nothing here feeds a calculation or payload.
 class WeightFormatter {
-  const WeightFormatter._();
+  const WeightFormatter._(); // coverage:ignore-line
 
   /// Accepts a [num] or a numeric [String] (dot-decimal, as the API sends).
   /// Anything unparseable formats as `"0"`.

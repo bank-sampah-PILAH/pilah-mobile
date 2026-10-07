@@ -117,4 +117,16 @@ void main() {
     expect(find.text('Ani Wijaya'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsNothing);
   });
+
+  testWidgets('pulling down reloads the feed without clearing it',
+      (tester) async {
+    await pumpPage(tester);
+    clearInteractions(getTransaksi);
+
+    await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+
+    verify(() => getTransaksi.execute(any())).called(1);
+    expect(find.text('Budi Santoso'), findsOneWidget);
+  });
 }

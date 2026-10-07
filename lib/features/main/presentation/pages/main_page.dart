@@ -109,6 +109,9 @@ class _ShellContent extends StatelessWidget {
         navigationShell.currentIndex == 7) {
       return navigationShell;
     }
+    // coverage:ignore-start
+    // Dead today: Jadwal (branch 4) is now one of the full nasabah tabs, so
+    // `selected` is never negative there. Kept as a guard should it leave them.
     // Nasabah may open the existing read-only schedule route outside the tabs.
     if (selected < 0 &&
         role == 'nasabah' &&
@@ -116,6 +119,7 @@ class _ShellContent extends StatelessWidget {
         navigationShell.currentIndex == 4) {
       return navigationShell;
     }
+    // coverage:ignore-end
     if (selected < 0 && !limitedNasabah) {
       return Scaffold(
           body: Center(
