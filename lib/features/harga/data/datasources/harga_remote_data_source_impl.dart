@@ -1,7 +1,9 @@
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source.dart';
+import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
 
 @LazySingleton(as: HargaRemoteDataSource)
 class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
@@ -31,7 +33,7 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
   @override
   Future<void> updateHarga(HargaModel harga) async {
     await networkService.put('/api/v1/jenis-sampah/${harga.id}',
-        data: harga.toJson());
+        data: harga.toUpdateJson());
   }
 
   @override
@@ -44,5 +46,18 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
   Future<void> activateHarga(String id) async {
     await networkService
         .patch('/api/v1/jenis-sampah/$id/status', data: {'is_active': true});
+  }
+
+  @override
+  Future<void> ubahHarga(UbahHarga perubahan) async {
+    final berlakuMulai = perubahan.berlakuMulai;
+    await networkService.post(
+      '/api/v1/jenis-sampah/${perubahan.id}/harga',
+      data: {
+        'harga_per_kg': perubahan.harga.toString(),
+        if (berlakuMulai != null)
+          'berlaku_mulai': isoDenganOffset(berlakuMulai),
+      },
+    );
   }
 }

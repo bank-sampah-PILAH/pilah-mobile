@@ -81,6 +81,10 @@ class HargaModel extends HargaEntity {
     );
   }
 
+  /// Field yang dikirim saat menyunting jenis sampah. Harga diganti lewat
+  /// `POST /jenis-sampah/{id}/harga` supaya tercatat sebagai versi baru.
+  Map<String, dynamic> toUpdateJson() => toJson()..remove('harga_per_kg');
+
   Map<String, dynamic> toJson() {
     // `id` and `is_active` are read-only on the backend; the record id travels
     // in the URL for updates, and status is toggled via the dedicated /status
