@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -13,6 +13,7 @@ import '../blocs/draft_editor_state.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/editor_item_card.dart';
+import '../widgets/pencairan_ui.dart';
 import '../widgets/potongan_control.dart';
 import 'draft_editor_args.dart';
 import 'draft_list_page.dart';
@@ -168,51 +169,45 @@ class _DraftEditorViewState extends State<DraftEditorView> {
           },
           child: Scaffold(
             backgroundColor: Colors.white,
-            appBar: _appBar(state),
-            body: state.phase == EditorPhase.loading
-                ? const Center(child: CircularProgressIndicator())
-                : _Form(state: state, nama: _nama),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  PencairanHeader(
+                    title: state.draftId == null
+                        ? 'Pencairan Baru'
+                        : 'Draft Pencairan',
+                    actions: [_menu(state)],
+                  ),
+                  Expanded(
+                    child: state.phase == EditorPhase.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _Form(state: state, nama: _nama),
+                  ),
+                ],
+              ),
+            ),
             bottomNavigationBar:
                 state.status.terkunci || state.phase == EditorPhase.loading
                     ? null
-                    : _BottomBar(
-                        state: state,
-                        onSave: cubit.save,
-                      ),
+                    : _BottomBar(state: state, onSave: cubit.save),
           ),
         ),
       ),
     );
   }
 
-  AppBar _appBar(DraftEditorState state) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      iconTheme: const IconThemeData(color: AppColors.black),
-      title: Text(
-        state.draftId == null ? 'Pencairan Baru' : 'Draft Pencairan',
-        style: AppTextStyle.appBar,
-      ),
-      actions: [
-        if (state.draftId != null && state.status == DraftStatus.draft)
-          PopupMenuButton<String>(
-            key: const Key('menu-editor'),
-            onSelected: (value) {
-              switch (value) {
-                case 'batalkan':
-                  _cancelDraft();
-              }
-            },
-            itemBuilder: (_) => [
-              if (state.status == DraftStatus.draft)
-                const PopupMenuItem(
-                  value: 'batalkan',
-                  child: Text('Batalkan draft'),
-                ),
-            ],
-          ),
+  Widget _menu(DraftEditorState state) {
+    if (state.draftId == null || state.status != DraftStatus.draft) {
+      return const SizedBox.shrink();
+    }
+    return PopupMenuButton<String>(
+      key: const Key('menu-editor'),
+      icon: Icon(Icons.more_vert, color: Colors.grey[800]),
+      onSelected: (value) {
+        if (value == 'batalkan') _cancelDraft();
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'batalkan', child: Text('Batalkan draft')),
       ],
     );
   }
@@ -228,68 +223,85 @@ class _Form extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<DraftEditorCubit>();
     final locked = state.status.terkunci;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                key: const Key('nama-draft'),
-                controller: nama,
-                readOnly: locked,
-                onChanged: cubit.setNama,
-                decoration: InputDecoration(
-                  labelText: 'Nama pencairan',
-                  hintText: 'Kosongkan untuk nama otomatis',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            if (state.draftId != null) ...[
-              const SizedBox(width: 8),
-              DraftStatusBadge(status: state.status),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(child: SectionLabel('NAMA PENCAIRAN')),
+              if (state.draftId != null) DraftStatusBadge(status: state.status),
             ],
-          ],
-        ),
-        if (state.dibuatOlehNama.isNotEmpty) ...[
+          ),
           const SizedBox(height: 8),
-          Text(
-            'Dibuat oleh ${state.dibuatOlehNama} · ${waktu(state.createdAt)}',
-            style: AppTextStyle.extraSmall,
-          ),
-          Text(
-            'Diubah oleh ${state.diubahOlehNama} · ${waktu(state.updatedAt)}',
-            style: AppTextStyle.extraSmall,
-          ),
-        ],
-        const SizedBox(height: 16),
-        if (!locked) _GeneralOptions(state: state),
-        _Totals(state: state),
-        const SizedBox(height: 16),
-        Text('NASABAH (${state.items.length})',
-            style: AppTextStyle.extraSmall.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            )),
-        const SizedBox(height: 8),
-        for (final item in state.items) ...[
-          EditorItemCard(
-            item: item,
-            state: state,
+          TextField(
+            key: const Key('nama-draft'),
+            controller: nama,
             readOnly: locked,
-            onNominal: (nominal) =>
-                cubit.setItemNominal(item.nasabahId, nominal),
-            onMetode: (metode) => cubit.setItemMetode(item.nasabahId, metode),
-            onPotongan: (potongan) =>
-                cubit.setItemPotongan(item.nasabahId, potongan),
-            onReset: () => cubit.resetItem(item.nasabahId),
-            onRemove: () => cubit.removeItem(item.nasabahId),
+            onChanged: cubit.setNama,
+            style: pencairanInputStyle,
+            decoration: pencairanInputDecoration(
+              hintText: 'Kosongkan untuk nama otomatis',
+            ),
           ),
+          if (state.dibuatOlehNama.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Dibuat oleh ${state.dibuatOlehNama} · ${waktu(state.createdAt)}',
+              style: AppTextStyle.extraSmall,
+            ),
+            Text(
+              'Diubah oleh ${state.diubahOlehNama} · ${waktu(state.updatedAt)}',
+              style: AppTextStyle.extraSmall,
+            ),
+          ],
+          const SizedBox(height: 24),
+          if (!locked) ...[
+            _GeneralOptions(state: state),
+            const SizedBox(height: 24),
+          ],
+          const SectionLabel('RINGKASAN'),
           const SizedBox(height: 8),
+          PencairanSummaryCard(rows: [
+            SummaryRow(
+              label: 'Total pencairan',
+              value: rupiah(state.totalNominal),
+              valueKey: const Key('total-nominal'),
+            ),
+            SummaryRow(
+              label: 'Total potongan',
+              value: rupiah(state.totalPotongan),
+              valueKey: const Key('total-potongan'),
+            ),
+            SummaryRow(
+              label: 'Total dibayar',
+              value: rupiah(state.totalDibayar),
+              valueKey: const Key('total-dibayar'),
+              emphasized: true,
+            ),
+          ]),
+          const SizedBox(height: 24),
+          SectionLabel('NASABAH (${state.items.length})'),
+          const SizedBox(height: 8),
+          for (final item in state.items) ...[
+            EditorItemCard(
+              item: item,
+              state: state,
+              readOnly: locked,
+              onNominal: (nominal) =>
+                  cubit.setItemNominal(item.nasabahId, nominal),
+              onMetode: (metode) => cubit.setItemMetode(item.nasabahId, metode),
+              onPotongan: (potongan) =>
+                  cubit.setItemPotongan(item.nasabahId, potongan),
+              onReset: () => cubit.resetItem(item.nasabahId),
+              onRemove: () => cubit.removeItem(item.nasabahId),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 16),
         ],
-      ],
+      ),
     );
   }
 }
@@ -302,36 +314,37 @@ class _GeneralOptions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<DraftEditorCubit>();
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.greenLight,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return PencairanCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Untuk semua nasabah', style: AppTextStyle.headline3),
+          const SectionLabel('UNTUK SEMUA NASABAH'),
+          const SizedBox(height: 16),
+          const SectionLabel('METODE'),
           const SizedBox(height: 8),
-          Text('Metode pembayaran', style: AppTextStyle.small),
           Wrap(
             spacing: 8,
             children: [
-              ActionChip(
+              PencairanChip(
                 key: const Key('metode-semua-tunai'),
-                label: const Text('Semua tunai'),
-                onPressed: () => cubit.setMetodeSemua(MetodePencairan.tunai),
+                label: 'Semua tunai',
+                selected: state.items.isNotEmpty &&
+                    state.items.every((i) => i.metode == MetodePencairan.tunai),
+                onTap: () => cubit.setMetodeSemua(MetodePencairan.tunai),
               ),
-              ActionChip(
+              PencairanChip(
                 key: const Key('metode-semua-transfer'),
-                label: const Text('Semua transfer'),
-                onPressed: () => cubit.setMetodeSemua(MetodePencairan.transfer),
+                label: 'Semua transfer',
+                selected: state.items.isNotEmpty &&
+                    state.items
+                        .every((i) => i.metode == MetodePencairan.transfer),
+                onTap: () => cubit.setMetodeSemua(MetodePencairan.transfer),
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          const SectionLabel('POTONGAN UMUM'),
           const SizedBox(height: 8),
-          Text('Potongan umum', style: AppTextStyle.small),
           PotonganControl(
             keyPrefix: 'potongan',
             value: state.potonganDefault,
@@ -343,101 +356,26 @@ class _GeneralOptions extends StatelessWidget {
   }
 }
 
-class _Totals extends StatelessWidget {
-  final DraftEditorState state;
-
-  const _Totals({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget row(Key key, String label, int value, {bool bold = false}) => Row(
-          children: [
-            Expanded(child: Text(label, style: AppTextStyle.small)),
-            Text(
-              rupiah(value),
-              key: key,
-              style: AppTextStyle.small.copyWith(
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        );
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          row(const Key('total-nominal'), 'Total pencairan',
-              state.totalNominal),
-          row(const Key('total-potongan'), 'Total potongan',
-              state.totalPotongan),
-          const Divider(),
-          row(const Key('total-dibayar'), 'Total dibayar', state.totalDibayar,
-              bold: true),
-        ],
-      ),
-    );
-  }
-}
-
 class _BottomBar extends StatelessWidget {
   final DraftEditorState state;
   final VoidCallback onSave;
 
-  const _BottomBar({
-    required this.state,
-    required this.onSave,
-  });
+  const _BottomBar({required this.state, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
     final canSave = state.canSave &&
         !state.isBusy &&
         (state.dirty || state.draftId == null);
-    ButtonStyle style(Color color, {bool outlined = false}) =>
-        ElevatedButton.styleFrom(
-          backgroundColor: outlined ? Colors.white : color,
-          foregroundColor: outlined ? color : Colors.white,
-          disabledBackgroundColor: Colors.grey[300],
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: outlined ? BorderSide(color: color) : BorderSide.none,
-          ),
-          elevation: 0,
-        );
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                key: const Key('simpan'),
-                onPressed: canSave ? onSave : null,
-                style: style(AppColors.greenDark),
-                child: state.phase == EditorPhase.saving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Simpan Draft'),
-              ),
-            ),
-          ],
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: CustomPrimaryButton(
+          key: const Key('simpan'),
+          title: state.phase == EditorPhase.saving
+              ? 'Menyimpan...'
+              : 'Simpan Draft',
+          onPressed: canSave ? onSave : null,
         ),
       ),
     );

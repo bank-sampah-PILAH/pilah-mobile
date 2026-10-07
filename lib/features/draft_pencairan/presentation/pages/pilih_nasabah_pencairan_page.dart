@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
@@ -14,6 +15,7 @@ import '../../domain/model/draft_pencairan.dart';
 import '../blocs/pilih_nasabah_cubit.dart';
 import '../blocs/pilih_nasabah_state.dart';
 import '../widgets/draft_format.dart';
+import '../widgets/pencairan_ui.dart';
 import 'draft_editor_args.dart';
 import 'draft_list_page.dart';
 
@@ -65,30 +67,17 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
     final cubit = context.read<PilihNasabahCubit>();
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.black),
-        title: Text('Pilih Nasabah', style: AppTextStyle.appBar),
-      ),
-      body: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
-        builder: (context, state) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomSearchField(
-                      hintText: 'Cari nama, kode, atau nomor HP',
-                      onChanged: _onSearch,
-                    ),
-                  ),
+      body: SafeArea(
+        child: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
+          builder: (context, state) => Column(
+            children: [
+              PencairanHeader(
+                title: 'Pilih Nasabah',
+                actions: [
                   PopupMenuButton<KandidatUrutan>(
                     key: const Key('urutan'),
                     tooltip: 'Urutkan',
-                    icon: const Icon(Icons.sort),
+                    icon: Icon(Icons.sort, color: Colors.grey[800]),
                     initialValue: state.urutan,
                     onSelected: cubit.setUrutan,
                     itemBuilder: (_) => [
@@ -98,12 +87,21 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
                   ),
                 ],
               ),
-            ),
-            const _QuickSelects(),
-            Expanded(child: _List(state: state)),
-            _Footer(state: state),
-          ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: CustomSearchField(
+                  hintText: 'Cari nama, kode, atau nomor HP',
+                  onChanged: _onSearch,
+                ),
+              ),
+              const _QuickSelects(),
+              Expanded(child: _List(state: state)),
+            ],
+          ),
         ),
+      ),
+      bottomNavigationBar: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
+        builder: (context, state) => _Footer(state: state),
       ),
     );
   }
@@ -115,21 +113,24 @@ class _QuickSelects extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PilihNasabahCubit>();
-    Widget chip(Key key, String label, VoidCallback onTap) => ActionChip(
-          key: key,
-          label: Text(label, style: AppTextStyle.small),
-          backgroundColor: AppColors.greenLight,
-          side: BorderSide.none,
-          onPressed: onTap,
-        );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Wrap(
         spacing: 8,
-        runSpacing: 0,
+        runSpacing: 8,
         children: [
-          chip(const Key('pilih-semua'), 'Pilih semua', cubit.pilihSemua),
-          chip(const Key('kosongkan'), 'Kosongkan', cubit.kosongkan),
+          PencairanChip(
+            key: const Key('pilih-semua'),
+            label: 'Pilih semua',
+            selected: false,
+            onTap: cubit.pilihSemua,
+          ),
+          PencairanChip(
+            key: const Key('kosongkan'),
+            label: 'Kosongkan',
+            selected: false,
+            onTap: cubit.kosongkan,
+          ),
         ],
       ),
     );
@@ -171,21 +172,44 @@ class _List extends StatelessWidget {
             icon: Icons.people_outline,
           );
         }
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           itemCount: state.kandidat.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final kandidat = state.kandidat[index];
-            return CheckboxListTile(
+            final dipilih = state.selectedIds.contains(kandidat.id);
+            return InkWell(
               key: Key('kandidat-${kandidat.id}'),
-              value: state.selectedIds.contains(kandidat.id),
-              onChanged: (_) => cubit.toggle(kandidat.id),
-              activeColor: AppColors.greenDark,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(kandidat.nama, style: AppTextStyle.headline3),
-              subtitle: Text(
-                '${kandidat.kode} · ${rupiah(kandidat.saldo)}',
-                style: AppTextStyle.small,
+              onTap: () => cubit.toggle(kandidat.id),
+              borderRadius: BorderRadius.circular(16),
+              child: PencairanCard(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                borderColor:
+                    dipilih ? AppColors.greenDark : Colors.grey.shade200,
+                child: Row(
+                  children: [
+                    IgnorePointer(
+                      child: Checkbox(
+                        value: dipilih,
+                        onChanged: (_) {},
+                        activeColor: AppColors.greenDark,
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(kandidat.nama, style: AppTextStyle.headline3),
+                          Text(
+                            '${kandidat.kode} · ${rupiah(kandidat.saldo)}',
+                            style: AppTextStyle.small,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -203,49 +227,42 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final terpilih = state.terpilih;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('${state.jumlahTerpilih} dipilih',
-                      style: AppTextStyle.headline3),
-                  Text('Total saldo ${rupiah(state.saldoTerpilih)}',
-                      style: AppTextStyle.small),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              key: const Key('lanjut'),
-              onPressed: terpilih.isEmpty
-                  ? null
-                  : () => context.pushReplacement(
-                        DraftListPage.routeEditor,
-                        extra: DraftEditorArgs.baru(terpilih),
-                      ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey[300],
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${state.jumlahTerpilih} dipilih',
+                        style: AppTextStyle.headline3),
+                    Text('Total saldo ${rupiah(state.saldoTerpilih)}',
+                        style: AppTextStyle.small),
+                  ],
                 ),
-                elevation: 0,
               ),
-              child: const Text('Lanjut'),
-            ),
-          ],
+              SizedBox(
+                width: 140,
+                child: CustomPrimaryButton(
+                  key: const Key('lanjut'),
+                  title: 'Lanjut',
+                  onPressed: terpilih.isEmpty
+                      ? null
+                      : () => context.pushReplacement(
+                            DraftListPage.routeEditor,
+                            extra: DraftEditorArgs.baru(terpilih),
+                          ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

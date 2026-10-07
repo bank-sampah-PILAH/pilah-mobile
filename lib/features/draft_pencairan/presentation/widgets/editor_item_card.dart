@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import '../../domain/model/draft_pencairan.dart';
 import '../blocs/draft_editor_state.dart';
 import 'draft_format.dart';
+import 'pencairan_ui.dart';
 import 'potongan_control.dart';
 
 /// One nasabah in the editor: how much, how paid, and what comes off.
@@ -91,16 +92,10 @@ class EditorItemCard extends StatelessWidget {
     final error = state.errorFor(item);
     final potongan = state.potonganEfektif(item);
     final disesuaikan = state.disesuaikan(item);
-    return Container(
+    return PencairanCard(
       key: Key('item-${item.nasabahId}'),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: error != null ? Colors.red.shade300 : Colors.grey.shade200,
-        ),
-      ),
+      borderColor: error != null ? Colors.red.shade300 : Colors.grey.shade200,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -144,11 +139,13 @@ class EditorItemCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           if (readOnly)
             Text('Nominal ${rupiah(item.nominal)} · ${item.metode.label}',
                 style: AppTextStyle.small)
           else ...[
+            const SectionLabel('NOMINAL'),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -166,27 +163,23 @@ class EditorItemCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
+            const SectionLabel('METODE'),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: [
                 for (final metode in MetodePencairan.values)
-                  ChoiceChip(
+                  PencairanChip(
                     key: Key('metode-${item.nasabahId}-${metode.name}'),
-                    label: Text(metode.label),
+                    label: metode.label,
                     selected: item.metode == metode,
-                    selectedColor: AppColors.greenDark,
-                    labelStyle: AppTextStyle.small.copyWith(
-                      color: item.metode == metode
-                          ? Colors.white
-                          : AppColors.black,
-                    ),
-                    onSelected: (_) => onMetode(metode),
+                    onTap: () => onMetode(metode),
                   ),
               ],
             ),
           ],
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -267,27 +260,22 @@ class _NominalFieldState extends State<_NominalField> {
 
   @override
   Widget build(BuildContext context) {
+    final red = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.red),
+    );
+    final base = pencairanInputDecoration(hintText: 'Contoh: 50000');
     return TextField(
       key: widget.fieldKey,
       controller: _controller,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(
-        isDense: true,
-        labelText: 'Nominal',
+      style: pencairanInputStyle,
+      decoration: base.copyWith(
         prefixText: 'Rp ',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: widget.hasError ? Colors.red : Colors.grey.shade400,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: widget.hasError ? Colors.red : Colors.grey.shade400,
-          ),
-        ),
+        prefixStyle: pencairanInputStyle,
+        enabledBorder: widget.hasError ? red : base.enabledBorder,
+        focusedBorder: widget.hasError ? red : base.focusedBorder,
       ),
       onChanged: (text) => widget.onChanged(int.tryParse(text) ?? 0),
     );
