@@ -110,6 +110,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       title: 'Konfirmasi pembayaran',
       message: '${state.items.length} nasabah · total dibayar '
           '${rupiah(state.totalDibayar)}.\n\n'
+          '${state.draftId == null || state.dirty ? 'Draft akan disimpan terlebih dulu. ' : ''}'
           'Lanjutkan hanya jika semua pembayaran sudah dilakukan. Saldo '
           'nasabah akan dikurangi dan tercatat di riwayat, dan ini tidak '
           'bisa diulang.',
@@ -575,9 +576,22 @@ class _BottomBar extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
+            SizedBox(
+              width: double.infinity,
+              child: CustomPrimaryButton(
+                key: const Key('konfirmasi'),
+                title: state.phase == EditorPhase.confirming
+                    ? 'Memproses...'
+                    : 'Konfirmasi Pembayaran',
+                onPressed: state.canConfirm ? onConfirm : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
               child: CustomOutlinedButton(
                 key: const Key('simpan'),
                 title: state.phase == EditorPhase.saving
@@ -586,16 +600,6 @@ class _BottomBar extends StatelessWidget {
                 borderColor: AppColors.greenDark,
                 textColor: AppColors.greenDark,
                 onPressed: canSave ? onSave : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: CustomPrimaryButton(
-                key: const Key('konfirmasi'),
-                title: state.phase == EditorPhase.confirming
-                    ? 'Memproses...'
-                    : 'Konfirmasi Pembayaran',
-                onPressed: state.canConfirm ? onConfirm : null,
               ),
             ),
           ],

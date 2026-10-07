@@ -162,14 +162,9 @@ class DraftEditorState extends Equatable {
   bool get canSave =>
       items.isNotEmpty && items.every((item) => localError(item) == null);
 
-  /// The saved draft, exactly as it is, can be paid. An unsaved edit has to be
-  /// saved first so the pengurus confirms what the server will actually record.
-  bool get canConfirm =>
-      draftId != null &&
-      !dirty &&
-      !isBusy &&
-      status == DraftStatus.draft &&
-      canSave;
+  /// A valid, still-open draft can be paid at any time. If it was never saved,
+  /// or has unsaved edits, confirming saves it first.
+  bool get canConfirm => !isBusy && status == DraftStatus.draft && canSave;
 
   @override
   List<Object?> get props => [
