@@ -251,15 +251,11 @@ void main() {
       expect(find.text('Data tidak ditemukan.'), findsOneWidget);
 
       await tester.tap(find.text('Coba Lagi'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(calls, 2);
-      // KNOWN BUG (reported, not fixed): the sheet's `_retry` is
-      // `setState(() => _detail = loadDetail())`, whose callback returns the
-      // Future, so debug builds assert before rebuilding and the retried
-      // result never shows. Consume that assertion so the retry request itself
-      // stays covered.
-      tester.takeException();
+      expect(find.text('Data tidak ditemukan.'), findsNothing);
+      expect(find.text('Plastik PET'), findsOneWidget);
     });
 
     testWidgets('falls back to a generic message for unexpected failures', (
