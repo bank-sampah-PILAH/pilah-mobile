@@ -643,17 +643,11 @@ void main() {
       expect(cubit.state.items, hasLength(2));
     });
 
-    testWidgets('saving creates the draft and then offers to confirm payment',
+    testWidgets('saving creates the draft and shows who made it',
         (tester) async {
       when(() => useCases.createDraft(any()))
           .thenAnswer((_) async => Right(_saved()));
       await pumpNew(tester);
-      expect(
-          tester
-              .widget<CustomPrimaryButton>(find.byKey(const Key('konfirmasi')))
-              .onPressed,
-          isNull,
-          reason: 'nothing to pay until the draft is saved');
 
       await tester.enterText(
           find.byKey(const Key('nama-draft')), 'Cair Oktober');
@@ -664,9 +658,78 @@ void main() {
       expect(find.textContaining('Ibu Sari'), findsWidgets);
       expect(
           tester
+              .widget<CustomOutlinedButton>(find.byKey(const Key('simpan')))
+              .onPressed,
+          isNull,
+          reason: 'nothing left to save');
+    });
+
+    testWidgets(
+        'a new draft can be paid right away: it is saved, then confirmed',
+        (tester) async {
+      when(() => useCases.createDraft(any()))
+          .thenAnswer((_) async => Right(_saved()));
+      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
+      await pumpNew(tester);
+      expect(
+          tester
               .widget<CustomPrimaryButton>(find.byKey(const Key('konfirmasi')))
               .onPressed,
-          isNotNull);
+          isNotNull,
+          reason: 'no need to save first');
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      verifyNever(() => useCases.createDraft(any()));
+      expect(find.textContaining('Rp 765.600'), findsWidgets);
+
+      await tester.tap(find.text('Ya, sudah dibayar'));
+      await tester.pumpAndSettle();
+
+      verifyInOrder([
+        () => useCases.createDraft(any()),
+        () => useCases.confirmDraft('d-1'),
+      ]);
+      expect(cubit.state.status, DraftStatus.dikonfirmasi);
+    });
+
+    testWidgets('declining the dialog saves and pays nothing', (tester) async {
+      await pumpNew(tester);
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Belum'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => useCases.createDraft(any()));
+      verifyNever(() => useCases.confirmDraft(any()));
+    });
+
+    testWidgets('an invalid draft cannot be confirmed', (tester) async {
+      await pumpNew(tester);
+
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '60000');
+      await tester.pump();
+
+      expect(
+          tester
+              .widget<CustomPrimaryButton>(find.byKey(const Key('konfirmasi')))
+              .onPressed,
+          isNull);
+    });
+
+    testWidgets(
+        'the two buttons are stacked at full width, so labels never crowd',
+        (tester) async {
+      await pumpNew(tester);
+
+      final konfirmasi = tester.getRect(find.byKey(const Key('konfirmasi')));
+      final simpan = tester.getRect(find.byKey(const Key('simpan')));
+
+      expect(konfirmasi.width, 420 - 32);
+      expect(simpan.width, 420 - 32);
+      expect(simpan.top, greaterThan(konfirmasi.bottom - 1));
     });
 
     testWidgets(

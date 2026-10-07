@@ -460,16 +460,75 @@ void lifecycleTests() {
       expect(editor.state.items.map(editor.state.errorFor), [null, null]);
     });
 
-    test('is not offered for an unsaved, edited or invalid draft', () async {
+    test('an unsaved draft is saved first and then paid', () async {
+      when(() => useCases.createDraft(any()))
+          .thenAnswer((_) async => Right(_serverDraft()));
+      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
       final unsaved = DraftEditorCubit(useCases)..startNew(const [_ahmad]);
-      expect(unsaved.state.canConfirm, isFalse);
+      expect(unsaved.state.canConfirm, isTrue);
+
       await unsaved.confirm();
 
+      verifyInOrder([
+        () => useCases.createDraft(any()),
+        () => useCases.confirmDraft('d-1'),
+      ]);
+      expect(unsaved.state.status, DraftStatus.dikonfirmasi);
+      expect(unsaved.state.draftId, 'd-1');
+    });
+
+    test('unsaved edits are saved before the payment is confirmed', () async {
+      when(() => useCases.updateDraft('d-1', any()))
+          .thenAnswer((_) async => Right(_serverDraft(nama: 'Baru')));
+      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
       editor.setNama('Baru');
-      expect(editor.state.canConfirm, isFalse, reason: 'save the edit first');
+      expect(editor.state.canConfirm, isTrue);
+
+      await editor.confirm();
+
+      verifyInOrder([
+        () => useCases.updateDraft('d-1', any()),
+        () => useCases.confirmDraft('d-1'),
+      ]);
+      expect(editor.state.status, DraftStatus.dikonfirmasi);
+    });
+
+    test('a save that fails stops the payment before it starts', () async {
+      when(() => useCases.updateDraft('d-1', any()))
+          .thenAnswer((_) async => Left(_unprocessable({
+                'items[1].nominal': ['Saldo nasabah tidak mencukupi']
+              })));
+      editor.setNama('Baru');
+
       await editor.confirm();
 
       verifyNever(() => useCases.confirmDraft(any()));
+      expect(editor.state.itemErrors, {'n-2': 'Saldo nasabah tidak mencukupi'});
+      expect(editor.state.status, DraftStatus.draft);
+      expect(editor.state.phase, EditorPhase.idle);
+    });
+
+    test('an invalid draft cannot be confirmed', () async {
+      editor.setItemNominal('n-2', 99999999);
+
+      expect(editor.state.canConfirm, isFalse);
+      await editor.confirm();
+
+      verifyNever(() => useCases.updateDraft(any(), any()));
+      verifyNever(() => useCases.confirmDraft(any()));
+    });
+
+    test('a paid draft cannot be confirmed again', () async {
+      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
+      await editor.confirm();
+
+      expect(editor.state.canConfirm, isFalse);
+      await editor.confirm();
+
+      verify(() => useCases.confirmDraft('d-1')).called(1);
     });
 
     test('a stale saldo is reported on the item and the draft stays open',
