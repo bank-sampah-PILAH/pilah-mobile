@@ -6,11 +6,12 @@ import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencaira
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart';
 
-Pencairan _pencairan({bool diperbarui = false}) => Pencairan(
+Pencairan _pencairan({bool diperbarui = false, int potongan = 0}) => Pencairan(
       id: 'p-9',
       nasabahId: 'n-1',
       nasabahNama: 'Budi Santoso',
       nominal: 150000,
+      potongan: potongan,
       metode: MetodePencairan.transfer,
       tanggal: DateTime(2026, 9, 22, 11),
       keterangan: '',
@@ -124,5 +125,22 @@ void main() {
     expect(find.byKey(const Key('edit-pencairan')), findsOneWidget);
     expect(find.byKey(const Key('riwayat-perubahan-pencairan')), findsNothing);
     expect(find.text('Diperbarui'), findsNothing);
+  });
+
+  testWidgets('a pencairan with a potongan shows what was paid out',
+      (tester) async {
+    await openSheet(tester, _pencairan(potongan: 10000));
+
+    expect(find.text('Potongan'), findsOneWidget);
+    expect(find.text('Rp 10.000'), findsOneWidget);
+    expect(find.text('Dibayar'), findsOneWidget);
+    expect(find.text('Rp 140.000'), findsOneWidget);
+  });
+
+  testWidgets('a pencairan without a potongan hides both rows', (tester) async {
+    await openSheet(tester, _pencairan());
+
+    expect(find.text('Potongan'), findsNothing);
+    expect(find.text('Dibayar'), findsNothing);
   });
 }
