@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -332,4 +334,20 @@ class DraftInput extends Equatable {
 
   @override
   List<Object?> get props => [nama, potonganDefault, items];
+}
+
+enum ExportBerkas {
+  pdf('PDF'),
+  xlsx('Excel');
+
+  const ExportBerkas(this.label);
+
+  final String label;
+}
+
+class DraftExport {
+  final Uint8List bytes;
+  final String filename;
+
+  const DraftExport({required this.bytes, required this.filename});
 }

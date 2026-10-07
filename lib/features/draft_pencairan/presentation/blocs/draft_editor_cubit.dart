@@ -151,6 +151,29 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     await _transition(EditorPhase.cancelling, _useCases.cancelDraft(id));
   }
 
+  /// Downloads the saved draft as a file. Null, with an error message, if it
+  /// cannot: the caller saves and shares the file.
+  Future<DraftExport?> export(ExportBerkas berkas) async {
+    final id = state.draftId;
+    if (id == null || !state.canExport) return null;
+    emit(
+        state.copyWith(phase: EditorPhase.exporting, errorMessage: () => null));
+    final result = await _useCases.exportDraft(id, berkas);
+    return result.fold(
+      (failure) {
+        emit(state.copyWith(
+          phase: EditorPhase.idle,
+          errorMessage: () => failure.displayMessage,
+        ));
+        return null;
+      },
+      (file) {
+        emit(state.copyWith(phase: EditorPhase.idle));
+        return file;
+      },
+    );
+  }
+
   Future<void> _transition(
     EditorPhase phase,
     Future<Either<NetworkException, DraftPencairan>> call,
