@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmat
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
 
 class TambahJenisSampahBottomSheet extends StatefulWidget {
   final HargaEntity? initialData;
@@ -44,6 +45,13 @@ class _TambahJenisSampahBottomSheetState
   String? _selectedCategory;
   bool _isSaving = false;
   String? _serverKodeError;
+
+  /// Tengah malam waktu setempat saat harga baru mulai berlaku, atau `null`
+  /// bila harga baru berlaku sekarang.
+  DateTime? _berlakuMulai;
+
+  /// Batas jadwal harga dari backend (`BATAS_JADWAL_HARGA_HARI`).
+  static const int _batasJadwalHari = 365;
 
   /// Dropdown options as (API value, display label, icon). The value is what the
   /// backend `JenisSampah.Kategori` choices accept and is stored in
@@ -242,6 +250,10 @@ class _TambahJenisSampahBottomSheetState
                   ),
                 ),
                 if (isEditMode) ...[
+                  const SizedBox(height: 20),
+                  _buildLabel('BERLAKU MULAI'),
+                  const SizedBox(height: 8),
+                  _buildPilihanBerlaku(),
                   const SizedBox(height: 16),
                   _buildRingkasanHarga(widget.initialData!),
                   const SizedBox(height: 12),
@@ -416,10 +428,21 @@ class _TambahJenisSampahBottomSheetState
       isActive: widget.initialData?.isActive ?? true,
     );
 
+    final hargaBerubah = isEditMode && priceVal != widget.initialData!.price;
+    final berlakuMulai = _berlakuMulai;
+
     setState(() => _isSaving = true);
-    final error = isEditMode
+    var error = isEditMode
         ? await cubit.updateHarga(harga)
         : await cubit.addHarga(harga);
+    // Harga tidak ikut PUT: setiap perubahan harga dicatat sebagai versi baru.
+    if (error == null && hargaBerubah) {
+      error = await cubit.ubahHarga(UbahHarga(
+        id: harga.id,
+        harga: priceVal,
+        berlakuMulai: berlakuMulai,
+      ));
+    }
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -428,9 +451,11 @@ class _TambahJenisSampahBottomSheetState
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
-        message: isEditMode
-            ? 'Jenis sampah berhasil diperbarui.'
-            : 'Jenis sampah baru berhasil ditambahkan.',
+        message: !isEditMode
+            ? 'Jenis sampah baru berhasil ditambahkan.'
+            : hargaBerubah && berlakuMulai != null
+                ? 'Harga baru berlaku mulai ${formatTanggalId(berlakuMulai)}.'
+                : 'Jenis sampah berhasil diperbarui.',
       );
       return;
     }
@@ -445,6 +470,51 @@ class _TambahJenisSampahBottomSheetState
       title: 'Gagal Menyimpan',
       message: error.displayMessage,
     );
+  }
+
+  Widget _buildPilihanBerlaku() {
+    final berlakuMulai = _berlakuMulai;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Sekarang'),
+              selected: berlakuMulai == null,
+              onSelected: (_) => setState(() => _berlakuMulai = null),
+            ),
+            ChoiceChip(
+              label: const Text('Tanggal lain'),
+              selected: berlakuMulai != null,
+              onSelected: (_) => _pilihTanggalBerlaku(),
+            ),
+          ],
+        ),
+        if (berlakuMulai != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Mulai ${formatTanggalId(berlakuMulai)}, pukul 00.00',
+            style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Harga terjadwal dimulai tengah malam waktu setempat pada tanggal yang
+  /// dipilih, paling cepat besok (harga hari ini memakai "Sekarang").
+  Future<void> _pilihTanggalBerlaku() async {
+    final besok = DateUtils.dateOnly(widget.now()).add(const Duration(days: 1));
+    final dipilih = await showDatePicker(
+      context: context,
+      initialDate: _berlakuMulai ?? besok,
+      firstDate: besok,
+      lastDate: besok.add(const Duration(days: _batasJadwalHari - 1)),
+    );
+    if (dipilih == null || !mounted) return;
+    setState(() => _berlakuMulai = DateUtils.dateOnly(dipilih));
   }
 
   /// Nilai yang dihitung sistem, bukan input, sehingga berlatar abu (SDS 5.1).
