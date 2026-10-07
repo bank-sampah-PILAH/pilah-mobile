@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
@@ -576,30 +574,28 @@ class _BottomBar extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            SizedBox(
-              width: double.infinity,
-              child: CustomPrimaryButton(
-                key: const Key('konfirmasi'),
-                title: state.phase == EditorPhase.confirming
-                    ? 'Memproses...'
-                    : 'Konfirmasi Pembayaran',
-                onPressed: state.canConfirm ? onConfirm : null,
+            Expanded(
+              flex: 5,
+              child: PencairanActionButton(
+                key: const Key('simpan'),
+                label: 'Simpan Draft',
+                icon: Icons.save_outlined,
+                isLoading: state.phase == EditorPhase.saving,
+                onPressed: canSave ? onSave : null,
               ),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: CustomOutlinedButton(
-                key: const Key('simpan'),
-                title: state.phase == EditorPhase.saving
-                    ? 'Menyimpan...'
-                    : 'Simpan Draft',
-                borderColor: AppColors.greenDark,
-                textColor: AppColors.greenDark,
-                onPressed: canSave ? onSave : null,
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 6,
+              child: PencairanActionButton(
+                key: const Key('konfirmasi'),
+                label: 'Konfirmasi Pembayaran',
+                icon: Icons.check_circle_outline,
+                filled: true,
+                isLoading: state.phase == EditorPhase.confirming,
+                onPressed: state.canConfirm ? onConfirm : null,
               ),
             ),
           ],

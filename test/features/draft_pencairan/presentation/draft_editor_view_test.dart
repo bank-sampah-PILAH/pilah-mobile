@@ -782,19 +782,6 @@ void main() {
     });
 
     testWidgets(
-        'the two buttons are stacked at full width, so labels never crowd',
-        (tester) async {
-      await pumpNew(tester);
-
-      final konfirmasi = tester.getRect(find.byKey(const Key('konfirmasi')));
-      final simpan = tester.getRect(find.byKey(const Key('simpan')));
-
-      expect(konfirmasi.width, 420 - 32);
-      expect(simpan.width, 420 - 32);
-      expect(simpan.top, greaterThan(konfirmasi.bottom - 1));
-    });
-
-    testWidgets(
         'the server\'s complaint about one nasabah appears on that nasabah',
         (tester) async {
       when(() => useCases.createDraft(any()))
