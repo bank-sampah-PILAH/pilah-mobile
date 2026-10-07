@@ -1,11 +1,8 @@
-import 'dart:async';
-
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -33,7 +30,10 @@ class App extends StatelessWidget {
   @visibleForTesting
   final bool? isWebOverride;
 
-  const App({super.key, @visibleForTesting this.isWebOverride}); // coverage:ignore-line
+  const App({
+    super.key,
+    @visibleForTesting this.isWebOverride,
+  }); // coverage:ignore-line
 
   // This widget is the root of your application.
   @override
@@ -95,11 +95,6 @@ class App extends StatelessWidget {
               current is Authenticated &&
               !isSupportedWebRole(current.authEntity.role),
           listener: (context, state) {
-            try {
-              unawaited(GoogleSignIn.instance.signOut().catchError((_) {}));
-            } catch (_) {
-              // Still clear the PILAH session if Google's sign-out fails.
-            }
             context.read<AuthenticationBloc>().add(LogoutRequested());
             AppNotification.afterNavigation(
               (context) => AppNotification.showWarning(
