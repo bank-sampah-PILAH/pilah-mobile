@@ -33,8 +33,9 @@ class RiwayatNasabahPage extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
           child: RefreshIndicator(
-            onRefresh: () =>
-                context.read<RiwayatHistoryCubit>().loadHistoryCurrent(),
+            onRefresh: () => context
+                .read<RiwayatHistoryCubit>()
+                .loadHistoryCurrent(reset: true),
             child: BlocBuilder<RiwayatHistoryCubit, RiwayatHistoryState>(
               builder: (context, state) => ListView(
                 physics: const AlwaysScrollableScrollPhysics(),

@@ -131,4 +131,16 @@ void main() {
     expect(find.text('Minggu Ini'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('pulling down reloads the feed without clearing it',
+      (tester) async {
+    await pumpPage(tester);
+    clearInteractions(getTransaksi);
+
+    await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+
+    verify(() => getTransaksi.execute(any())).called(1);
+    expect(find.text('Budi Santoso'), findsOneWidget);
+  });
 }

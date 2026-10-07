@@ -20,7 +20,10 @@ import 'package:pilah_mobile/services/di.dart';
 import 'core/router/app_router_config.dart';
 
 class App extends StatelessWidget {
-  const App({super.key});
+  // The constructor line is only credited when the first coverage report merged
+  // for this file happens to be from the test that builds `const App()` (the
+  // merge keeps the first value seen), so it is excluded to stay deterministic.
+  const App({super.key}); // coverage:ignore-line
 
   // This widget is the root of your application.
   @override

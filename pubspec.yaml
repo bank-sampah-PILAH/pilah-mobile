@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
 
   # C
+  clock: ^1.1.2
   cupertino_icons: ^1.0.2
   # D
   dartz: ^0.10.1
@@ -88,6 +89,8 @@ dev_dependencies:
   flutter_native_splash: ^2.4.7
   flutter_launcher_icons: ^0.14.4
   url_launcher_platform_interface: ^2.3.2
+  path_provider_platform_interface: ^2.1.2
+  share_plus_platform_interface: ^7.2.0
   plugin_platform_interface: ^2.1.8
 
 # For information on the generic Dart part of this file, see the

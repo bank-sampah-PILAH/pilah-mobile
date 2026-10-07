@@ -322,7 +322,11 @@ class AppRouterConfig {
           StatefulShellBranch(routes: [
             GoRoute(
                 path: AppLocations.customerBank,
+                // coverage:ignore-start
+                // Not built by any navigation destination: MainPage shows
+                // "Kembali ke Beranda" for this branch instead of the page.
                 builder: (_, __) => const NasabahBankPage()),
+            // coverage:ignore-end
           ]),
           StatefulShellBranch(routes: [
             GoRoute(

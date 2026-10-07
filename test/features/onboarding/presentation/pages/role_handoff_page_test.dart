@@ -18,6 +18,8 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
 
+import '../../../../support/pump_app.dart';
+
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
 
@@ -109,6 +111,56 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('LOGIN'), findsOneWidget);
+  });
+
+  testWidgets('a failed Google sign-out reports it and does not log out',
+      (tester) async {
+    final auth = _MockAuthBloc();
+    final originalGoogleSignInPlatform =
+        google_sign_in.GoogleSignInPlatform.instance;
+    final googleSignInPlatform = _MockGoogleSignInPlatform();
+    google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
+    when(() =>
+            googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
+        .thenAnswer((_) async => throw StateError('offline'));
+    addTearDown(() {
+      google_sign_in.GoogleSignInPlatform.instance =
+          originalGoogleSignInPlatform;
+    });
+    addTearDown(auth.close);
+    whenListen(
+      auth,
+      const Stream<AuthenticationStates>.empty(),
+      initialState: Authenticated(
+        authEntity: const AuthEntity(
+          name: 'Ayu Lestari',
+          email: 'ayu@example.com',
+          photoUrl: '',
+          token: 'jwt',
+          role: 'nasabah',
+        ),
+      ),
+    );
+    await pumpRouted(
+      tester,
+      BlocProvider<AuthenticationBloc>.value(
+        value: auth,
+        child: const RoleHandoffPage(
+          title: 'Akun Nasabah Siap',
+          message: 'Beranda Nasabah sedang disiapkan.',
+          registrationInProgress: false,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Keluar dan ganti akun'));
+    await pumpToast(tester);
+
+    expect(find.text('Ganti Akun Gagal'), findsOneWidget);
+    verifyNever(() => auth.add(any<AuthenticationEvent>(
+          that: isA<LogoutRequested>(),
+        )));
+    await settleToasts(tester);
   });
 
   testWidgets('opens Nasabah history from the Nasabah landing page',

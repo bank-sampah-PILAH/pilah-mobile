@@ -312,6 +312,87 @@ void main() {
     });
   }
 
+  test('balance keeps the time the backend last updated it', () async {
+    respond('/api/v1/nasabah/me/saldo',
+        {'total_saldo': '10.00', 'updated_at': '2026-09-23T09:00:00Z'});
+    final balance = await repository.balance('b');
+    expect(balance.updatedAt, DateTime.utc(2026, 9, 23, 9));
+  });
+
+  test('setoran detail keeps a decimal-string balance as sent', () async {
+    const id = '1a2c70b3-fd54-481b-a0a7-cbe06695fd83';
+    respond('/api/v1/nasabah/me/riwayat/$id', {
+      'id': id,
+      'tanggal': '2026-09-23T09:00:00Z',
+      'tipe': 'setoran',
+      'total_nilai': '5000.00',
+      'saldo_setelah_transaksi': '15000.00',
+      'items': [],
+    });
+    expect((await repository.setoranDetail('b', id)).balanceAfter, '15000.00');
+  });
+
+  test('a relative logo stays relative when no API origin is known', () {
+    final bank =
+        NasabahBank.fromJson({'nama': 'Mawar', 'foto_logo': '/media/logo.png'});
+    expect(bank.logoUrl, '/media/logo.png');
+  });
+
+  test('home resolves a relative bank logo against the API origin', () async {
+    final environment = _Environment();
+    when(() => environment.baseUrl).thenReturn('https://example.test');
+    when(() => network.environment).thenReturn(environment);
+    respond('/api/v1/nasabah/me/beranda', {
+      'user': {
+        'id': 'u',
+        'nama': 'Siti',
+        'email': 'siti@example.test',
+        'role': 'nasabah'
+      },
+      'keanggotaan': {'id': 'membership'},
+      'bank_sampah': {'nama': 'Melati', 'foto_logo': '/media/melati.png'},
+      'saldo': {'total_saldo': '1.00', 'updated_at': null},
+      'aktivitas_terbaru': [],
+    });
+    final home = await repository.home();
+    expect(home.bank.logoUrl, 'https://example.test/media/melati.png');
+  });
+
+  test('updateProfile sends gender and address when given', () async {
+    when(() => network.patch('/api/v1/nasabah/me/profil', data: {
+          'jenis_kelamin': 'P',
+          'alamat': 'Jl. Melati 1',
+        })).thenAnswer((_) async => Response(data: {
+          'id': 'u',
+          'nama': 'Siti',
+          'email': 'siti@example.test',
+          'jenis_kelamin': 'P',
+          'alamat': 'Jl. Melati 1',
+          'role': 'nasabah'
+        }, requestOptions: RequestOptions(path: '/api/v1/nasabah/me/profil')));
+    final updated = await repository.updateProfile(
+        jenisKelamin: 'P', alamat: 'Jl. Melati 1');
+    expect(updated.jenisKelamin, 'P');
+    expect(updated.alamat, 'Jl. Melati 1');
+  });
+
+  for (final status in [401, 403, 404, 500]) {
+    test('updateProfile HTTP $status becomes a safe actionable error',
+        () async {
+      when(() => network.patch(any(), data: any(named: 'data'))).thenThrow(
+          DioException(
+              requestOptions: RequestOptions(),
+              response: Response(
+                  requestOptions: RequestOptions(),
+                  statusCode: status,
+                  data: {'error': 'private detail'})));
+      await expectLater(
+          repository.updateProfile(nama: 'Siti'),
+          throwsA(isA<NasabahApiException>().having(
+              (e) => e.message, 'message', isNot(contains('private detail')))));
+    });
+  }
+
   test('decimal currency display keeps precision', () {
     expect(nasabahRupiah('12500.50'), 'Rp 12.500,50');
     expect(nasabahRupiah('0.00'), 'Rp 0');
