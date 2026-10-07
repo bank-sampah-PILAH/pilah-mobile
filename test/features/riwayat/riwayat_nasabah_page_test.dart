@@ -202,4 +202,17 @@ void main() {
     expect(calls, 2);
     expect(find.text('Data tidak ditemukan.'), findsNothing);
   });
+  testWidgets('the reload icon resets history to the first page',
+      (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+        (_) async => Right(RiwayatHistory([row('a', '12500.00')], false)));
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+    clearInteractions(repo);
+    await tester.tap(find.byTooltip('Muat ulang'));
+    await tester.pumpAndSettle();
+    verify(() => repo.history('member-b', page: 1)).called(1);
+    verifyNever(() => repo.history('member-b', page: 2));
+  });
 }

@@ -55,7 +55,7 @@ class RiwayatNasabahPage extends StatelessWidget {
                             ? null
                             : () => context
                                 .read<RiwayatHistoryCubit>()
-                                .loadHistoryCurrent(),
+                                .loadHistoryCurrent(reset: true),
                         icon: const Icon(Icons.refresh),
                         color: NasabahStyle.emerald,
                       ),
