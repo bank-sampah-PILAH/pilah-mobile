@@ -28,6 +28,10 @@ HargaEntity _jenis(String id, {HargaTerjadwal? terjadwal}) => HargaEntity(
 
 void main() {
   testWidgets('the price list shows an upcoming price change', (tester) async {
+    // A common phone width, so the extra line must fit without overflowing.
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
     final cubit = _MockHargaCubit();
     addTearDown(cubit.close);
     when(() => cubit.loadHarga()).thenAnswer((_) async {});
