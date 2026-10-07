@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/widgets/welcome_card.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -61,5 +62,48 @@ void main() {
     );
 
     expect(find.text('Masuk dengan akun demo'), findsNothing);
+  });
+
+  testWidgets('uses a centered max-width layout on desktop', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1440, 960);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<AuthenticationBloc>.value(
+          value: auth,
+          child: const LoginPage(debugShowDemoLogin: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final desktopContent = find.byKey(const ValueKey('desktop-login-content'));
+    expect(find.text('Masuk ke akun Anda'), findsOneWidget);
+    expect(tester.getSize(desktopContent).width, 1120);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps the existing layout on narrow screens', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<AuthenticationBloc>.value(
+          value: auth,
+          child: const LoginPage(debugShowDemoLogin: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Masuk ke akun Anda'), findsNothing);
+    expect(find.byType(WelcomeCard), findsOneWidget);
+    expect(tester.getSize(find.byType(WelcomeCard)).width, 752);
   });
 }
