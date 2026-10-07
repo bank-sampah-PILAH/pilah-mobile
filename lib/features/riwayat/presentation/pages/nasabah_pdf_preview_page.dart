@@ -65,8 +65,7 @@ class NasabahPdfPreviewPage extends StatelessWidget {
             export.filename,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           actions: [
             IconButton(

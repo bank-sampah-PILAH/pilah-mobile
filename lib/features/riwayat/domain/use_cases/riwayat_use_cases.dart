@@ -40,8 +40,7 @@ class GetRiwayatSetoranDetailUseCase
   Future<Either<NetworkException, RiwayatSetoranDetail>> execute(
       [RiwayatSetoranDetailParams? args]) {
     final params = args ??
-        const RiwayatSetoranDetailParams(
-            membershipId: '', transactionId: '');
+        const RiwayatSetoranDetailParams(membershipId: '', transactionId: '');
     return repository.setoranDetail(params.membershipId, params.transactionId);
   }
 }

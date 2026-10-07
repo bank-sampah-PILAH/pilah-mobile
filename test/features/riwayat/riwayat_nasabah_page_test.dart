@@ -4,20 +4,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/riwayat_nasabah_page.dart';
 
-class _RiwayatRepository extends Mock implements RiwayatRepository {}
+class TestRiwayatRepository extends Mock implements RiwayatRepository {}
 
 /// Hosts the page under a cubit backed by a mocked repository — one layer
 /// down from the old function-loader style, matching the pencairan tests.
 Future<void> host(
   WidgetTester tester,
-  _RiwayatRepository repo, {
+  TestRiwayatRepository repo, {
   List<NasabahActivity> initial = const [],
   bool hasNext = false,
 }) async {
@@ -32,8 +31,7 @@ Future<void> host(
   );
 }
 
-NasabahActivity row(String id, String amount) =>
-    NasabahActivity.fromJson({
+NasabahActivity row(String id, String amount) => NasabahActivity.fromJson({
       'id': id,
       'tanggal': '2026-09-23T08:00:00+07:00',
       'tipe': 'setoran',
@@ -50,7 +48,7 @@ void main() {
 
   testWidgets('loads page 1 and renders amounts with rupiah grouping',
       (tester) async {
-    final repo = _RiwayatRepository();
+    final repo = TestRiwayatRepository();
     when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
       (_) async => Right(RiwayatHistory([row('a', '12500.00')], false)),
     );
@@ -65,7 +63,7 @@ void main() {
 
   testWidgets('a failed request offers retry without an empty claim',
       (tester) async {
-    final repo = _RiwayatRepository();
+    final repo = TestRiwayatRepository();
     var calls = 0;
     when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
       (_) async {
@@ -86,7 +84,7 @@ void main() {
   });
 
   testWidgets('an empty response has an explicit empty state', (tester) async {
-    final repo = _RiwayatRepository();
+    final repo = TestRiwayatRepository();
     when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
       (_) async => Right(const RiwayatHistory([], false)),
     );
@@ -99,7 +97,7 @@ void main() {
 
   testWidgets('loads the next page without replacing earlier activities',
       (tester) async {
-    final repo = _RiwayatRepository();
+    final repo = TestRiwayatRepository();
     when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
       (invocation) async {
         final page = invocation.namedArguments[#page] as int;
@@ -122,10 +120,10 @@ void main() {
   });
 
   testWidgets('tapping a row opens the itemized detail sheet', (tester) async {
-    final repo = _RiwayatRepository();
+    final repo = TestRiwayatRepository();
     when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
-      (_) async => Right(RiwayatHistory([row('transaction-1', '12500.00')],
-          false)),
+      (_) async =>
+          Right(RiwayatHistory([row('transaction-1', '12500.00')], false)),
     );
     when(() => repo.setoranDetail(any(), any())).thenAnswer(
       (_) async => Right(

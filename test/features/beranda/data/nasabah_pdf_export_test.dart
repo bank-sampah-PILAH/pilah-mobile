@@ -27,15 +27,19 @@ void main() {
         requestOptions: RequestOptions(path: '/pdf'),
         headers: contentDisposition == null
             ? null
-            : Headers.fromMap({'content-disposition': [contentDisposition]}),
+            : Headers.fromMap({
+                'content-disposition': [contentDisposition]
+              }),
       );
 
-  test('exportPdf fetches bytes for the membership and uses the header filename',
+  test(
+      'exportPdf fetches bytes for the membership and uses the header filename',
       () async {
     when(() => network.getBytes('/api/v1/nasabah/me/riwayat/export-pdf',
         queryParams: any(named: 'queryParams'))).thenAnswer(
       (_) async => pdfResponse([0x25, 0x50, 0x44, 0x46],
-          contentDisposition: 'attachment; filename="Riwayat_Aktivitas_NSB-1.pdf"'),
+          contentDisposition:
+              'attachment; filename="Riwayat_Aktivitas_NSB-1.pdf"'),
     );
 
     final export = await repository.exportPdf('member-b');

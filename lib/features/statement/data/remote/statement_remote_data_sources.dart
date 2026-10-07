@@ -39,8 +39,7 @@ class StatementRemoteDataSourceImpl implements StatementRemoteDataSources {
   /// stripping it must not defeat the save.
   String attachmentName(Response response) {
     final header = response.headers.value('content-disposition');
-    final match =
-        header == null ? null : filenameRegExp.firstMatch(header);
+    final match = header == null ? null : filenameRegExp.firstMatch(header);
     return match?.group(1) ?? defaultStatementFilename;
   }
 }

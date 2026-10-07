@@ -72,8 +72,9 @@ class RiwayatRemoteDataSourceImpl implements RiwayatRemoteDataSource {
   /// stripping it must not defeat the save.
   String _attachmentName(Response response) {
     final header = response.headers.value('content-disposition');
-    final match =
-        header == null ? null : RegExp(r'filename="?([^";]+)"?$').firstMatch(header);
+    final match = header == null
+        ? null
+        : RegExp(r'filename="?([^";]+)"?$').firstMatch(header);
     return match?.group(1) ?? 'Riwayat_Aktivitas.pdf';
   }
 

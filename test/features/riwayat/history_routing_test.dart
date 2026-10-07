@@ -97,8 +97,7 @@ void main() {
       () => _RiwayatRemoteSource(repository),
     );
     di.registerLazySingleton<RiwayatRepository>(
-      () =>
-          RiwayatRepositoryImpl(di<RiwayatRemoteDataSource>()),
+      () => RiwayatRepositoryImpl(di<RiwayatRemoteDataSource>()),
     );
     di.registerFactory<RiwayatHistoryCubit>(
       () => RiwayatHistoryCubit(

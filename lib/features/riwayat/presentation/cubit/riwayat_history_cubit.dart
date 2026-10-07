@@ -83,8 +83,8 @@ class RiwayatHistoryCubit extends Cubit<RiwayatHistoryState> {
       (history) => emit(state.copyWith(
         status: RiwayatHistoryStatus.loaded,
         activities: [
-          ...state.activities.where((a) => !history.activities.any((n) =>
-              n.id == a.id)),
+          ...state.activities
+              .where((a) => !history.activities.any((n) => n.id == a.id)),
           ...history.activities,
         ],
         hasNext: history.hasNext,

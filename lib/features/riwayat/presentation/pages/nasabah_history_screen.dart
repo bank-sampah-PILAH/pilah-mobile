@@ -112,8 +112,7 @@ class NasabahHistoryScreen extends StatelessWidget {
                                   Container(
                                     margin: const EdgeInsets.fromLTRB(
                                         16, 12, 16, 8),
-                                    padding:
-                                        const EdgeInsets.all(4),
+                                    padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
                                       color: NasabahStyle.line
                                           .withValues(alpha: 0.25),
@@ -159,8 +158,7 @@ class NasabahHistoryScreen extends StatelessWidget {
                                           )),
                                           create: (_) =>
                                               di<RiwayatHistoryCubit>()
-                                                ..loadHistory(id,
-                                                    reset: true),
+                                                ..loadHistory(id, reset: true),
                                           child: const RiwayatNasabahPage(),
                                         ),
                                         const PencairanHistoryTab(),

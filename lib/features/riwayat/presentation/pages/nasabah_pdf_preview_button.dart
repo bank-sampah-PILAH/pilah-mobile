@@ -21,21 +21,29 @@ class NasabahPdfPreviewButton extends StatelessWidget {
       message: 'Menyiapkan laporan PDF...',
     );
     final export = await cubit.export(membershipId);
-    await loading.dismiss();
     if (!context.mounted) return;
     if (export == null) {
+      await loading.dismiss();
+      if (!context.mounted) return;
       AppNotification.showError(
         context,
         title: 'Gagal',
-        message: cubit.state.error ?? 'Laporan PDF gagal dibuat. Coba lagi nanti.',
+        message:
+            cubit.state.error ?? 'Laporan PDF gagal dibuat. Coba lagi nanti.',
       );
       return;
     }
-    await Navigator.of(context, rootNavigator: true).push(
+    // Push while the loading Flushbar is still up, then dismiss it: a route
+    // pushed right after Flushbar.dismiss() can hit Navigator._debugLocked
+    // (the lock outlives the completer by a frame). Dismissing a non-current
+    // route uses removeRoute — instant, no animation, no lock.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    await navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => NasabahPdfPreviewPage(export: export),
       ),
     );
+    await loading.dismiss();
   }
 
   @override

@@ -71,7 +71,7 @@ Authenticated session(String id) => Authenticated(
 
 void main() {
   late _Repository repository;
-late FakeRiwayatRemoteDataSource riwayat;
+  late FakeRiwayatRemoteDataSource riwayat;
   late _Auth auth;
   late _JadwalRepository jadwalRepository;
   late _PayoutUseCases payoutUseCases;

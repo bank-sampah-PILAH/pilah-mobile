@@ -35,8 +35,7 @@ class RiwayatNasabahPage extends StatelessWidget {
           child: RefreshIndicator(
             onRefresh: () =>
                 context.read<RiwayatHistoryCubit>().loadHistoryCurrent(),
-            child:
-                BlocBuilder<RiwayatHistoryCubit, RiwayatHistoryState>(
+            child: BlocBuilder<RiwayatHistoryCubit, RiwayatHistoryState>(
               builder: (context, state) => ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
@@ -46,8 +45,7 @@ class RiwayatNasabahPage extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Riwayat Setoran',
-                          style:
-                              NasabahStyle.text(20, weight: FontWeight.w600),
+                          style: NasabahStyle.text(20, weight: FontWeight.w600),
                         ),
                       ),
                       IconButton(
@@ -70,8 +68,7 @@ class RiwayatNasabahPage extends StatelessWidget {
                   if (state.activities.isNotEmpty)
                     NasabahActivityList(
                       activities: state.activities,
-                      onTap: (activity) =>
-                          _showDetail(context, activity.id),
+                      onTap: (activity) => _showDetail(context, activity.id),
                     ),
                   if (state.status == RiwayatHistoryStatus.loading)
                     const Padding(
