@@ -16,6 +16,7 @@ abstract class DraftPencairanRemoteDataSource {
   Future<DraftPencairan> createDraft(DraftInput input);
   Future<DraftPencairan> updateDraft(String id, DraftInput input);
   Future<DraftPencairan> cancelDraft(String id);
+  Future<DraftPencairan> confirmDraft(String id);
 }
 
 @LazySingleton(as: DraftPencairanRemoteDataSource)
@@ -84,6 +85,10 @@ class DraftPencairanRemoteDataSourceImpl
   @override
   Future<DraftPencairan> cancelDraft(String id) async =>
       _draft(await _network.post('$_path/$id/batalkan'));
+
+  @override
+  Future<DraftPencairan> confirmDraft(String id) async =>
+      _draft(await _network.post('$_path/$id/konfirmasi'));
 
   DraftPencairan _draft(dynamic response) =>
       DraftPencairanMapper.draft(response.data as Map<String, dynamic>);
