@@ -20,6 +20,12 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
+import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_data_source.dart';
+import 'package:pilah_mobile/features/riwayat/data/repositories/riwayat_repository_impl.dart';
+import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
+import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
+import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../support/approved_membership.dart';
@@ -45,6 +51,26 @@ class _Repository extends PreviewNasabahRepository {
   }
 }
 
+/// Adapts the preview repository's history to the riwayat datasource, so the
+/// routed screens and the cubit read the same test rows.
+class _RiwayatRemoteSource implements RiwayatRemoteDataSource {
+  _RiwayatRemoteSource(this._repo);
+  final _Repository _repo;
+
+  @override
+  Future<RiwayatHistory> history(String membershipId, {int page = 1}) =>
+      _repo.history(membershipId, page: page);
+
+  @override
+  Future<RiwayatSetoranDetail> setoranDetail(
+          String membershipId, String transactionId) =>
+      throw UnsupportedError('No detail in this test');
+
+  @override
+  Future<RiwayatPdf> exportPdf(String membershipId) =>
+      throw UnsupportedError('No export in this test');
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final router = AppRouterConfig.getRouter();
@@ -65,6 +91,21 @@ void main() {
     );
     states = StreamController<AuthenticationStates>.broadcast();
     di.registerSingleton<NasabahRepository>(repository);
+    // The history screen now loads setoran rows through RiwayatHistoryCubit;
+    // back it with the same preview-backed repository so the rows render.
+    di.registerFactory<RiwayatRemoteDataSource>(
+      () => _RiwayatRemoteSource(repository),
+    );
+    di.registerLazySingleton<RiwayatRepository>(
+      () =>
+          RiwayatRepositoryImpl(di<RiwayatRemoteDataSource>()),
+    );
+    di.registerFactory<RiwayatHistoryCubit>(
+      () => RiwayatHistoryCubit(
+        GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
+        GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
+      ),
+    );
     final environment = _Environment();
     when(() => environment.supportsDemoLogin).thenReturn(false);
     di.registerSingleton<AppEnvironment>(environment);
@@ -91,6 +132,9 @@ void main() {
     di<InviteTokenStore>().dispose();
     await di.unregister<InviteTokenStore>();
     await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<RiwayatHistoryCubit>();
+    await di.unregister<RiwayatRepository>();
+    await di.unregister<RiwayatRemoteDataSource>();
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
   });
