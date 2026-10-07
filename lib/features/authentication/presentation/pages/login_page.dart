@@ -33,78 +33,93 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: BlocConsumer<AuthenticationBloc, AuthenticationStates>(
-        listener: (context, state) {
-          if (state is Authenticated) {
-            context.go(locationForAuthStep(
-              state.authEntity.nextStep,
-              hasPendingInvite: di<InviteTokenStore>().hasToken,
-              role: state.authEntity.role,
-            ));
-          } else if (state is GoogleRegistrationPending) {
-            context.go(RoleSelectionPage.route);
-          } else if (state is AuthenticationFailure) {
-            AppNotification.showError(
-              context,
-              title: 'Login Gagal',
-              message: state.message,
+        listener: _handleAuthenticationState,
+        builder: (context, state) => _buildLoginBody(state),
+      ),
+    );
+  }
+
+  void _handleAuthenticationState(
+    BuildContext context,
+    AuthenticationStates state,
+  ) {
+    if (state is Authenticated) {
+      context.go(locationForAuthStep(
+        state.authEntity.nextStep,
+        hasPendingInvite: di<InviteTokenStore>().hasToken,
+        role: state.authEntity.role,
+      ));
+    } else if (state is GoogleRegistrationPending) {
+      context.go(RoleSelectionPage.route);
+    } else if (state is AuthenticationFailure) {
+      AppNotification.showError(
+        context,
+        title: 'Login Gagal',
+        message: state.message,
+      );
+    }
+  }
+
+  Widget _buildLoginBody(AuthenticationStates state) {
+    final isLoading = state is AuthenticationLoading;
+    final environment =
+        debugShowDemoLogin == null ? di<AppEnvironment>() : null;
+    final demoLoginEnabled =
+        !kReleaseMode && (debugShowDemoLogin ?? environment!.supportsDemoLogin);
+    final demoProfiles = demoLoginEnabled && environment != null
+        ? DemoLoginProfiles.forEnvironment(environment)
+        : DemoLoginProfiles.all;
+
+    return LoginBackgroundWrapper(
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 1024) {
+              return _DesktopLoginLayout(
+                isLoading: isLoading,
+                showDemoLogin: demoLoginEnabled,
+                demoProfiles: demoProfiles,
+              );
+            }
+            return _buildMobileLoginLayout(
+              isLoading: isLoading,
+              showDemoLogin: demoLoginEnabled,
+              demoProfiles: demoProfiles,
             );
-          }
-        },
-        builder: (context, state) {
-          final isLoading = state is AuthenticationLoading;
-          final environment =
-              debugShowDemoLogin == null ? di<AppEnvironment>() : null;
-          final demoLoginEnabled = !kReleaseMode &&
-              (debugShowDemoLogin ?? environment!.supportsDemoLogin);
+          },
+        ),
+      ),
+    );
+  }
 
-          return LoginBackgroundWrapper(
-            child: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth >= 1024) {
-                    return _DesktopLoginLayout(
-                      isLoading: isLoading,
-                      showDemoLogin: demoLoginEnabled,
-                      demoProfiles: environment == null
-                          ? DemoLoginProfiles.all
-                          : DemoLoginProfiles.forEnvironment(environment),
-                    );
-                  }
-
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24.0, vertical: 48.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 40),
-                          const LoginHeader(),
-                          const SizedBox(height: 48),
-                          const WelcomeCard(),
-                          const SizedBox(height: 32),
-                          LoginButton(isLoading: isLoading),
-                          if (demoLoginEnabled) ...[
-                            const SizedBox(height: 12),
-                            DemoLoginButton(
-                              isLoading: isLoading,
-                              profiles: environment == null
-                                  ? DemoLoginProfiles.all
-                                  : DemoLoginProfiles.forEnvironment(
-                                      environment),
-                            ),
-                          ],
-                          const SizedBox(height: 48),
-                          const LoginFooter(),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+  Widget _buildMobileLoginLayout({
+    required bool isLoading,
+    required bool showDemoLogin,
+    required List<DemoLoginProfile> demoProfiles,
+  }) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 40),
+            const LoginHeader(),
+            const SizedBox(height: 48),
+            const WelcomeCard(),
+            const SizedBox(height: 32),
+            LoginButton(isLoading: isLoading),
+            if (showDemoLogin) ...[
+              const SizedBox(height: 12),
+              DemoLoginButton(
+                isLoading: isLoading,
+                profiles: demoProfiles,
               ),
-            ),
-          );
-        },
+            ],
+            const SizedBox(height: 48),
+            const LoginFooter(),
+          ],
+        ),
       ),
     );
   }
@@ -135,13 +150,13 @@ class _DesktopLoginLayout extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 1120),
                 child: Row(
                   children: [
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const LoginHeader(),
-                          const SizedBox(height: 48),
-                          const WelcomeCard(),
+                          LoginHeader(),
+                          SizedBox(height: 48),
+                          WelcomeCard(),
                         ],
                       ),
                     ),
