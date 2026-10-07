@@ -45,7 +45,7 @@ class EditorItem extends Equatable {
       [nasabahId, nasabahNama, saldo, nominal, metode, potongan];
 }
 
-enum EditorPhase { idle, loading, saving, cancelling }
+enum EditorPhase { idle, loading, saving, confirming, cancelling }
 
 class DraftEditorState extends Equatable {
   /// Null until the draft has been saved for the first time.
@@ -161,6 +161,15 @@ class DraftEditorState extends Equatable {
   /// cause elsewhere (a top-up, a re-activation) and wants to try again.
   bool get canSave =>
       items.isNotEmpty && items.every((item) => localError(item) == null);
+
+  /// The saved draft, exactly as it is, can be paid. An unsaved edit has to be
+  /// saved first so the pengurus confirms what the server will actually record.
+  bool get canConfirm =>
+      draftId != null &&
+      !dirty &&
+      !isBusy &&
+      status == DraftStatus.draft &&
+      canSave;
 
   @override
   List<Object?> get props => [

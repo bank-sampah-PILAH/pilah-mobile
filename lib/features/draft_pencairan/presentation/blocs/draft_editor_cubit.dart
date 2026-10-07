@@ -121,6 +121,13 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     );
   }
 
+  /// Records that the pengurus has paid: the saldo and riwayat change, once.
+  Future<void> confirm() async {
+    final id = state.draftId;
+    if (id == null || !state.canConfirm) return;
+    await _transition(EditorPhase.confirming, _useCases.confirmDraft(id));
+  }
+
   /// Drops a draft that has not been paid. The saldo was never touched.
   Future<void> cancel() async {
     final id = state.draftId;
