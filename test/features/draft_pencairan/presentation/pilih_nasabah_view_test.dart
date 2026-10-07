@@ -172,15 +172,17 @@ void main() {
     expect(find.textContaining('Rp 765.600'), findsOneWidget);
   });
 
-  testWidgets('clear drops every pick', (tester) async {
+  testWidgets('invert and clear change the picks', (tester) async {
     await pump(tester);
     await tester.tap(find.byKey(const Key('kandidat-n-1')));
     await tester.pump();
-    expect(find.text('1 dipilih'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('balikkan')));
+    await tester.pump();
+    expect(find.text('2 dipilih'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('kosongkan')));
     await tester.pump();
-
     expect(find.text('0 dipilih'), findsOneWidget);
   });
 
@@ -228,6 +230,33 @@ void main() {
         search: '',
         urutan: KandidatUrutan.saldoTerbesar,
         saldoMin: 0)).called(1);
+  });
+
+  testWidgets('select by minimum saldo asks for the amount', (tester) async {
+    answer(saldoMin: 200000, rows: const [_ahmad, _citra]);
+    await pump(tester);
+
+    await tester.tap(find.byKey(const Key('pilih-saldo-min')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('saldo-min-field')), '200000');
+    await tester.tap(find.text('Pilih'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 dipilih'), findsOneWidget);
+  });
+
+  testWidgets('select the search results adds only what is shown',
+      (tester) async {
+    answer(search: 'i', rows: const [_budi, _citra]);
+    await pump(tester);
+    await tester.enterText(find.byType(TextField), 'i');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('pilih-hasil')));
+    await tester.pump();
+
+    expect(find.text('2 dipilih'), findsOneWidget);
   });
 
   testWidgets('says so when nobody can be paid out', (tester) async {

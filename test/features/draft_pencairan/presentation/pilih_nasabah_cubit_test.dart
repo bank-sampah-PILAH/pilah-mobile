@@ -89,6 +89,35 @@ void main() {
     expect(cubit.state.kandidat, [_budi], reason: 'the visible list is kept');
   });
 
+  test('select the search results adds only what is shown', () async {
+    cubit.toggle('n-1');
+    answer(search: 'i', rows: [_budi, _citra]);
+    await cubit.setSearch('i');
+
+    cubit.pilihHasilPencarian();
+
+    expect(cubit.state.selectedIds, {'n-1', 'n-2', 'n-3'});
+  });
+
+  test('select by minimum saldo adds those who have at least that much',
+      () async {
+    answer(saldoMin: 200000, rows: [_ahmad, _citra]);
+
+    await cubit.pilihSaldoMin(200000);
+
+    expect(cubit.state.selectedIds, {'n-1', 'n-3'});
+    verify(() => useCases.getKandidat(
+        search: '', urutan: KandidatUrutan.namaAZ, saldoMin: 200000)).called(1);
+  });
+
+  test('invert flips the picks within the list on screen', () {
+    cubit.toggle('n-1');
+
+    cubit.balikkan();
+
+    expect(cubit.state.selectedIds, {'n-2', 'n-3'});
+  });
+
   test('clear drops every pick', () {
     cubit.toggle('n-1');
     cubit.toggle('n-2');
