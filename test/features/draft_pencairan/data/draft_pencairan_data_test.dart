@@ -342,7 +342,7 @@ void main() {
       ],
     });
 
-    final export = (await buildDraftPencairanUseCases(api)
+    final export = (await buildDraftPencairanRepository(api)
             .exportDraft('d-1', ExportBerkas.pdf))
         .right;
 
