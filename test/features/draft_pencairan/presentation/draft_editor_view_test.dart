@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
@@ -517,7 +515,7 @@ void main() {
       expect(find.text('Nominal melebihi saldo nasabah'), findsOneWidget);
       expect(
           tester
-              .widget<CustomOutlinedButton>(find.byKey(const Key('simpan')))
+              .widget<PencairanActionButton>(find.byKey(const Key('simpan')))
               .onPressed,
           isNull);
     });
@@ -658,7 +656,7 @@ void main() {
       expect(find.textContaining('Ibu Sari'), findsWidgets);
       expect(
           tester
-              .widget<CustomOutlinedButton>(find.byKey(const Key('simpan')))
+              .widget<PencairanActionButton>(find.byKey(const Key('simpan')))
               .onPressed,
           isNull,
           reason: 'nothing left to save');
@@ -674,7 +672,8 @@ void main() {
       await pumpNew(tester);
       expect(
           tester
-              .widget<CustomPrimaryButton>(find.byKey(const Key('konfirmasi')))
+              .widget<PencairanActionButton>(
+                  find.byKey(const Key('konfirmasi')))
               .onPressed,
           isNotNull,
           reason: 'no need to save first');
@@ -714,9 +713,72 @@ void main() {
 
       expect(
           tester
-              .widget<CustomPrimaryButton>(find.byKey(const Key('konfirmasi')))
+              .widget<PencairanActionButton>(
+                  find.byKey(const Key('konfirmasi')))
               .onPressed,
           isNull);
+    });
+
+    testWidgets('Simpan Draft sits left of Konfirmasi Pembayaran on one row',
+        (tester) async {
+      await pumpNew(tester);
+
+      final simpan = tester.getRect(find.byKey(const Key('simpan')));
+      final konfirmasi = tester.getRect(find.byKey(const Key('konfirmasi')));
+
+      expect(simpan.center.dy, konfirmasi.center.dy);
+      expect(simpan.right, lessThan(konfirmasi.left));
+      expect(simpan.left, 16);
+      expect(konfirmasi.right, 420 - 16);
+      expect(simpan.height, 52);
+      expect(konfirmasi.width, greaterThan(simpan.width),
+          reason: 'the payment is the main action');
+    });
+
+    testWidgets('each action has its own icon', (tester) async {
+      await pumpNew(tester);
+
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('simpan')),
+              matching: find.byIcon(Icons.save_outlined)),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('konfirmasi')),
+              matching: find.byIcon(Icons.check_circle_outline)),
+          findsOneWidget);
+    });
+
+    testWidgets('saving shows a spinner in the save button, labels unchanged',
+        (tester) async {
+      final pending = Completer<Either<NetworkException, DraftPencairan>>();
+      when(() => useCases.createDraft(any())).thenAnswer((_) => pending.future);
+      await pumpNew(tester);
+
+      await tester.tap(find.byKey(const Key('simpan')));
+      await tester.pump();
+
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('simpan')),
+              matching: find.byType(CircularProgressIndicator)),
+          findsOneWidget);
+      expect(find.text('Simpan Draft'), findsOneWidget);
+      expect(find.text('Konfirmasi Pembayaran'), findsOneWidget);
+
+      pending.complete(Right(_saved()));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('both labels still fit on a narrow phone', (tester) async {
+      cubit = DraftEditorCubit(useCases)..startNew(const [_ahmad]);
+      _current = cubit;
+      await _pump(tester, size: const Size(320, 1800));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Simpan Draft'), findsOneWidget);
+      expect(find.text('Konfirmasi Pembayaran'), findsOneWidget);
     });
 
     testWidgets(
