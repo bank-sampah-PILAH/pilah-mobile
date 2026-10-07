@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -254,13 +255,17 @@ void main() {
     expect(first.items.single, second.items.single);
   });
 
-  test('cancelDraft posts to the cancel action', () async {
+  test('confirmDraft and cancelDraft post to their actions', () async {
+    api.on('POST', '$_path/d-1/konfirmasi',
+        json: draftJson(status: 'dikonfirmasi'));
     api.on('POST', '$_path/d-1/batalkan',
         json: draftJson(status: 'dibatalkan'));
+    final repository = buildDraftPencairanRepository(api);
 
-    final cancelled =
-        (await buildDraftPencairanRepository(api).cancelDraft('d-1')).right;
+    final confirmed = (await repository.confirmDraft('d-1')).right;
+    final cancelled = (await repository.cancelDraft('d-1')).right;
 
+    expect(confirmed.status, DraftStatus.dikonfirmasi);
     expect(cancelled.status, DraftStatus.dibatalkan);
   });
 
@@ -297,5 +302,31 @@ void main() {
 
     expect(draft.status, DraftStatus.tidakDikenal);
     expect(draft.status.terkunci, isTrue);
+  });
+
+  test('a stale confirmation surfaces the per-item field errors', () async {
+    api.on('POST', '$_path/d-1/konfirmasi', status: 422, json: {
+      'errors': {
+        'items[1].nominal': ['Saldo nasabah tidak mencukupi'],
+      },
+    });
+
+    final result = await buildDraftPencairanRepository(api).confirmDraft('d-1');
+
+    final failure = result.left;
+    expect(failure, isA<UnprocessableEntityException>());
+    expect(
+        (failure as UnprocessableEntityException)
+            .fieldError(['items[1].nominal']),
+        'Saldo nasabah tidak mencukupi');
+  });
+
+  test('a second confirmation is a conflict', () async {
+    api.on('POST', '$_path/d-1/konfirmasi',
+        status: 409, json: {'error': 'Draft sudah dikonfirmasi'});
+
+    final result = await buildDraftPencairanRepository(api).confirmDraft('d-1');
+
+    expect(result.left, isA<ConflictException>());
   });
 }
