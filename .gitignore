@@ -50,6 +50,8 @@ android/app/google-services.json
 *.freezed.dart
 *.g.dart
 .env
+.env.pr15-original
+htmlcov/
 
 # AI assistants
 .claude

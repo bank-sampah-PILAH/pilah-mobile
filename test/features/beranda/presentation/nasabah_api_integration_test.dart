@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import '../../../support/fake_riwayat.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
@@ -70,12 +71,22 @@ Authenticated session(String id) => Authenticated(
 
 void main() {
   late _Repository repository;
+  late FakeRiwayatRemoteDataSource riwayat;
   late _Auth auth;
   late _JadwalRepository jadwalRepository;
   late _PayoutUseCases payoutUseCases;
   setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
   setUp(() {
     repository = _Repository();
+    riwayat = FakeRiwayatRemoteDataSource(pages: [
+      [
+        NasabahActivity('t1', DateTime(2026, 9, 23), 'setoran', '12500.00'),
+        NasabahActivity('t2', DateTime(2026, 9, 22), 'setoran', '20000.00'),
+      ],
+      [
+        NasabahActivity('t3', DateTime(2026, 9, 21), 'setoran', '30000.00'),
+      ],
+    ]);
     auth = _Auth();
     jadwalRepository = _JadwalRepository();
     payoutUseCases = _PayoutUseCases();
@@ -94,9 +105,11 @@ void main() {
     di.registerFactory<RiwayatPencairanCubit>(
       () => RiwayatPencairanCubit(payoutUseCases),
     );
+    registerFakeRiwayat(riwayat);
   });
   tearDown(() async {
     await di.unregister<RiwayatPencairanCubit>();
+    await unregisterFakeRiwayat();
     await di.unregister<NasabahRepository>();
     await di.unregister<JadwalRepository>();
     await auth.close();
@@ -159,9 +172,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Muat Lagi'));
     await tester.pumpAndSettle();
-    expect(repository.pages, [('member-b', 1), ('member-b', 2)]);
-    expect(find.text('+ Rp 2'), findsOneWidget);
-    expect(find.text('+ Rp 1'), findsOneWidget);
+    expect(riwayat.requests, [('member-b', 1), ('member-b', 2)]);
+    expect(find.textContaining('30.000'), findsOneWidget);
     expect(find.text('Muat Lagi'), findsNothing);
   });
 

@@ -81,6 +81,9 @@ jobs:
       # itself). First attempt gets continue-on-error, second attempt runs
       # only on failure — a fresh connection usually gets through. Keep both
       # arg blocks identical.
+      # Match existing LCOV coverage:ignore-file annotations for generated DI
+      # and process entrypoints. Platform policy is tested separately; application
+      # code remains included in coverage and the quality gate is unchanged.
       - name: SonarCloud Scan
         id: sonar_scan
         continue-on-error: true
@@ -93,6 +96,7 @@ jobs:
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=lib/services/di.config.dart,lib/main_development.dart,lib/main_production.dart
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
             -Dsonar.scanner.skipJreProvisioning=true
 
@@ -107,5 +111,6 @@ jobs:
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=lib/services/di.config.dart,lib/main_development.dart,lib/main_production.dart
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
             -Dsonar.scanner.skipJreProvisioning=true

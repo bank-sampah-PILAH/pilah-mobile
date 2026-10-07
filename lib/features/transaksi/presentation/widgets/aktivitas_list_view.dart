@@ -35,11 +35,16 @@ class AktivitasListView extends StatelessWidget {
         }
 
         if (state.status == AktivitasStatus.failure) {
-          return EmptyView(
-            title: 'Gagal Memuat Data',
-            subtitle: state.errorMessage ?? 'Terjadi kesalahan',
-            icon: Icons.error_outline,
-          );
+          return Column(children: [
+            Expanded(
+                child: EmptyView(
+                    title: 'Gagal Memuat Data',
+                    subtitle: state.errorMessage ?? 'Terjadi kesalahan',
+                    icon: Icons.error_outline)),
+            TextButton(
+                onPressed: () => context.read<RiwayatAktivitasCubit>().load(),
+                child: const Text('Coba Lagi')),
+          ]);
         }
 
         if (state.items.isEmpty) {
@@ -78,11 +83,35 @@ class AktivitasListView extends StatelessWidget {
             child: _AktivitasRow(item: item),
           ));
         }
-        return ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 24),
-          children: children,
-        );
+        if (state.loadingMore) {
+          children.add(const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator())));
+        } else if (state.hasNext) {
+          children.add(TextButton(
+              onPressed: () => context.read<RiwayatAktivitasCubit>().loadMore(),
+              child: Text(
+                  state.errorMessage == null ? 'Muat Lagi' : 'Coba Lagi')));
+          if (state.errorMessage != null) {
+            children
+                .add(Text(state.errorMessage!, textAlign: TextAlign.center));
+          }
+        }
+        return NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification.metrics.axis == Axis.vertical &&
+                  notification.metrics.extentAfter < 200 &&
+                  state.errorMessage == null) {
+                context.read<RiwayatAktivitasCubit>().loadMore();
+              }
+              return false;
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 24),
+              children: children,
+            ));
       },
     );
   }

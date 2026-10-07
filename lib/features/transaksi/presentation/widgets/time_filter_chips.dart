@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/utils/file_downloader.dart';
+import 'package:pilah_mobile/core/utils/report_file_action.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
-import 'package:share_plus/share_plus.dart';
 
-/// Period chips, custom range, and setoran-only export for the unified
-/// Riwayat Aktivitas screen (PIL-282). Export and the custom range operate
-/// on setoran regardless of the type filter — pencairan has no backend
-/// support for either.
+/// Shared period controls for the unified activity feed. XLSX still exports
+/// setoran until PIL-248 extends the existing export endpoint.
 class TimeFilterChips extends StatelessWidget {
   const TimeFilterChips({super.key});
 
   // Chip label → backend `periode` value.
   static const Map<String, String> _chips = {
+    'Hari Ini': 'hari_ini',
+    'Minggu Ini': 'minggu_ini',
     'Bulan Ini': 'bulan_ini',
     'Bulan Lalu': 'bulan_lalu',
+    '3 Bulan': '3_bulan',
+    '6 Bulan': '6_bulan',
+    '12 Bulan': '12_bulan',
+    'Semua Waktu': 'semua',
   };
 
   @override
@@ -33,11 +36,18 @@ class TimeFilterChips extends StatelessWidget {
         final activePeriode = state.periode;
         return Row(
           children: [
-            for (final entry in _chips.entries) ...[
-              _buildFilterChip(context, entry.key, entry.value, activePeriode),
-              const SizedBox(width: 6),
-            ],
-            const Spacer(),
+            Expanded(
+                child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (final entry in _chips.entries) ...[
+                  _buildFilterChip(
+                      context, entry.key, entry.value, activePeriode),
+                  const SizedBox(width: 6),
+                ],
+              ]),
+            )),
+            const SizedBox(width: 6),
             // Calendar Button (custom date range)
             InkWell(
               onTap: () {
@@ -90,7 +100,7 @@ class TimeFilterChips extends StatelessWidget {
                         color: Color(0xFF374151), size: 16),
                     const SizedBox(width: 4),
                     Text(
-                      'XLS',
+                      'XLS Setoran',
                       style: AppTextStyle.small.copyWith(
                         color: const Color(0xFF374151),
                         fontWeight: FontWeight.bold,
@@ -132,37 +142,12 @@ class TimeFilterChips extends StatelessWidget {
       return;
     }
 
-    final SavedFile saved;
-    try {
-      saved = await FileDownloader.save(
-        filename: export!.filename,
-        bytes: export.bytes,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      AppNotification.showError(
-        context,
-        title: 'Gagal Menyimpan',
-        message: 'Gagal menyimpan laporan: $e',
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-    AppNotification.showSuccess(
+    await saveReportFile(
       context,
-      title: 'Berhasil',
-      message: 'Laporan berhasil disimpan ke folder ${saved.folder}',
-      actionLabel: 'Bagikan',
-      // share_plus copies whatever path it is handed into its own cache before
-      // handing out a content:// URI, so the saved file is shareable straight
-      // from Download — no second copy to keep in sync.
-      onAction: () => SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(saved.path)],
-          text: 'Laporan Transaksi PILAH',
-        ),
-      ),
+      filename: export!.filename,
+      bytes: export.bytes,
+      successMessage: (folder) => 'Laporan berhasil disimpan ke folder $folder',
+      shareText: 'Laporan Transaksi PILAH',
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,9 @@ import 'package:pilah_mobile/services/di.dart';
 
 void main() {
   tearDown(() async {
+    if (di.isRegistered<RiwayatHistoryCubit>()) {
+      await di.unregister<RiwayatHistoryCubit>();
+    }
     if (di.isRegistered<NasabahRepository>()) {
       await di.unregister<NasabahRepository>();
     }

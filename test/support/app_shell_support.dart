@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -58,7 +60,8 @@ class AppShell {
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network));
     recent = RecentActivityCubit(GetTransaksiUseCase(repo), pencairan);
     riwayat = RiwayatAktivitasCubit(
-        GetTransaksiUseCase(repo), pencairan, ExportTransaksiUseCase(repo));
+        GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)),
+        ExportTransaksiUseCase(repo));
     nasabah = buildNasabahCubit(api);
     onboarding = buildOnboardingCubit(api);
     jadwal = JadwalCubit(

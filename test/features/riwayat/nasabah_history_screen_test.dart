@@ -1,3 +1,6 @@
+import 'package:pilah_mobile/preview/preview_riwayat_repository.dart';
+import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,9 +59,15 @@ void main() {
   Future<void> pumpScreen(WidgetTester tester, _Repository repo) async {
     repository = repo;
     di.registerSingleton<NasabahRepository>(repository);
+    di.registerFactory<RiwayatHistoryCubit>(() {
+      final source = PreviewRiwayatRepository(repository);
+      return RiwayatHistoryCubit(GetRiwayatHistoryUseCase(source),
+          GetRiwayatSetoranDetailUseCase(source));
+    });
     di.registerFactory<RiwayatPencairanCubit>(
         () => RiwayatPencairanCubit(buildPencairanUseCases(StubApi())));
     addTearDown(() async {
+      await di.unregister<RiwayatHistoryCubit>();
       await di.unregister<NasabahRepository>();
       await di.unregister<RiwayatPencairanCubit>();
     });

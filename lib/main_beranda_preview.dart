@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/preview/preview_riwayat_repository.dart';
+import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
@@ -16,6 +19,13 @@ import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah
 void main() {
   if (!di.isRegistered<NasabahRepository>()) {
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+  }
+  if (!di.isRegistered<RiwayatHistoryCubit>()) {
+    di.registerFactory<RiwayatHistoryCubit>(() {
+      final repository = PreviewRiwayatRepository(di<NasabahRepository>());
+      return RiwayatHistoryCubit(GetRiwayatHistoryUseCase(repository),
+          GetRiwayatSetoranDetailUseCase(repository));
+    });
   }
   final router = GoRouter(initialLocation: AppLocations.dashboard, routes: [
     GoRoute(

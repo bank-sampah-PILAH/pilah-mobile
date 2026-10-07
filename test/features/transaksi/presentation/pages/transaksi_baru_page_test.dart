@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -92,7 +94,8 @@ void main() {
     final export = ExportTransaksiUseCase(
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network)));
     final recent = RecentActivityCubit(getTransaksi, pencairan);
-    final riwayat = RiwayatAktivitasCubit(getTransaksi, pencairan, export);
+    final riwayat = RiwayatAktivitasCubit(
+        GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)), export);
     final nasabah = buildNasabahCubit(api);
     addTearDown(() async {
       await harga.close();

@@ -118,6 +118,8 @@ class StubApi implements HttpClientAdapter {
   @override
   Future<ResponseBody> fetch(RequestOptions options,
       Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+    // Consume multipart streams like a real adapter, releasing file handles.
+    await requestStream?.drain<void>();
     requests.add(RecordedRequest(
       options.method,
       options.uri.path,

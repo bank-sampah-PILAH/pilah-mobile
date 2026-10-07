@@ -22,7 +22,9 @@ class AktivitasTipeChips extends StatelessWidget {
       buildWhen: (previous, current) =>
           previous.tipeFilter != current.tipeFilter,
       builder: (context, state) {
-        return Row(
+        return Wrap(
+          spacing: 6,
+          runSpacing: 6,
           children: [
             for (final entry in _labels.entries) ...[
               GestureDetector(
@@ -49,7 +51,6 @@ class AktivitasTipeChips extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
             ],
           ],
         );
