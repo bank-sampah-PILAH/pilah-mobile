@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,11 +8,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
+
+import '../../../../support/pump_app.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -79,7 +83,8 @@ void main() {
 
   tearDown(() => onboarding.close());
 
-  Future<GoRouter> pump(WidgetTester tester, {bool pushed = false}) async {
+  Future<GoRouter> pump(WidgetTester tester,
+      {bool pushed = false, List<String> extraRoutes = const []}) async {
     final router = GoRouter(
       initialLocation:
           pushed ? '/complete-profile' : RegisterNasabahScreen.route,
@@ -102,6 +107,11 @@ void main() {
           path: '/dashboard',
           builder: (_, __) => const Scaffold(body: Text('NASABAH DASHBOARD')),
         ),
+        for (final path in extraRoutes)
+          GoRoute(
+            path: path,
+            builder: (_, __) => Scaffold(body: Text('route:$path')),
+          ),
       ],
     );
     addTearDown(router.dispose);
@@ -286,6 +296,124 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Cari nama bank sampah...'), findsOneWidget);
+    });
+  });
+
+  group('leaving and failing', () {
+    Future<void> pickBank(WidgetTester tester) async {
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bank Sampah BTH'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a rejected application shows the error and stays',
+        (tester) async {
+      when(() => dataSource.registerNasabah(any())).thenAnswer(
+        (_) async => throw DioException(
+          requestOptions: RequestOptions(path: '/x'),
+          type: DioExceptionType.connectionTimeout,
+        ),
+      );
+      await pump(tester);
+      await pickBank(tester);
+
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await pumpToast(tester);
+
+      expect(find.text('Connection Timeout'), findsOneWidget);
+      expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
+    testWidgets('the membership status label follows the status',
+        (tester) async {
+      for (final (status, active, label) in [
+        ('pending', false, 'Menunggu'),
+        ('rejected', false, 'Ditolak'),
+        ('approved', false, 'Nonaktif'),
+        ('approved', true, 'Aktif'),
+      ]) {
+        when(() => dataSource.listMyMemberships()).thenAnswer((_) async => [
+              NasabahMembershipEntity(
+                id: 'm',
+                bankSampahId: 'b',
+                bankSampahNama: 'Bank Lama',
+                bankSampahKota: 'Bogor',
+                status: status,
+                isActive: active,
+              ),
+            ]);
+        await pump(tester);
+        await tester.pumpAndSettle();
+
+        expect(find.text(label), findsOneWidget, reason: status);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    });
+
+    testWidgets('a failed membership lookup leaves the form open',
+        (tester) async {
+      when(() => dataSource.listMyMemberships())
+          .thenAnswer((_) async => throw StateError('offline'));
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+    });
+
+    testWidgets('system back mid-wizard returns to the profile screen',
+        (tester) async {
+      onboarding.saveProfileDraft(_draft);
+      await pump(tester, pushed: true);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('COMPLETE PROFILE'), findsOneWidget);
+    });
+
+    testWidgets('system back with nothing underneath goes to the profile form',
+        (tester) async {
+      onboarding.saveProfileDraft(_draft);
+      await pump(tester);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('COMPLETE PROFILE'), findsOneWidget);
+    });
+
+    testWidgets('system back when reached directly asks before leaving',
+        (tester) async {
+      await pump(tester);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Keluar dari Pendaftaran?'), findsOneWidget);
+
+      await tester.tap(find.text('Batal'));
+      await tester.pumpAndSettle();
+      verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+    });
+
+    testWidgets('signing out routes to the login page', (tester) async {
+      whenListen(
+        auth,
+        Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
+        initialState: AuthenticationInitial(),
+      );
+      await pump(tester, extraRoutes: ['/login']);
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/login'), findsOneWidget);
     });
   });
 }

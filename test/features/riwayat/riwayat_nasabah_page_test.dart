@@ -156,4 +156,50 @@ void main() {
     expect(find.text('1.000 kg'), findsOneWidget);
     expect(find.text('Setoran rutin'), findsOneWidget);
   });
+
+  testWidgets('retries the detail request after a failed sheet load',
+      (tester) async {
+    final repo = TestRiwayatRepository();
+    var calls = 0;
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (_) async =>
+          Right(RiwayatHistory([row('transaction-1', '12500.00')], false)),
+    );
+    when(() => repo.setoranDetail(any(), any())).thenAnswer(
+      (_) async {
+        calls++;
+        if (calls == 1) {
+          return Left(NetworkException(message: 'offline'));
+        }
+        return Right(
+          NasabahSetoranDetail.fromJson(const {
+            'tanggal': '2026-09-23T08:00:00+07:00',
+            'tipe': 'setoran',
+            'total_nilai': '12500.00',
+            'saldo_setelah_transaksi': '25000.00',
+            'items': [
+              {
+                'nama_sampah_snapshot': 'Plastik PET',
+                'berat': '1.000',
+                'harga_snapshot': '12500.00',
+                'subtotal': '12500.00',
+              },
+            ],
+          }),
+        );
+      },
+    );
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Setoran'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik PET'), findsNothing);
+
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+
+    expect(calls, 2);
+    expect(find.text('Plastik PET'), findsOneWidget);
+  });
 }

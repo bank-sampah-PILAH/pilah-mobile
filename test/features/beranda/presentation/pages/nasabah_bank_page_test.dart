@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
@@ -12,6 +14,16 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+import '../../../../support/fake_image_download.dart';
+
+class _MockUrlLauncher extends Mock
+    with MockPlatformInterfaceMixin
+    implements UrlLauncherPlatform {}
+
+class _FakeLaunchOptions extends Fake implements LaunchOptions {}
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -141,5 +153,88 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.bankCalls, callsBeforeRefresh + 1);
+  });
+
+  testWidgets('a signed-in staff member is told to sign in as a nasabah',
+      (tester) async {
+    whenListen(auth, const Stream<AuthenticationStates>.empty(),
+        initialState: Authenticated(
+            authEntity: const AuthEntity(
+          id: 'p',
+          name: 'Pengurus',
+          email: 'p@example.test',
+          photoUrl: '',
+          token: 'token',
+          role: 'pengelola',
+        )));
+    await open(tester, _melati);
+
+    expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
+    expect(find.text('Jl. Melati No. 3'), findsNothing);
+  });
+
+  group('calling the PIC', () {
+    late _MockUrlLauncher launcher;
+    late UrlLauncherPlatform original;
+
+    setUpAll(() {
+      registerFallbackValue(_FakeLaunchOptions());
+      registerFallbackValue(PreferredLaunchMode.externalApplication);
+    });
+
+    setUp(() {
+      original = UrlLauncherPlatform.instance;
+      launcher = _MockUrlLauncher();
+      UrlLauncherPlatform.instance = launcher;
+    });
+
+    tearDown(() => UrlLauncherPlatform.instance = original);
+
+    testWidgets('dials the bank phone number', (tester) async {
+      when(() => launcher.launchUrl(any(), any()))
+          .thenAnswer((_) async => true);
+      await open(tester, _melati);
+
+      await tester.tap(find.byTooltip('Hubungi PIC'));
+      await tester.pump();
+
+      verify(() => launcher.launchUrl('tel:081234567890', any())).called(1);
+    });
+
+    testWidgets('quietly ignores a device without a dialer', (tester) async {
+      when(() => launcher.launchUrl(any(), any()))
+          .thenThrow(PlatformException(code: 'ACTIVITY_NOT_FOUND'));
+      await open(tester, _melati);
+
+      await tester.tap(find.byTooltip('Hubungi PIC'));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  testWidgets('keeps the initial visible until the logo has downloaded',
+      (tester) async {
+    final download = FakeImageDownload.install();
+    di.registerSingleton<NasabahRepository>(_Repository(_melati));
+    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
+        value: auth, child: const MaterialApp(home: NasabahBankPage())));
+    await tester.pumpAndSettle();
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    download.sendFirstHalf();
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+
+    expect(find.text('M'), findsOneWidget);
+
+    download.finish();
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump();
+
+    expect(find.text('M'), findsNothing);
+    FakeImageDownload.uninstall();
   });
 }

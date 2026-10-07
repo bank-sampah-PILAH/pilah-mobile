@@ -1,3 +1,5 @@
+// coverage:ignore-file
+// One-line delegate to the development entrypoint, which is itself excluded.
 import 'package:pilah_mobile/main_development.dart' as development;
 
 /// Default entrypoint: `flutter run` and `flutter build` target this file
