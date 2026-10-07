@@ -4,6 +4,7 @@
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -27,11 +28,14 @@ Future<void> main() async {
   await di<NetworkUtils>().init();
 
   // Initialize Firebase
-  await Firebase.initializeApp();
+  if (!kIsWeb) {
+    await Firebase.initializeApp();
+  }
 
   // Initialize Google Sign-In (required for v7+)
   await GoogleSignIn.instance.initialize(
-    serverClientId: dotenv.env['GOOGLE_SERVER_CLIENT_ID'],
+    clientId: kIsWeb ? dotenv.env['GOOGLE_SERVER_CLIENT_ID'] : null,
+    serverClientId: kIsWeb ? null : dotenv.env['GOOGLE_SERVER_CLIENT_ID'],
   );
 
   runApp(const App());
