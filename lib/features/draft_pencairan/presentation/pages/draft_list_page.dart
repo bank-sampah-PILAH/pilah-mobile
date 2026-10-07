@@ -14,6 +14,7 @@ import '../blocs/draft_list_cubit.dart';
 import '../blocs/draft_list_state.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
+import '../widgets/pencairan_ui.dart';
 import 'draft_editor_args.dart';
 
 /// The pencairan screen: saved drafts to resume, and the way to start a new one.
@@ -48,24 +49,31 @@ class DraftListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.black),
-        title: Text('Pencairan', style: AppTextStyle.appBar),
-        actions: [
-          PopupMenuButton<String>(
-            key: const Key('menu-lainnya'),
-            onSelected: (_) => context.push(CatatPencairanPage.route),
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'catat',
-                child: Text('Catat pencairan satu nasabah'),
+      body: SafeArea(
+        child: BlocBuilder<DraftListCubit, DraftListState>(
+          builder: (context, state) => Column(
+            children: [
+              PencairanHeader(
+                title: 'Pencairan',
+                actions: [
+                  PopupMenuButton<String>(
+                    key: const Key('menu-lainnya'),
+                    icon: Icon(Icons.more_vert, color: Colors.grey[800]),
+                    onSelected: (_) => context.push(CatatPencairanPage.route),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'catat',
+                        child: Text('Catat pencairan satu nasabah'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+              _FilterChips(selected: state.filter),
+              Expanded(child: _Body(state: state, onOpen: _open)),
             ],
           ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'draft_list_fab',
@@ -74,14 +82,6 @@ class DraftListView extends StatelessWidget {
         onPressed: () => _open(context, DraftListPage.routePilih),
         icon: const Icon(Icons.add),
         label: const Text('Buat Pencairan'),
-      ),
-      body: BlocBuilder<DraftListCubit, DraftListState>(
-        builder: (context, state) => Column(
-          children: [
-            _FilterChips(selected: state.filter),
-            Expanded(child: _Body(state: state, onOpen: _open)),
-          ],
-        ),
       ),
     );
   }
@@ -97,20 +97,16 @@ class _FilterChips extends StatelessWidget {
     final cubit = context.read<DraftListCubit>();
     Widget chip(Key key, String label, DraftStatus? value) => Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(
+          child: PencairanChip(
             key: key,
-            label: Text(label),
+            label: label,
             selected: selected == value,
-            selectedColor: AppColors.greenDark,
-            labelStyle: AppTextStyle.small.copyWith(
-              color: selected == value ? Colors.white : AppColors.black,
-            ),
-            onSelected: (_) => cubit.setFilter(value),
+            onTap: () => cubit.setFilter(value),
           ),
         );
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Row(children: [
         chip(const Key('filter-semua'), 'Semua', null),
         chip(const Key('filter-draft'), 'Draft', DraftStatus.draft),
@@ -194,13 +190,8 @@ class _DraftCard extends StatelessWidget {
       key: Key('draft-${draft.id}'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.cardOffWhite,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
+      child: PencairanCard(
+        borderColor: Colors.grey.shade200,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

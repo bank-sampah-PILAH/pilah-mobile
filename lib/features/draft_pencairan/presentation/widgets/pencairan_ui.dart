@@ -219,16 +219,19 @@ class PencairanSummaryCard extends StatelessWidget {
   }
 
   Widget _row(SummaryRow row) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            row.label,
-            style: AppTextStyle.small.copyWith(
-              color: row.emphasized ? Colors.black87 : Colors.grey[500],
-              fontWeight: row.emphasized ? FontWeight.bold : FontWeight.normal,
-              fontSize: row.emphasized ? 16 : null,
+          Expanded(
+            child: Text(
+              row.label,
+              style: AppTextStyle.small.copyWith(
+                color: row.emphasized ? Colors.black87 : Colors.grey[500],
+                fontWeight:
+                    row.emphasized ? FontWeight.bold : FontWeight.normal,
+                fontSize: row.emphasized ? 16 : null,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             row.value,
             key: row.valueKey,

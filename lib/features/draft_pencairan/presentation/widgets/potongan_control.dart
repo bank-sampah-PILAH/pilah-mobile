@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import '../../domain/model/draft_pencairan.dart';
+import 'pencairan_ui.dart';
 
 /// Picks a potongan: percent (with a slider) or fixed rupiah. Keys are
 /// `<keyPrefix>-persen`, `-rupiah`, `-nilai` and `-slider`.
@@ -64,17 +64,11 @@ class _PotonganControlState extends State<PotonganControl> {
           spacing: 8,
           children: [
             for (final jenis in PotonganJenis.values)
-              ChoiceChip(
+              PencairanChip(
                 key: Key('$prefix-${jenis.name}'),
-                label: Text(jenis.label),
+                label: jenis.label,
                 selected: widget.value.jenis == jenis,
-                selectedColor: AppColors.greenDark,
-                labelStyle: AppTextStyle.small.copyWith(
-                  color: widget.value.jenis == jenis
-                      ? Colors.white
-                      : AppColors.black,
-                ),
-                onSelected: (_) => _setJenis(jenis),
+                onTap: () => _setJenis(jenis),
               ),
           ],
         ),
@@ -89,8 +83,9 @@ class _PotonganControlState extends State<PotonganControl> {
             value: widget.value.nilai.clamp(0, 100).toDouble(),
             onChanged: (value) =>
                 widget.onChanged(Potongan(PotonganJenis.persen, value)),
-          ),
-        const SizedBox(height: 4),
+          )
+        else
+          const SizedBox(height: 8),
         TextField(
           key: Key('$prefix-nilai'),
           controller: _controller,
@@ -102,10 +97,12 @@ class _PotonganControlState extends State<PotonganControl> {
                 ? FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d{0,2}'))
                 : FilteringTextInputFormatter.digitsOnly,
           ],
-          decoration: InputDecoration(
-            isDense: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          style: pencairanInputStyle,
+          decoration: pencairanInputDecoration(
+            hintText: persen ? 'Contoh: 10' : 'Contoh: 5000',
+          ).copyWith(
             prefixText: persen ? null : 'Rp ',
+            prefixStyle: pencairanInputStyle,
             suffixText: persen ? '%' : null,
           ),
           onChanged: (text) => widget.onChanged(Potongan(
