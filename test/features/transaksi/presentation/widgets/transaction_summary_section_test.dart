@@ -37,20 +37,21 @@ void main() {
     testWidgets('shows the whole amount rather than clipping it',
         (tester) async {
       await mount(tester, 1250000, const Size(390, 900));
-      expect(find.text('Rp 1.250.000'), findsOneWidget,
-          reason: 'money may be scaled down, never truncated');
+      expect(find.text('Rp 1.250.000'), findsNWidgets(2),
+          reason: 'the card shows the figure twice, as Subtotal item and as '
+              'Grand Total; money may be scaled down, never truncated');
     });
 
     testWidgets('still fits comfortably on a wide window', (tester) async {
       await mount(tester, 1250000, const Size(1440, 900));
       expect(tester.takeException(), isNull);
-      expect(find.text('Rp 1.250.000'), findsOneWidget);
+      expect(find.text('Rp 1.250.000'), findsNWidgets(2));
     });
 
     testWidgets('a zero total is shown, not hidden', (tester) async {
       await mount(tester, 0, const Size(390, 900));
       expect(tester.takeException(), isNull);
-      expect(find.text('Rp 0'), findsOneWidget);
+      expect(find.text('Rp 0'), findsNWidgets(2));
     });
   });
 }
