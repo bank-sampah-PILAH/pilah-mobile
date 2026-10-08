@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,14 +10,24 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/na
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
-import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class MainPage extends StatelessWidget {
-  const MainPage({super.key, required this.navigationShell});
+  const MainPage({
+    super.key,
+    required this.navigationShell,
+    @visibleForTesting this.isWebOverride,
+  });
   final StatefulNavigationShell navigationShell;
+
+  /// Menggantikan [kIsWeb] pada test. kIsWeb adalah konstanta kompilasi dan
+  /// selalu false di `flutter test`, jadi tanpa seam ini sisi web tidak dapat
+  /// diuji sama sekali.
+  final bool? isWebOverride;
 
   @override
   Widget build(BuildContext context) =>
@@ -36,13 +47,15 @@ class MainPage extends StatelessWidget {
           }
           navigationShell.goBranch(0, initialLocation: true);
         },
-        child: _RoleShell(navigationShell: navigationShell),
+        child: _RoleShell(
+            navigationShell: navigationShell, isWebOverride: isWebOverride),
       );
 }
 
 class _RoleShell extends StatelessWidget {
-  const _RoleShell({required this.navigationShell});
+  const _RoleShell({required this.navigationShell, this.isWebOverride});
   final StatefulNavigationShell navigationShell;
+  final bool? isWebOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +79,7 @@ class _RoleShell extends StatelessWidget {
           name: session.authEntity.name,
           bankSampahNama: session.authEntity.bankSampahNama,
           navigationShell: navigationShell,
+          isWebOverride: isWebOverride,
         ),
       );
     }
@@ -74,6 +88,7 @@ class _RoleShell extends StatelessWidget {
       bankSampahNama:
           auth is Authenticated ? auth.authEntity.bankSampahNama : null,
       navigationShell: navigationShell,
+      isWebOverride: isWebOverride,
     );
   }
 }
@@ -84,6 +99,7 @@ class _ShellContent extends StatelessWidget {
     required this.navigationShell,
     this.bankSampahNama,
     this.name = '',
+    this.isWebOverride,
   });
 
   final String role;
@@ -94,6 +110,8 @@ class _ShellContent extends StatelessWidget {
   final String? bankSampahNama;
 
   final StatefulNavigationShell navigationShell;
+
+  final bool? isWebOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -159,10 +177,17 @@ class _ShellContent extends StatelessWidget {
 
     final current = selected < 0 ? 0 : selected;
 
-    // Lebar menentukan bentuk navigasi; role tetap menentukan destinasinya.
-    // Pada compact bottom bar dipertahankan apa adanya, termasuk seluruh
+    // Platform menentukan keluarga bentuk navigasi, lebar hanya menentukan
+    // seberapa banyak navigasi kiri yang muat. Role tetap menentukan
+    // destinasinya, pada ketiga bentuk, dari sumber yang sama.
+    final form = NavigationForm.resolve(
+      isWeb: isWebOverride ?? kIsWeb,
+      width: MediaQuery.sizeOf(context).width,
+    );
+
+    // Di aplikasi bottom bar dipertahankan apa adanya, termasuk seluruh
     // perilaku yang sudah dijaga test navigasi yang ada.
-    if (context.layoutBreakpoint == LayoutBreakpoint.compact) {
+    if (form == NavigationForm.bottomBar) {
       return Scaffold(
         body: body,
         bottomNavigationBar: RoleNavigationBar(
@@ -174,8 +199,29 @@ class _ShellContent extends StatelessWidget {
       );
     }
 
-    // Pada medium dan expanded rail menggantikan bottom bar, tidak menemaninya:
-    // menampilkan keduanya berarti menawarkan menu yang sama dua kali.
+    // Browser sempit: destinasi pindah ke balik tombol menu. Kepala tipis
+    // dipakai alih-alih AppBar milik Scaffold karena sebagian halaman membawa
+    // AppBar sendiri, dan dua AppBar bertumpuk akan terlihat.
+    if (form.isOverlay) {
+      return Scaffold(
+        drawer: RoleNavigationDrawer(
+          role: role,
+          limitedNasabah: limitedNasabah,
+          currentIndex: current,
+          bankSampahNama: bankSampahNama,
+          onSelected: select,
+        ),
+        body: Column(
+          children: [
+            const _MenuButtonHeader(),
+            Expanded(child: body),
+          ],
+        ),
+      );
+    }
+
+    // Rail menggantikan bottom bar, tidak menemaninya: menampilkan keduanya
+    // berarti menawarkan menu yang sama dua kali.
     return Scaffold(
       body: Row(
         children: [
@@ -188,6 +234,26 @@ class _ShellContent extends StatelessWidget {
           ),
           Expanded(child: ContentBounds(child: body)),
         ],
+      ),
+    );
+  }
+}
+
+/// Kepala tipis berisi tombol pembuka drawer, untuk browser sempit.
+class _MenuButtonHeader extends StatelessWidget {
+  const _MenuButtonHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: IconButton(
+          icon: const Icon(Icons.menu),
+          tooltip: 'Buka menu navigasi',
+          onPressed: Scaffold.of(context).openDrawer,
+        ),
       ),
     );
   }
