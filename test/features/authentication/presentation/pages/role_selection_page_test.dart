@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -58,7 +59,7 @@ void main() {
     await auth.close();
   });
 
-  testWidgets('offers three non-Superadmin roles and submits the selection',
+  testWidgets('offers roles supported by the platform and submits selection',
       (tester) async {
     tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1;
@@ -77,19 +78,24 @@ void main() {
     expect(find.text('Daftar Akun'), findsOneWidget);
     expect(find.text('Langkah 1'), findsOneWidget);
     expect(find.text('ayu@example.com'), findsOneWidget);
-    expect(find.text('Nasabah'), findsOneWidget);
+    expect(find.text('Nasabah'), kIsWeb ? findsNothing : findsOneWidget);
     expect(find.text('Pengelola Bank Sampah'), findsOneWidget);
     expect(find.text('Pengelola Bank Sampah Induk'), findsOneWidget);
     expect(find.text('Superadmin'), findsNothing);
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.text('Nasabah'));
+    await tester.tap(find.text(kIsWeb ? 'Pengelola Bank Sampah' : 'Nasabah'));
     await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
 
     final event = verify(() => auth.add(captureAny())).captured.single
         as RegisterGoogleRoleRequested;
-    expect(event.role, GoogleRegistrationRole.nasabah);
+    expect(
+      event.role,
+      kIsWeb
+          ? GoogleRegistrationRole.pengelola
+          : GoogleRegistrationRole.nasabah,
+    );
   });
 
   testWidgets('signs out of Google before changing accounts', (tester) async {
