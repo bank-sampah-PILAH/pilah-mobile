@@ -7,7 +7,6 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-import '../../domain/model/draft_pencairan.dart';
 import '../blocs/draft_editor_cubit.dart';
 import '../blocs/draft_editor_state.dart';
 import '../widgets/draft_format.dart';
@@ -94,17 +93,6 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     return result == true;
   }
 
-  Future<void> _cancelDraft() async {
-    final cubit = context.read<DraftEditorCubit>();
-    final ok = await _confirmDialog(
-      title: 'Batalkan draft?',
-      message: 'Draft ini tidak akan dibayarkan. Saldo nasabah tidak berubah.',
-      yes: 'Ya, batalkan',
-      no: 'Kembali',
-    );
-    if (ok && mounted) await cubit.cancel();
-  }
-
   void _onState(BuildContext context, DraftEditorState state) {
     if (_nama.text != state.nama) _nama.text = state.nama;
   }
@@ -176,7 +164,6 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                     title: state.draftId == null
                         ? 'Pencairan Baru'
                         : 'Draft Pencairan',
-                    actions: [_menu(state)],
                   ),
                   Expanded(
                     child: state.phase == EditorPhase.loading
@@ -193,22 +180,6 @@ class _DraftEditorViewState extends State<DraftEditorView> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _menu(DraftEditorState state) {
-    if (state.draftId == null || state.status != DraftStatus.draft) {
-      return const SizedBox.shrink();
-    }
-    return PopupMenuButton<String>(
-      key: const Key('menu-editor'),
-      icon: Icon(Icons.more_vert, color: Colors.grey[800]),
-      onSelected: (value) {
-        if (value == 'batalkan') _cancelDraft();
-      },
-      itemBuilder: (_) => const [
-        PopupMenuItem(value: 'batalkan', child: Text('Batalkan draft')),
-      ],
     );
   }
 }

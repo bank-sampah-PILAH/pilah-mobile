@@ -32,6 +32,15 @@ class DraftListCubit extends Cubit<DraftListState> {
     );
   }
 
+  /// Cancels a draft, then reloads. Returns why it failed, or null on success.
+  Future<String?> batalkan(String id) async {
+    final result = await _useCases.cancelDraft(id);
+    final failure = result.fold((failure) => failure, (_) => null);
+    if (failure != null) return failure.displayMessage;
+    await load();
+    return null;
+  }
+
   void setFilter(DraftStatus? filter) =>
       emit(state.copyWith(filter: () => filter));
 }
