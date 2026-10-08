@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Kelas lebar layar yang dipakai seluruh layout responsif PILAH.
 ///
 /// Satu-satunya sumber kebenaran untuk pertanyaan "layar ini selebar apa".
@@ -37,4 +39,17 @@ enum LayoutBreakpoint {
     if (width >= mediumMinWidth) return medium;
     return compact;
   }
+}
+
+/// Jalan baca breakpoint dari dalam widget tree.
+extension LayoutBreakpointContext on BuildContext {
+  /// Kelas lebar untuk jendela yang sedang menampung element ini.
+  ///
+  /// Dibaca lewat `MediaQuery.sizeOf`, bukan lewat `MediaQuery.of`, supaya
+  /// element hanya ikut dibangun ulang ketika *ukuran* berubah dan bukan
+  /// setiap kali ada bagian lain dari MediaQueryData yang berubah. Karena
+  /// dibaca sebagai dependensi, nilainya ikut berubah saat jendela browser
+  /// diubah ukurannya; itulah yang dijaga oleh test resize.
+  LayoutBreakpoint get layoutBreakpoint =>
+      LayoutBreakpoint.fromWidth(MediaQuery.sizeOf(this).width);
 }
