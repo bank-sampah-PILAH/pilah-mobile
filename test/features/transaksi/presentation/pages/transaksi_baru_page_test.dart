@@ -82,7 +82,8 @@ void main() {
   });
 
   /// Opens the real page with the real cubits it reads, over the stubbed API.
-  Future<void> open(WidgetTester tester) async {
+  Future<void> open(WidgetTester tester,
+      {Size window = const Size(800, 2600)}) async {
     final harga = buildHargaCubit(api);
     final profile = buildProfileCubit(api);
     final transaksi = buildTransaksiCubit(api);
@@ -123,7 +124,7 @@ void main() {
         child: app,
       ),
       pushed: true,
-      size: const Size(800, 2600),
+      size: window,
     );
     await tester.pumpAndSettle();
   }
@@ -174,6 +175,47 @@ void main() {
     expect(find.text('Daftar setoran tidak boleh kosong'), findsOneWidget);
     expect(api.requests.where((r) => r.method == 'POST'), isEmpty);
     await settleToasts(tester);
+  });
+
+  group('the form on a wide window', () {
+    testWidgets('the summary and save sit beside the fields, not below',
+        (tester) async {
+      await open(tester, window: const Size(1440, 1200));
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      final card = tester.getRect(find.byType(ItemSetoranCard));
+      final save = tester.getRect(find.text('Simpan Transaksi'));
+
+      expect(save.left, greaterThanOrEqualTo(card.right),
+          reason: 'a 1440px window has room for two columns; stacking the '
+              'summary below the fields wastes all of it');
+    });
+
+    testWidgets('the content is bounded rather than stretched edge to edge',
+        (tester) async {
+      await open(tester, window: const Size(1440, 1200));
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      final card = tester.getRect(find.byType(ItemSetoranCard));
+      expect(card.left, greaterThan(100),
+          reason: 'content capped at 1200 and centred leaves a gutter; '
+              'full-bleed fields would start at the page padding');
+    });
+
+    testWidgets('a phone still stacks the save button below the fields',
+        (tester) async {
+      await open(tester, window: const Size(390, 2600));
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      final card = tester.getRect(find.byType(ItemSetoranCard));
+      final save = tester.getRect(find.text('Simpan Transaksi'));
+
+      expect(save.top, greaterThan(card.bottom),
+          reason: 'the phone layout must not change');
+    });
   });
 
   /// The weight box is the last text field in the card; the price field above
