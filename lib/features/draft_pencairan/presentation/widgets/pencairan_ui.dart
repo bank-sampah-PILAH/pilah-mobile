@@ -161,26 +161,27 @@ class PencairanChip extends StatelessWidget {
   }
 }
 
-/// Soft grey box, like the saldo card on Catat Pencairan.
+/// White box with a green outline. Pass a different [borderColor] to flag an
+/// error.
 class PencairanCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final Color? borderColor;
+  final Color borderColor;
 
   const PencairanCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.borderColor,
+    this.borderColor = AppColors.greenDark,
   });
 
   @override
   Widget build(BuildContext context) => Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: borderColor == null ? null : Border.all(color: borderColor!),
+          border: Border.all(color: borderColor),
         ),
         child: child,
       );

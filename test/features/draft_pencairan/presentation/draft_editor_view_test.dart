@@ -172,7 +172,9 @@ void main() {
       final dibayar = tester.getCenter(find.byKey(const Key('dibayar-n-1')));
       expect(saldo.dy, lessThan(potongan.dy));
       expect(potongan.dy, lessThan(dibayar.dy));
-      expect(saldo.dx, dibayar.dx, reason: 'values share the right edge');
+      expect(tester.getTopRight(find.byKey(const Key('saldo-awal-n-1'))).dx,
+          tester.getTopRight(find.byKey(const Key('dibayar-n-1'))).dx,
+          reason: 'values share the right edge');
       expect(tester.widget<Text>(find.byKey(const Key('saldo-awal-n-1'))).data,
           'Rp 465.600');
       expect(tester.widget<Text>(find.byKey(const Key('potongan-n-1'))).data,
