@@ -196,6 +196,11 @@ class _List extends StatelessWidget {
                         activeColor: AppColors.greenDark,
                       ),
                     ),
+                    PencairanAvatar(
+                      key: Key('avatar-${kandidat.id}'),
+                      nama: kandidat.nama,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

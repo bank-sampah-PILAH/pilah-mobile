@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -247,13 +246,15 @@ class _Form extends StatelessWidget {
           ),
           if (state.dibuatOlehNama.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(
-              'Dibuat oleh ${state.dibuatOlehNama} · ${waktu(state.createdAt)}',
-              style: AppTextStyle.extraSmall,
+            PencairanMetaLine(
+              label: 'Dibuat oleh',
+              nama: state.dibuatOlehNama,
+              waktu: waktu(state.createdAt),
             ),
-            Text(
-              'Diubah oleh ${state.diubahOlehNama} · ${waktu(state.updatedAt)}',
-              style: AppTextStyle.extraSmall,
+            PencairanMetaLine(
+              label: 'Diubah oleh',
+              nama: state.diubahOlehNama,
+              waktu: waktu(state.updatedAt),
             ),
           ],
           const SizedBox(height: 24),
@@ -320,7 +321,7 @@ class _GeneralOptions extends StatelessWidget {
         children: [
           const SectionLabel('UNTUK SEMUA NASABAH'),
           const SizedBox(height: 16),
-          const SectionLabel('METODE'),
+          const SectionLabel.field('METODE'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -343,7 +344,7 @@ class _GeneralOptions extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const SectionLabel('POTONGAN UMUM'),
+          const SectionLabel.field('POTONGAN UMUM'),
           const SizedBox(height: 8),
           PotonganControl(
             keyPrefix: 'potongan',

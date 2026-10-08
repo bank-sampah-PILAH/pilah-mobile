@@ -101,13 +101,28 @@ class EditorItemCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              PencairanAvatar(
+                key: Key('avatar-${item.nasabahId}'),
+                nama: item.nasabahNama,
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.nasabahNama, style: AppTextStyle.headline3),
-                    Text('Saldo ${rupiah(item.saldo)}',
-                        style: AppTextStyle.extraSmall),
+                    Text(
+                      item.nasabahNama,
+                      style: AppTextStyle.headline3.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      'Saldo ${rupiah(item.saldo)}',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.grey[700],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -123,20 +138,8 @@ class EditorItemCard extends StatelessWidget {
                       style: AppTextStyle.extraSmall
                           .copyWith(color: AppColors.statOrange)),
                 ),
-                IconButton(
-                  key: Key('reset-${item.nasabahId}'),
-                  tooltip: 'Kembalikan ke default',
-                  icon: const Icon(Icons.restart_alt, size: 20),
-                  onPressed: onReset,
-                ),
               ],
-              if (!readOnly)
-                IconButton(
-                  key: Key('hapus-${item.nasabahId}'),
-                  tooltip: 'Hapus dari draft',
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: onRemove,
-                ),
+              if (!readOnly) _menu(disesuaikan),
             ],
           ),
           const SizedBox(height: 12),
@@ -144,7 +147,7 @@ class EditorItemCard extends StatelessWidget {
             Text('Nominal ${rupiah(item.nominal)} · ${item.metode.label}',
                 style: AppTextStyle.small)
           else ...[
-            const SectionLabel('NOMINAL'),
+            const SectionLabel.field('NOMINAL'),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -156,58 +159,179 @@ class EditorItemCard extends StatelessWidget {
                     onChanged: onNominal,
                   ),
                 ),
-                TextButton(
+                const SizedBox(width: 8),
+                PencairanChip(
                   key: Key('penuh-${item.nasabahId}'),
-                  onPressed: () => onNominal(item.saldo),
-                  child: const Text('Penuh'),
+                  label: 'Penuh',
+                  selected: item.nominal == item.saldo,
+                  onTap: () => onNominal(item.saldo),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            const SectionLabel('METODE'),
+            const SectionLabel.field('METODE'),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: [
                 for (final metode in MetodePencairan.values)
                   PencairanChip(
                     key: Key('metode-${item.nasabahId}-${metode.name}'),
                     label: metode.label,
+                    icon: metode == MetodePencairan.tunai
+                        ? Icons.payments_outlined
+                        : Icons.account_balance_outlined,
                     selected: item.metode == metode,
                     onTap: () => onMetode(metode),
                   ),
               ],
             ),
           ],
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Potongan ${rupiah(potongan)}'
-                  '${item.potongan == null ? ' (umum)' : ''}',
-                  style: AppTextStyle.small,
-                ),
-              ),
-              if (!readOnly)
-                TextButton(
-                  key: Key('potongan-item-${item.nasabahId}'),
-                  onPressed: () => _aturPotongan(context),
-                  child: const Text('Atur potongan'),
-                ),
-            ],
-          ),
-          Text(
-            'Dibayar ${rupiah(item.nominal - potongan)}',
-            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+          const SizedBox(height: 12),
+          _HasilStrip(
+            nasabahId: item.nasabahId,
+            potongan: potongan,
+            khusus: item.potongan != null,
+            dibayar: item.nominal - potongan,
+            onAtur: readOnly ? null : () => _aturPotongan(context),
           ),
           if (error != null)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 8),
               child: Text(error,
                   style: AppTextStyle.small.copyWith(color: Colors.red)),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _menu(bool disesuaikan) => PopupMenuButton<String>(
+        key: Key('menu-item-${item.nasabahId}'),
+        icon: Icon(Icons.more_vert, color: Colors.grey[800]),
+        onSelected: (value) {
+          if (value == 'reset') onReset();
+          if (value == 'hapus') onRemove();
+        },
+        itemBuilder: (_) => [
+          if (disesuaikan)
+            const PopupMenuItem(
+              value: 'reset',
+              child: Text('Kembalikan ke default'),
+            ),
+          const PopupMenuItem(value: 'hapus', child: Text('Hapus dari draft')),
+        ],
+      );
+}
+
+/// Where the nasabah's card lands: what comes off, and what is paid.
+class _HasilStrip extends StatelessWidget {
+  final String nasabahId;
+  final int potongan;
+  final bool khusus;
+  final int dibayar;
+
+  /// Opens the potongan editor; null when the card is read-only.
+  final VoidCallback? onAtur;
+
+  const _HasilStrip({
+    required this.nasabahId,
+    required this.potongan,
+    required this.khusus,
+    required this.dibayar,
+    required this.onAtur,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.greenLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionLabel.field('POTONGAN'),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            potongan > 0
+                                ? '\u2212 ${rupiah(potongan)}'
+                                : rupiah(potongan),
+                            key: Key('potongan-$nasabahId'),
+                            style: AppTextStyle.title1.copyWith(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: potongan > 0
+                                  ? AppColors.statOrange
+                                  : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        khusus ? 'khusus' : 'umum',
+                        style: AppTextStyle.extraSmall
+                            .copyWith(color: Colors.grey[700]),
+                      ),
+                    ],
+                  ),
+                  if (onAtur != null)
+                    TextButton.icon(
+                      key: Key('potongan-item-$nasabahId'),
+                      onPressed: onAtur,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        alignment: Alignment.centerLeft,
+                      ),
+                      icon: const Icon(Icons.percent, size: 16),
+                      label: const Text('Atur potongan'),
+                    ),
+                ],
+              ),
+            ),
+            VerticalDivider(width: 24, color: Colors.green.shade100),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SectionLabel.field('DIBAYAR'),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      rupiah(dibayar),
+                      key: Key('dibayar-$nasabahId'),
+                      style: AppTextStyle.headline1.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF006D44),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
