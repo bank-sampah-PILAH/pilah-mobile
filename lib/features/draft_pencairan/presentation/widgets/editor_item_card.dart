@@ -95,7 +95,7 @@ class EditorItemCard extends StatelessWidget {
     return PencairanCard(
       key: Key('item-${item.nasabahId}'),
       padding: const EdgeInsets.all(12),
-      borderColor: error != null ? Colors.red.shade300 : Colors.grey.shade200,
+      borderColor: error != null ? Colors.red.shade300 : AppColors.greenDark,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -115,12 +115,6 @@ class EditorItemCard extends StatelessWidget {
                       style: AppTextStyle.headline3.copyWith(
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      'Saldo ${rupiah(item.saldo)}',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[700],
                       ),
                     ),
                   ],
@@ -179,9 +173,6 @@ class EditorItemCard extends StatelessWidget {
                   PencairanChip(
                     key: Key('metode-${item.nasabahId}-${metode.name}'),
                     label: metode.label,
-                    icon: metode == MetodePencairan.tunai
-                        ? Icons.payments_outlined
-                        : Icons.account_balance_outlined,
                     selected: item.metode == metode,
                     onTap: () => onMetode(metode),
                   ),
@@ -191,10 +182,10 @@ class EditorItemCard extends StatelessWidget {
           const SizedBox(height: 12),
           _HasilStrip(
             nasabahId: item.nasabahId,
+            saldo: item.saldo,
+            nominal: item.nominal,
             potongan: potongan,
-            khusus: item.potongan != null,
-            dibayar: item.nominal - potongan,
-            onAtur: readOnly ? null : () => _aturPotongan(context),
+            onEdit: readOnly ? null : () => _aturPotongan(context),
           ),
           if (error != null)
             Padding(
@@ -225,118 +216,133 @@ class EditorItemCard extends StatelessWidget {
       );
 }
 
-/// Where the nasabah's card lands: what comes off, and what is paid.
+/// Where the nasabah's card lands, top to bottom: the saldo they start from,
+/// what comes off, and what is paid. A row for the nominal shows up only when
+/// it differs from the saldo, so the figures always add up on screen.
 class _HasilStrip extends StatelessWidget {
   final String nasabahId;
+  final int saldo;
+  final int nominal;
   final int potongan;
-  final bool khusus;
-  final int dibayar;
 
   /// Opens the potongan editor; null when the card is read-only.
-  final VoidCallback? onAtur;
+  final VoidCallback? onEdit;
 
   const _HasilStrip({
     required this.nasabahId,
+    required this.saldo,
+    required this.nominal,
     required this.potongan,
-    required this.khusus,
-    required this.dibayar,
-    required this.onAtur,
+    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.greenLight,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IntrinsicHeight(
+          _row('Saldo awal', rupiah(saldo), Key('saldo-awal-$nasabahId')),
+          if (nominal != saldo) ...[
+            const SizedBox(height: 10),
+            _row('Dicairkan', rupiah(nominal), Key('dicairkan-$nasabahId')),
+          ],
+          const SizedBox(height: 10),
+          _row(
+            'Potongan',
+            potongan > 0 ? '\u2212 ${rupiah(potongan)}' : rupiah(potongan),
+            Key('potongan-$nasabahId'),
+            valueColor: potongan > 0 ? AppColors.statOrange : Colors.black87,
+            trailing: onEdit == null ? null : _editButton(),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: Colors.green.shade100),
+          ),
+          _row(
+            'Dibayar',
+            rupiah(nominal - potongan),
+            Key('dibayar-$nasabahId'),
+            emphasized: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _editButton() => Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: InkWell(
+          key: Key('potongan-item-$nasabahId'),
+          onTap: onEdit,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.greenDark),
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SectionLabel.field('POTONGAN'),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                potongan > 0
-                                    ? '\u2212 ${rupiah(potongan)}'
-                                    : rupiah(potongan),
-                                key: Key('potongan-$nasabahId'),
-                                style: AppTextStyle.title1.copyWith(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: potongan > 0
-                                      ? AppColors.statOrange
-                                      : Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            khusus ? 'khusus' : 'umum',
-                            style: AppTextStyle.extraSmall
-                                .copyWith(color: Colors.grey[700]),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                VerticalDivider(width: 24, color: Colors.green.shade100),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SectionLabel.field('DIBAYAR'),
-                      const SizedBox(height: 4),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          rupiah(dibayar),
-                          key: Key('dibayar-$nasabahId'),
-                          style: AppTextStyle.headline1.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF006D44),
-                          ),
-                        ),
-                      ),
-                    ],
+                const Icon(Icons.edit_outlined,
+                    size: 14, color: AppColors.greenDark),
+                const SizedBox(width: 4),
+                Text(
+                  'Edit',
+                  style: AppTextStyle.small.copyWith(
+                    color: AppColors.greenDark,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          if (onAtur != null)
-            TextButton.icon(
-              key: Key('potongan-item-$nasabahId'),
-              onPressed: onAtur,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(0, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      );
+
+  Widget _row(
+    String label,
+    String value,
+    Key valueKey, {
+    Color valueColor = Colors.black87,
+    bool emphasized = false,
+    Widget? trailing,
+  }) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: AppTextStyle.small.copyWith(
+            color: emphasized ? Colors.black87 : Colors.grey[700],
+            fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
+            fontSize: emphasized ? 15 : 13,
+          ),
+        ),
+        if (trailing != null) trailing,
+        const SizedBox(width: 12),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              value,
+              key: valueKey,
+              style: AppTextStyle.title1.copyWith(
+                fontSize: emphasized ? 20 : 15,
+                fontWeight: emphasized ? FontWeight.bold : FontWeight.w600,
+                color: emphasized ? const Color(0xFF006D44) : valueColor,
               ),
-              icon: const Icon(Icons.percent, size: 16),
-              label: const Text('Atur potongan'),
             ),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 }
