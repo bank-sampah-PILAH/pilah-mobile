@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -31,15 +32,20 @@ const _approved = NasabahMembershipEntity(
   isActive: true,
 );
 
-/// The shell must choose a navigation *form* from the window width while the
-/// destinations themselves stay decided by role. A Pengurus who widens their
-/// browser should keep the same five destinations and the same selected page;
-/// only the shape around them changes.
+/// The lead dev's rule: in the app the navigation sits at the bottom, in a
+/// browser it sits on the left. So the shell picks the navigation *family* from
+/// the platform, and uses width only to decide how much of the left-hand
+/// navigation fits.
+///
+/// Choosing on width alone was wrong in both directions. A native phone held
+/// sideways is wider than 840 and lost its bottom bar; a browser window
+/// narrowed below 600 grew one.
 void main() {
   Future<void> mountShell(
     WidgetTester tester, {
     required String role,
     required Size window,
+    required bool isWeb,
     String initialLocation = '/home',
   }) async {
     tester.view.physicalSize = window;
@@ -77,7 +83,8 @@ void main() {
       initialLocation: initialLocation,
       routes: [
         StatefulShellRoute.indexedStack(
-          builder: (_, __, shell) => MainPage(navigationShell: shell),
+          builder: (_, __, shell) =>
+              MainPage(navigationShell: shell, isWebOverride: isWeb),
           branches: [
             for (final path in [
               '/home',
@@ -107,30 +114,63 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('shell navigation form', () {
-    testWidgets('a phone keeps the bottom navigation bar', (tester) async {
-      await mountShell(tester, role: 'pengelola', window: const Size(390, 844));
+  group('the app always keeps its navigation at the bottom', () {
+    testWidgets('a phone gets the bottom bar', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: false);
       expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.byType(RoleNavigationRail), findsNothing);
     });
 
-    testWidgets('a tablet swaps the bottom bar for a rail', (tester) async {
-      await mountShell(tester, role: 'pengelola', window: const Size(720, 900));
+    testWidgets('a tablet keeps the bottom bar', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(820, 1180), isWeb: false);
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      expect(find.byType(RoleNavigationRail), findsNothing,
+          reason: 'width must not turn the app into a desktop layout');
+    });
+
+    testWidgets('a phone held sideways keeps the bottom bar', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(844, 390), isWeb: false);
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      expect(find.byType(RoleNavigationRail), findsNothing,
+          reason: 'this is the landscape bug: 844 is wide, but it is a phone');
+    });
+  });
+
+  group('the browser always keeps its navigation on the left', () {
+    testWidgets('a desktop window uses the rail', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(1440, 900), isWeb: true);
       expect(find.byType(RoleNavigationRail), findsOneWidget);
       expect(find.byType(BottomNavigationBar), findsNothing,
           reason: 'showing both would offer the same menu twice');
     });
 
-    testWidgets('a desktop window uses the rail', (tester) async {
+    testWidgets('a tablet window uses the rail', (tester) async {
       await mountShell(tester,
-          role: 'pengelola', window: const Size(1440, 900));
+          role: 'pengelola', window: const Size(720, 900), isWeb: true);
       expect(find.byType(RoleNavigationRail), findsOneWidget);
       expect(find.byType(BottomNavigationBar), findsNothing);
     });
 
-    testWidgets('the rail still navigates between branches', (tester) async {
+    testWidgets('a phone browser moves the menu behind a button',
+        (tester) async {
       await mountShell(tester,
-          role: 'pengelola', window: const Size(1440, 900));
+          role: 'pengelola', window: const Size(390, 844), isWeb: true);
+      expect(find.byIcon(Icons.menu), findsOneWidget);
+      expect(find.byType(RoleNavigationRail), findsNothing,
+          reason: 'a 256px rail cannot share a 390px window with content');
+      expect(find.byType(BottomNavigationBar), findsNothing,
+          reason: 'a browser keeps its navigation on the left, not the bottom');
+    });
+  });
+
+  group('navigating', () {
+    testWidgets('the rail moves between branches', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(1440, 900), isWeb: true);
       expect(find.text('body:/home'), findsOneWidget);
 
       await tester.tap(find.text('Nasabah'));
@@ -139,8 +179,27 @@ void main() {
       expect(find.text('body:/customers'), findsOneWidget);
     });
 
-    testWidgets('resizing keeps the selected destination', (tester) async {
-      await mountShell(tester, role: 'pengelola', window: const Size(390, 844));
+    testWidgets('the menu button opens a drawer that moves between branches',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: true);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      expect(find.byType(RoleNavigationDrawer), findsOneWidget);
+
+      await tester.tap(find.text('Harga'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('body:/prices'), findsOneWidget);
+    });
+
+    testWidgets('widening the browser keeps the selected destination',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: true);
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Harga'));
       await tester.pumpAndSettle();
       expect(find.text('body:/prices'), findsOneWidget);
