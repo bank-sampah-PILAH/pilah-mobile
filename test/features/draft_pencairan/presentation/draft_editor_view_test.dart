@@ -110,6 +110,129 @@ void main() {
       expect(find.byType(PencairanCard), findsWidgets);
     });
 
+    testWidgets('section headings are dark and field labels a quieter grey',
+        (tester) async {
+      await pumpNew(tester);
+
+      for (final heading in [
+        'NAMA PENCAIRAN',
+        'UNTUK SEMUA NASABAH',
+        'RINGKASAN',
+        'NASABAH (3)',
+      ]) {
+        final style = tester.widget<Text>(find.text(heading)).style!;
+        expect(style.color, Colors.black87, reason: heading);
+        expect(style.fontSize, 12, reason: heading);
+      }
+      for (final label in ['POTONGAN UMUM']) {
+        expect(tester.widget<Text>(find.text(label)).style!.color,
+            Colors.grey[700],
+            reason: label);
+      }
+      expect(tester.widget<Text>(find.text('NOMINAL').first).style!.color,
+          Colors.grey[700]);
+    });
+
+    testWidgets('each nasabah card leads with an avatar and the name',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(find.byKey(const Key('avatar-n-1')), findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('avatar-n-1')),
+              matching: find.text('AR')),
+          findsOneWidget);
+      expect(find.text('Saldo Rp 465.600'), findsOneWidget);
+    });
+
+    testWidgets('the card ends in a strip: potongan on the left, dibayar big',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(tester.widget<Text>(find.byKey(const Key('dibayar-n-1'))).data,
+          'Rp 465.600');
+      expect(
+          tester
+              .widget<Text>(find.byKey(const Key('dibayar-n-1')))
+              .style!
+              .fontSize,
+          18);
+      expect(tester.widget<Text>(find.byKey(const Key('potongan-n-1'))).data,
+          'Rp 0');
+      expect(tester.getCenter(find.byKey(const Key('potongan-n-1'))).dx,
+          lessThan(tester.getCenter(find.byKey(const Key('dibayar-n-1'))).dx));
+    });
+
+    testWidgets('a potongan shows as a minus, tagged umum or khusus',
+        (tester) async {
+      await pumpNew(tester);
+      await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
+      await tester.pump();
+
+      expect(tester.widget<Text>(find.byKey(const Key('potongan-n-2'))).data,
+          '\u2212 Rp 5.000');
+      expect(tester.widget<Text>(find.byKey(const Key('dibayar-n-2'))).data,
+          'Rp 45.000');
+      expect(find.text('umum'), findsNWidgets(3));
+
+      cubit.setItemPotongan('n-2', const Potongan(PotonganJenis.rupiah, 500));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('khusus'), findsOneWidget);
+      expect(find.text('umum'), findsNWidgets(2));
+    });
+
+    testWidgets('methods carry icons, and Penuh lights up at the full saldo',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('metode-n-1-tunai')),
+              matching: find.byIcon(Icons.payments_outlined)),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('metode-n-1-transfer')),
+              matching: find.byIcon(Icons.account_balance_outlined)),
+          findsOneWidget);
+      expect(
+          tester
+              .widget<PencairanChip>(find.byKey(const Key('penuh-n-2')))
+              .selected,
+          isTrue);
+
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '30000');
+      await tester.pump();
+
+      expect(
+          tester
+              .widget<PencairanChip>(find.byKey(const Key('penuh-n-2')))
+              .selected,
+          isFalse);
+    });
+
+    testWidgets('a card\'s menu offers remove, and reset only once adjusted',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.tap(find.byKey(const Key('menu-item-n-2')));
+      await tester.pumpAndSettle();
+      expect(find.text('Hapus dari draft'), findsOneWidget);
+      expect(find.text('Kembalikan ke default'), findsNothing);
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '30000');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('menu-item-n-2')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kembalikan ke default'), findsOneWidget);
+    });
+
     testWidgets('shows everyone picked with the totals', (tester) async {
       await pumpNew(tester);
 
@@ -233,9 +356,11 @@ void main() {
           const Potongan(PotonganJenis.rupiah, 500));
       expect(find.text('Disesuaikan'), findsOneWidget);
 
-      await tester.ensureVisible(find.byKey(const Key('reset-n-2')));
-      await tester.tap(find.byKey(const Key('reset-n-2')));
-      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('menu-item-n-2')));
+      await tester.tap(find.byKey(const Key('menu-item-n-2')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kembalikan ke default'));
+      await tester.pumpAndSettle();
 
       expect(cubit.state.items[1].potongan, isNull);
       expect(find.text('Disesuaikan'), findsNothing);
@@ -244,9 +369,11 @@ void main() {
     testWidgets('an item can be taken out', (tester) async {
       await pumpNew(tester);
 
-      await tester.ensureVisible(find.byKey(const Key('hapus-n-3')));
-      await tester.tap(find.byKey(const Key('hapus-n-3')));
-      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('menu-item-n-3')));
+      await tester.tap(find.byKey(const Key('menu-item-n-3')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hapus dari draft'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Citra Dewi'), findsNothing);
       expect(cubit.state.items, hasLength(2));
@@ -312,6 +439,19 @@ void main() {
       expect(find.textContaining('7 Okt 2026, 09:05'), findsOneWidget);
       expect(find.textContaining('Diubah oleh Pak Budi'), findsOneWidget);
       expect(find.textContaining('7 Okt 2026, 11:30'), findsOneWidget);
+    });
+
+    testWidgets('the names are dark so they can be read at a glance',
+        (tester) async {
+      await pumpSaved(tester);
+
+      final spans = (tester
+              .widget<Text>(find.textContaining('Dibuat oleh Ibu Sari'))
+              .textSpan! as TextSpan)
+          .children!
+          .cast<TextSpan>();
+      expect(spans[1].text, 'Ibu Sari');
+      expect(spans[1].style!.color, Colors.black87);
     });
 
     testWidgets('opening an already cancelled draft does not announce it',
