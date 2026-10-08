@@ -289,6 +289,40 @@ void main() {
       expect(find.text('Rp 191.400'), findsWidgets);
     });
 
+    testWidgets('the slider never shows more than two decimals',
+        (tester) async {
+      await pumpNew(tester);
+      final slider = find.byKey(const Key('potongan-slider'));
+
+      // The slider's own arithmetic drifts: 0.5 steps arrive as 56.99999999999999.
+      tester.widget<Slider>(slider).onChanged!(56.99999999999999);
+      await tester.pump();
+      await tester.pump();
+
+      expect(cubit.state.potonganDefault,
+          const Potongan(PotonganJenis.persen, 57));
+      expect(
+          tester
+              .widget<TextField>(find.byKey(const Key('potongan-nilai')))
+              .controller!
+              .text,
+          '57');
+      expect(tester.widget<Slider>(slider).label, '57%');
+
+      tester.widget<Slider>(slider).onChanged!(33.333333333);
+      await tester.pump();
+      await tester.pump();
+
+      expect(cubit.state.potonganDefault.nilai, 33.33);
+      expect(
+          tester
+              .widget<TextField>(find.byKey(const Key('potongan-nilai')))
+              .controller!
+              .text,
+          '33.33');
+      expect(tester.widget<Slider>(slider).label, '33.33%');
+    });
+
     testWidgets('switching to rupiah takes a fixed amount off each nasabah',
         (tester) async {
       await pumpNew(tester);
