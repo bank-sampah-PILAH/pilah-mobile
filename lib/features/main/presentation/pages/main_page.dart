@@ -8,7 +8,10 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class MainPage extends StatelessWidget {
@@ -128,21 +131,50 @@ class _ShellContent extends StatelessWidget {
         child: const Text('Kembali ke Beranda'),
       )));
     }
+    final body = limitedNasabah && navigationShell.currentIndex != 7
+        ? NasabahVerificationHome(name: name)
+        : navigationShell;
+
+    // Satu handler untuk kedua bentuk navigasi: keduanya melaporkan indeks
+    // menu, jadi penerjemahan ke branch hanya ditulis sekali.
+    void select(int index) {
+      if (role == 'nasabah' && branches[index] == 0) {
+        context.read<NasabahApprovalCubit>().load(silent: true);
+      }
+      navigationShell.goBranch(branches[index],
+          initialLocation: index == selected);
+    }
+
+    final current = selected < 0 ? 0 : selected;
+
+    // Lebar menentukan bentuk navigasi; role tetap menentukan destinasinya.
+    // Pada compact bottom bar dipertahankan apa adanya, termasuk seluruh
+    // perilaku yang sudah dijaga test navigasi yang ada.
+    if (context.layoutBreakpoint == LayoutBreakpoint.compact) {
+      return Scaffold(
+        body: body,
+        bottomNavigationBar: RoleNavigationBar(
+          role: role,
+          limitedNasabah: limitedNasabah,
+          currentIndex: current,
+          onSelected: select,
+        ),
+      );
+    }
+
+    // Pada medium dan expanded rail menggantikan bottom bar, tidak menemaninya:
+    // menampilkan keduanya berarti menawarkan menu yang sama dua kali.
     return Scaffold(
-      body: limitedNasabah && navigationShell.currentIndex != 7
-          ? NasabahVerificationHome(name: name)
-          : navigationShell,
-      bottomNavigationBar: RoleNavigationBar(
-        role: role,
-        limitedNasabah: limitedNasabah,
-        currentIndex: selected < 0 ? 0 : selected,
-        onSelected: (index) {
-          if (role == 'nasabah' && branches[index] == 0) {
-            context.read<NasabahApprovalCubit>().load(silent: true);
-          }
-          navigationShell.goBranch(branches[index],
-              initialLocation: index == selected);
-        },
+      body: Row(
+        children: [
+          RoleNavigationRail(
+            role: role,
+            limitedNasabah: limitedNasabah,
+            currentIndex: current,
+            onSelected: select,
+          ),
+          Expanded(child: ContentBounds(child: body)),
+        ],
       ),
     );
   }
