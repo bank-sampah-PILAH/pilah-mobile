@@ -1,0 +1,152 @@
+name: Deploy dashboard web
+
+on:
+  workflow_call:
+    inputs:
+      flavor:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: dashboard-web-${{ inputs.flavor }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Production must have required reviewers configured in GitHub.
+    environment: ${{ inputs.flavor }}
+    env:
+      FLUTTER_VERSION: "3.41.3"
+      FLAVOR: ${{ inputs.flavor }}
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      SERVICE_NAME: ${{ vars.CLOUD_RUN_WEB_SERVICE || 'pilah-web' }}
+      ARTIFACT_REPO: ${{ vars.ARTIFACT_REPO }}
+      WORKLOAD_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      RUNTIME_SERVICE_ACCOUNT: ${{ vars.RUNTIME_WEB_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate hosting configuration
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          case "$FLAVOR" in
+            staging)
+              : "${FLY_API_TOKEN:?Set staging FLY_API_TOKEN for pilah-web-staging}"
+              ;;
+            production)
+              required=(PROJECT_ID REGION SERVICE_NAME ARTIFACT_REPO WORKLOAD_PROVIDER DEPLOY_SERVICE_ACCOUNT RUNTIME_SERVICE_ACCOUNT)
+              for name in "${required[@]}"; do
+                if [ -z "${!name}" ]; then
+                  echo "::error::Set production variable $name"
+                  exit 1
+                fi
+              done
+              [[ "$PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]]
+              [[ "$REGION" =~ ^[a-z]+-[a-z]+[0-9]+$ ]]
+              [[ "$SERVICE_NAME" =~ ^[a-z][a-z0-9-]*[a-z0-9]$ ]]
+              [[ "$ARTIFACT_REPO" =~ ^[a-z][a-z0-9-]*$ ]]
+              [[ "$WORKLOAD_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]]
+              [[ "$DEPLOY_SERVICE_ACCOUNT" =~ ^[a-z0-9-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com$ ]]
+              [[ "$RUNTIME_SERVICE_ACCOUNT" =~ ^[a-z0-9-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com$ ]]
+              ;;
+            *) echo "::error::Unsupported dashboard environment"; exit 1 ;;
+          esac
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Prepare public application environment
+        env:
+          APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+        run: python3 scripts/prepare_web_env.py "$FLAVOR" .env
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Staging already depends on CI verify. Tags get their own verification.
+      - name: Verify production tag
+        if: inputs.flavor == 'production'
+        run: |
+          flutter analyze --fatal-infos
+          flutter test
+
+      - name: Build dashboard once
+        run: |
+          if [ "$FLAVOR" = staging ]; then
+            target=lib/main_development.dart
+          else
+            target=lib/main_production.dart
+          fi
+          flutter build web --release -t "$target"
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-web-${{ inputs.flavor }}-${{ github.sha }}
+          path: build/web
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        if: inputs.flavor == 'staging'
+
+      - name: Deploy Fly staging
+        if: inputs.flavor == 'staging'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy --remote-only --config deploy/web/fly.staging.toml
+          url=https://pilah-web-staging.fly.dev
+          curl --fail --retry 8 --retry-all-errors --retry-delay 5 "$url/healthz"
+          curl --fail --retry 3 --retry-all-errors "$url/" > /dev/null
+          echo "Dashboard staging: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Authenticate to Google Cloud
+        if: inputs.flavor == 'production'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: inputs.flavor == 'production'
+
+      - name: Build and push static image
+        if: inputs.flavor == 'production'
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          image="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE_NAME}:${GITHUB_SHA}"
+          docker build -f deploy/web/Dockerfile -t "$image" .
+          docker push "$image"
+          echo "IMAGE_URI=$image" >> "$GITHUB_ENV"
+
+      - name: Deploy Cloud Run production and report actual HTTPS URL
+        if: inputs.flavor == 'production'
+        run: |
+          gcloud run deploy "$SERVICE_NAME" \
+            --project "$PROJECT_ID" --region "$REGION" \
+            --image "$IMAGE_URI" --platform managed --allow-unauthenticated \
+            --service-account "$RUNTIME_SERVICE_ACCOUNT" --port 8080 \
+            --startup-probe='httpGet.path=/healthz,httpGet.port=8080' --quiet
+          url="$(gcloud run services describe "$SERVICE_NAME" \
+            --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
+          [[ "$url" =~ ^https://[a-z0-9.-]+\.run\.app$ ]]
+          curl --fail --retry 8 --retry-all-errors --retry-delay 5 "$url/healthz"
+          curl --fail --retry 3 --retry-all-errors "$url/" > /dev/null
+          echo "Dashboard production: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Configure backend PILAH_WEB_ORIGIN and Google Authorized JavaScript origins with this exact origin." >> "$GITHUB_STEP_SUMMARY"

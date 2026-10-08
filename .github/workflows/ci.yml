@@ -9,7 +9,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
   workflow_dispatch:
 
@@ -46,7 +46,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install diff coverage tool
-        run: python -m pip install --disable-pip-version-check diff-cover==10.6.0
+        run: python -m pip install --disable-pip-version-check diff-cover==10.6.0 PyYAML==6.0.3
 
       # Java 17 for the Gradle side of the debug APK build.
       - uses: actions/setup-java@v4
@@ -123,8 +123,22 @@ jobs:
       # Lints the CI workflow files themselves (syntax, expression misuse,
       # invalid action inputs, shell scripts in run blocks). Cheap step at the
       # end so workflow edits still get everything else checked in one job.
+      - name: Dashboard hosting behavior and pipeline safety
+        run: python3 -m unittest discover -s scripts/tests -v
+
       - name: actionlint
         run: docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color
+
+  deploy_web_staging:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      flavor: staging
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
 
   debug_apk:
     if: github.event_name == 'workflow_dispatch'
