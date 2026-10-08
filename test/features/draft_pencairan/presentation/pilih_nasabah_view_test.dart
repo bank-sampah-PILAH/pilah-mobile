@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
@@ -90,6 +91,30 @@ void main() {
         find.descendant(
             of: find.byKey(const Key('avatar-n-2')), matching: find.text('BS')),
         findsOneWidget);
+  });
+
+  testWidgets('rows are shadow cards, and a picked row gets a green outline',
+      (tester) async {
+    await pump(tester);
+
+    BoxDecoration decorationOf(String id) => tester
+        .widget<Container>(find
+            .descendant(
+                of: find.byKey(Key('kandidat-$id')),
+                matching: find.byType(Container))
+            .first)
+        .decoration! as BoxDecoration;
+
+    expect(decorationOf('n-1').border, isNull);
+    expect(decorationOf('n-1').boxShadow, isNotEmpty);
+
+    await tester.tap(find.byKey(const Key('kandidat-n-1')));
+    await tester.pump();
+
+    final border = decorationOf('n-1').border! as Border;
+    expect(border.top.color, AppColors.greenDark);
+    expect(border.top.width, 2);
+    expect(decorationOf('n-2').border, isNull);
   });
 
   testWidgets('lists each nasabah with their code and saldo', (tester) async {

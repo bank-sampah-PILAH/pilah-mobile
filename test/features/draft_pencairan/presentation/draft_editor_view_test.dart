@@ -149,7 +149,7 @@ void main() {
           reason: 'the saldo lives in the strip now');
     });
 
-    testWidgets('a card is white with a green outline, not grey',
+    testWidgets('a nasabah card is white with a soft shadow and no outline',
         (tester) async {
       await pumpNew(tester);
 
@@ -160,7 +160,54 @@ void main() {
           .first);
       final decoration = box.decoration! as BoxDecoration;
       expect(decoration.color, Colors.white);
-      expect((decoration.border! as Border).top.color, AppColors.greenDark);
+      expect(decoration.border, isNull);
+      expect(decoration.boxShadow, isNotEmpty);
+    });
+
+    testWidgets('the card for all nasabah keeps a 2px green outline',
+        (tester) async {
+      await pumpNew(tester);
+
+      final box = tester.widget<Container>(find
+          .descendant(
+              of: find.ancestor(
+                  of: find.text('UNTUK SEMUA NASABAH'),
+                  matching: find.byType(PencairanCard)),
+              matching: find.byType(Container))
+          .first);
+      final border = (box.decoration! as BoxDecoration).border! as Border;
+      expect(border.top.color, AppColors.greenDark);
+      expect(border.top.width, 2);
+    });
+
+    testWidgets('an invalid card is outlined in red', (tester) async {
+      await pumpNew(tester);
+
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '60000');
+      await tester.pump();
+
+      final box = tester.widget<Container>(find
+          .descendant(
+              of: find.byKey(const Key('item-n-2')),
+              matching: find.byType(Container))
+          .first);
+      final border = (box.decoration! as BoxDecoration).border! as Border;
+      expect(border.top.color, Colors.red.shade300);
+    });
+
+    testWidgets('Total potongan is yellow with a minus, like on the cards',
+        (tester) async {
+      await pumpNew(tester);
+      expect(tester.widget<Text>(find.byKey(const Key('total-potongan'))).data,
+          'Rp 0');
+
+      await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
+      await tester.pump();
+
+      final total =
+          tester.widget<Text>(find.byKey(const Key('total-potongan')));
+      expect(total.data, '\u2212 Rp 76.560');
+      expect(total.style!.color, AppColors.statOrange);
     });
 
     testWidgets('the strip reads top to bottom: saldo awal, potongan, dibayar',
@@ -222,6 +269,10 @@ void main() {
       expect(find.descendant(of: edit, matching: find.text('Edit')),
           findsOneWidget);
       expect(find.text('Atur potongan'), findsNothing);
+      final pill = tester.widget<Container>(
+          find.descendant(of: edit, matching: find.byType(Container)).first);
+      expect((pill.decoration! as BoxDecoration).border, isNull,
+          reason: 'the Edit button has no outline');
       expect(
           tester.getCenter(edit).dy,
           closeTo(
@@ -343,7 +394,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
       await tester.pump();
 
-      expect(find.text('Rp 76.560'), findsWidgets);
+      expect(find.text('\u2212 Rp 76.560'), findsWidgets);
       expect(find.text('Rp 689.040'), findsWidgets);
     });
 
@@ -358,7 +409,7 @@ void main() {
 
       expect(cubit.state.potonganDefault,
           const Potongan(PotonganJenis.persen, 25));
-      expect(find.text('Rp 191.400'), findsWidgets);
+      expect(find.text('\u2212 Rp 191.400'), findsWidgets);
     });
 
     testWidgets('the slider never shows more than two decimals',
@@ -406,7 +457,7 @@ void main() {
 
       expect(cubit.state.potonganDefault,
           const Potongan(PotonganJenis.rupiah, 1000));
-      expect(find.text('Rp 3.000'), findsWidgets);
+      expect(find.text('\u2212 Rp 3.000'), findsWidgets);
     });
 
     testWidgets('one tap sets every method', (tester) async {

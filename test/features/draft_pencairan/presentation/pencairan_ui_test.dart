@@ -220,6 +220,10 @@ void main() {
         body: PencairanSummaryCard(rows: [
           SummaryRow(label: 'Total pencairan', value: 'Rp 100.000'),
           SummaryRow(
+              label: 'Total potongan',
+              value: '\u2212 Rp 10.000',
+              valueColor: AppColors.statOrange),
+          SummaryRow(
               label: 'Total dibayar', value: 'Rp 90.000', emphasized: true),
         ]),
       ),
@@ -227,7 +231,9 @@ void main() {
 
     expect(find.text('Total pencairan'), findsOneWidget);
     expect(find.text('Rp 100.000'), findsOneWidget);
-    expect(find.byType(Divider), findsOneWidget);
+    expect(find.byType(Divider), findsNWidgets(2));
+    expect(tester.widget<Text>(find.text('\u2212 Rp 10.000')).style!.color,
+        AppColors.statOrange);
     expect(tester.widget<Text>(find.text('Rp 90.000')).style!.fontSize, 20);
     expect(tester.widget<Text>(find.text('Rp 100.000')).style!.fontSize, 15);
   });
@@ -246,7 +252,45 @@ void main() {
     expect(decoration.borderRadius, BorderRadius.circular(16));
     final border = decoration.border! as Border;
     expect(border.top.color, AppColors.greenDark);
-    expect(border.top.width, 1);
+    expect(border.top.width, 2);
+  });
+
+  group('PencairanCard.shadow', () {
+    BoxDecoration decorationOf(WidgetTester tester) => tester
+        .widget<Container>(find.descendant(
+            of: find.byType(PencairanCard), matching: find.byType(Container)))
+        .decoration! as BoxDecoration;
+
+    testWidgets('is white with a soft shadow and no outline', (tester) async {
+      await pumpRouted(
+        tester,
+        const Scaffold(body: PencairanCard.shadow(child: Text('isi'))),
+      );
+
+      final decoration = decorationOf(tester);
+      expect(decoration.color, Colors.white);
+      expect(decoration.border, isNull);
+      expect(decoration.borderRadius, BorderRadius.circular(16));
+      expect(decoration.boxShadow, isNotEmpty);
+    });
+
+    testWidgets('can still be outlined, to mark an error or a selection',
+        (tester) async {
+      await pumpRouted(
+        tester,
+        const Scaffold(
+          body: PencairanCard.shadow(
+            borderColor: AppColors.greenDark,
+            child: Text('isi'),
+          ),
+        ),
+      );
+
+      final decoration = decorationOf(tester);
+      expect((decoration.border! as Border).top.color, AppColors.greenDark);
+      expect((decoration.border! as Border).top.width, 2);
+      expect(decoration.boxShadow, isNotEmpty);
+    });
   });
 
   testWidgets('a PencairanCard can take another outline, for an error',
