@@ -110,6 +110,15 @@ void main() {
     String bankName = 'Bank Sampah Melati',
     NasabahRepository? repository,
   }) async {
+    // This screen asserts on the nasabah bottom navigation bar, so the window
+    // has to stay in the compact width class; the 800x600 test default is
+    // classified as a tablet and renders a navigation rail instead. The width
+    // is kept just under the boundary rather than at a phone width so the rest
+    // of the layout these tests inspect is disturbed as little as possible.
+    tester.view.physicalSize = const Size(599, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final auth = _AuthBloc();
     final sessions = StreamController<AuthenticationStates>();
     final dashboard = _DashboardCubit();
