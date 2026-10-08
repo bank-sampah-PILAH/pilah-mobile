@@ -698,28 +698,9 @@ void main() {
       expect(find.text('Draft dibatalkan.'), findsNothing);
     });
 
-    testWidgets('cancelling asks first, then drops the draft', (tester) async {
-      when(() => useCases.cancelDraft('d-1')).thenAnswer(
-          (_) async => Right(_saved(status: DraftStatus.dibatalkan)));
-      await pumpSaved(tester);
-
-      await tester.tap(find.byKey(const Key('menu-editor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Batalkan draft'));
-      await tester.pumpAndSettle();
-      verifyNever(() => useCases.cancelDraft(any()));
-
-      await tester.tap(find.text('Ya, batalkan'));
-      await tester.pumpAndSettle();
-
-      verify(() => useCases.cancelDraft('d-1')).called(1);
-      expect(cubit.state.status, DraftStatus.dibatalkan);
-      expect(find.byKey(const Key('simpan')), findsNothing);
-    });
-
-    testWidgets('a paid or cancelled draft cannot be cancelled again',
+    testWidgets('the editor has no menu: cancelling lives on the list',
         (tester) async {
-      await pumpSaved(tester, status: DraftStatus.dikonfirmasi);
+      await pumpSaved(tester);
 
       expect(find.byKey(const Key('menu-editor')), findsNothing);
     });
