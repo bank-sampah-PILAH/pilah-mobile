@@ -80,6 +80,22 @@ void main() {
     expect(find.textContaining('7 Okt 2026'), findsNWidgets(2));
   });
 
+  testWidgets('draft cards are white with a soft shadow', (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+
+    final decoration = tester
+        .widget<Container>(find
+            .descendant(
+                of: find.byKey(const Key('draft-d-1')),
+                matching: find.byType(Container))
+            .first)
+        .decoration! as BoxDecoration;
+    expect(decoration.color, Colors.white);
+    expect(decoration.border, isNull);
+    expect(decoration.boxShadow, isNotEmpty);
+  });
+
   testWidgets('a status chip narrows the list', (tester) async {
     await pump(tester, [
       _draft('d-1', 'Cair Oktober', DraftStatus.draft),
