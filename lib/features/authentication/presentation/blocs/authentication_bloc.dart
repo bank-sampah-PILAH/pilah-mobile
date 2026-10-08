@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:injectable/injectable.dart';
@@ -21,9 +22,14 @@ class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationStates> {
   final AuthenticationUseCases _useCases;
   final LoginWithGoogleUseCase _loginWithGoogleUseCase;
+  final bool _isWeb;
 
-  AuthenticationBloc(this._useCases, this._loginWithGoogleUseCase)
-      : super(AuthenticationInitial()) {
+  AuthenticationBloc(
+    this._useCases,
+    this._loginWithGoogleUseCase, {
+    bool? isWebOverride,
+  })  : _isWeb = isWebOverride ?? kIsWeb,
+        super(AuthenticationInitial()) {
     on<PostLoginEvent>(_onPostLoginEvent);
     on<LoginRefreshEvent>(_onLoginRefreshEvent);
     on<LoginWithGoogleRequested>(_onLoginWithGoogleRequested);
@@ -168,6 +174,13 @@ class AuthenticationBloc
     Emitter<AuthenticationStates> emitter,
   ) async {
     emitter(AuthenticationLoading());
+    if (_isWeb) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Still clear the PILAH session if Google's sign-out fails.
+      }
+    }
     await _useCases.logout();
     emitter(Unauthenticated());
   }

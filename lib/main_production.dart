@@ -31,8 +31,10 @@ Future<void> main() async {
   if (!kIsWeb) await Firebase.initializeApp();
 
   // Initialize Google Sign-In (required for v7+)
+  final googleClientId = dotenv.env['GOOGLE_SERVER_CLIENT_ID'];
   await GoogleSignIn.instance.initialize(
-    serverClientId: dotenv.env['GOOGLE_SERVER_CLIENT_ID'],
+    clientId: kIsWeb ? googleClientId : null,
+    serverClientId: kIsWeb ? null : googleClientId,
   );
 
   runApp(const App());
