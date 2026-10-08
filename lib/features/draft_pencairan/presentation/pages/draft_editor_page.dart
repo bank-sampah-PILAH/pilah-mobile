@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -272,8 +273,11 @@ class _Form extends StatelessWidget {
             ),
             SummaryRow(
               label: 'Total potongan',
-              value: rupiah(state.totalPotongan),
+              value: state.totalPotongan > 0
+                  ? '\u2212 ${rupiah(state.totalPotongan)}'
+                  : rupiah(state.totalPotongan),
               valueKey: const Key('total-potongan'),
+              valueColor: state.totalPotongan > 0 ? AppColors.statOrange : null,
             ),
             SummaryRow(
               label: 'Total dibayar',
