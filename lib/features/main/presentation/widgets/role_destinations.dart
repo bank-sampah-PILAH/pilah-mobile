@@ -35,13 +35,14 @@ abstract final class RoleDestinations {
   /// disetujui; bagi staff nilainya diabaikan.
   static List<RoleDestination> forRole(String? role,
           {bool limitedNasabah = false}) =>
-      role == 'nasabah'
-          ? limitedNasabah
-              ? _limitedNasabah
-              : _nasabah
-          : isStaff(role)
-              ? _staff
-              : const [];
+      switch (role) {
+        'nasabah' when limitedNasabah => _limitedNasabah,
+        'nasabah' => _nasabah,
+        final other when isStaff(other) => _staff,
+        // Gagal tertutup, dan sengaja menjadi baris terakhir: role yang tidak
+        // dikenal mendapat daftar kosong, bukan menu staff.
+        _ => const [],
+      };
 
   /// Branch index setiap destinasi [role], berurutan sesuai tampilan.
   static List<int> branchIndicesFor(String? role,
