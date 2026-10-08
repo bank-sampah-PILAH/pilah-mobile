@@ -542,6 +542,58 @@ void main() {
       expect(find.text('Disesuaikan'), findsNothing);
     });
 
+    testWidgets('the potongan sheet is white with rounded top corners',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
+      await tester.tap(find.byKey(const Key('potongan-item-n-2')));
+      await tester.pumpAndSettle();
+
+      final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
+      expect(sheet.backgroundColor, Colors.white);
+      expect(
+          sheet.shape,
+          const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24))));
+    });
+
+    testWidgets('Ikuti potongan umum sits to the right of Terapkan',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
+      await tester.tap(find.byKey(const Key('potongan-item-n-2')));
+      await tester.pumpAndSettle();
+
+      final terapkan =
+          tester.getRect(find.widgetWithText(ElevatedButton, 'Terapkan'));
+      final ikuti = tester
+          .getRect(find.widgetWithText(TextButton, 'Ikuti potongan umum'));
+      expect(terapkan.right, lessThan(ikuti.left));
+      expect(terapkan.center.dy, closeTo(ikuti.center.dy, 1));
+
+      await tester.tap(find.text('Ikuti potongan umum'));
+      await tester.pumpAndSettle();
+      expect(cubit.state.items[1].potongan, isNull);
+    });
+
+    testWidgets('the potongan kinds are Persen and Nominal, not Rupiah',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(find.text('Persen'), findsOneWidget);
+      expect(find.text('Nominal'), findsOneWidget);
+      expect(find.text('Rupiah'), findsNothing);
+
+      await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
+      await tester.tap(find.byKey(const Key('potongan-item-n-2')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nominal'), findsNWidgets(2));
+      expect(find.text('Rupiah'), findsNothing);
+    });
+
     testWidgets('an item can be taken out', (tester) async {
       await pumpNew(tester);
 
