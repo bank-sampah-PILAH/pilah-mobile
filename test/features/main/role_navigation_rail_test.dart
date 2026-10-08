@@ -76,6 +76,24 @@ void main() {
           reason: 'a tablet cannot spare the width for extended labels');
     });
 
+    testWidgets('the collapsed rail still names its destinations',
+        (tester) async {
+      await taps(tester, role: 'pengelola', window: const Size(720, 900));
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.extended, isFalse);
+      expect(rail.labelType, NavigationRailLabelType.all,
+          reason: 'five unlabelled icons with no tooltip are a guessing game');
+    });
+
+    testWidgets('the extended rail does not repeat labels underneath',
+        (tester) async {
+      await taps(tester, role: 'pengelola', window: const Size(1440, 900));
+      expect(
+          tester.widget<NavigationRail>(find.byType(NavigationRail)).labelType,
+          NavigationRailLabelType.none,
+          reason: 'Material asserts on any other value while extended');
+    });
+
     testWidgets('renders nothing at all for a role without navigation',
         (tester) async {
       await taps(tester, role: 'superadmin');
