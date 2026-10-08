@@ -53,8 +53,7 @@ void main() {
     testWidgets('shortens to initials when the rail is collapsed',
         (tester) async {
       await mount(tester,
-          bankSampahNama: 'Bank Sampah Melati',
-          window: const Size(720, 900));
+          bankSampahNama: 'Bank Sampah Melati', window: const Size(720, 900));
       expect(find.text('Bank Sampah Melati'), findsNothing,
           reason: 'a collapsed rail has no room for the full name');
       expect(find.text('BS'), findsOneWidget);

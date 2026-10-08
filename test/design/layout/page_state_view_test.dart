@@ -45,8 +45,7 @@ void main() {
       expect(find.byType(EmptyView), findsNothing);
     });
 
-    testWidgets('loading hides the content behind a skeleton',
-        (tester) async {
+    testWidgets('loading hides the content behind a skeleton', (tester) async {
       await mount(tester, state: PageState.loading);
       expect(find.byKey(ready), findsNothing,
           reason: 'showing stale content while loading misleads the user');
