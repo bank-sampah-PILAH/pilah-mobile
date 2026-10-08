@@ -64,11 +64,17 @@ class _RoleShell extends StatelessWidget {
         child: _ShellContent(
           role: role!,
           name: session.authEntity.name,
+          bankSampahNama: session.authEntity.bankSampahNama,
           navigationShell: navigationShell,
         ),
       );
     }
-    return _ShellContent(role: role!, navigationShell: navigationShell);
+    return _ShellContent(
+      role: role!,
+      bankSampahNama:
+          auth is Authenticated ? auth.authEntity.bankSampahNama : null,
+      navigationShell: navigationShell,
+    );
   }
 }
 
@@ -76,11 +82,17 @@ class _ShellContent extends StatelessWidget {
   const _ShellContent({
     required this.role,
     required this.navigationShell,
+    this.bankSampahNama,
     this.name = '',
   });
 
   final String role;
   final String name;
+
+  /// Bank sampah sesi ini, diteruskan ke rail sebagai konteks. Null bagi
+  /// sesi yang tidak terikat bank sampah.
+  final String? bankSampahNama;
+
   final StatefulNavigationShell navigationShell;
 
   @override
@@ -171,6 +183,7 @@ class _ShellContent extends StatelessWidget {
             role: role,
             limitedNasabah: limitedNasabah,
             currentIndex: current,
+            bankSampahNama: bankSampahNama,
             onSelected: select,
           ),
           Expanded(child: ContentBounds(child: body)),
