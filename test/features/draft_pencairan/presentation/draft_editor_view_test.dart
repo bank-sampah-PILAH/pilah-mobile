@@ -233,6 +233,25 @@ void main() {
       expect(find.text('Kembalikan ke default'), findsOneWidget);
     });
 
+    testWidgets('the cards fit a narrow phone, even with big amounts',
+        (tester) async {
+      cubit = DraftEditorCubit(useCases)
+        ..startNew(const [
+          Kandidat(
+              id: 'n-9',
+              kode: 'NAS-9',
+              nama: 'Nasabah Besar',
+              saldo: 123456789),
+        ])
+        ..setPotonganDefault(const Potongan(PotonganJenis.persen, 12.5));
+      _current = cubit;
+      await _pump(tester, size: const Size(320, 1800));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('potongan-item-n-9')), findsOneWidget);
+      expect(find.byKey(const Key('dibayar-n-9')), findsOneWidget);
+    });
+
     testWidgets('shows everyone picked with the totals', (tester) async {
       await pumpNew(tester);
 
@@ -524,7 +543,11 @@ void main() {
 
 DraftEditorCubit? _current;
 
-Future<void> _pump(WidgetTester tester, {bool pushed = false}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  bool pushed = false,
+  Size size = const Size(420, 1800),
+}) async {
   // The cubit is created by each test; find it through the provider.
   await pumpRouted(
     tester,
@@ -532,7 +555,7 @@ Future<void> _pump(WidgetTester tester, {bool pushed = false}) async {
       return const _Host();
     }),
     pushed: pushed,
-    size: const Size(420, 1800),
+    size: size,
   );
   await tester.pumpAndSettle();
 }
