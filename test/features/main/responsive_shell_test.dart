@@ -109,15 +109,13 @@ void main() {
 
   group('shell navigation form', () {
     testWidgets('a phone keeps the bottom navigation bar', (tester) async {
-      await mountShell(tester,
-          role: 'pengelola', window: const Size(390, 844));
+      await mountShell(tester, role: 'pengelola', window: const Size(390, 844));
       expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.byType(RoleNavigationRail), findsNothing);
     });
 
     testWidgets('a tablet swaps the bottom bar for a rail', (tester) async {
-      await mountShell(tester,
-          role: 'pengelola', window: const Size(720, 900));
+      await mountShell(tester, role: 'pengelola', window: const Size(720, 900));
       expect(find.byType(RoleNavigationRail), findsOneWidget);
       expect(find.byType(BottomNavigationBar), findsNothing,
           reason: 'showing both would offer the same menu twice');
@@ -142,8 +140,7 @@ void main() {
     });
 
     testWidgets('resizing keeps the selected destination', (tester) async {
-      await mountShell(tester,
-          role: 'pengelola', window: const Size(390, 844));
+      await mountShell(tester, role: 'pengelola', window: const Size(390, 844));
       await tester.tap(find.text('Harga'));
       await tester.pumpAndSettle();
       expect(find.text('body:/prices'), findsOneWidget);
