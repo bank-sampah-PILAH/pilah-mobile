@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
@@ -56,14 +57,96 @@ void main() {
     });
   });
 
-  testWidgets('SectionLabel is small, bold, spaced and grey', (tester) async {
-    await pumpRouted(tester, const Scaffold(body: SectionLabel('NOMINAL')));
+  group('SectionLabel', () {
+    testWidgets('a heading is dark, bold and spaced so it stands out',
+        (tester) async {
+      await pumpRouted(tester, const Scaffold(body: SectionLabel('RINGKASAN')));
 
-    final style = tester.widget<Text>(find.text('NOMINAL')).style!;
-    expect(style.fontSize, 10);
-    expect(style.fontWeight, FontWeight.bold);
-    expect(style.letterSpacing, 1.0);
-    expect(style.color, Colors.grey[500]);
+      final style = tester.widget<Text>(find.text('RINGKASAN')).style!;
+      expect(style.fontSize, 12);
+      expect(style.fontWeight, FontWeight.bold);
+      expect(style.letterSpacing, 1.0);
+      expect(style.color, Colors.black87);
+    });
+
+    testWidgets('a field label is a step quieter: smaller, dark grey',
+        (tester) async {
+      await pumpRouted(
+          tester, const Scaffold(body: SectionLabel.field('NOMINAL')));
+
+      final style = tester.widget<Text>(find.text('NOMINAL')).style!;
+      expect(style.fontSize, 11);
+      expect(style.fontWeight, FontWeight.bold);
+      expect(style.letterSpacing, 1.0);
+      expect(style.color, Colors.grey[700]);
+    });
+  });
+
+  group('PencairanAvatar', () {
+    testWidgets('shows the initials on the name\'s own palette colour',
+        (tester) async {
+      await pumpRouted(
+        tester,
+        const Scaffold(
+          body: PencairanAvatar(key: Key('avatar'), nama: 'Ahmad Ridwan'),
+        ),
+      );
+
+      expect(find.text('AR'), findsOneWidget);
+      final box = tester.widget<Container>(find.descendant(
+          of: find.byKey(const Key('avatar')),
+          matching: find.byType(Container)));
+      final decoration = box.decoration! as BoxDecoration;
+      expect(decoration.shape, BoxShape.circle);
+      expect(decoration.color, avatarPaletteFor('Ahmad Ridwan').$1);
+      expect(tester.widget<Text>(find.text('AR')).style!.color,
+          avatarPaletteFor('Ahmad Ridwan').$2);
+      expect(
+          tester.getSize(find.byKey(const Key('avatar'))), const Size(40, 40));
+    });
+  });
+
+  testWidgets('PencairanMetaLine reads label, name and time in two tones',
+      (tester) async {
+    await pumpRouted(
+      tester,
+      const Scaffold(
+        body: PencairanMetaLine(
+          label: 'Dibuat oleh',
+          nama: 'Pengurus PILAH',
+          waktu: '8 Okt 2026, 06:59',
+        ),
+      ),
+    );
+
+    expect(find.text('Dibuat oleh Pengurus PILAH · 8 Okt 2026, 06:59'),
+        findsOneWidget);
+    final text = tester.widget<Text>(find.byType(Text));
+    final spans = (text.textSpan! as TextSpan).children!.cast<TextSpan>();
+    expect(spans[0].style!.color, Colors.grey[700]);
+    expect(spans[1].text, 'Pengurus PILAH');
+    expect(spans[1].style!.color, Colors.black87);
+    expect(spans[1].style!.fontWeight, FontWeight.w600);
+    expect(spans[2].style!.color, Colors.grey[700]);
+  });
+
+  testWidgets('PencairanChip can carry an icon', (tester) async {
+    await pumpRouted(
+      tester,
+      Scaffold(
+        body: PencairanChip(
+          key: const Key('chip'),
+          label: 'Tunai',
+          icon: Icons.payments_outlined,
+          selected: true,
+          onTap: () {},
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.payments_outlined), findsOneWidget);
+    expect(tester.widget<Icon>(find.byIcon(Icons.payments_outlined)).color,
+        Colors.white);
   });
 
   test('inputs are white, 12px round, grey until focused, then green', () {

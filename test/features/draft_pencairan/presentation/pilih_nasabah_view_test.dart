@@ -80,6 +80,18 @@ void main() {
         reason: 'quick selects are pills');
   });
 
+  testWidgets('every row shows the nasabah\'s avatar', (tester) async {
+    await pump(tester);
+
+    for (final id in ['n-1', 'n-2', 'n-3']) {
+      expect(find.byKey(Key('avatar-$id')), findsOneWidget, reason: id);
+    }
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('avatar-n-2')), matching: find.text('BS')),
+        findsOneWidget);
+  });
+
   testWidgets('lists each nasabah with their code and saldo', (tester) async {
     await pump(tester);
 
