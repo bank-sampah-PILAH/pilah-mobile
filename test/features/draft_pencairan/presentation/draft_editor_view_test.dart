@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
@@ -143,13 +144,39 @@ void main() {
               of: find.byKey(const Key('avatar-n-1')),
               matching: find.text('AR')),
           findsOneWidget);
-      expect(find.text('Saldo Rp 465.600'), findsOneWidget);
+      expect(find.text('Ahmad Ridwan'), findsOneWidget);
+      expect(find.text('Saldo Rp 465.600'), findsNothing,
+          reason: 'the saldo lives in the strip now');
     });
 
-    testWidgets('the card ends in a strip: potongan on the left, dibayar big',
+    testWidgets('a card is white with a green outline, not grey',
         (tester) async {
       await pumpNew(tester);
 
+      final box = tester.widget<Container>(find
+          .descendant(
+              of: find.byKey(const Key('item-n-1')),
+              matching: find.byType(Container))
+          .first);
+      final decoration = box.decoration! as BoxDecoration;
+      expect(decoration.color, Colors.white);
+      expect((decoration.border! as Border).top.color, AppColors.greenDark);
+    });
+
+    testWidgets('the strip reads top to bottom: saldo awal, potongan, dibayar',
+        (tester) async {
+      await pumpNew(tester);
+
+      final saldo = tester.getCenter(find.byKey(const Key('saldo-awal-n-1')));
+      final potongan = tester.getCenter(find.byKey(const Key('potongan-n-1')));
+      final dibayar = tester.getCenter(find.byKey(const Key('dibayar-n-1')));
+      expect(saldo.dy, lessThan(potongan.dy));
+      expect(potongan.dy, lessThan(dibayar.dy));
+      expect(saldo.dx, dibayar.dx, reason: 'values share the right edge');
+      expect(tester.widget<Text>(find.byKey(const Key('saldo-awal-n-1'))).data,
+          'Rp 465.600');
+      expect(tester.widget<Text>(find.byKey(const Key('potongan-n-1'))).data,
+          'Rp 0');
       expect(tester.widget<Text>(find.byKey(const Key('dibayar-n-1'))).data,
           'Rp 465.600');
       expect(
@@ -157,14 +184,55 @@ void main() {
               .widget<Text>(find.byKey(const Key('dibayar-n-1')))
               .style!
               .fontSize,
-          18);
-      expect(tester.widget<Text>(find.byKey(const Key('potongan-n-1'))).data,
-          'Rp 0');
-      expect(tester.getCenter(find.byKey(const Key('potongan-n-1'))).dx,
-          lessThan(tester.getCenter(find.byKey(const Key('dibayar-n-1'))).dx));
+          20);
+      expect(find.text('Saldo awal'), findsNWidgets(3));
+      expect(find.text('Dibayar'), findsNWidgets(3));
     });
 
-    testWidgets('a potongan shows as a minus, tagged umum or khusus',
+    testWidgets('the Dicairkan row appears only for a partial pencairan',
+        (tester) async {
+      await pumpNew(tester);
+      expect(find.byKey(const Key('dicairkan-n-2')), findsNothing);
+
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '30000');
+      await tester.pump();
+
+      expect(tester.widget<Text>(find.byKey(const Key('dicairkan-n-2'))).data,
+          'Rp 30.000');
+      expect(find.byKey(const Key('dicairkan-n-1')), findsNothing);
+      final saldo = tester.getCenter(find.byKey(const Key('saldo-awal-n-2')));
+      final dicairkan =
+          tester.getCenter(find.byKey(const Key('dicairkan-n-2')));
+      final potongan = tester.getCenter(find.byKey(const Key('potongan-n-2')));
+      expect(saldo.dy, lessThan(dicairkan.dy));
+      expect(dicairkan.dy, lessThan(potongan.dy));
+    });
+
+    testWidgets(
+        'Edit with a pen opens the potongan editor, in the potongan row',
+        (tester) async {
+      await pumpNew(tester);
+
+      final edit = find.byKey(const Key('potongan-item-n-2'));
+      expect(
+          find.descendant(of: edit, matching: find.byIcon(Icons.edit_outlined)),
+          findsOneWidget);
+      expect(find.descendant(of: edit, matching: find.text('Edit')),
+          findsOneWidget);
+      expect(find.text('Atur potongan'), findsNothing);
+      expect(
+          tester.getCenter(edit).dy,
+          closeTo(
+              tester.getCenter(find.byKey(const Key('potongan-n-2'))).dy, 20));
+
+      await tester.ensureVisible(edit);
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Terapkan'), findsOneWidget);
+    });
+
+    testWidgets('a potongan shows as a minus, with no umum or khusus tag',
         (tester) async {
       await pumpNew(tester);
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
@@ -174,30 +242,32 @@ void main() {
           '\u2212 Rp 5.000');
       expect(tester.widget<Text>(find.byKey(const Key('dibayar-n-2'))).data,
           'Rp 45.000');
-      expect(find.text('umum'), findsNWidgets(3));
+      expect(find.text('umum'), findsNothing);
 
       cubit.setItemPotongan('n-2', const Potongan(PotonganJenis.rupiah, 500));
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('khusus'), findsOneWidget);
-      expect(find.text('umum'), findsNWidgets(2));
+      expect(find.text('khusus'), findsNothing);
+      expect(tester.widget<Text>(find.byKey(const Key('potongan-n-2'))).data,
+          '\u2212 Rp 500');
     });
 
-    testWidgets('methods carry icons, and Penuh lights up at the full saldo',
+    testWidgets(
+        'methods are plain pills, and Penuh lights up at the full saldo',
         (tester) async {
       await pumpNew(tester);
 
       expect(
           find.descendant(
               of: find.byKey(const Key('metode-n-1-tunai')),
-              matching: find.byIcon(Icons.payments_outlined)),
-          findsOneWidget);
+              matching: find.byType(Icon)),
+          findsNothing);
       expect(
           find.descendant(
               of: find.byKey(const Key('metode-n-1-transfer')),
-              matching: find.byIcon(Icons.account_balance_outlined)),
-          findsOneWidget);
+              matching: find.byType(Icon)),
+          findsNothing);
       expect(
           tester
               .widget<PencairanChip>(find.byKey(const Key('penuh-n-2')))
