@@ -75,7 +75,10 @@ class RoleNavigationRail extends StatelessWidget {
       backgroundColor: AppColors.cardOffWhite,
       selectedIndex: currentIndex,
       onDestinationSelected: onSelected,
-      labelType: NavigationRailLabelType.none,
+      // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
+      // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
+      labelType:
+          extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
       selectedIconTheme: const IconThemeData(color: AppColors.greenDark),
       unselectedIconTheme: const IconThemeData(color: AppColors.grey100),
       selectedLabelTextStyle: AppTextStyle.extraSmall.copyWith(
