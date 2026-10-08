@@ -17,13 +17,31 @@ class PrepareWebEnvTest(unittest.TestCase):
                                     env={**os.environ, "APP_ENV_FILE": contents}, capture_output=True, text=True)
             return result, target.read_text() if target.exists() else None
 
-    def test_ship_only_selected_public_settings_and_disable_demo(self):
-        for flavor, key, api in (("staging", "BASE_URL_DEV", "https://pilah-be-staging.fly.dev/api/v1/"),
-                                 ("production", "BASE_URL_PROD", "https://backend-actual.run.app/api/v1/")):
-            result, output = self.prepare(flavor, f"{key} = '{api}'\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\nENABLE_DEMO_LOGIN=true\nSECRET=never-ship\n")
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(output, f"{key}={api}\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\nENABLE_DEMO_LOGIN=false\n")
-            self.assertNotIn(CLIENT, result.stdout + result.stderr)
+    def test_normalize_api_base_to_origin_and_ship_only_public_settings(self):
+        configs = (
+            ("staging", "BASE_URL_DEV", "https://pilah-be-staging.fly.dev/api/v1/",
+             "https://pilah-be-staging.fly.dev"),
+            ("staging", "BASE_URL_DEV", "https://pilah-be-staging.fly.dev",
+             "https://pilah-be-staging.fly.dev"),
+            ("production", "BASE_URL_PROD", "https://backend-actual.run.app/api/v1/",
+             "https://backend-actual.run.app"),
+            ("production", "BASE_URL_PROD", "https://backend-actual.run.app",
+             "https://backend-actual.run.app"),
+        )
+        for flavor, key, configured_url, origin in configs:
+            with self.subTest(flavor=flavor, configured_url=configured_url):
+                result, output = self.prepare(
+                    flavor,
+                    f"{key} = '{configured_url}'\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
+                    "ENABLE_DEMO_LOGIN=true\nSECRET=never-ship\n",
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(
+                    output,
+                    f"{key}={origin}\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
+                    "ENABLE_DEMO_LOGIN=false\n",
+                )
+                self.assertNotIn(CLIENT, result.stdout + result.stderr)
 
     def test_reject_missing_invalid_or_ambiguous_configuration_without_writing(self):
         valid = f"BASE_URL_PROD=https://backend.run.app/api/v1/\nGOOGLE_SERVER_CLIENT_ID={CLIENT}\n"
