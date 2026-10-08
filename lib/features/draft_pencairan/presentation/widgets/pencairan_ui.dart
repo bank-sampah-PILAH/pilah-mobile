@@ -161,19 +161,29 @@ class PencairanChip extends StatelessWidget {
   }
 }
 
-/// White box with a green outline. Pass a different [borderColor] to flag an
-/// error.
+/// White box with a 2px green outline, for a panel such as the options that
+/// apply to everyone. [PencairanCard.shadow] is the softer card used for each
+/// nasabah or draft: no outline, a shadow instead. Either takes a
+/// [borderColor] to mark an error or a selection.
 class PencairanCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final Color borderColor;
+  final Color? borderColor;
+  final bool _shadow;
 
   const PencairanCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.borderColor = AppColors.greenDark,
-  });
+  }) : _shadow = false;
+
+  const PencairanCard.shadow({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.borderColor,
+  }) : _shadow = true;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -181,7 +191,18 @@ class PencairanCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor),
+          border: borderColor == null
+              ? null
+              : Border.all(color: borderColor!, width: 2),
+          boxShadow: _shadow
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: child,
       );
@@ -193,11 +214,15 @@ class SummaryRow {
   final bool emphasized;
   final Key? valueKey;
 
+  /// Overrides the value's colour (a potongan is yellow); null keeps the default.
+  final Color? valueColor;
+
   const SummaryRow({
     required this.label,
     required this.value,
     this.emphasized = false,
     this.valueKey,
+    this.valueColor,
   });
 }
 
@@ -262,7 +287,8 @@ class PencairanSummaryCard extends StatelessWidget {
                         ? AppTextStyle.headline1
                         : AppTextStyle.title1)
                     .copyWith(
-                  color: row.emphasized ? _emerald : Colors.black87,
+                  color: row.valueColor ??
+                      (row.emphasized ? _emerald : Colors.black87),
                   fontWeight: FontWeight.bold,
                   fontSize: row.emphasized ? 20 : 15,
                 ),

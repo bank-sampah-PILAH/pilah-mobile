@@ -190,8 +190,7 @@ class _DraftCard extends StatelessWidget {
       key: Key('draft-${draft.id}'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: PencairanCard(
-        borderColor: Colors.grey.shade200,
+      child: PencairanCard.shadow(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

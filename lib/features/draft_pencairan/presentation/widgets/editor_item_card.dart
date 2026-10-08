@@ -92,10 +92,10 @@ class EditorItemCard extends StatelessWidget {
     final error = state.errorFor(item);
     final potongan = state.potonganEfektif(item);
     final disesuaikan = state.disesuaikan(item);
-    return PencairanCard(
+    return PencairanCard.shadow(
       key: Key('item-${item.nasabahId}'),
       padding: const EdgeInsets.all(12),
-      borderColor: error != null ? Colors.red.shade300 : AppColors.greenDark,
+      borderColor: error != null ? Colors.red.shade300 : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -285,7 +285,6 @@ class _HasilStrip extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.greenDark),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

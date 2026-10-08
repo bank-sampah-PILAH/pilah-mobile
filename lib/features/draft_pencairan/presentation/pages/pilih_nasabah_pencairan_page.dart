@@ -183,10 +183,9 @@ class _List extends StatelessWidget {
               key: Key('kandidat-${kandidat.id}'),
               onTap: () => cubit.toggle(kandidat.id),
               borderRadius: BorderRadius.circular(16),
-              child: PencairanCard(
+              child: PencairanCard.shadow(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                borderColor:
-                    dipilih ? AppColors.greenDark : Colors.grey.shade200,
+                borderColor: dipilih ? AppColors.greenDark : null,
                 child: Row(
                   children: [
                     IgnorePointer(
