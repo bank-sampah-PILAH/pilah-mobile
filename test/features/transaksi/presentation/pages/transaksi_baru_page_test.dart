@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remot
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -172,6 +173,35 @@ void main() {
     expect(find.text('Nasabah harus dipilih'), findsOneWidget);
     expect(find.text('Daftar setoran tidak boleh kosong'), findsOneWidget);
     expect(api.requests.where((r) => r.method == 'POST'), isEmpty);
+    await settleToasts(tester);
+  });
+
+  /// The weight box is the last text field in the card; the price field above
+  /// it is read-only.
+  Future<void> setBerat(WidgetTester tester, String value) async {
+    final berat = find
+        .descendant(
+            of: find.byType(ItemSetoranCard),
+            matching: find.byType(TextFormField))
+        .last;
+    await tester.enterText(berat, value);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('an item left at zero weight is flagged, not posted',
+      (tester) async {
+    await open(tester);
+    await pickNasabah(tester);
+    await addItem(tester, 'Botol PET');
+    await setBerat(tester, '0');
+
+    await save(tester);
+
+    expect(api.requests.where((r) => r.method == 'POST'), isEmpty,
+        reason: 'a 0 kg setoran must not be sent at all');
+    expect(find.text('Berat harus lebih dari 0'), findsOneWidget,
+        reason: 'the backend rejects it (PIL-224), so the form should say so '
+            'before the round trip rather than after it');
     await settleToasts(tester);
   });
 
