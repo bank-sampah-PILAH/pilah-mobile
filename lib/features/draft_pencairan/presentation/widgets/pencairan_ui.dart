@@ -250,15 +250,22 @@ class PencairanSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            row.value,
-            key: row.valueKey,
-            style:
-                (row.emphasized ? AppTextStyle.headline1 : AppTextStyle.title1)
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                row.value,
+                key: row.valueKey,
+                style: (row.emphasized
+                        ? AppTextStyle.headline1
+                        : AppTextStyle.title1)
                     .copyWith(
-              color: row.emphasized ? _emerald : Colors.black87,
-              fontWeight: FontWeight.bold,
-              fontSize: row.emphasized ? 20 : 15,
+                  color: row.emphasized ? _emerald : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: row.emphasized ? 20 : 15,
+                ),
+              ),
             ),
           ),
         ],

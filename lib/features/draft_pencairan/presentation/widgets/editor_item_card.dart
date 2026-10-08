@@ -251,87 +251,91 @@ class _HasilStrip extends StatelessWidget {
         color: AppColors.greenLight,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionLabel.field('POTONGAN'),
-                  const SizedBox(height: 4),
-                  Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            potongan > 0
-                                ? '\u2212 ${rupiah(potongan)}'
-                                : rupiah(potongan),
-                            key: Key('potongan-$nasabahId'),
-                            style: AppTextStyle.title1.copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: potongan > 0
-                                  ? AppColors.statOrange
-                                  : Colors.black87,
+                      const SectionLabel.field('POTONGAN'),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                potongan > 0
+                                    ? '\u2212 ${rupiah(potongan)}'
+                                    : rupiah(potongan),
+                                key: Key('potongan-$nasabahId'),
+                                style: AppTextStyle.title1.copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: potongan > 0
+                                      ? AppColors.statOrange
+                                      : Colors.black87,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        khusus ? 'khusus' : 'umum',
-                        style: AppTextStyle.extraSmall
-                            .copyWith(color: Colors.grey[700]),
+                          const SizedBox(width: 6),
+                          Text(
+                            khusus ? 'khusus' : 'umum',
+                            style: AppTextStyle.extraSmall
+                                .copyWith(color: Colors.grey[700]),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  if (onAtur != null)
-                    TextButton.icon(
-                      key: Key('potongan-item-$nasabahId'),
-                      onPressed: onAtur,
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 32),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                VerticalDivider(width: 24, color: Colors.green.shade100),
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionLabel.field('DIBAYAR'),
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
+                        child: Text(
+                          rupiah(dibayar),
+                          key: Key('dibayar-$nasabahId'),
+                          style: AppTextStyle.headline1.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF006D44),
+                          ),
+                        ),
                       ),
-                      icon: const Icon(Icons.percent, size: 16),
-                      label: const Text('Atur potongan'),
-                    ),
-                ],
-              ),
-            ),
-            VerticalDivider(width: 24, color: Colors.green.shade100),
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionLabel.field('DIBAYAR'),
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      rupiah(dibayar),
-                      key: Key('dibayar-$nasabahId'),
-                      style: AppTextStyle.headline1.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF006D44),
-                      ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (onAtur != null)
+            TextButton.icon(
+              key: Key('potongan-item-$nasabahId'),
+              onPressed: onAtur,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              icon: const Icon(Icons.percent, size: 16),
+              label: const Text('Atur potongan'),
+            ),
+        ],
       ),
     );
   }
