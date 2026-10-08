@@ -59,7 +59,16 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     Stream<NasabahApprovalState>? approvalStates,
     MockApproval? approvalCubit,
     String initialLocation = '/home',
+    Size window = const Size(390, 844),
     bool settle = true}) async {
+  // These tests are about the bottom navigation bar, so they pin a phone-sized
+  // window. Previously they relied on the 800x600 test default, which the
+  // layout breakpoints now classify as a tablet and therefore render as a
+  // navigation rail; stating the viewport makes the assumption explicit.
+  tester.view.physicalSize = window;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   final approval = approvalCubit ?? MockApproval();
   when(() => approval.load(silent: any(named: 'silent')))
       .thenAnswer((_) async {});
