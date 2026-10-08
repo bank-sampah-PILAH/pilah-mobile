@@ -19,7 +19,7 @@ enum DraftStatus {
 
 enum PotonganJenis {
   persen('Persen'),
-  rupiah('Rupiah');
+  rupiah('Nominal');
 
   const PotonganJenis(this.label);
 
