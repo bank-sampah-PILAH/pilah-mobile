@@ -232,7 +232,8 @@ void main() {
     expect(tester.widget<Text>(find.text('Rp 100.000')).style!.fontSize, 15);
   });
 
-  testWidgets('PencairanCard is a soft grey rounded box', (tester) async {
+  testWidgets('PencairanCard is a white rounded box with a green outline',
+      (tester) async {
     await pumpRouted(
       tester,
       const Scaffold(body: PencairanCard(child: Text('isi'))),
@@ -241,7 +242,26 @@ void main() {
     final box = tester.widget<Container>(find.descendant(
         of: find.byType(PencairanCard), matching: find.byType(Container)));
     final decoration = box.decoration! as BoxDecoration;
-    expect(decoration.color, Colors.grey[50]);
+    expect(decoration.color, Colors.white);
     expect(decoration.borderRadius, BorderRadius.circular(16));
+    final border = decoration.border! as Border;
+    expect(border.top.color, AppColors.greenDark);
+    expect(border.top.width, 1);
+  });
+
+  testWidgets('a PencairanCard can take another outline, for an error',
+      (tester) async {
+    await pumpRouted(
+      tester,
+      Scaffold(
+        body: PencairanCard(
+            borderColor: Colors.red.shade300, child: const Text('isi')),
+      ),
+    );
+
+    final box = tester.widget<Container>(find.descendant(
+        of: find.byType(PencairanCard), matching: find.byType(Container)));
+    expect(((box.decoration! as BoxDecoration).border! as Border).top.color,
+        Colors.red.shade300);
   });
 }
