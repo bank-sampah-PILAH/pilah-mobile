@@ -12,8 +12,8 @@ void main() {
     test('bootstraps authentication from the real $environment graph',
         () async {
       dotenv.loadFromString(envString: '''
-BASE_URL_DEV=https://pilah-be-staging.fly.dev/api/v1/
-BASE_URL_PROD=https://backend.run.app/api/v1/
+BASE_URL_DEV=https://pilah-be-staging.fly.dev
+BASE_URL_PROD=https://backend.run.app
 ENABLE_DEMO_LOGIN=false
 ''');
       // The same public bootstrap and resolution used by main_* and App.

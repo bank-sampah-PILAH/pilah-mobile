@@ -28,17 +28,18 @@ def prepare(flavor, target):
     api = values[key]
     url = urlsplit(api)
     if (url.scheme != "https" or not url.hostname or url.username or url.password
-            or url.query or url.fragment or url.path != "/api/v1/"
+            or url.query or url.fragment or url.path not in ("", "/", "/api/v1/")
             or not re.fullmatch(r"[a-zA-Z0-9.-]+", url.netloc)
             or url.hostname in ("localhost", "dummyjson.com")):
-        raise ValueError(key + " must be an HTTPS API URL ending in /api/v1/")
-    if flavor == "staging" and api != "https://pilah-be-staging.fly.dev/api/v1/":
-        raise ValueError("staging API must use pilah-be-staging.fly.dev/api/v1/")
+        raise ValueError(key + " must be an HTTPS API origin, optionally ending in /api/v1/")
+    api_origin = f"{url.scheme}://{url.netloc}"
+    if flavor == "staging" and api_origin != "https://pilah-be-staging.fly.dev":
+        raise ValueError("staging API must use pilah-be-staging.fly.dev")
     client = values["GOOGLE_SERVER_CLIENT_ID"]
     if not re.fullmatch(r"[0-9]+-[a-zA-Z0-9-]+\.apps\.googleusercontent\.com", client):
         raise ValueError("GOOGLE_SERVER_CLIENT_ID must be a Web OAuth client ID")
     # .env is an asset, not a secret store: discard every other supplied value.
-    pathlib.Path(target).write_text(f"{key}={api}\nGOOGLE_SERVER_CLIENT_ID={client}\nENABLE_DEMO_LOGIN=false\n")
+    pathlib.Path(target).write_text(f"{key}={api_origin}\nGOOGLE_SERVER_CLIENT_ID={client}\nENABLE_DEMO_LOGIN=false\n")
 
 
 if __name__ == "__main__":

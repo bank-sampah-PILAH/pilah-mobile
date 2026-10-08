@@ -6,8 +6,12 @@ workflows remain independent and unchanged.
 
 | Environment | Dashboard | API / entrypoint |
 | --- | --- | --- |
-| staging | `https://pilah-web-staging.fly.dev` (Fly, `sin`) | `https://pilah-be-staging.fly.dev/api/v1/`, `lib/main_development.dart` |
-| production | Actual `status.url` returned by Cloud Run service `pilah-web` | production `APP_ENV_FILE`'s `BASE_URL_PROD`, `lib/main_production.dart` |
+| staging | `https://pilah-web-staging.fly.dev` (Fly, `sin`) | `https://pilah-be-staging.fly.dev`, `lib/main_development.dart` |
+| production | Actual `status.url` returned by Cloud Run service `pilah-web` | production `APP_ENV_FILE`'s `BASE_URL_PROD` backend origin, `lib/main_production.dart` |
+
+`BASE_URL_DEV` and `BASE_URL_PROD` are backend origins, without an API path.
+Mobile request paths already include `/api/v1`; the build script also strips a
+legacy `/api/v1/` suffix from these values before writing the public dotenv.
 
 The production `*.run.app` hostname is provider-generated. Do not guess it.
 The deploy job checks HTTPS `/healthz` and `/`, then prints the verified URL
@@ -23,15 +27,15 @@ These are maintainer provisioning steps, not actions performed by this PR.
    reviewers**; naming an environment alone does not enable approval protection.
 2. Set environment secret `APP_ENV_FILE` using the existing application format:
    ```dotenv
-   BASE_URL_DEV=https://pilah-be-staging.fly.dev/api/v1/
-   BASE_URL_PROD=https://ACTUAL-PRODUCTION-BACKEND.run.app/api/v1/
+   BASE_URL_DEV=https://pilah-be-staging.fly.dev
+   BASE_URL_PROD=https://ACTUAL-PRODUCTION-BACKEND.run.app
    GOOGLE_SERVER_CLIENT_ID=NUMERIC-ID-WEB-CLIENT.apps.googleusercontent.com
    ENABLE_DEMO_LOGIN=false
    ```
    Replace examples with real values. Only the selected API key, Google Web
    client ID and `ENABLE_DEMO_LOGIN=false` enter the public `.env` web asset.
-   Missing/duplicate keys, a non-HTTPS API, wrong staging API, missing trailing
-   `/api/v1/`, and malformed client IDs fail before build. Do not put server
+   Missing/duplicate keys, a non-HTTPS API, wrong staging API, an unexpected
+   API path, and malformed client IDs fail before build. Do not put server
    secrets in browser settings. The script never sources shell dotenv values.
 3. Provision **separate** Fly app `pilah-web-staging` in the intended organization
    and allocate its provider hostname/networking as required by Fly. Put an
