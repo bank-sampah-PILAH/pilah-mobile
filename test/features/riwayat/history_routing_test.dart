@@ -71,9 +71,6 @@ class _RiwayatRemoteSource implements RiwayatRemoteDataSource {
           String membershipId, String transactionId) =>
       throw UnsupportedError('No detail in this test');
 
-  @override
-  Future<RiwayatPdf> exportPdf(String membershipId) =>
-      throw UnsupportedError('No export in this test');
 }
 
 void main() {

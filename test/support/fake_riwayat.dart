@@ -33,9 +33,6 @@ class FakeRiwayatRemoteDataSource implements RiwayatRemoteDataSource {
           String membershipId, String transactionId) =>
       throw UnsupportedError('No detail fixture in this test');
 
-  @override
-  Future<RiwayatPdf> exportPdf(String membershipId) =>
-      throw UnsupportedError('No export fixture in this test');
 }
 
 void registerFakeRiwayat(FakeRiwayatRemoteDataSource source) {
@@ -74,8 +71,4 @@ class _FixedRepository implements RiwayatRepository {
           String membershipId, String transactionId) async =>
       Left(NetworkException(message: 'Tidak ada data uji'));
 
-  @override
-  Future<Either<NetworkException, RiwayatPdf>> exportPdf(
-          String membershipId) async =>
-      Left(NetworkException(message: 'Tidak ada data uji'));
 }

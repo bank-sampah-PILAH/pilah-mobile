@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -98,72 +96,6 @@ void main() {
     });
 
     expect((await source.setoranDetail('b', id)).balanceAfter, '15000.00');
-  });
-
-  test('exportPdf reads bytes and the header filename', () async {
-    when(() => network.getBytes('/api/v1/nasabah/me/riwayat/export-pdf',
-        queryParams: any(named: 'queryParams'))).thenAnswer(
-      (_) async => Response(
-        data: Uint8List.fromList([0x25, 0x50, 0x44, 0x46]),
-        requestOptions: RequestOptions(path: '/pdf'),
-        headers: Headers.fromMap({
-          'content-disposition': [
-            'attachment; filename="Riwayat_Aktivitas_NSB-1.pdf"'
-          ]
-        }),
-      ),
-    );
-
-    final export = await source.exportPdf('member-b');
-
-    expect(export.bytes, [0x25, 0x50, 0x44, 0x46]);
-    expect(export.filename, 'Riwayat_Aktivitas_NSB-1.pdf');
-    verify(() => network.getBytes('/api/v1/nasabah/me/riwayat/export-pdf',
-        queryParams: {'keanggotaan_id': 'member-b'})).called(1);
-  });
-
-  test('a stripped Content-Disposition header falls back to a fixed filename',
-      () async {
-    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
-        .thenAnswer(
-      (_) async => Response(
-        data: Uint8List.fromList([1]),
-        requestOptions: RequestOptions(path: '/pdf'),
-      ),
-    );
-
-    expect(
-        (await source.exportPdf('member-b')).filename, 'Riwayat_Aktivitas.pdf');
-  });
-
-  test('a quoted filename is unquoted', () async {
-    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
-        .thenAnswer(
-      (_) async => Response(
-        data: Uint8List.fromList([1]),
-        requestOptions: RequestOptions(path: '/pdf'),
-        headers: Headers.fromMap({
-          'content-disposition': [
-            'attachment; filename="Riwayat_Aktivitas_X.pdf"'
-          ]
-        }),
-      ),
-    );
-
-    expect((await source.exportPdf('member-b')).filename,
-        'Riwayat_Aktivitas_X.pdf');
-  });
-
-  test('exportPdf treats a list payload as int bytes', () async {
-    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
-        .thenAnswer(
-      (_) async => Response(
-        data: [1, 2, 3],
-        requestOptions: RequestOptions(path: '/pdf'),
-      ),
-    );
-
-    expect((await source.exportPdf('member-b')).bytes, [1, 2, 3]);
   });
 
   test('422 with membership choices raises the picker error', () async {

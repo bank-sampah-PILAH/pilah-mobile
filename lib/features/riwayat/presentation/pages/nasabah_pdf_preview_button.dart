@@ -33,17 +33,20 @@ class NasabahPdfPreviewButton extends StatelessWidget {
       );
       return;
     }
-    // Push while the loading Flushbar is still up, then dismiss it: a route
-    // pushed right after Flushbar.dismiss() can hit Navigator._debugLocked
-    // (the lock outlives the completer by a frame). Dismissing a non-current
-    // route uses removeRoute — instant, no animation, no lock.
+    // Start the push, then dismiss the loading toast before awaiting: the
+    // toast is non-dismissible and awaiting the push would leave it mounted
+    // under the PDF preview for the whole session (and trap the app behind
+    // an invisible barrier on return). Dismissing a non-current route is
+    // instant — removeRoute, no animation, and no Navigator._debugLocked
+    // (the lock outlives the push's completer by a frame, the race that
+    // started this dance).
     final navigator = Navigator.of(context, rootNavigator: true);
-    await navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => NasabahPdfPreviewPage(export: export),
-      ),
+    final route = MaterialPageRoute<void>(
+      builder: (_) => NasabahPdfPreviewPage(export: export),
     );
+    final pushed = navigator.push(route);
     await loading.dismiss();
+    await pushed;
   }
 
   @override

@@ -61,6 +61,11 @@ class RiwayatHistoryCubit extends Cubit<RiwayatHistoryState> {
 
   /// Loads [page] (or the next page) and appends, deduping by id so a retry
   /// or refresh overlap cannot duplicate rows.
+  ///
+  /// The requested page commits to the state only on success: advancing
+  /// before the request lands would make a failed page N unrequested forever
+  /// (a retry asks for N + 1, silently skipping N — including page 1 on the
+  /// very first load).
   Future<void> loadHistory(String membershipId, {bool reset = false}) async {
     this.membershipId = membershipId;
     final requestedPage = reset ? 1 : state.page + 1;
@@ -69,7 +74,6 @@ class RiwayatHistoryCubit extends Cubit<RiwayatHistoryState> {
       status: RiwayatHistoryStatus.loading,
       activities: reset ? [] : state.activities,
       error: null,
-      page: requestedPage,
     ));
     final result = await _historyUseCase.execute(
       RiwayatHistoryParams(membershipId, page: requestedPage),
@@ -88,6 +92,7 @@ class RiwayatHistoryCubit extends Cubit<RiwayatHistoryState> {
           ...history.activities,
         ],
         hasNext: history.hasNext,
+        page: requestedPage,
       )),
     );
   }

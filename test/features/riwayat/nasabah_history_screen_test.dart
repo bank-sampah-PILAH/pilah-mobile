@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -71,10 +69,6 @@ class _RiwayatRepository implements RiwayatRepository {
     );
   }
 
-  @override
-  Future<Either<NetworkException, RiwayatPdf>> exportPdf(
-          String membershipId) async =>
-      Right(RiwayatPdf(bytes: Uint8List(0), filename: 'x.pdf'));
 }
 
 void main() {

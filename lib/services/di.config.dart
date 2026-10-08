@@ -332,8 +332,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i216.GetRiwayatHistoryUseCase(gh<_i908.RiwayatRepository>()));
     gh.lazySingleton<_i216.GetRiwayatSetoranDetailUseCase>(() =>
         _i216.GetRiwayatSetoranDetailUseCase(gh<_i908.RiwayatRepository>()));
-    gh.lazySingleton<_i216.ExportRiwayatPdfUseCase>(
-        () => _i216.ExportRiwayatPdfUseCase(gh<_i908.RiwayatRepository>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
     gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(

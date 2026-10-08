@@ -79,10 +79,4 @@ class _PreviewRiwayatRepository implements RiwayatRepository {
     String transactionId,
   ) async =>
       Left(NetworkException(message: 'Pratinjau tidak memiliki data detail.'));
-
-  @override
-  Future<Either<NetworkException, RiwayatPdf>> exportPdf(
-    String membershipId,
-  ) async =>
-      Left(NetworkException(message: 'Pratinjau tidak dapat membuat PDF.'));
 }

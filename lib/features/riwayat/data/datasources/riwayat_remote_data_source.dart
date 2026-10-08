@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-
-import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_me_get.dart';
@@ -15,9 +12,6 @@ abstract class RiwayatRemoteDataSource {
     String membershipId,
     String transactionId,
   );
-
-  /// The activity-statement PDF (PIL-315), fetched byte-and-header only.
-  Future<RiwayatPdf> exportPdf(String membershipId);
 }
 
 /// Speaks the nasabah `me` riwayat endpoints through the authenticated
@@ -50,33 +44,6 @@ class RiwayatRemoteDataSourceImpl implements RiwayatRemoteDataSource {
       RiwayatSetoranDetail.fromJson(
         await _get('riwayat/$transactionId', membershipId: membershipId),
       );
-
-  @override
-  Future<RiwayatPdf> exportPdf(String membershipId) async {
-    final response = await network.getBytes(
-      '$_base/riwayat/export-pdf',
-      queryParams: {'keanggotaan_id': membershipId},
-    );
-    final data = response.data;
-    final bytes = data is Uint8List
-        ? data
-        : Uint8List.fromList((data as List).cast<int>());
-    return RiwayatPdf(
-      bytes: bytes,
-      filename: _attachmentName(response),
-    );
-  }
-
-  /// Filename from `Content-Disposition: attachment; filename="x.pdf"`, with
-  /// a fixed default — the backend always sends the header, but a proxy
-  /// stripping it must not defeat the save.
-  String _attachmentName(Response response) {
-    final header = response.headers.value('content-disposition');
-    final match = header == null
-        ? null
-        : RegExp(r'filename="?([^";]+)"?$').firstMatch(header);
-    return match?.group(1) ?? 'Riwayat_Aktivitas.pdf';
-  }
 
   /// Shared GET + error mapping — the same nasabah-me surface as
   /// NasabahRepository, so both route through the one implementation.
