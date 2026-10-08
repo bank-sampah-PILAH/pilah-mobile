@@ -38,6 +38,10 @@ class EditorItemCard extends StatelessWidget {
     final hasil = await showModalBottomSheet<_PotonganChoice>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheet) => Padding(
           padding: EdgeInsets.fromLTRB(
@@ -59,15 +63,8 @@ class EditorItemCard extends StatelessWidget {
                 onChanged: (value) => setSheet(() => pilihan = value),
               ),
               const SizedBox(height: 16),
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              Row(
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(sheetContext)
-                        .pop(const _PotonganChoice(null)),
-                    child: const Text('Ikuti potongan umum'),
-                  ),
                   ElevatedButton(
                     onPressed: () => Navigator.of(sheetContext)
                         .pop(_PotonganChoice(pilihan)),
@@ -76,6 +73,17 @@ class EditorItemCard extends StatelessWidget {
                       foregroundColor: Colors.white,
                     ),
                     child: const Text('Terapkan'),
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(sheetContext)
+                          .pop(const _PotonganChoice(null)),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Ikuti potongan umum'),
+                      ),
+                    ),
                   ),
                 ],
               ),
