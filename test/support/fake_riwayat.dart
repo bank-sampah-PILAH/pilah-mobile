@@ -32,7 +32,6 @@ class FakeRiwayatRemoteDataSource implements RiwayatRemoteDataSource {
   Future<RiwayatSetoranDetail> setoranDetail(
           String membershipId, String transactionId) =>
       throw UnsupportedError('No detail fixture in this test');
-
 }
 
 void registerFakeRiwayat(FakeRiwayatRemoteDataSource source) {
@@ -70,5 +69,4 @@ class _FixedRepository implements RiwayatRepository {
   Future<Either<NetworkException, RiwayatSetoranDetail>> setoranDetail(
           String membershipId, String transactionId) async =>
       Left(NetworkException(message: 'Tidak ada data uji'));
-
 }

@@ -70,7 +70,6 @@ class _RiwayatRemoteSource implements RiwayatRemoteDataSource {
   Future<RiwayatSetoranDetail> setoranDetail(
           String membershipId, String transactionId) =>
       throw UnsupportedError('No detail in this test');
-
 }
 
 void main() {

@@ -19,7 +19,8 @@ class RiwayatRepositoryImpl implements RiwayatRepository {
   /// apiCall-style paths) would flatten it to "Instance of ...". Map it to a
   /// [NetworkException] with the message intact; everything else follows the
   /// shared bad-response/timeout mapping.
-  Future<Either<NetworkException, T>> _call<T>(Future<T> Function() request) async {
+  Future<Either<NetworkException, T>> _call<T>(
+      Future<T> Function() request) async {
     try {
       return Right(await request());
     } on NasabahApiException catch (error) {

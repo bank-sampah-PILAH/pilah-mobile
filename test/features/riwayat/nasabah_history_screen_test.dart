@@ -68,7 +68,6 @@ class _RiwayatRepository implements RiwayatRepository {
       ),
     );
   }
-
 }
 
 void main() {
