@@ -28,6 +28,19 @@ DraftRingkasan _draft(String id, String nama, DraftStatus status) =>
       totalDibayar: 138500,
     );
 
+DraftPencairan _batal() => DraftPencairan(
+      id: 'd-1',
+      nama: 'Cair Oktober',
+      status: DraftStatus.dibatalkan,
+      potonganDefault: Potongan.nol,
+      createdAt: DateTime(2026, 10, 7),
+      updatedAt: DateTime(2026, 10, 7),
+      items: const [],
+      totalNominal: 0,
+      totalPotongan: 0,
+      totalDibayar: 0,
+    );
+
 void main() {
   late _MockUseCases useCases;
 
@@ -161,5 +174,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('route:${DraftListPage.routeEditor}'), findsOneWidget);
+  });
+
+  testWidgets('only a draft in progress can be cancelled from its card',
+      (tester) async {
+    await pump(tester, [
+      _draft('d-1', 'Cair Oktober', DraftStatus.draft),
+      _draft('d-2', 'Cair September', DraftStatus.dikonfirmasi),
+      _draft('d-3', 'Cair Agustus', DraftStatus.dibatalkan),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('batalkan-d-1')), findsOneWidget);
+    expect(find.byKey(const Key('batalkan-d-2')), findsNothing);
+    expect(find.byKey(const Key('batalkan-d-3')), findsNothing);
+  });
+
+  testWidgets('the trash icon asks first, then cancels and reloads',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+    when(() => useCases.cancelDraft('d-1'))
+        .thenAnswer((_) async => Right(_batal()));
+    when(() => useCases.getDrafts()).thenAnswer((_) async =>
+        Right([_draft('d-1', 'Cair Oktober', DraftStatus.dibatalkan)]));
+
+    await tester.tap(find.byKey(const Key('batalkan-d-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Batalkan draft?'), findsOneWidget);
+    verifyNever(() => useCases.cancelDraft(any()));
+
+    await tester.tap(find.text('Ya, batalkan'));
+    await tester.pumpAndSettle();
+
+    verify(() => useCases.cancelDraft('d-1')).called(1);
+    expect(find.byKey(const Key('batalkan-d-1')), findsNothing);
+  });
+
+  testWidgets('backing out of the question cancels nothing', (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('batalkan-d-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kembali'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => useCases.cancelDraft(any()));
+    expect(find.byKey(const Key('batalkan-d-1')), findsOneWidget);
   });
 }

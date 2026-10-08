@@ -9,6 +9,19 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_l
 
 class _MockUseCases extends Mock implements DraftPencairanUseCases {}
 
+DraftPencairan _batal(String id) => DraftPencairan(
+      id: id,
+      nama: 'Draft $id',
+      status: DraftStatus.dibatalkan,
+      potonganDefault: Potongan.nol,
+      createdAt: DateTime(2026, 10, 7),
+      updatedAt: DateTime(2026, 10, 7),
+      items: const [],
+      totalNominal: 0,
+      totalPotongan: 0,
+      totalDibayar: 0,
+    );
+
 DraftRingkasan _ringkasan(String id, DraftStatus status) => DraftRingkasan(
       id: id,
       nama: 'Draft $id',
@@ -78,5 +91,34 @@ void main() {
 
     expect(cubit.state.status, DraftListStatus.failure);
     expect(cubit.state.errorMessage, isNotNull);
+  });
+
+  test('cancelling a draft reloads the list and reports no error', () async {
+    when(() => useCases.getDrafts())
+        .thenAnswer((_) async => Right([_ringkasan('d-1', DraftStatus.draft)]));
+    await cubit.load();
+    when(() => useCases.cancelDraft('d-1'))
+        .thenAnswer((_) async => Right(_batal('d-1')));
+    when(() => useCases.getDrafts()).thenAnswer(
+        (_) async => Right([_ringkasan('d-1', DraftStatus.dibatalkan)]));
+
+    final error = await cubit.batalkan('d-1');
+
+    expect(error, isNull);
+    expect(cubit.state.drafts.single.status, DraftStatus.dibatalkan);
+  });
+
+  test('a cancel that fails says why and leaves the list alone', () async {
+    when(() => useCases.getDrafts())
+        .thenAnswer((_) async => Right([_ringkasan('d-1', DraftStatus.draft)]));
+    await cubit.load();
+    when(() => useCases.cancelDraft('d-1'))
+        .thenAnswer((_) async => Left(ConnectionTimeOutException()));
+
+    final error = await cubit.batalkan('d-1');
+
+    expect(error, isNotNull);
+    expect(cubit.state.drafts.single.status, DraftStatus.draft);
+    verify(() => useCases.getDrafts()).called(1);
   });
 }
