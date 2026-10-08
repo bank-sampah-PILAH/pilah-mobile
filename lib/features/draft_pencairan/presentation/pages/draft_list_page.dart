@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
@@ -167,6 +168,7 @@ class _Body extends StatelessWidget {
                       DraftListPage.routeEditor,
                       extra: DraftEditorArgs.lanjutkan(drafts[index].id),
                     ),
+                    onCancel: () => _batalkan(context, drafts[index]),
                   ),
                 ),
         );
@@ -174,11 +176,44 @@ class _Body extends StatelessWidget {
   }
 }
 
+Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
+  final cubit = context.read<DraftListCubit>();
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Batalkan draft?'),
+      content: Text(
+        '"${draft.nama}" tidak akan dibayarkan. Saldo nasabah tidak berubah.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Kembali'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Ya, batalkan'),
+        ),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  final error = await cubit.batalkan(draft.id);
+  if (error != null && context.mounted) {
+    AppNotification.showError(context, title: 'Gagal', message: error);
+  }
+}
+
 class _DraftCard extends StatelessWidget {
   final DraftRingkasan draft;
   final VoidCallback onTap;
+  final VoidCallback onCancel;
 
-  const _DraftCard({required this.draft, required this.onTap});
+  const _DraftCard({
+    required this.draft,
+    required this.onTap,
+    required this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +241,16 @@ class _DraftCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 DraftStatusBadge(status: draft.status),
+                if (draft.status == DraftStatus.draft)
+                  IconButton(
+                    key: Key('batalkan-${draft.id}'),
+                    tooltip: 'Batalkan draft',
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.only(left: 8),
+                    onPressed: onCancel,
+                    icon: Icon(Icons.delete_outline, color: Colors.red[700]),
+                  ),
               ],
             ),
             const SizedBox(height: 4),
