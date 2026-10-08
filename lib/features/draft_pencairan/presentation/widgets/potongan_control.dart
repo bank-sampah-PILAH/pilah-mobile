@@ -81,8 +81,11 @@ class _PotonganControlState extends State<PotonganControl> {
             activeColor: AppColors.greenDark,
             label: '${_format(widget.value.nilai)}%',
             value: widget.value.nilai.clamp(0, 100).toDouble(),
-            onChanged: (value) =>
-                widget.onChanged(Potongan(PotonganJenis.persen, value)),
+            // The slider's arithmetic drifts (56.99999999999999): keep two decimals.
+            onChanged: (value) => widget.onChanged(Potongan(
+              PotonganJenis.persen,
+              (value * 100).round() / 100,
+            )),
           )
         else
           const SizedBox(height: 8),
