@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
@@ -59,17 +60,22 @@ class PencairanHeader extends StatelessWidget {
   }
 }
 
-/// `PILIH NASABAH`-style heading above a group of fields.
+/// Heading above a group of fields (`RINGKASAN`). [SectionLabel.field] is the
+/// quieter label of a single field inside a card (`NOMINAL`).
 class SectionLabel extends StatelessWidget {
   final String text;
+  final bool _field;
 
-  const SectionLabel(this.text, {super.key});
+  const SectionLabel(this.text, {super.key}) : _field = false;
+
+  const SectionLabel.field(this.text, {super.key}) : _field = true;
 
   @override
   Widget build(BuildContext context) => Text(
         text,
         style: AppTextStyle.extraSmall.copyWith(
-          color: Colors.grey[500],
+          color: _field ? Colors.grey[700] : Colors.black87,
+          fontSize: _field ? 11 : 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.0,
         ),
@@ -113,16 +119,19 @@ class PencairanChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback? onTap;
+  final IconData? icon;
 
   const PencairanChip({
     super.key,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = selected ? Colors.white : const Color(0xFF6B7280);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -131,12 +140,21 @@ class PencairanChip extends StatelessWidget {
           color: selected ? AppColors.greenDark : const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          label,
-          style: AppTextStyle.small.copyWith(
-            color: selected ? Colors.white : const Color(0xFF6B7280),
-            fontWeight: FontWeight.bold,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: AppTextStyle.small.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -245,4 +263,68 @@ class PencairanSummaryCard extends StatelessWidget {
           ),
         ],
       );
+}
+
+/// Round avatar with the nasabah's initials, coloured from the same palette as
+/// the nasabah list, so a person looks the same on every screen. There is no
+/// photo to show yet; a photo would replace the initials here.
+class PencairanAvatar extends StatelessWidget {
+  final String nama;
+  final double size;
+
+  const PencairanAvatar({super.key, required this.nama, this.size = 40});
+
+  @override
+  Widget build(BuildContext context) {
+    final (background, foreground) = avatarPaletteFor(nama);
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+      child: Text(
+        initialsOf(nama),
+        style: AppTextStyle.small.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.bold,
+          fontSize: size * 0.34,
+        ),
+      ),
+    );
+  }
+}
+
+/// `Dibuat oleh Nama · 8 Okt 2026, 06:59` with the name picked out in dark.
+class PencairanMetaLine extends StatelessWidget {
+  final String label;
+  final String nama;
+  final String waktu;
+
+  const PencairanMetaLine({
+    super.key,
+    required this.label,
+    required this.nama,
+    required this.waktu,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final muted =
+        AppTextStyle.small.copyWith(color: Colors.grey[700], fontSize: 12);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$label ', style: muted),
+          TextSpan(
+            text: nama,
+            style: muted.copyWith(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          TextSpan(text: ' \u00b7 $waktu', style: muted),
+        ],
+      ),
+    );
+  }
 }
