@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_b
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -86,6 +87,18 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     }
   }
 
+  /// Keadaan form sebagai draft, supaya aturan kelayakannya hidup di satu
+  /// tempat dan dapat diuji tanpa widget.
+  SetoranDraft get _draft => SetoranDraft(
+        nasabahId: selectedCustomer?.id,
+        items: setoranItems
+            .map((item) => SetoranItemDraft(
+                  jenisSampahId: item['jenis_sampah_id'] as String?,
+                  berat: (item['berat'] as num?)?.toDouble() ?? 0,
+                ))
+            .toList(growable: false),
+      );
+
   void _addItem() {
     setState(() {
       setoranItems.add(
@@ -93,14 +106,20 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     });
   }
 
+  /// Pesan untuk kartu ke-[index]. Jenis diperiksa lebih dulu: tanpa jenis,
+  /// beratnya belum berarti apa pun.
+  String? _itemErrorText(int index) {
+    if (index >= _draft.items.length) return null;
+    final item = _draft.items[index];
+    if (!item.hasJenis) return 'Pilih jenis sampah';
+    if (!item.hasPositiveBerat) return 'Berat harus lebih dari 0';
+    return null;
+  }
+
   Future<void> _handleSubmit() async {
     setState(() => _hasSubmitted = true);
 
-    if (selectedCustomer == null ||
-        setoranItems.isEmpty ||
-        setoranItems.any((item) => item['jenis_sampah_id'] == null)) {
-      return;
-    }
+    if (!_draft.isValid) return;
 
     final idempotencyKey = _idempotencyKey ?? newTransaksiIdempotencyKey();
     _idempotencyKey = idempotencyKey;
@@ -413,8 +432,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                             index: index,
                             itemData: setoranItems[index],
                             hasError: _hasSubmitted &&
-                                setoranItems[index]['jenis'] == null,
-                            errorText: 'Pilih jenis sampah',
+                                _draft.invalidItemIndexes.contains(index),
+                            errorText: _itemErrorText(index),
                             onChanged: (updatedItem) {
                               final newId =
                                   updatedItem['jenis_sampah_id'] as String?;
