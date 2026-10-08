@@ -28,6 +28,15 @@ enum LayoutBreakpoint {
   /// Batas bawah blok `expanded`, dalam logical pixel.
   static const double expandedMinWidth = 840;
 
+  /// Lebar maksimum konten pada blok `expanded`, dalam logical pixel.
+  ///
+  /// PRD 6.2.1 menetapkan margin layar mobile sekitar 16 px tetapi tidak
+  /// menyebutkan batas lebar konten desktop, jadi angka ini adalah usulan yang
+  /// masih perlu dikonfirmasi ke PO. Dipilih 1200 agar panjang baris tetap
+  /// terbaca pada monitor lebar, sejalan dengan anjuran Material 3 untuk
+  /// membatasi lebar badan konten pada jendela expanded.
+  static const double contentMaxWidth = 1200;
+
   /// Mengklasifikasikan [width] logical pixel ke dalam satu blok.
   ///
   /// Batas dimiliki oleh blok yang lebih lebar: tepat 600 adalah [medium] dan
