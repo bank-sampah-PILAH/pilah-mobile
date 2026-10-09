@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
@@ -14,10 +16,12 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_e
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
+import '../../../support/platform_fakes.dart';
 import '../../../support/pump_app.dart';
 
 class _MockUseCases extends Mock implements DraftPencairanUseCases {}
@@ -938,6 +942,105 @@ void main() {
 
       verify(() => useCases.exportDraft('d-1', ExportBerkas.pdf)).called(1);
       expect(cubit.state.phase, EditorPhase.exporting);
+    });
+
+    testWidgets('a PDF opens in a preview first instead of being saved',
+        (tester) async {
+      DraftPdfPreviewPage.viewBuilder =
+          (_, bytes) => const Center(child: Text('halaman pdf'));
+      addTearDown(() => DraftPdfPreviewPage.viewBuilder = null);
+      // Answers at once, as a fast server does: nothing may get in the way.
+      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+          .thenAnswer((_) async => Right(DraftExport(
+                bytes: Uint8List.fromList([1, 2, 3]),
+                filename: 'draft.pdf',
+              )));
+      await pumpSaved(tester);
+
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ekspor-pdf')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftPdfPreviewPage), findsOneWidget);
+      expect(find.text('halaman pdf'), findsOneWidget);
+      expect(find.textContaining('Berkas disimpan'), findsNothing);
+    });
+
+    testWidgets(
+        'after coming back from the preview, Ekspor and back still work',
+        (tester) async {
+      DraftPdfPreviewPage.viewBuilder =
+          (_, bytes) => const Center(child: Text('halaman pdf'));
+      addTearDown(() => DraftPdfPreviewPage.viewBuilder = null);
+      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+          .thenAnswer((_) async => Right(DraftExport(
+                bytes: Uint8List.fromList([1, 2, 3]),
+                filename: 'draft.pdf',
+              )));
+      await pumpSaved(tester);
+
+      for (var round = 0; round < 3; round++) {
+        await tester.tap(find.byKey(const Key('menu-ekspor')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('ekspor-pdf')));
+        await tester.pumpAndSettle();
+        expect(find.byType(DraftPdfPreviewPage), findsOneWidget,
+            reason: 'round $round');
+
+        await tester.tap(find.byKey(const Key('kembali')));
+        await tester.pumpAndSettle();
+        expect(find.byType(DraftPdfPreviewPage), findsNothing);
+      }
+    });
+
+    testWidgets('while the file is made the Ekspor button shows a spinner',
+        (tester) async {
+      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftExport>>().future);
+      await pumpSaved(tester);
+
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ekspor-pdf')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('ekspor-spinner')), findsOneWidget);
+      expect(find.text('Menyiapkan...'), findsOneWidget);
+      expect(find.text('Informasi'), findsNothing,
+          reason: 'no toast route that could be left behind');
+      // Busy: a second tap opens nothing.
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byKey(const Key('ekspor-pdf')), findsNothing);
+    });
+
+    testWidgets('Excel is still saved straight away, with no preview',
+        (tester) async {
+      final paths = installFakePathProvider(downloads: 'Download');
+      when(() => useCases.exportDraft('d-1', ExportBerkas.xlsx))
+          .thenAnswer((_) async => Right(DraftExport(
+                bytes: Uint8List.fromList([1, 2, 3]),
+                filename: 'draft.xlsx',
+              )));
+      await pumpSaved(tester);
+
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ekspor-xlsx')));
+      for (var i = 0; i < 8; i++) {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+
+      expect(find.byType(DraftPdfPreviewPage), findsNothing);
+      expect(File('${paths.downloads}/draft.xlsx').existsSync(), isTrue);
+      // Let the success toast run its course, a frame at a time.
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
     });
 
     testWidgets('export is held back while there are unsaved edits',
