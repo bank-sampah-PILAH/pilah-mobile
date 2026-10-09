@@ -503,10 +503,34 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
             ),
             const SizedBox(height: 8),
           ],
-          CustomPrimaryButton(
-            key: const Key('terapkan-umum'),
-            title: 'Terapkan',
-            onPressed: _siap ? _terapkan : null,
+          // Slimmer than the page's main buttons: this one sits inside a card.
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              key: const Key('terapkan-umum'),
+              onPressed: _siap ? _terapkan : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.greenDark,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey[300],
+                disabledForegroundColor: Colors.white,
+                minimumSize: const Size(0, 36),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Terapkan',
+                style: AppTextStyle.title1.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ),
         ],
       ),

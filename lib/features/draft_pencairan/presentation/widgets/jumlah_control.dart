@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:pilah_mobile/design/constants/colors.dart';
+
 import '../../domain/model/draft_pencairan.dart';
 import 'pencairan_ui.dart';
 
@@ -75,6 +77,21 @@ class _JumlahControlState extends State<JumlahControl> {
               ),
           ],
         ),
+        if (persen)
+          Slider(
+            key: const Key('jumlah-slider'),
+            min: 0,
+            max: 100,
+            divisions: 200,
+            activeColor: AppColors.greenDark,
+            label: '${_format(value)}%',
+            value: value!.nilai.clamp(0, 100).toDouble(),
+            // The slider's arithmetic drifts (56.99999999999999): keep two decimals.
+            onChanged: (nilai) => widget.onChanged(JumlahUmum(
+              JumlahJenis.persen,
+              (nilai * 100).round() / 100,
+            )),
+          ),
         if (value != null) ...[
           const SizedBox(height: 8),
           TextField(
