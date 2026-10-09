@@ -17,7 +17,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaks
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -426,7 +426,7 @@ void main() {
 
     await save(tester);
 
-    expect(find.byType(TransaksiBerhasilBottomSheet), findsOneWidget);
+    expect(find.byType(TransaksiBerhasilPanel), findsOneWidget);
     expect(find.text('Transaksi Berhasil!'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsWidgets);
     expect(find.text('+Rp 5.000'), findsOneWidget);

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
-class TransaksiBerhasilBottomSheet extends StatefulWidget {
+class TransaksiBerhasilPanel extends StatefulWidget {
   final String customerName;
   final int totalSetoran;
   final int newBalance;
   final int itemCount;
   final Future<void> Function() onKirimWaSelesai;
 
-  const TransaksiBerhasilBottomSheet({
+  const TransaksiBerhasilPanel({
     super.key,
     required this.customerName,
     required this.totalSetoran,
@@ -18,12 +18,10 @@ class TransaksiBerhasilBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<TransaksiBerhasilBottomSheet> createState() =>
-      _TransaksiBerhasilBottomSheetState();
+  State<TransaksiBerhasilPanel> createState() => _TransaksiBerhasilPanelState();
 }
 
-class _TransaksiBerhasilBottomSheetState
-    extends State<TransaksiBerhasilBottomSheet> {
+class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
   static const Color emeraldPrimary = Color(0xFF006D44);
   bool _isSending = false;
 

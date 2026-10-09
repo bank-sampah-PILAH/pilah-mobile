@@ -13,7 +13,7 @@ import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.d
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -265,7 +265,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     await showAdaptiveConfirmation(
       context: context,
       dismissible: false,
-      builder: (sheetContext, _) => TransaksiBerhasilBottomSheet(
+      builder: (sheetContext, _) => TransaksiBerhasilPanel(
         customerName: selectedCustomer!.name,
         totalSetoran: created.totalNilai,
         newBalance: created.saldoSetelah,
