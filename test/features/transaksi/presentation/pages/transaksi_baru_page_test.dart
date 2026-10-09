@@ -641,6 +641,77 @@ void main() {
     });
   });
 
+  /// The success confirmation is the last step of the flow and still arrives
+  /// as a bottom sheet on every window. On a 1440px monitor that means a band
+  /// across the bottom edge, far from the save button that produced it — which
+  /// on a wide window lives in the right-hand summary panel.
+  ///
+  /// It is deliberately not dismissible: the pengelola has to choose whether to
+  /// send the WhatsApp draft. Whatever container it gets must keep that.
+  group('the success confirmation follows the window width', () {
+    Future<void> saveSuccessfully(WidgetTester tester, Size window) async {
+      api.on('POST', '/api/v1/transaksi', json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester, window: window);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await save(tester);
+    }
+
+    testWidgets('a wide window gets a dialog', (tester) async {
+      await saveSuccessfully(tester, const Size(1440, 1200));
+
+      expect(find.text('Transaksi Berhasil!'), findsOneWidget);
+      expect(find.byType(Dialog), findsOneWidget,
+          reason: 'the save button is in the right-hand panel on this width; '
+              'the answer should not appear at the opposite edge');
+      expect(find.byType(BottomSheet), findsNothing);
+      await settleToasts(tester);
+    });
+
+    testWidgets('a phone keeps the bottom sheet', (tester) async {
+      await saveSuccessfully(tester, const Size(390, 2600));
+
+      expect(find.text('Transaksi Berhasil!'), findsOneWidget);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+      await settleToasts(tester);
+    });
+
+    testWidgets('it still cannot be dismissed by tapping outside',
+        (tester) async {
+      await saveSuccessfully(tester, const Size(1440, 1200));
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Transaksi Berhasil!'), findsOneWidget,
+          reason: 'choosing whether to send the WhatsApp draft is the point of '
+              'this step, so it must not be dismissable by accident');
+      await settleToasts(tester);
+    });
+
+    testWidgets('the WhatsApp draft still opens from the dialog',
+        (tester) async {
+      await saveSuccessfully(tester, const Size(1440, 1200));
+
+      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await pumpToast(tester);
+
+      final launched = verify(() => launcher.launchUrl(captureAny(), any()))
+          .captured
+          .single as String;
+      expect(launched, startsWith('https://wa.me/'));
+      expect(find.text('route:/'), findsOneWidget,
+          reason: 'the dialog closes and the page leaves, as the sheet did');
+      await settleToasts(tester);
+    });
+  });
+
   testWidgets('a WhatsApp that cannot be opened is only a warning',
       (tester) async {
     when(() => launcher.launchUrl(any(), any())).thenAnswer((_) async => false);
