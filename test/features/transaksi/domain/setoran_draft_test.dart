@@ -120,4 +120,41 @@ void main() {
       );
     });
   });
+
+  /// The form wants to redden a card the moment the pengelola creates an
+  /// invalid state by editing, but *not* the moment a card appears. Those are
+  /// different problems: a fresh card has no jenis yet (invalid from birth,
+  /// nobody's fault), while a zero weight is unreachable without an edit,
+  /// because a new item starts at 1 kg. So the page needs the indexes for one
+  /// specific problem, not just "invalid".
+  group('SetoranDraft — indeks per masalah', () {
+    test('only the zero-weight items come back', () {
+      final subject = draft(items: const [
+        SetoranItemDraft(jenisSampahId: jenis, berat: 3.5),
+        SetoranItemDraft(jenisSampahId: 'jenis-kaca', berat: 0),
+        SetoranItemDraft(berat: 2),
+      ]);
+
+      expect(subject.itemIndexesWith(SetoranProblem.nonPositiveBerat), {1},
+          reason: 'index 2 is invalid too, but for the other reason');
+    });
+
+    test('only the items without a jenis come back', () {
+      final subject = draft(items: const [
+        SetoranItemDraft(berat: 2),
+        SetoranItemDraft(jenisSampahId: jenis, berat: 0),
+      ]);
+
+      expect(subject.itemIndexesWith(SetoranProblem.itemWithoutJenis), {0});
+    });
+
+    test('a form-level problem has no item indexes', () {
+      expect(
+        draft(nasabahId: null).itemIndexesWith(SetoranProblem.noNasabah),
+        isEmpty,
+        reason: 'noNasabah and noItems are about the form, not a card, so '
+            'asking which cards they mark must be empty rather than wrong',
+      );
+    });
+  });
 }

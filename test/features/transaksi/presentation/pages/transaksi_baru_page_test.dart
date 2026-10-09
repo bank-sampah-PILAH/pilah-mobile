@@ -247,6 +247,84 @@ void main() {
     await settleToasts(tester);
   });
 
+  /// Flagging only after the save button is pressed means the pengelola can
+  /// clear a weight box, look away, and learn about it a minute later. A zero
+  /// weight is worth saying at once, because — unlike a missing jenis — it is
+  /// unreachable without an edit: `_addItem` starts every card at 1 kg. So the
+  /// two problems get different timing, and a brand-new card stays neutral.
+  ///
+  /// Pressing save must also *say* something. Today an invalid form returns
+  /// silently and only the inline text changes, which is easy to miss when the
+  /// offending card has scrolled out of view.
+  group('menandai sebelum tombol simpan ditekan', () {
+    testWidgets('a freshly added card is not flagged', (tester) async {
+      await open(tester);
+      await pickNasabah(tester);
+      await tester.ensureVisible(find.text('Tambah Item Setoran'));
+      await tester.tap(find.text('Tambah Item Setoran'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pilih jenis sampah'), findsNothing,
+          reason: 'a new card has no jenis yet; reddening it before the '
+              'pengelola has done anything is nagging, not reminding');
+      expect(find.text('Berat harus lebih dari 0'), findsNothing);
+    });
+
+    testWidgets('clearing the weight flags the card without pressing save',
+        (tester) async {
+      await open(tester);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await setBerat(tester, '0');
+
+      expect(find.text('Berat harus lebih dari 0'), findsOneWidget,
+          reason: '0 kg can only be reached by editing, so it can be flagged '
+              'at once instead of waiting for the save button');
+      expect(api.requests.where((r) => r.method == 'POST'), isEmpty);
+    });
+
+    testWidgets('a blocked save raises a notification', (tester) async {
+      await open(tester);
+
+      await save(tester);
+
+      expect(find.text('Belum Bisa Disimpan'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
+    testWidgets('the notification names what is missing', (tester) async {
+      await open(tester);
+      await pickNasabah(tester);
+      await tester.ensureVisible(find.text('Tambah Item Setoran'));
+      await tester.tap(find.text('Tambah Item Setoran'));
+      await tester.pumpAndSettle();
+
+      await save(tester);
+
+      expect(find.textContaining('ada item tanpa jenis sampah'), findsOneWidget,
+          reason: 'wording distinct from the inline "Pilih jenis sampah", so '
+              'this cannot pass by matching the card text instead');
+      await settleToasts(tester);
+    });
+
+    testWidgets('the notification comes back on every blocked attempt',
+        (tester) async {
+      await open(tester);
+
+      await save(tester);
+      expect(find.text('Belum Bisa Disimpan'), findsOneWidget);
+      await settleToasts(tester);
+      expect(find.text('Belum Bisa Disimpan'), findsNothing);
+
+      await save(tester);
+
+      expect(find.text('Belum Bisa Disimpan'), findsOneWidget,
+          reason: 'a second press must not be silent just because the first '
+              'one already complained');
+      await settleToasts(tester);
+    });
+  });
+
   testWidgets('an item with no jenis chosen is flagged', (tester) async {
     await open(tester);
     await pickNasabah(tester);
