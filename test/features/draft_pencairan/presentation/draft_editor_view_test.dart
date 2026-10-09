@@ -204,7 +204,7 @@ void main() {
           'Rp 0');
 
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
-      await tester.pump();
+      await _terapkanUmum(tester);
 
       final total =
           tester.widget<Text>(find.byKey(const Key('total-potongan')));
@@ -284,14 +284,14 @@ void main() {
       await tester.tap(edit);
       await tester.pumpAndSettle();
 
-      expect(find.text('Terapkan'), findsOneWidget);
+      expect(find.byKey(const Key('terapkan-item')), findsOneWidget);
     });
 
     testWidgets('a potongan shows as a minus, with no umum or khusus tag',
         (tester) async {
       await pumpNew(tester);
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
-      await tester.pump();
+      await _terapkanUmum(tester);
 
       expect(tester.widget<Text>(find.byKey(const Key('potongan-n-2'))).data,
           '\u2212 Rp 5.000');
@@ -394,7 +394,7 @@ void main() {
       await pumpNew(tester);
 
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
-      await tester.pump();
+      await _terapkanUmum(tester);
 
       expect(find.text('\u2212 Rp 76.560'), findsWidgets);
       expect(find.text('Rp 689.040'), findsWidgets);
@@ -407,7 +407,7 @@ void main() {
           .widget<Slider>(find.byKey(const Key('potongan-slider')))
           .onChanged!(25);
       await tester.pump();
-      await tester.pump();
+      await _terapkanUmum(tester);
 
       expect(cubit.state.potonganDefault,
           const Potongan(PotonganJenis.persen, 25));
@@ -423,6 +423,7 @@ void main() {
       tester.widget<Slider>(slider).onChanged!(56.99999999999999);
       await tester.pump();
       await tester.pump();
+      await _terapkanUmum(tester);
 
       expect(cubit.state.potonganDefault,
           const Potongan(PotonganJenis.persen, 57));
@@ -437,6 +438,7 @@ void main() {
       tester.widget<Slider>(slider).onChanged!(33.333333333);
       await tester.pump();
       await tester.pump();
+      await _terapkanUmum(tester);
 
       expect(cubit.state.potonganDefault.nilai, 33.33);
       expect(
@@ -455,7 +457,7 @@ void main() {
       await tester.tap(find.byKey(const Key('potongan-rupiah')));
       await tester.pump();
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '1000');
-      await tester.pump();
+      await _terapkanUmum(tester);
 
       expect(cubit.state.potonganDefault,
           const Potongan(PotonganJenis.rupiah, 1000));
@@ -466,12 +468,12 @@ void main() {
       await pumpNew(tester);
 
       await tester.tap(find.byKey(const Key('metode-semua-transfer')));
-      await tester.pump();
+      await _terapkanUmum(tester);
       expect(cubit.state.items.map((i) => i.metode),
           everyElement(MetodePencairan.transfer));
 
       await tester.tap(find.byKey(const Key('metode-semua-tunai')));
-      await tester.pump();
+      await _terapkanUmum(tester);
       expect(cubit.state.items.map((i) => i.metode),
           everyElement(MetodePencairan.tunai));
     });
@@ -518,7 +520,7 @@ void main() {
         (tester) async {
       await pumpNew(tester);
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
-      await tester.pump();
+      await _terapkanUmum(tester);
 
       await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
       await tester.tap(find.byKey(const Key('potongan-item-n-2')));
@@ -527,7 +529,7 @@ void main() {
       await tester.pump();
       await tester.enterText(
           find.byKey(const Key('item-potongan-nilai')), '500');
-      await tester.tap(find.text('Terapkan'));
+      await tester.tap(find.byKey(const Key('terapkan-item')));
       await tester.pumpAndSettle();
 
       expect(cubit.state.items[1].potongan,
@@ -568,8 +570,7 @@ void main() {
       await tester.tap(find.byKey(const Key('potongan-item-n-2')));
       await tester.pumpAndSettle();
 
-      final terapkan =
-          tester.getRect(find.widgetWithText(ElevatedButton, 'Terapkan'));
+      final terapkan = tester.getRect(find.byKey(const Key('terapkan-item')));
       final ikuti = tester
           .getRect(find.widgetWithText(TextButton, 'Ikuti potongan umum'));
       expect(terapkan.right, lessThan(ikuti.left));
@@ -583,16 +584,18 @@ void main() {
     testWidgets('the potongan kinds are Persen and Nominal, not Rupiah',
         (tester) async {
       await pumpNew(tester);
+      Finder label(String key, String text) =>
+          find.descendant(of: find.byKey(Key(key)), matching: find.text(text));
 
-      expect(find.text('Persen'), findsOneWidget);
-      expect(find.text('Nominal'), findsOneWidget);
+      expect(label('potongan-persen', 'Persen'), findsOneWidget);
+      expect(label('potongan-rupiah', 'Nominal'), findsOneWidget);
       expect(find.text('Rupiah'), findsNothing);
 
       await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
       await tester.tap(find.byKey(const Key('potongan-item-n-2')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nominal'), findsNWidgets(2));
+      expect(label('item-potongan-rupiah', 'Nominal'), findsOneWidget);
       expect(find.text('Rupiah'), findsNothing);
     });
 
@@ -705,6 +708,296 @@ void main() {
       await pumpSaved(tester);
 
       expect(find.byKey(const Key('menu-editor')), findsNothing);
+    });
+  });
+
+  group('the general settings', () {
+    Future<void> jumlah(WidgetTester tester, String jenis,
+        [String? nilai]) async {
+      await tester.ensureVisible(find.byKey(Key('jumlah-$jenis')));
+      await tester.tap(find.byKey(Key('jumlah-$jenis')));
+      await tester.pump();
+      if (nilai != null) {
+        await tester.enterText(find.byKey(const Key('jumlah-nilai')), nilai);
+        await tester.pump();
+      }
+    }
+
+    Future<void> potongan(WidgetTester tester, String nilai) async {
+      await tester.enterText(find.byKey(const Key('potongan-nilai')), nilai);
+      await tester.pump();
+    }
+
+    bool terapkanAktif(WidgetTester tester) =>
+        tester
+            .widget<ElevatedButton>(find.descendant(
+              of: find.byKey(const Key('terapkan-umum')),
+              matching: find.byType(ElevatedButton),
+            ))
+            .onPressed !=
+        null;
+
+    PencairanChip chip(WidgetTester tester, String key) =>
+        tester.widget<PencairanChip>(find.byKey(Key(key)));
+
+    String? teksJumlah(WidgetTester tester) => tester
+        .widgetList<TextField>(find.byKey(const Key('jumlah-nilai')))
+        .map((f) => f.controller!.text)
+        .firstOrNull;
+
+    testWidgets('Metode, Jumlah pencairan and Potongan umum come in order',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(find.text('JUMLAH PENCAIRAN'), findsOneWidget);
+      final y = [
+        for (final key in [
+          'metode-semua-tunai',
+          'jumlah-persen',
+          'potongan-persen',
+          'terapkan-umum',
+        ])
+          tester.getTopLeft(find.byKey(Key(key))).dy,
+      ];
+      expect(y, [...y]..sort());
+    });
+
+    testWidgets('Jumlah pencairan offers Persen and Nominal, no Penuh',
+        (tester) async {
+      await pumpNew(tester);
+
+      final x = [
+        for (final j in ['persen', 'rupiah'])
+          tester.getTopLeft(find.byKey(Key('jumlah-$j'))).dx,
+      ];
+      expect(x, [...x]..sort());
+      expect(find.byKey(const Key('jumlah-penuh')), findsNothing);
+    });
+
+    testWidgets('starts at Persen 100, which is the whole saldo',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(chip(tester, 'jumlah-persen').selected, isTrue);
+      expect(chip(tester, 'jumlah-rupiah').selected, isFalse);
+      expect(teksJumlah(tester), '100');
+      expect(terapkanAktif(tester), isFalse);
+    });
+
+    testWidgets('with amounts set by hand there is nothing to show yet',
+        (tester) async {
+      await pumpNew(tester);
+      cubit.setItemNominal('n-2', 1000);
+      await tester.pump();
+      await tester.pump();
+
+      expect(chip(tester, 'jumlah-persen').selected, isFalse);
+      expect(chip(tester, 'jumlah-rupiah').selected, isFalse);
+      expect(find.byKey(const Key('jumlah-nilai')), findsNothing);
+    });
+
+    testWidgets('nothing changes until Terapkan is pressed', (tester) async {
+      await pumpNew(tester);
+      expect(terapkanAktif(tester), isFalse);
+      expect(find.byKey(const Key('belum-diterapkan')), findsNothing);
+
+      await jumlah(tester, 'rupiah', '100000');
+      await tester.tap(find.byKey(const Key('metode-semua-transfer')));
+      await potongan(tester, '10');
+
+      expect(find.byKey(const Key('belum-diterapkan')), findsOneWidget);
+      expect(terapkanAktif(tester), isTrue);
+      expect(cubit.state.items.map((i) => i.nominal), [465600, 50000, 250000]);
+      expect(cubit.state.items.map((i) => i.metode),
+          everyElement(MetodePencairan.tunai));
+      expect(cubit.state.potonganDefault, Potongan.nol);
+      expect(cubit.state.dirty, isFalse);
+
+      await _terapkanUmum(tester);
+
+      expect(cubit.state.items.map((i) => i.nominal), [100000, 50000, 100000]);
+      expect(cubit.state.items.map((i) => i.metode),
+          everyElement(MetodePencairan.transfer));
+      expect(cubit.state.potonganDefault,
+          const Potongan(PotonganJenis.persen, 10));
+      expect(find.byKey(const Key('belum-diterapkan')), findsNothing);
+      expect(terapkanAktif(tester), isFalse);
+    });
+
+    testWidgets('a fixed Nominal never pays above a saldo', (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah', '100000');
+      await _terapkanUmum(tester);
+
+      expect(cubit.state.items.map((i) => i.nominal), [100000, 50000, 100000]);
+      expect(find.text('Bermasalah 0'), findsOneWidget);
+    });
+
+    testWidgets('Persen pays that share of each saldo, rounded down',
+        (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'persen', '50');
+      await _terapkanUmum(tester);
+
+      expect(cubit.state.items.map((i) => i.nominal), [232800, 25000, 125000]);
+      expect(find.text('Rp 382.800'), findsWidgets);
+    });
+
+    testWidgets('choosing Persen again brings the whole saldo back',
+        (tester) async {
+      await pumpNew(tester);
+      cubit.setItemNominal('n-1', 1000);
+      await tester.pump();
+      await tester.pump();
+
+      await jumlah(tester, 'persen');
+      expect(teksJumlah(tester), '100', reason: 'it starts at the whole saldo');
+      expect(terapkanAktif(tester), isTrue);
+      await _terapkanUmum(tester);
+
+      expect(cubit.state.items.map((i) => i.nominal), [465600, 50000, 250000]);
+    });
+
+    testWidgets('only what was touched is applied', (tester) async {
+      await pumpNew(tester);
+      cubit.setItemNominal('n-2', 30000);
+      cubit.setItemMetode('n-3', MetodePencairan.transfer);
+      await tester.pump();
+      await tester.pump();
+
+      await potongan(tester, '10');
+      await _terapkanUmum(tester);
+
+      expect(cubit.state.items[1].nominal, 30000,
+          reason: 'jumlah was not touched');
+      expect(cubit.state.items[2].metode, MetodePencairan.transfer,
+          reason: 'metode was not touched');
+      expect(cubit.state.potonganDefault,
+          const Potongan(PotonganJenis.persen, 10));
+    });
+
+    testWidgets('an unusable Jumlah keeps Terapkan off', (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah');
+      expect(terapkanAktif(tester), isFalse, reason: 'no amount yet');
+      await tester.enterText(find.byKey(const Key('jumlah-nilai')), '0');
+      await tester.pump();
+      expect(terapkanAktif(tester), isFalse);
+
+      await jumlah(tester, 'persen', '101');
+      expect(terapkanAktif(tester), isFalse, reason: 'over 100 percent');
+
+      await tester.enterText(find.byKey(const Key('jumlah-nilai')), '99');
+      await tester.pump();
+      expect(terapkanAktif(tester), isTrue);
+    });
+
+    group('going back to what is saved', () {
+      testWidgets('a method changed and changed back', (tester) async {
+        await pumpNew(tester);
+
+        await tester.tap(find.byKey(const Key('metode-semua-transfer')));
+        await tester.pump();
+        expect(terapkanAktif(tester), isTrue);
+        expect(chip(tester, 'metode-semua-transfer').selected, isTrue);
+
+        await tester.tap(find.byKey(const Key('metode-semua-tunai')));
+        await tester.pump();
+
+        expect(terapkanAktif(tester), isFalse);
+        expect(find.byKey(const Key('belum-diterapkan')), findsNothing);
+        expect(chip(tester, 'metode-semua-tunai').selected, isTrue);
+      });
+
+      testWidgets('a potongan typed and cleared again', (tester) async {
+        await pumpNew(tester);
+
+        await potongan(tester, '10');
+        expect(terapkanAktif(tester), isTrue);
+
+        await potongan(tester, '0');
+
+        expect(terapkanAktif(tester), isFalse);
+        expect(find.byKey(const Key('belum-diterapkan')), findsNothing);
+      });
+
+      testWidgets('a jumlah changed and changed back', (tester) async {
+        await pumpNew(tester);
+
+        await jumlah(tester, 'persen', '50');
+        expect(terapkanAktif(tester), isTrue);
+
+        await tester.enterText(find.byKey(const Key('jumlah-nilai')), '100');
+        await tester.pump();
+
+        expect(terapkanAktif(tester), isFalse);
+        expect(find.byKey(const Key('belum-diterapkan')), findsNothing);
+      });
+
+      testWidgets('one section back to saved does not hide another',
+          (tester) async {
+        await pumpNew(tester);
+        await tester.tap(find.byKey(const Key('metode-semua-transfer')));
+        await potongan(tester, '10');
+
+        await tester.tap(find.byKey(const Key('metode-semua-tunai')));
+        await tester.pump();
+
+        expect(terapkanAktif(tester), isTrue, reason: 'the potongan remains');
+      });
+
+      testWidgets('what was applied becomes the saved state', (tester) async {
+        await pumpNew(tester);
+        await jumlah(tester, 'persen', '50');
+        await _terapkanUmum(tester);
+
+        expect(terapkanAktif(tester), isFalse);
+        expect(chip(tester, 'jumlah-persen').selected, isTrue);
+        expect(teksJumlah(tester), '50', reason: 'the form shows what is in');
+
+        await tester.enterText(find.byKey(const Key('jumlah-nilai')), '60');
+        await tester.pump();
+        expect(terapkanAktif(tester), isTrue);
+
+        await tester.enterText(find.byKey(const Key('jumlah-nilai')), '50');
+        await tester.pump();
+        expect(terapkanAktif(tester), isFalse,
+            reason: 'back to the latest applied, not to 100');
+      });
+
+      testWidgets('a method applied becomes the saved state too',
+          (tester) async {
+        await pumpNew(tester);
+        await tester.tap(find.byKey(const Key('metode-semua-transfer')));
+        await _terapkanUmum(tester);
+
+        await tester.tap(find.byKey(const Key('metode-semua-tunai')));
+        await tester.pump();
+        expect(terapkanAktif(tester), isTrue);
+
+        await tester.tap(find.byKey(const Key('metode-semua-transfer')));
+        await tester.pump();
+        expect(terapkanAktif(tester), isFalse);
+      });
+
+      testWidgets('a hand edit on a card makes the saved jumlah unknown',
+          (tester) async {
+        await pumpNew(tester);
+        await jumlah(tester, 'persen', '50');
+        await _terapkanUmum(tester);
+
+        cubit.setItemNominal('n-2', 1000);
+        await tester.pump();
+        await tester.pump();
+
+        expect(chip(tester, 'jumlah-persen').selected, isFalse);
+        await jumlah(tester, 'persen');
+        expect(terapkanAktif(tester), isTrue,
+            reason: 'so the same jumlah can be applied again');
+      });
     });
   });
 
@@ -1139,6 +1432,15 @@ void main() {
 }
 
 DraftEditorCubit? _current;
+
+/// Presses Terapkan on the "Untuk semua nasabah" card.
+Future<void> _terapkanUmum(WidgetTester tester) async {
+  await tester.pump(); // the choice just made enables the button
+  await tester.ensureVisible(find.byKey(const Key('terapkan-umum')));
+  await tester.tap(find.byKey(const Key('terapkan-umum')));
+  await tester.pump();
+  await tester.pump();
+}
 
 Future<void> _pump(
   WidgetTester tester, {
