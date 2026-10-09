@@ -116,20 +116,64 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
         onPressed: _isSaving ? null : _handleSubmit,
       );
 
-  /// Pesan untuk kartu ke-[index]. Jenis diperiksa lebih dulu: tanpa jenis,
-  /// beratnya belum berarti apa pun.
+  /// Kartu mana yang ditandai merah saat ini.
+  ///
+  /// Sebelum tombol simpan ditekan hanya berat nol yang ditandai: keadaan itu
+  /// tidak mungkin tercapai tanpa suntingan, karena [_addItem] memulai setiap
+  /// kartu pada 1 kg. Jenis yang belum dipilih justru keadaan awal kartu baru,
+  /// jadi menandainya saat itu berarti mengomeli pengelola yang belum
+  /// melakukan apa pun. Setelah simpan ditekan, semuanya ditandai.
+  Set<int> get _flaggedItemIndexes => _hasSubmitted
+      ? _draft.invalidItemIndexes
+      : _draft.itemIndexesWith(SetoranProblem.nonPositiveBerat);
+
+  /// Pesan untuk kartu ke-[index], mengikuti waktu yang sama.
   String? _itemErrorText(int index) {
     if (index >= _draft.items.length) return null;
     final item = _draft.items[index];
+    if (!_hasSubmitted) {
+      // Hanya berat, supaya pesannya tentang kolom yang memang baru disunting.
+      return item.hasPositiveBerat ? null : 'Berat harus lebih dari 0';
+    }
+    // Jenis diperiksa lebih dulu: tanpa jenis, beratnya belum berarti apa pun.
     if (!item.hasJenis) return 'Pilih jenis sampah';
     if (!item.hasPositiveBerat) return 'Berat harus lebih dari 0';
     return null;
   }
 
+  /// Ringkasan untuk notifikasi ketika simpan ditolak.
+  ///
+  /// Seluruh masalah disebut sekaligus, bukan satu per satu, supaya pengelola
+  /// tahu semua yang tersisa. Urutannya mengikuti urutan enum dan bukan urutan
+  /// penemuan, supaya pesan yang sama selalu terbaca sama.
+  String _problemsMessage(Set<SetoranProblem> problems) {
+    const copy = {
+      SetoranProblem.noNasabah: 'nasabah belum dipilih',
+      SetoranProblem.noItems: 'belum ada item setoran',
+      SetoranProblem.itemWithoutJenis: 'ada item tanpa jenis sampah',
+      SetoranProblem.nonPositiveBerat: 'ada item dengan berat 0',
+    };
+    final parts = SetoranProblem.values
+        .where(problems.contains)
+        .map((problem) => copy[problem]!);
+    return 'Periksa: ${parts.join(', ')}.';
+  }
+
   Future<void> _handleSubmit() async {
     setState(() => _hasSubmitted = true);
 
-    if (!_draft.isValid) return;
+    final problems = _draft.problems;
+    if (problems.isNotEmpty) {
+      // Teks sebaris saja mudah terlewat ketika kartu yang bermasalah sudah
+      // tergulir keluar layar, dan pada layar lebar tombol simpan berada di
+      // panel kanan yang jauh dari kartunya.
+      AppNotification.showError(
+        context,
+        title: 'Belum Bisa Disimpan',
+        message: _problemsMessage(problems),
+      );
+      return;
+    }
 
     final idempotencyKey = _idempotencyKey ?? newTransaksiIdempotencyKey();
     _idempotencyKey = idempotencyKey;
@@ -454,8 +498,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                 return ItemSetoranCard(
                                   index: index,
                                   itemData: setoranItems[index],
-                                  hasError: _hasSubmitted &&
-                                      _draft.invalidItemIndexes.contains(index),
+                                  hasError: _flaggedItemIndexes.contains(index),
                                   errorText: _itemErrorText(index),
                                   onChanged: (updatedItem) {
                                     final newId = updatedItem['jenis_sampah_id']

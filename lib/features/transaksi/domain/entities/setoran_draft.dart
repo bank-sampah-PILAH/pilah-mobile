@@ -64,6 +64,28 @@ class SetoranDraft {
     return found;
   }
 
+  /// Indeks item yang mengalami [problem].
+  ///
+  /// Form menandai berat nol lebih awal daripada jenis yang belum dipilih —
+  /// berat nol tidak mungkin tercapai tanpa suntingan, sedangkan kartu baru
+  /// memang lahir tanpa jenis — jadi ia butuh indeks untuk satu masalah
+  /// tertentu, bukan sekadar [invalidItemIndexes].
+  ///
+  /// [SetoranProblem.noNasabah] dan [SetoranProblem.noItems] berbicara tentang
+  /// form dan bukan tentang satu kartu, jadi keduanya mengembalikan himpunan
+  /// kosong alih-alih jawaban yang menyesatkan.
+  Set<int> itemIndexesWith(SetoranProblem problem) => switch (problem) {
+        SetoranProblem.itemWithoutJenis => _indexesWhere((i) => !i.hasJenis),
+        SetoranProblem.nonPositiveBerat =>
+          _indexesWhere((i) => !i.hasPositiveBerat),
+        SetoranProblem.noNasabah || SetoranProblem.noItems => const {},
+      };
+
+  Set<int> _indexesWhere(bool Function(SetoranItemDraft item) test) => {
+        for (var index = 0; index < items.length; index++)
+          if (test(items[index])) index,
+      };
+
   /// Indeks item yang bermasalah, supaya form dapat menandai kartunya alih-alih
   /// hanya menampilkan satu pesan umum.
   Set<int> get invalidItemIndexes => {
