@@ -35,7 +35,12 @@ class RoleNavigationRail extends StatelessWidget {
   final String? bankSampahNama;
 
   /// Indeks pada daftar destinasi role ini, bukan branch index.
-  final int currentIndex;
+  /// Destinasi yang sedang aktif, atau null bila tidak ada.
+  ///
+  /// Null dipakai pada rute di luar daftar destinasi, misalnya halaman profil
+  /// staff: menandai Beranda di sana akan berbohong tentang posisi pengguna.
+  /// Material sendiri menerima null pada selectedIndex untuk maksud yang sama.
+  final int? currentIndex;
 
   /// Menerima indeks menu yang dipilih, bukan branch index. Penerjemahan ke
   /// branch dilakukan pemanggil, sama seperti pada bottom bar.

@@ -136,24 +136,38 @@ class _ShellContent extends StatelessWidget {
         if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
       });
     }
-    // The staff profile is outside its five navigation destinations.
-    if (selected < 0 &&
-        RoleNavigationBar.isStaff(role) &&
-        navigationShell.currentIndex == 7) {
+    // Platform menentukan keluarga bentuk navigasi, lebar hanya menentukan
+    // seberapa banyak navigasi kiri yang muat. Role tetap menentukan
+    // destinasinya, pada ketiga bentuk, dari sumber yang sama.
+    //
+    // Diselesaikan di sini, sebelum penjaga rute di bawah, karena penjaga itu
+    // perlu tahu bentuknya: di aplikasi ia mengembalikan shell apa adanya,
+    // sedangkan di peramban navigasi kiri harus tetap terlihat.
+    final form = NavigationForm.resolve(
+      isWeb: isWebOverride ?? kIsWeb,
+      width: MediaQuery.sizeOf(context).width,
+    );
+
+    // Rute sah yang berada di luar lima destinasi: profil staff (branch 7),
+    // dan jadwal nasabah (branch 4) bila ia pernah keluar dari tab mereka.
+    // Keduanya satu gagasan, jadi ditulis satu kali.
+    final offDestination = selected < 0 &&
+        ((RoleNavigationBar.isStaff(role) &&
+                navigationShell.currentIndex == 7) ||
+            // Mati hari ini: Jadwal kini salah satu tab nasabah penuh, jadi
+            // `selected` tidak pernah negatif di sana. Dipertahankan sebagai
+            // penjaga bila ia keluar dari tab mereka lagi.
+            (role == 'nasabah' &&
+                !limitedNasabah &&
+                navigationShell.currentIndex == 4));
+
+    // Di aplikasi perilakunya dipertahankan apa adanya: bottom bar memang
+    // tidak pernah ada pada rute ini, dan test native menjaga itu.
+    if (offDestination && form == NavigationForm.bottomBar) {
       return navigationShell;
     }
-    // coverage:ignore-start
-    // Dead today: Jadwal (branch 4) is now one of the full nasabah tabs, so
-    // `selected` is never negative there. Kept as a guard should it leave them.
-    // Nasabah may open the existing read-only schedule route outside the tabs.
-    if (selected < 0 &&
-        role == 'nasabah' &&
-        !limitedNasabah &&
-        navigationShell.currentIndex == 4) {
-      return navigationShell;
-    }
-    // coverage:ignore-end
-    if (selected < 0 && !limitedNasabah) {
+
+    if (selected < 0 && !limitedNasabah && !offDestination) {
       return Scaffold(
           body: Center(
               child: TextButton(
@@ -175,15 +189,11 @@ class _ShellContent extends StatelessWidget {
           initialLocation: index == selected);
     }
 
-    final current = selected < 0 ? 0 : selected;
-
-    // Platform menentukan keluarga bentuk navigasi, lebar hanya menentukan
-    // seberapa banyak navigasi kiri yang muat. Role tetap menentukan
-    // destinasinya, pada ketiga bentuk, dari sumber yang sama.
-    final form = NavigationForm.resolve(
-      isWeb: isWebOverride ?? kIsWeb,
-      width: MediaQuery.sizeOf(context).width,
-    );
+    // Null pada rute di luar destinasi: tidak ada yang boleh tampak terpilih.
+    // Bottom bar tidak pernah menerima null karena jalur itu sudah kembali di
+    // atas, jadi RoleNavigationBar tidak perlu diubah sama sekali.
+    final int? railSelected =
+        offDestination ? null : (selected < 0 ? 0 : selected);
 
     // Di aplikasi bottom bar dipertahankan apa adanya, termasuk seluruh
     // perilaku yang sudah dijaga test navigasi yang ada.
@@ -193,7 +203,7 @@ class _ShellContent extends StatelessWidget {
         bottomNavigationBar: RoleNavigationBar(
           role: role,
           limitedNasabah: limitedNasabah,
-          currentIndex: current,
+          currentIndex: selected < 0 ? 0 : selected,
           onSelected: select,
         ),
       );
@@ -207,7 +217,7 @@ class _ShellContent extends StatelessWidget {
         drawer: RoleNavigationDrawer(
           role: role,
           limitedNasabah: limitedNasabah,
-          currentIndex: current,
+          currentIndex: railSelected,
           bankSampahNama: bankSampahNama,
           onSelected: select,
         ),
@@ -228,7 +238,7 @@ class _ShellContent extends StatelessWidget {
           RoleNavigationRail(
             role: role,
             limitedNasabah: limitedNasabah,
-            currentIndex: current,
+            currentIndex: railSelected,
             bankSampahNama: bankSampahNama,
             onSelected: select,
           ),
