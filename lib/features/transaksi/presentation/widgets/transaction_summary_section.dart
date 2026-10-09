@@ -50,12 +50,20 @@ class TransactionSummarySection extends StatelessWidget {
                   color: Colors.grey[500],
                 ),
               ),
-              Text(
-                _formatCurrency(grandTotal),
-                style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+              const SizedBox(width: 12),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    _formatCurrency(grandTotal),
+                    maxLines: 1,
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -75,12 +83,24 @@ class TransactionSummarySection extends StatelessWidget {
                   fontSize: 16,
                 ),
               ),
-              Text(
-                _formatCurrency(grandTotal),
-                style: AppTextStyle.headline1.copyWith(
-                  color: AppColors.greenDark,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+              const SizedBox(width: 12),
+              // Nominal uang tidak boleh dipotong atau diberi elipsis, jadi
+              // ketika ruangnya kurang angkanya dikecilkan, bukan dipangkas.
+              // Label di kiri tetap berukuran tetap; yang menyesuaikan adalah
+              // angkanya, karena angkanya yang panjangnya tidak dapat ditebak.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    _formatCurrency(grandTotal),
+                    maxLines: 1,
+                    style: AppTextStyle.headline1.copyWith(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
                 ),
               ),
             ],

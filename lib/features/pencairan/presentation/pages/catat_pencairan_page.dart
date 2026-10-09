@@ -526,7 +526,7 @@ class _RingkasanCard extends StatelessWidget {
       );
 }
 
-/// Mirrors [TransaksiBerhasilBottomSheet]'s structure (icon, title, bordered
+/// Mirrors [TransaksiBerhasilPanel]'s structure (icon, title, bordered
 /// detail box with dividers, primary CTA).
 class _PencairanBerhasilSheet extends StatelessWidget {
   final Pencairan created;
