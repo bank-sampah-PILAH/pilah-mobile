@@ -10,6 +10,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
@@ -743,7 +744,9 @@ void main() {
       expect(find.byType(EditorItemCard), findsWidgets);
       expect(find.byType(EditorItemCard).evaluate().length, lessThan(30),
           reason: '300 cards must not all be built at once');
-      expect(find.byKey(const Key('item-b-300')), findsNothing);
+      expect(find.byKey(const Key('item-b-300')), findsOneWidget,
+          reason: 'the biggest dibayar comes first');
+      expect(find.byKey(const Key('item-b-1')), findsNothing);
     });
 
     testWidgets('scrolling down reaches the last nasabah', (tester) async {
@@ -751,22 +754,25 @@ void main() {
 
       await scrollKe(tester, akhir: true);
 
-      expect(find.byKey(const Key('item-b-300')), findsOneWidget);
-      expect(find.byKey(const Key('item-b-1')), findsNothing);
+      expect(find.byKey(const Key('item-b-1')), findsOneWidget,
+          reason: 'the smallest dibayar comes last');
+      expect(find.byKey(const Key('item-b-300')), findsNothing);
     });
 
     testWidgets('an edit survives its card scrolling off and back',
         (tester) async {
       await pumpBanyak(tester);
-      await tester.enterText(find.byKey(const Key('nominal-b-1')), '7777');
+      await tester.enterText(find.byKey(const Key('nominal-b-300')), '7777');
       await tester.pump();
 
       await scrollKe(tester, akhir: true);
       await scrollKe(tester, akhir: false);
 
-      expect(cubit.state.items.first.nominal, 7777);
+      expect(
+          cubit.state.items.firstWhere((i) => i.nasabahId == 'b-300').nominal,
+          7777);
       final field =
-          tester.widget<TextField>(find.byKey(const Key('nominal-b-1')));
+          tester.widget<TextField>(find.byKey(const Key('nominal-b-300')));
       expect(field.controller!.text, '7777');
     });
 
@@ -777,6 +783,333 @@ void main() {
       final total = banyak.fold<int>(0, (sum, k) => sum + k.saldo);
       expect(cubit.state.totalNominal, total);
       expect(find.byKey(const Key('total-nominal')), findsOneWidget);
+    });
+  });
+
+  group('finding nasabah in a big draft', () {
+    final banyak = [
+      for (var i = 1; i <= 40; i++)
+        Kandidat(
+          id: 'b-$i',
+          kode: 'NAS-${i.toString().padLeft(4, '0')}',
+          nama: 'Nasabah ${i.toString().padLeft(3, '0')}',
+          saldo: 10000 + i * 100,
+        ),
+    ];
+
+    Future<void> pumpBanyak(WidgetTester tester) async {
+      cubit = DraftEditorCubit(useCases)..startNew(banyak);
+      _current = cubit;
+      await _pump(tester);
+    }
+
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('even a short draft has search, sort and filter',
+        (tester) async {
+      await pumpNew(tester);
+
+      expect(find.byKey(const Key('cari-nasabah')), findsOneWidget);
+      expect(find.byKey(const Key('urutkan-nasabah')), findsOneWidget);
+      expect(find.byKey(const Key('filter-item-semua')), findsOneWidget);
+    });
+
+    testWidgets('the controls show the search box, sort button and chips',
+        (tester) async {
+      await pumpBanyak(tester);
+
+      expect(find.byKey(const Key('cari-nasabah')), findsOneWidget);
+      expect(find.byKey(const Key('urutkan-nasabah')), findsOneWidget);
+      expect(find.text('Semua 40'), findsOneWidget);
+      expect(find.text('Tunai 40'), findsOneWidget);
+      expect(find.text('Transfer 0'), findsOneWidget);
+      expect(find.text('Bermasalah 0'), findsOneWidget,
+          reason: 'always there: 0 reads as "everything is fine"');
+    });
+
+    testWidgets('searching narrows the list but not the totals',
+        (tester) async {
+      await pumpBanyak(tester);
+      final total = cubit.state.totalNominal;
+
+      await tester.enterText(find.byKey(const Key('cari-nasabah')), '017');
+      await settle(tester);
+
+      expect(find.text('NASABAH (1 dari 40)'), findsOneWidget);
+      expect(find.byKey(const Key('item-b-17')), findsOneWidget);
+      expect(find.byKey(const Key('item-b-1')), findsNothing);
+      expect(cubit.state.items, hasLength(40));
+      expect(cubit.state.totalNominal, total);
+    });
+
+    testWidgets('nothing found says so', (tester) async {
+      await pumpBanyak(tester);
+
+      await tester.enterText(find.byKey(const Key('cari-nasabah')), 'zzz');
+      await settle(tester);
+
+      expect(find.text('Tidak ada nasabah yang cocok.'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the chips run Semua, Bermasalah, Transfer, Tunai, Potongan khusus',
+        (tester) async {
+      await pumpBanyak(tester);
+      cubit.setItemNominal('b-3', 0);
+      await settle(tester);
+
+      final kiri = [
+        for (final f in [
+          ItemFilter.semua,
+          ItemFilter.bermasalah,
+          ItemFilter.transfer,
+          ItemFilter.tunai,
+          ItemFilter.potonganKhusus,
+          ItemFilter.pencairanKhusus,
+        ])
+          tester.getTopLeft(find.byKey(Key('filter-item-${f.name}'))).dx,
+      ];
+
+      expect(kiri, [...kiri]..sort());
+      expect(ItemFilter.values.map((f) => f.name), [
+        'semua',
+        'bermasalah',
+        'transfer',
+        'tunai',
+        'potonganKhusus',
+        'pencairanKhusus',
+      ]);
+    });
+
+    testWidgets('a method chip lists only those paid that way', (tester) async {
+      await pumpBanyak(tester);
+      cubit.setItemMetode('b-5', MetodePencairan.transfer);
+      cubit.setItemMetode('b-9', MetodePencairan.transfer);
+      await settle(tester);
+
+      await tester.ensureVisible(find.byKey(const Key('filter-item-transfer')));
+      await tester.tap(find.byKey(const Key('filter-item-transfer')));
+      await settle(tester);
+
+      expect(find.text('Transfer 2'), findsOneWidget);
+      expect(find.text('NASABAH (2 dari 40)'), findsOneWidget);
+      expect(find.byKey(const Key('item-b-5')), findsOneWidget);
+      expect(find.byKey(const Key('item-b-9')), findsOneWidget);
+      expect(find.byKey(const Key('item-b-1')), findsNothing);
+    });
+
+    testWidgets('Bermasalah counts what is wrong and finds it', (tester) async {
+      await pumpBanyak(tester);
+
+      expect(find.text('Bermasalah 0'), findsOneWidget);
+      cubit.setItemNominal('b-30', 0);
+      await settle(tester);
+      expect(find.text('Bermasalah 1'), findsOneWidget);
+
+      await tester
+          .ensureVisible(find.byKey(const Key('filter-item-bermasalah')));
+      await tester.tap(find.byKey(const Key('filter-item-bermasalah')));
+      await settle(tester);
+
+      expect(find.text('NASABAH (1 dari 40)'), findsOneWidget);
+      expect(find.byKey(const Key('item-b-30')), findsOneWidget);
+
+      // Fixed: the list under it empties and the chip goes back to 0.
+      cubit.setItemNominal('b-30', 10000);
+      await settle(tester);
+      expect(find.text('NASABAH (0 dari 40)'), findsOneWidget);
+      expect(find.text('Tidak ada nasabah yang cocok.'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const Key('filter-item-semua')));
+      expect(find.text('Bermasalah 0'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('filter-item-semua')));
+      await settle(tester);
+      expect(find.text('Bermasalah 0'), findsOneWidget);
+      expect(find.text('NASABAH (40)'), findsOneWidget);
+    });
+
+    testWidgets('Pencairan khusus lists those not paid out in full',
+        (tester) async {
+      await pumpBanyak(tester);
+      cubit.setItemNominal('b-12', 5000);
+      await settle(tester);
+
+      await tester
+          .ensureVisible(find.byKey(const Key('filter-item-pencairanKhusus')));
+      await tester.tap(find.byKey(const Key('filter-item-pencairanKhusus')));
+      await settle(tester);
+
+      expect(find.text('Pencairan khusus 1'), findsOneWidget);
+      expect(find.text('NASABAH (1 dari 40)'), findsOneWidget);
+      expect(find.byKey(const Key('item-b-12')), findsOneWidget);
+    });
+
+    testWidgets('Potongan khusus lists those with their own potongan',
+        (tester) async {
+      await pumpBanyak(tester);
+      cubit.setItemPotongan('b-7', const Potongan(PotonganJenis.persen, 5));
+      await settle(tester);
+
+      await tester
+          .ensureVisible(find.byKey(const Key('filter-item-potonganKhusus')));
+      await tester.tap(find.byKey(const Key('filter-item-potonganKhusus')));
+      await settle(tester);
+
+      expect(find.byKey(const Key('item-b-7')), findsOneWidget);
+      expect(find.text('NASABAH (1 dari 40)'), findsOneWidget);
+    });
+
+    Future<String> pertama(WidgetTester tester) async => tester
+        .widgetList<EditorItemCard>(find.byType(EditorItemCard))
+        .first
+        .item
+        .nasabahId;
+
+    testWidgets('starts with the biggest dibayar first', (tester) async {
+      await pumpBanyak(tester);
+
+      expect(await pertama(tester), 'b-40');
+    });
+
+    testWidgets('the sort menu is a white card listing four fields',
+        (tester) async {
+      await pumpBanyak(tester);
+
+      await tester.tap(find.byKey(const Key('urutkan-nasabah')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('urut-bermasalah')), findsNothing);
+      final posisi = [
+        for (final f in ['dibayar', 'nama', 'saldo', 'potongan'])
+          tester.getTopLeft(find.byKey(Key('urut-$f'))).dy,
+      ];
+      expect(posisi, [...posisi]..sort(), reason: 'in that order, top down');
+      final menu = tester.widget<Material>(find
+          .ancestor(
+              of: find.byKey(const Key('urut-nama')),
+              matching: find.byType(Material))
+          .first);
+      expect(menu.color, Colors.white);
+      expect(menu.surfaceTintColor, Colors.transparent);
+    });
+
+    testWidgets('the menu stays open after a choice, which is applied at once',
+        (tester) async {
+      await pumpBanyak(tester);
+      await tester.tap(find.byKey(const Key('urutkan-nasabah')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('urut-nama')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('urut-saldo')), findsOneWidget,
+          reason: 'still open');
+      expect(await pertama(tester), 'b-1', reason: 'Nama starts A-Z');
+
+      await tester.tap(find.byKey(const Key('urut-saldo')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('urut-saldo')), findsOneWidget);
+      expect(await pertama(tester), 'b-40', reason: 'biggest saldo first');
+    });
+
+    testWidgets('choosing the same field again reverses it', (tester) async {
+      await pumpBanyak(tester);
+      await tester.tap(find.byKey(const Key('urutkan-nasabah')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('urut-dibayar')));
+      await tester.pumpAndSettle();
+      expect(await pertama(tester), 'b-1', reason: 'dibayar flipped');
+
+      await tester.tap(find.byKey(const Key('urut-dibayar')));
+      await tester.pumpAndSettle();
+      expect(await pertama(tester), 'b-40', reason: 'and flipped back');
+    });
+
+    testWidgets('tapping the sort button again closes the menu',
+        (tester) async {
+      await pumpBanyak(tester);
+      await tester.tap(find.byKey(const Key('urutkan-nasabah')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('urut-nama')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('urutkan-nasabah')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('urut-nama')), findsNothing);
+    });
+
+    testWidgets('tapping elsewhere closes the menu', (tester) async {
+      await pumpBanyak(tester);
+      await tester.tap(find.byKey(const Key('urutkan-nasabah')));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(10, 1500));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('urut-nama')), findsNothing);
+    });
+
+    testWidgets('typing a nominal does not move the card out from under you',
+        (tester) async {
+      await pumpBanyak(tester);
+      expect(await pertama(tester), 'b-40');
+
+      // Far below every other dibayar: by amount it would drop to the bottom.
+      await tester.enterText(find.byKey(const Key('nominal-b-40')), '1');
+      await settle(tester);
+
+      expect(await pertama(tester), 'b-40', reason: 'it stays where it was');
+      expect(cubit.state.items.firstWhere((i) => i.nasabahId == 'b-40').nominal,
+          1);
+    });
+
+    testWidgets('choosing a sort again puts the cards in their new order',
+        (tester) async {
+      await pumpBanyak(tester);
+      await tester.enterText(find.byKey(const Key('nominal-b-40')), '1');
+      await settle(tester);
+
+      await tester.tap(find.byKey(const Key('urutkan-nasabah')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('urut-dibayar'))); // flips
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('urut-dibayar'))); // flips back
+      await tester.pumpAndSettle();
+
+      expect(await pertama(tester), 'b-39',
+          reason: 'b-40 now pays almost nothing');
+    });
+
+    testWidgets('a removed nasabah leaves the order intact', (tester) async {
+      await pumpBanyak(tester);
+
+      cubit.removeItem('b-40');
+      await settle(tester);
+
+      expect(await pertama(tester), 'b-39');
+      expect(find.text('NASABAH (39)'), findsOneWidget);
+    });
+
+    testWidgets('an edit made in a narrowed view is kept', (tester) async {
+      await pumpBanyak(tester);
+      await tester.enterText(find.byKey(const Key('cari-nasabah')), '017');
+      await settle(tester);
+
+      await tester.enterText(find.byKey(const Key('nominal-b-17')), '5000');
+      await settle(tester);
+      await tester.enterText(find.byKey(const Key('cari-nasabah')), '');
+      await settle(tester);
+
+      expect(cubit.state.items.firstWhere((i) => i.nasabahId == 'b-17').nominal,
+          5000);
+      expect(cubit.state.items, hasLength(40));
+      expect(find.text('NASABAH (40)'), findsOneWidget);
     });
   });
 
@@ -810,7 +1143,7 @@ DraftEditorCubit? _current;
 Future<void> _pump(
   WidgetTester tester, {
   bool pushed = false,
-  Size size = const Size(420, 1800),
+  Size size = const Size(420, 2600),
 }) async {
   // The cubit is created by each test; find it through the provider.
   await pumpRouted(
