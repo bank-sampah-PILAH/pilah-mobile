@@ -536,6 +536,96 @@ void main() {
     });
   });
 
+  /// A pengelola records a setoran with one hand on a weighing scale. Reaching
+  /// for the mouse between every item is the slow part, so the keyboard has to
+  /// carry the whole loop: type a weight, submit, move to the next box.
+  ///
+  /// Two things block that today. The price box is `readOnly` but still takes
+  /// focus, so Tab stops on a field that cannot be typed into. And the weight
+  /// box has no submit action at all, so Enter does nothing.
+  ///
+  /// There is also a hole left by the in-flight freeze: `AbsorbPointer` stops
+  /// pointers, not keys, so Enter can still reach a form that is mid-save.
+  group('the keyboard can drive the form', () {
+    Finder weightOf(int index) => find
+        .descendant(
+            of: find.byType(ItemSetoranCard).at(index),
+            matching: find.byType(TextFormField))
+        .last;
+
+    testWidgets('Enter in the weight box saves the setoran', (tester) async {
+      api.on('POST', '/api/v1/transaksi', json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      await tester.enterText(weightOf(0), '2,5');
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(api.requests.where((r) => r.method == 'POST').length, 1,
+          reason: 'the whole loop should be typeable without the mouse');
+      await settleToasts(tester);
+    });
+
+    testWidgets('Enter does nothing while a save is in flight', (tester) async {
+      api.on('POST', '/api/v1/transaksi', json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await tester.enterText(weightOf(0), '2,5');
+      await tester.pump();
+
+      api.latency = const Duration(seconds: 1);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      // The freeze stops pointers, not keys, so this is the path around it.
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      expect(api.requests.where((r) => r.method == 'POST').length, 1,
+          reason: 'a second Enter during the round trip must not post twice');
+      await settleToasts(tester);
+    });
+
+    testWidgets('tab skips the read-only price box', (tester) async {
+      await open(tester);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+      await addItem(tester, 'Kardus');
+
+      await tester.tap(weightOf(0));
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+
+      // Each card lays out its price box before its weight box, so without the
+      // fix this lands on the second card's price rather than its weight.
+      final fields = find.byType(EditableText);
+      final focused = <int>[
+        for (var i = 0; i < tester.widgetList(fields).length; i++)
+          if (tester.widget<EditableText>(fields.at(i)).focusNode.hasFocus) i,
+      ];
+      expect(focused, [3],
+          reason: 'fields are [price0, weight0, price1, weight1]; tabbing from '
+              'weight0 must reach weight1, not a box that cannot be typed in');
+      await settleToasts(tester);
+    });
+  });
+
   testWidgets('a WhatsApp that cannot be opened is only a warning',
       (tester) async {
     when(() => launcher.launchUrl(any(), any())).thenAnswer((_) async => false);
