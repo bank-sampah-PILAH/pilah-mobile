@@ -8,11 +8,17 @@ import '../../domain/model/draft_pencairan.dart';
 /// one row per file type. A bare three-dot icon was not read as export.
 class ExportMenuButton extends StatelessWidget {
   final bool enabled;
+
+  /// A file is being made. Shown on the button itself: a toast for this has to
+  /// be dismissed again, and a quick answer can beat its entrance animation and
+  /// leave it stranded over the header.
+  final bool busy;
   final ValueChanged<ExportBerkas> onSelected;
 
   const ExportMenuButton({
     super.key,
     required this.enabled,
+    this.busy = false,
     required this.onSelected,
   });
 
@@ -57,10 +63,21 @@ class ExportMenuButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.download_outlined, size: 20, color: color),
+            if (busy)
+              SizedBox(
+                key: const Key('ekspor-spinner'),
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppColors.greenDark,
+                ),
+              )
+            else
+              Icon(Icons.download_outlined, size: 20, color: color),
             const SizedBox(width: 6),
             Text(
-              'Ekspor',
+              busy ? 'Menyiapkan...' : 'Ekspor',
               style: AppTextStyle.small
                   .copyWith(fontWeight: FontWeight.w600, color: color),
             ),

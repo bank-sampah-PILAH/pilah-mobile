@@ -4,18 +4,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/core/utils/file_downloader.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import '../blocs/draft_editor_cubit.dart';
 import '../blocs/draft_editor_state.dart';
 import '../blocs/editor_item_view.dart';
+import '../widgets/draft_file_actions.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/editor_item_card.dart';
@@ -26,6 +25,7 @@ import '../widgets/jumlah_control.dart';
 import '../widgets/pencairan_ui.dart';
 import '../widgets/potongan_control.dart';
 import 'draft_editor_args.dart';
+import 'draft_pdf_preview_page.dart';
 import 'draft_list_page.dart';
 
 /// Shapes a pencairan: name, general potongan and method, then each nasabah.
@@ -123,40 +123,16 @@ class _DraftEditorViewState extends State<DraftEditorView> {
 
   Future<void> _export(ExportBerkas berkas) async {
     final cubit = context.read<DraftEditorCubit>();
-    final loading = AppNotification.showLoading(
-      context,
-      title: 'Informasi',
-      message: 'Menyiapkan ${berkas.label}...',
-    );
     final file = await cubit.export(berkas);
-    await loading.dismiss();
     if (file == null || !mounted) return;
 
-    final SavedFile saved;
-    try {
-      saved = await FileDownloader.save(
-        filename: file.filename,
-        bytes: file.bytes,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      AppNotification.showError(
-        context,
-        title: 'Gagal Menyimpan',
-        message: 'Gagal menyimpan berkas: $e',
-      );
+    if (berkas == ExportBerkas.pdf) {
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => DraftPdfPreviewPage(file: file),
+      ));
       return;
     }
-    if (!mounted) return;
-    AppNotification.showSuccess(
-      context,
-      title: 'Berhasil',
-      message: 'Berkas disimpan ke folder ${saved.folder}',
-      actionLabel: 'Bagikan',
-      onAction: () => SharePlus.instance.share(
-        ShareParams(files: [XFile(saved.path)], text: 'Draft Pencairan PILAH'),
-      ),
-    );
+    await simpanBerkasDraft(context, file);
   }
 
   /// A paid pencairan changes saldo and riwayat, so the screens that show
@@ -249,6 +225,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                       if (state.draftId != null)
                         ExportMenuButton(
                           enabled: state.canExport,
+                          busy: state.phase == EditorPhase.exporting,
                           onSelected: _export,
                         ),
                     ],
