@@ -41,6 +41,31 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
         (item) => item.copyWith(metode: metode),
       );
 
+  /// Applies the general settings together, in one edit. Only what is given
+  /// changes: [metode] and [jumlah] rewrite every item; [potongan] becomes the
+  /// draft's default, which items with their own potongan do not follow.
+  void terapkanUmum({
+    MetodePencairan? metode,
+    JumlahUmum? jumlah,
+    Potongan? potongan,
+  }) {
+    if (metode == null && jumlah == null && potongan == null) return;
+    final berubah = metode != null || jumlah != null;
+    _change(
+      state.copyWith(
+        items: [
+          for (final item in state.items)
+            item.copyWith(
+              metode: metode,
+              nominal: jumlah?.hitung(item.saldo),
+            ),
+        ],
+        potonganDefault: potongan,
+      ),
+      touched: berubah ? state.items.map((item) => item.nasabahId).toSet() : {},
+    );
+  }
+
   void setItemMetode(String nasabahId, MetodePencairan metode) =>
       _editItem(nasabahId, (item) => item.copyWith(metode: metode));
 

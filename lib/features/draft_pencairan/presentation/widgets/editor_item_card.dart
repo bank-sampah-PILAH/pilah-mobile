@@ -66,6 +66,7 @@ class EditorItemCard extends StatelessWidget {
               Row(
                 children: [
                   ElevatedButton(
+                    key: const Key('terapkan-item'),
                     onPressed: () => Navigator.of(sheetContext)
                         .pop(_PotonganChoice(pilihan)),
                     style: ElevatedButton.styleFrom(
