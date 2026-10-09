@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -104,12 +106,12 @@ void main() {
       for (final label in [
         'NAMA PENCAIRAN',
         'UNTUK SEMUA NASABAH',
-        'RINGKASAN',
         'NASABAH (3)',
       ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
-      expect(find.byType(PencairanSummaryCard), findsOneWidget);
+      expect(find.text('RINGKASAN'), findsNothing,
+          reason: 'the summary lives in the panel above the buttons');
       expect(find.byType(PencairanCard), findsWidgets);
     });
 
@@ -120,7 +122,6 @@ void main() {
       for (final heading in [
         'NAMA PENCAIRAN',
         'UNTUK SEMUA NASABAH',
-        'RINGKASAN',
         'NASABAH (3)',
       ]) {
         final style = tester.widget<Text>(find.text(heading)).style!;
@@ -200,6 +201,7 @@ void main() {
     testWidgets('Total potongan is yellow with a minus, like on the cards',
         (tester) async {
       await pumpNew(tester);
+      await _bukaRingkasan(tester);
       expect(tester.widget<Text>(find.byKey(const Key('total-potongan'))).data,
           'Rp 0');
 
@@ -383,6 +385,7 @@ void main() {
       expect(find.text('Ahmad Ridwan'), findsOneWidget);
       expect(find.text('Budi Santoso'), findsOneWidget);
       expect(find.text('Citra Dewi'), findsOneWidget);
+      await _bukaRingkasan(tester);
       expect(find.byKey(const Key('total-nominal')), findsOneWidget);
       expect(find.text('Rp 765.600'), findsNWidgets(2),
           reason: 'total pencairan and total dibayar');
@@ -396,6 +399,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('potongan-nilai')), '10');
       await _terapkanUmum(tester);
 
+      await _bukaRingkasan(tester);
       expect(find.text('\u2212 Rp 76.560'), findsWidgets);
       expect(find.text('Rp 689.040'), findsWidgets);
     });
@@ -411,6 +415,7 @@ void main() {
 
       expect(cubit.state.potonganDefault,
           const Potongan(PotonganJenis.persen, 25));
+      await _bukaRingkasan(tester);
       expect(find.text('\u2212 Rp 191.400'), findsWidgets);
     });
 
@@ -461,6 +466,7 @@ void main() {
 
       expect(cubit.state.potonganDefault,
           const Potongan(PotonganJenis.rupiah, 1000));
+      await _bukaRingkasan(tester);
       expect(find.text('\u2212 Rp 3.000'), findsWidgets);
     });
 
@@ -732,6 +738,138 @@ void main() {
       await pumpSaved(tester);
 
       expect(find.byKey(const Key('menu-editor')), findsNothing);
+    });
+  });
+
+  group('the summary panel', () {
+    Finder panel() => find.byKey(const Key('ringkasan-panel'));
+
+    String teks(WidgetTester tester, String key) =>
+        tester.widget<Text>(find.byKey(Key(key))).data!;
+
+    testWidgets('collapsed it shows only Total dibayar', (tester) async {
+      await pumpNew(tester);
+
+      expect(panel(), findsOneWidget);
+      expect(teks(tester, 'total-dibayar'), 'Rp 765.600');
+      expect(find.text('Total dibayar'), findsOneWidget);
+      expect(find.byKey(const Key('total-nominal')), findsNothing);
+      expect(find.byKey(const Key('total-potongan')), findsNothing);
+      expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+    });
+
+    testWidgets('it sits above the save button, white with round top corners',
+        (tester) async {
+      await pumpNew(tester);
+
+      final simpan = find.byKey(const Key('simpan'));
+      expect(tester.getBottomLeft(find.byKey(const Key('total-dibayar'))).dy,
+          lessThanOrEqualTo(tester.getTopLeft(simpan).dy),
+          reason: 'the total sits above the button, in the same panel');
+      expect(tester.getTopLeft(panel()).dy,
+          lessThan(tester.getTopLeft(simpan).dy));
+      expect(tester.getBottomLeft(panel()).dy,
+          greaterThanOrEqualTo(tester.getBottomLeft(simpan).dy));
+      final dekor =
+          tester.widget<Container>(panel()).decoration! as BoxDecoration;
+      expect(dekor.color, Colors.white);
+      final sudut = dekor.borderRadius! as BorderRadius;
+      expect(sudut.topLeft, const Radius.circular(20));
+      expect(sudut.bottomLeft, Radius.zero);
+      expect(dekor.boxShadow, isNotEmpty);
+    });
+
+    testWidgets('tapping it opens the details, tapping again closes them',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      expect(teks(tester, 'total-nominal'), 'Rp 765.600');
+      expect(teks(tester, 'total-potongan'), 'Rp 0');
+      expect(teks(tester, 'total-dibayar'), 'Rp 765.600');
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('total-nominal')), findsNothing);
+    });
+
+    testWidgets('a swipe up opens it and a swipe down closes it',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.fling(
+          find.byKey(const Key('ringkasan-toggle')), const Offset(0, -80), 800);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('total-nominal')), findsOneWidget);
+
+      await tester.fling(
+          find.byKey(const Key('ringkasan-toggle')), const Offset(0, 80), 800);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('total-nominal')), findsNothing);
+    });
+
+    testWidgets('Total potongan is yellow with a minus when opened',
+        (tester) async {
+      await pumpNew(tester);
+      cubit.terapkanUmum(potongan: const Potongan(PotonganJenis.persen, 10));
+      await tester.pump();
+      await tester.pump();
+
+      await _bukaRingkasan(tester);
+
+      final total =
+          tester.widget<Text>(find.byKey(const Key('total-potongan')));
+      expect(total.data, '\u2212 Rp 76.560');
+      expect(total.style!.color, AppColors.statOrange);
+    });
+
+    testWidgets('the total follows every edit, wherever you are in the list',
+        (tester) async {
+      await pumpNew(tester);
+
+      cubit.setItemNominal('n-2', 10000);
+      await tester.pump();
+      await tester.pump();
+
+      expect(teks(tester, 'total-dibayar'), 'Rp 725.600');
+    });
+
+    testWidgets('it counts everyone even when the list is narrowed',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.enterText(find.byKey(const Key('cari-nasabah')), 'budi');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+      expect(teks(tester, 'total-dibayar'), 'Rp 765.600');
+    });
+
+    testWidgets('a paid draft keeps the panel but has no buttons',
+        (tester) async {
+      await pumpSaved(tester, status: DraftStatus.dikonfirmasi);
+
+      expect(panel(), findsOneWidget);
+      expect(teks(tester, 'total-dibayar'), 'Rp 150.000');
+      expect(find.byKey(const Key('simpan')), findsNothing);
+    });
+
+    testWidgets('there is no panel while the draft is loading', (tester) async {
+      when(() => useCases.getDraft('d-1')).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
+      cubit = DraftEditorCubit(useCases);
+      _current = cubit;
+      unawaited(cubit.load('d-1'));
+      await pumpRouted(tester, const _Host());
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(panel(), findsNothing);
     });
   });
 
@@ -1196,6 +1334,7 @@ void main() {
 
       final total = banyak.fold<int>(0, (sum, k) => sum + k.saldo);
       expect(cubit.state.totalNominal, total);
+      await _bukaRingkasan(tester);
       expect(find.byKey(const Key('total-nominal')), findsOneWidget);
     });
   });
@@ -1553,6 +1692,13 @@ void main() {
 }
 
 DraftEditorCubit? _current;
+
+/// Opens the summary panel above the buttons, if it is closed.
+Future<void> _bukaRingkasan(WidgetTester tester) async {
+  if (find.byKey(const Key('total-nominal')).evaluate().isNotEmpty) return;
+  await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+  await tester.pumpAndSettle();
+}
 
 /// Presses Terapkan on the "Untuk semua nasabah" card.
 Future<void> _terapkanUmum(WidgetTester tester) async {
