@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_terjadwal.dart';
 
 class HargaModel extends HargaEntity {
   HargaModel({
@@ -14,6 +15,8 @@ class HargaModel extends HargaEntity {
     required super.icon,
     required super.iconColor,
     required super.isActive,
+    super.berlakuMulai,
+    super.hargaTerjadwal,
   });
 
   factory HargaModel.fromJson(Map<String, dynamic> json) {
@@ -61,8 +64,26 @@ class HargaModel extends HargaEntity {
       icon: icon,
       iconColor: iconColor,
       isActive: json['is_active'] as bool? ?? true,
+      berlakuMulai:
+          DateTime.tryParse(json['harga_berlaku_mulai'] as String? ?? ''),
+      hargaTerjadwal: _parseTerjadwal(json['harga_terjadwal']),
     );
   }
+
+  static HargaTerjadwal? _parseTerjadwal(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final mulai = DateTime.tryParse(json['berlaku_mulai'] as String? ?? '');
+    if (mulai == null) return null;
+    return HargaTerjadwal(
+      harga:
+          double.tryParse(json['harga_per_kg']?.toString() ?? '')?.toInt() ?? 0,
+      berlakuMulai: mulai,
+    );
+  }
+
+  /// Field yang dikirim saat menyunting jenis sampah. Harga diganti lewat
+  /// `POST /jenis-sampah/{id}/harga` supaya tercatat sebagai versi baru.
+  Map<String, dynamic> toUpdateJson() => toJson()..remove('harga_per_kg');
 
   Map<String, dynamic> toJson() {
     // `id` and `is_active` are read-only on the backend; the record id travels

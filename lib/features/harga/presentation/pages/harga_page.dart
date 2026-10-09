@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -245,6 +246,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     final subtitle = item.subtitle;
     final badgeText = item.badgeText;
     final price = item.priceFormatted;
+    final terjadwal = item.hargaTerjadwal;
 
     return GestureDetector(
       onTap: () {
@@ -311,6 +313,17 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                     backgroundColor: Colors.blue[50],
                     textColor: Colors.blue[600],
                   ),
+                  if (terjadwal != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Rp ${formatRupiahId(terjadwal.harga)} mulai '
+                      '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+                      style: AppTextStyle.extraSmall.copyWith(
+                        color: AppColors.avatarYellowText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
