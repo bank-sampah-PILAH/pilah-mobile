@@ -133,6 +133,25 @@ import '../features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart'
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
     as _i1053;
 import '../features/profile/presentation/cubit/profile_cubit.dart' as _i300;
+import '../features/riwayat/data/datasources/riwayat_remote_data_source.dart'
+    as _i101;
+import '../features/riwayat/data/repositories/riwayat_repository_impl.dart'
+    as _i316;
+import '../features/riwayat/domain/repositories/riwayat_repository.dart'
+    as _i908;
+import '../features/riwayat/domain/use_cases/riwayat_use_cases.dart' as _i216;
+import '../features/riwayat/presentation/cubit/riwayat_history_cubit.dart'
+    as _i225;
+import '../features/statement/data/remote/statement_remote_data_sources.dart'
+    as _i987;
+import '../features/statement/data/statement_repository_impl.dart' as _i322;
+import '../features/statement/domain/repository/statement_repository.dart'
+    as _i664;
+import '../features/statement/domain/statement_interactor.dart' as _i408;
+import '../features/statement/domain/use_cases/statement_use_cases.dart'
+    as _i742;
+import '../features/statement/presentation/blocs/statement_export_cubit.dart'
+    as _i873;
 import '../features/superadmin/data/datasources/superadmin_remote_data_source.dart'
     as _i309;
 import '../features/superadmin/data/datasources/superadmin_remote_data_source_impl.dart'
@@ -239,10 +258,16 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i24.AuthRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i73.JadwalRepository>(
         () => _i928.JadwalRepositoryImpl(gh<_i915.JadwalRemoteDataSource>()));
+    gh.lazySingleton<_i987.StatementRemoteDataSources>(
+        () => _i987.StatementRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i960.HargaRemoteDataSource>(
         () => _i74.HargaRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i307.NasabahRemoteDataSource>(
         () => _i990.NasabahRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i101.RiwayatRemoteDataSource>(
+        () => _i101.RiwayatRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i908.RiwayatRepository>(
+        () => _i316.RiwayatRepositoryImpl(gh<_i101.RiwayatRemoteDataSource>()));
     gh.lazySingleton<_i300.ProfileCubit>(() => _i300.ProfileCubit(
           gh<_i1053.ProfileRemoteDataSource>(),
           gh<_i183.ImagePicker>(),
@@ -257,6 +282,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i244.OnboardingCubit(gh<_i247.OnboardingRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
+    gh.lazySingleton<_i664.StatementRepository>(() =>
+        _i322.StatementRepositoryImpl(gh<_i987.StatementRemoteDataSources>()));
     gh.lazySingleton<_i449.PencairanRepository>(() =>
         _i913.PencairanRepositoryImpl(gh<_i1037.PencairanRemoteDataSources>()));
     gh.lazySingleton<_i40.HargaRepository>(
@@ -301,12 +328,20 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
+    gh.lazySingleton<_i216.GetRiwayatHistoryUseCase>(
+        () => _i216.GetRiwayatHistoryUseCase(gh<_i908.RiwayatRepository>()));
+    gh.lazySingleton<_i216.GetRiwayatSetoranDetailUseCase>(() =>
+        _i216.GetRiwayatSetoranDetailUseCase(gh<_i908.RiwayatRepository>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
     gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
           gh<_i521.AuthenticationUseCases>(),
           gh<_i934.LoginWithGoogleUseCase>(),
         ));
+    gh.lazySingleton<_i742.StatementUseCases>(
+        () => _i408.StatementInteractor(gh<_i664.StatementRepository>()));
+    gh.factory<_i873.StatementExportCubit>(
+        () => _i873.StatementExportCubit(gh<_i742.StatementUseCases>()));
     gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
         () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i268.GetBankSampahUseCase>(
@@ -366,6 +401,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i700.RevisiPencairanCubit(gh<_i686.PencairanUseCases>()));
     gh.factory<_i8.RiwayatPencairanCubit>(
         () => _i8.RiwayatPencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.factory<_i225.RiwayatHistoryCubit>(() => _i225.RiwayatHistoryCubit(
+          gh<_i216.GetRiwayatHistoryUseCase>(),
+          gh<_i216.GetRiwayatSetoranDetailUseCase>(),
+        ));
     gh.lazySingleton<_i454.RiwayatAktivitasCubit>(
         () => _i454.RiwayatAktivitasCubit(
               gh<_i383.GetTransaksiUseCase>(),

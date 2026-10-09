@@ -8,7 +8,9 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_membership_content.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_history_tab.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/riwayat_nasabah_page.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_preview_button.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Re-key history on account or membership changes to discard stale responses.
@@ -110,47 +112,54 @@ class NasabahHistoryScreen extends StatelessWidget {
                                   Container(
                                     margin: const EdgeInsets.fromLTRB(
                                         16, 12, 16, 8),
+                                    padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
                                       color: NasabahStyle.line
                                           .withValues(alpha: 0.25),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: TabBar(
-                                      dividerColor: Colors.transparent,
-                                      indicatorSize: TabBarIndicatorSize.tab,
-                                      indicator: BoxDecoration(
-                                        color: NasabahStyle.emerald,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      labelColor: Colors.white,
-                                      unselectedLabelColor: NasabahStyle.muted,
-                                      labelStyle: NasabahStyle.text(14,
-                                          weight: FontWeight.w600),
-                                      tabs: const [
-                                        Tab(text: 'Setoran'),
-                                        Tab(text: 'Pencairan'),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TabBar(
+                                            dividerColor: Colors.transparent,
+                                            indicatorSize:
+                                                TabBarIndicatorSize.tab,
+                                            indicator: BoxDecoration(
+                                              color: NasabahStyle.emerald,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            labelColor: Colors.white,
+                                            unselectedLabelColor:
+                                                NasabahStyle.muted,
+                                            labelStyle: NasabahStyle.text(14,
+                                                weight: FontWeight.w600),
+                                            tabs: const [
+                                              Tab(text: 'Setoran'),
+                                              Tab(text: 'Pencairan'),
+                                            ],
+                                          ),
+                                        ),
+                                        NasabahPdfPreviewButton(
+                                            membershipId: id),
                                       ],
                                     ),
                                   ),
                                   Expanded(
                                     child: TabBarView(
                                       children: [
-                                        RiwayatNasabahPage(
+                                        BlocProvider<RiwayatHistoryCubit>(
                                           key: ValueKey((
                                             auth.id,
                                             auth.email,
                                             auth.token,
                                             id,
                                           )),
-                                          loadPage: (page) =>
-                                              di<NasabahRepository>()
-                                                  .history(id, page: page),
-                                          loadDetail: (transactionId) =>
-                                              di<NasabahRepository>()
-                                                  .setoranDetail(
-                                            id,
-                                            transactionId,
-                                          ),
+                                          create: (_) =>
+                                              di<RiwayatHistoryCubit>()
+                                                ..loadHistory(id, reset: true),
+                                          child: const RiwayatNasabahPage(),
                                         ),
                                         const PencairanHistoryTab(),
                                       ],

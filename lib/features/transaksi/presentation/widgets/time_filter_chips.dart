@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/utils/file_downloader.dart';
+import 'package:pilah_mobile/core/utils/report_export_sheet.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Period chips, custom range, and setoran-only export for the unified
 /// Riwayat Aktivitas screen (PIL-282). Export and the custom range operate
@@ -107,13 +106,8 @@ class TimeFilterChips extends StatelessWidget {
     );
   }
 
-  /// Downloads the report, then offers to share it.
-  ///
-  /// Sharing used to be the only outcome: the file went to the cache directory
-  /// and the system share sheet opened over it, so a user who just wanted the
-  /// spreadsheet on their phone had to mail it to themselves. Saving to
-  /// Download and putting "Bagikan" on the confirmation covers both, and asks
-  /// nothing of the majority who only wanted the file.
+  /// Downloads the report, then offers to share it — the app-wide
+  /// save-then-share flow shared with the PDF export.
   Future<void> _onExport(BuildContext context) async {
     final cubit = context.read<RiwayatAktivitasCubit>();
 
@@ -132,37 +126,13 @@ class TimeFilterChips extends StatelessWidget {
       return;
     }
 
-    final SavedFile saved;
-    try {
-      saved = await FileDownloader.save(
-        filename: export!.filename,
-        bytes: export.bytes,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      AppNotification.showError(
-        context,
-        title: 'Gagal Menyimpan',
-        message: 'Gagal menyimpan laporan: $e',
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-    AppNotification.showSuccess(
+    await saveAndOfferShare(
       context,
-      title: 'Berhasil',
-      message: 'Laporan berhasil disimpan ke folder ${saved.folder}',
-      actionLabel: 'Bagikan',
-      // share_plus copies whatever path it is handed into its own cache before
-      // handing out a content:// URI, so the saved file is shareable straight
-      // from Download — no second copy to keep in sync.
-      onAction: () => SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(saved.path)],
-          text: 'Laporan Transaksi PILAH',
-        ),
-      ),
+      filename: export!.filename,
+      bytes: export.bytes,
+      successMessage: (saved) =>
+          'Laporan berhasil disimpan ke folder ${saved.folder}',
+      shareText: 'Laporan Transaksi PILAH',
     );
   }
 
