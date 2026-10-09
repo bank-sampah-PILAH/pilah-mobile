@@ -599,6 +599,30 @@ void main() {
       expect(find.text('Rupiah'), findsNothing);
     });
 
+    testWidgets('the card menu is white and rounded, with an icon per action',
+        (tester) async {
+      await pumpNew(tester);
+      cubit.setItemNominal('n-2', 1000);
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.byKey(const Key('menu-item-n-2')));
+      await tester.tap(find.byKey(const Key('menu-item-n-2')));
+      await tester.pumpAndSettle();
+
+      Finder ikon(String key, IconData icon) => find.descendant(
+          of: find.byKey(Key(key)), matching: find.byIcon(icon));
+      expect(ikon('aksi-reset', Icons.restart_alt), findsOneWidget);
+      expect(ikon('aksi-hapus', Icons.delete_outline), findsOneWidget);
+      final kartu = tester.widget<Material>(find
+          .ancestor(
+              of: find.byKey(const Key('aksi-hapus')),
+              matching: find.byType(Material))
+          .first);
+      expect(kartu.color, Colors.white);
+      expect(kartu.surfaceTintColor, Colors.transparent);
+    });
+
     testWidgets('an item can be taken out', (tester) async {
       await pumpNew(tester);
 
