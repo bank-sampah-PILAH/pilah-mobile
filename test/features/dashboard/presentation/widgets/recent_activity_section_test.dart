@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
@@ -144,6 +145,35 @@ void main() {
 
       expect(find.text('Ani Wijaya'), findsOneWidget);
       expect(find.text('Budi'), findsOneWidget);
+    });
+
+    testWidgets('Lihat Semua opens the laporan tab', (tester) async {
+      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+        _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
+      ]));
+      addTearDown(cubit.close);
+      final router = GoRouter(routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, __) => Scaffold(
+            body: BlocProvider<RecentActivityCubit>.value(
+              value: cubit,
+              child: RecentActivitySection(now: () => _today),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/laporan',
+          builder: (_, __) => const Scaffold(body: Text('Laporan')),
+        ),
+      ]);
+      addTearDown(router.dispose);
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+
+      await tester.tap(find.text('Lihat Semua'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Laporan'), findsOneWidget);
     });
   });
 }

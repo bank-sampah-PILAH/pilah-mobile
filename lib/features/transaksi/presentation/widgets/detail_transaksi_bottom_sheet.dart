@@ -52,6 +52,9 @@ class _DetailTransaksiBottomSheetState
     });
   }
 
+  // coverage:ignore-start
+  // Unreachable while the WhatsApp status section is hidden in build() (see the
+  // TEMP comment there); restore the tests with the section.
   Future<void> _retryWaNotification() async {
     final id = widget.transactionData['id']?.toString();
     if (id == null || id.isEmpty) return;
@@ -84,6 +87,8 @@ class _DetailTransaksiBottomSheetState
       );
     }
   }
+
+  // coverage:ignore-end
 
   @override
   Widget build(BuildContext context) {
@@ -430,6 +435,8 @@ class _DetailTransaksiBottomSheetState
     );
   }
 
+  // coverage:ignore-start
+  // Only used by the hidden WhatsApp status section (see the TEMP comment above).
   // Kept alive (unreferenced) while the WA status section above is disabled.
   // ignore: unused_element
   Widget _buildWaStatusBox(String status, String name) {
@@ -560,4 +567,5 @@ class _DetailTransaksiBottomSheetState
       );
     }
   }
+  // coverage:ignore-end
 }

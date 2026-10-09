@@ -26,7 +26,9 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
     _detail = widget.loadDetail();
   }
 
-  void _retry() => setState(() => _detail = widget.loadDetail());
+  void _retry() => setState(() {
+        _detail = widget.loadDetail();
+      });
 
   @override
   Widget build(BuildContext context) => Padding(

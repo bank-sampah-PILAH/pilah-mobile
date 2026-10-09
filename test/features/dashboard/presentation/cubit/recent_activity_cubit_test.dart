@@ -220,4 +220,28 @@ void main() {
 
     expect(cubit.state, isA<RecentActivityInitial>());
   });
+
+  test('entries without a date sort after dated ones', () async {
+    when(() => getTransaksi.execute(any())).thenAnswer(
+      (_) async => Right([
+        TransaksiGroupEntity(header: 'X', transactions: [
+          _trx('Dated', tanggal: DateTime(2026, 9, 22)),
+          _trx('Undated A'),
+          _trx('Undated B'),
+        ]),
+      ]),
+    );
+
+    await cubit.load();
+
+    expect(_titles(cubit.state), ['Dated', 'Undated A', 'Undated B']);
+  });
+
+  test('states compare by value', () {
+    expect(RecentActivityInitial(), RecentActivityInitial());
+    expect(RecentActivityLoading(), RecentActivityLoading());
+    expect(const RecentActivityError('a'), const RecentActivityError('a'));
+    expect(const RecentActivityError('a') == const RecentActivityError('b'),
+        isFalse);
+  });
 }

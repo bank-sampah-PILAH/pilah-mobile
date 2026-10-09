@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +14,9 @@ import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_c
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 
@@ -20,7 +24,16 @@ import 'package:pilah_mobile/services/di.dart';
 import 'core/router/app_router_config.dart';
 
 class App extends StatelessWidget {
-  const App({super.key});
+  // The constructor line is only credited when the first coverage report merged
+  // for this file happens to be from the test that builds `const App()` (the
+  // merge keeps the first value seen), so it is excluded to stay deterministic.
+  @visibleForTesting
+  final bool? isWebOverride;
+
+  const App({
+    super.key,
+    @visibleForTesting this.isWebOverride,
+  }); // coverage:ignore-line
 
   // This widget is the root of your application.
   @override
@@ -76,16 +89,33 @@ class App extends StatelessWidget {
       child: BlocListener<AuthenticationBloc, AuthenticationStates>(
         listenWhen: (previous, current) => current is Unauthenticated,
         listener: (context, state) => resetSessionScopedState(context),
-        child: _PendingInviteResumeWatcher(
-          child: MaterialApp.router(
-            title: 'Flutter Pilah Mobile',
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.primary,
+        child: BlocListener<AuthenticationBloc, AuthenticationStates>(
+          listenWhen: (previous, current) =>
+              (isWebOverride ?? kIsWeb) &&
+              current is Authenticated &&
+              !isSupportedWebRole(current.authEntity.role),
+          listener: (context, state) {
+            context.read<AuthenticationBloc>().add(LogoutRequested());
+            AppNotification.afterNavigation(
+              (context) => AppNotification.showWarning(
+                context,
+                title: 'Akses web tidak tersedia',
+                message:
+                    'Akun ini hanya dapat digunakan melalui aplikasi mobile.',
               ),
-              useMaterial3: true,
+            );
+          },
+          child: _PendingInviteResumeWatcher(
+            child: MaterialApp.router(
+              title: 'Flutter Pilah Mobile',
+              theme: ThemeData(
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: AppColors.primary,
+                ),
+                useMaterial3: true,
+              ),
+              routerConfig: AppRouterConfig.getRouter(),
             ),
-            routerConfig: AppRouterConfig.getRouter(),
           ),
         ),
       ),

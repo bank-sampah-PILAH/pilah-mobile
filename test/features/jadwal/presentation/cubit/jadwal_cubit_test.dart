@@ -533,6 +533,49 @@ void main() {
       verify(() => repository.getJadwal(page: 1, date: null)).called(2);
     },
   );
+
+  test('keeps the list and reports the error when the next page fails',
+      () async {
+    when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+      (_) async => Right(_page([schedule], totalCount: 2, hasMore: true)),
+    );
+    when(() => repository.getJadwal(page: 2, date: null)).thenAnswer(
+      (_) async => Left(GeneralException(message: 'offline')),
+    );
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    await cubit.loadJadwal();
+    await cubit.loadNextPage();
+
+    final state = cubit.state as JadwalLoaded;
+    expect(state.items, [schedule]);
+    expect(state.isLoadingMore, isFalse);
+    expect(state.loadingMoreError, isNotNull);
+  });
+
+  test('saving before anything was loaded still creates and then lists it',
+      () async {
+    when(() => repository.createJadwal(any()))
+        .thenAnswer((_) async => Right(schedule));
+    when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
+      (_) async => Right(_page([schedule])),
+    );
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+
+    final error = await cubit.saveJadwal(schedule);
+
+    expect(error, isNull);
+    expect((cubit.state as JadwalLoaded).items, [schedule]);
+    expect((cubit.state as JadwalLoaded).isSaving, isFalse);
+  });
+
+  test('a page result is equal to another with the same content', () {
+    expect(_page([schedule], totalCount: 3, hasMore: true),
+        _page([schedule], totalCount: 3, hasMore: true));
+    expect(_page([schedule]), isNot(_page([schedule], hasMore: true)));
+  });
 }
 
 JadwalPageResult _page(

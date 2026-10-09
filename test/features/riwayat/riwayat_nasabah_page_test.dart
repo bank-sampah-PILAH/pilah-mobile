@@ -200,4 +200,77 @@ void main() {
     expect(find.textContaining('20.000'), findsOneWidget);
     expect(find.text('Muat Lagi'), findsNothing);
   });
+
+  testWidgets('shows the API message when the history cannot be loaded', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host((_) async {
+      throw const NasabahApiException('Sesi berakhir. Silakan masuk kembali.');
+    }));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sesi berakhir. Silakan masuk kembali.'), findsOneWidget);
+    expect(find.text('Coba Lagi'), findsOneWidget);
+  });
+
+  testWidgets('pulling down reloads the first page', (tester) async {
+    final requests = <int>[];
+    await tester.pumpWidget(host((number) async {
+      requests.add(number);
+      return page([activity('a', '12500.00')]);
+    }));
+    await tester.pumpAndSettle();
+
+    unawaited(
+      tester.state<RefreshIndicatorState>(find.byType(RefreshIndicator)).show(),
+    );
+    await tester.pumpAndSettle();
+
+    expect(requests, [1, 1]);
+  });
+
+  group('setoran detail sheet', () {
+    testWidgets(
+        'explains an API failure and requests the detail again on retry', (
+      tester,
+    ) async {
+      var calls = 0;
+      await tester.pumpWidget(host(
+        (_) async => page([activity('transaction-1', '12500.00')]),
+        loadDetail: (_) async {
+          if (++calls == 1) {
+            throw const NasabahApiException('Data tidak ditemukan.');
+          }
+          return setoranDetail();
+        },
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Setoran'));
+      await tester.pumpAndSettle();
+      expect(find.text('Data tidak ditemukan.'), findsOneWidget);
+
+      await tester.tap(find.text('Coba Lagi'));
+      await tester.pumpAndSettle();
+
+      expect(calls, 2);
+      expect(find.text('Data tidak ditemukan.'), findsNothing);
+      expect(find.text('Plastik PET'), findsOneWidget);
+    });
+
+    testWidgets('falls back to a generic message for unexpected failures', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host(
+        (_) async => page([activity('transaction-1', '12500.00')]),
+        loadDetail: (_) async => throw Exception('boom'),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Setoran'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rincian setoran gagal dimuat.'), findsOneWidget);
+    });
+  });
 }

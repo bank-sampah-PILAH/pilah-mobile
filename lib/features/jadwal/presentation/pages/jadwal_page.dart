@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -844,7 +845,11 @@ class _JadwalFormState extends State<_JadwalForm> {
   }
 
   DateTime _defaultStartTime(DateTime? date) {
+    // coverage:ignore-start
+    // Defensive: _openForm always passes the selected date for a new schedule
+    // and an existing one carries its own start time.
     if (date == null) return DateTime.now().add(const Duration(days: 1));
+    // coverage:ignore-end
 
     final selectedDate = DateUtils.dateOnly(date);
     final preferred = DateTime(
@@ -853,7 +858,7 @@ class _JadwalFormState extends State<_JadwalForm> {
       selectedDate.day,
       9,
     );
-    final now = DateTime.now();
+    final now = clock.now();
     if (!DateUtils.isSameDay(selectedDate, now) || preferred.isAfter(now)) {
       return preferred;
     }
