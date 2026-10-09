@@ -52,6 +52,12 @@ dart run build_runner build --delete-conflicting-outputs
 flutter build apk -t lib/main_production.dart
 ```
 
+### 🌐 Dashboard hosting
+
+See [dashboard deployment guide](docs/DASHBOARD_DEPLOYMENT.md) for Fly staging,
+Cloud Run production, CI gates, exact backend/Google origins, and the shared
+Web OAuth client ID. Web supports Super Admin, Pengurus and Pengurus Induk only.
+
 ### ⚙️ Supported Flavor
 
 1.  staging
