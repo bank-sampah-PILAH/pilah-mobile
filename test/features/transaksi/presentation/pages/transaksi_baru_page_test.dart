@@ -609,19 +609,34 @@ void main() {
       await tester.tap(weightOf(0));
       await tester.pumpAndSettle();
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pumpAndSettle();
+      // Swept rather than asserted one step at a time: the delete button and
+      // the jenis selector legitimately take focus between the two weight
+      // boxes, so the order is not ours to pin down. What is ours is that a
+      // box nobody can type into never takes a turn.
+      var reachedSecondWeight = false;
+      for (var step = 0; step < 14; step++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
 
-      // Each card lays out its price box before its weight box, so without the
-      // fix this lands on the second card's price rather than its weight.
-      final fields = find.byType(EditableText);
-      final focused = <int>[
-        for (var i = 0; i < tester.widgetList(fields).length; i++)
-          if (tester.widget<EditableText>(fields.at(i)).focusNode.hasFocus) i,
-      ];
-      expect(focused, [3],
-          reason: 'fields are [price0, weight0, price1, weight1]; tabbing from '
-              'weight0 must reach weight1, not a box that cannot be typed in');
+        final fields =
+            tester.widgetList<EditableText>(find.byType(EditableText));
+        expect(
+          fields.where((field) => field.readOnly && field.focusNode.hasFocus),
+          isEmpty,
+          reason: 'step $step put focus on a read-only price box; Tab must '
+              'never stop on a field that cannot be typed in',
+        );
+        if (tester
+            .widget<EditableText>(find.byType(EditableText).last)
+            .focusNode
+            .hasFocus) {
+          reachedSecondWeight = true;
+        }
+      }
+
+      expect(reachedSecondWeight, isTrue,
+          reason: 'the second weight box must be reachable by Tab, or the '
+              'keyboard loop stops at the first item');
       await settleToasts(tester);
     });
   });
