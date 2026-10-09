@@ -730,10 +730,7 @@ void main() {
 
     bool terapkanAktif(WidgetTester tester) =>
         tester
-            .widget<ElevatedButton>(find.descendant(
-              of: find.byKey(const Key('terapkan-umum')),
-              matching: find.byType(ElevatedButton),
-            ))
+            .widget<ElevatedButton>(find.byKey(const Key('terapkan-umum')))
             .onPressed !=
         null;
 
@@ -760,6 +757,21 @@ void main() {
           tester.getTopLeft(find.byKey(Key(key))).dy,
       ];
       expect(y, [...y]..sort());
+    });
+
+    testWidgets('Terapkan is a slim, full-width button', (tester) async {
+      await pumpNew(tester);
+
+      final tombol = tester.getSize(find.byKey(const Key('terapkan-umum')));
+      final kartu = tester.getSize(find
+          .ancestor(
+              of: find.byKey(const Key('terapkan-umum')),
+              matching: find.byType(PencairanCard))
+          .first);
+      expect(tombol.height, lessThanOrEqualTo(40));
+      expect(tombol.height, greaterThanOrEqualTo(32));
+      expect(tombol.width, greaterThan(kartu.width - 60),
+          reason: 'still spans the card');
     });
 
     testWidgets('Jumlah pencairan offers Persen and Nominal, no Penuh',
@@ -893,6 +905,91 @@ void main() {
       await tester.enterText(find.byKey(const Key('jumlah-nilai')), '99');
       await tester.pump();
       expect(terapkanAktif(tester), isTrue);
+    });
+
+    group('the Persen slider', () {
+      Slider slider(WidgetTester tester) =>
+          tester.widget<Slider>(find.byKey(const Key('jumlah-slider')));
+
+      Future<void> geser(WidgetTester tester, double nilai) async {
+        slider(tester).onChanged!(nilai);
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('Persen has one, starting at 100; Nominal has none',
+          (tester) async {
+        await pumpNew(tester);
+
+        expect(slider(tester).value, 100);
+        expect(slider(tester).min, 0);
+        expect(slider(tester).max, 100);
+
+        await jumlah(tester, 'rupiah');
+        expect(find.byKey(const Key('jumlah-slider')), findsNothing);
+      });
+
+      testWidgets('moving it sets the share, waiting for Terapkan',
+          (tester) async {
+        await pumpNew(tester);
+
+        await geser(tester, 50);
+
+        expect(teksJumlah(tester), '50');
+        expect(slider(tester).label, '50%');
+        expect(terapkanAktif(tester), isTrue);
+        expect(
+            cubit.state.items.map((i) => i.nominal), [465600, 50000, 250000]);
+
+        await _terapkanUmum(tester);
+
+        expect(
+            cubit.state.items.map((i) => i.nominal), [232800, 25000, 125000]);
+      });
+
+      testWidgets('typing moves the slider too', (tester) async {
+        await pumpNew(tester);
+
+        await tester.enterText(find.byKey(const Key('jumlah-nilai')), '25');
+        await tester.pump();
+
+        expect(slider(tester).value, 25);
+      });
+
+      testWidgets('it never shows more than two decimals', (tester) async {
+        await pumpNew(tester);
+
+        await geser(tester, 56.99999999999999);
+        expect(teksJumlah(tester), '57');
+        expect(slider(tester).label, '57%');
+
+        await geser(tester, 33.333333333);
+        expect(teksJumlah(tester), '33.33');
+        expect(slider(tester).label, '33.33%');
+      });
+
+      testWidgets('back at 100 is back to what is saved', (tester) async {
+        await pumpNew(tester);
+
+        await geser(tester, 50);
+        expect(terapkanAktif(tester), isTrue);
+
+        await geser(tester, 100);
+
+        expect(terapkanAktif(tester), isFalse);
+        expect(find.byKey(const Key('belum-diterapkan')), findsNothing);
+      });
+
+      testWidgets('a typed share above 100 pins the slider and stays unusable',
+          (tester) async {
+        await pumpNew(tester);
+
+        await tester.enterText(find.byKey(const Key('jumlah-nilai')), '150');
+        await tester.pump();
+
+        expect(slider(tester).value, 100);
+        expect(terapkanAktif(tester), isFalse);
+      });
     });
 
     group('going back to what is saved', () {
