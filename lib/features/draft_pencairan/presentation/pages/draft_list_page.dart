@@ -57,14 +57,15 @@ class DraftListView extends StatelessWidget {
               PencairanHeader(
                 title: 'Pencairan',
                 actions: [
-                  PopupMenuButton<String>(
+                  PencairanPopupMenu<String>(
                     key: const Key('menu-lainnya'),
-                    icon: Icon(Icons.more_vert, color: Colors.grey[800]),
                     onSelected: (_) => context.push(CatatPencairanPage.route),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
+                    entries: const [
+                      PencairanMenuEntry(
+                        key: Key('aksi-catat'),
                         value: 'catat',
-                        child: Text('Catat pencairan satu nasabah'),
+                        label: 'Catat pencairan satu nasabah',
+                        icon: Icons.edit_note,
                       ),
                     ],
                   ),

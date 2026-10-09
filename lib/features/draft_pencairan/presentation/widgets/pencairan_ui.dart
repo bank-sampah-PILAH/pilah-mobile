@@ -362,3 +362,89 @@ class PencairanMetaLine extends StatelessWidget {
     );
   }
 }
+
+/// One row of a [PencairanPopupMenu]: what it does, and the icon that says so.
+class PencairanMenuEntry<T> {
+  final Key? key;
+  final T value;
+  final String label;
+  final IconData icon;
+
+  /// Reads red: the action removes or discards something.
+  final bool destruktif;
+
+  const PencairanMenuEntry({
+    this.key,
+    required this.value,
+    required this.label,
+    required this.icon,
+    this.destruktif = false,
+  });
+}
+
+/// The three-dot menu of the pencairan screens: a white, rounded card with no
+/// Material tint, each row led by an icon in a small tinted square, like the
+/// export card. Replaces the default grey popup.
+class PencairanPopupMenu<T> extends StatelessWidget {
+  final List<PencairanMenuEntry<T>> entries;
+  final ValueChanged<T> onSelected;
+  final String tooltip;
+
+  const PencairanPopupMenu({
+    super.key,
+    required this.entries,
+    required this.onSelected,
+    this.tooltip = 'Menu',
+  });
+
+  static const _merah = Color(0xFFC62828);
+  static const _merahMuda = Color(0xFFFDECEC);
+  static const _hijauMuda = Color(0xFFE8F5E9);
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<T>(
+      tooltip: tooltip,
+      icon: Icon(Icons.more_vert, color: Colors.grey[800]),
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 8,
+      shadowColor: Colors.black38,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      onSelected: onSelected,
+      itemBuilder: (_) => [
+        for (final entry in entries)
+          PopupMenuItem<T>(
+            key: entry.key,
+            value: entry.value,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: entry.destruktif ? _merahMuda : _hijauMuda,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    entry.icon,
+                    size: 20,
+                    color: entry.destruktif ? _merah : AppColors.greenDark,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    entry.label,
+                    style: AppTextStyle.small.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: entry.destruktif ? _merah : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
