@@ -9,11 +9,15 @@ import 'package:share_plus_platform_interface/share_plus_platform_interface.dart
 /// the real home folder.
 class FakePathProvider extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
-  FakePathProvider({this.downloads, required this.documents});
+  FakePathProvider({this.downloads, required this.documents, this.temporary});
 
   /// Null mimics a platform without a downloads folder.
   final String? downloads;
   final String documents;
+
+  /// Null defers to the platform interface default (an UnimplementedError);
+  /// a path lets PDF viewers that cache to a temp dir mount under tests.
+  final String? temporary;
 
   @override
   Future<String?> getDownloadsPath() async => downloads;
@@ -22,17 +26,21 @@ class FakePathProvider extends PathProviderPlatform
   Future<String?> getApplicationDocumentsPath() async => documents;
 
   @override
+  Future<String?> getTemporaryPath() async => temporary;
+
+  @override
   Future<String?> getExternalStoragePath() async => null;
 }
 
 /// Installs a [FakePathProvider] for the duration of the test.
 FakePathProvider installFakePathProvider(
-    {String? downloads, String? documents}) {
+    {String? downloads, String? documents, String? temporary}) {
   final original = PathProviderPlatform.instance;
   final root = Directory.systemTemp.createTempSync('pilah_paths_');
   final fake = FakePathProvider(
     downloads: downloads == null ? null : '${root.path}/$downloads',
     documents: '${root.path}/${documents ?? 'documents'}',
+    temporary: temporary == null ? null : '${root.path}/$temporary',
   );
   PathProviderPlatform.instance = fake;
   addTearDown(() {

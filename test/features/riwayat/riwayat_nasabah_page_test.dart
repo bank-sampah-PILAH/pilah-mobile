@@ -202,4 +202,45 @@ void main() {
     expect(calls, 2);
     expect(find.text('Plastik PET'), findsOneWidget);
   });
+
+  testWidgets('the Muat ulang button re-asks page 1, not the next page',
+      (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (invocation) async {
+        final page = invocation.namedArguments[#page] as int;
+        return Right(RiwayatHistory(
+          [row('a$page', '12500.00')],
+          page == 1,
+        ));
+      },
+    );
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Muat ulang'));
+    await tester.pumpAndSettle();
+
+    // Reset, not page+1: a refresh that appended page 2's rows would be
+    // indistinguishable from paging.
+    verify(() => repo.history('member-b', page: 1)).called(2);
+    verifyNever(() => repo.history(any(), page: 2));
+    expect(find.textContaining('12.500'), findsOneWidget);
+  });
+
+  testWidgets('pull-to-refresh re-asks page 1 too', (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (invocation) async =>
+          Right(RiwayatHistory([row('a', '12500.00')], false)),
+    );
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, 200));
+    await tester.pumpAndSettle();
+
+    verify(() => repo.history('member-b', page: 1)).called(2);
+    verifyNever(() => repo.history(any(), page: 2));
+  });
 }

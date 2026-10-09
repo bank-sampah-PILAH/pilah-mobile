@@ -2,10 +2,10 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_data_source.dart';
 import 'package:pilah_mobile/features/riwayat/data/repositories/riwayat_repository_impl.dart';
-import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 
 class _Remote extends Mock implements RiwayatRemoteDataSource {}
 
@@ -61,6 +61,48 @@ void main() {
     expect(
       result.fold((f) => f.displayMessage, (_) => ''),
       isNotEmpty,
+    );
+  });
+
+  test('a timeout DioException maps through NetworkException.handleException',
+      () async {
+    when(() => remote.history('member-b', page: 1)).thenAnswer(
+      (_) async => throw DioException(
+        requestOptions: RequestOptions(path: '/riwayat'),
+        type: DioExceptionType.connectionTimeout,
+      ),
+    );
+
+    final result = await repository.history('member-b');
+    expect(result.isLeft(), isTrue);
+    final failure =
+        result.fold((f) => f, (_) => throw StateError('expected Left'));
+    expect(failure, isA<ConnectionTimeOutException>());
+    expect(
+      failure.displayMessage,
+      isNotEmpty,
+    );
+  });
+
+  test('an unexpected throw maps to Left(GeneralException)', () async {
+    when(() => remote.setoranDetail('member-b', 't1'))
+        .thenThrow(StateError('boom'));
+
+    final result = await repository.setoranDetail('member-b', 't1');
+    final failure =
+        result.fold((f) => f, (_) => throw StateError('expected Left'));
+    expect(failure, isA<GeneralException>());
+  });
+
+  test('a NasabahApiException keeps its backend message', () async {
+    when(() => remote.history('member-b', page: 1)).thenAnswer(
+      (_) async => throw const NasabahApiException('Tidak ada data'),
+    );
+
+    final result = await repository.history('member-b');
+    expect(
+      result.fold((f) => f.displayMessage, (_) => ''),
+      'Tidak ada data',
     );
   });
 }
