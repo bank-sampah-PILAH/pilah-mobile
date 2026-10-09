@@ -1,3 +1,4 @@
+import 'bank_sampah_label.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -45,11 +46,6 @@ class RoleNavigationDrawer extends StatelessWidget {
 
   final bool limitedNasabah;
 
-  String get _bankLabel {
-    final trimmed = bankSampahNama?.trim() ?? '';
-    return trimmed.isEmpty ? 'Bank Sampah' : trimmed;
-  }
-
   @override
   Widget build(BuildContext context) {
     final destinations =
@@ -65,7 +61,7 @@ class RoleNavigationDrawer extends StatelessWidget {
         onSelected(index);
       },
       children: [
-        _Header(label: _bankLabel),
+        _Header(label: BankSampahLabel.of(bankSampahNama)),
         for (final destination in destinations)
           NavigationDrawerDestination(
             icon: Icon(destination.icon),

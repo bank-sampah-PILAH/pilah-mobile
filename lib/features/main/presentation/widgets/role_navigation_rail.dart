@@ -1,3 +1,4 @@
+import 'bank_sampah_label.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -49,21 +50,6 @@ class RoleNavigationRail extends StatelessWidget {
   final bool limitedNasabah;
 
   /// Label bank sampah, atau label umum bila namanya tidak diketahui.
-  String get _bankLabel {
-    final trimmed = bankSampahNama?.trim() ?? '';
-    return trimmed.isEmpty ? 'Bank Sampah' : trimmed;
-  }
-
-  /// Inisial dari maksimal dua kata pertama, untuk rail yang collapsed.
-  String get _bankInitials {
-    final words = _bankLabel
-        .split(RegExp(r'\s+'))
-        .where((word) => word.isNotEmpty)
-        .toList();
-    if (words.isEmpty) return 'BS';
-    return words.take(2).map((word) => word[0].toUpperCase()).join();
-  }
-
   @override
   Widget build(BuildContext context) {
     final destinations =
@@ -73,8 +59,8 @@ class RoleNavigationRail extends StatelessWidget {
     return NavigationRail(
       extended: extended,
       leading: _BankSampahContext(
-        label: _bankLabel,
-        initials: _bankInitials,
+        label: BankSampahLabel.of(bankSampahNama),
+        initials: BankSampahLabel.initialsOf(bankSampahNama),
         extended: extended,
       ),
       backgroundColor: AppColors.cardOffWhite,
