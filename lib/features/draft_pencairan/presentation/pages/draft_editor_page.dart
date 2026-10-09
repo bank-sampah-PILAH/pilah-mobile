@@ -194,90 +194,108 @@ class _Form extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<DraftEditorCubit>();
     final locked = state.status.terkunci;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(child: SectionLabel('NAMA PENCAIRAN')),
-              if (state.draftId != null) DraftStatusBadge(status: state.status),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const Key('nama-draft'),
-            controller: nama,
-            readOnly: locked,
-            onChanged: cubit.setNama,
-            style: pencairanInputStyle,
-            decoration: pencairanInputDecoration(
-              hintText: 'Kosongkan untuk nama otomatis',
+    // A lazy sliver list: a draft can hold hundreds of nasabah, and building a
+    // card for each up front makes the screen slow to open and to scroll.
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(child: SectionLabel('NAMA PENCAIRAN')),
+                    if (state.draftId != null)
+                      DraftStatusBadge(status: state.status),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  key: const Key('nama-draft'),
+                  controller: nama,
+                  readOnly: locked,
+                  onChanged: cubit.setNama,
+                  style: pencairanInputStyle,
+                  decoration: pencairanInputDecoration(
+                    hintText: 'Kosongkan untuk nama otomatis',
+                  ),
+                ),
+                if (state.dibuatOlehNama.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  PencairanMetaLine(
+                    label: 'Dibuat oleh',
+                    nama: state.dibuatOlehNama,
+                    waktu: waktu(state.createdAt),
+                  ),
+                  PencairanMetaLine(
+                    label: 'Diubah oleh',
+                    nama: state.diubahOlehNama,
+                    waktu: waktu(state.updatedAt),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                if (!locked) ...[
+                  _GeneralOptions(state: state),
+                  const SizedBox(height: 24),
+                ],
+                const SectionLabel('RINGKASAN'),
+                const SizedBox(height: 8),
+                PencairanSummaryCard(rows: [
+                  SummaryRow(
+                    label: 'Total pencairan',
+                    value: rupiah(state.totalNominal),
+                    valueKey: const Key('total-nominal'),
+                  ),
+                  SummaryRow(
+                    label: 'Total potongan',
+                    value: state.totalPotongan > 0
+                        ? '\u2212 ${rupiah(state.totalPotongan)}'
+                        : rupiah(state.totalPotongan),
+                    valueKey: const Key('total-potongan'),
+                    valueColor:
+                        state.totalPotongan > 0 ? AppColors.statOrange : null,
+                  ),
+                  SummaryRow(
+                    label: 'Total dibayar',
+                    value: rupiah(state.totalDibayar),
+                    valueKey: const Key('total-dibayar'),
+                    emphasized: true,
+                  ),
+                ]),
+                const SizedBox(height: 24),
+                SectionLabel('NASABAH (${state.items.length})'),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
-          if (state.dibuatOlehNama.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            PencairanMetaLine(
-              label: 'Dibuat oleh',
-              nama: state.dibuatOlehNama,
-              waktu: waktu(state.createdAt),
-            ),
-            PencairanMetaLine(
-              label: 'Diubah oleh',
-              nama: state.diubahOlehNama,
-              waktu: waktu(state.updatedAt),
-            ),
-          ],
-          const SizedBox(height: 24),
-          if (!locked) ...[
-            _GeneralOptions(state: state),
-            const SizedBox(height: 24),
-          ],
-          const SectionLabel('RINGKASAN'),
-          const SizedBox(height: 8),
-          PencairanSummaryCard(rows: [
-            SummaryRow(
-              label: 'Total pencairan',
-              value: rupiah(state.totalNominal),
-              valueKey: const Key('total-nominal'),
-            ),
-            SummaryRow(
-              label: 'Total potongan',
-              value: state.totalPotongan > 0
-                  ? '\u2212 ${rupiah(state.totalPotongan)}'
-                  : rupiah(state.totalPotongan),
-              valueKey: const Key('total-potongan'),
-              valueColor: state.totalPotongan > 0 ? AppColors.statOrange : null,
-            ),
-            SummaryRow(
-              label: 'Total dibayar',
-              value: rupiah(state.totalDibayar),
-              valueKey: const Key('total-dibayar'),
-              emphasized: true,
-            ),
-          ]),
-          const SizedBox(height: 24),
-          SectionLabel('NASABAH (${state.items.length})'),
-          const SizedBox(height: 8),
-          for (final item in state.items) ...[
-            EditorItemCard(
-              item: item,
-              state: state,
-              readOnly: locked,
-              onNominal: (nominal) =>
-                  cubit.setItemNominal(item.nasabahId, nominal),
-              onMetode: (metode) => cubit.setItemMetode(item.nasabahId, metode),
-              onPotongan: (potongan) =>
-                  cubit.setItemPotongan(item.nasabahId, potongan),
-              onReset: () => cubit.resetItem(item.nasabahId),
-              onRemove: () => cubit.removeItem(item.nasabahId),
-            ),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 16),
-        ],
-      ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          sliver: SliverList.separated(
+            itemCount: state.items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final item = state.items[index];
+              return EditorItemCard(
+                key: ValueKey(item.nasabahId),
+                item: item,
+                state: state,
+                readOnly: locked,
+                onNominal: (nominal) =>
+                    cubit.setItemNominal(item.nasabahId, nominal),
+                onMetode: (metode) =>
+                    cubit.setItemMetode(item.nasabahId, metode),
+                onPotongan: (potongan) =>
+                    cubit.setItemPotongan(item.nasabahId, potongan),
+                onReset: () => cubit.resetItem(item.nasabahId),
+                onRemove: () => cubit.removeItem(item.nasabahId),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
