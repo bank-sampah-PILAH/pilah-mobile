@@ -207,20 +207,27 @@ class EditorItemCard extends StatelessWidget {
     );
   }
 
-  Widget _menu(bool disesuaikan) => PopupMenuButton<String>(
+  Widget _menu(bool disesuaikan) => PencairanPopupMenu<String>(
         key: Key('menu-item-${item.nasabahId}'),
-        icon: Icon(Icons.more_vert, color: Colors.grey[800]),
         onSelected: (value) {
           if (value == 'reset') onReset();
           if (value == 'hapus') onRemove();
         },
-        itemBuilder: (_) => [
+        entries: [
           if (disesuaikan)
-            const PopupMenuItem(
+            const PencairanMenuEntry(
+              key: Key('aksi-reset'),
               value: 'reset',
-              child: Text('Kembalikan ke default'),
+              label: 'Kembalikan ke default',
+              icon: Icons.restart_alt,
             ),
-          const PopupMenuItem(value: 'hapus', child: Text('Hapus dari draft')),
+          const PencairanMenuEntry(
+            key: Key('aksi-hapus'),
+            value: 'hapus',
+            label: 'Hapus dari draft',
+            icon: Icons.delete_outline,
+            destruktif: true,
+          ),
         ],
       );
 }
