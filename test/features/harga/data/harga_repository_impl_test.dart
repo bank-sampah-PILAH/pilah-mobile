@@ -54,6 +54,16 @@ void main() {
       });
     });
 
+    test('turns a failed request into a NetworkException', () async {
+      when(() => network.post(path, data: any(named: 'data')))
+          .thenThrow(Exception('offline'));
+
+      final result =
+          await repository.ubahHarga(const UbahHarga(id: 'j-1', harga: 4000));
+
+      expect(result.isLeft(), isTrue);
+    });
+
     test('leaves berlaku_mulai out so the price applies now', () async {
       await repository.ubahHarga(const UbahHarga(id: 'j-1', harga: 4000));
 

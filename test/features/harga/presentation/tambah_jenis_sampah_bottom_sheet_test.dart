@@ -12,7 +12,8 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sa
 
 class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
 
-HargaEntity _jenis({HargaTerjadwal? terjadwal}) => HargaEntity(
+HargaEntity _jenis({HargaTerjadwal? terjadwal, bool tanpaMulai = false}) =>
+    HargaEntity(
       id: 'j-1',
       kodeSampah: 'PLS-001',
       name: 'Plastik PET',
@@ -24,7 +25,7 @@ HargaEntity _jenis({HargaTerjadwal? terjadwal}) => HargaEntity(
       icon: Icons.recycling,
       iconColor: Colors.green,
       isActive: true,
-      berlakuMulai: DateTime(2026, 10, 7, 11),
+      berlakuMulai: tanpaMulai ? null : DateTime(2026, 10, 7, 11),
       hargaTerjadwal: terjadwal,
     );
 
@@ -94,6 +95,13 @@ void main() {
       expect(find.text('Rp 3.500/kg sejak 7 Oktober 2026'), findsOneWidget);
       expect(find.text('Rp 5.000/kg mulai 15 Oktober 2026'), findsOneWidget);
     });
+
+    testWidgets('shows only the price when its start time is unknown',
+        (tester) async {
+      await bukaSheet(tester, _jenis(tanpaMulai: true));
+
+      expect(find.text('Rp 3.500/kg'), findsOneWidget);
+    });
   });
 
   group('saving a price change', () {
@@ -149,6 +157,26 @@ void main() {
 
       verify(() => cubit.updateHarga(any())).called(1);
       verifyNever(() => cubit.ubahHarga(any()));
+    });
+
+    testWidgets('going back to Sekarang after picking a date applies it now',
+        (tester) async {
+      await bukaSheet(tester, _jenis());
+
+      await isiHarga(tester, '4000');
+      final tanggalLain = find.text('Tanggal lain');
+      await tester.ensureVisible(tanggalLain);
+      await tester.tap(tanggalLain);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sekarang'));
+      await tester.pumpAndSettle();
+      await simpan(tester);
+
+      verify(
+        () => cubit.ubahHarga(const UbahHarga(id: 'j-1', harga: 4000)),
+      ).called(1);
     });
   });
 }

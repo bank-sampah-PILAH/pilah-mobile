@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_terjadwal.dart';
 
 Map<String, dynamic> _jenisJson({Object? terjadwal}) => {
       'id': 'j-1',
@@ -36,5 +37,12 @@ void main() {
         DateTime.utc(2026, 10, 14, 17),
       );
     });
+  });
+
+  test('two scheduled prices with the same price and start are equal', () {
+    expect(
+      HargaTerjadwal(harga: 5000, berlakuMulai: DateTime.utc(2026, 10, 14)),
+      HargaTerjadwal(harga: 5000, berlakuMulai: DateTime.utc(2026, 10, 14)),
+    );
   });
 }
