@@ -1,17 +1,21 @@
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../blocs/draft_editor_cubit.dart';
 import '../blocs/draft_editor_state.dart';
+import '../blocs/editor_item_view.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/editor_item_card.dart';
+import '../widgets/editor_item_controls.dart';
 import '../widgets/pencairan_ui.dart';
 import '../widgets/potongan_control.dart';
 import 'draft_editor_args.dart';
@@ -184,16 +188,60 @@ class _DraftEditorViewState extends State<DraftEditorView> {
   }
 }
 
-class _Form extends StatelessWidget {
+class _Form extends StatefulWidget {
   final DraftEditorState state;
   final TextEditingController nama;
 
   const _Form({required this.state, required this.nama});
 
   @override
+  State<_Form> createState() => _FormState();
+}
+
+class _FormState extends State<_Form> {
+  // What the list shows. The draft itself is untouched by any of it.
+  final _cari = TextEditingController();
+  ItemFilter _filter = ItemFilter.semua;
+  ItemSort _urutan = const ItemSort.awal();
+
+  // The order is frozen between sorts: sorting by dibayar while typing a nominal
+  // would move the card away mid-keystroke. It is redone when the sort changes
+  // or the set of nasabah does (added, removed, or a draft opened).
+  Map<String, int>? _posisi;
+  ItemSort? _posisiUrutan;
+  Set<String>? _posisiId;
+
+  Map<String, int> _urutanTetap(DraftEditorState state) {
+    final ids = {for (final item in state.items) item.nasabahId};
+    if (_posisi == null ||
+        _posisiUrutan != _urutan ||
+        !setEquals(_posisiId, ids)) {
+      _posisi = EditorItemView.urutan(state, _urutan);
+      _posisiUrutan = _urutan;
+      _posisiId = ids;
+    }
+    return _posisi!;
+  }
+
+  @override
+  void dispose() {
+    _cari.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
+    final nama = widget.nama;
     final cubit = context.read<DraftEditorCubit>();
     final locked = state.status.terkunci;
+    final tampil = EditorItemView.tampilkan(
+      state,
+      query: _cari.text,
+      filter: _filter,
+      sort: _urutan,
+      posisi: _urutanTetap(state),
+    );
     // A lazy sliver list: a draft can hold hundreds of nasabah, and building a
     // card for each up front makes the screen slow to open and to scroll.
     return CustomScrollView(
@@ -265,35 +313,62 @@ class _Form extends StatelessWidget {
                   ),
                 ]),
                 const SizedBox(height: 24),
-                SectionLabel('NASABAH (${state.items.length})'),
+                SectionLabel(
+                  tampil.length == state.items.length
+                      ? 'NASABAH (${state.items.length})'
+                      : 'NASABAH (${tampil.length} dari ${state.items.length})',
+                ),
                 const SizedBox(height: 8),
+                EditorItemControls(
+                  state: state,
+                  search: _cari,
+                  filter: _filter,
+                  sort: _urutan,
+                  onSearch: (_) => setState(() {}),
+                  onFilter: (f) => setState(() => _filter = f),
+                  onSort: (field) =>
+                      setState(() => _urutan = _urutan.pilih(field)),
+                ),
+                const SizedBox(height: 12),
               ],
             ),
           ),
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          sliver: SliverList.separated(
-            itemCount: state.items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final item = state.items[index];
-              return EditorItemCard(
-                key: ValueKey(item.nasabahId),
-                item: item,
-                state: state,
-                readOnly: locked,
-                onNominal: (nominal) =>
-                    cubit.setItemNominal(item.nasabahId, nominal),
-                onMetode: (metode) =>
-                    cubit.setItemMetode(item.nasabahId, metode),
-                onPotongan: (potongan) =>
-                    cubit.setItemPotongan(item.nasabahId, potongan),
-                onReset: () => cubit.resetItem(item.nasabahId),
-                onRemove: () => cubit.removeItem(item.nasabahId),
-              );
-            },
-          ),
+          sliver: tampil.isEmpty && state.items.isNotEmpty
+              ? SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'Tidak ada nasabah yang cocok.',
+                        style: AppTextStyle.small,
+                      ),
+                    ),
+                  ),
+                )
+              : SliverList.separated(
+                  itemCount: tampil.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final item = tampil[index];
+                    return EditorItemCard(
+                      key: ValueKey(item.nasabahId),
+                      item: item,
+                      state: state,
+                      readOnly: locked,
+                      onNominal: (nominal) =>
+                          cubit.setItemNominal(item.nasabahId, nominal),
+                      onMetode: (metode) =>
+                          cubit.setItemMetode(item.nasabahId, metode),
+                      onPotongan: (potongan) =>
+                          cubit.setItemPotongan(item.nasabahId, potongan),
+                      onReset: () => cubit.resetItem(item.nasabahId),
+                      onRemove: () => cubit.removeItem(item.nasabahId),
+                    );
+                  },
+                ),
         ),
       ],
     );
