@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
 
+import '../../domain/model/draft_pencairan.dart';
 import '../blocs/draft_editor_cubit.dart';
 import '../blocs/draft_editor_state.dart';
 import '../blocs/editor_item_view.dart';
@@ -16,6 +17,7 @@ import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/editor_item_card.dart';
 import '../widgets/editor_item_controls.dart';
+import '../widgets/jumlah_control.dart';
 import '../widgets/pencairan_ui.dart';
 import '../widgets/potongan_control.dart';
 import 'draft_editor_args.dart';
@@ -375,14 +377,80 @@ class _FormState extends State<_Form> {
   }
 }
 
-class _GeneralOptions extends StatelessWidget {
+class _GeneralOptions extends StatefulWidget {
   final DraftEditorState state;
 
   const _GeneralOptions({required this.state});
 
   @override
+  State<_GeneralOptions> createState() => _GeneralOptionsState();
+}
+
+/// Choices here wait for Terapkan, so one tap does not rewrite every card by
+/// accident. Only what was touched is applied: changing the potongan leaves
+/// amounts the pengurus set by hand alone.
+class _GeneralOptionsState extends State<_GeneralOptions> {
+  // What the pengurus has chosen here. Null means "as saved"; a choice equal to
+  // the saved state is dropped again, so changing something back switches
+  // Terapkan off.
+  MetodePencairan? _metode;
+  JumlahUmum? _jumlah;
+  Potongan? _potongan;
+
+  // The jumlah last applied. It stays the saved one only while the cards still
+  // say so; a hand edit on a card makes it unknown.
+  JumlahUmum? _jumlahTerapan;
+
+  List<EditorItem> get _items => widget.state.items;
+
+  /// "Semua tunai/transfer" as saved, or null when the cards differ.
+  MetodePencairan? get _metodeTersimpan {
+    if (_items.isEmpty) return null;
+    final pertama = _items.first.metode;
+    return _items.every((i) => i.metode == pertama) ? pertama : null;
+  }
+
+  /// The jumlah the cards agree on: the last one applied, or the whole saldo,
+  /// or null when they were set by hand.
+  JumlahUmum? get _jumlahTersimpan {
+    if (_items.isEmpty) return null;
+    bool cocok(JumlahUmum jumlah) =>
+        _items.every((i) => i.nominal == jumlah.hitung(i.saldo));
+    final terapan = _jumlahTerapan;
+    if (terapan != null && cocok(terapan)) return terapan;
+    return cocok(JumlahUmum.penuh) ? JumlahUmum.penuh : null;
+  }
+
+  Potongan get _potonganTersimpan => widget.state.potonganDefault;
+
+  bool get _metodeBerubah => _metode != null && _metode != _metodeTersimpan;
+  bool get _jumlahBerubah => _jumlah != null && _jumlah != _jumlahTersimpan;
+  bool get _potonganBerubah =>
+      _potongan != null && _potongan != _potonganTersimpan;
+
+  bool get _adaPerubahan =>
+      _metodeBerubah || _jumlahBerubah || _potonganBerubah;
+
+  bool get _siap => _adaPerubahan && (!_jumlahBerubah || _jumlah!.valid);
+
+  void _terapkan() {
+    final jumlah = _jumlahBerubah ? _jumlah : null;
+    context.read<DraftEditorCubit>().terapkanUmum(
+          metode: _metodeBerubah ? _metode : null,
+          jumlah: jumlah,
+          potongan: _potonganBerubah ? _potongan : null,
+        );
+    setState(() {
+      if (jumlah != null) _jumlahTerapan = jumlah;
+      _metode = null;
+      _jumlah = null;
+      _potongan = null;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final cubit = context.read<DraftEditorCubit>();
+    final metode = _metode ?? _metodeTersimpan;
     return PencairanCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,27 +465,48 @@ class _GeneralOptions extends StatelessWidget {
               PencairanChip(
                 key: const Key('metode-semua-tunai'),
                 label: 'Semua tunai',
-                selected: state.items.isNotEmpty &&
-                    state.items.every((i) => i.metode == MetodePencairan.tunai),
-                onTap: () => cubit.setMetodeSemua(MetodePencairan.tunai),
+                selected: metode == MetodePencairan.tunai,
+                onTap: () => setState(() => _metode = MetodePencairan.tunai),
               ),
               PencairanChip(
                 key: const Key('metode-semua-transfer'),
                 label: 'Semua transfer',
-                selected: state.items.isNotEmpty &&
-                    state.items
-                        .every((i) => i.metode == MetodePencairan.transfer),
-                onTap: () => cubit.setMetodeSemua(MetodePencairan.transfer),
+                selected: metode == MetodePencairan.transfer,
+                onTap: () => setState(() => _metode = MetodePencairan.transfer),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          const SectionLabel.field('JUMLAH PENCAIRAN'),
+          const SizedBox(height: 8),
+          JumlahControl(
+            value: _jumlah ?? _jumlahTersimpan,
+            onChanged: (jumlah) => setState(() => _jumlah = jumlah),
           ),
           const SizedBox(height: 16),
           const SectionLabel.field('POTONGAN UMUM'),
           const SizedBox(height: 8),
           PotonganControl(
             keyPrefix: 'potongan',
-            value: state.potonganDefault,
-            onChanged: cubit.setPotonganDefault,
+            value: _potongan ?? _potonganTersimpan,
+            onChanged: (potongan) => setState(() => _potongan = potongan),
+          ),
+          const SizedBox(height: 16),
+          if (_adaPerubahan) ...[
+            Text(
+              'Belum diterapkan',
+              key: const Key('belum-diterapkan'),
+              style: AppTextStyle.small.copyWith(
+                color: AppColors.statOrange,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          CustomPrimaryButton(
+            key: const Key('terapkan-umum'),
+            title: 'Terapkan',
+            onPressed: _siap ? _terapkan : null,
           ),
         ],
       ),

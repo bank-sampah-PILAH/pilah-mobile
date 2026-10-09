@@ -61,6 +61,53 @@ class Potongan extends Equatable {
   List<Object?> get props => [jenis, nilai];
 }
 
+/// How a general jumlah is given: a share of each saldo, or a fixed rupiah.
+enum JumlahJenis {
+  persen('Persen'),
+  rupiah('Nominal');
+
+  const JumlahJenis(this.label);
+
+  final String label;
+}
+
+/// A way to set everyone's pencairan at once: the same share of each saldo, or
+/// the same rupiah for all. The whole saldo is simply 100 percent.
+class JumlahUmum extends Equatable {
+  final JumlahJenis jenis;
+  final num nilai;
+
+  const JumlahUmum(this.jenis, this.nilai);
+
+  static const penuh = JumlahUmum(JumlahJenis.persen, 100);
+
+  /// Whether it can be applied: a share up to 100, or a rupiah above zero.
+  bool get valid {
+    switch (jenis) {
+      case JumlahJenis.persen:
+        return nilai > 0 && nilai <= 100;
+      case JumlahJenis.rupiah:
+        return nilai >= 1;
+    }
+  }
+
+  /// What a nasabah with [saldo] is paid, in whole rupiah rounded down. A fixed
+  /// rupiah is a ceiling: someone with less is paid their whole saldo.
+  int hitung(int saldo) {
+    switch (jenis) {
+      case JumlahJenis.persen:
+        // Hundredths of a percent keep the arithmetic in integers.
+        return (saldo * (nilai * 100).round()) ~/ 10000;
+      case JumlahJenis.rupiah:
+        final tetap = nilai.floor();
+        return tetap < saldo ? tetap : saldo;
+    }
+  }
+
+  @override
+  List<Object?> get props => [jenis, nilai];
+}
+
 enum KandidatUrutan {
   namaAZ('nama', 'Nama A-Z'),
   namaZA('-nama', 'Nama Z-A'),
