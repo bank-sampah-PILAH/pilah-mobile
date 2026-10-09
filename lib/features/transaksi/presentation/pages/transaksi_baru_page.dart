@@ -160,6 +160,11 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
   }
 
   Future<void> _handleSubmit() async {
+    // Pembekuan form memakai AbsorbPointer, yang menahan penunjuk tetapi bukan
+    // tombol. Enter karena itu masih dapat sampai ke sini saat permintaan
+    // sedang berjalan, jadi penjaganya ada di handler, bukan hanya di tombol.
+    if (_isSaving) return;
+
     setState(() => _hasSubmitted = true);
 
     final problems = _draft.problems;
@@ -542,6 +547,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                         setoranItems[index] = updatedItem;
                                       });
                                     },
+                                    onSubmitted: _handleSubmit,
                                     onDelete: () {
                                       setState(() {
                                         setoranItems.removeAt(index);
