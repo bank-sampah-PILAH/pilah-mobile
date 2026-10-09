@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -26,12 +27,12 @@ class PilihNasabahSection extends StatelessWidget {
       children: [
         InkWell(
           onTap: () async {
-            final result = await showModalBottomSheet<NasabahEntity>(
+            // Bottom sheet pada telepon, dialog pada peramban. Wadahnya
+            // dipilih oleh showAdaptivePicker; di sini hanya isinya.
+            final result = await showAdaptivePicker<NasabahEntity>(
               context: context,
-              useRootNavigator: true,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => const PilihNasabahBottomSheet(),
+              builder: (context, presentation) =>
+                  PilihNasabahBottomSheet(presentation: presentation),
             );
             if (result != null) {
               onCustomerSelected(result);
