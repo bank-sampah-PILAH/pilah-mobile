@@ -212,4 +212,85 @@ void main() {
           reason: 'a resize must not send the user back to the dashboard');
     });
   });
+
+  /// Review finding from @HeraldoArman on PR #70.
+  ///
+  /// A staff profile route is branch 7, outside the five navigation
+  /// destinations, so `selected` is negative and `main_page.dart` returns the
+  /// shell raw. On the app that is exactly right — the bottom bar was never
+  /// there. In a browser it means the rail, the drawer and `ContentBounds` all
+  /// disappear, leaving a full-bleed page whose only way back is the browser's
+  /// own back button.
+  ///
+  /// The guard itself is older than this PR (`04994da`, PIL-228); what this PR
+  /// changed is that there is now left-hand navigation to lose.
+  group('a route outside the destinations keeps its navigation on web', () {
+    testWidgets('the staff profile keeps the rail on a desktop window',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1280, 900),
+          isWeb: true,
+          initialLocation: '/profile');
+
+      expect(find.text('body:/profile'), findsOneWidget);
+      expect(find.byType(RoleNavigationRail), findsOneWidget,
+          reason: 'losing the whole shell leaves the browser back button as '
+              'the only way out of the profile page');
+    });
+
+    testWidgets('nothing is marked selected on that route', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1280, 900),
+          isWeb: true,
+          initialLocation: '/profile');
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.selectedIndex, isNull,
+          reason: 'the pengelola is not on Beranda, so highlighting Beranda '
+              'would misreport where they are');
+    });
+
+    testWidgets('a narrow browser keeps the menu button', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(390, 844),
+          isWeb: true,
+          initialLocation: '/profile');
+
+      expect(find.byIcon(Icons.menu), findsOneWidget,
+          reason: 'the drawer is the narrow-browser form of the same shell');
+    });
+
+    testWidgets('the app is left exactly as it was', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(390, 844),
+          isWeb: false,
+          initialLocation: '/profile');
+
+      expect(find.text('body:/profile'), findsOneWidget);
+      expect(find.byType(BottomNavigationBar), findsNothing,
+          reason: 'parity with the behaviour before this PR: the bottom bar '
+              'was never on the profile route, and web is the only gap');
+    });
+  });
+
+  /// Guards the shared-helper extraction asked for in the same review: the
+  /// fallback was only covered on the rail side, so the drawer could have
+  /// drifted silently.
+  group('both navigation headers name the bank sampah the same way', () {
+    testWidgets('the drawer falls back when the name is missing',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: true);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bank Sampah'), findsOneWidget,
+          reason: 'the session in this test carries no bankSampahNama');
+    });
+  });
 }
