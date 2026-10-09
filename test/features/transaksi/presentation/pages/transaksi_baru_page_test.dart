@@ -461,10 +461,18 @@ void main() {
     /// Taps save and returns with the POST still unresolved. The `save` helper
     /// cannot be used here: its `pumpToast` advances 1.2s and would finish it.
     Future<void> beginSave(WidgetTester tester) async {
-      api.latency = const Duration(seconds: 5);
+      api.latency = const Duration(seconds: 1);
       await tester.ensureVisible(find.text('Simpan Transaksi'));
       await tester.tap(find.text('Simpan Transaksi'));
       await tester.pump();
+    }
+
+    /// Lets the held request resolve. The clock has to be advanced explicitly:
+    /// `pumpAndSettle` alone returns as soon as the tree stops animating and
+    /// does not wait for a pending `Future.delayed`.
+    Future<void> finishSave(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
     }
 
     testWidgets('the WhatsApp draft describes the setoran that was saved',
@@ -475,6 +483,13 @@ void main() {
         'saldo_setelah_transaksi': '30000',
         'items': [{}],
       });
+      // The default stub template is `Halo {nama}`, which contains no item
+      // placeholder at all and so could never tell the two outcomes apart.
+      stubProfile(api, wa: {
+        'template': 'Setoran: {daftar_item}',
+        'preview_contoh': 'Setoran: -',
+        'variabel_tersedia': ['{daftar_item}'],
+      });
       await open(tester);
       await pickNasabah(tester);
       await addItem(tester, 'Botol PET');
@@ -483,7 +498,7 @@ void main() {
       // Deleting an item is pure local state, so it needs no network and lands
       // squarely inside the round trip.
       await tester.tap(find.byIcon(Icons.close).first);
-      await tester.pumpAndSettle();
+      await finishSave(tester);
 
       await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
       await pumpToast(tester);
@@ -516,7 +531,7 @@ void main() {
       expect(find.byType(Dialog), findsNothing,
           reason: 'changing the nasabah mid-request would describe one '
               'setoran to a different person');
-      await tester.pumpAndSettle();
+      await finishSave(tester);
       await settleToasts(tester);
     });
   });
