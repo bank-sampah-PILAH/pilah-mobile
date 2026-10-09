@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 
 import '../../../../support/nasabah_support.dart';
@@ -42,8 +43,7 @@ void main() {
           onCustomerSelected: (n) => chosen = n,
         ),
       ),
-      wrap: (app) =>
-          BlocProvider<NasabahCubit>.value(value: cubit, child: app),
+      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
       size: window,
     );
     await tester.tap(find.text('Tap untuk pilih nasabah'));
@@ -71,8 +71,7 @@ void main() {
 
     testWidgets('one pixel below medium is still a sheet', (tester) async {
       api.on('GET', '/api/v1/nasabah', json: nasabahPage([]));
-      await open(
-          tester, const Size(LayoutBreakpoint.mediumMinWidth - 1, 800));
+      await open(tester, const Size(LayoutBreakpoint.mediumMinWidth - 1, 800));
 
       expect(find.byType(BottomSheet), findsOneWidget);
     });
@@ -131,14 +130,27 @@ void main() {
               'server refuses');
     });
 
-    testWidgets('the dialog does not span the whole window', (tester) async {
+    testWidgets('the dialog is a bounded box in the middle of the window',
+        (tester) async {
       api.on('GET', '/api/v1/nasabah', json: nasabahPage([]));
       await open(tester, const Size(1280, 800));
 
-      final box = tester.getSize(find.byType(Dialog));
-      expect(box.width, lessThan(1280),
-          reason: 'a dialog is centred and bounded, not a full-width band');
-      expect(box.height, lessThan(800));
+      // The picker content, not `Dialog` itself: Dialog's outermost render box
+      // is its inset padding, which fills the window by design, so measuring
+      // that would say nothing about where the picker actually sits.
+      final box = tester.getRect(find.byType(PilihNasabahBottomSheet));
+
+      expect(box.width, lessThan(640),
+          reason: 'a dialog is a bounded box, not a full-width band');
+      expect(box.center.dx, closeTo(640, 1),
+          reason: 'horizontally centred in a 1280px window');
+      // The property that actually separates the two containers: a bottom
+      // sheet is anchored to the bottom edge, so its box would reach y=800.
+      // Not asserted on the vertical centre, because the content sits inside
+      // asymmetric padding (16 at the top, 0 at the bottom) and is therefore
+      // 8px below the dialog's own centre.
+      expect(box.bottom, lessThan(760),
+          reason: 'a dialog floats clear of the bottom edge');
     });
   });
 }
