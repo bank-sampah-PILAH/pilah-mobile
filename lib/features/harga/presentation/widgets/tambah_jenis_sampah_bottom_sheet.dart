@@ -9,6 +9,7 @@ import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_jenis.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
@@ -451,11 +452,11 @@ class _TambahJenisSampahBottomSheetState
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
-        message: !isEditMode
-            ? 'Jenis sampah baru berhasil ditambahkan.'
-            : hargaBerubah && berlakuMulai != null
-                ? 'Harga baru berlaku mulai ${formatTanggalId(berlakuMulai)}.'
-                : 'Jenis sampah berhasil diperbarui.',
+        message: pesanSimpanJenis(
+          isEditMode: isEditMode,
+          hargaBerubah: hargaBerubah,
+          berlakuMulai: berlakuMulai,
+        ),
       );
       return;
     }
