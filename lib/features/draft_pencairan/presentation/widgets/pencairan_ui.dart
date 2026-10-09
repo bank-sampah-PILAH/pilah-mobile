@@ -7,8 +7,6 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 /// one flow: a grey rounded back button, bold title, spaced section labels,
 /// white 12px inputs, pill chips and soft cards.
 
-const _emerald = Color(0xFF006D44);
-
 /// Title row with the app's grey rounded back button. Going back uses
 /// `maybePop`, so a screen guarding unsaved edits with a `PopScope` is asked.
 class PencairanHeader extends StatelessWidget {
@@ -205,97 +203,6 @@ class PencairanCard extends StatelessWidget {
               : null,
         ),
         child: child,
-      );
-}
-
-class SummaryRow {
-  final String label;
-  final String value;
-  final bool emphasized;
-  final Key? valueKey;
-
-  /// Overrides the value's colour (a potongan is yellow); null keeps the default.
-  final Color? valueColor;
-
-  const SummaryRow({
-    required this.label,
-    required this.value,
-    this.emphasized = false,
-    this.valueKey,
-    this.valueColor,
-  });
-}
-
-/// White card with a soft shadow and dividers, like Ringkasan on Catat Pencairan.
-class PencairanSummaryCard extends StatelessWidget {
-  final List<SummaryRow> rows;
-
-  const PencairanSummaryCard({super.key, required this.rows});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
-              ),
-            _row(rows[i]),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _row(SummaryRow row) => Row(
-        children: [
-          Expanded(
-            child: Text(
-              row.label,
-              style: AppTextStyle.small.copyWith(
-                color: row.emphasized ? Colors.black87 : Colors.grey[500],
-                fontWeight:
-                    row.emphasized ? FontWeight.bold : FontWeight.normal,
-                fontSize: row.emphasized ? 16 : null,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                row.value,
-                key: row.valueKey,
-                style: (row.emphasized
-                        ? AppTextStyle.headline1
-                        : AppTextStyle.title1)
-                    .copyWith(
-                  color: row.valueColor ??
-                      (row.emphasized ? _emerald : Colors.black87),
-                  fontWeight: FontWeight.bold,
-                  fontSize: row.emphasized ? 20 : 15,
-                ),
-              ),
-            ),
-          ),
-        ],
       );
 }
 

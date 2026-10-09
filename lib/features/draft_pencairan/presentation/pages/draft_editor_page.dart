@@ -17,6 +17,7 @@ import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/editor_item_card.dart';
 import '../widgets/editor_item_controls.dart';
+import '../widgets/editor_summary_panel.dart';
 import '../widgets/jumlah_control.dart';
 import '../widgets/pencairan_ui.dart';
 import '../widgets/potongan_control.dart';
@@ -179,10 +180,14 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                 ],
               ),
             ),
-            bottomNavigationBar:
-                state.status.terkunci || state.phase == EditorPhase.loading
-                    ? null
-                    : _BottomBar(state: state, onSave: cubit.save),
+            bottomNavigationBar: state.phase == EditorPhase.loading
+                ? null
+                : EditorSummaryPanel(
+                    state: state,
+                    aksi: state.status.terkunci
+                        ? null
+                        : _BottomBar(state: state, onSave: cubit.save),
+                  ),
           ),
         ),
       ),
@@ -290,31 +295,6 @@ class _FormState extends State<_Form> {
                   _GeneralOptions(state: state),
                   const SizedBox(height: 24),
                 ],
-                const SectionLabel('RINGKASAN'),
-                const SizedBox(height: 8),
-                PencairanSummaryCard(rows: [
-                  SummaryRow(
-                    label: 'Total pencairan',
-                    value: rupiah(state.totalNominal),
-                    valueKey: const Key('total-nominal'),
-                  ),
-                  SummaryRow(
-                    label: 'Total potongan',
-                    value: state.totalPotongan > 0
-                        ? '\u2212 ${rupiah(state.totalPotongan)}'
-                        : rupiah(state.totalPotongan),
-                    valueKey: const Key('total-potongan'),
-                    valueColor:
-                        state.totalPotongan > 0 ? AppColors.statOrange : null,
-                  ),
-                  SummaryRow(
-                    label: 'Total dibayar',
-                    value: rupiah(state.totalDibayar),
-                    valueKey: const Key('total-dibayar'),
-                    emphasized: true,
-                  ),
-                ]),
-                const SizedBox(height: 24),
                 SectionLabel(
                   tampil.length == state.items.length
                       ? 'NASABAH (${state.items.length})'
