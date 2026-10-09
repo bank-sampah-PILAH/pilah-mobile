@@ -57,6 +57,104 @@ void main() {
     });
   });
 
+  group('PencairanPopupMenu', () {
+    Future<List<String>> pump(WidgetTester tester) async {
+      final dipilih = <String>[];
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topRight,
+            child: PencairanPopupMenu<String>(
+              key: const Key('menu'),
+              onSelected: dipilih.add,
+              entries: const [
+                PencairanMenuEntry(
+                  key: Key('aksi-satu'),
+                  value: 'satu',
+                  label: 'Aksi satu',
+                  icon: Icons.restart_alt,
+                ),
+                PencairanMenuEntry(
+                  key: Key('aksi-dua'),
+                  value: 'dua',
+                  label: 'Aksi dua',
+                  icon: Icons.delete_outline,
+                  destruktif: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ));
+      return dipilih;
+    }
+
+    testWidgets('shows the three dots and opens a white rounded card',
+        (tester) async {
+      await pump(tester);
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('menu')));
+      await tester.pumpAndSettle();
+
+      final kartu = tester.widget<Material>(find
+          .ancestor(
+              of: find.byKey(const Key('aksi-satu')),
+              matching: find.byType(Material))
+          .first);
+      expect(kartu.color, Colors.white);
+      expect(kartu.surfaceTintColor, Colors.transparent);
+      final bentuk = kartu.shape! as RoundedRectangleBorder;
+      expect(bentuk.borderRadius, BorderRadius.circular(16));
+    });
+
+    testWidgets('each row carries the icon of its action', (tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(const Key('menu')));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('aksi-satu')),
+              matching: find.byIcon(Icons.restart_alt)),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('aksi-dua')),
+              matching: find.byIcon(Icons.delete_outline)),
+          findsOneWidget);
+      expect(find.text('Aksi satu'), findsOneWidget);
+      expect(find.text('Aksi dua'), findsOneWidget);
+    });
+
+    testWidgets('a destructive action reads red, the others green',
+        (tester) async {
+      await pump(tester);
+      await tester.tap(find.byKey(const Key('menu')));
+      await tester.pumpAndSettle();
+
+      Color warna(String key, IconData icon) => tester
+          .widget<Icon>(find.descendant(
+              of: find.byKey(Key(key)), matching: find.byIcon(icon)))
+          .color!;
+      expect(warna('aksi-satu', Icons.restart_alt), AppColors.greenDark);
+      expect(warna('aksi-dua', Icons.delete_outline), const Color(0xFFC62828));
+    });
+
+    testWidgets('choosing a row reports its value and closes the card',
+        (tester) async {
+      final dipilih = await pump(tester);
+      await tester.tap(find.byKey(const Key('menu')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('aksi-dua')));
+      await tester.pumpAndSettle();
+
+      expect(dipilih, ['dua']);
+      expect(find.byKey(const Key('aksi-satu')), findsNothing);
+    });
+  });
+
   group('SectionLabel', () {
     testWidgets('a heading is dark, bold and spaced so it stands out',
         (tester) async {
