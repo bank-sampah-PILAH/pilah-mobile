@@ -11,6 +11,7 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -703,6 +704,79 @@ void main() {
       await pumpSaved(tester);
 
       expect(find.byKey(const Key('menu-editor')), findsNothing);
+    });
+  });
+
+  group('a large draft', () {
+    final banyak = [
+      for (var i = 1; i <= 300; i++)
+        Kandidat(
+          id: 'b-$i',
+          kode: 'NAS-${i.toString().padLeft(4, '0')}',
+          nama: 'Nasabah ${i.toString().padLeft(3, '0')}',
+          saldo: 10000 + i,
+        ),
+    ];
+
+    /// Jumps the form to its end or its start, building what comes into view.
+    Future<void> scrollKe(WidgetTester tester, {required bool akhir}) async {
+      final position =
+          tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+      // A lazy list only estimates its length until it has built the end, so
+      // keep jumping until the extent stops growing.
+      for (var i = 0; i < 6; i++) {
+        position.jumpTo(akhir ? position.maxScrollExtent : 0);
+        await tester.pump();
+      }
+    }
+
+    Future<void> pumpBanyak(WidgetTester tester) async {
+      cubit = DraftEditorCubit(useCases)..startNew(banyak);
+      _current = cubit;
+      await _pump(tester);
+    }
+
+    testWidgets('only the cards near the screen are built', (tester) async {
+      await pumpBanyak(tester);
+
+      expect(find.textContaining('NASABAH (300)'), findsOneWidget);
+      expect(find.byType(EditorItemCard), findsWidgets);
+      expect(find.byType(EditorItemCard).evaluate().length, lessThan(30),
+          reason: '300 cards must not all be built at once');
+      expect(find.byKey(const Key('item-b-300')), findsNothing);
+    });
+
+    testWidgets('scrolling down reaches the last nasabah', (tester) async {
+      await pumpBanyak(tester);
+
+      await scrollKe(tester, akhir: true);
+
+      expect(find.byKey(const Key('item-b-300')), findsOneWidget);
+      expect(find.byKey(const Key('item-b-1')), findsNothing);
+    });
+
+    testWidgets('an edit survives its card scrolling off and back',
+        (tester) async {
+      await pumpBanyak(tester);
+      await tester.enterText(find.byKey(const Key('nominal-b-1')), '7777');
+      await tester.pump();
+
+      await scrollKe(tester, akhir: true);
+      await scrollKe(tester, akhir: false);
+
+      expect(cubit.state.items.first.nominal, 7777);
+      final field =
+          tester.widget<TextField>(find.byKey(const Key('nominal-b-1')));
+      expect(field.controller!.text, '7777');
+    });
+
+    testWidgets('the summary counts every nasabah, built or not',
+        (tester) async {
+      await pumpBanyak(tester);
+
+      final total = banyak.fold<int>(0, (sum, k) => sum + k.saldo);
+      expect(cubit.state.totalNominal, total);
+      expect(find.byKey(const Key('total-nominal')), findsOneWidget);
     });
   });
 
