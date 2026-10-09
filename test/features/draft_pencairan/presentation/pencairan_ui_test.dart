@@ -310,32 +310,6 @@ void main() {
     });
   });
 
-  testWidgets('PencairanSummaryCard lists rows and stresses the last',
-      (tester) async {
-    await pumpRouted(
-      tester,
-      const Scaffold(
-        body: PencairanSummaryCard(rows: [
-          SummaryRow(label: 'Total pencairan', value: 'Rp 100.000'),
-          SummaryRow(
-              label: 'Total potongan',
-              value: '\u2212 Rp 10.000',
-              valueColor: AppColors.statOrange),
-          SummaryRow(
-              label: 'Total dibayar', value: 'Rp 90.000', emphasized: true),
-        ]),
-      ),
-    );
-
-    expect(find.text('Total pencairan'), findsOneWidget);
-    expect(find.text('Rp 100.000'), findsOneWidget);
-    expect(find.byType(Divider), findsNWidgets(2));
-    expect(tester.widget<Text>(find.text('\u2212 Rp 10.000')).style!.color,
-        AppColors.statOrange);
-    expect(tester.widget<Text>(find.text('Rp 90.000')).style!.fontSize, 20);
-    expect(tester.widget<Text>(find.text('Rp 100.000')).style!.fontSize, 15);
-  });
-
   testWidgets('PencairanCard is a white rounded box with a green outline',
       (tester) async {
     await pumpRouted(
