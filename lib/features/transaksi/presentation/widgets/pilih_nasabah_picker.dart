@@ -16,8 +16,8 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 /// sama dapat tampil sebagai bottom sheet pada telepon dan sebagai dialog pada
 /// peramban. [presentation] hanya dipakai untuk hal yang memang berbeda di
 /// mata pengguna.
-class PilihNasabahBottomSheet extends StatefulWidget {
-  const PilihNasabahBottomSheet({
+class PilihNasabahPicker extends StatefulWidget {
+  const PilihNasabahPicker({
     super.key,
     this.presentation = PickerPresentation.bottomSheet,
   });
@@ -25,11 +25,10 @@ class PilihNasabahBottomSheet extends StatefulWidget {
   final PickerPresentation presentation;
 
   @override
-  State<PilihNasabahBottomSheet> createState() =>
-      _PilihNasabahBottomSheetState();
+  State<PilihNasabahPicker> createState() => _PilihNasabahPickerState();
 }
 
-class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
+class _PilihNasabahPickerState extends State<PilihNasabahPicker> {
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   late Future<List<NasabahEntity>> _nasabahFuture;

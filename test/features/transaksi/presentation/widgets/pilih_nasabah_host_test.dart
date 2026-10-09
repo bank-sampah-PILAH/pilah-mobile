@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 
 import '../../../../support/nasabah_support.dart';
@@ -138,7 +138,7 @@ void main() {
       // The picker content, not `Dialog` itself: Dialog's outermost render box
       // is its inset padding, which fills the window by design, so measuring
       // that would say nothing about where the picker actually sits.
-      final box = tester.getRect(find.byType(PilihNasabahBottomSheet));
+      final box = tester.getRect(find.byType(PilihNasabahPicker));
 
       expect(box.width, lessThan(640),
           reason: 'a dialog is a bounded box, not a full-width band');

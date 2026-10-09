@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart';
 
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
@@ -32,7 +32,7 @@ class PilihNasabahSection extends StatelessWidget {
             final result = await showAdaptivePicker<NasabahEntity>(
               context: context,
               builder: (context, presentation) =>
-                  PilihNasabahBottomSheet(presentation: presentation),
+                  PilihNasabahPicker(presentation: presentation),
             );
             if (result != null) {
               onCustomerSelected(result);
