@@ -129,3 +129,72 @@ Future<T?> showAdaptivePicker<T>({
       );
   }
 }
+
+/// Membuka [builder] sebagai konfirmasi: bottom sheet pada telepon, dialog di
+/// tengah pada peramban.
+///
+/// Memakai keputusan yang sama dengan [showAdaptivePicker] tetapi rangka yang
+/// berbeda, dan itu disengaja. Picker setinggi jendela karena isinya daftar
+/// yang bergulir; konfirmasi memeluk isinya, karena isinya beberapa baris yang
+/// sudah diketahui. Menyatukan keduanya di balik satu bendera akan membuat satu
+/// fungsi yang separuh parameternya tidak berlaku pada separuh pemakaiannya.
+///
+/// [dismissible] false menutup kedua jalan keluar — tekan di luar dan tombol
+/// kembali — untuk konfirmasi yang memang menuntut sebuah pilihan.
+Future<T?> showAdaptiveConfirmation<T>({
+  required BuildContext context,
+  required Widget Function(
+          BuildContext context, PickerPresentation presentation)
+      builder,
+  bool dismissible = true,
+}) {
+  final presentation =
+      PickerPresentation.resolve(width: MediaQuery.sizeOf(context).width);
+
+  const padding = EdgeInsets.all(24);
+
+  switch (presentation) {
+    case PickerPresentation.bottomSheet:
+      return showModalBottomSheet<T>(
+        context: context,
+        useRootNavigator: true,
+        isScrollControlled: true,
+        isDismissible: dismissible,
+        enableDrag: dismissible,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: padding,
+          child: builder(sheetContext, presentation),
+        ),
+      );
+
+    case PickerPresentation.dialog:
+      return showDialog<T>(
+        context: context,
+        useRootNavigator: true,
+        barrierDismissible: dismissible,
+        builder: (dialogContext) => PopScope(
+          canPop: dismissible,
+          child: Dialog(
+            backgroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(24)),
+            ),
+            // Lebar tetap, tinggi mengikuti isi: tidak ada daftar yang bergulir
+            // di sini, jadi memaksakan tinggi hanya menambah ruang kosong.
+            child: SizedBox(
+              width: PickerPresentation.dialogWidth,
+              child: Padding(
+                padding: padding,
+                child: builder(dialogContext, presentation),
+              ),
+            ),
+          ),
+        ),
+      );
+  }
+}

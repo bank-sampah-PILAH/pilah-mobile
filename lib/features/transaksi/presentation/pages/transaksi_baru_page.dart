@@ -19,6 +19,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setora
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
@@ -258,12 +259,13 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       saldo: created.saldoSetelah,
     );
 
-    await showModalBottomSheet(
+    // Bottom sheet pada telepon, dialog pada peramban — wadahnya dipilih oleh
+    // showAdaptiveConfirmation. Tetap tidak dapat ditutup sembarangan: memilih
+    // mengirim draft WhatsApp atau tidak adalah inti langkah ini.
+    await showAdaptiveConfirmation(
       context: context,
-      isDismissible: false,
-      enableDrag: false,
-      isScrollControlled: true,
-      builder: (sheetContext) => TransaksiBerhasilBottomSheet(
+      dismissible: false,
+      builder: (sheetContext, _) => TransaksiBerhasilBottomSheet(
         customerName: selectedCustomer!.name,
         totalSetoran: created.totalNilai,
         newBalance: created.saldoSetelah,

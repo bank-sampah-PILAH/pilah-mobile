@@ -43,113 +43,109 @@ class _TransaksiBerhasilBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Icon
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.green[50],
-              shape: BoxShape.circle,
-            ),
-            child:
-                const Icon(Icons.check_circle, color: emeraldPrimary, size: 40),
+    // Tanpa chrome wadahnya sendiri — warna, sudut dan padding datang dari
+    // showAdaptiveConfirmation, supaya isi yang sama tampil sebagai bottom
+    // sheet pada telepon dan dialog pada peramban.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Icon
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: Colors.green[50],
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 24),
+          child:
+              const Icon(Icons.check_circle, color: emeraldPrimary, size: 40),
+        ),
+        const SizedBox(height: 24),
 
-          // Title & Subtitle
-          Text(
-            'Transaksi Berhasil!',
-            style: AppTextStyle.headline1.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
+        // Title & Subtitle
+        Text(
+          'Transaksi Berhasil!',
+          style: AppTextStyle.headline1.copyWith(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
-          const SizedBox(height: 8),
-          Text(
-            '${widget.itemCount} jenis sampah berhasil dicatat.',
-            style: AppTextStyle.small.copyWith(
-              color: Colors.grey[500],
-            ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${widget.itemCount} jenis sampah berhasil dicatat.',
+          style: AppTextStyle.small.copyWith(
+            color: Colors.grey[500],
           ),
-          const SizedBox(height: 24),
+        ),
+        const SizedBox(height: 24),
 
-          // Summary Box
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: Column(
-              children: [
-                _buildSummaryRow('Nasabah', widget.customerName, isBold: false),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1, color: Color(0xFFEEEEEE)),
-                ),
-                _buildSummaryRow(
-                    'Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}',
-                    isPrimary: true),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1, color: Color(0xFFEEEEEE)),
-                ),
-                _buildSummaryRow(
-                    'Saldo Terbaru', _formatCurrency(widget.newBalance),
-                    isPrimary: true),
-              ],
-            ),
+        // Summary Box
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
           ),
-          const SizedBox(height: 32),
-
-          // Action Buttons
-          ElevatedButton(
-            onPressed: _isSending
-                ? null
-                : () async {
-                    setState(() => _isSending = true);
-                    await widget.onKirimWaSelesai();
-                    if (!mounted) return;
-                    setState(() => _isSending = false);
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: emeraldPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              minimumSize: const Size(double.infinity, 0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          child: Column(
+            children: [
+              _buildSummaryRow('Nasabah', widget.customerName, isBold: false),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
               ),
-              elevation: 0,
-            ),
-            child: _isSending
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : Text(
-                    'Kirim Notif WhatsApp & Selesai',
-                    style: AppTextStyle.title1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+              _buildSummaryRow(
+                  'Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}',
+                  isPrimary: true),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+              ),
+              _buildSummaryRow(
+                  'Saldo Terbaru', _formatCurrency(widget.newBalance),
+                  isPrimary: true),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 32),
+
+        // Action Buttons
+        ElevatedButton(
+          onPressed: _isSending
+              ? null
+              : () async {
+                  setState(() => _isSending = true);
+                  await widget.onKirimWaSelesai();
+                  if (!mounted) return;
+                  setState(() => _isSending = false);
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: emeraldPrimary,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            minimumSize: const Size(double.infinity, 0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 0,
+          ),
+          child: _isSending
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : Text(
+                  'Kirim Notif WhatsApp & Selesai',
+                  style: AppTextStyle.title1.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+        ),
+      ],
     );
   }
 
