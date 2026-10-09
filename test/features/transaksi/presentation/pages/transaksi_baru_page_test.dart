@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repo
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -445,6 +446,79 @@ void main() {
     expect(
         find.textContaining('Pesan WhatsApp sudah disiapkan'), findsOneWidget);
     await settleToasts(tester);
+  });
+
+  /// `_isSaving` only disables the save button. Every other control stays
+  /// live while the POST is in flight — the nasabah picker, the weight boxes,
+  /// the per-item delete.
+  ///
+  /// That matters because `buildWaSetoranLink` is built *after* the await, from
+  /// `selectedCustomer` and `setoranItems` as they are then, while its own
+  /// comment claims it is "a snapshot of what was actually submitted". Edit the
+  /// form during the round trip and the WhatsApp draft describes a setoran the
+  /// server never saw.
+  group('the form while a save is in flight', () {
+    /// Taps save and returns with the POST still unresolved. The `save` helper
+    /// cannot be used here: its `pumpToast` advances 1.2s and would finish it.
+    Future<void> beginSave(WidgetTester tester) async {
+      api.latency = const Duration(seconds: 5);
+      await tester.ensureVisible(find.text('Simpan Transaksi'));
+      await tester.tap(find.text('Simpan Transaksi'));
+      await tester.pump();
+    }
+
+    testWidgets('the WhatsApp draft describes the setoran that was saved',
+        (tester) async {
+      api.on('POST', '/api/v1/transaksi', json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      await beginSave(tester);
+      // Deleting an item is pure local state, so it needs no network and lands
+      // squarely inside the round trip.
+      await tester.tap(find.byIcon(Icons.close).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
+      await pumpToast(tester);
+
+      final launched = verify(() => launcher.launchUrl(captureAny(), any()))
+          .captured
+          .single as String;
+      expect(launched, contains('Botol'),
+          reason: 'the nasabah is told what was actually recorded against '
+              'their balance, not what the form happened to hold afterwards');
+      await settleToasts(tester);
+    });
+
+    testWidgets('the form cannot be edited while the save is in flight',
+        (tester) async {
+      api.on('POST', '/api/v1/transaksi', json: {
+        'id': 't1',
+        'total_nilai': '5000',
+        'saldo_setelah_transaksi': '30000',
+        'items': [{}],
+      });
+      await open(tester);
+      await pickNasabah(tester);
+      await addItem(tester, 'Botol PET');
+
+      await beginSave(tester);
+      await tester.tap(find.byType(PilihNasabahSection));
+      await tester.pump();
+
+      expect(find.byType(Dialog), findsNothing,
+          reason: 'changing the nasabah mid-request would describe one '
+              'setoran to a different person');
+      await tester.pumpAndSettle();
+      await settleToasts(tester);
+    });
   });
 
   testWidgets('a WhatsApp that cannot be opened is only a warning',
