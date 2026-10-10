@@ -45,6 +45,26 @@ void main() {
     expect(api.last.query, {'ordering': 'nama'});
   });
 
+  test('getKandidat can ask for nasabah without saldo too, to show them',
+      () async {
+    api.on('GET', '$_path/kandidat', json: [
+      {
+        'id': 'n-9',
+        'kode': 'NAS-0009',
+        'nama': 'Fani Kosong',
+        'saldo': '0.00',
+      },
+    ]);
+
+    final result = await buildDraftPencairanUseCases(api)
+        .getKandidat(termasukKosong: true);
+
+    expect(api.last.query, {'ordering': 'nama', 'termasuk_kosong': 'true'});
+    final fani = result.getOrElse(() => []).single;
+    expect(fani.saldo, 0);
+    expect(fani.kosong, isTrue);
+  });
+
   test('createDraft posts the full item list and parses the calculated draft',
       () async {
     api.on('POST', _path, status: 201, json: draftJson());

@@ -17,6 +17,8 @@ const _budi =
     Kandidat(id: 'n-2', kode: 'NAS-0002', nama: 'Budi Santoso', saldo: 50000);
 const _citra =
     Kandidat(id: 'n-3', kode: 'NAS-0003', nama: 'Citra Dewi', saldo: 250000);
+const _fani =
+    Kandidat(id: 'n-4', kode: 'NAS-0004', nama: 'Fani Kosong', saldo: 0);
 
 void main() {
   late _MockUseCases useCases;
@@ -25,26 +27,25 @@ void main() {
   void answer({
     String search = '',
     KandidatUrutan urutan = KandidatUrutan.namaAZ,
-    int saldoMin = 0,
     required List<Kandidat> rows,
   }) {
     when(() => useCases.getKandidat(
           search: search,
           urutan: urutan,
-          saldoMin: saldoMin,
+          termasukKosong: true,
         )).thenAnswer((_) async => Right(rows));
   }
 
   setUp(() async {
     useCases = _MockUseCases();
-    answer(rows: [_ahmad, _budi, _citra]);
+    answer(rows: [_ahmad, _budi, _citra, _fani]);
     cubit = PilihNasabahCubit(useCases);
     await cubit.load();
   });
 
-  test('lists every nasabah who can be paid out, none picked yet', () {
+  test('lists everyone, nasabah without saldo included, none picked yet', () {
     expect(cubit.state.status, PilihStatus.loaded);
-    expect(cubit.state.kandidat, [_ahmad, _budi, _citra]);
+    expect(cubit.state.kandidat, [_ahmad, _budi, _citra, _fani]);
     expect(cubit.state.selectedIds, isEmpty);
     expect(cubit.state.jumlahTerpilih, 0);
   });
@@ -57,6 +58,12 @@ void main() {
     expect(cubit.state.selectedIds, {'n-2'});
     expect(cubit.state.jumlahTerpilih, 1);
     expect(cubit.state.saldoTerpilih, 50000);
+  });
+
+  test('a nasabah without saldo cannot be picked', () {
+    cubit.toggle('n-4');
+
+    expect(cubit.state.selectedIds, isEmpty);
   });
 
   test('searching and sorting ask the server, and the picks survive', () async {
@@ -75,57 +82,147 @@ void main() {
     verify(() => useCases.getKandidat(
           search: 'bud',
           urutan: KandidatUrutan.saldoTerbesar,
-          saldoMin: 0,
+          termasukKosong: true,
         )).called(1);
   });
 
-  test('select all picks everyone, even people the search is hiding', () async {
-    answer(search: 'bud', rows: [_budi]);
-    await cubit.setSearch('bud');
+  group('sorting by field', () {
+    test('name starts A to Z, and again flips to Z to A', () async {
+      answer(urutan: KandidatUrutan.namaZA, rows: [_fani, _citra]);
+      await cubit.setSortField(KandidatSortField.nama);
 
-    await cubit.pilihSemua();
+      expect(cubit.state.urutan, KandidatUrutan.namaZA);
+    });
 
-    expect(cubit.state.selectedIds, {'n-1', 'n-2', 'n-3'});
-    expect(cubit.state.kandidat, [_budi], reason: 'the visible list is kept');
+    test('saldo starts with the biggest, and again flips to the smallest',
+        () async {
+      answer(urutan: KandidatUrutan.saldoTerbesar, rows: [_ahmad]);
+      await cubit.setSortField(KandidatSortField.saldo);
+      expect(cubit.state.urutan, KandidatUrutan.saldoTerbesar);
+
+      answer(urutan: KandidatUrutan.saldoTerkecil, rows: [_fani]);
+      await cubit.setSortField(KandidatSortField.saldo);
+      expect(cubit.state.urutan, KandidatUrutan.saldoTerkecil);
+    });
+
+    test('every order knows its field and direction', () {
+      expect(KandidatUrutan.namaAZ.field, KandidatSortField.nama);
+      expect(KandidatUrutan.namaAZ.ascending, isTrue);
+      expect(KandidatUrutan.saldoTerbesar.field, KandidatSortField.saldo);
+      expect(KandidatUrutan.saldoTerbesar.ascending, isFalse);
+    });
   });
 
-  test('select the search results adds only what is shown', () async {
-    cubit.toggle('n-1');
-    answer(search: 'i', rows: [_budi, _citra]);
-    await cubit.setSearch('i');
+  group('filters', () {
+    test('show everyone by default', () {
+      expect(cubit.state.tampil, [_ahmad, _budi, _citra, _fani]);
+    });
 
-    cubit.pilihHasilPencarian();
+    test('only the picked, or only those not picked yet', () {
+      cubit.toggle('n-1');
 
-    expect(cubit.state.selectedIds, {'n-1', 'n-2', 'n-3'});
+      cubit.setFilter(PilihFilter.terpilih);
+      expect(cubit.state.tampil, [_ahmad]);
+
+      cubit.setFilter(PilihFilter.belumDipilih);
+      expect(cubit.state.tampil, [_budi, _citra, _fani]);
+    });
+
+    test('only those without saldo', () {
+      cubit.setFilter(PilihFilter.saldoKosong);
+
+      expect(cubit.state.tampil, [_fani]);
+    });
+
+    test('a minimum saldo narrows the list, and zero clears it', () {
+      cubit.setSaldoMin(200000);
+      expect(cubit.state.tampil, [_ahmad, _citra]);
+
+      cubit.setSaldoMin(0);
+      expect(cubit.state.tampil, hasLength(4));
+    });
+
+    test('a minimum saldo combines with a status filter', () {
+      cubit.toggle('n-1');
+      cubit.setSaldoMin(200000);
+      cubit.setFilter(PilihFilter.belumDipilih);
+
+      expect(cubit.state.tampil, [_citra]);
+    });
+
+    test('counts say how many each filter holds', () {
+      cubit.toggle('n-1');
+      cubit.toggle('n-2');
+
+      expect(cubit.state.jumlah(PilihFilter.semua), 4);
+      expect(cubit.state.jumlah(PilihFilter.terpilih), 2);
+      expect(cubit.state.jumlah(PilihFilter.belumDipilih), 2);
+      expect(cubit.state.jumlah(PilihFilter.saldoKosong), 1);
+    });
   });
 
-  test('select by minimum saldo adds those who have at least that much',
-      () async {
-    answer(saldoMin: 200000, rows: [_ahmad, _citra]);
+  group('picking what is shown', () {
+    test('the checkbox picks everyone shown who has saldo', () {
+      cubit.pilihTampil();
 
-    await cubit.pilihSaldoMin(200000);
+      expect(cubit.state.selectedIds, {'n-1', 'n-2', 'n-3'});
+      expect(cubit.state.pilihanTampil, PilihanTampil.semua);
+    });
 
-    expect(cubit.state.selectedIds, {'n-1', 'n-3'});
-    verify(() => useCases.getKandidat(
-        search: '', urutan: KandidatUrutan.namaAZ, saldoMin: 200000)).called(1);
-  });
+    test('it picks only what a filter leaves on screen', () {
+      cubit.setSaldoMin(200000);
 
-  test('invert flips the picks within the list on screen', () {
-    cubit.toggle('n-1');
+      cubit.pilihTampil();
 
-    cubit.balikkan();
+      expect(cubit.state.selectedIds, {'n-1', 'n-3'});
+    });
 
-    expect(cubit.state.selectedIds, {'n-2', 'n-3'});
-  });
+    test('when all are picked, it un-picks them again', () {
+      cubit.pilihTampil();
 
-  test('clear drops every pick', () {
-    cubit.toggle('n-1');
-    cubit.toggle('n-2');
+      cubit.pilihTampil();
 
-    cubit.kosongkan();
+      expect(cubit.state.selectedIds, isEmpty);
+      expect(cubit.state.pilihanTampil, PilihanTampil.tidakAda);
+    });
 
-    expect(cubit.state.selectedIds, isEmpty);
-    expect(cubit.state.saldoTerpilih, 0);
+    test('some picked reads as partial, and picks the rest', () {
+      cubit.toggle('n-1');
+      expect(cubit.state.pilihanTampil, PilihanTampil.sebagian);
+
+      cubit.pilihTampil();
+
+      expect(cubit.state.selectedIds, {'n-1', 'n-2', 'n-3'});
+    });
+
+    test('un-picking leaves the picks hidden by a filter alone', () {
+      cubit.pilihTampil();
+      cubit.setSaldoMin(200000);
+
+      cubit.pilihTampil();
+
+      expect(cubit.state.selectedIds, {'n-2'});
+    });
+
+    test('invert flips the picks within what is shown, never the empty ones',
+        () {
+      cubit.toggle('n-1');
+
+      cubit.balikkan();
+
+      expect(cubit.state.selectedIds, {'n-2', 'n-3'});
+    });
+
+    test('clear drops every pick, even hidden ones', () {
+      cubit.toggle('n-1');
+      cubit.toggle('n-2');
+      cubit.setFilter(PilihFilter.saldoKosong);
+
+      cubit.kosongkan();
+
+      expect(cubit.state.selectedIds, isEmpty);
+      expect(cubit.state.saldoTerpilih, 0);
+    });
   });
 
   test('the picked nasabah come back in name order for the editor', () async {
@@ -139,7 +236,7 @@ void main() {
     when(() => useCases.getKandidat(
           search: '',
           urutan: KandidatUrutan.namaAZ,
-          saldoMin: 0,
+          termasukKosong: true,
         )).thenAnswer((_) async => Left(ConnectionTimeOutException()));
 
     await cubit.load();
@@ -154,7 +251,7 @@ void main() {
     when(() => useCases.getKandidat(
           search: 'a',
           urutan: KandidatUrutan.namaAZ,
-          saldoMin: 0,
+          termasukKosong: true,
         )).thenAnswer((_) => slow.future);
     answer(search: 'ab', rows: [_ahmad]);
 
