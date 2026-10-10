@@ -689,6 +689,16 @@ void main() {
   });
 
   group('a saved draft', () {
+    for (final status in DraftStatus.values) {
+      testWidgets('is titled plain "Pencairan" whether it is ${status.name}',
+          (tester) async {
+        await pumpSaved(tester, status: status);
+
+        expect(find.text('Pencairan'), findsOneWidget);
+        expect(find.text('Draft Pencairan'), findsNothing);
+      });
+    }
+
     testWidgets('shows who made it and when, and its name', (tester) async {
       await pumpSaved(tester);
 
