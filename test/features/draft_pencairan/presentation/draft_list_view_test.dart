@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
@@ -249,5 +250,91 @@ void main() {
     await tester.tap(find.byKey(const Key('aksi-catat')));
     await tester.pumpAndSettle();
     expect(find.text('route:/catat-pencairan'), findsOneWidget);
+  });
+
+  testWidgets(
+      'a card shows the total paid, with saldo and potongan folded away',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Total dibayar'), findsOneWidget);
+    expect(find.text('Rp 138.500'), findsOneWidget);
+    expect(find.byKey(const Key('total-saldo-d-1')), findsNothing);
+    expect(find.byKey(const Key('total-potongan-d-1')), findsNothing);
+  });
+
+  testWidgets('the chevron unfolds total saldo and a yellow potongan',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('ekspan-d-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Total saldo'), findsOneWidget);
+    expect(find.text('Rp 150.000'), findsOneWidget);
+    final potongan = tester.widget<Text>(find.descendant(
+        of: find.byKey(const Key('total-potongan-d-1')),
+        matching: find.textContaining('11.500')));
+    expect(potongan.data, '\u2212 Rp 11.500');
+    expect(potongan.style?.color, AppColors.statOrange);
+
+    await tester.tap(find.byKey(const Key('ekspan-d-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('total-saldo-d-1')), findsNothing);
+  });
+
+  testWidgets('unfolding a card does not open the draft', (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('ekspan-d-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routeEditor}'), findsNothing);
+  });
+
+  testWidgets('the potongan row stays, plainly Rp 0, when nothing is deducted',
+      (tester) async {
+    await pump(tester, [
+      DraftRingkasan(
+        id: 'd-9',
+        nama: 'Tanpa potongan',
+        status: DraftStatus.draft,
+        jumlahItem: 1,
+        totalNominal: 50000,
+        totalPotongan: 0,
+        totalDibayar: 50000,
+      ),
+    ]);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('ekspan-d-9')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('total-saldo-d-9')), findsOneWidget);
+    final potongan = tester.widget<Text>(find.descendant(
+        of: find.byKey(const Key('total-potongan-d-9')),
+        matching: find.text('Rp 0')));
+    expect(potongan.style?.color, isNot(AppColors.statOrange));
+  });
+
+  testWidgets('the footer has the pengurus avatar and a clock by the time',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+
+    final footer = find.byKey(const Key('footer-d-1'));
+    expect(find.descendant(of: footer, matching: find.byType(PencairanAvatar)),
+        findsOneWidget);
+    expect(find.descendant(of: footer, matching: find.text('Ibu Sari')),
+        findsOneWidget);
+    expect(find.descendant(of: footer, matching: find.byIcon(Icons.schedule)),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: footer, matching: find.textContaining('7 Okt 2026, 09:05')),
+        findsOneWidget);
   });
 }
