@@ -96,6 +96,8 @@ void main() {
       'nama': 'Cair Oktober',
       'potongan_jenis': 'persen',
       'potongan_nilai': 10,
+      'jumlah_jenis': null,
+      'jumlah_nilai': null,
       'items': [
         {
           'nasabah_id': 'n-1',
@@ -237,6 +239,73 @@ void main() {
     final result = await buildDraftPencairanUseCases(api).confirmDraft('d-1');
 
     expect(result.left, isA<ConflictException>());
+  });
+
+  test('the jumlah applied to everyone is sent with the draft', () async {
+    api.on('POST', _path, status: 201, json: draftJson());
+
+    await buildDraftPencairanUseCases(api).createDraft(const DraftInput(
+      potonganDefault: Potongan.nol,
+      jumlahUmum: JumlahUmum(JumlahJenis.persen, 50),
+      items: [
+        DraftItemInput(
+            nasabahId: 'n-1', nominal: 1000, metode: MetodePencairan.tunai)
+      ],
+    ));
+
+    expect(api.last.json['jumlah_jenis'], 'persen');
+    expect(api.last.json['jumlah_nilai'], 50);
+  });
+
+  test('a saved draft brings back the jumlah that was applied', () async {
+    api.on('GET', '$_path/d-1',
+        json: draftJson(
+            extra: {'jumlah_jenis': 'rupiah', 'jumlah_nilai': '75000.00'}));
+
+    final draft =
+        (await buildDraftPencairanUseCases(api).getDraft('d-1')).right;
+
+    expect(draft.jumlahUmum, const JumlahUmum(JumlahJenis.rupiah, 75000));
+  });
+
+  test('a draft with nothing applied has no jumlah', () async {
+    api.on('GET', '$_path/d-1', json: draftJson());
+
+    final draft =
+        (await buildDraftPencairanUseCases(api).getDraft('d-1')).right;
+
+    expect(draft.jumlahUmum, isNull);
+  });
+
+  test('exportPratinjau posts the draft as sent and downloads the file',
+      () async {
+    api.onBytes('POST', '$_path/export', [
+      37,
+      80,
+      68,
+      70
+    ], headers: {
+      'content-disposition': ['attachment; filename="PILAH_Draft_baru.pdf"'],
+    });
+
+    final export = (await buildDraftPencairanUseCases(api).exportPratinjau(
+      const DraftInput(
+        nama: 'Belum Disimpan',
+        potonganDefault: Potongan(PotonganJenis.persen, 10),
+        items: [
+          DraftItemInput(
+              nasabahId: 'n-1', nominal: 100000, metode: MetodePencairan.tunai)
+        ],
+      ),
+      ExportBerkas.pdf,
+    ))
+        .right;
+
+    expect(api.last.query, {'berkas': 'pdf'});
+    expect(api.last.json['nama'], 'Belum Disimpan');
+    expect((api.last.json['items'] as List).single['nasabah_id'], 'n-1');
+    expect(export.filename, 'PILAH_Draft_baru.pdf');
+    expect(export.bytes, Uint8List.fromList([37, 80, 68, 70]));
   });
 
   test('exportDraft downloads the file named by the server', () async {

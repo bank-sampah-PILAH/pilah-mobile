@@ -204,7 +204,10 @@ void main() {
 
     await tester.tap(find.byKey(const Key('batalkan-d-1')));
     await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byType(BottomSheet), findsOneWidget);
     expect(find.text('Batalkan draft?'), findsOneWidget);
+    expect(find.textContaining('Cair Oktober'), findsWidgets);
     verifyNever(() => useCases.cancelDraft(any()));
 
     await tester.tap(find.text('Ya, batalkan'));

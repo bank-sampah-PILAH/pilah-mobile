@@ -65,7 +65,7 @@ void main() {
       expect(editor.state.totalPotongan, 3000);
     });
 
-    test('an item can override the general potongan and be reset', () {
+    test('an item can override the general potongan and follow it again', () {
       final editor = _newEditor()
         ..setPotonganDefault(const Potongan(PotonganJenis.persen, 10))
         ..setItemPotongan('n-2', const Potongan(PotonganJenis.rupiah, 500))
@@ -76,13 +76,11 @@ void main() {
       expect(state.potonganEfektif(state.items[2]), 10000);
       expect(state.items.map(state.disesuaikan), [false, true, true]);
 
-      editor.resetItem('n-2');
-      editor.resetItem('n-3');
+      editor.setItemPotongan('n-2', null);
 
       expect(editor.state.items[1].potongan, isNull);
-      expect(editor.state.items[2].nominal, 250000);
       expect(editor.state.items.map(editor.state.disesuaikan),
-          [false, false, false]);
+          [false, false, true]);
     });
 
     test('every method can be switched to transfer or cash at once', () {
@@ -154,8 +152,10 @@ DraftPencairan _serverDraft({
   DraftStatus status = DraftStatus.draft,
   String nama = 'Cair Oktober',
   List<DraftItem>? items,
+  JumlahUmum? jumlah,
 }) =>
     DraftPencairan(
+      jumlahUmum: jumlah,
       id: id,
       nama: nama,
       status: status,
@@ -618,13 +618,72 @@ void lifecycleTests() {
       expect(await editor.export(ExportBerkas.xlsx), isNotNull);
     });
 
-    test('is refused while there are unsaved edits, so the file matches',
+    DraftEditorCubit baruDenganMock() =>
+        DraftEditorCubit(useCases)..startNew(const [_ahmad, _budi, _citra]);
+
+    test('unsaved edits are exported as they stand, and stay unsaved',
         () async {
+      final file = DraftExport(bytes: Uint8List(2), filename: 'baru.pdf');
+      when(() => useCases.exportPratinjau(any(), ExportBerkas.pdf))
+          .thenAnswer((_) async => Right(file));
       editor.setNama('Baru');
 
-      expect(editor.state.canExport, isFalse);
-      expect(await editor.export(ExportBerkas.pdf), isNull);
+      expect(editor.state.canExport, isTrue);
+      final result = await editor.export(ExportBerkas.pdf);
+
+      expect(result, same(file));
+      final input =
+          verify(() => useCases.exportPratinjau(captureAny(), ExportBerkas.pdf))
+              .captured
+              .single as DraftInput;
+      expect(input.nama, 'Baru');
       verifyNever(() => useCases.exportDraft(any(), any()));
+      verifyNever(() => useCases.updateDraft(any(), any()));
+      expect(editor.state.dirty, isTrue);
+      expect(editor.state.phase, EditorPhase.idle);
+    });
+
+    test('a draft never saved can be exported too', () async {
+      when(() => useCases.exportPratinjau(any(), ExportBerkas.xlsx)).thenAnswer(
+          (_) async =>
+              Right(DraftExport(bytes: Uint8List(1), filename: 'x.xlsx')));
+      final baru = baruDenganMock();
+
+      expect(baru.state.draftId, isNull);
+      expect(baru.state.canExport, isTrue);
+      expect(await baru.export(ExportBerkas.xlsx), isNotNull);
+      verifyNever(() => useCases.createDraft(any()));
+    });
+
+    test('an edit that cannot be built is not exported', () async {
+      final baru = baruDenganMock()..setItemNominal('n-1', 999999999);
+
+      expect(baru.state.canExport, isFalse);
+      expect(await baru.export(ExportBerkas.pdf), isNull);
+      verifyNever(() => useCases.exportPratinjau(any(), any()));
+    });
+
+    test('nothing to export while an export or save is under way', () async {
+      final baru = baruDenganMock();
+      when(() => useCases.exportPratinjau(any(), any())).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftExport>>().future);
+
+      unawaited(baru.export(ExportBerkas.pdf));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(baru.state.phase, EditorPhase.exporting);
+      expect(baru.state.canExport, isFalse);
+    });
+
+    test('a rejected pratinjau shows its reason and leaves the editor idle',
+        () async {
+      when(() => useCases.exportPratinjau(any(), any()))
+          .thenAnswer((_) async => Left(ConnectionTimeOutException()));
+      final baru = baruDenganMock();
+
+      expect(await baru.export(ExportBerkas.pdf), isNull);
+      expect(baru.state.errorMessage, isNotNull);
+      expect(baru.state.phase, EditorPhase.idle);
     });
 
     test('a failed download reports a message and returns nothing', () async {
@@ -634,6 +693,63 @@ void lifecycleTests() {
       expect(await editor.export(ExportBerkas.pdf), isNull);
       expect(editor.state.errorMessage, isNotNull);
       expect(editor.state.phase, EditorPhase.idle);
+    });
+  });
+
+  group('naming and the jumlah applied to everyone', () {
+    test('a new draft is named at once with the date and time', () {
+      final editor = DraftEditorCubit(useCases)
+        ..startNew(const [
+          Kandidat(id: 'n-1', kode: 'K1', nama: 'Ahmad', saldo: 1000),
+        ], sekarang: DateTime(2026, 10, 8, 6, 4));
+
+      expect(editor.state.nama, 'Pencairan 8 Okt 2026, 06:04');
+      expect(editor.state.dirty, isFalse);
+    });
+
+    test('the name can still be changed', () {
+      final editor = DraftEditorCubit(useCases)
+        ..startNew(const [_ahmad, _budi, _citra])
+        ..setNama('Cair Lebaran');
+
+      expect(editor.state.nama, 'Cair Lebaran');
+    });
+
+    test('applying a jumlah keeps it, and it is saved with the draft',
+        () async {
+      when(() => useCases.createDraft(any()))
+          .thenAnswer((_) async => Right(_serverDraft()));
+      final editor = DraftEditorCubit(useCases)
+        ..startNew(const [_ahmad, _budi, _citra])
+        ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.persen, 50));
+
+      expect(editor.state.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
+      await editor.save();
+
+      final input = verify(() => useCases.createDraft(captureAny()))
+          .captured
+          .single as DraftInput;
+      expect(input.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
+    });
+
+    test('applying only a method or potongan leaves the jumlah alone', () {
+      final editor = DraftEditorCubit(useCases)
+        ..startNew(const [_ahmad, _budi, _citra])
+        ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.rupiah, 75000))
+        ..terapkanUmum(metode: MetodePencairan.transfer);
+
+      expect(
+          editor.state.jumlahUmum, const JumlahUmum(JumlahJenis.rupiah, 75000));
+    });
+
+    test('a loaded draft brings its jumlah back', () async {
+      when(() => useCases.getDraft('d-1')).thenAnswer((_) async => Right(
+          _serverDraft(jumlah: const JumlahUmum(JumlahJenis.persen, 25))));
+      final editor = DraftEditorCubit(useCases);
+
+      await editor.load('d-1');
+
+      expect(editor.state.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 25));
     });
   });
 }

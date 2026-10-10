@@ -101,6 +101,17 @@ void main() {
   }
 
   group('a new draft', () {
+    testWidgets('has its name filled in from the start', (tester) async {
+      await pumpNew(tester);
+
+      final nama = tester
+          .widget<TextField>(find.byKey(const Key('nama-draft')))
+          .controller!
+          .text;
+      expect(nama,
+          matches(RegExp(r'^Pencairan \d{1,2} \w{3} \d{4}, \d{2}:\d{2}$')));
+    });
+
     testWidgets(
         'looks like the rest of pencairan: back button and labelled sections',
         (tester) async {
@@ -346,8 +357,7 @@ void main() {
           isFalse);
     });
 
-    testWidgets('a card\'s menu offers remove, and reset only once adjusted',
-        (tester) async {
+    testWidgets('a card\'s menu only ever offers remove', (tester) async {
       await pumpNew(tester);
 
       await tester.tap(find.byKey(const Key('menu-item-n-2')));
@@ -362,7 +372,9 @@ void main() {
       await tester.tap(find.byKey(const Key('menu-item-n-2')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Kembalikan ke default'), findsOneWidget);
+      expect(find.text('Hapus dari draft'), findsOneWidget);
+      expect(find.text('Kembalikan ke default'), findsNothing);
+      expect(find.byKey(const Key('aksi-reset')), findsNothing);
     });
 
     testWidgets('the cards fit a narrow phone, even with big amounts',
@@ -547,10 +559,10 @@ void main() {
           const Potongan(PotonganJenis.rupiah, 500));
       expect(find.text('Disesuaikan'), findsOneWidget);
 
-      await tester.ensureVisible(find.byKey(const Key('menu-item-n-2')));
-      await tester.tap(find.byKey(const Key('menu-item-n-2')));
+      await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
+      await tester.tap(find.byKey(const Key('potongan-item-n-2')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Kembalikan ke default'));
+      await tester.tap(find.text('Ikuti potongan umum'));
       await tester.pumpAndSettle();
 
       expect(cubit.state.items[1].potongan, isNull);
@@ -623,7 +635,7 @@ void main() {
 
       Finder ikon(String key, IconData icon) => find.descendant(
           of: find.byKey(Key(key)), matching: find.byIcon(icon));
-      expect(ikon('aksi-reset', Icons.restart_alt), findsOneWidget);
+      expect(find.byKey(const Key('aksi-reset')), findsNothing);
       expect(ikon('aksi-hapus', Icons.delete_outline), findsOneWidget);
       final kartu = tester.widget<Material>(find
           .ancestor(
@@ -890,6 +902,45 @@ void main() {
       expect(find.text('Dikonfirmasi'), findsWidgets);
     });
 
+    testWidgets('the payment question is a sheet that shows what is paid',
+        (tester) async {
+      await pumpSaved(tester);
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Konfirmasi pembayaran'), findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('konfirmasi-nasabah')),
+              matching: find.text('${cubit.state.items.length}')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('konfirmasi-total')),
+              matching: find.text('Rp 150.000')),
+          findsOneWidget);
+      expect(find.byKey(const Key('konfirmasi-peringatan')), findsOneWidget);
+      expect(find.textContaining('tidak bisa diulang'), findsOneWidget);
+      expect(find.byKey(const Key('konfirmasi-simpan-dulu')), findsNothing,
+          reason: 'nothing unsaved to mention');
+    });
+
+    testWidgets('it says the draft is saved first when it has unsaved edits',
+        (tester) async {
+      await pumpSaved(tester);
+      cubit.setNama('Belum disimpan');
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('konfirmasi-simpan-dulu')), findsOneWidget);
+    });
+
     testWidgets('the header has a labelled Ekspor button, not a three-dot menu',
         (tester) async {
       await pumpSaved(tester);
@@ -922,10 +973,26 @@ void main() {
       expect(menu.surfaceTintColor, Colors.transparent);
     });
 
-    testWidgets('a new draft has nothing to export yet', (tester) async {
+    testWidgets('a new draft can be exported as it stands, without saving',
+        (tester) async {
+      when(() => useCases.exportPratinjau(any(), ExportBerkas.pdf)).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftExport>>().future);
       await pumpNew(tester);
 
-      expect(find.byKey(const Key('menu-ekspor')), findsNothing);
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ekspor-pdf')));
+      await tester.pump();
+
+      final input =
+          verify(() => useCases.exportPratinjau(captureAny(), ExportBerkas.pdf))
+              .captured
+              .single as DraftInput;
+      expect(input.nama, startsWith('Pencairan '),
+          reason: 'named from the start, so the file has a title');
+      expect(input.items, hasLength(3));
+      verifyNever(() => useCases.createDraft(any()));
+      verifyNever(() => useCases.exportDraft(any(), any()));
     });
 
     testWidgets('export asks the server for the chosen format', (tester) async {
@@ -1043,8 +1110,10 @@ void main() {
       }
     });
 
-    testWidgets('export is held back while there are unsaved edits',
+    testWidgets('unsaved edits are exported as they stand, and not saved',
         (tester) async {
+      when(() => useCases.exportPratinjau(any(), ExportBerkas.pdf)).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftExport>>().future);
       await pumpSaved(tester);
       cubit.setNama('Belum disimpan');
       await tester.pump();
@@ -1052,9 +1121,17 @@ void main() {
 
       await tester.tap(find.byKey(const Key('menu-ekspor')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ekspor-pdf')));
+      await tester.pump();
 
-      expect(find.byKey(const Key('ekspor-pdf')), findsNothing);
+      final input =
+          verify(() => useCases.exportPratinjau(captureAny(), ExportBerkas.pdf))
+              .captured
+              .single as DraftInput;
+      expect(input.nama, 'Belum disimpan');
+      verifyNever(() => useCases.updateDraft(any(), any()));
       verifyNever(() => useCases.exportDraft(any(), any()));
+      expect(cubit.state.dirty, isTrue, reason: 'still unsaved');
     });
   });
 
@@ -1215,6 +1292,125 @@ void main() {
 
     PencairanChip chip(WidgetTester tester, String key) =>
         tester.widget<PencairanChip>(find.byKey(Key(key)));
+
+    DraftPencairan tersimpanDenganJumlah({
+      required int nominalPertama,
+      int nominalKedua = 100000,
+      JumlahUmum? jumlah,
+    }) =>
+        DraftPencairan(
+          id: 'd-1',
+          nama: 'Cair Oktober',
+          status: DraftStatus.draft,
+          potonganDefault: Potongan.nol,
+          jumlahUmum: jumlah,
+          items: [
+            DraftItem(
+              id: 'i-1',
+              nasabahId: 'n-1',
+              nasabahNama: 'Ahmad Ridwan',
+              nominal: nominalPertama,
+              metode: MetodePencairan.tunai,
+              potonganEfektif: 0,
+              dibayar: nominalPertama,
+              saldoSaatIni: 100000,
+            ),
+            DraftItem(
+              id: 'i-2',
+              nasabahId: 'n-2',
+              nasabahNama: 'Budi Santoso',
+              nominal: nominalKedua,
+              metode: MetodePencairan.tunai,
+              potonganEfektif: 0,
+              dibayar: nominalKedua,
+              saldoSaatIni: 200000,
+            ),
+          ],
+          totalNominal: 0,
+          totalPotongan: 0,
+          totalDibayar: 0,
+        );
+
+    Future<void> bukaTersimpan(
+        WidgetTester tester, DraftPencairan draft) async {
+      when(() => useCases.getDraft('d-1'))
+          .thenAnswer((_) async => Right(draft));
+      cubit = DraftEditorCubit(useCases);
+      _current = cubit;
+      await cubit.load('d-1');
+      await _pump(tester);
+    }
+
+    testWidgets('reopening a saved draft shows the Persen that was applied',
+        (tester) async {
+      await bukaTersimpan(
+        tester,
+        tersimpanDenganJumlah(
+          nominalPertama: 50000,
+          jumlah: const JumlahUmum(JumlahJenis.persen, 50),
+        ),
+      );
+
+      await tester.ensureVisible(find.byKey(const Key('jumlah-persen')));
+      expect(chip(tester, 'jumlah-persen').selected, isTrue);
+      expect(chip(tester, 'jumlah-rupiah').selected, isFalse);
+      expect(
+          tester
+              .widget<TextField>(find.byKey(const Key('jumlah-nilai')))
+              .controller!
+              .text,
+          '50');
+      expect(
+          tester.widget<Slider>(find.byKey(const Key('jumlah-slider'))).value,
+          50);
+    });
+
+    testWidgets('and the fixed Nominal that was applied', (tester) async {
+      await bukaTersimpan(
+        tester,
+        tersimpanDenganJumlah(
+          nominalPertama: 75000,
+          nominalKedua: 75000,
+          jumlah: const JumlahUmum(JumlahJenis.rupiah, 75000),
+        ),
+      );
+
+      await tester.ensureVisible(find.byKey(const Key('jumlah-rupiah')));
+      expect(chip(tester, 'jumlah-rupiah').selected, isTrue);
+      expect(chip(tester, 'jumlah-persen').selected, isFalse);
+    });
+
+    testWidgets('a jumlah the cards no longer agree with is not shown as on',
+        (tester) async {
+      await bukaTersimpan(
+        tester,
+        tersimpanDenganJumlah(
+          nominalPertama: 12345,
+          jumlah: const JumlahUmum(JumlahJenis.persen, 50),
+        ),
+      );
+
+      await tester.ensureVisible(find.byKey(const Key('jumlah-persen')));
+      expect(chip(tester, 'jumlah-persen').selected, isFalse);
+      expect(chip(tester, 'jumlah-rupiah').selected, isFalse);
+    });
+
+    testWidgets('a jumlah applied now is what the next save carries',
+        (tester) async {
+      when(() => useCases.createDraft(any()))
+          .thenAnswer((_) async => Right(_saved()));
+      await pumpNew(tester);
+
+      await jumlah(tester, 'persen', '50');
+      await _terapkanUmum(tester);
+      await tester.tap(find.byKey(const Key('simpan')));
+      await tester.pumpAndSettle();
+
+      final input = verify(() => useCases.createDraft(captureAny()))
+          .captured
+          .single as DraftInput;
+      expect(input.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
+    });
 
     String? teksJumlah(WidgetTester tester) => tester
         .widgetList<TextField>(find.byKey(const Key('jumlah-nilai')))
@@ -1995,6 +2191,8 @@ void main() {
     await tester.tap(find.byKey(const Key('kembali')));
     await tester.pumpAndSettle();
 
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byType(BottomSheet), findsOneWidget);
     expect(find.text('Buang perubahan?'), findsOneWidget);
     await tester.tap(find.text('Tetap di sini'));
     await tester.pumpAndSettle();
