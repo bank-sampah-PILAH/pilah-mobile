@@ -214,6 +214,20 @@ void main() {
     expect(find.text('route:${DraftListPage.routeEditor}'), findsOneWidget);
   });
 
+  testWidgets('the list reloads when an opened draft is left', (tester) async {
+    final router =
+        await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cair Oktober'));
+    await tester.pumpAndSettle();
+    clearInteractions(useCases);
+
+    router.pop();
+    await tester.pumpAndSettle();
+
+    verify(() => useCases.getDrafts()).called(1);
+  });
+
   testWidgets('only a draft in progress can be cancelled from its card',
       (tester) async {
     await pump(tester, [
@@ -250,6 +264,23 @@ void main() {
 
     verify(() => useCases.cancelDraft('d-1')).called(1);
     expect(find.byKey(const Key('batalkan-d-1')), findsNothing);
+  });
+
+  testWidgets('a cancel that fails says so and keeps the draft',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+    when(() => useCases.cancelDraft('d-1'))
+        .thenAnswer((_) async => Left(ConnectionTimeOutException()));
+
+    await tester.tap(find.byKey(const Key('batalkan-d-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, batalkan'));
+    await pumpToast(tester);
+
+    expect(find.text('Gagal'), findsOneWidget);
+    expect(find.byKey(const Key('batalkan-d-1')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
   });
 
   testWidgets('backing out of the question cancels nothing', (tester) async {

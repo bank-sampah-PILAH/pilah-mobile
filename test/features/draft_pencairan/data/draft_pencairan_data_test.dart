@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -9,6 +12,39 @@ import '../../../support/draft_pencairan_support.dart';
 import '../../../support/stub_api.dart';
 
 const _path = '/api/v1/draft-pencairan';
+
+/// Serves the draft list in two pages, the first pointing at the second.
+class _TwoPages extends StubApi {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    await super.fetch(options, requestStream, cancelFuture);
+    final second = options.uri.queryParameters['page'] == '2';
+    return ResponseBody.fromString(
+      jsonEncode({
+        'next': second ? null : 'http://api.test$_path?page=2',
+        'results': [
+          {
+            'id': second ? 'd-2' : 'd-1',
+            'nama': second ? 'Halaman dua' : 'Halaman satu',
+            'status': 'draft',
+            'jumlah_item': 1,
+            'total_nominal': '1000.00',
+            'total_potongan': '0.00',
+            'total_dibayar': '1000.00',
+          },
+        ],
+      }),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+}
 
 void main() {
   late StubApi api;
@@ -289,6 +325,37 @@ void main() {
     final dengan = (await useCases.getDraft('d-2')).right;
 
     expect(tanpa, isNot(equals(dengan)));
+  });
+
+  test('getDrafts follows the pages until there is no next one', () async {
+    final paged = _TwoPages();
+
+    final drafts = (await buildDraftPencairanUseCases(paged).getDrafts()).right;
+
+    expect(drafts.map((d) => d.nama), ['Halaman satu', 'Halaman dua']);
+    expect(paged.requests.map((r) => r.query['page']), [null, '2']);
+  });
+
+  test('a file the server does not name gets one from the time and format',
+      () async {
+    api.onBytes('GET', '$_path/d-1/export', [37, 80, 68, 70]);
+
+    final export = (await buildDraftPencairanUseCases(api)
+            .exportDraft('d-1', ExportBerkas.xlsx))
+        .right;
+
+    expect(export.filename, matches(RegExp(r'^draft_pencairan_\d+\.xlsx$')));
+  });
+
+  test('the same draft read twice is equal, whatever it holds', () async {
+    api.on('GET', '$_path/d-1', json: draftJson());
+    final useCases = buildDraftPencairanUseCases(api);
+
+    final first = (await useCases.getDraft('d-1')).right;
+    final second = (await useCases.getDraft('d-1')).right;
+
+    expect(first, second);
+    expect(first.items.single, second.items.single);
   });
 
   test('exportPratinjau posts the draft as sent and downloads the file',
