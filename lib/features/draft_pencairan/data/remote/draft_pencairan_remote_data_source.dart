@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart' show Response;
+
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 
@@ -17,6 +21,8 @@ abstract class DraftPencairanRemoteDataSource {
   Future<DraftPencairan> updateDraft(String id, DraftInput input);
   Future<DraftPencairan> cancelDraft(String id);
   Future<DraftPencairan> confirmDraft(String id);
+  Future<DraftExport> exportPratinjau(DraftInput input, ExportBerkas berkas);
+  Future<DraftExport> exportDraft(String id, ExportBerkas berkas);
 }
 
 @LazySingleton(as: DraftPencairanRemoteDataSource)
@@ -89,6 +95,37 @@ class DraftPencairanRemoteDataSourceImpl
   @override
   Future<DraftPencairan> confirmDraft(String id) async =>
       _draft(await _network.post('$_path/$id/konfirmasi'));
+
+  @override
+  Future<DraftExport> exportPratinjau(
+    DraftInput input,
+    ExportBerkas berkas,
+  ) async {
+    final response = await _network.postBytes(
+      '$_path/export',
+      queryParams: {'berkas': berkas.name},
+      data: DraftPencairanMapper.body(input),
+    );
+    return _berkas(response, berkas);
+  }
+
+  @override
+  Future<DraftExport> exportDraft(String id, ExportBerkas berkas) async {
+    final response = await _network.getBytes(
+      '$_path/$id/export',
+      queryParams: {'berkas': berkas.name},
+    );
+    return _berkas(response, berkas);
+  }
+
+  DraftExport _berkas(Response response, ExportBerkas berkas) {
+    final bytes = Uint8List.fromList((response.data as List).cast<int>());
+    final filename = RegExp(r'filename="?([^"]+)"?')
+            .firstMatch(response.headers.value('content-disposition') ?? '')
+            ?.group(1) ??
+        'draft_pencairan_${DateTime.now().millisecondsSinceEpoch}.${berkas.name}';
+    return DraftExport(bytes: bytes, filename: filename);
+  }
 
   DraftPencairan _draft(dynamic response) =>
       DraftPencairanMapper.draft(response.data as Map<String, dynamic>);

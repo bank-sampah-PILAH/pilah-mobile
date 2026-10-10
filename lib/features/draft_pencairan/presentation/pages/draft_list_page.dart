@@ -16,6 +16,7 @@ import '../blocs/draft_list_cubit.dart';
 import '../blocs/draft_list_state.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
+import '../widgets/pencairan_konfirmasi_sheet.dart';
 import '../widgets/pencairan_sort_button.dart';
 import '../widgets/pencairan_ui.dart';
 import 'draft_editor_args.dart';
@@ -45,6 +46,22 @@ class DraftListView extends StatelessWidget {
     final cubit = context.read<DraftListCubit>();
     await context.push<Object?>(route, extra: extra);
     // Whatever happened over there, the list may have changed.
+    await cubit.load();
+  }
+
+  /// The picker hands back who was picked, and the editor is opened from here
+  /// rather than in its place, so the list reloads when the editor is left and
+  /// shows the draft that was just saved.
+  Future<void> _buat(BuildContext context) async {
+    final cubit = context.read<DraftListCubit>();
+    final terpilih =
+        await context.push<List<Kandidat>>(DraftListPage.routePilih);
+    if (terpilih != null && terpilih.isNotEmpty && context.mounted) {
+      await context.push<Object?>(
+        DraftListPage.routeEditor,
+        extra: DraftEditorArgs.baru(terpilih),
+      );
+    }
     await cubit.load();
   }
 
@@ -84,7 +101,7 @@ class DraftListView extends StatelessWidget {
         heroTag: 'draft_list_fab',
         backgroundColor: AppColors.greenDark,
         foregroundColor: Colors.white,
-        onPressed: () => _open(context, DraftListPage.routePilih),
+        onPressed: () => _buat(context),
         icon: const Icon(Icons.add),
         label: const Text('Buat Pencairan'),
       ),
@@ -338,26 +355,37 @@ class _TidakAdaHasil extends StatelessWidget {
 
 Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
   final cubit = context.read<DraftListCubit>();
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('Batalkan draft?'),
-      content: Text(
-        '"${draft.nama}" tidak akan dibayarkan. Saldo nasabah tidak berubah.',
+  final ok = await showPencairanKonfirmasi(
+    context,
+    icon: Icons.delete_outline,
+    judul: 'Batalkan draft?',
+    pesan: 'Draft ini tidak akan dibayarkan. Saldo nasabah tidak berubah.',
+    isi: Container(
+      key: const Key('batalkan-ringkasan'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Kembali'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Ya, batalkan'),
-        ),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(draft.nama,
+              style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(
+            '${draft.jumlahItem} nasabah \u00b7 ${rupiah(draft.totalDibayar)}',
+            style: AppTextStyle.extraSmall,
+          ),
+        ],
+      ),
     ),
+    ya: 'Ya, batalkan',
+    tidak: 'Kembali',
+    nada: KonfirmasiNada.bahaya,
   );
-  if (ok != true) return;
+  if (!ok) return;
   final error = await cubit.batalkan(draft.id);
   if (error != null && context.mounted) {
     AppNotification.showError(context, title: 'Gagal', message: error);

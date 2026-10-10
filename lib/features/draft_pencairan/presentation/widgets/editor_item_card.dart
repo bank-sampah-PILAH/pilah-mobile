@@ -18,7 +18,6 @@ class EditorItemCard extends StatelessWidget {
   final ValueChanged<int> onNominal;
   final ValueChanged<MetodePencairan> onMetode;
   final ValueChanged<Potongan?> onPotongan;
-  final VoidCallback onReset;
   final VoidCallback onRemove;
 
   const EditorItemCard({
@@ -29,7 +28,6 @@ class EditorItemCard extends StatelessWidget {
     required this.onNominal,
     required this.onMetode,
     required this.onPotongan,
-    required this.onReset,
     required this.onRemove,
   });
 
@@ -142,7 +140,7 @@ class EditorItemCard extends StatelessWidget {
                           .copyWith(color: AppColors.statOrange)),
                 ),
               ],
-              if (!readOnly) _menu(disesuaikan),
+              if (!readOnly) _menu(),
             ],
           ),
           const SizedBox(height: 12),
@@ -207,21 +205,11 @@ class EditorItemCard extends StatelessWidget {
     );
   }
 
-  Widget _menu(bool disesuaikan) => PencairanPopupMenu<String>(
+  Widget _menu() => PencairanPopupMenu<String>(
         key: Key('menu-item-${item.nasabahId}'),
-        onSelected: (value) {
-          if (value == 'reset') onReset();
-          if (value == 'hapus') onRemove();
-        },
-        entries: [
-          if (disesuaikan)
-            const PencairanMenuEntry(
-              key: Key('aksi-reset'),
-              value: 'reset',
-              label: 'Kembalikan ke default',
-              icon: Icons.restart_alt,
-            ),
-          const PencairanMenuEntry(
+        onSelected: (_) => onRemove(),
+        entries: const [
+          PencairanMenuEntry(
             key: Key('aksi-hapus'),
             value: 'hapus',
             label: 'Hapus dari draft',

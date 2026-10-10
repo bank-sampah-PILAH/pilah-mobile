@@ -17,6 +17,13 @@ class DraftPencairanMapper {
         num.tryParse(json['potongan_nilai']?.toString() ?? '') ?? 0,
       );
 
+  /// Null when nothing was applied to everyone.
+  static JumlahUmum? _jumlah(Map<String, dynamic> json) {
+    final jenis = JumlahJenis.fromApi(json['jumlah_jenis'] as String?);
+    final nilai = num.tryParse(json['jumlah_nilai']?.toString() ?? '');
+    return jenis == null || nilai == null ? null : JumlahUmum(jenis, nilai);
+  }
+
   static Kandidat kandidat(Map<String, dynamic> json) => Kandidat(
         id: json['id'].toString(),
         kode: json['kode']?.toString() ?? '',
@@ -47,6 +54,7 @@ class DraftPencairanMapper {
         nama: json['nama']?.toString() ?? '',
         status: DraftStatus.fromApi(json['status'] as String?),
         potonganDefault: _potongan(json),
+        jumlahUmum: _jumlah(json),
         dibuatOlehNama: json['dibuat_oleh_nama']?.toString() ?? '',
         diubahOlehNama: json['diubah_oleh_nama']?.toString() ?? '',
         createdAt: _tanggal(json['created_at']),
@@ -81,6 +89,9 @@ class DraftPencairanMapper {
       if (nama != null && nama.isNotEmpty) 'nama': nama,
       'potongan_jenis': input.potonganDefault.jenis.name,
       'potongan_nilai': input.potonganDefault.nilaiJson,
+      // Always sent: null clears what was kept when nothing is applied now.
+      'jumlah_jenis': input.jumlahUmum?.jenis.name,
+      'jumlah_nilai': input.jumlahUmum?.nilaiJson,
       'items': [
         for (final item in input.items)
           {

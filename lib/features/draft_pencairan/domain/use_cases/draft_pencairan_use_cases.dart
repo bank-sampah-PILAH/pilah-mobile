@@ -20,4 +20,14 @@ abstract class DraftPencairanUseCases {
   );
   Future<Either<NetworkException, DraftPencairan>> cancelDraft(String id);
   Future<Either<NetworkException, DraftPencairan>> confirmDraft(String id);
+
+  /// The export of [input] as it is now, saved or not; nothing is stored.
+  Future<Either<NetworkException, DraftExport>> exportPratinjau(
+    DraftInput input,
+    ExportBerkas berkas,
+  );
+  Future<Either<NetworkException, DraftExport>> exportDraft(
+    String id,
+    ExportBerkas berkas,
+  );
 }

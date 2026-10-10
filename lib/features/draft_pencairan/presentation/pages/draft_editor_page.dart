@@ -14,19 +14,23 @@ import '../../domain/model/draft_pencairan.dart';
 import '../blocs/draft_editor_cubit.dart';
 import '../blocs/draft_editor_state.dart';
 import '../blocs/editor_item_view.dart';
+import '../widgets/draft_file_actions.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/editor_item_card.dart';
 import '../widgets/editor_item_controls.dart';
 import '../widgets/editor_summary_panel.dart';
+import '../widgets/export_menu_button.dart';
 import '../widgets/jumlah_control.dart';
+import '../widgets/pencairan_konfirmasi_sheet.dart';
 import '../widgets/pencairan_ui.dart';
 import '../widgets/potongan_control.dart';
 import 'draft_editor_args.dart';
+import 'draft_pdf_preview_page.dart';
 import 'draft_list_page.dart';
 
 /// Shapes a pencairan: name, general potongan and method, then each nasabah.
-/// A saved draft can be resumed, paid (confirmed) or cancelled.
+/// A saved draft can be resumed, paid (confirmed), cancelled or exported.
 class DraftEditorPage extends StatelessWidget {
   static const route = DraftListPage.routeEditor;
 
@@ -75,47 +79,38 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     super.dispose();
   }
 
-  Future<bool> _confirmDialog({
-    required String title,
-    required String message,
-    required String yes,
-    String no = 'Batal',
-  }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(no),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(yes),
-          ),
-        ],
-      ),
-    );
-    return result == true;
-  }
-
   Future<void> _confirmPayment() async {
     final cubit = context.read<DraftEditorCubit>();
     final state = cubit.state;
-    final ok = await _confirmDialog(
-      title: 'Konfirmasi pembayaran',
-      message: '${state.items.length} nasabah · total dibayar '
-          '${rupiah(state.totalDibayar)}.\n\n'
-          '${state.draftId == null || state.dirty ? 'Draft akan disimpan terlebih dulu. ' : ''}'
-          'Lanjutkan hanya jika semua pembayaran sudah dilakukan. Saldo '
-          'nasabah akan dikurangi dan tercatat di riwayat, dan ini tidak '
-          'bisa diulang.',
-      yes: 'Ya, sudah dibayar',
-      no: 'Belum',
+    final disimpanDulu = state.draftId == null || state.dirty;
+    final ok = await showPencairanKonfirmasi(
+      context,
+      icon: Icons.payments_outlined,
+      judul: 'Konfirmasi pembayaran',
+      pesan: 'Lanjutkan hanya jika semua pembayaran sudah dilakukan.',
+      isi: _RingkasanBayar(
+        jumlah: state.items.length,
+        total: state.totalDibayar,
+        disimpanDulu: disimpanDulu,
+      ),
+      ya: 'Ya, sudah dibayar',
+      tidak: 'Belum',
     );
     if (ok && mounted) await cubit.confirm();
+  }
+
+  Future<void> _export(ExportBerkas berkas) async {
+    final cubit = context.read<DraftEditorCubit>();
+    final file = await cubit.export(berkas);
+    if (file == null || !mounted) return;
+
+    if (berkas == ExportBerkas.pdf) {
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => DraftPdfPreviewPage(file: file),
+      ));
+      return;
+    }
+    await simpanBerkasDraft(context, file);
   }
 
   /// A paid pencairan changes saldo and riwayat, so the screens that show
@@ -188,11 +183,14 @@ class _DraftEditorViewState extends State<DraftEditorView> {
           canPop: !state.dirty,
           onPopInvokedWithResult: (didPop, _) async {
             if (didPop) return;
-            final buang = await _confirmDialog(
-              title: 'Buang perubahan?',
-              message: 'Perubahan yang belum disimpan akan hilang.',
-              yes: 'Buang',
-              no: 'Tetap di sini',
+            final buang = await showPencairanKonfirmasi(
+              context,
+              icon: Icons.warning_amber_rounded,
+              judul: 'Buang perubahan?',
+              pesan: 'Perubahan yang belum disimpan akan hilang.',
+              ya: 'Buang',
+              tidak: 'Tetap di sini',
+              nada: KonfirmasiNada.peringatan,
             );
             if (buang && context.mounted) context.pop();
           },
@@ -204,6 +202,13 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                   PencairanHeader(
                     title:
                         state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
+                    actions: [
+                      ExportMenuButton(
+                        enabled: state.canExport,
+                        busy: state.phase == EditorPhase.exporting,
+                        onSelected: _export,
+                      ),
+                    ],
                   ),
                   Expanded(
                     child: state.phase == EditorPhase.loading
@@ -383,7 +388,6 @@ class _FormState extends State<_Form> {
                           cubit.setItemMetode(item.nasabahId, metode),
                       onPotongan: (potongan) =>
                           cubit.setItemPotongan(item.nasabahId, potongan),
-                      onReset: () => cubit.resetItem(item.nasabahId),
                       onRemove: () => cubit.removeItem(item.nasabahId),
                     );
                   },
@@ -414,10 +418,6 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
   JumlahUmum? _jumlah;
   Potongan? _potongan;
 
-  // The jumlah last applied. It stays the saved one only while the cards still
-  // say so; a hand edit on a card makes it unknown.
-  JumlahUmum? _jumlahTerapan;
-
   List<EditorItem> get _items => widget.state.items;
 
   /// "Semua tunai/transfer" as saved, or null when the cards differ.
@@ -427,13 +427,13 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
     return _items.every((i) => i.metode == pertama) ? pertama : null;
   }
 
-  /// The jumlah the cards agree on: the last one applied, or the whole saldo,
-  /// or null when they were set by hand.
+  /// The jumlah the cards agree on: the one kept with the draft while the cards
+  /// still say so, else the whole saldo, or null when they were set by hand.
   JumlahUmum? get _jumlahTersimpan {
     if (_items.isEmpty) return null;
     bool cocok(JumlahUmum jumlah) =>
         _items.every((i) => i.nominal == jumlah.hitung(i.saldo));
-    final terapan = _jumlahTerapan;
+    final terapan = widget.state.jumlahUmum;
     if (terapan != null && cocok(terapan)) return terapan;
     return cocok(JumlahUmum.penuh) ? JumlahUmum.penuh : null;
   }
@@ -458,7 +458,6 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
           potongan: _potonganBerubah ? _potongan : null,
         );
     setState(() {
-      if (jumlah != null) _jumlahTerapan = jumlah;
       _metode = null;
       _jumlah = null;
       _potongan = null;
@@ -601,6 +600,104 @@ class _BottomBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// What the payment sheet shows: who and how much is about to be paid, and the
+/// warning that this cannot be undone.
+class _RingkasanBayar extends StatelessWidget {
+  final int jumlah;
+  final int total;
+  final bool disimpanDulu;
+
+  const _RingkasanBayar({
+    required this.jumlah,
+    required this.total,
+    required this.disimpanDulu,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget baris(Key key, String label, Widget nilai) => Row(
+          key: key,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [Text(label, style: AppTextStyle.small), nilai],
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.greenLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              baris(
+                const Key('konfirmasi-nasabah'),
+                'Nasabah',
+                Text('$jumlah',
+                    style: AppTextStyle.small
+                        .copyWith(fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(height: 10),
+              baris(
+                const Key('konfirmasi-total'),
+                'Total dibayar',
+                Text(
+                  rupiah(total),
+                  style: AppTextStyle.headline3.copyWith(
+                    color: AppColors.greenDark,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          key: const Key('konfirmasi-peringatan'),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.statOrangeLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline,
+                  size: 18, color: AppColors.statOrange),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Saldo nasabah akan dikurangi dan tercatat di riwayat. '
+                  'Ini tidak bisa diulang.',
+                  style: AppTextStyle.small,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (disimpanDulu) ...[
+          const SizedBox(height: 12),
+          Row(
+            key: const Key('konfirmasi-simpan-dulu'),
+            children: [
+              Icon(Icons.save_outlined, size: 18, color: Colors.grey[700]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Draft akan disimpan terlebih dulu.',
+                  style: AppTextStyle.small.copyWith(color: Colors.grey[700]),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

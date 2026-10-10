@@ -169,6 +169,41 @@ void main() {
     expect(find.text('route:${DraftListPage.routePilih}'), findsOneWidget);
   });
 
+  testWidgets(
+      'picked nasabah open a new editor, and the list reloads once it is left',
+      (tester) async {
+    final router = await pump(tester, const []);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buat Pencairan'));
+    await tester.pumpAndSettle();
+
+    router.pop(const [
+      Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 1000),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routeEditor}'), findsOneWidget);
+    clearInteractions(useCases);
+
+    router.pop();
+    await tester.pumpAndSettle();
+
+    verify(() => useCases.getDrafts()).called(1);
+  });
+
+  testWidgets('leaving the picker without picking does not open an editor',
+      (tester) async {
+    final router = await pump(tester, const []);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buat Pencairan'));
+    await tester.pumpAndSettle();
+
+    router.pop();
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routeEditor}'), findsNothing);
+  });
+
   testWidgets('opening a draft goes to the editor', (tester) async {
     await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
     await tester.pumpAndSettle();
@@ -177,6 +212,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('route:${DraftListPage.routeEditor}'), findsOneWidget);
+  });
+
+  testWidgets('the list reloads when an opened draft is left', (tester) async {
+    final router =
+        await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cair Oktober'));
+    await tester.pumpAndSettle();
+    clearInteractions(useCases);
+
+    router.pop();
+    await tester.pumpAndSettle();
+
+    verify(() => useCases.getDrafts()).called(1);
   });
 
   testWidgets('only a draft in progress can be cancelled from its card',
@@ -204,7 +253,10 @@ void main() {
 
     await tester.tap(find.byKey(const Key('batalkan-d-1')));
     await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byType(BottomSheet), findsOneWidget);
     expect(find.text('Batalkan draft?'), findsOneWidget);
+    expect(find.textContaining('Cair Oktober'), findsWidgets);
     verifyNever(() => useCases.cancelDraft(any()));
 
     await tester.tap(find.text('Ya, batalkan'));
@@ -212,6 +264,23 @@ void main() {
 
     verify(() => useCases.cancelDraft('d-1')).called(1);
     expect(find.byKey(const Key('batalkan-d-1')), findsNothing);
+  });
+
+  testWidgets('a cancel that fails says so and keeps the draft',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await tester.pumpAndSettle();
+    when(() => useCases.cancelDraft('d-1'))
+        .thenAnswer((_) async => Left(ConnectionTimeOutException()));
+
+    await tester.tap(find.byKey(const Key('batalkan-d-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ya, batalkan'));
+    await pumpToast(tester);
+
+    expect(find.text('Gagal'), findsOneWidget);
+    expect(find.byKey(const Key('batalkan-d-1')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
   });
 
   testWidgets('backing out of the question cancels nothing', (tester) async {

@@ -45,7 +45,7 @@ class EditorItem extends Equatable {
       [nasabahId, nasabahNama, saldo, nominal, metode, potongan];
 }
 
-enum EditorPhase { idle, loading, saving, confirming, cancelling }
+enum EditorPhase { idle, loading, saving, confirming, cancelling, exporting }
 
 class DraftEditorState extends Equatable {
   /// Null until the draft has been saved for the first time.
@@ -53,6 +53,9 @@ class DraftEditorState extends Equatable {
   final DraftStatus status;
   final String nama;
   final Potongan potonganDefault;
+
+  /// What was last applied to everyone; the server keeps it with the draft.
+  final JumlahUmum? jumlahUmum;
   final List<EditorItem> items;
 
   /// Who made and last changed the saved draft; blank before the first save.
@@ -76,6 +79,7 @@ class DraftEditorState extends Equatable {
     this.status = DraftStatus.draft,
     this.nama = '',
     this.potonganDefault = Potongan.nol,
+    this.jumlahUmum,
     this.items = const [],
     this.dibuatOlehNama = '',
     this.diubahOlehNama = '',
@@ -92,6 +96,7 @@ class DraftEditorState extends Equatable {
     DraftStatus? status,
     String? nama,
     Potongan? potonganDefault,
+    JumlahUmum? Function()? jumlahUmum,
     List<EditorItem>? items,
     String? dibuatOlehNama,
     String? diubahOlehNama,
@@ -107,6 +112,7 @@ class DraftEditorState extends Equatable {
         status: status ?? this.status,
         nama: nama ?? this.nama,
         potonganDefault: potonganDefault ?? this.potonganDefault,
+        jumlahUmum: jumlahUmum != null ? jumlahUmum() : this.jumlahUmum,
         items: items ?? this.items,
         dibuatOlehNama: dibuatOlehNama ?? this.dibuatOlehNama,
         diubahOlehNama: diubahOlehNama ?? this.diubahOlehNama,
@@ -166,12 +172,19 @@ class DraftEditorState extends Equatable {
   /// or has unsaved edits, confirming saves it first.
   bool get canConfirm => !isBusy && status == DraftStatus.draft && canSave;
 
+  /// A saved draft can always be exported as saved. One with edits, or never
+  /// saved, is exported as it stands on screen, so it must be valid to be
+  /// built: nothing is saved either way.
+  bool get canExport =>
+      !isBusy && items.isNotEmpty && ((draftId != null && !dirty) || canSave);
+
   @override
   List<Object?> get props => [
         draftId,
         status,
         nama,
         potonganDefault,
+        jumlahUmum,
         items,
         dibuatOlehNama,
         diubahOlehNama,

@@ -98,6 +98,26 @@ class NetworkService {
     return response;
   }
 
+  /// POSTs JSON and gets a binary payload back (e.g. an export of what is on
+  /// screen). Like [getBytes], it returns the raw [Response] for its headers.
+  Future<Response> postBytes(
+    String path, {
+    Map<String, dynamic>? queryParams,
+    Map<String, dynamic>? data,
+  }) async {
+    final headers = headersRequest()..['Accept'] = '*/*';
+    Response response = await dio
+        .post(environment.baseUrl + path,
+            queryParameters: queryParams,
+            data: json.encode(data),
+            options: options.copyWith(
+              headers: headers,
+              responseType: ResponseType.bytes,
+            ))
+        .timeout(globalTimeout);
+    return response;
+  }
+
   /// POSTs multipart form data (e.g. file uploads). Unlike [post], this does
   /// NOT force `Content-Type: application/json` — Dio sets
   /// `multipart/form-data` with the correct boundary from [formData].

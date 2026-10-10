@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
@@ -7,6 +12,39 @@ import '../../../support/draft_pencairan_support.dart';
 import '../../../support/stub_api.dart';
 
 const _path = '/api/v1/draft-pencairan';
+
+/// Serves the draft list in two pages, the first pointing at the second.
+class _TwoPages extends StubApi {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    await super.fetch(options, requestStream, cancelFuture);
+    final second = options.uri.queryParameters['page'] == '2';
+    return ResponseBody.fromString(
+      jsonEncode({
+        'next': second ? null : 'http://api.test$_path?page=2',
+        'results': [
+          {
+            'id': second ? 'd-2' : 'd-1',
+            'nama': second ? 'Halaman dua' : 'Halaman satu',
+            'status': 'draft',
+            'jumlah_item': 1,
+            'total_nominal': '1000.00',
+            'total_potongan': '0.00',
+            'total_dibayar': '1000.00',
+          },
+        ],
+      }),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+}
 
 void main() {
   late StubApi api;
@@ -94,6 +132,8 @@ void main() {
       'nama': 'Cair Oktober',
       'potongan_jenis': 'persen',
       'potongan_nilai': 10,
+      'jumlah_jenis': null,
+      'jumlah_nilai': null,
       'items': [
         {
           'nasabah_id': 'n-1',
@@ -235,5 +275,138 @@ void main() {
     final result = await buildDraftPencairanUseCases(api).confirmDraft('d-1');
 
     expect(result.left, isA<ConflictException>());
+  });
+
+  test('the jumlah applied to everyone is sent with the draft', () async {
+    api.on('POST', _path, status: 201, json: draftJson());
+
+    await buildDraftPencairanUseCases(api).createDraft(const DraftInput(
+      potonganDefault: Potongan.nol,
+      jumlahUmum: JumlahUmum(JumlahJenis.persen, 50),
+      items: [
+        DraftItemInput(
+            nasabahId: 'n-1', nominal: 1000, metode: MetodePencairan.tunai)
+      ],
+    ));
+
+    expect(api.last.json['jumlah_jenis'], 'persen');
+    expect(api.last.json['jumlah_nilai'], 50);
+  });
+
+  test('a saved draft brings back the jumlah that was applied', () async {
+    api.on('GET', '$_path/d-1',
+        json: draftJson(
+            extra: {'jumlah_jenis': 'rupiah', 'jumlah_nilai': '75000.00'}));
+
+    final draft =
+        (await buildDraftPencairanUseCases(api).getDraft('d-1')).right;
+
+    expect(draft.jumlahUmum, const JumlahUmum(JumlahJenis.rupiah, 75000));
+  });
+
+  test('a draft with nothing applied has no jumlah', () async {
+    api.on('GET', '$_path/d-1', json: draftJson());
+
+    final draft =
+        (await buildDraftPencairanUseCases(api).getDraft('d-1')).right;
+
+    expect(draft.jumlahUmum, isNull);
+  });
+
+  test('drafts that differ only in their jumlah are not the same draft',
+      () async {
+    api.on('GET', '$_path/d-1', json: draftJson());
+    api.on('GET', '$_path/d-2',
+        json: draftJson(
+            extra: {'jumlah_jenis': 'persen', 'jumlah_nilai': '50.00'}));
+    final useCases = buildDraftPencairanUseCases(api);
+
+    final tanpa = (await useCases.getDraft('d-1')).right;
+    final dengan = (await useCases.getDraft('d-2')).right;
+
+    expect(tanpa, isNot(equals(dengan)));
+  });
+
+  test('getDrafts follows the pages until there is no next one', () async {
+    final paged = _TwoPages();
+
+    final drafts = (await buildDraftPencairanUseCases(paged).getDrafts()).right;
+
+    expect(drafts.map((d) => d.nama), ['Halaman satu', 'Halaman dua']);
+    expect(paged.requests.map((r) => r.query['page']), [null, '2']);
+  });
+
+  test('a file the server does not name gets one from the time and format',
+      () async {
+    api.onBytes('GET', '$_path/d-1/export', [37, 80, 68, 70]);
+
+    final export = (await buildDraftPencairanUseCases(api)
+            .exportDraft('d-1', ExportBerkas.xlsx))
+        .right;
+
+    expect(export.filename, matches(RegExp(r'^draft_pencairan_\d+\.xlsx$')));
+  });
+
+  test('the same draft read twice is equal, whatever it holds', () async {
+    api.on('GET', '$_path/d-1', json: draftJson());
+    final useCases = buildDraftPencairanUseCases(api);
+
+    final first = (await useCases.getDraft('d-1')).right;
+    final second = (await useCases.getDraft('d-1')).right;
+
+    expect(first, second);
+    expect(first.items.single, second.items.single);
+  });
+
+  test('exportPratinjau posts the draft as sent and downloads the file',
+      () async {
+    api.onBytes('POST', '$_path/export', [
+      37,
+      80,
+      68,
+      70
+    ], headers: {
+      'content-disposition': ['attachment; filename="PILAH_Draft_baru.pdf"'],
+    });
+
+    final export = (await buildDraftPencairanUseCases(api).exportPratinjau(
+      const DraftInput(
+        nama: 'Belum Disimpan',
+        potonganDefault: Potongan(PotonganJenis.persen, 10),
+        items: [
+          DraftItemInput(
+              nasabahId: 'n-1', nominal: 100000, metode: MetodePencairan.tunai)
+        ],
+      ),
+      ExportBerkas.pdf,
+    ))
+        .right;
+
+    expect(api.last.query, {'berkas': 'pdf'});
+    expect(api.last.json['nama'], 'Belum Disimpan');
+    expect((api.last.json['items'] as List).single['nasabah_id'], 'n-1');
+    expect(export.filename, 'PILAH_Draft_baru.pdf');
+    expect(export.bytes, Uint8List.fromList([37, 80, 68, 70]));
+  });
+
+  test('exportDraft downloads the file named by the server', () async {
+    api.onBytes('GET', '$_path/d-1/export', [
+      37,
+      80,
+      68,
+      70
+    ], headers: {
+      'content-disposition': [
+        'attachment; filename="PILAH_Draft_Pencairan_cair.pdf"',
+      ],
+    });
+
+    final export = (await buildDraftPencairanUseCases(api)
+            .exportDraft('d-1', ExportBerkas.pdf))
+        .right;
+
+    expect(api.last.query, {'berkas': 'pdf'});
+    expect(export.filename, 'PILAH_Draft_Pencairan_cair.pdf');
+    expect(export.bytes, Uint8List.fromList([37, 80, 68, 70]));
   });
 }

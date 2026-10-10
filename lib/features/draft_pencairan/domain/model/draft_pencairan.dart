@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -69,6 +71,14 @@ enum JumlahJenis {
   const JumlahJenis(this.label);
 
   final String label;
+
+  static JumlahJenis? fromApi(String? value) {
+    for (final jenis in values) {
+      if (jenis.name == value) return jenis;
+    }
+    // The API calls the fixed rupiah kind 'rupiah', as for potongan.
+    return null;
+  }
 }
 
 /// A way to set everyone's pencairan at once: the same share of each saldo, or
@@ -80,6 +90,9 @@ class JumlahUmum extends Equatable {
   const JumlahUmum(this.jenis, this.nilai);
 
   static const penuh = JumlahUmum(JumlahJenis.persen, 100);
+
+  /// Whole numbers are sent as integers, so 50 stays `50` rather than `50.0`.
+  num get nilaiJson => nilai == nilai.truncate() ? nilai.truncate() : nilai;
 
   /// Whether it can be applied: a share up to 100, or a rupiah above zero.
   bool get valid {
@@ -213,6 +226,9 @@ class DraftPencairan extends Equatable {
   final String nama;
   final DraftStatus status;
   final Potongan potonganDefault;
+
+  /// What was last applied to everyone, kept so the form reopens as it was.
+  final JumlahUmum? jumlahUmum;
   final String dibuatOlehNama;
   final String diubahOlehNama;
   final DateTime? createdAt;
@@ -227,6 +243,7 @@ class DraftPencairan extends Equatable {
     required this.nama,
     required this.status,
     required this.potonganDefault,
+    this.jumlahUmum,
     this.dibuatOlehNama = '',
     this.diubahOlehNama = '',
     this.createdAt,
@@ -243,6 +260,7 @@ class DraftPencairan extends Equatable {
         nama,
         status,
         potonganDefault,
+        jumlahUmum,
         dibuatOlehNama,
         diubahOlehNama,
         createdAt,
@@ -322,14 +340,32 @@ class DraftItemInput extends Equatable {
 class DraftInput extends Equatable {
   final String? nama;
   final Potongan potonganDefault;
+  final JumlahUmum? jumlahUmum;
   final List<DraftItemInput> items;
 
   const DraftInput({
     this.nama,
     required this.potonganDefault,
+    this.jumlahUmum,
     required this.items,
   });
 
   @override
-  List<Object?> get props => [nama, potonganDefault, items];
+  List<Object?> get props => [nama, potonganDefault, jumlahUmum, items];
+}
+
+enum ExportBerkas {
+  pdf('PDF'),
+  xlsx('Excel');
+
+  const ExportBerkas(this.label);
+
+  final String label;
+}
+
+class DraftExport {
+  final Uint8List bytes;
+  final String filename;
+
+  const DraftExport({required this.bytes, required this.filename});
 }

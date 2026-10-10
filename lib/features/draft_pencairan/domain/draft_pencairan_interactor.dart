@@ -53,4 +53,18 @@ class DraftPencairanInteractor implements DraftPencairanUseCases {
   @override
   Future<Either<NetworkException, DraftPencairan>> confirmDraft(String id) =>
       _repository.confirmDraft(id);
+
+  @override
+  Future<Either<NetworkException, DraftExport>> exportPratinjau(
+    DraftInput input,
+    ExportBerkas berkas,
+  ) =>
+      _repository.exportPratinjau(input, berkas);
+
+  @override
+  Future<Either<NetworkException, DraftExport>> exportDraft(
+    String id,
+    ExportBerkas berkas,
+  ) =>
+      _repository.exportDraft(id, berkas);
 }

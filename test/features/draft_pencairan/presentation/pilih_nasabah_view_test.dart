@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +12,6 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
@@ -28,7 +29,7 @@ const _fani =
 
 void main() {
   late _MockUseCases useCases;
-  Object? openedWith;
+  Object? picked;
 
   void answer({
     String search = '',
@@ -44,7 +45,7 @@ void main() {
 
   setUp(() {
     useCases = _MockUseCases();
-    openedWith = null;
+    picked = null;
     answer();
   });
 
@@ -54,22 +55,23 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
+          builder: (_, __) => const Scaffold(body: Text('route:/')),
+        ),
+        GoRoute(
+          path: DraftListPage.routePilih,
           builder: (_, __) => BlocProvider(
             create: (_) => PilihNasabahCubit(useCases)..load(),
             child: const PilihNasabahView(),
           ),
         ),
-        GoRoute(
-          path: DraftListPage.routeEditor,
-          builder: (_, state) {
-            openedWith = state.extra;
-            return const Scaffold(body: Text('route:editor'));
-          },
-        ),
       ],
     );
     addTearDown(router.dispose);
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    // The list page opens the picker and waits for what was picked.
+    unawaited(router
+        .push<List<Kandidat>>(DraftListPage.routePilih)
+        .then((value) => picked = value));
     await tester.pumpAndSettle();
   }
 
@@ -148,7 +150,7 @@ void main() {
         isNotNull);
   });
 
-  testWidgets('continue hands the picked nasabah to the editor',
+  testWidgets('continue hands the picked nasabah back to whoever opened it',
       (tester) async {
     await pump(tester);
     await tester.tap(find.byKey(const Key('kandidat-n-3')));
@@ -158,8 +160,8 @@ void main() {
     await tester.tap(find.byKey(const Key('lanjut')));
     await tester.pumpAndSettle();
 
-    expect(find.text('route:editor'), findsOneWidget);
-    expect((openedWith! as DraftEditorArgs).kandidat, [_ahmad, _citra]);
+    expect(find.text('route:/'), findsOneWidget);
+    expect(picked, [_ahmad, _citra]);
   });
 
   testWidgets('the search field has the sort button beside it, as elsewhere',

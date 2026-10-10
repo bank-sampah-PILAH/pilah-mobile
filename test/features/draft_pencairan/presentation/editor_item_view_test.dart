@@ -179,6 +179,16 @@ void main() {
   });
 
   group('a frozen order', () {
+    test('anyone missing from the frozen order goes after those in it', () {
+      expect(
+        _ids(EditorItemView.tampilkan(state, posisi: {'a': 0})).first,
+        'a',
+      );
+      expect(
+        _ids(EditorItemView.tampilkan(state, posisi: {'b': 0, 'd': 1})).take(2),
+        ['b', 'd'],
+      );
+    });
     test('follows the given positions, not the live amounts', () {
       // By dibayar it would be a, c, d, b; the frozen order says otherwise.
       final posisi = {'b': 0, 'd': 1, 'c': 2, 'a': 3};

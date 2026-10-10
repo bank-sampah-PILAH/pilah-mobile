@@ -27,8 +27,10 @@ const draftItemJson = {
 Map<String, dynamic> draftJson({
   String status = 'draft',
   List<Map<String, dynamic>> items = const [draftItemJson],
+  Map<String, dynamic> extra = const {},
 }) =>
     {
+      ...extra,
       'id': 'd-1',
       'nama': 'Cair Oktober',
       'status': status,
