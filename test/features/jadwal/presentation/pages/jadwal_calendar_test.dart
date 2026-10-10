@@ -17,7 +17,9 @@ void main() {
   ) async {
     final cubit = _MockJadwalCubit();
     final now = DateTime.now();
-    final scheduledDate = DateTime(now.year, now.month, 10);
+    // Never today: today is selected already, which is not what is under test.
+    final scheduledDate =
+        DateTime(now.year, now.month, now.day == 10 ? 11 : 10);
     final schedule = _schedule(scheduledDate);
     when(() => cubit.state).thenReturn(JadwalLoaded(
       [schedule],

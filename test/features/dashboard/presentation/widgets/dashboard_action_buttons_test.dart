@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 void main() {
@@ -45,8 +45,8 @@ void main() {
           builder: (_, __) => const Scaffold(body: Text('Form Setoran')),
         ),
         GoRoute(
-          path: CatatPencairanPage.route,
-          builder: (_, __) => const Scaffold(body: Text('Form Pencairan')),
+          path: DraftListPage.route,
+          builder: (_, __) => const Scaffold(body: Text('Daftar Pencairan')),
         ),
       ],
     );
@@ -57,12 +57,12 @@ void main() {
     return router;
   }
 
-  testWidgets('offers a choice between Catat Setoran and Catat Pencairan',
+  testWidgets('offers a choice between Catat Setoran and Pencairan',
       (tester) async {
     await pumpChooser(tester);
 
     expect(find.text('Catat Setoran'), findsOneWidget);
-    expect(find.text('Catat Pencairan'), findsOneWidget);
+    expect(find.text('Pencairan'), findsOneWidget);
   });
 
   testWidgets('opens Setoran Baru when Catat Setoran is chosen',
@@ -75,13 +75,13 @@ void main() {
     expect(find.text('Form Setoran'), findsOneWidget);
   });
 
-  testWidgets('opens Catat Pencairan when Catat Pencairan is chosen',
+  testWidgets('opens the pencairan list when Pencairan is chosen',
       (tester) async {
     await pumpChooser(tester);
 
-    await tester.tap(find.text('Catat Pencairan'));
+    await tester.tap(find.text('Pencairan'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Form Pencairan'), findsOneWidget);
+    expect(find.text('Daftar Pencairan'), findsOneWidget);
   });
 }
