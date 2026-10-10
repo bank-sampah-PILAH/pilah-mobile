@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -336,5 +338,167 @@ void main() {
         find.descendant(
             of: footer, matching: find.textContaining('7 Okt 2026, 09:05')),
         findsOneWidget);
+  });
+
+  group('finding a draft', () {
+    DraftRingkasan row(String id, String nama,
+            {DraftStatus status = DraftStatus.draft,
+            DateTime? dibuat,
+            int dibayar = 100000}) =>
+        DraftRingkasan(
+          id: id,
+          nama: nama,
+          status: status,
+          dibuatOlehNama: 'Ibu Sari',
+          createdAt: dibuat,
+          jumlahItem: 1,
+          totalNominal: dibayar,
+          totalPotongan: 0,
+          totalDibayar: dibayar,
+        );
+
+    final now = DateTime.now();
+    final rows = [
+      row('a', 'Alfa', dibuat: now, dibayar: 100000),
+      row('b', 'Bravo',
+          dibuat: now.subtract(const Duration(days: 40)),
+          status: DraftStatus.dikonfirmasi,
+          dibayar: 900000),
+    ];
+
+    testWidgets('typing in the search field narrows the list', (tester) async {
+      await pump(tester, rows);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('cari-draft')), 'bra');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bravo'), findsOneWidget);
+      expect(find.text('Alfa'), findsNothing);
+    });
+
+    testWidgets('a search with no match says so and can be cleared',
+        (tester) async {
+      await pump(tester, rows);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('cari-draft')), 'zzz');
+      await tester.pumpAndSettle();
+      expect(find.textContaining("Tidak ada pencairan untuk 'zzz'"),
+          findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('hapus-pencarian')));
+      await tester.pumpAndSettle();
+      expect(find.text('Alfa'), findsOneWidget);
+      expect(find.text('Bravo'), findsOneWidget);
+    });
+
+    testWidgets('each status chip carries how many drafts it holds',
+        (tester) async {
+      await pump(tester, rows);
+      await tester.pumpAndSettle();
+
+      Finder count(String chip, String n) =>
+          find.descendant(of: find.byKey(Key(chip)), matching: find.text(n));
+      expect(count('filter-semua', '2'), findsOneWidget);
+      expect(count('filter-draft', '1'), findsOneWidget);
+      expect(count('filter-dikonfirmasi', '1'), findsOneWidget);
+      expect(count('filter-dibatalkan', '0'), findsOneWidget);
+    });
+
+    testWidgets('no counts are shown until the drafts have loaded',
+        (tester) async {
+      final pending =
+          Completer<Either<NetworkException, List<DraftRingkasan>>>();
+      when(() => useCases.getDrafts()).thenAnswer((_) => pending.future);
+      await pumpRouted(
+        tester,
+        BlocProvider(
+          create: (_) => DraftListCubit(useCases)..load(),
+          child: const DraftListView(),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+          tester
+              .widget<PencairanChip>(find.byKey(const Key('filter-semua')))
+              .count,
+          isNull);
+
+      pending.complete(Right(rows));
+      await tester.pumpAndSettle();
+      expect(
+          tester
+              .widget<PencairanChip>(find.byKey(const Key('filter-semua')))
+              .count,
+          2);
+    });
+
+    testWidgets(
+        'the sort button sits beside the search field, as in the editor',
+        (tester) async {
+      await pump(tester, rows);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('urutkan-draft')), findsOneWidget);
+      expect(find.byIcon(Icons.swap_vert), findsOneWidget);
+      expect(find.byKey(const Key('urutan')), findsNothing,
+          reason: 'no sort chip any more');
+      final cari = tester.getRect(find.byKey(const Key('cari-draft')));
+      final urut = tester.getRect(find.byKey(const Key('urutkan-draft')));
+      expect(urut.left, greaterThanOrEqualTo(cari.right));
+      expect((urut.center.dy - cari.center.dy).abs(), lessThan(4));
+    });
+
+    testWidgets('its menu offers date, total paid and name', (tester) async {
+      await pump(tester, rows);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('urutkan-draft')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('urut-draft-tanggal')), findsOneWidget);
+      expect(find.byKey(const Key('urut-draft-dibayar')), findsOneWidget);
+      expect(find.byKey(const Key('urut-draft-nama')), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_downward), findsOneWidget,
+          reason: 'the date, newest first, is the current order');
+    });
+
+    testWidgets('picking total paid re-sorts, and the menu stays open',
+        (tester) async {
+      await pump(tester, rows);
+      await tester.pumpAndSettle();
+      expect(
+          tester.getTopLeft(find.text('Alfa')).dy <
+              tester.getTopLeft(find.text('Bravo')).dy,
+          isTrue);
+
+      await tester.tap(find.byKey(const Key('urutkan-draft')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('urut-draft-dibayar')));
+      await tester.pumpAndSettle();
+
+      expect(
+          tester.getTopLeft(find.text('Bravo')).dy <
+              tester.getTopLeft(find.text('Alfa')).dy,
+          isTrue);
+      expect(find.byKey(const Key('urut-draft-nama')), findsOneWidget,
+          reason: 'still open for another try');
+    });
+
+    testWidgets('drafts sit under date headings only in the time orders',
+        (tester) async {
+      await pump(tester, rows);
+      await tester.pumpAndSettle();
+      expect(find.text('HARI INI'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('urutkan-draft')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('urut-draft-dibayar')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('HARI INI'), findsNothing);
+    });
   });
 }
