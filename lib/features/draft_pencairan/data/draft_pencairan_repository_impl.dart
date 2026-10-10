@@ -62,6 +62,16 @@ class DraftPencairanRepositoryImpl implements DraftPencairanRepository {
       _draft(_remote.confirmDraft(id));
 
   @override
+  Future<Either<NetworkException, DraftExport>> exportPratinjau(
+    DraftInput input,
+    ExportBerkas berkas,
+  ) =>
+      apiCall<DraftExport>(
+        func: _remote.exportPratinjau(input, berkas),
+        mapper: (value) => value as DraftExport,
+      );
+
+  @override
   Future<Either<NetworkException, DraftExport>> exportDraft(
     String id,
     ExportBerkas berkas,

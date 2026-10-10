@@ -53,6 +53,9 @@ class DraftEditorState extends Equatable {
   final DraftStatus status;
   final String nama;
   final Potongan potonganDefault;
+
+  /// What was last applied to everyone; the server keeps it with the draft.
+  final JumlahUmum? jumlahUmum;
   final List<EditorItem> items;
 
   /// The method chosen for everyone; a nasabah on another one is adjusted.
@@ -79,6 +82,7 @@ class DraftEditorState extends Equatable {
     this.status = DraftStatus.draft,
     this.nama = '',
     this.potonganDefault = Potongan.nol,
+    this.jumlahUmum,
     this.items = const [],
     this.metodeUmum = MetodePencairan.tunai,
     this.dibuatOlehNama = '',
@@ -96,6 +100,7 @@ class DraftEditorState extends Equatable {
     DraftStatus? status,
     String? nama,
     Potongan? potonganDefault,
+    JumlahUmum? Function()? jumlahUmum,
     List<EditorItem>? items,
     MetodePencairan? metodeUmum,
     String? dibuatOlehNama,
@@ -112,6 +117,7 @@ class DraftEditorState extends Equatable {
         status: status ?? this.status,
         nama: nama ?? this.nama,
         potonganDefault: potonganDefault ?? this.potonganDefault,
+        jumlahUmum: jumlahUmum != null ? jumlahUmum() : this.jumlahUmum,
         items: items ?? this.items,
         metodeUmum: metodeUmum ?? this.metodeUmum,
         dibuatOlehNama: dibuatOlehNama ?? this.dibuatOlehNama,
@@ -174,8 +180,11 @@ class DraftEditorState extends Equatable {
   /// or has unsaved edits, confirming saves it first.
   bool get canConfirm => !isBusy && status == DraftStatus.draft && canSave;
 
-  /// A file reflects the saved draft, so unsaved edits would make it lie.
-  bool get canExport => draftId != null && !dirty && !isBusy;
+  /// A saved draft can always be exported as saved. One with edits, or never
+  /// saved, is exported as it stands on screen, so it must be valid to be
+  /// built: nothing is saved either way.
+  bool get canExport =>
+      !isBusy && items.isNotEmpty && ((draftId != null && !dirty) || canSave);
 
   @override
   List<Object?> get props => [
@@ -183,6 +192,7 @@ class DraftEditorState extends Equatable {
         status,
         nama,
         potonganDefault,
+        jumlahUmum,
         items,
         metodeUmum,
         dibuatOlehNama,
