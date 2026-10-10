@@ -17,10 +17,15 @@ class DraftPencairanRepositoryImpl implements DraftPencairanRepository {
     String search = '',
     KandidatUrutan urutan = KandidatUrutan.namaAZ,
     int saldoMin = 0,
+    bool termasukKosong = false,
   }) =>
       apiCall<List<Kandidat>>(
         func: _remote.getKandidat(
-            search: search, urutan: urutan, saldoMin: saldoMin),
+          search: search,
+          urutan: urutan,
+          saldoMin: saldoMin,
+          termasukKosong: termasukKosong,
+        ),
         mapper: (value) => value as List<Kandidat>,
       );
 

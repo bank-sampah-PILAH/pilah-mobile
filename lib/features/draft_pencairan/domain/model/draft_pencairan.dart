@@ -108,19 +108,44 @@ class JumlahUmum extends Equatable {
   List<Object?> get props => [jenis, nilai];
 }
 
-enum KandidatUrutan {
-  namaAZ('nama', 'Nama A-Z'),
-  namaZA('-nama', 'Nama Z-A'),
-  saldoTerkecil('saldo', 'Saldo terkecil'),
-  saldoTerbesar('-saldo', 'Saldo terbesar');
+/// What the picker can be ordered by. The direction is separate, so one
+/// button can carry both, as in the lists elsewhere in pencairan.
+enum KandidatSortField {
+  nama('Nama'),
+  saldo('Saldo');
 
-  const KandidatUrutan(this.apiValue, this.label);
-
-  final String apiValue;
   final String label;
+
+  const KandidatSortField(this.label);
 }
 
-/// A nasabah who can still be paid out: active, approved, with saldo.
+enum KandidatUrutan {
+  namaAZ('nama', KandidatSortField.nama, true),
+  namaZA('-nama', KandidatSortField.nama, false),
+  saldoTerkecil('saldo', KandidatSortField.saldo, true),
+  saldoTerbesar('-saldo', KandidatSortField.saldo, false);
+
+  const KandidatUrutan(this.apiValue, this.field, this.ascending);
+
+  final String apiValue;
+  final KandidatSortField field;
+  final bool ascending;
+
+  /// The order after choosing [pilihan]: the same field again flips the
+  /// direction; a new one starts with names A-Z and the biggest saldo first.
+  KandidatUrutan pilih(KandidatSortField pilihan) {
+    if (pilihan == field) {
+      return KandidatUrutan.values
+          .firstWhere((u) => u.field == field && u.ascending != ascending);
+    }
+    return pilihan == KandidatSortField.nama
+        ? KandidatUrutan.namaAZ
+        : KandidatUrutan.saldoTerbesar;
+  }
+}
+
+/// A nasabah the picker lists: active and approved. One without saldo is shown
+/// but cannot be picked, so a missing name never looks like a mistake.
 class Kandidat extends Equatable {
   final String id;
   final String kode;
@@ -133,6 +158,8 @@ class Kandidat extends Equatable {
     required this.nama,
     required this.saldo,
   });
+
+  bool get kosong => saldo <= 0;
 
   @override
   List<Object?> get props => [id, kode, nama, saldo];

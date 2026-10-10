@@ -16,11 +16,13 @@ class DraftPencairanInteractor implements DraftPencairanUseCases {
     String search = '',
     KandidatUrutan urutan = KandidatUrutan.namaAZ,
     int saldoMin = 0,
+    bool termasukKosong = false,
   }) =>
       _repository.getKandidat(
         search: search,
         urutan: urutan,
         saldoMin: saldoMin,
+        termasukKosong: termasukKosong,
       );
 
   @override

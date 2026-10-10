@@ -8,6 +8,7 @@ abstract class DraftPencairanUseCases {
     String search = '',
     KandidatUrutan urutan = KandidatUrutan.namaAZ,
     int saldoMin = 0,
+    bool termasukKosong = false,
   });
   Future<Either<NetworkException, List<DraftRingkasan>>> getDrafts();
   Future<Either<NetworkException, DraftPencairan>> getDraft(String id);
