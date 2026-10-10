@@ -168,9 +168,8 @@ class _DraftEditorViewState extends State<DraftEditorView> {
               child: Column(
                 children: [
                   PencairanHeader(
-                    title: state.draftId == null
-                        ? 'Pencairan Baru'
-                        : 'Draft Pencairan',
+                    title:
+                        state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
                   ),
                   Expanded(
                     child: state.phase == EditorPhase.loading
