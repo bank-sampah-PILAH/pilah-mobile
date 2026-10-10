@@ -25,3 +25,32 @@ String waktu(DateTime? value) {
   return '${value.day} ${_bulan[value.month - 1]} ${value.year}, '
       '${dua(value.hour)}:${dua(value.minute)}';
 }
+
+const _bulanPenuh = [
+  'JANUARI',
+  'FEBRUARI',
+  'MARET',
+  'APRIL',
+  'MEI',
+  'JUNI',
+  'JULI',
+  'AGUSTUS',
+  'SEPTEMBER',
+  'OKTOBER',
+  'NOVEMBER',
+  'DESEMBER',
+];
+
+/// The heading a draft sits under in the list: today, yesterday, the last
+/// week, then its month and year. [sekarang] is injectable for tests.
+String labelKelompok(DateTime? value, {DateTime? sekarang}) {
+  if (value == null) return 'TANPA TANGGAL';
+  final now = sekarang ?? DateTime.now();
+  final hari = DateTime(value.year, value.month, value.day);
+  final hariIni = DateTime(now.year, now.month, now.day);
+  final selisih = hariIni.difference(hari).inDays;
+  if (selisih <= 0) return 'HARI INI';
+  if (selisih == 1) return 'KEMARIN';
+  if (selisih < 7) return 'MINGGU INI';
+  return '${_bulanPenuh[value.month - 1]} ${value.year}';
+}
