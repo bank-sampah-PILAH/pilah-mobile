@@ -19,4 +19,5 @@ abstract class DraftPencairanUseCases {
     DraftInput input,
   );
   Future<Either<NetworkException, DraftPencairan>> cancelDraft(String id);
+  Future<Either<NetworkException, DraftPencairan>> confirmDraft(String id);
 }

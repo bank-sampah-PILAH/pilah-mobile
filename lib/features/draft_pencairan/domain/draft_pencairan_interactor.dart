@@ -49,4 +49,8 @@ class DraftPencairanInteractor implements DraftPencairanUseCases {
   @override
   Future<Either<NetworkException, DraftPencairan>> cancelDraft(String id) =>
       _repository.cancelDraft(id);
+
+  @override
+  Future<Either<NetworkException, DraftPencairan>> confirmDraft(String id) =>
+      _repository.confirmDraft(id);
 }

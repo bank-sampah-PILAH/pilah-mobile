@@ -378,3 +378,97 @@ class PencairanPopupMenu<T> extends StatelessWidget {
     );
   }
 }
+
+/// A 52px action button with an icon, sized to sit beside another one.
+///
+/// The label shrinks to fit rather than overflowing, so two of these share a
+/// row even on a narrow phone. While [isLoading] the icon becomes a spinner
+/// (the width stays put) and taps are ignored.
+class PencairanActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool filled;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  const PencairanActionButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.filled = false,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final foreground = !enabled
+        ? Colors.grey[500]!
+        : filled
+            ? Colors.white
+            : AppColors.greenDark;
+    final onTap = isLoading ? null : onPressed;
+    final content = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: foreground,
+                ),
+              )
+            : Icon(icon, color: foreground, size: 20),
+        const SizedBox(width: 8),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: AppTextStyle.title1.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    );
+    return SizedBox(
+      height: 52,
+      child: filled
+          ? ElevatedButton(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.greenDark,
+                disabledBackgroundColor: Colors.grey[300],
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: shape,
+                elevation: 0,
+              ),
+              child: content,
+            )
+          : OutlinedButton(
+              onPressed: onTap,
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                side: BorderSide(
+                  color: enabled ? AppColors.greenDark : Colors.grey[300]!,
+                  width: 1.5,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: shape,
+              ),
+              child: content,
+            ),
+    );
+  }
+}

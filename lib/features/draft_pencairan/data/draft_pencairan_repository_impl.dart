@@ -57,6 +57,10 @@ class DraftPencairanRepositoryImpl implements DraftPencairanRepository {
   Future<Either<NetworkException, DraftPencairan>> cancelDraft(String id) =>
       _draft(_remote.cancelDraft(id));
 
+  @override
+  Future<Either<NetworkException, DraftPencairan>> confirmDraft(String id) =>
+      _draft(_remote.confirmDraft(id));
+
   Future<Either<NetworkException, DraftPencairan>> _draft(
     Future<DraftPencairan> call,
   ) =>

@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -25,7 +26,7 @@ import 'draft_editor_args.dart';
 import 'draft_list_page.dart';
 
 /// Shapes a pencairan: name, general potongan and method, then each nasabah.
-/// A saved draft can be resumed or cancelled.
+/// A saved draft can be resumed, paid (confirmed) or cancelled.
 class DraftEditorPage extends StatelessWidget {
   static const route = DraftListPage.routeEditor;
 
@@ -100,6 +101,34 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     return result == true;
   }
 
+  Future<void> _confirmPayment() async {
+    final cubit = context.read<DraftEditorCubit>();
+    final state = cubit.state;
+    final ok = await _confirmDialog(
+      title: 'Konfirmasi pembayaran',
+      message: '${state.items.length} nasabah · total dibayar '
+          '${rupiah(state.totalDibayar)}.\n\n'
+          '${state.draftId == null || state.dirty ? 'Draft akan disimpan terlebih dulu. ' : ''}'
+          'Lanjutkan hanya jika semua pembayaran sudah dilakukan. Saldo '
+          'nasabah akan dikurangi dan tercatat di riwayat, dan ini tidak '
+          'bisa diulang.',
+      yes: 'Ya, sudah dibayar',
+      no: 'Belum',
+    );
+    if (ok && mounted) await cubit.confirm();
+  }
+
+  /// A paid pencairan changes saldo and riwayat, so the screens that show
+  /// them reload. Absent in a bare test tree, hence the guard.
+  void _refreshRiwayat() {
+    try {
+      context.read<RiwayatAktivitasCubit>().load(silent: true);
+      context.read<RecentActivityCubit>().load(silent: true);
+    } on Object {
+      // Not provided: nothing to refresh.
+    }
+  }
+
   void _onState(BuildContext context, DraftEditorState state) {
     if (_nama.text != state.nama) _nama.text = state.nama;
   }
@@ -125,12 +154,17 @@ class _DraftEditorViewState extends State<DraftEditorView> {
           listenWhen: (a, b) =>
               a.status != b.status &&
               b.status.terkunci &&
-              a.phase == EditorPhase.cancelling,
+              (a.phase == EditorPhase.confirming ||
+                  a.phase == EditorPhase.cancelling),
           listener: (context, state) {
+            final paid = state.status == DraftStatus.dikonfirmasi;
+            if (paid) _refreshRiwayat();
             AppNotification.showSuccess(
               context,
               title: 'Berhasil',
-              message: 'Draft dibatalkan.',
+              message: paid
+                  ? 'Pembayaran dikonfirmasi. Saldo dan riwayat diperbarui.'
+                  : 'Draft dibatalkan.',
             );
           },
         ),
@@ -185,7 +219,11 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                     state: state,
                     aksi: state.status.terkunci
                         ? null
-                        : _BottomBar(state: state, onSave: cubit.save),
+                        : _BottomBar(
+                            state: state,
+                            onSave: cubit.save,
+                            onConfirm: _confirmPayment,
+                          ),
                   ),
           ),
         ),
@@ -520,8 +558,13 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
 class _BottomBar extends StatelessWidget {
   final DraftEditorState state;
   final VoidCallback onSave;
+  final VoidCallback onConfirm;
 
-  const _BottomBar({required this.state, required this.onSave});
+  const _BottomBar({
+    required this.state,
+    required this.onSave,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -531,12 +574,31 @@ class _BottomBar extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: CustomPrimaryButton(
-          key: const Key('simpan'),
-          title: state.phase == EditorPhase.saving
-              ? 'Menyimpan...'
-              : 'Simpan Draft',
-          onPressed: canSave ? onSave : null,
+        child: Row(
+          children: [
+            Expanded(
+              flex: 5,
+              child: PencairanActionButton(
+                key: const Key('simpan'),
+                label: 'Simpan Draft',
+                icon: Icons.save_outlined,
+                isLoading: state.phase == EditorPhase.saving,
+                onPressed: canSave ? onSave : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 6,
+              child: PencairanActionButton(
+                key: const Key('konfirmasi'),
+                label: 'Konfirmasi Pembayaran',
+                icon: Icons.check_circle_outline,
+                filled: true,
+                isLoading: state.phase == EditorPhase.confirming,
+                onPressed: state.canConfirm ? onConfirm : null,
+              ),
+            ),
+          ],
         ),
       ),
     );

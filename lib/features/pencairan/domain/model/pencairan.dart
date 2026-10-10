@@ -60,6 +60,10 @@ class Pencairan extends Equatable {
   final String nasabahNama;
   final String bankSampahNama;
   final int nominal;
+
+  /// Withheld from [nominal] when the pencairan came from a draft; the
+  /// nasabah's saldo still drops by the whole [nominal].
+  final int potongan;
   final MetodePencairan metode;
   final DateTime? tanggal;
   final String keterangan;
@@ -80,6 +84,7 @@ class Pencairan extends Equatable {
     required this.nasabahNama,
     this.bankSampahNama = '',
     required this.nominal,
+    this.potongan = 0,
     required this.metode,
     required this.tanggal,
     required this.keterangan,
@@ -91,6 +96,9 @@ class Pencairan extends Equatable {
     this.tanggalEditMinimum,
   });
 
+  /// What was actually paid out.
+  int get dibayar => nominal - potongan;
+
   @override
   List<Object?> get props => [
         id,
@@ -98,6 +106,7 @@ class Pencairan extends Equatable {
         nasabahNama,
         bankSampahNama,
         nominal,
+        potongan,
         metode,
         tanggal,
         keterangan,

@@ -14,6 +14,7 @@ Map<String, dynamic> _pencairanJson() => {
       'dicatat_oleh_nama': 'Ibu Sari',
       'tanggal': '2026-09-22T03:15:00Z',
       'nominal': '150000.00',
+      'potongan': '10000.00',
       'metode': 'transfer',
       'keterangan': 'Ditransfer',
       'status': 'tercatat',

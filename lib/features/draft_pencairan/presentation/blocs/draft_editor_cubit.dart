@@ -121,6 +121,29 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     );
   }
 
+  /// Records that the pengurus has paid: the saldo and riwayat change, once.
+  ///
+  /// A draft that was never saved, or has unsaved edits, is saved first so what
+  /// the server records is exactly what the pengurus confirmed. If that save is
+  /// rejected, nothing is paid.
+  Future<void> confirm() async {
+    if (!state.canConfirm) return;
+    if (state.draftId == null || state.dirty) {
+      await save();
+      final saved = state;
+      if (saved.draftId == null ||
+          saved.dirty ||
+          saved.errorMessage != null ||
+          saved.itemErrors.isNotEmpty) {
+        return;
+      }
+    }
+    await _transition(
+      EditorPhase.confirming,
+      _useCases.confirmDraft(state.draftId!),
+    );
+  }
+
   /// Drops a draft that has not been paid. The saldo was never touched.
   Future<void> cancel() async {
     final id = state.draftId;

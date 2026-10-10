@@ -380,4 +380,95 @@ void main() {
     expect(((box.decoration! as BoxDecoration).border! as Border).top.color,
         Colors.red.shade300);
   });
+
+  group('PencairanActionButton', () {
+    Future<void> pump(
+      WidgetTester tester, {
+      required bool filled,
+      VoidCallback? onPressed,
+      bool isLoading = false,
+      double width = 200,
+      String label = 'Simpan Draft',
+    }) =>
+        pumpRouted(
+          tester,
+          Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: width,
+                child: PencairanActionButton(
+                  key: const Key('aksi'),
+                  label: label,
+                  icon: Icons.save_outlined,
+                  filled: filled,
+                  isLoading: isLoading,
+                  onPressed: onPressed,
+                ),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('shows its icon and label, 52 tall, and reports taps',
+        (tester) async {
+      var taps = 0;
+      await pump(tester, filled: false, onPressed: () => taps++);
+
+      expect(find.byIcon(Icons.save_outlined), findsOneWidget);
+      expect(find.text('Simpan Draft'), findsOneWidget);
+      expect(tester.getSize(find.byKey(const Key('aksi'))).height, 52);
+      await tester.tap(find.byKey(const Key('aksi')));
+      expect(taps, 1);
+    });
+
+    testWidgets('filled is solid green with white content', (tester) async {
+      await pump(tester, filled: true, onPressed: () {});
+
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.style!.backgroundColor!.resolve({}), AppColors.greenDark);
+      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
+          Colors.white);
+    });
+
+    testWidgets('outlined is white with a green border and green content',
+        (tester) async {
+      await pump(tester, filled: false, onPressed: () {});
+
+      expect(find.byType(OutlinedButton), findsOneWidget);
+      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
+          AppColors.greenDark);
+    });
+
+    testWidgets('a disabled button is grey and ignores taps', (tester) async {
+      await pump(tester, filled: true, onPressed: null);
+
+      expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
+          Colors.grey[500]);
+      await tester.tap(find.byKey(const Key('aksi')), warnIfMissed: false);
+    });
+
+    testWidgets('loading swaps the icon for a spinner and keeps the label',
+        (tester) async {
+      var taps = 0;
+      await pump(tester,
+          filled: false, isLoading: true, onPressed: () => taps++);
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.save_outlined), findsNothing);
+      expect(find.text('Simpan Draft'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('aksi')), warnIfMissed: false);
+      expect(taps, 0, reason: 'busy: no double taps');
+    });
+
+    testWidgets('a long label shrinks instead of overflowing', (tester) async {
+      await pump(tester,
+          filled: true,
+          onPressed: () {},
+          width: 120,
+          label: 'Konfirmasi Pembayaran');
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Konfirmasi Pembayaran'), findsOneWidget);
+    });
+  });
 }
