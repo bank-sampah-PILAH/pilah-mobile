@@ -203,7 +203,8 @@ class _BulkRow extends StatelessWidget {
                     child: Checkbox(
                       tristate: true,
                       value: nilai,
-                      onChanged: (_) {},
+                      // Never fires: IgnorePointer, the row's InkWell taps.
+                      onChanged: (_) {}, // coverage:ignore-line
                       activeColor: AppColors.greenDark,
                     ),
                   ),

@@ -19,6 +19,9 @@ class DraftPdfPreviewPage extends StatelessWidget {
   @visibleForTesting
   static Widget Function(BuildContext, Uint8List)? viewBuilder;
 
+  // The real viewer renders through a platform plugin that a unit test cannot
+  // run; tests swap it with [viewBuilder] and the device run covers this.
+  // coverage:ignore-start
   static Widget _defaultView(BuildContext context, Uint8List bytes) =>
       PdfPreview(
         build: (_) async => bytes,
@@ -31,6 +34,7 @@ class DraftPdfPreviewPage extends StatelessWidget {
         loadingWidget: const CircularProgressIndicator(),
         scrollViewDecoration: BoxDecoration(color: Colors.grey[200]),
       );
+  // coverage:ignore-end
 
   @override
   Widget build(BuildContext context) {
