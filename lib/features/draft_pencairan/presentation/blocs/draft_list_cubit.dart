@@ -43,4 +43,10 @@ class DraftListCubit extends Cubit<DraftListState> {
 
   void setFilter(DraftStatus? filter) =>
       emit(state.copyWith(filter: () => filter));
+
+  void setQuery(String query) => emit(state.copyWith(query: query));
+
+  /// Orders by [field]; the same field again flips the direction.
+  void setUrutan(DraftSortField field) =>
+      emit(state.copyWith(urutan: state.urutan.pilih(field)));
 }

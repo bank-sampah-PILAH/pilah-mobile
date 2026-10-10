@@ -119,12 +119,16 @@ class PencairanChip extends StatelessWidget {
   final VoidCallback? onTap;
   final IconData? icon;
 
+  /// A small count after the label, such as how many drafts the chip holds.
+  final int? count;
+
   const PencairanChip({
     super.key,
     required this.label,
     required this.selected,
     required this.onTap,
     this.icon,
+    this.count,
   });
 
   @override
@@ -152,6 +156,25 @@ class PencairanChip extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            if (count != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                constraints: const BoxConstraints(minWidth: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : const Color(0xFFE5E7EB),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: selected ? AppColors.greenDark : color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

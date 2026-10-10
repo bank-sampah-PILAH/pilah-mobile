@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -15,6 +16,7 @@ import '../blocs/draft_list_cubit.dart';
 import '../blocs/draft_list_state.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
+import '../widgets/pencairan_sort_button.dart';
 import '../widgets/pencairan_ui.dart';
 import 'draft_editor_args.dart';
 
@@ -71,7 +73,8 @@ class DraftListView extends StatelessWidget {
                   ),
                 ],
               ),
-              _FilterChips(selected: state.filter),
+              const _SearchBar(),
+              _FilterChips(state: state),
               Expanded(child: _Body(state: state, onOpen: _open)),
             ],
           ),
@@ -89,10 +92,68 @@ class DraftListView extends StatelessWidget {
   }
 }
 
-class _FilterChips extends StatelessWidget {
-  final DraftStatus? selected;
+/// The search field, kept in step with the cubit so that clearing the search
+/// from the empty state empties the text too.
+class _SearchBar extends StatefulWidget {
+  const _SearchBar();
 
-  const _FilterChips({required this.selected});
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<DraftListCubit>();
+    return BlocListener<DraftListCubit, DraftListState>(
+      listenWhen: (a, b) => a.query != b.query,
+      listener: (context, state) {
+        if (_controller.text != state.query) _controller.text = state.query;
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: CustomSearchField(
+                key: const Key('cari-draft'),
+                controller: _controller,
+                hintText: 'Cari nama, pembuat, atau tanggal',
+                onChanged: cubit.setQuery,
+              ),
+            ),
+            const SizedBox(width: 8),
+            BlocBuilder<DraftListCubit, DraftListState>(
+              buildWhen: (a, b) => a.urutan != b.urutan,
+              builder: (context, state) => PencairanSortButton<DraftSortField>(
+                buttonKey: const Key('urutkan-draft'),
+                itemKeyPrefix: 'urut-draft-',
+                fields: DraftSortField.values,
+                labelOf: (field) => field.label,
+                current: state.urutan.field,
+                ascending: state.urutan.ascending,
+                onSort: cubit.setUrutan,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChips extends StatelessWidget {
+  final DraftListState state;
+
+  const _FilterChips({required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +163,10 @@ class _FilterChips extends StatelessWidget {
           child: PencairanChip(
             key: key,
             label: label,
-            selected: selected == value,
+            selected: state.filter == value,
+            count: state.status == DraftListStatus.loaded
+                ? state.jumlah(value)
+                : null,
             onTap: () => cubit.setFilter(value),
           ),
         );
@@ -149,6 +213,17 @@ class _Body extends StatelessWidget {
         );
       case DraftListStatus.loaded:
         final drafts = state.tampil;
+        final dicari = state.query.trim().isNotEmpty;
+        if (drafts.isEmpty && dicari) {
+          return AppRefreshIndicator(
+            onRefresh: cubit.load,
+            child: _TidakAdaHasil(
+              query: state.query.trim(),
+              onClear: () => cubit.setQuery(''),
+            ),
+          );
+        }
+        final entries = _susun(drafts, state.urutan);
         return AppRefreshIndicator(
           onRefresh: cubit.load,
           child: drafts.isEmpty
@@ -157,24 +232,108 @@ class _Body extends StatelessWidget {
                   subtitle: 'Buat pencairan untuk satu atau banyak nasabah.',
                   icon: Icons.payments_outlined,
                 )
-              : ListView.separated(
+              : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
-                  itemCount: drafts.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) => _DraftCard(
-                    draft: drafts[index],
-                    onTap: () => onOpen(
-                      context,
-                      DraftListPage.routeEditor,
-                      extra: DraftEditorArgs.lanjutkan(drafts[index].id),
-                    ),
-                    onCancel: () => _batalkan(context, drafts[index]),
-                  ),
+                  itemCount: entries.length,
+                  itemBuilder: (context, index) {
+                    final entry = entries[index];
+                    if (entry is String) return _KelompokHeader(entry);
+                    final draft = entry as DraftRingkasan;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _DraftCard(
+                        draft: draft,
+                        onTap: () => onOpen(
+                          context,
+                          DraftListPage.routeEditor,
+                          extra: DraftEditorArgs.lanjutkan(draft.id),
+                        ),
+                        onCancel: () => _batalkan(context, draft),
+                      ),
+                    );
+                  },
                 ),
         );
     }
   }
+}
+
+/// The list as drawn: a heading before the first draft of each date group, in
+/// the time orders, and the drafts alone otherwise.
+List<Object> _susun(List<DraftRingkasan> drafts, DraftSort urutan) {
+  if (!urutan.perTanggal) return drafts;
+  final entries = <Object>[];
+  String? terakhir;
+  for (final draft in drafts) {
+    final label = labelKelompok(draft.createdAt);
+    if (label != terakhir) {
+      entries.add(label);
+      terakhir = label;
+    }
+    entries.add(draft);
+  }
+  return entries;
+}
+
+class _KelompokHeader extends StatelessWidget {
+  final String label;
+
+  const _KelompokHeader(this.label);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+        child: Text(
+          label,
+          style: AppTextStyle.extraSmall.copyWith(
+            color: Colors.grey[700],
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
+          ),
+        ),
+      );
+}
+
+class _TidakAdaHasil extends StatelessWidget {
+  final String query;
+  final VoidCallback onClear;
+
+  const _TidakAdaHasil({required this.query, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Tidak ada pencairan untuk '$query'",
+                      textAlign: TextAlign.center,
+                      style: AppTextStyle.small,
+                    ),
+                    TextButton(
+                      key: const Key('hapus-pencarian'),
+                      style: TextButton.styleFrom(
+                          foregroundColor: AppColors.greenDark),
+                      onPressed: onClear,
+                      child: const Text('Hapus pencarian'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
