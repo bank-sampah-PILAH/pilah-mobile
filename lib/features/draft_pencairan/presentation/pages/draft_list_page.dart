@@ -205,7 +205,7 @@ Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
   }
 }
 
-class _DraftCard extends StatelessWidget {
+class _DraftCard extends StatefulWidget {
   final DraftRingkasan draft;
   final VoidCallback onTap;
   final VoidCallback onCancel;
@@ -217,14 +217,18 @@ class _DraftCard extends StatelessWidget {
   });
 
   @override
+  State<_DraftCard> createState() => _DraftCardState();
+}
+
+class _DraftCardState extends State<_DraftCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final meta = [
-      if (draft.dibuatOlehNama.isNotEmpty) draft.dibuatOlehNama,
-      waktu(draft.createdAt),
-    ].where((part) => part.isNotEmpty).join(' · ');
+    final draft = widget.draft;
     return InkWell(
       key: Key('draft-${draft.id}'),
-      onTap: onTap,
+      onTap: widget.onTap,
       borderRadius: BorderRadius.circular(16),
       child: PencairanCard.shadow(
         child: Column(
@@ -242,32 +246,169 @@ class _DraftCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 DraftStatusBadge(status: draft.status),
-                if (draft.status == DraftStatus.draft)
-                  IconButton(
-                    key: Key('batalkan-${draft.id}'),
-                    tooltip: 'Batalkan draft',
-                    visualDensity: VisualDensity.compact,
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.only(left: 8),
-                    onPressed: onCancel,
-                    icon: Icon(Icons.delete_outline, color: Colors.red[700]),
-                  ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(
-              '${draft.jumlahItem} nasabah · ${rupiah(draft.totalDibayar)}',
-              style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                Icon(Icons.people_outline, size: 16, color: Colors.grey[700]),
+                const SizedBox(width: 4),
+                Text('${draft.jumlahItem} nasabah',
+                    style: AppTextStyle.extraSmall),
+              ],
             ),
-            if (draft.totalPotongan > 0)
-              Text(
-                'Potongan ${rupiah(draft.totalPotongan)}',
-                style: AppTextStyle.extraSmall,
-              ),
-            if (meta.isNotEmpty) Text(meta, style: AppTextStyle.extraSmall),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Total dibayar',
+                          style: AppTextStyle.extraSmall
+                              .copyWith(color: Colors.grey[700])),
+                      Text(
+                        rupiah(draft.totalDibayar),
+                        style: AppTextStyle.headline3.copyWith(
+                          color: AppColors.greenDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  key: Key('ekspan-${draft.id}'),
+                  tooltip: _expanded ? 'Sembunyikan rincian' : 'Lihat rincian',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                  icon: Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            if (_expanded) ...[
+              const SizedBox(height: 8),
+              _Rincian(draft: draft),
+            ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: Colors.grey.shade200),
+            ),
+            _Footer(draft: draft, onCancel: widget.onCancel),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// What the total paid is made of: the saldo and what comes off it.
+class _Rincian extends StatelessWidget {
+  final DraftRingkasan draft;
+
+  const _Rincian({required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    Widget row(Key key, String label, String value, {Color? color}) => Row(
+          key: key,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: AppTextStyle.small),
+            Text(
+              value,
+              style: AppTextStyle.small.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color ?? Colors.black87,
+              ),
+            ),
+          ],
+        );
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.greenLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          row(Key('total-saldo-${draft.id}'), 'Total saldo',
+              rupiah(draft.totalNominal)),
+          const SizedBox(height: 8),
+          row(
+            Key('total-potongan-${draft.id}'),
+            'Potongan',
+            draft.totalPotongan > 0
+                ? '\u2212 ${rupiah(draft.totalPotongan)}'
+                : rupiah(0),
+            color: draft.totalPotongan > 0 ? AppColors.statOrange : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Who made the draft and when, with the way to throw it away at the far end.
+class _Footer extends StatelessWidget {
+  final DraftRingkasan draft;
+  final VoidCallback onCancel;
+
+  const _Footer({required this.draft, required this.onCancel});
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = AppTextStyle.extraSmall.copyWith(color: Colors.grey[700]);
+    final time = waktu(draft.createdAt);
+    return Row(
+      key: Key('footer-${draft.id}'),
+      children: [
+        if (draft.dibuatOlehNama.isNotEmpty) ...[
+          PencairanAvatar(nama: draft.dibuatOlehNama, size: 32),
+          const SizedBox(width: 8),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (draft.dibuatOlehNama.isNotEmpty)
+                Text(
+                  draft.dibuatOlehNama,
+                  style:
+                      AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              if (time.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(Icons.schedule, size: 14, color: Colors.grey[700]),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(time,
+                          style: muted,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+        if (draft.status == DraftStatus.draft)
+          IconButton(
+            key: Key('batalkan-${draft.id}'),
+            tooltip: 'Batalkan draft',
+            visualDensity: VisualDensity.compact,
+            onPressed: onCancel,
+            icon: Icon(Icons.delete_outline, color: Colors.red[700]),
+          ),
+      ],
     );
   }
 }
