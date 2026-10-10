@@ -374,10 +374,10 @@ void main() {
     api.on('GET', '$_path/d-2',
         json: draftJson(
             extra: {'jumlah_jenis': 'persen', 'jumlah_nilai': '50.00'}));
-    final useCases = buildDraftPencairanUseCases(api);
+    final repository = buildDraftPencairanRepository(api);
 
-    final tanpa = (await useCases.getDraft('d-1')).right;
-    final dengan = (await useCases.getDraft('d-2')).right;
+    final tanpa = (await repository.getDraft('d-1')).right;
+    final dengan = (await repository.getDraft('d-2')).right;
 
     expect(tanpa, isNot(equals(dengan)));
   });
