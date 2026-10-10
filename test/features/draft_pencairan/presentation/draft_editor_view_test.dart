@@ -1020,6 +1020,20 @@ void main() {
       await tester.pump(const Duration(seconds: 10));
     });
 
+    testWidgets('an export that fails says so in a toast', (tester) async {
+      when(() => useCases.exportDraft('d-1', ExportBerkas.xlsx))
+          .thenAnswer((_) async => Left(ConnectionTimeOutException()));
+      await pumpSaved(tester);
+
+      await tester.tap(find.byKey(const Key('menu-ekspor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ekspor-xlsx')));
+      await pumpToast(tester);
+
+      expect(find.text('Gagal'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 10));
+    });
+
     testWidgets('choosing Transfer on a card changes its metode',
         (tester) async {
       await pumpNew(tester);

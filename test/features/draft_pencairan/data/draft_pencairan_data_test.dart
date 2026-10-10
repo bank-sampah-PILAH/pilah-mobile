@@ -382,6 +382,17 @@ void main() {
     expect(tanpa, isNot(equals(dengan)));
   });
 
+  test('a file the server does not name gets one from the time and format',
+      () async {
+    api.onBytes('GET', '$_path/d-1/export', [37, 80, 68, 70]);
+
+    final export = (await buildDraftPencairanRepository(api)
+            .exportDraft('d-1', ExportBerkas.xlsx))
+        .right;
+
+    expect(export.filename, matches(RegExp(r'^draft_pencairan_\d+\.xlsx$')));
+  });
+
   test('exportPratinjau posts the draft as sent and downloads the file',
       () async {
     api.onBytes('POST', '$_path/export', [

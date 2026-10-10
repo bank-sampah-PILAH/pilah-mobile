@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 
 import '../../../support/platform_fakes.dart';
+import '../../../support/pump_app.dart';
 
 void main() {
   final file = DraftExport(
@@ -71,5 +72,43 @@ void main() {
 
     expect(share.shared, hasLength(1));
     expect(share.shared.single.fileNameOverrides, ['draft-pencairan.pdf']);
+  });
+
+  testWidgets('Unduh says so when the file cannot be saved', (tester) async {
+    // The documents path is a file, so no folder will take the PDF.
+    final paths = installFakePathProvider();
+    File(paths.documents).createSync(recursive: true);
+    await pump(tester);
+
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const Key('unduh')));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    });
+    await pumpToast(tester);
+
+    expect(find.text('Gagal Menyimpan'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('the toast after saving can share the saved file',
+      (tester) async {
+    final paths = installFakePathProvider(downloads: 'Download');
+    final share = installFakeSharePlatform();
+    await pump(tester);
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const Key('unduh')));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    });
+    await pumpToast(tester);
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Bagikan').last);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+
+    expect(share.shared, hasLength(1));
+    expect(share.shared.single.files!.single.path,
+        '${paths.downloads}/draft-pencairan.pdf');
+    await tester.pump(const Duration(seconds: 10));
   });
 }
