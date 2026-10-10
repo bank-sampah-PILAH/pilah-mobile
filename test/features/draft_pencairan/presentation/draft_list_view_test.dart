@@ -169,6 +169,41 @@ void main() {
     expect(find.text('route:${DraftListPage.routePilih}'), findsOneWidget);
   });
 
+  testWidgets(
+      'picked nasabah open a new editor, and the list reloads once it is left',
+      (tester) async {
+    final router = await pump(tester, const []);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buat Pencairan'));
+    await tester.pumpAndSettle();
+
+    router.pop(const [
+      Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 1000),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routeEditor}'), findsOneWidget);
+    clearInteractions(useCases);
+
+    router.pop();
+    await tester.pumpAndSettle();
+
+    verify(() => useCases.getDrafts()).called(1);
+  });
+
+  testWidgets('leaving the picker without picking does not open an editor',
+      (tester) async {
+    final router = await pump(tester, const []);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buat Pencairan'));
+    await tester.pumpAndSettle();
+
+    router.pop();
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routeEditor}'), findsNothing);
+  });
+
   testWidgets('opening a draft goes to the editor', (tester) async {
     await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
     await tester.pumpAndSettle();
