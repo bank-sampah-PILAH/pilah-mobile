@@ -49,6 +49,22 @@ class DraftListView extends StatelessWidget {
     await cubit.load();
   }
 
+  /// The picker hands back who was picked, and the editor is opened from here
+  /// rather than in its place, so the list reloads when the editor is left and
+  /// shows the draft that was just saved.
+  Future<void> _buat(BuildContext context) async {
+    final cubit = context.read<DraftListCubit>();
+    final terpilih =
+        await context.push<List<Kandidat>>(DraftListPage.routePilih);
+    if (terpilih != null && terpilih.isNotEmpty && context.mounted) {
+      await context.push<Object?>(
+        DraftListPage.routeEditor,
+        extra: DraftEditorArgs.baru(terpilih),
+      );
+    }
+    await cubit.load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,7 +101,7 @@ class DraftListView extends StatelessWidget {
         heroTag: 'draft_list_fab',
         backgroundColor: AppColors.greenDark,
         foregroundColor: Colors.white,
-        onPressed: () => _open(context, DraftListPage.routePilih),
+        onPressed: () => _buat(context),
         icon: const Icon(Icons.add),
         label: const Text('Buat Pencairan'),
       ),

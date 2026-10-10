@@ -18,7 +18,6 @@ import '../widgets/draft_format.dart';
 import '../widgets/pencairan_sort_button.dart';
 import '../widgets/saldo_min_sheet.dart';
 import '../widgets/pencairan_ui.dart';
-import 'draft_editor_args.dart';
 import 'draft_list_page.dart';
 
 /// First step of a pencairan: choose who is paid. Search, sort, filters and
@@ -368,12 +367,8 @@ class _Footer extends StatelessWidget {
                 child: CustomPrimaryButton(
                   key: const Key('lanjut'),
                   title: 'Lanjut',
-                  onPressed: terpilih.isEmpty
-                      ? null
-                      : () => context.pushReplacement(
-                            DraftListPage.routeEditor,
-                            extra: DraftEditorArgs.baru(terpilih),
-                          ),
+                  onPressed:
+                      terpilih.isEmpty ? null : () => context.pop(terpilih),
                 ),
               ),
             ],
