@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -16,12 +15,14 @@ import '../../domain/model/draft_pencairan.dart';
 import '../blocs/pilih_nasabah_cubit.dart';
 import '../blocs/pilih_nasabah_state.dart';
 import '../widgets/draft_format.dart';
+import '../widgets/pencairan_sort_button.dart';
+import '../widgets/saldo_min_sheet.dart';
 import '../widgets/pencairan_ui.dart';
 import 'draft_editor_args.dart';
 import 'draft_list_page.dart';
 
-/// First step of a pencairan: choose who is paid. Search, sort and quick
-/// selects make a long list manageable; picks survive both.
+/// First step of a pencairan: choose who is paid. Search, sort, filters and
+/// picking in bulk make a long list manageable; picks survive them all.
 class PilihNasabahPencairanPage extends StatelessWidget {
   static const route = DraftListPage.routePilih;
 
@@ -65,36 +66,12 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
 
   Future<void> _askSaldoMin() async {
     final cubit = context.read<PilihNasabahCubit>();
-    final controller = TextEditingController();
-    final saldoMin = await showDialog<int>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Pilih berdasarkan saldo'),
-        content: TextField(
-          key: const Key('saldo-min-field'),
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(
-            labelText: 'Saldo minimal',
-            prefixText: 'Rp ',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext)
-                .pop(int.tryParse(controller.text) ?? 0),
-            child: const Text('Pilih'),
-          ),
-        ],
-      ),
+    final saldoMin = await showSaldoMinSheet(
+      context,
+      kandidat: cubit.state.kandidat,
+      awal: cubit.state.saldoMin,
     );
-    if (saldoMin != null && saldoMin > 0) await cubit.pilihSaldoMin(saldoMin);
+    if (saldoMin != null) cubit.setSaldoMin(saldoMin);
   }
 
   @override
@@ -106,30 +83,33 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
         child: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
           builder: (context, state) => Column(
             children: [
-              PencairanHeader(
-                title: 'Pilih Nasabah',
-                actions: [
-                  PopupMenuButton<KandidatUrutan>(
-                    key: const Key('urutan'),
-                    tooltip: 'Urutkan',
-                    icon: Icon(Icons.sort, color: Colors.grey[800]),
-                    initialValue: state.urutan,
-                    onSelected: cubit.setUrutan,
-                    itemBuilder: (_) => [
-                      for (final urutan in KandidatUrutan.values)
-                        PopupMenuItem(value: urutan, child: Text(urutan.label)),
-                    ],
-                  ),
-                ],
-              ),
+              const PencairanHeader(title: 'Pilih Nasabah'),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: CustomSearchField(
-                  hintText: 'Cari nama, kode, atau nomor HP',
-                  onChanged: _onSearch,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomSearchField(
+                        key: const Key('cari-kandidat'),
+                        hintText: 'Cari nama, kode, atau nomor HP',
+                        onChanged: _onSearch,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    PencairanSortButton<KandidatSortField>(
+                      buttonKey: const Key('urutkan-kandidat'),
+                      itemKeyPrefix: 'urut-kandidat-',
+                      fields: KandidatSortField.values,
+                      labelOf: (field) => field.label,
+                      current: state.urutan.field,
+                      ascending: state.urutan.ascending,
+                      onSort: cubit.setSortField,
+                    ),
+                  ],
                 ),
               ),
-              _QuickSelects(onSaldoMin: _askSaldoMin),
+              _Filters(state: state, onSaldoMin: _askSaldoMin),
+              _BulkRow(state: state),
               Expanded(child: _List(state: state)),
             ],
           ),
@@ -142,49 +122,113 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
   }
 }
 
-class _QuickSelects extends StatelessWidget {
+/// The filter pills, left-aligned under the search field and green when on,
+/// each with how many nasabah it holds. The minimum saldo opens its amount
+/// dialog and then reads like the rest, as "Saldo \u2265 Rp 200.000".
+class _Filters extends StatelessWidget {
+  final PilihNasabahState state;
   final VoidCallback onSaldoMin;
 
-  const _QuickSelects({required this.onSaldoMin});
+  const _Filters({required this.state, required this.onSaldoMin});
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PilihNasabahCubit>();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+    Widget chip(Key key, PilihFilter filter) => Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: PencairanChip(
+            key: key,
+            label: filter.label,
+            count: state.jumlah(filter),
+            selected: state.filter == filter,
+            onTap: () => cubit.setFilter(filter),
+          ),
+        );
+    final aktif = state.saldoMin > 0;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Row(
         children: [
+          chip(const Key('pf-semua'), PilihFilter.semua),
+          chip(const Key('pf-terpilih'), PilihFilter.terpilih),
+          chip(const Key('pf-belum'), PilihFilter.belumDipilih),
+          chip(const Key('pf-kosong'), PilihFilter.saldoKosong),
           PencairanChip(
-            key: const Key('pilih-semua'),
-            label: 'Pilih semua',
-            selected: false,
-            onTap: cubit.pilihSemua,
+            key: const Key('pf-saldo'),
+            label: aktif
+                ? 'Saldo \u2265 ${rupiah(state.saldoMin)}'
+                : 'Saldo minimal',
+            selected: aktif,
+            onTap: aktif ? () => cubit.setSaldoMin(0) : onSaldoMin,
           ),
-          PencairanChip(
-            key: const Key('pilih-hasil'),
-            label: 'Hasil pencarian',
-            selected: false,
-            onTap: cubit.pilihHasilPencarian,
+        ],
+      ),
+    );
+  }
+}
+
+/// One checkbox for everyone shown, with the two other bulk actions beside it.
+/// They act on what the filters leave on screen, and never on someone without
+/// saldo.
+class _BulkRow extends StatelessWidget {
+  final PilihNasabahState state;
+
+  const _BulkRow({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<PilihNasabahCubit>();
+    final dapat = state.dapatDipilih.length;
+    final nilai = switch (state.pilihanTampil) {
+      PilihanTampil.tidakAda => false,
+      PilihanTampil.sebagian => null,
+      PilihanTampil.semua => true,
+    };
+    final teks = AppTextStyle.small.copyWith(
+      color: AppColors.greenDark,
+      fontWeight: FontWeight.w600,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              key: const Key('pilih-tampil'),
+              onTap: dapat == 0 ? null : cubit.pilihTampil,
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  IgnorePointer(
+                    child: Checkbox(
+                      tristate: true,
+                      value: nilai,
+                      onChanged: (_) {},
+                      activeColor: AppColors.greenDark,
+                    ),
+                  ),
+                  Flexible(
+                    child: Text(
+                      'Pilih semua ($dapat)',
+                      style: AppTextStyle.small
+                          .copyWith(fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          PencairanChip(
-            key: const Key('pilih-saldo-min'),
-            label: 'Saldo minimal…',
-            selected: false,
-            onTap: onSaldoMin,
-          ),
-          PencairanChip(
+          TextButton(
             key: const Key('balikkan'),
-            label: 'Balikkan',
-            selected: false,
-            onTap: cubit.balikkan,
+            onPressed: cubit.balikkan,
+            child: Text('Balikkan', style: teks),
           ),
-          PencairanChip(
+          TextButton(
             key: const Key('kosongkan'),
-            label: 'Kosongkan',
-            selected: false,
-            onTap: cubit.kosongkan,
+            onPressed: cubit.kosongkan,
+            child: Text('Kosongkan', style: teks),
           ),
         ],
       ),
@@ -218,6 +262,13 @@ class _List extends StatelessWidget {
           ),
         );
       case PilihStatus.loaded:
+        if (state.tampil.isEmpty && state.kandidat.isNotEmpty) {
+          return const EmptyView(
+            title: 'Belum ada nasabah pada filter ini',
+            subtitle: 'Ganti filter untuk melihat nasabah lainnya.',
+            icon: Icons.filter_list_off,
+          );
+        }
         if (state.kandidat.isEmpty) {
           return EmptyView(
             title: state.search.isEmpty
@@ -229,47 +280,52 @@ class _List extends StatelessWidget {
         }
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          itemCount: state.kandidat.length,
+          itemCount: state.tampil.length,
           separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
-            final kandidat = state.kandidat[index];
+            final kandidat = state.tampil[index];
             final dipilih = state.selectedIds.contains(kandidat.id);
+            final kartu = PencairanCard.shadow(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              borderColor: dipilih ? AppColors.greenDark : null,
+              child: Row(
+                children: [
+                  IgnorePointer(
+                    child: Checkbox(
+                      value: dipilih,
+                      onChanged: kandidat.kosong ? null : (_) {},
+                      activeColor: AppColors.greenDark,
+                    ),
+                  ),
+                  PencairanAvatar(
+                    key: Key('avatar-${kandidat.id}'),
+                    nama: kandidat.nama,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(kandidat.nama, style: AppTextStyle.headline3),
+                        Text(
+                          kandidat.kosong
+                              ? '${kandidat.kode} \u00b7 Saldo kosong'
+                              : '${kandidat.kode} \u00b7 ${rupiah(kandidat.saldo)}',
+                          style: AppTextStyle.small,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
             return InkWell(
               key: Key('kandidat-${kandidat.id}'),
-              onTap: () => cubit.toggle(kandidat.id),
+              onTap: kandidat.kosong ? null : () => cubit.toggle(kandidat.id),
               borderRadius: BorderRadius.circular(16),
-              child: PencairanCard.shadow(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                borderColor: dipilih ? AppColors.greenDark : null,
-                child: Row(
-                  children: [
-                    IgnorePointer(
-                      child: Checkbox(
-                        value: dipilih,
-                        onChanged: (_) {},
-                        activeColor: AppColors.greenDark,
-                      ),
-                    ),
-                    PencairanAvatar(
-                      key: Key('avatar-${kandidat.id}'),
-                      nama: kandidat.nama,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(kandidat.nama, style: AppTextStyle.headline3),
-                          Text(
-                            '${kandidat.kode} · ${rupiah(kandidat.saldo)}',
-                            style: AppTextStyle.small,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Dimmed: it is here to be seen, not to be picked.
+              child:
+                  kandidat.kosong ? Opacity(opacity: 0.5, child: kartu) : kartu,
             );
           },
         );
