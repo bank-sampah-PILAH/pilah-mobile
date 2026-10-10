@@ -119,10 +119,7 @@ class DraftPencairanRemoteDataSourceImpl
   }
 
   DraftExport _berkas(Response response, ExportBerkas berkas) {
-    final data = response.data;
-    final bytes = data is Uint8List
-        ? data
-        : Uint8List.fromList((data as List).cast<int>());
+    final bytes = Uint8List.fromList((response.data as List).cast<int>());
     final filename = RegExp(r'filename="?([^"]+)"?')
             .firstMatch(response.headers.value('content-disposition') ?? '')
             ?.group(1) ??
