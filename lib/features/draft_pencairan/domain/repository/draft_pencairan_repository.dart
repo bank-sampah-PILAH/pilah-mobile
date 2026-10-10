@@ -20,6 +20,10 @@ abstract class DraftPencairanRepository {
   );
   Future<Either<NetworkException, DraftPencairan>> cancelDraft(String id);
   Future<Either<NetworkException, DraftPencairan>> confirmDraft(String id);
+  Future<Either<NetworkException, DraftExport>> exportPratinjau(
+    DraftInput input,
+    ExportBerkas berkas,
+  );
   Future<Either<NetworkException, DraftExport>> exportDraft(
     String id,
     ExportBerkas berkas,

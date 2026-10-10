@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import '../../domain/use_cases/draft_pencairan_use_cases.dart';
+import '../widgets/draft_format.dart';
 import 'draft_editor_state.dart';
 
 /// Holds a draft pencairan while the pengurus shapes it: who is paid, how
@@ -17,9 +18,12 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
 
   DraftEditorCubit(this._useCases) : super(const DraftEditorState());
 
-  /// Starts a draft for [kandidat]: each is paid their whole saldo, in cash.
-  void startNew(List<Kandidat> kandidat) {
+  /// Starts a draft for [kandidat]: each is paid their whole saldo, in cash. It
+  /// is named at once ("Pencairan 8 Okt 2026, 06:04"), so even an export of it
+  /// before saving has a title. [sekarang] is for tests.
+  void startNew(List<Kandidat> kandidat, {DateTime? sekarang}) {
     emit(DraftEditorState(
+      nama: 'Pencairan ${waktu(sekarang ?? DateTime.now())}',
       items: [
         for (final k in kandidat)
           EditorItem(
@@ -61,6 +65,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
             ),
         ],
         potonganDefault: potongan,
+        jumlahUmum: jumlah != null ? () => jumlah : null,
       ),
       touched: berubah ? state.items.map((item) => item.nasabahId).toSet() : {},
     );
@@ -75,12 +80,6 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   /// Gives the item its own potongan, or null to follow the general one.
   void setItemPotongan(String nasabahId, Potongan? potongan) =>
       _editItem(nasabahId, (item) => item.copyWith(potongan: () => potongan));
-
-  /// Back to the plain defaults: the whole saldo and the general potongan.
-  void resetItem(String nasabahId) => _editItem(
-        nasabahId,
-        (item) => item.copyWith(nominal: item.saldo, potongan: () => null),
-      );
 
   void removeItem(String nasabahId) => _change(state.copyWith(
         items: [
@@ -151,20 +150,21 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     await _transition(EditorPhase.cancelling, _useCases.cancelDraft(id));
   }
 
-  /// Downloads the saved draft as a file. Null, with an error message, if it
-  /// cannot: the caller saves and shares the file.
+  /// Builds the draft as a file. A saved draft with no edits is downloaded as
+  /// saved; one with edits, or never saved, is built from what is on screen.
+  /// Either way nothing is saved. Null, with an error message, if it cannot be
+  /// built: the caller saves and shares the file.
   Future<DraftExport?> export(ExportBerkas berkas) async {
+    if (!state.canExport) return null;
     final id = state.draftId;
-    if (id == null || !state.canExport) return null;
     emit(
         state.copyWith(phase: EditorPhase.exporting, errorMessage: () => null));
-    final result = await _useCases.exportDraft(id, berkas);
+    final result = id != null && !state.dirty
+        ? await _useCases.exportDraft(id, berkas)
+        : await _useCases.exportPratinjau(_input(), berkas);
     return result.fold(
       (failure) {
-        emit(state.copyWith(
-          phase: EditorPhase.idle,
-          errorMessage: () => failure.displayMessage,
-        ));
+        emit(_rejected(failure));
         return null;
       },
       (file) {
@@ -189,6 +189,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   DraftInput _input() => DraftInput(
         nama: state.nama,
         potonganDefault: state.potonganDefault,
+        jumlahUmum: state.jumlahUmum,
         items: [
           for (final item in state.items)
             DraftItemInput(
@@ -223,6 +224,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
         status: draft.status,
         nama: draft.nama,
         potonganDefault: draft.potonganDefault,
+        jumlahUmum: draft.jumlahUmum,
         dibuatOlehNama: draft.dibuatOlehNama,
         diubahOlehNama: draft.diubahOlehNama,
         createdAt: draft.createdAt,
