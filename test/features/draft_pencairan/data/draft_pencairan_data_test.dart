@@ -277,6 +277,20 @@ void main() {
     expect(draft.jumlahUmum, isNull);
   });
 
+  test('drafts that differ only in their jumlah are not the same draft',
+      () async {
+    api.on('GET', '$_path/d-1', json: draftJson());
+    api.on('GET', '$_path/d-2',
+        json: draftJson(
+            extra: {'jumlah_jenis': 'persen', 'jumlah_nilai': '50.00'}));
+    final useCases = buildDraftPencairanUseCases(api);
+
+    final tanpa = (await useCases.getDraft('d-1')).right;
+    final dengan = (await useCases.getDraft('d-2')).right;
+
+    expect(tanpa, isNot(equals(dengan)));
+  });
+
   test('exportPratinjau posts the draft as sent and downloads the file',
       () async {
     api.onBytes('POST', '$_path/export', [
