@@ -9,6 +9,7 @@ abstract class DraftPencairanRemoteDataSource {
     required String search,
     required KandidatUrutan urutan,
     required int saldoMin,
+    required bool termasukKosong,
   });
   Future<List<DraftRingkasan>> getDrafts();
   Future<DraftPencairan> getDraft(String id);
@@ -30,6 +31,7 @@ class DraftPencairanRemoteDataSourceImpl
     required String search,
     required KandidatUrutan urutan,
     required int saldoMin,
+    required bool termasukKosong,
   }) async {
     final response = await _network.get(
       '$_path/kandidat',
@@ -37,6 +39,7 @@ class DraftPencairanRemoteDataSourceImpl
         if (search.trim().isNotEmpty) 'search': search.trim(),
         'ordering': urutan.apiValue,
         if (saldoMin > 0) 'saldo_min': saldoMin,
+        if (termasukKosong) 'termasuk_kosong': true,
       },
     );
     return (response.data as List)
