@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -21,8 +22,11 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ImagePicker _picker;
   final ImageCropper _cropper;
 
-  ProfileCubit(this._dataSource, this._picker, this._cropper)
-      : super(const ProfileState());
+  ProfileCubit(this._dataSource, this._picker, this._cropper, {bool? isWeb})
+      : _isWeb = isWeb ?? kIsWeb,
+        super(const ProfileState());
+
+  final bool _isWeb;
 
   /// Loads the bank sampah profile, WhatsApp template and team roster. The bank
   /// profile is essential (a failure shows the error screen); the template and
@@ -104,6 +108,14 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> pickLogo() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
+
+    if (_isWeb) {
+      emit(state.copyWith(
+        selectedLogoBytes: await image.readAsBytes(),
+        selectedLogoFilename: image.name,
+      ));
+      return;
+    }
 
     final CroppedFile? cropped = await _cropper.cropImage(
       sourcePath: image.path,
