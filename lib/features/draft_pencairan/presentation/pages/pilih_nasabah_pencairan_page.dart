@@ -262,74 +262,96 @@ class _List extends StatelessWidget {
           ),
         );
       case PilihStatus.loaded:
-        if (state.tampil.isEmpty && state.kandidat.isNotEmpty) {
-          return const EmptyView(
-            title: 'Belum ada nasabah pada filter ini',
-            subtitle: 'Ganti filter untuk melihat nasabah lainnya.',
-            icon: Icons.filter_list_off,
-          );
-        }
-        if (state.kandidat.isEmpty) {
-          return EmptyView(
-            title: state.search.isEmpty
-                ? 'Tidak ada nasabah yang dapat dicairkan'
-                : 'Tidak ada nasabah yang cocok',
-            subtitle: 'Nasabah aktif yang memiliki saldo akan muncul di sini.',
-            icon: Icons.people_outline,
-          );
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          itemCount: state.tampil.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            final kandidat = state.tampil[index];
-            final dipilih = state.selectedIds.contains(kandidat.id);
-            final kartu = PencairanCard.shadow(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              borderColor: dipilih ? AppColors.greenDark : null,
-              child: Row(
-                children: [
-                  IgnorePointer(
-                    child: Checkbox(
-                      value: dipilih,
-                      onChanged: kandidat.kosong ? null : (_) {},
-                      activeColor: AppColors.greenDark,
-                    ),
-                  ),
-                  PencairanAvatar(
-                    key: Key('avatar-${kandidat.id}'),
-                    nama: kandidat.nama,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(kandidat.nama, style: AppTextStyle.headline3),
-                        Text(
-                          kandidat.kosong
-                              ? '${kandidat.kode} \u00b7 Saldo kosong'
-                              : '${kandidat.kode} \u00b7 ${rupiah(kandidat.saldo)}',
-                          style: AppTextStyle.small,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-            return InkWell(
-              key: Key('kandidat-${kandidat.id}'),
-              onTap: kandidat.kosong ? null : () => cubit.toggle(kandidat.id),
-              borderRadius: BorderRadius.circular(16),
-              // Dimmed: it is here to be seen, not to be picked.
-              child:
-                  kandidat.kosong ? Opacity(opacity: 0.5, child: kartu) : kartu,
-            );
-          },
-        );
+        return _kosongAtauDaftar(cubit);
     }
+  }
+
+  /// An explanation when there is nothing to pick, otherwise the rows.
+  Widget _kosongAtauDaftar(PilihNasabahCubit cubit) {
+    if (state.kandidat.isEmpty) {
+      return EmptyView(
+        title: state.search.isEmpty
+            ? 'Tidak ada nasabah yang dapat dicairkan'
+            : 'Tidak ada nasabah yang cocok',
+        subtitle: 'Nasabah aktif yang memiliki saldo akan muncul di sini.',
+        icon: Icons.people_outline,
+      );
+    }
+    if (state.tampil.isEmpty) {
+      return const EmptyView(
+        title: 'Belum ada nasabah pada filter ini',
+        subtitle: 'Ganti filter untuk melihat nasabah lainnya.',
+        icon: Icons.filter_list_off,
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      itemCount: state.tampil.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final kandidat = state.tampil[index];
+        return _KandidatRow(
+          kandidat: kandidat,
+          dipilih: state.selectedIds.contains(kandidat.id),
+          onTap: () => cubit.toggle(kandidat.id),
+        );
+      },
+    );
+  }
+}
+
+/// One nasabah: a card to tap. Without saldo it is dimmed and cannot be picked.
+class _KandidatRow extends StatelessWidget {
+  final Kandidat kandidat;
+  final bool dipilih;
+  final VoidCallback onTap;
+
+  const _KandidatRow({
+    required this.kandidat,
+    required this.dipilih,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final saldo = kandidat.kosong ? 'Saldo kosong' : rupiah(kandidat.saldo);
+    final kartu = PencairanCard.shadow(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      borderColor: dipilih ? AppColors.greenDark : null,
+      child: Row(
+        children: [
+          IgnorePointer(
+            child: Checkbox(
+              value: dipilih,
+              onChanged: kandidat.kosong ? null : (_) {},
+              activeColor: AppColors.greenDark,
+            ),
+          ),
+          PencairanAvatar(
+            key: Key('avatar-${kandidat.id}'),
+            nama: kandidat.nama,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(kandidat.nama, style: AppTextStyle.headline3),
+                Text('${kandidat.kode} \u00b7 $saldo',
+                    style: AppTextStyle.small),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return InkWell(
+      key: Key('kandidat-${kandidat.id}'),
+      onTap: kandidat.kosong ? null : onTap,
+      borderRadius: BorderRadius.circular(16),
+      // Dimmed: it is here to be seen, not to be picked.
+      child: kandidat.kosong ? Opacity(opacity: 0.5, child: kartu) : kartu,
+    );
   }
 }
 
