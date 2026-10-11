@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
@@ -71,9 +71,7 @@ void main() {
       expect(find.text(status), findsOneWidget, reason: status);
     }
     final mulai = DateTime.parse('2026-10-01T02:30:00Z').toLocal();
-    final jam = '${mulai.hour.toString().padLeft(2, '0')}:'
-        '${mulai.minute.toString().padLeft(2, '0')}';
-    expect(find.text('Mulai ${formatTanggalId(mulai)}, $jam'), findsOneWidget);
+    expect(find.text('Mulai ${formatTanggalJamId(mulai)}'), findsOneWidget);
     expect(find.text('Dicatat oleh Ibu Sari'), findsNWidgets(3));
     expect(find.text('Harga awal dari data lama'), findsOneWidget);
   });

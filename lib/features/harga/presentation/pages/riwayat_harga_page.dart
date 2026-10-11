@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
+import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -158,7 +159,7 @@ class _VersiHargaCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Mulai ${_waktu(versi.berlakuMulai.toLocal())}',
+            'Mulai ${formatTanggalJamId(versi.berlakuMulai.toLocal())}',
             style: AppTextStyle.small.copyWith(color: Colors.grey[700]),
           ),
           const SizedBox(height: 2),
@@ -183,10 +184,4 @@ class _VersiHargaCard extends StatelessWidget {
     case StatusVersiHarga.digantikan:
       return ('Digantikan', Colors.grey.shade100, Colors.grey.shade500);
   }
-}
-
-String _waktu(DateTime waktu) {
-  final h = waktu.hour.toString().padLeft(2, '0');
-  final m = waktu.minute.toString().padLeft(2, '0');
-  return '${formatTanggalId(waktu)}, $h:$m';
 }
