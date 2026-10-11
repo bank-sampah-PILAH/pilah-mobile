@@ -17,6 +17,14 @@ void main() {
   const export =
       StatementExport(bytes: pdfBytes, filename: 'Riwayat_Aktivitas_NSB-1.pdf');
 
+  // Parallel test files also create riwayat_pdf temp dirs in /tmp; every
+  // assertion looks at THIS page's copy only, identified by content.
+  bool holdsThisPdf(File file) {
+    final data = file.readAsBytesSync();
+    return data.length == pdfBytes.length &&
+        data.toString() == pdfBytes.toString();
+  }
+
   Future<void> pumpPreview(WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: NasabahPdfPreviewPage(export: export)),
@@ -39,18 +47,41 @@ void main() {
     await pumpPreview(tester);
     await pumpReal(tester);
 
-    final tempFiles = Directory.systemTemp
+    final ours = Directory.systemTemp
         .listSync()
         .whereType<Directory>()
-        .where((d) => d.path.contains('riwayat_pdf'))
+        .where((d) =>
+            d.path.contains('riwayat_pdf') &&
+            d.listSync().whereType<File>().any(holdsThisPdf))
         .toList();
-    expect(tempFiles, isNotEmpty,
+    expect(ours, isNotEmpty,
         reason: 'the preview copy is a disposable temp file, not the download');
-    expect(tempFiles.last.listSync().whereType<File>().first.readAsBytesSync(),
+    expect(ours.single.listSync().whereType<File>().first.readAsBytesSync(),
         pdfBytes);
-    for (final d in tempFiles) {
-      if (d.existsSync()) d.deleteSync(recursive: true);
-    }
+    // Cleanup belongs to the widget: its dispose deletes the temp dir (the
+    // unmount test asserts that).
+  });
+
+  testWidgets('unmounting the preview deletes its temp copy', (tester) async {
+    installFakePathProvider(downloads: 'Downloads', temporary: 'tmp');
+    await pumpPreview(tester);
+    await pumpReal(tester);
+    final ours = Directory.systemTemp
+        .listSync()
+        .whereType<Directory>()
+        .where((d) =>
+            d.path.contains('riwayat_pdf') &&
+            d.listSync().whereType<File>().any(holdsThisPdf))
+        .toList();
+    expect(ours.single.existsSync(), isTrue);
+
+    await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+    await tester.pump();
+
+    expect(
+        ours.single.existsSync(),
+        isFalse,
+        reason: 'the financial PDF copy must not survive the preview session');
   });
 
   testWidgets(

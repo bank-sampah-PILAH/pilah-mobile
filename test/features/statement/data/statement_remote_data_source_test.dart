@@ -64,4 +64,28 @@ void main() {
     expect((await source.exportPdf('member-b')).filename,
         'Riwayat_Aktivitas_X.pdf');
   });
+
+  test('a traversal filename is reduced to a bare basename', () async {
+    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => pdfResponse([1],
+            contentDisposition: 'attachment; filename="../x.pdf"'));
+
+    expect((await source.exportPdf('member-b')).filename, 'x.pdf');
+  });
+
+  test('a windows-style traversal filename is stripped too', () async {
+    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => pdfResponse([1],
+            contentDisposition: 'attachment; filename="..\\..\\x.pdf"'));
+
+    expect((await source.exportPdf('member-b')).filename, 'x.pdf');
+  });
+
+  test('a filename without the pdf extension gains it', () async {
+    when(() => network.getBytes(any(), queryParams: any(named: 'queryParams')))
+        .thenAnswer((_) async => pdfResponse([1],
+            contentDisposition: 'attachment; filename="laporan"'));
+
+    expect((await source.exportPdf('member-b')).filename, 'laporan.pdf');
+  });
 }

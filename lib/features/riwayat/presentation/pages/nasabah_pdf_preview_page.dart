@@ -60,18 +60,38 @@ class NasabahPdfPreviewPage extends StatelessWidget {
 
 /// pdfrx 2.4.x has no in-memory constructor: bytes go to a temp file and the
 /// viewer reads from a path. Temp only — the durable copy is what the
-/// download button writes on demand, and the temp dir is OS-cleaned.
-class _Viewer extends StatelessWidget {
+/// download button writes on demand, and this state deletes its temp dir on
+/// dispose (every preview open would otherwise leave the financial PDF on
+/// disk until the OS cleans the temp dir).
+class _Viewer extends StatefulWidget {
   const _Viewer({required this.export});
 
   final StatementExport export;
 
-  File _tempFile() {
-    final temp = Directory.systemTemp.createTempSync('riwayat_pdf');
-    return File('${temp.path}/${export.filename}')
-      ..writeAsBytesSync(export.bytes, flush: true);
+  @override
+  State<_Viewer> createState() => _ViewerState();
+}
+
+class _ViewerState extends State<_Viewer> {
+  late final Directory _tempDir;
+  late final File _file;
+
+  @override
+  void initState() {
+    super.initState();
+    // Once per page instance: a parent rebuild (e.g. a theme change) must not
+    // re-create the file and reload the viewer.
+    _tempDir = Directory.systemTemp.createTempSync('riwayat_pdf');
+    _file = File('${_tempDir.path}/${widget.export.filename}')
+      ..writeAsBytesSync(widget.export.bytes, flush: true);
   }
 
   @override
-  Widget build(BuildContext context) => PdfViewer.file(_tempFile().path);
+  void dispose() {
+    if (_tempDir.existsSync()) _tempDir.deleteSync(recursive: true);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => PdfViewer.file(_file.path);
 }
