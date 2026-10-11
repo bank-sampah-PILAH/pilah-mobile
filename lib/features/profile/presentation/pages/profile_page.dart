@@ -493,6 +493,17 @@ class _ProfileViewState extends State<_ProfileView>
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (auth?.email.trim().isNotEmpty ?? false) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            auth!.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyle.small.copyWith(
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
