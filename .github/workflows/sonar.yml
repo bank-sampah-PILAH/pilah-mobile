@@ -63,6 +63,13 @@ jobs:
       - name: Generate code (build_runner)
         run: dart run build_runner build --delete-conflicting-outputs
 
+      # injectable_generator writes `// coverage:ignore-file` into
+      # di.config.dart, which drops the DI graph from lcov while SonarCloud
+      # still counts its lines as uncovered. test/services/di_graph_test.dart
+      # resolves every registration, so measure it like any other file.
+      - name: Measure coverage of the generated DI graph
+        run: sed -i '/^\/\/ coverage:ignore-file$/d' lib/services/di.config.dart
+
       - name: Run tests with coverage
         run: flutter test --coverage
 
