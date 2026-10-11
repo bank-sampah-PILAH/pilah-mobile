@@ -204,6 +204,41 @@ void main() {
   });
 
   group('updateBankSampah', () {
+    test('sends browser logo bytes with the profile update', () async {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      cubit.emit(cubit.state.copyWith(
+        selectedLogoBytes: bytes,
+        selectedLogoFilename: 'bank-logo.png',
+      ));
+      when(() => dataSource.updateBankSampah(
+            nama: any(named: 'nama'),
+            alamat: any(named: 'alamat'),
+            kota: any(named: 'kota'),
+            noHpPic: any(named: 'noHpPic'),
+            fotoLogoPath: any(named: 'fotoLogoPath'),
+            fotoLogoBytes: any(named: 'fotoLogoBytes'),
+            fotoLogoFilename: any(named: 'fotoLogoFilename'),
+          )).thenAnswer((_) async => _stored);
+
+      await cubit.updateBankSampah(
+        nama: 'Bank Sampah BTH',
+        alamat: 'Kel. Kukusan',
+        noHpPic: '081234567890',
+      );
+
+      verify(() => dataSource.updateBankSampah(
+            nama: 'Bank Sampah BTH',
+            alamat: 'Kel. Kukusan',
+            kota: null,
+            noHpPic: '081234567890',
+            fotoLogoPath: null,
+            fotoLogoBytes: bytes,
+            fotoLogoFilename: 'bank-logo.png',
+          )).called(1);
+      expect(cubit.state.selectedLogoBytes, isNull);
+      expect(cubit.state.selectedLogoFilename, isNull);
+    });
+
     test('sends the pending logo along with the text fields', () async {
       cubit.emit(cubit.state.copyWith(
         bankSampah: _stored,
