@@ -151,6 +151,10 @@ class AppRouterConfig {
       GoRoute(
         path: RiwayatHargaPage.route,
         name: RiwayatHargaPage.route,
+        // The jenis travels as extra, which a refreshed web tab or a pasted
+        // link doesn't carry; send those back to the list to pick one.
+        redirect: (context, state) =>
+            state.extra is HargaEntity ? null : HargaPage.route,
         builder: (context, state) =>
             RiwayatHargaPage(jenis: state.extra! as HargaEntity),
       ),
