@@ -313,6 +313,25 @@ void persistenceTests() {
       expect(editor.state.dirty, isFalse);
     });
 
+    test('saving a draft that has since been confirmed shows it as confirmed',
+        () async {
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) async => Right(_serverDraft()));
+      await editor.save();
+      editor.setNama('Revisi');
+      when(() => repository.updateDraft(any(), any())).thenAnswer((_) async =>
+          Left(ConflictException(message: 'Draft sudah dikonfirmasi')));
+      when(() => repository.getDraft('d-1')).thenAnswer(
+          (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
+
+      await editor.save();
+
+      expect(editor.state.status, DraftStatus.dikonfirmasi);
+      expect(editor.state.nama, 'Cair Oktober',
+          reason: 'the unsaved edit gives way to what the server holds');
+      expect(editor.state.errorMessage, 'Draft sudah dikonfirmasi');
+    });
+
     test('an edit marks the draft dirty and clears that item\'s server error',
         () async {
       when(() => repository.createDraft(any()))
@@ -495,7 +514,7 @@ void lifecycleTests() {
 
   group('confirming payment', () {
     test('records the payment and locks the draft', () async {
-      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
 
       await editor.confirm();
@@ -510,7 +529,7 @@ void lifecycleTests() {
 
     test('a paid draft shows no complaint about the saldo it just spent',
         () async {
-      when(() => useCases.confirmDraft('d-1')).thenAnswer((_) async =>
+      when(() => repository.confirmDraft('d-1')).thenAnswer((_) async =>
           Right(_serverDraft(status: DraftStatus.dikonfirmasi, items: const [
             DraftItem(
               id: 'i-1',
@@ -540,27 +559,27 @@ void lifecycleTests() {
     });
 
     test('an unsaved draft is saved first and then paid', () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_serverDraft()));
-      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
-      final unsaved = DraftEditorCubit(useCases)..startNew(const [_ahmad]);
+      final unsaved = DraftEditorCubit(repository)..startNew(const [_ahmad]);
       expect(unsaved.state.canConfirm, isTrue);
 
       await unsaved.confirm();
 
       verifyInOrder([
-        () => useCases.createDraft(any()),
-        () => useCases.confirmDraft('d-1'),
+        () => repository.createDraft(any()),
+        () => repository.confirmDraft('d-1'),
       ]);
       expect(unsaved.state.status, DraftStatus.dikonfirmasi);
       expect(unsaved.state.draftId, 'd-1');
     });
 
     test('unsaved edits are saved before the payment is confirmed', () async {
-      when(() => useCases.updateDraft('d-1', any()))
+      when(() => repository.updateDraft('d-1', any()))
           .thenAnswer((_) async => Right(_serverDraft(nama: 'Baru')));
-      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
       editor.setNama('Baru');
       expect(editor.state.canConfirm, isTrue);
@@ -568,14 +587,14 @@ void lifecycleTests() {
       await editor.confirm();
 
       verifyInOrder([
-        () => useCases.updateDraft('d-1', any()),
-        () => useCases.confirmDraft('d-1'),
+        () => repository.updateDraft('d-1', any()),
+        () => repository.confirmDraft('d-1'),
       ]);
       expect(editor.state.status, DraftStatus.dikonfirmasi);
     });
 
     test('a save that fails stops the payment before it starts', () async {
-      when(() => useCases.updateDraft('d-1', any()))
+      when(() => repository.updateDraft('d-1', any()))
           .thenAnswer((_) async => Left(_unprocessable({
                 'items[1].nominal': ['Saldo nasabah tidak mencukupi']
               })));
@@ -583,7 +602,7 @@ void lifecycleTests() {
 
       await editor.confirm();
 
-      verifyNever(() => useCases.confirmDraft(any()));
+      verifyNever(() => repository.confirmDraft(any()));
       expect(editor.state.itemErrors, {'n-2': 'Saldo nasabah tidak mencukupi'});
       expect(editor.state.status, DraftStatus.draft);
       expect(editor.state.phase, EditorPhase.idle);
@@ -595,24 +614,24 @@ void lifecycleTests() {
       expect(editor.state.canConfirm, isFalse);
       await editor.confirm();
 
-      verifyNever(() => useCases.updateDraft(any(), any()));
-      verifyNever(() => useCases.confirmDraft(any()));
+      verifyNever(() => repository.updateDraft(any(), any()));
+      verifyNever(() => repository.confirmDraft(any()));
     });
 
     test('a paid draft cannot be confirmed again', () async {
-      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
       await editor.confirm();
 
       expect(editor.state.canConfirm, isFalse);
       await editor.confirm();
 
-      verify(() => useCases.confirmDraft('d-1')).called(1);
+      verify(() => repository.confirmDraft('d-1')).called(1);
     });
 
     test('a stale saldo is reported on the item and the draft stays open',
         () async {
-      when(() => useCases.confirmDraft('d-1'))
+      when(() => repository.confirmDraft('d-1'))
           .thenAnswer((_) async => Left(_unprocessable({
                 'items[1].nominal': ['Saldo nasabah tidak mencukupi']
               })));
@@ -624,9 +643,26 @@ void lifecycleTests() {
       expect(editor.state.phase, EditorPhase.idle);
     });
 
-    test('a draft that was already confirmed says so', () async {
-      when(() => useCases.confirmDraft('d-1')).thenAnswer((_) async =>
+    test('a draft that was already confirmed says so and locks the editor',
+        () async {
+      when(() => repository.confirmDraft('d-1')).thenAnswer((_) async =>
           Left(ConflictException(message: 'Draft sudah dikonfirmasi')));
+      when(() => repository.getDraft('d-1')).thenAnswer(
+          (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
+
+      await editor.confirm();
+
+      expect(editor.state.errorMessage, 'Draft sudah dikonfirmasi');
+      expect(editor.state.status, DraftStatus.dikonfirmasi);
+      expect(editor.state.phase, EditorPhase.idle);
+    });
+
+    test('if the draft cannot be fetched again, the conflict still shows',
+        () async {
+      when(() => repository.confirmDraft('d-1')).thenAnswer((_) async =>
+          Left(ConflictException(message: 'Draft sudah dikonfirmasi')));
+      when(() => repository.getDraft('d-1')).thenAnswer(
+          (_) async => Left(GeneralException(message: 'Tidak ada sinyal')));
 
       await editor.confirm();
 
@@ -636,7 +672,7 @@ void lifecycleTests() {
 
     test('a second tap while confirming is ignored', () async {
       final pending = Completer<Either<NetworkException, DraftPencairan>>();
-      when(() => useCases.confirmDraft('d-1'))
+      when(() => repository.confirmDraft('d-1'))
           .thenAnswer((_) => pending.future);
 
       final first = editor.confirm();
@@ -644,7 +680,7 @@ void lifecycleTests() {
       pending.complete(Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
       await first;
 
-      verify(() => useCases.confirmDraft('d-1')).called(1);
+      verify(() => repository.confirmDraft('d-1')).called(1);
     });
   });
 
@@ -661,12 +697,24 @@ void lifecycleTests() {
     });
 
     test('a failure leaves the draft open and says why', () async {
-      when(() => repository.cancelDraft('d-1')).thenAnswer((_) async =>
-          Left(ConflictException(message: 'Draft sudah dikonfirmasi')));
+      when(() => repository.cancelDraft('d-1')).thenAnswer(
+          (_) async => Left(GeneralException(message: 'Tidak ada sinyal')));
 
       await editor.cancel();
 
       expect(editor.state.status, DraftStatus.draft);
+      expect(editor.state.errorMessage, 'Tidak ada sinyal');
+    });
+
+    test('a draft someone else already confirmed shows as confirmed', () async {
+      when(() => repository.cancelDraft('d-1')).thenAnswer((_) async =>
+          Left(ConflictException(message: 'Draft sudah dikonfirmasi')));
+      when(() => repository.getDraft('d-1')).thenAnswer(
+          (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
+
+      await editor.cancel();
+
+      expect(editor.state.status, DraftStatus.dikonfirmasi);
       expect(editor.state.errorMessage, 'Draft sudah dikonfirmasi');
     });
   });
