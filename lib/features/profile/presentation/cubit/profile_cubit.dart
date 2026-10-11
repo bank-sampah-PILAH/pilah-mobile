@@ -22,7 +22,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ImagePicker _picker;
   final ImageCropper _cropper;
 
-  ProfileCubit(this._dataSource, this._picker, this._cropper, {bool? isWeb})
+  ProfileCubit(this._dataSource, this._picker, this._cropper,
+      {@ignoreParam bool? isWeb})
       : _isWeb = isWeb ?? kIsWeb,
         super(const ProfileState());
 
