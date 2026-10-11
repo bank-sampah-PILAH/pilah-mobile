@@ -148,6 +148,44 @@ void main() {
         isNotNull);
   });
 
+  group('a draft holds at most 1.000 nasabah', () {
+    List<Kandidat> banyak(int jumlah) => [
+          for (var i = 0; i < jumlah; i++)
+            Kandidat(
+                id: 'b-$i', kode: 'NAS-$i', nama: 'Nasabah $i', saldo: 10000),
+        ];
+
+    bool lanjutAktif(WidgetTester tester) =>
+        tester
+            .widget<CustomPrimaryButton>(find.byKey(const Key('lanjut')))
+            .onPressed !=
+        null;
+
+    testWidgets('picking more says so and keeps continue off', (tester) async {
+      answer(rows: banyak(1001));
+      await pump(tester);
+
+      await tester.tap(find.byKey(const Key('pilih-tampil')));
+      await tester.pump();
+
+      expect(find.text('1001 dipilih'), findsOneWidget);
+      expect(find.text('Maksimal 1.000 nasabah per draft'), findsOneWidget);
+      expect(lanjutAktif(tester), isFalse);
+    });
+
+    testWidgets('exactly the limit is fine', (tester) async {
+      answer(rows: banyak(1000));
+      await pump(tester);
+
+      await tester.tap(find.byKey(const Key('pilih-tampil')));
+      await tester.pump();
+
+      expect(find.text('1000 dipilih'), findsOneWidget);
+      expect(find.text('Maksimal 1.000 nasabah per draft'), findsNothing);
+      expect(lanjutAktif(tester), isTrue);
+    });
+  });
+
   testWidgets('continue hands the picked nasabah to the editor',
       (tester) async {
     await pump(tester);
