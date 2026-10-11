@@ -4,7 +4,10 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 enum DraftStatus {
   draft('Draft'),
   dikonfirmasi('Dikonfirmasi'),
-  dibatalkan('Dibatalkan');
+  dibatalkan('Dibatalkan'),
+
+  /// A status a newer backend sent that this app has no screen for.
+  tidakDikenal('Tidak dikenal');
 
   const DraftStatus(this.label);
 
@@ -13,8 +16,10 @@ enum DraftStatus {
   /// Only a draft can still be edited, confirmed or cancelled.
   bool get terkunci => this != draft;
 
-  static DraftStatus fromApi(String? value) => DraftStatus.values
-      .firstWhere((s) => s.name == value, orElse: () => DraftStatus.draft);
+  /// Anything unrecognised is locked: offering edits on it would only 409.
+  static DraftStatus fromApi(String? value) =>
+      DraftStatus.values.firstWhere((s) => s.name == value,
+          orElse: () => DraftStatus.tidakDikenal);
 }
 
 enum PotonganJenis {

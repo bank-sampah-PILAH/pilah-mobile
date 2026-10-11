@@ -78,7 +78,8 @@ class DraftPencairanMapper {
   static Map<String, dynamic> body(DraftInput input) {
     final nama = input.nama?.trim();
     return {
-      if (nama != null && nama.isNotEmpty) 'nama': nama,
+      // Blank is sent too: the server names the draft again instead of keeping the old name.
+      if (nama != null) 'nama': nama,
       'potongan_jenis': input.potonganDefault.jenis.name,
       'potongan_nilai': input.potonganDefault.nilaiJson,
       'items': [

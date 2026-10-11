@@ -16,7 +16,7 @@ class DraftStatusBadge extends StatelessWidget {
           const Color(0xFFDCFCE7),
           const Color(0xFF166534)
         ),
-      DraftStatus.dibatalkan => (
+      DraftStatus.dibatalkan || DraftStatus.tidakDikenal => (
           const Color(0xFFF3F4F6),
           const Color(0xFF4B5563)
         ),
