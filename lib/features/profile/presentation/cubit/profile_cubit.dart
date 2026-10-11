@@ -88,24 +88,18 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
-  /// Opens the gallery, then a square cropper, holding the result in state for
-  /// the next save. Nothing is uploaded here — a pick the user then abandons
-  /// should leave the stored logo untouched.
+  /// Opens the gallery and holds the pending logo for the next save. Nothing
+  /// is uploaded here — a pick the user then abandons leaves the stored logo
+  /// untouched.
   ///
-  /// Cropping is not optional polish. The logo is only ever drawn inside a
-  /// circle, so an uncropped landscape photo arrives already ruined: the avatar
-  /// takes the centre and throws the sides away, and the user finds out after
-  /// saving. Locking the frame to 1:1 makes what they choose what they get.
+  /// Mobile uses a square cropper and compresses the result to a 1024px JPEG.
+  /// Web deliberately skips cropping and retains the browser-selected bytes:
+  /// the cropper has no web implementation, and adding a separate browser
+  /// editor is outside this profile change. The preview uses the same centered
+  /// circular crop that will display the saved logo.
   ///
-  /// Backing out at either step returns null and is not an error. The state is
-  /// left exactly as it was, including any logo picked earlier — abandoning a
-  /// crop is not a request to undo the previous choice.
-  ///
-  /// Sizing and compression belong to the cropper, not the picker: the picker
-  /// runs first, and anything it shrinks is detail the crop no longer has to
-  /// work with. Doing it once, at the end, also avoids encoding the same JPEG
-  /// twice. The 1024px/quality-70 result lands far under the API's 5 MB cap,
-  /// which a modern phone camera would otherwise breach on its own.
+  /// Backing out of the native picker or cropper returns null and is not an
+  /// error. The state stays as it was, including any logo picked earlier.
   Future<void> pickLogo() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;

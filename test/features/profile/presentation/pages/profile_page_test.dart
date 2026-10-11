@@ -1,5 +1,5 @@
+import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -107,6 +107,17 @@ void main() {
     final waSection = tester.getTopLeft(find.text('TEMPLATE NOTIFIKASI WA'));
 
     expect(waSection.dx, greaterThan(bankSection.dx));
+  });
+
+  testWidgets('mobile stacks bank settings above the WhatsApp template',
+      (tester) async {
+    await openPage(tester, size: const Size(390, 844));
+
+    final bankSection = tester.getTopLeft(find.text('PROFIL BANK SAMPAH'));
+    final waSection = tester.getTopLeft(find.text('TEMPLATE NOTIFIKASI WA'));
+
+    expect(waSection.dx, bankSection.dx);
+    expect(waSection.dy, greaterThan(bankSection.dy));
   });
 
   testWidgets('a failed load can be retried', (tester) async {
@@ -257,17 +268,19 @@ void main() {
   testWidgets('previews a browser-selected logo from its bytes',
       (tester) async {
     await openPage(tester);
+    expect(cubit.state.status.toString(), 'ProfileStatus.loaded');
     cubit.emit(cubit.state.copyWith(
-      selectedLogoBytes: Uint8List.fromList([1, 2, 3]),
+      selectedLogoBytes: Uint8List.fromList(base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
       selectedLogoFilename: 'bank-logo.png',
     ));
-    await tester.pump();
+    expect(cubit.state.selectedLogoBytes, isNotNull);
+    await tester.pumpAndSettle();
 
+    expect(cubit.state.selectedLogoBytes, isNotNull);
     expect(
-      find.byWidgetPredicate(
-        (widget) => widget is Image && widget.image is MemoryImage,
-      ),
-      findsOneWidget,
+      tester.widget<ClipOval>(find.byType(ClipOval)).child,
+      isA<Image>(),
     );
   });
 
