@@ -101,7 +101,7 @@ jobs:
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
-            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart,**/di.config.dart
             -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart
             -Dsonar.scanner.skipJreProvisioning=true
 
@@ -116,6 +116,6 @@ jobs:
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
-            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart,**/di.config.dart
             -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart
             -Dsonar.scanner.skipJreProvisioning=true

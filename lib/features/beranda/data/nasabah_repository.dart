@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/media/media_url.dart';
+import 'nasabah_me_get.dart';
 
 String _noOrigin() => '';
 
@@ -171,35 +172,9 @@ class NasabahRepository {
   static const _base = '/api/v1/nasabah/me';
 
   Future<Map<String, dynamic>> _get(String path,
-      {String? membershipId, int? page}) async {
-    try {
-      final response = await network.get('$_base/$path', queryParams: {
-        if (membershipId != null) 'keanggotaan_id': membershipId,
-        if (page != null) 'page': page,
-      });
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (error) {
-      final status = error.response?.statusCode;
-      final data = error.response?.data;
-      final errors = data is Map ? data['errors'] : null;
-      final choices = errors is Map ? errors['pilihan'] : null;
-      if (status == 422 && choices is List && choices.isNotEmpty) {
-        throw NasabahApiException('Pilih bank sampah Anda.',
-            choices: choices
-                .map((v) => MembershipChoice(
-                    v['id'] as String, v['bank_sampah_nama'] as String))
-                .toList());
-      }
-      throw NasabahApiException(switch (status) {
-        401 => 'Sesi berakhir. Silakan masuk kembali.',
-        403 =>
-          'Akses belum tersedia. Pastikan akun, keanggotaan, dan bank sampah aktif.',
-        404 => 'Data tidak ditemukan. Muat ulang atau pilih keanggotaan lain.',
-        422 => 'Pilihan keanggotaan tidak valid. Silakan pilih kembali.',
-        _ => 'Data gagal dimuat. Periksa koneksi dan coba lagi.',
-      });
-    }
-  }
+          {String? membershipId, int? page}) =>
+      nasabahMeGet(network, '$_base/$path',
+          membershipId: membershipId, page: page);
 
   Future<NasabahHome> home({String? membershipId}) async =>
       NasabahHome.fromJson(await _get('beranda', membershipId: membershipId),
@@ -209,22 +184,6 @@ class NasabahRepository {
   Future<NasabahBank> bank(String membershipId) async => NasabahBank.fromJson(
       await _get('bank-sampah', membershipId: membershipId),
       origin: () => network.environment.baseUrl);
-  Future<NasabahHistory> history(String membershipId, {int page = 1}) async {
-    final json = await _get('riwayat', membershipId: membershipId, page: page);
-    return NasabahHistory(
-        (json['results'] as List)
-            .map((v) => NasabahActivity.fromJson(v as Map<String, dynamic>))
-            .toList(),
-        json['next'] != null);
-  }
-
-  Future<NasabahSetoranDetail> setoranDetail(
-    String membershipId,
-    String transactionId,
-  ) async =>
-      NasabahSetoranDetail.fromJson(
-        await _get('riwayat/$transactionId', membershipId: membershipId),
-      );
 
   Future<NasabahIdentity> profile() async =>
       NasabahIdentity.fromJson(await _get('profil'));

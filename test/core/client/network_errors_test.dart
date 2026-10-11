@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +72,25 @@ void main() {
                   as UnprocessableEntityException)
               .getErrorMessage(),
           'X');
+    });
+
+    test('a 400 with a byte-typed body still carries the backend message', () {
+      // ResponseType.bytes endpoints (PDF/XLSX export) deliver the error
+      // body as raw bytes, not a Map — the message must still surface.
+      final bytes = Uint8List.fromList(
+          utf8.encode('{"error":"Tidak ada data pada periode ini"}'));
+      final error = NetworkException.handleBadResponse(_response(400, bytes))
+          as BadRequestException;
+
+      expect(error.displayMessage, 'Tidak ada data pada periode ini');
+    });
+
+    test('an undecodable byte body falls back to the generic prefix', () {
+      final error = NetworkException.handleBadResponse(
+              _response(400, Uint8List.fromList([0xff, 0xfe])))
+          as BadRequestException;
+
+      expect(error.displayMessage, 'Invalid Request');
     });
   });
 
