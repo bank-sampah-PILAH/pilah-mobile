@@ -2,6 +2,7 @@
 import os
 import pathlib
 import subprocess
+import tomllib
 import unittest
 
 import yaml
@@ -14,6 +15,11 @@ def workflow(name):
 
 
 class WebPipelineTest(unittest.TestCase):
+    def test_staging_fly_dockerfile_resolves_from_config_directory(self):
+        config = ROOT / "deploy/web/fly.staging.toml"
+        dockerfile = tomllib.loads(config.read_text())["build"]["dockerfile"]
+        self.assertTrue((config.parent / dockerfile).is_file())
+
     def test_staging_is_automatic_only_after_merge_gate(self):
         ci = workflow("ci.yml")
         self.assertIn("staging", ci["on"]["push"]["branches"])
