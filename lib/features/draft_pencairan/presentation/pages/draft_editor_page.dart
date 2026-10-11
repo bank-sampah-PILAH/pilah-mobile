@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -148,12 +149,16 @@ class _DraftEditorViewState extends State<DraftEditorView> {
   void _onFinished(BuildContext context, DraftEditorState state) {
     final paid = state.status == DraftStatus.dikonfirmasi;
     if (paid) _refreshRiwayat();
-    _toast(
+    AppNotification.showSuccess(
       context,
-      'Berhasil',
-      paid
+      title: 'Berhasil',
+      message: paid
           ? 'Pembayaran dikonfirmasi. Saldo dan riwayat diperbarui.'
           : 'Draft dibatalkan.',
+      actionLabel: paid ? 'Lihat riwayat' : null,
+      onAction: paid
+          ? () => context.go('${AppLocations.history}?filter=pencairan')
+          : null,
     );
   }
 
