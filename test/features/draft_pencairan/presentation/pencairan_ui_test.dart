@@ -169,8 +169,9 @@ void main() {
 
     testWidgets('a field label is a step quieter: smaller, dark grey',
         (tester) async {
-      await pumpRouted(
-          tester, const Scaffold(body: SectionLabel.field('NOMINAL')));
+      // Built at run time on purpose: a const label never runs its constructor.
+      final label = 'NOMINAL'.toUpperCase();
+      await pumpRouted(tester, Scaffold(body: SectionLabel.field(label)));
 
       final style = tester.widget<Text>(find.text('NOMINAL')).style!;
       expect(style.fontSize, 11);

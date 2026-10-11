@@ -68,6 +68,13 @@ void main() {
     );
   }
 
+  test('the page keeps the key it is given', () {
+    // Built at run time on purpose: the router's const page never runs it.
+    final key = UniqueKey();
+
+    expect(DraftListPage(key: key).key, key);
+  });
+
   testWidgets('has the pencairan header with a back button and pill filters',
       (tester) async {
     await pump(tester, const []);
