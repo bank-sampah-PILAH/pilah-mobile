@@ -86,4 +86,18 @@ void main() {
 
     expect(find.text('Belum Ada Riwayat Harga'), findsOneWidget);
   });
+
+  testWidgets('a failed load says why and can be retried', (tester) async {
+    api.fail('GET', _path);
+    await pumpView(tester);
+
+    expect(find.text('Gagal Memuat Riwayat Harga'), findsOneWidget);
+    api.on('GET', _path, json: {
+      'results': [_versi('4000.00', '2026-10-01T02:30:00Z', 'berlaku')],
+    });
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rp 4.000 / kg'), findsOneWidget);
+  });
 }
