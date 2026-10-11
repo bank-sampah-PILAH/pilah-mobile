@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +83,31 @@ void main() {
   tearDown(() => cubit.close());
 
   group('pickLogo', () {
+    test('uses browser file bytes without launching the native cropper',
+        () async {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      when(() => picker.pickImage(source: any(named: 'source'))).thenAnswer(
+        (_) async => XFile.fromData(bytes,
+            name: 'bank-logo.png', mimeType: 'image/png'),
+      );
+      final webCubit = ProfileCubit(dataSource, picker, cropper, isWeb: true);
+      addTearDown(webCubit.close);
+
+      await webCubit.pickLogo();
+
+      expect(webCubit.state.selectedLogoBytes, bytes);
+      expect(webCubit.state.selectedLogoFilename, 'bank-logo.png');
+      verifyNever(() => cropper.cropImage(
+            sourcePath: any(named: 'sourcePath'),
+            maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
+            aspectRatio: any(named: 'aspectRatio'),
+            compressFormat: any(named: 'compressFormat'),
+            compressQuality: any(named: 'compressQuality'),
+            uiSettings: any(named: 'uiSettings'),
+          ));
+    });
+
     test('holds the cropped file, not the one straight out of the gallery',
         () async {
       stubPickAndCrop('/tmp/picked.heic', '/tmp/image_cropper_1.jpg');
