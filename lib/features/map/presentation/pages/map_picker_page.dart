@@ -66,9 +66,12 @@ class _MapPickerPageState extends State<MapPickerPage> {
     super.dispose();
   }
 
-  void _syncFieldsTo(LatLng point) {
-    // A focused field is being typed into; never clobber it from the camera.
-    if (_latitudeFocus.hasFocus || _longitudeFocus.hasFocus) return;
+  void _syncFieldsTo(LatLng point, {bool force = false}) {
+    // Passive syncs avoid clobbering focused input; real map gestures can force
+    // the fields back to the camera center.
+    if (!force && (_latitudeFocus.hasFocus || _longitudeFocus.hasFocus)) {
+      return;
+    }
     _latitudeField.text = point.latitude.toStringAsFixed(6);
     _longitudeField.text = point.longitude.toStringAsFixed(6);
   }
@@ -111,7 +114,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
       return;
     }
     if (mounted) {
-      _controller.move(LatLng(lokasi.latitude, lokasi.longitude), 17);
+      final point = LatLng(lokasi.latitude, lokasi.longitude);
+      _syncFieldsTo(point, force: true);
+      _controller.move(point, 17);
     }
   }
 
@@ -136,7 +141,22 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 options: MapOptions(
                   initialCenter: widget.initialCenter ?? _defaultCenter,
                   initialZoom: 16,
-                  onMapEvent: (event) => _syncFieldsTo(event.camera.center),
+                  onMapEvent: (event) {
+                    switch (event.source) {
+                      case MapEventSource.onDrag:
+                      case MapEventSource.onMultiFinger:
+                      case MapEventSource.flingAnimationController:
+                      case MapEventSource.doubleTapZoomAnimationController:
+                      case MapEventSource.scrollWheel:
+                      case MapEventSource.keyboard:
+                        // Only user-driven camera movement replaces typed
+                        // values. Passive events can fire as fields lose
+                        // focus while entering a coordinate pair.
+                        _syncFieldsTo(event.camera.center, force: true);
+                      default:
+                        break;
+                    }
+                  },
                 ),
                 children: [
                   widget.tileLayerBuilder(),

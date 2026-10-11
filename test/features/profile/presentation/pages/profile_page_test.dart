@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
@@ -85,6 +86,56 @@ void main() {
     expect(
         find.widgetWithText(TextFormField, '+6281234567890'), findsOneWidget);
     expect(find.text('Simpan Pengaturan'), findsOneWidget);
+  });
+
+  testWidgets('edits the saved bank location through the map picker',
+      (tester) async {
+    stubProfile(api,
+        bank: bankJson(latitude: -6.356123, longitude: 106.827456));
+    api.on(
+      'PUT',
+      '/api/v1/bank-sampah/me',
+      json: bankJson(latitude: -6.2, longitude: 106.8),
+    );
+    api.on('PUT', '/api/v1/pengaturan/wa-template', json: {});
+    await openPage(tester);
+
+    expect(find.text('-6.356123, 106.827456'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('pilih_lokasi_peta')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MapPickerPage), findsOneWidget);
+    expect(find.text('Pilih Lokasi di Peta'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('latitude_field')))
+          .controller!
+          .text,
+      '-6.356123',
+    );
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('longitude_field')))
+          .controller!
+          .text,
+      '106.827456',
+    );
+
+    await tester.enterText(find.byKey(const Key('latitude_field')), '-6.2');
+    await tester.enterText(find.byKey(const Key('longitude_field')), '106.8');
+    await tester.tap(find.byKey(const Key('simpan_lokasi')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('-6.200000, 106.800000 (belum disimpan)'), findsOneWidget);
+    await tester.tap(find.text('Simpan Pengaturan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('-6.200000, 106.800000'), findsOneWidget);
+    expect(
+      api.requests.where((request) =>
+          request.path == '/api/v1/bank-sampah/me' && request.method == 'PUT'),
+      hasLength(1),
+    );
   });
 
   testWidgets('a failed load can be retried', (tester) async {

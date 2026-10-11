@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mocktail/mocktail.dart';
@@ -102,6 +103,54 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(finder.single, (latitude: -6.362829, longitude: 106.828655));
+  });
+
+  testWidgets('keeps manual coordinates when map focus changes',
+      (tester) async {
+    await openOverHost(tester, center: const LatLng(-6.2, 106.8));
+
+    await tester.enterText(find.byKey(const Key('latitude_field')), '-6.22');
+    tester.binding.focusManager.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.tap(find.byType(FlutterMap));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('longitude_field')), '106.82');
+    tester.binding.focusManager.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.tap(find.byType(FlutterMap));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    final latitude = tester
+        .widget<TextField>(find.byKey(const Key('latitude_field')))
+        .controller!
+        .text;
+    final longitude = tester
+        .widget<TextField>(find.byKey(const Key('longitude_field')))
+        .controller!
+        .text;
+    expect(latitude, '-6.22');
+    expect(longitude, '106.82');
+  });
+
+  testWidgets('map gestures update the coordinate fields', (tester) async {
+    await openOverHost(tester, center: const LatLng(-6.2, 106.8));
+
+    await tester.drag(find.byType(FlutterMap), const Offset(80, 0));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    final latitude = double.parse(tester
+        .widget<TextField>(find.byKey(const Key('latitude_field')))
+        .controller!
+        .text);
+    final longitude = double.parse(tester
+        .widget<TextField>(find.byKey(const Key('longitude_field')))
+        .controller!
+        .text);
+    expect(latitude != -6.2 || longitude != 106.8, isTrue);
   });
 
   for (final (lat, lng, why) in const [
