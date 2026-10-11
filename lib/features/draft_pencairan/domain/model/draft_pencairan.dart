@@ -38,6 +38,12 @@ enum PotonganJenis {
   }
 }
 
+/// [persen] percent of [dasar], rounded down to whole rupiah. Percent in
+/// hundredths (2.5% -> 250) keeps the arithmetic in integers, exactly as the
+/// backend does, so potongan and jumlah never round differently.
+int _persenDari(int dasar, num persen) =>
+    (dasar * (persen * 100).round()) ~/ 10000;
+
 /// A potongan the pengurus chose: a percentage of the nominal, or fixed rupiah.
 class Potongan extends Equatable {
   final PotonganJenis jenis;
@@ -52,8 +58,7 @@ class Potongan extends Equatable {
   int hitung(int nominal) {
     switch (jenis) {
       case PotonganJenis.persen:
-        // Percent in hundredths (2.5% -> 250) keeps the arithmetic in integers.
-        return (nominal * (nilai * 100).round()) ~/ 10000;
+        return _persenDari(nominal, nilai);
       case PotonganJenis.rupiah:
         return nilai.floor();
     }
@@ -101,8 +106,7 @@ class JumlahUmum extends Equatable {
   int hitung(int saldo) {
     switch (jenis) {
       case JumlahJenis.persen:
-        // Hundredths of a percent keep the arithmetic in integers.
-        return (saldo * (nilai * 100).round()) ~/ 10000;
+        return _persenDari(saldo, nilai);
       case JumlahJenis.rupiah:
         final tetap = nilai.floor();
         return tetap < saldo ? tetap : saldo;
