@@ -64,8 +64,8 @@ class ExportMenuButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (busy)
-              SizedBox(
-                key: const Key('ekspor-spinner'),
+              const SizedBox(
+                key: Key('ekspor-spinner'),
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
