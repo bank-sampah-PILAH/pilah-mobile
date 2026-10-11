@@ -8,6 +8,9 @@ import '../../domain/model/draft_pencairan.dart';
 import '../../domain/use_cases/draft_pencairan_use_cases.dart';
 import 'draft_editor_state.dart';
 
+const _tidakMemenuhiSyarat =
+    'Nasabah ini sudah tidak memenuhi syarat. Hapus dari draft untuk melanjutkan.';
+
 /// Holds a draft pencairan while the pengurus shapes it: who is paid, how
 /// much, how, and what potongan comes off. Nothing reaches the server until
 /// it is saved, and the saldo never moves until the payment is confirmed.
@@ -76,10 +79,14 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   void setItemPotongan(String nasabahId, Potongan? potongan) =>
       _editItem(nasabahId, (item) => item.copyWith(potongan: () => potongan));
 
-  /// Back to the plain defaults: the whole saldo and the general potongan.
+  /// Back to the plain defaults: the whole saldo, cash and the general potongan.
   void resetItem(String nasabahId) => _editItem(
         nasabahId,
-        (item) => item.copyWith(nominal: item.saldo, potongan: () => null),
+        (item) => item.copyWith(
+          nominal: item.saldo,
+          metode: MetodePencairan.tunai,
+          potongan: () => null,
+        ),
       );
 
   void removeItem(String nasabahId) => _change(state.copyWith(
@@ -159,10 +166,11 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   DraftEditorState _rejected(NetworkException failure) {
     final errors = <String, String>{};
     failure.fieldErrors().forEach((key, message) {
-      final index = int.tryParse(
-          RegExp(r'^items\[(\d+)\]').firstMatch(key)?.group(1) ?? '');
+      final match = RegExp(r'^items\[(\d+)\]\.(\w+)').firstMatch(key);
+      final index = int.tryParse(match?.group(1) ?? '');
       if (index != null && index < state.items.length) {
-        errors[state.items[index].nasabahId] = message;
+        errors[state.items[index].nasabahId] =
+            match!.group(2) == 'nasabah_id' ? _tidakMemenuhiSyarat : message;
       }
     });
     return state.copyWith(

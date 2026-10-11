@@ -133,7 +133,9 @@ class DraftEditorState extends Equatable {
 
   /// True once the pengurus changed anything from the plain defaults.
   bool disesuaikan(EditorItem item) =>
-      item.nominal != item.saldo || item.potongan != null;
+      item.nominal != item.saldo ||
+      item.potongan != null ||
+      item.metode != MetodePencairan.tunai;
 
   /// What the server said about [item], else what is wrong with it locally.
   String? errorFor(EditorItem item) =>
