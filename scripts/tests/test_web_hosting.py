@@ -35,7 +35,7 @@ class WebHostingTest(unittest.TestCase):
                 base = "http://127.0.0.1:" + port
                 for _ in range(50):
                     try:
-                        urllib.request.urlopen(base + "/healthz", timeout=1).close()
+                        urllib.request.urlopen(base + "/health", timeout=1).close()
                         break
                     except (OSError, urllib.error.URLError):
                         time.sleep(.1)
@@ -61,7 +61,7 @@ class WebHostingTest(unittest.TestCase):
                 with urllib.request.urlopen(request) as response:
                     self.assertEqual(response.headers["Content-Encoding"], "gzip")
                     self.assertEqual(gzip.decompress(response.read()), b"x" * 4096)
-                with urllib.request.urlopen(base + "/healthz") as response:
+                with urllib.request.urlopen(base + "/health") as response:
                     self.assertEqual(response.read(), b"ok\n")
                 for path in ("/missing.js", "/dashboard", "/assets/missing.png"):
                     with self.subTest(path=path), self.assertRaises(urllib.error.HTTPError) as missing:

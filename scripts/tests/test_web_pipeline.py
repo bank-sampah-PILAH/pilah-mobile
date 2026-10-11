@@ -43,7 +43,7 @@ class WebPipelineTest(unittest.TestCase):
         self.assertIn("flutter build web --release", text)
         self.assertNotIn("--pwa-strategy", text)
         self.assertIn("status.url", text)
-        self.assertIn("/healthz", text)
+        self.assertIn("/health", text)
 
     def test_invalid_hosting_configuration_fails_before_cloud_auth(self):
         steps = workflow("deploy-web.yml")["jobs"]["deploy"]["steps"]

@@ -14,7 +14,7 @@ Mobile request paths already include `/api/v1`; the build script also strips a
 legacy `/api/v1/` suffix from these values before writing the public dotenv.
 
 The production `*.run.app` hostname is provider-generated. Do not guess it.
-The deploy job checks HTTPS `/healthz` and `/`, then prints the verified URL
+The deploy job checks HTTPS `/health` and `/`, then prints the verified URL
 in its Actions summary. This proves static availability, **not** OAuth or
 an authenticated dashboard session.
 
@@ -41,7 +41,7 @@ These are maintainer provisioning steps, not actions performed by this PR.
    and allocate its provider hostname/networking as required by Fly. Put an
    app-scoped deploy token in staging secret `FLY_API_TOKEN` (not a backend
    app token). `deploy/web/fly.staging.toml` forces HTTPS, uses port 8080 and
-   checks `/healthz`. No Fly secrets are needed by this static runtime.
+   checks `/health`. No Fly secrets are needed by this static runtime.
 4. In production, enable Cloud Run, Artifact Registry and IAM/WIF APIs, create a
    Docker Artifact Registry repository, and set these GitHub environment vars
    (same naming as backend where shared):
@@ -104,7 +104,7 @@ changes require separate authorization; this delivery does not perform them.
   no-cache` with ETags (revalidate, not immutable). Flutter's standard names
   are **not content fingerprints**. No blanket JS immutable cache rule is safe.
 - Hash routing (`/#/...`) needs no server rewrite: `/missing.js` and a literal
-  `/dashboard` return 404, not HTML with status 200. `/healthz` returns `ok`.
+  `/dashboard` return 404, not HTML with status 200. `/health` returns `ok`.
 - `web/flutter_bootstrap.js` uses the supported bootstrap template without
   service-worker settings. No deprecated `--pwa-strategy` option is used; no
   offline worker is registered. These new provider apps have no prior worker.
@@ -147,7 +147,7 @@ After an approved live deploy:
 
 1. Open the job's reported HTTPS URL, then reload a `/#/...` route. Check
    `curl -I URL/main.dart.js` and `URL/flutter_bootstrap.js` for `no-cache`,
-   `curl URL/healthz` for `ok`, and `URL/missing.js` for 404.
+   `curl URL/health` for `ok`, and `URL/missing.js` for 404.
 2. Ensure the selected API points at the corresponding backend (including the
    trailing slash), production has no demo entry, and no worker is registered.
 3. Complete exact backend/Google origins above, then verify real Google login

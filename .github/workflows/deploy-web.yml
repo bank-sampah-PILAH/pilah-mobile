@@ -112,7 +112,7 @@ jobs:
         run: |
           flyctl deploy --remote-only --config deploy/web/fly.staging.toml
           url=https://pilah-web-staging.fly.dev
-          curl --fail --retry 8 --retry-all-errors --retry-delay 5 "$url/healthz"
+          curl --fail --retry 8 --retry-all-errors --retry-delay 5 "$url/health"
           curl --fail --retry 3 --retry-all-errors "$url/" > /dev/null
           echo "Dashboard staging: $url" >> "$GITHUB_STEP_SUMMARY"
 
@@ -142,11 +142,11 @@ jobs:
             --project "$PROJECT_ID" --region "$REGION" \
             --image "$IMAGE_URI" --platform managed --allow-unauthenticated \
             --service-account "$RUNTIME_SERVICE_ACCOUNT" --port 8080 \
-            --startup-probe='httpGet.path=/healthz,httpGet.port=8080' --quiet
+            --startup-probe='httpGet.path=/health,httpGet.port=8080' --quiet
           url="$(gcloud run services describe "$SERVICE_NAME" \
             --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
           [[ "$url" =~ ^https://[a-z0-9.-]+\.run\.app$ ]]
-          curl --fail --retry 8 --retry-all-errors --retry-delay 5 "$url/healthz"
+          curl --fail --retry 8 --retry-all-errors --retry-delay 5 "$url/health"
           curl --fail --retry 3 --retry-all-errors "$url/" > /dev/null
           echo "Dashboard production: $url" >> "$GITHUB_STEP_SUMMARY"
           echo "Configure backend PILAH_WEB_ORIGIN and Google Authorized JavaScript origins with this exact origin." >> "$GITHUB_STEP_SUMMARY"
