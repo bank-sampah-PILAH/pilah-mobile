@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
@@ -16,10 +19,18 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_e
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 
 import '../../../support/pump_app.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}
+
+class _MockRiwayat extends MockCubit<RiwayatAktivitasState>
+    implements RiwayatAktivitasCubit {}
+
+class _MockRecent extends MockCubit<RecentActivityState>
+    implements RecentActivityCubit {}
 
 const _ahmad =
     Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 465600);
@@ -875,6 +886,42 @@ void main() {
 
       expect(find.text('Dikonfirmasi'), findsWidgets);
       expect(find.textContaining('Pembayaran dikonfirmasi'), findsNothing);
+    });
+
+    testWidgets('a paid draft reloads the riwayat and the dashboard activity',
+        (tester) async {
+      final riwayat = _MockRiwayat();
+      final recent = _MockRecent();
+      when(() => riwayat.load(silent: true)).thenAnswer((_) async {});
+      when(() => recent.load(silent: true)).thenAnswer((_) async {});
+      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
+      when(() => useCases.getDraft('d-1'))
+          .thenAnswer((_) async => Right(_saved()));
+      cubit = DraftEditorCubit(useCases);
+      _current = cubit;
+      await cubit.load('d-1');
+      await pumpRouted(
+        tester,
+        const _Host(),
+        size: const Size(420, 2600),
+        wrap: (app) => MultiBlocProvider(
+          providers: [
+            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
+            BlocProvider<RecentActivityCubit>.value(value: recent),
+          ],
+          child: app,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, sudah dibayar'));
+      await tester.pumpAndSettle();
+
+      verify(() => riwayat.load(silent: true)).called(1);
+      verify(() => recent.load(silent: true)).called(1);
     });
 
     testWidgets('confirming asks first, then records the payment',
