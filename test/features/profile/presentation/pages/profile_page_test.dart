@@ -87,6 +87,13 @@ void main() {
     expect(find.text('Simpan Pengaturan'), findsOneWidget);
   });
 
+  testWidgets('shows the signed-in account email in the profile',
+      (tester) async {
+    await openPage(tester);
+
+    expect(find.text('siti@example.test'), findsOneWidget);
+  });
+
   testWidgets('a failed load can be retried', (tester) async {
     api.on('GET', '/api/v1/bank-sampah/me',
         status: 500, json: <String, dynamic>{});
