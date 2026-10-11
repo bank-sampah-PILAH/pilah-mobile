@@ -185,4 +185,39 @@ void main() {
 
     expect(cancelled.status, DraftStatus.dibatalkan);
   });
+
+  test('updateDraft sends a cleared name so the server names it again',
+      () async {
+    api.on('PATCH', '$_path/d-1', json: draftJson());
+    const potongan = Potongan(PotonganJenis.persen, 10);
+    const item = DraftItemInput(
+      nasabahId: 'n-1',
+      nominal: 80000,
+      metode: MetodePencairan.tunai,
+    );
+
+    await buildDraftPencairanUseCases(api).updateDraft(
+      'd-1',
+      const DraftInput(nama: '  ', potonganDefault: potongan, items: [item]),
+    );
+    expect(api.last.json, containsPair('nama', ''));
+
+    await buildDraftPencairanUseCases(api).updateDraft(
+      'd-1',
+      const DraftInput(potonganDefault: potongan, items: [item]),
+    );
+    expect(api.last.json, isNot(contains('nama')),
+        reason: 'no name given keeps the stored one');
+  });
+
+  test('a status the app does not know is read as locked, not editable',
+      () async {
+    api.on('GET', '$_path/d-1', json: draftJson(status: 'diarsipkan'));
+
+    final draft =
+        (await buildDraftPencairanUseCases(api).getDraft('d-1')).right;
+
+    expect(draft.status, DraftStatus.tidakDikenal);
+    expect(draft.status.terkunci, isTrue);
+  });
 }

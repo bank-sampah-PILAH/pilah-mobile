@@ -193,6 +193,16 @@ void main() {
     expect(find.byKey(const Key('batalkan-d-3')), findsNothing);
   });
 
+  testWidgets('a draft in a status the app does not know cannot be cancelled',
+      (tester) async {
+    await pump(
+        tester, [_draft('d-1', 'Cair Oktober', DraftStatus.tidakDikenal)]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tidak dikenal'), findsOneWidget);
+    expect(find.byKey(const Key('batalkan-d-1')), findsNothing);
+  });
+
   testWidgets('the trash icon asks first, then cancels and reloads',
       (tester) async {
     await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
