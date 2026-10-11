@@ -334,10 +334,6 @@ extension GetItInjectableX on _i174.GetIt {
         _i216.GetRiwayatSetoranDetailUseCase(gh<_i908.RiwayatRepository>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
-    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
-          gh<_i521.AuthenticationUseCases>(),
-          gh<_i934.LoginWithGoogleUseCase>(),
-        ));
     gh.lazySingleton<_i742.StatementUseCases>(
         () => _i408.StatementInteractor(gh<_i664.StatementRepository>()));
     gh.factory<_i873.StatementExportCubit>(
@@ -348,6 +344,11 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i268.GetBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i868.RejectBankSampahUseCase>(
         () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
+    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
+          gh<_i521.AuthenticationUseCases>(),
+          gh<_i934.LoginWithGoogleUseCase>(),
+          isWebOverride: gh<bool>(),
+        ));
     gh.lazySingleton<_i839.AddTransaksiUseCase>(
         () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i67.ExportTransaksiUseCase>(
