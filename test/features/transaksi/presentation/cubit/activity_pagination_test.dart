@@ -58,6 +58,22 @@ void main() {
     verify(() => feed.execute(any())).called(2);
   });
 
+  test('keeps distinct rows with empty ids across pages', () async {
+    final first = item('');
+    final second = item('');
+    final third = item('');
+    when(() => feed.execute(any())).thenAnswer((invocation) async {
+      final filter = invocation.positionalArguments.first as TransaksiFilter;
+      return Right(filter.page == 1
+          ? AktivitasPage([first, item('known')], true)
+          : AktivitasPage([second, item('known'), third], false));
+    });
+    await cubit.load();
+    await cubit.loadMore();
+    expect(cubit.state.items, [first, isA<ActivitasEntity>(), second, third]);
+    expect(cubit.state.items.where((row) => row.transaksi?.id == 'known'), hasLength(1));
+  });
+
   test('custom dates and type are sent to the same endpoint', () async {
     cubit.applyCustomRange(DateTime(2026, 9, 1), DateTime(2026, 9, 30));
     await Future<void>.delayed(Duration.zero);

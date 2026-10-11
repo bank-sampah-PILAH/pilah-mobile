@@ -37,6 +37,31 @@ void main() {
     expect(cubit.state, const RiwayatAktivitasState());
   });
 
+  test('filtered feeds cannot invoke the legacy XLS export', () async {
+    final feed = Feed();
+    final export = Export();
+    final cubit = RiwayatAktivitasCubit(feed, export);
+    addTearDown(cubit.close);
+    when(() => feed.execute(any())).thenAnswer((_) async => const Right(AktivitasPage([], false)));
+    when(() => export.execute(any())).thenAnswer((_) async => Right(TransaksiExport(bytes: Uint8List(0), filename: 'all.xlsx')));
+    for (final type in [AktivitasTipeFilter.setoran, AktivitasTipeFilter.pencairan]) {
+      cubit.setTipeFilter(type);
+      await Future<void>.delayed(Duration.zero);
+      final result = await cubit.exportTransaksi();
+      expect(result.export, isNull);
+      expect(result.error, contains('filter'));
+    }
+    cubit.setTipeFilter(AktivitasTipeFilter.semua);
+    cubit.search('Budi');
+    await Future<void>.delayed(Duration.zero);
+    expect((await cubit.exportTransaksi()).export, isNull);
+    verifyNever(() => export.execute(any()));
+    cubit.search('   ');
+    await Future<void>.delayed(Duration.zero);
+    expect((await cubit.exportTransaksi()).export, isNotNull);
+    verify(() => export.execute(any())).called(1);
+  });
+
   group('server feed lifecycle', () {
     late Feed feed;
     late Export export;

@@ -11,6 +11,7 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/time_filter_chips.dart';
 
 import '../../../../support/platform_fakes.dart';
@@ -154,6 +155,24 @@ void main() {
 
       expect(find.text(start), findsOneWidget);
     });
+  });
+
+  testWidgets('export control reacts to type and search filters', (tester) async {
+    await open(tester);
+    InkWell exportControl() => tester.widget<InkWell>(find.ancestor(of: find.text('XLS Setoran'), matching: find.byType(InkWell)).first);
+    expect(exportControl().onTap, isNotNull);
+    cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNull);
+    cubit.setTipeFilter(AktivitasTipeFilter.semua);
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNotNull);
+    cubit.search('Budi');
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNull);
+    cubit.search('');
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNotNull);
   });
 
   group('export', () {
