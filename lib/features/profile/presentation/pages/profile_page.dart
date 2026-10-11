@@ -1,9 +1,12 @@
 import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -63,6 +66,9 @@ class _ProfileViewState extends State<_ProfileView>
   bool _bankSeeded = false;
   // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
+  // A point picked on the map since the last save. Held here rather than in the
+  // cubit: like a form field it belongs to this screen until the user saves.
+  Lokasi? _pendingLokasi;
 
   @override
   void initState() {
@@ -196,6 +202,7 @@ class _ProfileViewState extends State<_ProfileView>
       nama: _namaBankController.text.trim(),
       alamat: _alamatBankController.text.trim(),
       noHpPic: _hpBankController.text.trim(),
+      lokasi: _pendingLokasi,
     );
     if (!mounted) return;
     if (bankErr != null) {
@@ -203,6 +210,8 @@ class _ProfileViewState extends State<_ProfileView>
       _snack(bankErr.displayMessage, error: true);
       return;
     }
+    // The save is in; the coordinate row falls back to the stored entity.
+    _pendingLokasi = null;
 
     // Writes whatever the field shows, which is the point of a WYSIWYG editor —
     // an emptied field is a deliberate "drop my custom template", and the
@@ -568,6 +577,8 @@ class _ProfileViewState extends State<_ProfileView>
                           ? 'Nomor HP wajib diisi'
                           : null,
                     ),
+                    const SizedBox(height: 16),
+                    _buildLokasiRow(state),
                   ],
                 ),
               ),
@@ -578,6 +589,84 @@ class _ProfileViewState extends State<_ProfileView>
         ),
       ),
     );
+  }
+
+  /// The bank's map location (PIL-326): what is saved on the record, plus the
+  /// control that opens the picker.
+  ///
+  /// A picked-but-unsaved point wins over the stored one — same rule as
+  /// [_buildLogoPicker], so "what will this be" answers immediately. Saving
+  /// applies it (see [_onSaveSettings]) and the row falls back to the entity.
+  Widget _buildLokasiRow(ProfileState state) {
+    final pending = _pendingLokasi;
+    final stored = state.bankSampah?.lokasi;
+    final lokasi = pending ?? stored;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'LOKASI DI PETA',
+          style: AppTextStyle.extraSmall.copyWith(
+            color: Colors.grey[500],
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const Key('pilih_lokasi_peta'),
+          onPressed: _openMapPicker,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            side: BorderSide(color: Colors.grey[300]!),
+            backgroundColor: Colors.grey[50],
+          ),
+          icon: Icon(
+            Icons.location_on_outlined,
+            size: 20,
+            color: lokasi != null ? AppColors.greenDark : Colors.grey[500],
+          ),
+          label: Text(
+            lokasi != null
+                ? '${lokasi.latitude.toStringAsFixed(6)}, '
+                    '${lokasi.longitude.toStringAsFixed(6)}'
+                    '${pending != null ? ' (belum disimpan)' : ''}'
+                : 'Belum diatur — pilih di peta',
+            style: AppTextStyle.small.copyWith(
+              color: lokasi != null ? Colors.black87 : Colors.grey[500],
+            ),
+          ),
+        ),
+        if (pending != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Tekan Simpan Pengaturan untuk menerapkan lokasi.',
+              style: AppTextStyle.extraSmall.copyWith(color: Colors.grey[500]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Opens the picker seeded from the point that will currently be saved, so
+  /// opening it to tweak a pending pick does not start from the default center.
+  Future<void> _openMapPicker() async {
+    final bank = context.read<ProfileCubit>().state.bankSampah?.lokasi;
+    final initial = _pendingLokasi ?? bank;
+    final picked = await Navigator.of(context).push<Lokasi>(MaterialPageRoute(
+      builder: (_) => MapPickerPage(
+        initialCenter: initial == null
+            ? null
+            : LatLng(initial.latitude, initial.longitude),
+      ),
+    ));
+    if (picked != null && mounted) {
+      setState(() => _pendingLokasi = picked);
+    }
   }
 
   /// The bank sampah logo, and the control for replacing it.

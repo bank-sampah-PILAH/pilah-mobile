@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'dart:io';
@@ -42,6 +43,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   bool _isLoading = false;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
+  ({double latitude, double longitude})? _lokasi;
 
   @override
   void dispose() {
@@ -69,6 +71,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       alamat: _alamatController.text.trim(),
       noHpPic: _phoneController.text.trim(),
       fotoKegiatanPath: image.path,
+      lokasi: _lokasi,
     );
 
     // Sends the banked profile first when the user came through step one, and
@@ -114,6 +117,20 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
         _selectedImage = File(image.path);
       });
       field.didChange(_selectedImage);
+    }
+  }
+
+  /// Opens the map picker and keeps the result until submit. A pop without a
+  /// result (back) leaves the current selection untouched.
+  Future<void> _pickLokasi() async {
+    final picked =
+        await Navigator.of(context).push<({double latitude, double longitude})>(
+      MaterialPageRoute(
+        builder: (pickerContext) => const MapPickerPage(),
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _lokasi = picked);
     }
   }
 
@@ -602,6 +619,64 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                 }
                                 return null;
                               },
+                            ),
+                          ),
+
+                          // Field 4: Lokasi Bank Sampah (opsional, PIL-326)
+                          //
+                          // Not a validator-backed FormField: leaving it empty is
+                          // legal (the backend stores both or neither), so there is
+                          // no error state to inline — the row either shows the
+                          // picked point or the invitation to pick one.
+                          _buildFormField(
+                            label: 'LOKASI BANK SAMPAH (OPSIONAL)',
+                            description:
+                                'Pilih titik lokasi bank sampah di peta',
+                            child: InkWell(
+                              key: const Key('pick_lokasi'),
+                              onTap: _pickLokasi,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 14),
+                                decoration: BoxDecoration(
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      color: _lokasi != null
+                                          ? AppColors.greenDark
+                                          : Colors.grey.shade500,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _lokasi != null
+                                            ? '${_lokasi!.latitude.toStringAsFixed(6)}, '
+                                                '${_lokasi!.longitude.toStringAsFixed(6)}'
+                                            : 'Belum dipilih — ketuk untuk memilih di peta',
+                                        style: TextStyle(
+                                          color: _lokasi != null
+                                              ? Colors.black87
+                                              : Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_lokasi != null)
+                                      IconButton(
+                                        icon: const Icon(Icons.close, size: 18),
+                                        tooltip: 'Hapus lokasi',
+                                        onPressed: () =>
+                                            setState(() => _lokasi = null),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
 

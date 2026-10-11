@@ -84,6 +84,7 @@ import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
     as _i928;
 import '../features/jadwal/domain/repositories/jadwal_repository.dart' as _i73;
 import '../features/jadwal/presentation/cubit/jadwal_cubit.dart' as _i942;
+import '../features/map/presentation/widgets/location_service.dart' as _i558;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     as _i307;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart'
@@ -189,6 +190,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i183.ImagePicker>(() => imagePickerModule.imagePicker);
     gh.lazySingleton<_i183.ImageCropper>(() => imagePickerModule.imageCropper);
     gh.lazySingleton<_i901.InviteTokenStore>(() => _i901.InviteTokenStore());
+    gh.lazySingleton<_i558.LocationService>(() => _i558.LocationService());
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
       registerFor: {_dev},
@@ -303,16 +305,17 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
-    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
-          gh<_i521.AuthenticationUseCases>(),
-          gh<_i934.LoginWithGoogleUseCase>(),
-        ));
     gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
         () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i268.GetBankSampahUseCase>(
         () => _i268.GetBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i868.RejectBankSampahUseCase>(
         () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
+    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
+          gh<_i521.AuthenticationUseCases>(),
+          gh<_i934.LoginWithGoogleUseCase>(),
+          isWebOverride: gh<bool>(),
+        ));
     gh.lazySingleton<_i839.AddTransaksiUseCase>(
         () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i67.ExportTransaksiUseCase>(

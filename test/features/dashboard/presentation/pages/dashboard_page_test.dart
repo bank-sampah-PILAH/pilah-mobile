@@ -14,6 +14,8 @@ import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_pag
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_statistics_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/dashboard_support.dart';
@@ -25,13 +27,21 @@ class _ActivityCubit extends MockCubit<RecentActivityState>
 
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
+class _FakeProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {}
+
 void main() {
   late StubApi api;
   late DashboardCubit dashboard;
   late _ActivityCubit activity;
   late MockAuthBloc auth;
+  // The dead stand-in the prompt checks need: bank-less (null) forever, so
+  // no prompt opens and no extra fetch happens.
+  final profile = _FakeProfileCubit();
 
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  setUpAll(() {
+    registerFallbackValue(_FakeAuthEvent());
+    when(() => profile.ensureBank()).thenAnswer((_) async => null);
+  });
 
   void arrange({
     Map<String, dynamic> stats = const {},
@@ -57,6 +67,9 @@ void main() {
           BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: activity),
           BlocProvider<AuthenticationBloc>.value(value: auth),
+          // The dashboard reads the bank location for the backfill prompt;
+          // these page tests never open it, so a dead cubit is enough.
+          BlocProvider<ProfileCubit>.value(value: profile),
         ],
         child: Scaffold(body: SingleChildScrollView(child: child)),
       ),
@@ -140,6 +153,9 @@ void main() {
           BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: activity),
           BlocProvider<AuthenticationBloc>.value(value: auth),
+          // Same dead stand-in as `pump` above: the backfill prompt never
+          // opens in this test.
+          BlocProvider<ProfileCubit>.value(value: profile),
         ],
         child: const DashboardPage(),
       ),
