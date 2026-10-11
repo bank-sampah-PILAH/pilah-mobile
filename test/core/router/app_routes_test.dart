@@ -19,7 +19,9 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
@@ -125,6 +127,42 @@ void main() {
       router.go('/riwayat-perubahan-pencairan', extra: 'p1');
       await tester.pumpAndSettle();
       expect(find.byType(RevisiPencairanPage), findsOneWidget);
+    });
+
+    testWidgets('can open the price history of a jenis sampah', (tester) async {
+      final router = await boot(tester);
+
+      router.go(
+        '/riwayat-harga',
+        extra: HargaEntity(
+          id: 'j-1',
+          kodeSampah: 'PLS-001',
+          name: 'Botol PET',
+          price: 3500,
+          priceFormatted: 'Rp 3500',
+          category: 'plastik',
+          subtitle: '',
+          badgeText: 'Anorganik',
+          icon: Icons.recycling,
+          iconColor: Colors.green,
+          isActive: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RiwayatHargaPage), findsOneWidget);
+      expect(find.text('Botol PET'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the price history without a jenis (a refreshed web tab) '
+        'falls back to the harga list', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/riwayat-harga');
+
+      expect(find.byType(RiwayatHargaPage), findsNothing);
+      expect(find.byType(HargaPage), findsOneWidget);
     });
 
     testWidgets('opens the jadwal page, honouring a date in the link',

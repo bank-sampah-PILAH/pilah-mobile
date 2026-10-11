@@ -11,7 +11,11 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
+import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
+import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository_impl.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
@@ -100,6 +104,9 @@ class AppShell {
         () => RevisiPencairanCubit(useCases));
     di.registerFactory<RiwayatPencairanCubit>(
         () => RiwayatPencairanCubit(useCases));
+    di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
+        GetRiwayatHargaUseCase(
+            HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
     _approval = registerApprovedMembership();
   }
 
@@ -112,6 +119,7 @@ class AppShell {
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<RiwayatHargaCubit>();
     final approval = _approval;
     if (approval != null) await unregisterApprovedMembership(approval);
     // Not awaited: with listeners attached a broadcast controller's close()
