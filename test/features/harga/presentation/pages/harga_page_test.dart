@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 import '../../../../support/harga_support.dart';
@@ -48,6 +50,25 @@ void main() {
   });
 
   tearDown(() => cubit.close());
+
+  testWidgets("each card opens that jenis's price history, not the edit sheet",
+      (tester) async {
+    final router = await pumpRouted(
+      tester,
+      BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
+      extraRoutes: [RiwayatHargaPage.route],
+      size: const Size(800, 1600),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Riwayat harga').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${RiwayatHargaPage.route}'), findsOneWidget);
+    final jenis = router.routerDelegate.currentConfiguration.extra;
+    expect((jenis as HargaEntity).name, 'Botol PET');
+    expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
+  });
 
   testWidgets('lists active jenis sampah with their price', (tester) async {
     await openPage(tester);
