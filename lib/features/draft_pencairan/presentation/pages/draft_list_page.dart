@@ -381,8 +381,7 @@ Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
         ],
       ),
     ),
-    ya: 'Ya, batalkan',
-    tidak: 'Kembali',
+    jawaban: const KonfirmasiJawaban('Ya, batalkan', 'Kembali'),
     nada: KonfirmasiNada.bahaya,
   );
   if (!ok) return;

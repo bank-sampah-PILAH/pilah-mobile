@@ -93,8 +93,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
         jumlah: state.items.length,
         total: state.totalDibayar,
       ),
-      ya: 'Ya, sudah dibayar',
-      tidak: 'Belum',
+      jawaban: const KonfirmasiJawaban('Ya, sudah dibayar', 'Belum'),
     );
     if (ok && mounted) await cubit.confirm();
   }
@@ -173,8 +172,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       icon: Icons.warning_amber_rounded,
       judul: 'Buang perubahan?',
       pesan: 'Perubahan yang belum disimpan akan hilang.',
-      ya: 'Buang',
-      tidak: 'Tetap di sini',
+      jawaban: const KonfirmasiJawaban('Buang', 'Tetap di sini'),
       nada: KonfirmasiNada.peringatan,
     );
     if (buang && context.mounted) context.pop();

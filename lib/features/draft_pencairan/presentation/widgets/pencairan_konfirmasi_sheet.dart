@@ -15,6 +15,14 @@ enum KonfirmasiNada {
   final Color latar;
 }
 
+/// The two answers of a question, as the buttons read.
+class KonfirmasiJawaban {
+  final String ya;
+  final String tidak;
+
+  const KonfirmasiJawaban(this.ya, [this.tidak = 'Batal']);
+}
+
 /// Asks a yes-or-no question in a white, rounded bottom sheet, like the other
 /// sheets of pencairan: an icon in a tinted circle, a title, a line of
 /// explanation, optional [isi] of its own, and the two answers side by side.
@@ -25,8 +33,7 @@ Future<bool> showPencairanKonfirmasi(
   required String judul,
   String? pesan,
   Widget? isi,
-  required String ya,
-  String tidak = 'Batal',
+  required KonfirmasiJawaban jawaban,
   KonfirmasiNada nada = KonfirmasiNada.normal,
 }) async {
   final hasil = await showModalBottomSheet<bool>(
@@ -80,7 +87,7 @@ Future<bool> showPencairanKonfirmasi(
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(tidak),
+                      child: Text(jawaban.tidak),
                     ),
                   ),
                 ),
@@ -98,7 +105,7 @@ Future<bool> showPencairanKonfirmasi(
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(ya),
+                      child: Text(jawaban.ya),
                     ),
                   ),
                 ),
