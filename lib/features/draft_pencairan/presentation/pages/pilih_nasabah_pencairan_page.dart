@@ -360,6 +360,10 @@ class _Footer extends StatelessWidget {
                         style: AppTextStyle.headline3),
                     Text('Total saldo ${rupiah(state.saldoTerpilih)}',
                         style: AppTextStyle.small),
+                    if (state.kelebihan)
+                      Text('Maksimal 1.000 nasabah per draft',
+                          style: AppTextStyle.small
+                              .copyWith(color: Colors.red[700])),
                   ],
                 ),
               ),
@@ -368,7 +372,7 @@ class _Footer extends StatelessWidget {
                 child: CustomPrimaryButton(
                   key: const Key('lanjut'),
                   title: 'Lanjut',
-                  onPressed: terpilih.isEmpty
+                  onPressed: terpilih.isEmpty || state.kelebihan
                       ? null
                       : () => context.pushReplacement(
                             DraftListPage.routeEditor,

@@ -102,7 +102,12 @@ class PilihNasabahState extends Equatable {
         : PilihanTampil.sebagian;
   }
 
+  /// What the server accepts in one draft.
+  static const int maksimalDipilih = 1000;
+
   int get jumlahTerpilih => selectedIds.length;
+
+  bool get kelebihan => jumlahTerpilih > maksimalDipilih;
 
   int get saldoTerpilih =>
       selectedIds.fold(0, (sum, id) => sum + (known[id]?.saldo ?? 0));
