@@ -54,6 +54,8 @@ import '../features/bank_sampah_approval/presentation/cubit/nasabah_approval_cub
     as _i359;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
+import '../features/dashboard/data/datasources/dashboard_reporting_data_source.dart'
+    as _i3;
 import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
     as _i650;
 import '../features/dashboard/domain/repositories/dashboard_repository.dart'
@@ -245,6 +247,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i495.SuperadminRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i881.TransaksiRemoteDataSource>(
         () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i3.DashboardReportingDataSource>(
+        () => _i3.DashboardReportingDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i377.DashboardRemoteDataSource>(
         () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i915.JadwalRemoteDataSource>(
