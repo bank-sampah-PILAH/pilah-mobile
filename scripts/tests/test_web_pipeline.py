@@ -17,6 +17,10 @@ class WebPipelineTest(unittest.TestCase):
     def test_staging_is_automatic_only_after_merge_gate(self):
         ci = workflow("ci.yml")
         self.assertIn("staging", ci["on"]["push"]["branches"])
+        self.assertEqual(
+            ci["concurrency"]["cancel-in-progress"],
+            "${{ github.ref != 'refs/heads/staging' }}",
+        )
         job = ci["jobs"]["deploy_web_staging"]
         self.assertEqual(job["needs"], "verify")
         self.assertEqual(job["if"], "github.event_name == 'push' && github.ref == 'refs/heads/staging'")

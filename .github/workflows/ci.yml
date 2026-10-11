@@ -15,7 +15,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/staging' }}
 
 env:
   # Matches the repository's `.fvmrc` (3.41.3 stable). Pin exactly so a new
