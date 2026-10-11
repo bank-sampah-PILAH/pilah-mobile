@@ -67,7 +67,26 @@ class _RiwayatHargaViewState extends State<RiwayatHargaView> {
             case RiwayatHargaStatus.loading:
               return const Center(child: CircularProgressIndicator());
             case RiwayatHargaStatus.failure:
-              return const SizedBox.shrink();
+              return Column(
+                children: [
+                  Expanded(
+                    child: EmptyView(
+                      title: 'Gagal Memuat Riwayat Harga',
+                      subtitle: state.errorMessage,
+                      icon: Icons.error_outline,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: TextButton(
+                      onPressed: () => context
+                          .read<RiwayatHargaCubit>()
+                          .load(widget.jenisId),
+                      child: const Text('Coba lagi'),
+                    ),
+                  ),
+                ],
+              );
             case RiwayatHargaStatus.loaded:
               if (state.riwayat.isEmpty) {
                 return const EmptyView(
