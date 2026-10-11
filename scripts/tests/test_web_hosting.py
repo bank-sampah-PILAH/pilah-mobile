@@ -1,4 +1,5 @@
 """Exercise the shipped static image, not a Python substitute server."""
+import gzip
 import pathlib
 import shutil
 import subprocess
@@ -24,7 +25,7 @@ class WebHostingTest(unittest.TestCase):
                           "assets/.env", "assets/logo.png", "vendor/passkeys-2.4.0/bundle.js"):
                 path = web / asset
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text("fixture: " + asset)
+                path.write_text("x" * 4096 if asset == "main.dart.js" else "fixture: " + asset)
             subprocess.run(["docker", "build", "-q", "-t", name, "-f",
                             "deploy/web/Dockerfile", str(context)], check=True)
             try:
@@ -43,11 +44,23 @@ class WebHostingTest(unittest.TestCase):
                     with self.subTest(path=path), urllib.request.urlopen(base + path) as response:
                         self.assertEqual(response.status, 200)
                         self.assertEqual(response.headers["Cache-Control"], "no-cache")
+                        self.assertEqual(
+                            response.headers["Content-Security-Policy"], "frame-ancestors 'none';"
+                        )
+                        self.assertEqual(response.headers["Referrer-Policy"], "strict-origin-when-cross-origin")
+                        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+                        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
                         etag = response.headers["ETag"]
                     with self.assertRaises(urllib.error.HTTPError) as cached:
                         urllib.request.urlopen(urllib.request.Request(base + path, headers={"If-None-Match": etag}))
                     self.assertEqual(cached.exception.code, 304)
                     cached.exception.close()
+                request = urllib.request.Request(
+                    base + "/main.dart.js", headers={"Accept-Encoding": "gzip"}
+                )
+                with urllib.request.urlopen(request) as response:
+                    self.assertEqual(response.headers["Content-Encoding"], "gzip")
+                    self.assertEqual(gzip.decompress(response.read()), b"x" * 4096)
                 with urllib.request.urlopen(base + "/healthz") as response:
                     self.assertEqual(response.read(), b"ok\n")
                 for path in ("/missing.js", "/dashboard", "/assets/missing.png"):
