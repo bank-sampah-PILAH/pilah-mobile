@@ -84,6 +84,21 @@ void main() {
           [false, false, false]);
     });
 
+    test('a changed method counts as an adjustment, and reset takes it back',
+        () {
+      final editor = _newEditor()
+        ..setItemMetode('n-2', MetodePencairan.transfer);
+
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, true, false]);
+
+      editor.resetItem('n-2');
+
+      expect(editor.state.items[1].metode, MetodePencairan.tunai);
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, false, false]);
+    });
+
     test('every method can be switched to transfer or cash at once', () {
       final editor = _newEditor()
         ..setItemMetode('n-1', MetodePencairan.transfer)
@@ -291,6 +306,23 @@ void persistenceTests() {
 
       expect(editor.state.itemErrors, isEmpty);
       expect(editor.state.dirty, isTrue);
+    });
+
+    test('an item the server no longer accepts says what to do about it',
+        () async {
+      when(() => useCases.createDraft(any()))
+          .thenAnswer((_) async => Left(_unprocessable({
+                'items[1].nasabah_id': [
+                  'Nasabah tidak ditemukan atau tidak aktif'
+                ]
+              })));
+
+      await editor.save();
+
+      expect(editor.state.itemErrors, {
+        'n-2': 'Nasabah ini sudah tidak memenuhi syarat. '
+            'Hapus dari draft untuk melanjutkan.'
+      });
     });
 
     test('a server rejection of one item is shown on that item', () async {

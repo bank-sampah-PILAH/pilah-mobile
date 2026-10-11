@@ -484,6 +484,21 @@ void main() {
           everyElement(MetodePencairan.tunai));
     });
 
+    testWidgets('a changed method is marked until it is set back to cash',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.tap(find.byKey(const Key('metode-n-2-transfer')));
+      await tester.pump();
+      expect(find.text('Disesuaikan'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('metode-n-2-tunai')));
+      await tester.pump();
+
+      expect(cubit.state.items[1].metode, MetodePencairan.tunai);
+      expect(find.text('Disesuaikan'), findsNothing);
+    });
+
     testWidgets('a nominal can be changed, and "Penuh" restores the saldo',
         (tester) async {
       await pumpNew(tester);
