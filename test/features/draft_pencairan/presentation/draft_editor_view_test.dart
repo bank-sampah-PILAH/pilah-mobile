@@ -1021,7 +1021,7 @@ void main() {
     });
 
     testWidgets('an export that fails says so in a toast', (tester) async {
-      when(() => useCases.exportDraft('d-1', ExportBerkas.xlsx))
+      when(() => repository.exportDraft('d-1', ExportBerkas.xlsx))
           .thenAnswer((_) async => Left(ConnectionTimeOutException()));
       await pumpSaved(tester);
 
@@ -1120,8 +1120,9 @@ void main() {
 
     testWidgets('a new draft can be exported as it stands, without saving',
         (tester) async {
-      when(() => useCases.exportPratinjau(any(), ExportBerkas.pdf)).thenAnswer(
-          (_) => Completer<Either<NetworkException, DraftExport>>().future);
+      when(() => repository.exportPratinjau(any(), ExportBerkas.pdf))
+          .thenAnswer(
+              (_) => Completer<Either<NetworkException, DraftExport>>().future);
       await pumpNew(tester);
 
       await tester.tap(find.byKey(const Key('menu-ekspor')));
@@ -1129,21 +1130,21 @@ void main() {
       await tester.tap(find.byKey(const Key('ekspor-pdf')));
       await tester.pump();
 
-      final input =
-          verify(() => useCases.exportPratinjau(captureAny(), ExportBerkas.pdf))
-              .captured
-              .single as DraftInput;
+      final input = verify(
+              () => repository.exportPratinjau(captureAny(), ExportBerkas.pdf))
+          .captured
+          .single as DraftInput;
       expect(input.nama, startsWith('Pencairan '),
           reason: 'named from the start, so the file has a title');
       expect(input.items, hasLength(3));
-      verifyNever(() => useCases.createDraft(any()));
-      verifyNever(() => useCases.exportDraft(any(), any()));
+      verifyNever(() => repository.createDraft(any()));
+      verifyNever(() => repository.exportDraft(any(), any()));
     });
 
     testWidgets('export asks the server for the chosen format', (tester) async {
       // Never answers: the download itself is covered at the cubit level, and
       // an answer would bring the save-and-share toasts into a layout test.
-      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
+      when(() => repository.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftExport>>().future);
       await pumpSaved(tester);
 
@@ -1152,7 +1153,7 @@ void main() {
       await tester.tap(find.byKey(const Key('ekspor-pdf')));
       await tester.pump();
 
-      verify(() => useCases.exportDraft('d-1', ExportBerkas.pdf)).called(1);
+      verify(() => repository.exportDraft('d-1', ExportBerkas.pdf)).called(1);
       expect(cubit.state.phase, EditorPhase.exporting);
     });
 
@@ -1162,7 +1163,7 @@ void main() {
           (_, bytes) => const Center(child: Text('halaman pdf'));
       addTearDown(() => DraftPdfPreviewPage.viewBuilder = null);
       // Answers at once, as a fast server does: nothing may get in the way.
-      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+      when(() => repository.exportDraft('d-1', ExportBerkas.pdf))
           .thenAnswer((_) async => Right(DraftExport(
                 bytes: Uint8List.fromList([1, 2, 3]),
                 filename: 'draft.pdf',
@@ -1185,7 +1186,7 @@ void main() {
       DraftPdfPreviewPage.viewBuilder =
           (_, bytes) => const Center(child: Text('halaman pdf'));
       addTearDown(() => DraftPdfPreviewPage.viewBuilder = null);
-      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+      when(() => repository.exportDraft('d-1', ExportBerkas.pdf))
           .thenAnswer((_) async => Right(DraftExport(
                 bytes: Uint8List.fromList([1, 2, 3]),
                 filename: 'draft.pdf',
@@ -1208,7 +1209,7 @@ void main() {
 
     testWidgets('while the file is made the Ekspor button shows a spinner',
         (tester) async {
-      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
+      when(() => repository.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftExport>>().future);
       await pumpSaved(tester);
 
@@ -1231,7 +1232,7 @@ void main() {
     testWidgets('Excel is still saved straight away, with no preview',
         (tester) async {
       final paths = installFakePathProvider(downloads: 'Download');
-      when(() => useCases.exportDraft('d-1', ExportBerkas.xlsx))
+      when(() => repository.exportDraft('d-1', ExportBerkas.xlsx))
           .thenAnswer((_) async => Right(DraftExport(
                 bytes: Uint8List.fromList([1, 2, 3]),
                 filename: 'draft.xlsx',
@@ -1257,8 +1258,9 @@ void main() {
 
     testWidgets('unsaved edits are exported as they stand, and not saved',
         (tester) async {
-      when(() => useCases.exportPratinjau(any(), ExportBerkas.pdf)).thenAnswer(
-          (_) => Completer<Either<NetworkException, DraftExport>>().future);
+      when(() => repository.exportPratinjau(any(), ExportBerkas.pdf))
+          .thenAnswer(
+              (_) => Completer<Either<NetworkException, DraftExport>>().future);
       await pumpSaved(tester);
       cubit.setNama('Belum disimpan');
       await tester.pump();
@@ -1269,13 +1271,13 @@ void main() {
       await tester.tap(find.byKey(const Key('ekspor-pdf')));
       await tester.pump();
 
-      final input =
-          verify(() => useCases.exportPratinjau(captureAny(), ExportBerkas.pdf))
-              .captured
-              .single as DraftInput;
+      final input = verify(
+              () => repository.exportPratinjau(captureAny(), ExportBerkas.pdf))
+          .captured
+          .single as DraftInput;
       expect(input.nama, 'Belum disimpan');
-      verifyNever(() => useCases.updateDraft(any(), any()));
-      verifyNever(() => useCases.exportDraft(any(), any()));
+      verifyNever(() => repository.updateDraft(any(), any()));
+      verifyNever(() => repository.exportDraft(any(), any()));
       expect(cubit.state.dirty, isTrue, reason: 'still unsaved');
     });
   });
@@ -1478,9 +1480,9 @@ void main() {
 
     Future<void> bukaTersimpan(
         WidgetTester tester, DraftPencairan draft) async {
-      when(() => useCases.getDraft('d-1'))
+      when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(draft));
-      cubit = DraftEditorCubit(useCases);
+      cubit = DraftEditorCubit(repository);
       _current = cubit;
       await cubit.load('d-1');
       await _pump(tester);
@@ -1542,7 +1544,7 @@ void main() {
 
     testWidgets('a jumlah applied now is what the next save carries',
         (tester) async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_saved()));
       await pumpNew(tester);
 
@@ -1551,7 +1553,7 @@ void main() {
       await tester.tap(find.byKey(const Key('simpan')));
       await tester.pumpAndSettle();
 
-      final input = verify(() => useCases.createDraft(captureAny()))
+      final input = verify(() => repository.createDraft(captureAny()))
           .captured
           .single as DraftInput;
       expect(input.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
@@ -2322,6 +2324,39 @@ void main() {
       expect(cubit.state.items, hasLength(40));
       expect(find.text('NASABAH (40)'), findsOneWidget);
     });
+  });
+
+  testWidgets('a new draft that was never saved asks before it is thrown away',
+      (tester) async {
+    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    _current = cubit;
+    await _pump(tester, pushed: true);
+
+    await tester.tap(find.byKey(const Key('kembali')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buang perubahan?'), findsOneWidget);
+    expect(find.byType(DraftEditorView), findsOneWidget);
+    await tester.tap(find.text('Buang'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DraftEditorView), findsNothing);
+  });
+
+  testWidgets('once a new draft is saved, leaving asks nothing',
+      (tester) async {
+    when(() => repository.createDraft(any()))
+        .thenAnswer((_) async => Right(_saved()));
+    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    _current = cubit;
+    await _pump(tester, pushed: true);
+    await cubit.save();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('kembali')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buang perubahan?'), findsNothing);
+    expect(find.byType(DraftEditorView), findsNothing);
   });
 
   testWidgets('leaving with unsaved edits asks before throwing them away',
