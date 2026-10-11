@@ -39,15 +39,18 @@ import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/lapor
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 import '../../support/app_shell_support.dart';
+import '../../support/draft_pencairan_support.dart';
 import '../../support/stub_api.dart';
 
 class _MockAppeal extends Mock implements AppealMembershipUseCase {}
 
 void main() {
   late AppShell shell;
+  late StubApi api;
 
   setUp(() async {
-    shell = AppShell(StubApi());
+    api = StubApi();
+    shell = AppShell(api);
     await shell.registerDi();
   });
 
@@ -150,6 +153,20 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(DraftEditorPage), findsOneWidget);
       expect(find.text('Ahmad'), findsOneWidget);
+    });
+
+    testWidgets('can continue a saved draft from its id', (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      router.go(
+        '/draft-pencairan/editor',
+        extra: const DraftEditorArgs.lanjutkan('d-1'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Cair Oktober'), findsOneWidget);
     });
 
     testWidgets('opening the draft editor without a draft goes to the list',

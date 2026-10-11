@@ -743,6 +743,46 @@ void main() {
       expect(find.text('Draft dibatalkan.'), findsNothing);
     });
 
+    testWidgets('cancelling from here announces it', (tester) async {
+      when(() => useCases.cancelDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dibatalkan)));
+      await pumpSaved(tester);
+
+      await cubit.cancel();
+      await pumpToast(tester);
+
+      expect(find.text('Draft dibatalkan.'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 10));
+    });
+
+    testWidgets('a save that fails says so in a toast', (tester) async {
+      when(() => useCases.updateDraft(any(), any()))
+          .thenAnswer((_) async => Left(ConnectionTimeOutException()));
+      await pumpSaved(tester);
+      cubit.setNama('Revisi');
+      await tester.pump();
+
+      await cubit.save();
+      await pumpToast(tester);
+
+      expect(find.text('Gagal'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 10));
+    });
+
+    testWidgets('choosing Transfer on a card changes its metode',
+        (tester) async {
+      await pumpNew(tester);
+
+      await tester.ensureVisible(find.byKey(const Key('metode-n-2-transfer')));
+      await tester.tap(find.byKey(const Key('metode-n-2-transfer')));
+      await tester.pump();
+
+      expect(
+        cubit.state.items.firstWhere((i) => i.nasabahId == 'n-2').metode,
+        MetodePencairan.transfer,
+      );
+    });
+
     testWidgets('the editor has no menu: cancelling lives on the list',
         (tester) async {
       await pumpSaved(tester);

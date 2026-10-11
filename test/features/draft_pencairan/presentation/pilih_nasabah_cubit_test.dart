@@ -89,6 +89,21 @@ void main() {
     expect(cubit.state.kandidat, [_budi], reason: 'the visible list is kept');
   });
 
+  test('select all that cannot reach the server says why and keeps the picks',
+      () async {
+    cubit.toggle('n-1');
+    when(() => useCases.getKandidat(
+          search: '',
+          urutan: KandidatUrutan.namaAZ,
+          saldoMin: 0,
+        )).thenAnswer((_) async => Left(ConnectionTimeOutException()));
+
+    await cubit.pilihSemua();
+
+    expect(cubit.state.errorMessage, isNotNull);
+    expect(cubit.state.selectedIds, {'n-1'});
+  });
+
   test('clear drops every pick', () {
     cubit.toggle('n-1');
     cubit.toggle('n-2');
