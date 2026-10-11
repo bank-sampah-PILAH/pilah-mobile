@@ -104,15 +104,76 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     if (_nama.text != state.nama) _nama.text = state.nama;
   }
 
+  // A new error to show.
+  static bool _newError(DraftEditorState a, DraftEditorState b) =>
+      b.errorMessage != null && a.errorMessage != b.errorMessage;
+
+  // Only a cancellation made here: merely opening a draft that is already paid
+  // or cancelled changes the status too, silently.
+  static bool _cancelledHere(DraftEditorState a, DraftEditorState b) =>
+      a.status != b.status &&
+      b.status.terkunci &&
+      a.phase == EditorPhase.cancelling;
+
+  static bool _savedCleanly(DraftEditorState a, DraftEditorState b) =>
+      a.phase == EditorPhase.saving &&
+      b.phase == EditorPhase.idle &&
+      !b.dirty &&
+      b.errorMessage == null &&
+      b.itemErrors.isEmpty &&
+      a.status == b.status;
+
+  static void _toast(BuildContext context, String title, String message) =>
+      AppNotification.showSuccess(context, title: title, message: message);
+
+  Future<void> _onPopBlocked(BuildContext context, bool didPop) async {
+    if (didPop) return;
+    final buang = await _confirmDialog(
+      title: 'Buang perubahan?',
+      message: 'Perubahan yang belum disimpan akan hilang.',
+      yes: 'Buang',
+      no: 'Tetap di sini',
+    );
+    if (buang && context.mounted) context.pop();
+  }
+
+  Widget _scaffold(BuildContext context, DraftEditorState state) {
+    final cubit = context.read<DraftEditorCubit>();
+    final loading = state.phase == EditorPhase.loading;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            PencairanHeader(
+              title: state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
+            ),
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _Form(state: state, nama: _nama),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: loading
+          ? null
+          : EditorSummaryPanel(
+              state: state,
+              aksi: state.status.terkunci
+                  ? null
+                  : _BottomBar(state: state, onSave: cubit.save),
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<DraftEditorCubit>();
     return MultiBlocListener(
       listeners: [
         BlocListener<DraftEditorCubit, DraftEditorState>(listener: _onState),
         BlocListener<DraftEditorCubit, DraftEditorState>(
-          listenWhen: (a, b) =>
-              b.errorMessage != null && a.errorMessage != b.errorMessage,
+          listenWhen: _newError,
           listener: (context, state) => AppNotification.showError(
             context,
             title: 'Gagal',
@@ -120,74 +181,21 @@ class _DraftEditorViewState extends State<DraftEditorView> {
           ),
         ),
         BlocListener<DraftEditorCubit, DraftEditorState>(
-          // Only a payment or cancellation made here: merely opening a draft that
-          // is already paid or cancelled changes the status too, silently.
-          listenWhen: (a, b) =>
-              a.status != b.status &&
-              b.status.terkunci &&
-              a.phase == EditorPhase.cancelling,
-          listener: (context, state) {
-            AppNotification.showSuccess(
-              context,
-              title: 'Berhasil',
-              message: 'Draft dibatalkan.',
-            );
-          },
+          listenWhen: _cancelledHere,
+          listener: (context, _) =>
+              _toast(context, 'Berhasil', 'Draft dibatalkan.'),
         ),
         BlocListener<DraftEditorCubit, DraftEditorState>(
-          listenWhen: (a, b) =>
-              a.phase == EditorPhase.saving &&
-              b.phase == EditorPhase.idle &&
-              !b.dirty &&
-              b.errorMessage == null &&
-              b.itemErrors.isEmpty &&
-              a.status == b.status,
-          listener: (context, state) => AppNotification.showSuccess(
-            context,
-            title: 'Berhasil',
-            message: 'Draft disimpan.',
-          ),
+          listenWhen: _savedCleanly,
+          listener: (context, _) =>
+              _toast(context, 'Berhasil', 'Draft disimpan.'),
         ),
       ],
       child: BlocBuilder<DraftEditorCubit, DraftEditorState>(
         builder: (context, state) => PopScope(
           canPop: !state.dirty,
-          onPopInvokedWithResult: (didPop, _) async {
-            if (didPop) return;
-            final buang = await _confirmDialog(
-              title: 'Buang perubahan?',
-              message: 'Perubahan yang belum disimpan akan hilang.',
-              yes: 'Buang',
-              no: 'Tetap di sini',
-            );
-            if (buang && context.mounted) context.pop();
-          },
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  PencairanHeader(
-                    title:
-                        state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
-                  ),
-                  Expanded(
-                    child: state.phase == EditorPhase.loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _Form(state: state, nama: _nama),
-                  ),
-                ],
-              ),
-            ),
-            bottomNavigationBar: state.phase == EditorPhase.loading
-                ? null
-                : EditorSummaryPanel(
-                    state: state,
-                    aksi: state.status.terkunci
-                        ? null
-                        : _BottomBar(state: state, onSave: cubit.save),
-                  ),
-          ),
+          onPopInvokedWithResult: (didPop, _) => _onPopBlocked(context, didPop),
+          child: _scaffold(context, state),
         ),
       ),
     );
