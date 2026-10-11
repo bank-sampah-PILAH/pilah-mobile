@@ -36,11 +36,19 @@ class StatementRemoteDataSourceImpl implements StatementRemoteDataSources {
 
   /// Filename from `Content-Disposition: attachment; filename="x.pdf"`, with
   /// a fixed default — the backend always sends the header, but a proxy
-  /// stripping it must not defeat the save.
+  /// stripping it must not defeat the save. The value becomes a path
+  /// component (temp preview file, Downloads save), so it is reduced to a
+  /// bare basename and forced onto the PDF extension: a header like
+  /// `filename="../x.pdf"` must not escape the target directory.
   String attachmentName(Response response) {
     final header = response.headers.value('content-disposition');
     final match = header == null ? null : filenameRegExp.firstMatch(header);
-    return match?.group(1) ?? defaultStatementFilename;
+    final raw = match?.group(1) ?? defaultStatementFilename;
+    // Headers may carry either separator flavor; strip both so `..\x.pdf`
+    // cannot traverse on Windows either.
+    final base =
+        raw.split(RegExp(r'[/\\]')).where((part) => part.isNotEmpty).last;
+    return base.endsWith('.pdf') ? base : '$base.pdf';
   }
 }
 

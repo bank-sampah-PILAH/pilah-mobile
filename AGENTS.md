@@ -16,8 +16,9 @@
 
 - This project uses Flutter 3.41.3 and Dart 3.11.1.
 - Add local environment values from `.env.example` before running the app.
-  `GOOGLE_SERVER_CLIENT_ID` must be a Web OAuth client ID; pass it as web's
-  `clientId` and native's `serverClientId`.
+  `GOOGLE_SERVER_CLIENT_ID` must be a Web OAuth client ID with authorized
+  JavaScript origins for local and deployed hosts; pass it as web's `clientId`
+  and native's `serverClientId`.
 - Android builds also require ignored `android/app/google-services.json`.
   CI materializes it from the `GOOGLE_SERVICES_JSON` secret; use an authorized
   local Firebase config, never log or commit it, and ask a maintainer to

@@ -1,10 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
-import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_me_get.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
-import 'package:pilah_mobile/features/statement/data/remote/statement_remote_data_sources.dart';
 
 abstract class RiwayatRemoteDataSource {
   /// One page of the member's setoran history; `hasNext` = more pages.
@@ -15,9 +12,6 @@ abstract class RiwayatRemoteDataSource {
     String membershipId,
     String transactionId,
   );
-
-  /// The activity-statement PDF (PIL-315), fetched byte-and-header only.
-  Future<RiwayatPdf> exportPdf(String membershipId);
 }
 
 /// Speaks the nasabah `me` riwayat endpoints through the authenticated
@@ -29,12 +23,17 @@ class RiwayatRemoteDataSourceImpl implements RiwayatRemoteDataSource {
 
   RiwayatRemoteDataSourceImpl(this.network);
 
-  NasabahRepository get _nasabah => NasabahRepository(network);
+  static const _base = '/api/v1/nasabah/me';
 
   @override
   Future<RiwayatHistory> history(String membershipId, {int page = 1}) async {
-    final result = await _nasabah.history(membershipId, page: page);
-    return RiwayatHistory(result.activities, result.hasNext);
+    final json = await _get('riwayat', membershipId: membershipId, page: page);
+    return RiwayatHistory(
+      (json['results'] as List)
+          .map((v) => NasabahActivity.fromJson(v as Map<String, dynamic>))
+          .toList(),
+      json['next'] != null,
+    );
   }
 
   @override
@@ -42,15 +41,17 @@ class RiwayatRemoteDataSourceImpl implements RiwayatRemoteDataSource {
     String membershipId,
     String transactionId,
   ) async =>
-      _nasabah.setoranDetail(membershipId, transactionId);
+      RiwayatSetoranDetail.fromJson(
+        await _get('riwayat/$transactionId', membershipId: membershipId),
+      );
 
-  @override
-  Future<RiwayatPdf> exportPdf(String membershipId) async {
-    final result =
-        await StatementRemoteDataSourceImpl(network).exportPdf(membershipId);
-    return RiwayatPdf(
-      bytes: Uint8List.fromList(result.bytes),
-      filename: result.filename,
-    );
-  }
+  /// Shared GET + error mapping — the same nasabah-me surface as
+  /// NasabahRepository, so both route through the one implementation.
+  Future<Map<String, dynamic>> _get(
+    String path, {
+    String? membershipId,
+    int? page,
+  }) =>
+      nasabahMeGet(network, '$_base/$path',
+          membershipId: membershipId, page: page);
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
@@ -17,7 +16,6 @@ import 'package:pilah_mobile/features/statement/domain/model/statement_export.da
 import 'package:pilah_mobile/features/statement/domain/statement_interactor.dart';
 import 'package:pilah_mobile/features/statement/domain/use_cases/statement_use_cases.dart';
 import 'package:pilah_mobile/features/statement/presentation/blocs/statement_export_cubit.dart';
-import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_riwayat_repository.dart';
 
 import '../../support/stub_api.dart';
@@ -70,7 +68,8 @@ void main() {
         .getOrElse(() => throw StateError('detail failed'));
     expect(loaded.amount, '25000.00');
     expect(api.last.query, {'keanggotaan_id': 'member-1'});
-    final pdf = (await ExportRiwayatPdfUseCase(repo).execute('member-1'))
+    final statement = StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
+    final pdf = (await statement.exportPdf('member-1'))
         .getOrElse(() => throw StateError('PDF failed'));
     expect(pdf.bytes, [37, 80, 68, 70]);
     expect(pdf.filename, 'statement.pdf');
@@ -90,7 +89,8 @@ void main() {
     expect(api.last.query['keanggotaan_id'], '');
     expect((await GetRiwayatSetoranDetailUseCase(repo).execute()).isRight(),
         isTrue);
-    final pdf = (await ExportRiwayatPdfUseCase(repo).execute())
+    final statement = StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
+    final pdf = (await statement.exportPdf(''))
         .getOrElse(() => throw StateError('PDF failed'));
     expect(pdf.filename, 'Riwayat_Aktivitas.pdf');
     api.fail('GET', path);
@@ -98,7 +98,7 @@ void main() {
     api.fail('GET', '$path/export-pdf');
     expect((await repo.history('member-1')).isLeft(), isTrue);
     expect((await repo.setoranDetail('member-1', 'tx-1')).isLeft(), isTrue);
-    expect((await repo.exportPdf('member-1')).isLeft(), isTrue);
+    expect((await statement.exportPdf('member-1')).isLeft(), isTrue);
   });
 
   test('statement pipeline emits loading, loaded and failure for the real API',
@@ -156,29 +156,12 @@ void main() {
     expect(cubit.state.status, StatementExportStatus.loading);
   });
 
-  test('preview adapter preserves PDF bytes and maps both error kinds',
-      () async {
-    final source = _Nasabah();
-    final repo = PreviewRiwayatRepository(source);
-    when(() => source.exportPdf('m')).thenAnswer((_) async =>
-        const NasabahExport(bytes: [1, 2], filename: 'preview.pdf'));
-    final result = (await repo.exportPdf('m'))
-        .getOrElse(() => throw StateError('PDF failed'));
-    expect(result.bytes, Uint8List.fromList([1, 2]));
-    expect(result.filename, 'preview.pdf');
-    when(() => source.history('m', page: 1))
-        .thenThrow(NasabahApiException('Pilih bank'));
-    expect(
-        (await repo.history('m'))
-            .swap()
-            .getOrElse(() => throw StateError('expected failure'))
-            .message,
-        'Pilih bank');
-    when(() => source.setoranDetail('m', 'tx'))
-        .thenThrow(StateError('offline'));
+  test('offline history adapter returns empty history and a typed detail error', () async {
+    final repo = PreviewRiwayatRepository(_Nasabah());
+    final history = (await repo.history('m')).getOrElse(() => throw StateError('history failed'));
+    expect(history.activities, isEmpty);
+    expect(history.hasNext, isFalse);
     expect((await repo.setoranDetail('m', 'tx')).isLeft(), isTrue);
-    final offline = PreviewNasabahRepository();
-    expect(() => offline.exportPdf('m'), throwsUnsupportedError);
   });
 
   test('history state copies retain omitted fields and explicitly clear errors',

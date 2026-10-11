@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 
 export 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart'
@@ -11,11 +9,3 @@ export 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart'
 typedef RiwayatHistory = NasabahHistory;
 typedef RiwayatSetoranDetail = NasabahSetoranDetail;
 typedef RiwayatActivity = NasabahActivity;
-
-/// A fetched statement PDF (PIL-315): raw bytes plus the filename the
-/// server picked in Content-Disposition.
-class RiwayatPdf {
-  const RiwayatPdf({required this.bytes, required this.filename});
-  final Uint8List bytes;
-  final String filename;
-}

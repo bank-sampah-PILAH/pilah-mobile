@@ -1,11 +1,14 @@
+import 'package:dartz/dartz.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:flutter/material.dart';
-import 'package:pilah_mobile/preview/preview_riwayat_repository.dart';
-import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
+import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
+import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/preview/preview_authentication.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -20,12 +23,16 @@ void main() {
   if (!di.isRegistered<NasabahRepository>()) {
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
   }
-  if (!di.isRegistered<RiwayatHistoryCubit>()) {
-    di.registerFactory<RiwayatHistoryCubit>(() {
-      final repository = PreviewRiwayatRepository(di<NasabahRepository>());
-      return RiwayatHistoryCubit(GetRiwayatHistoryUseCase(repository),
-          GetRiwayatSetoranDetailUseCase(repository));
-    });
+  // The history screen's setoran tab resolves the cubit from GetIt; preview
+  // runs offline without configureDependencies, so wire offline stubs.
+  if (!di.isRegistered<RiwayatRepository>()) {
+    di.registerFactory<RiwayatRepository>(() => _PreviewRiwayatRepository());
+    di.registerFactory<RiwayatHistoryCubit>(
+      () => RiwayatHistoryCubit(
+        GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
+        GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
+      ),
+    );
   }
   final router = GoRouter(initialLocation: AppLocations.dashboard, routes: [
     GoRoute(
@@ -54,4 +61,22 @@ void main() {
       ),
     ),
   );
+}
+
+/// Offline riwayat stub: empty history, no detail, no PDF — matching the
+/// design-preview contract of [PreviewNasabahRepository].
+class _PreviewRiwayatRepository implements RiwayatRepository {
+  @override
+  Future<Either<NetworkException, RiwayatHistory>> history(
+    String membershipId, {
+    int page = 1,
+  }) async =>
+      const Right<NetworkException, RiwayatHistory>(RiwayatHistory([], false));
+
+  @override
+  Future<Either<NetworkException, RiwayatSetoranDetail>> setoranDetail(
+    String membershipId,
+    String transactionId,
+  ) async =>
+      Left(NetworkException(message: 'Pratinjau tidak memiliki data detail.'));
 }

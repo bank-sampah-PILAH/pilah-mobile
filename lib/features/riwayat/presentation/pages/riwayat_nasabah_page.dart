@@ -33,6 +33,8 @@ class RiwayatNasabahPage extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
           child: RefreshIndicator(
+            // Refresh means re-ask page 1: reset:false would request the
+            // page after the last one and append its rows below.
             onRefresh: () => context
                 .read<RiwayatHistoryCubit>()
                 .loadHistoryCurrent(reset: true),

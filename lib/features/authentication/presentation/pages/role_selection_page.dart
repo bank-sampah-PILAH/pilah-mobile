@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -109,6 +110,12 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
       listener: _listen,
       builder: (context, state) {
         final isLoading = state is GoogleRegistrationSubmitting;
+        final roleOptions = _roleOptions
+            .where((option) => isRoleSupportedOnPlatform(
+                  option.value.wireValue,
+                  isWeb: kIsWeb,
+                ))
+            .toList();
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
@@ -148,17 +155,16 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                             style: AppTextStyle.title1),
                         const SizedBox(height: 16),
                         for (var index = 0;
-                            index < _roleOptions.length;
+                            index < roleOptions.length;
                             index++) ...[
                           _RoleCard(
-                            option: _roleOptions[index],
-                            selected:
-                                _selectedRole == _roleOptions[index].value,
+                            option: roleOptions[index],
+                            selected: _selectedRole == roleOptions[index].value,
                             enabled: !isLoading,
-                            onTap: () => setState(() =>
-                                _selectedRole = _roleOptions[index].value),
+                            onTap: () => setState(
+                                () => _selectedRole = roleOptions[index].value),
                           ),
-                          if (index < _roleOptions.length - 1)
+                          if (index < roleOptions.length - 1)
                             const SizedBox(height: 12),
                         ],
                       ],

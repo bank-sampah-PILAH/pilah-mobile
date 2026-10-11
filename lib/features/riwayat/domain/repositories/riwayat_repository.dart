@@ -11,5 +11,4 @@ abstract class RiwayatRepository {
     String membershipId,
     String transactionId,
   );
-  Future<Either<NetworkException, RiwayatPdf>> exportPdf(String membershipId);
 }

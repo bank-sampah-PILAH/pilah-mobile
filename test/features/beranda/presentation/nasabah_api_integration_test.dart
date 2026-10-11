@@ -49,14 +49,6 @@ class _Repository extends PreviewNasabahRepository {
     }
     return super.home(membershipId: membershipId);
   }
-
-  @override
-  Future<NasabahHistory> history(String membershipId, {int page = 1}) async {
-    pages.add((membershipId, page));
-    return NasabahHistory([
-      NasabahActivity('t$page', DateTime(2026, 9, 23), 'setoran', '$page.00')
-    ], page == 1);
-  }
 }
 
 Authenticated session(String id) => Authenticated(

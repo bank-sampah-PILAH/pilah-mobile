@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
+    as google_sign_in;
 import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
@@ -23,6 +28,10 @@ class MockAuthenticationUseCases extends Mock
 
 class MockLoginWithGoogleUseCase extends Mock
     implements LoginWithGoogleUseCase {}
+
+class _MockGoogleSignInPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements google_sign_in.GoogleSignInPlatform {}
 
 void main() {
   late AuthenticationBloc bloc;
@@ -52,6 +61,78 @@ void main() {
 
     test('initial state should be AuthenticationInitial', () {
       expect(bloc.state, isA<AuthenticationInitial>());
+    });
+
+    test('signs out of Google before completing web logout', () async {
+      final originalGoogleSignInPlatform =
+          google_sign_in.GoogleSignInPlatform.instance;
+      final googleSignInPlatform = _MockGoogleSignInPlatform();
+      google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
+      final googleSignOut = Completer<void>();
+      final calls = <String>[];
+      when(() => googleSignInPlatform
+          .signOut(const google_sign_in.SignOutParams())).thenAnswer((_) {
+        calls.add('Google sign-out');
+        return googleSignOut.future;
+      });
+      when(() => mockUseCases.logout()).thenAnswer((_) async {
+        calls.add('PILAH logout');
+        return const Right(null);
+      });
+
+      final webBloc = AuthenticationBloc(
+        mockUseCases,
+        mockLoginWithGoogle,
+        isWebOverride: true,
+      );
+      addTearDown(() async {
+        if (!googleSignOut.isCompleted) googleSignOut.complete();
+        google_sign_in.GoogleSignInPlatform.instance =
+            originalGoogleSignInPlatform;
+        await webBloc.close();
+      });
+      final loading = webBloc.stream.first;
+      final unauthenticated =
+          webBloc.stream.firstWhere((state) => state is Unauthenticated);
+
+      webBloc.add(LogoutRequested());
+      expect(await loading, isA<AuthenticationLoading>());
+      expect(calls, ['Google sign-out']);
+
+      googleSignOut.complete();
+      expect(await unauthenticated, isA<Unauthenticated>());
+      expect(calls, ['Google sign-out', 'PILAH logout']);
+    });
+
+    test('continues web logout if Google sign-out fails', () async {
+      final originalGoogleSignInPlatform =
+          google_sign_in.GoogleSignInPlatform.instance;
+      final googleSignInPlatform = _MockGoogleSignInPlatform();
+      google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
+      when(() => googleSignInPlatform
+              .signOut(const google_sign_in.SignOutParams()))
+          .thenAnswer((_) async => throw StateError('GIS unavailable'));
+      when(() => mockUseCases.logout())
+          .thenAnswer((_) async => const Right(null));
+
+      final webBloc = AuthenticationBloc(
+        mockUseCases,
+        mockLoginWithGoogle,
+        isWebOverride: true,
+      );
+      addTearDown(() async {
+        google_sign_in.GoogleSignInPlatform.instance =
+            originalGoogleSignInPlatform;
+        await webBloc.close();
+      });
+      final states = expectLater(
+        webBloc.stream,
+        emitsInOrder([isA<AuthenticationLoading>(), isA<Unauthenticated>()]),
+      );
+
+      webBloc.add(LogoutRequested());
+      await states;
+      verify(() => mockUseCases.logout()).called(1);
     });
 
     blocTest<AuthenticationBloc, dynamic>(

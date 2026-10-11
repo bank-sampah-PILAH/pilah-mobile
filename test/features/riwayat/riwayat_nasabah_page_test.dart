@@ -215,4 +215,90 @@ void main() {
     verify(() => repo.history('member-b', page: 1)).called(1);
     verifyNever(() => repo.history('member-b', page: 2));
   });
+  testWidgets('retries the detail request after a failed sheet load',
+      (tester) async {
+    final repo = TestRiwayatRepository();
+    var calls = 0;
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (_) async =>
+          Right(RiwayatHistory([row('transaction-1', '12500.00')], false)),
+    );
+    when(() => repo.setoranDetail(any(), any())).thenAnswer(
+      (_) async {
+        calls++;
+        if (calls == 1) {
+          return Left(NetworkException(message: 'offline'));
+        }
+        return Right(
+          NasabahSetoranDetail.fromJson(const {
+            'tanggal': '2026-09-23T08:00:00+07:00',
+            'tipe': 'setoran',
+            'total_nilai': '12500.00',
+            'saldo_setelah_transaksi': '25000.00',
+            'items': [
+              {
+                'nama_sampah_snapshot': 'Plastik PET',
+                'berat': '1.000',
+                'harga_snapshot': '12500.00',
+                'subtotal': '12500.00',
+              },
+            ],
+          }),
+        );
+      },
+    );
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Setoran'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plastik PET'), findsNothing);
+
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+
+    expect(calls, 2);
+    expect(find.text('Plastik PET'), findsOneWidget);
+  });
+
+  testWidgets('the Muat ulang button re-asks page 1, not the next page',
+      (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (invocation) async {
+        final page = invocation.namedArguments[#page] as int;
+        return Right(RiwayatHistory(
+          [row('a$page', '12500.00')],
+          page == 1,
+        ));
+      },
+    );
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Muat ulang'));
+    await tester.pumpAndSettle();
+
+    // Reset, not page+1: a refresh that appended page 2's rows would be
+    // indistinguishable from paging.
+    verify(() => repo.history('member-b', page: 1)).called(2);
+    verifyNever(() => repo.history(any(), page: 2));
+    expect(find.textContaining('12.500'), findsOneWidget);
+  });
+
+  testWidgets('pull-to-refresh re-asks page 1 too', (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (invocation) async =>
+          Right(RiwayatHistory([row('a', '12500.00')], false)),
+    );
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, 200));
+    await tester.pumpAndSettle();
+
+    verify(() => repo.history('member-b', page: 1)).called(2);
+    verifyNever(() => repo.history(any(), page: 2));
+  });
 }

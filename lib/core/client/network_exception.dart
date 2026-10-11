@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
@@ -85,20 +86,40 @@ class NetworkException implements Exception {
   ///  - other errors (401/403/404/400): `{"error": "msg"}`
   static String? extractMessage(Response? response) {
     final data = response?.data;
-    if (data is Map) {
-      final errors = data['errors'];
-      if (errors is Map && errors.isNotEmpty) {
-        final firstValue = errors.values.first;
-        if (firstValue is List && firstValue.isNotEmpty) {
-          return firstValue.first.toString();
-        }
-        return firstValue.toString();
-      }
-      final singleError = data['error'] ?? data['message'] ?? data['detail'];
-      if (singleError != null) return singleError.toString();
-    }
+    if (data is Map) return _messageFromPayload(data);
     if (data is String && data.isNotEmpty) return data;
+    if (data is List<int> && data.isNotEmpty) {
+      return _messageFromBytes(data);
+    }
     return null;
+  }
+
+  static String? _messageFromPayload(Map payload) {
+    final errors = payload['errors'];
+    if (errors is Map && errors.isNotEmpty) {
+      final firstValue = errors.values.first;
+      if (firstValue is List && firstValue.isNotEmpty) {
+        return firstValue.first.toString();
+      }
+      return firstValue.toString();
+    }
+    final singleError =
+        payload['error'] ?? payload['message'] ?? payload['detail'];
+    if (singleError != null) return singleError.toString();
+    return null;
+  }
+
+  /// Byte payloads happen on `ResponseType.bytes` endpoints (PDF/XLSX
+  /// exports): the backend's 400 JSON body arrives as bytes, so it is decoded
+  /// here before the message is read — without this the user sees the generic
+  /// prefix instead of e.g. "Tidak ada data pada periode ini".
+  static String? _messageFromBytes(List<int> bytes) {
+    try {
+      final decoded = jsonDecode(utf8.decode(bytes, allowMalformed: true));
+      return decoded is Map ? _messageFromPayload(decoded) : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Flattens `{"errors": {"field": ["msg"]}}` into `{field: "msg"}` so forms can

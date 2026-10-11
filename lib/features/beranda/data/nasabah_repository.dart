@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/media/media_url.dart';
+import 'nasabah_me_get.dart';
 
 String _noOrigin() => '';
 
@@ -164,13 +165,6 @@ class NasabahHistory {
   final bool hasNext;
 }
 
-/// A downloaded PDF: raw bytes plus the filename the server picked.
-class NasabahExport {
-  const NasabahExport({required this.bytes, required this.filename});
-  final List<int> bytes;
-  final String filename;
-}
-
 /// Uses the application's authenticated transport, never the management APIs.
 class NasabahRepository {
   NasabahRepository(this.network);
@@ -178,35 +172,9 @@ class NasabahRepository {
   static const _base = '/api/v1/nasabah/me';
 
   Future<Map<String, dynamic>> _get(String path,
-      {String? membershipId, int? page}) async {
-    try {
-      final response = await network.get('$_base/$path', queryParams: {
-        if (membershipId != null) 'keanggotaan_id': membershipId,
-        if (page != null) 'page': page,
-      });
-      return response.data as Map<String, dynamic>;
-    } on DioException catch (error) {
-      final status = error.response?.statusCode;
-      final data = error.response?.data;
-      final errors = data is Map ? data['errors'] : null;
-      final choices = errors is Map ? errors['pilihan'] : null;
-      if (status == 422 && choices is List && choices.isNotEmpty) {
-        throw NasabahApiException('Pilih bank sampah Anda.',
-            choices: choices
-                .map((v) => MembershipChoice(
-                    v['id'] as String, v['bank_sampah_nama'] as String))
-                .toList());
-      }
-      throw NasabahApiException(switch (status) {
-        401 => 'Sesi berakhir. Silakan masuk kembali.',
-        403 =>
-          'Akses belum tersedia. Pastikan akun, keanggotaan, dan bank sampah aktif.',
-        404 => 'Data tidak ditemukan. Muat ulang atau pilih keanggotaan lain.',
-        422 => 'Pilihan keanggotaan tidak valid. Silakan pilih kembali.',
-        _ => 'Data gagal dimuat. Periksa koneksi dan coba lagi.',
-      });
-    }
-  }
+          {String? membershipId, int? page}) =>
+      nasabahMeGet(network, '$_base/$path',
+          membershipId: membershipId, page: page);
 
   Future<NasabahHome> home({String? membershipId}) async =>
       NasabahHome.fromJson(await _get('beranda', membershipId: membershipId),
@@ -216,47 +184,6 @@ class NasabahRepository {
   Future<NasabahBank> bank(String membershipId) async => NasabahBank.fromJson(
       await _get('bank-sampah', membershipId: membershipId),
       origin: () => network.environment.baseUrl);
-  Future<NasabahHistory> history(String membershipId, {int page = 1}) async {
-    final json = await _get('riwayat', membershipId: membershipId, page: page);
-    return NasabahHistory(
-        (json['results'] as List)
-            .map((v) => NasabahActivity.fromJson(v as Map<String, dynamic>))
-            .toList(),
-        json['next'] != null);
-  }
-
-  /// Downloads the activity-statement PDF (PIL-315): the backend renders it
-  /// with the member's bank and saldo, so the pass-through only forwards
-  /// auth. `Content-Disposition` carries the filename for the saved copy.
-  Future<NasabahExport> exportPdf(String membershipId) async {
-    final response = await network.getBytes(
-      '$_base/riwayat/export-pdf',
-      queryParams: {'keanggotaan_id': membershipId},
-    );
-    return NasabahExport(
-      bytes: (response.data as List).cast<int>(),
-      filename: _attachmentName(response),
-    );
-  }
-
-  /// Filename from `Content-Disposition: attachment; filename="x.pdf"`, with
-  /// a fixed default — the backend always sends the header, but a proxy
-  /// stripping it must not defeat the save.
-  static String _attachmentName(Response response) {
-    final header = response.headers.value('content-disposition');
-    final match = header == null
-        ? null
-        : RegExp(r'filename="?([^";]+)"?$').firstMatch(header);
-    return match?.group(1) ?? 'Riwayat_Aktivitas.pdf';
-  }
-
-  Future<NasabahSetoranDetail> setoranDetail(
-    String membershipId,
-    String transactionId,
-  ) async =>
-      NasabahSetoranDetail.fromJson(
-        await _get('riwayat/$transactionId', membershipId: membershipId),
-      );
 
   Future<NasabahIdentity> profile() async =>
       NasabahIdentity.fromJson(await _get('profil'));
