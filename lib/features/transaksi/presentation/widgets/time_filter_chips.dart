@@ -31,9 +31,12 @@ class TimeFilterChips extends StatelessWidget {
       buildWhen: (previous, current) =>
           previous.periode != current.periode ||
           previous.dariTanggal != current.dariTanggal ||
-          previous.sampaiTanggal != current.sampaiTanggal,
+          previous.sampaiTanggal != current.sampaiTanggal ||
+          previous.tipeFilter != current.tipeFilter ||
+          previous.search != current.search,
       builder: (context, state) {
         final activePeriode = state.periode;
+        final canExport = state.tipeFilter == AktivitasTipeFilter.semua && state.search.trim().isEmpty;
         return Row(
           children: [
             Expanded(
@@ -83,7 +86,7 @@ class TimeFilterChips extends StatelessWidget {
             const SizedBox(width: 8),
             // Export XLS Button
             InkWell(
-              onTap: () => _onExport(context),
+              onTap: canExport ? () => _onExport(context) : null,
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 padding:

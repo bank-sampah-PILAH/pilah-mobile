@@ -69,14 +69,20 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
         final ids = state.items.map(_key).toSet();
         emit(state.copyWith(items: [
           ...state.items,
-          ...page.items.where((item) => ids.add(_key(item)))
+          ...page.items.where((item) {
+            final key = _key(item);
+            return key == null || ids.add(key);
+          })
         ], hasNext: page.hasNext, loadingMore: false));
       },
     );
   }
 
-  String _key(ActivitasEntity item) =>
-      '${item.tipe.name}:${item.transaksi?.id ?? item.pencairan?.id}';
+  String? _key(ActivitasEntity item) {
+    final id = item.transaksi?.id ?? item.pencairan?.id;
+    if (id == null || id.isEmpty) return null;
+    return '${item.tipe.name}:$id';
+  }
 
   void setPeriode(String periode) {
     if (state.periode == periode && state.dariTanggal == null) return;
@@ -109,6 +115,9 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
 
   /// XLSX expansion to include payouts is owned by PIL-248.
   Future<({TransaksiExport? export, String? error})> exportTransaksi() async {
+    if (state.tipeFilter != AktivitasTipeFilter.semua || state.search.trim().isNotEmpty) {
+      return (export: null, error: 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.');
+    }
     final result = await _export.execute(_filter(1));
     return result.fold(
         (failure) => (export: null, error: failure.displayMessage),
