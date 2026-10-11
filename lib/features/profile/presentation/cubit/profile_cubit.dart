@@ -178,6 +178,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         kota: state.bankSampah?.kota,
         noHpPic: noHpPic,
         fotoLogoPath: state.selectedLogoFile?.path,
+        fotoLogoBytes: state.selectedLogoBytes,
+        fotoLogoFilename: state.selectedLogoFilename,
       );
       emit(state.copyWith(bankSampah: updated, clearSelectedLogo: true));
       return null;
