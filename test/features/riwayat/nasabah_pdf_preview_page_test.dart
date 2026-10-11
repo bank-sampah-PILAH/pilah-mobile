@@ -78,9 +78,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: Scaffold()));
     await tester.pump();
 
-    expect(
-        ours.single.existsSync(),
-        isFalse,
+    expect(ours.single.existsSync(), isFalse,
         reason: 'the financial PDF copy must not survive the preview session');
   });
 
