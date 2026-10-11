@@ -262,7 +262,7 @@ void persistenceTests() {
   test(
       'a new draft is named by the pengurus\' WIB clock, wherever the phone is',
       () {
-    final editor = DraftEditorCubit(_MockUseCases())
+    final editor = DraftEditorCubit(_MockRepository())
       ..startNew(const [_ahmad], sekarang: DateTime.utc(2026, 10, 8, 23, 30));
 
     expect(editor.state.nama, 'Pencairan 9 Okt 2026, 06:30');
@@ -733,7 +733,7 @@ void lifecycleTests() {
   group('exporting', () {
     test('hands back the file for a saved draft', () async {
       final file = DraftExport(bytes: Uint8List(3), filename: 'draft.pdf');
-      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+      when(() => repository.exportDraft('d-1', ExportBerkas.pdf))
           .thenAnswer((_) async => Right(file));
 
       final result = await editor.export(ExportBerkas.pdf);
@@ -743,9 +743,9 @@ void lifecycleTests() {
     });
 
     test('a confirmed draft can still be exported', () async {
-      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
-      when(() => useCases.exportDraft('d-1', ExportBerkas.xlsx)).thenAnswer(
+      when(() => repository.exportDraft('d-1', ExportBerkas.xlsx)).thenAnswer(
           (_) async =>
               Right(DraftExport(bytes: Uint8List(1), filename: 'a.xlsx')));
       await editor.confirm();
@@ -755,12 +755,12 @@ void lifecycleTests() {
     });
 
     DraftEditorCubit baruDenganMock() =>
-        DraftEditorCubit(useCases)..startNew(const [_ahmad, _budi, _citra]);
+        DraftEditorCubit(repository)..startNew(const [_ahmad, _budi, _citra]);
 
     test('unsaved edits are exported as they stand, and stay unsaved',
         () async {
       final file = DraftExport(bytes: Uint8List(2), filename: 'baru.pdf');
-      when(() => useCases.exportPratinjau(any(), ExportBerkas.pdf))
+      when(() => repository.exportPratinjau(any(), ExportBerkas.pdf))
           .thenAnswer((_) async => Right(file));
       editor.setNama('Baru');
 
@@ -768,27 +768,27 @@ void lifecycleTests() {
       final result = await editor.export(ExportBerkas.pdf);
 
       expect(result, same(file));
-      final input =
-          verify(() => useCases.exportPratinjau(captureAny(), ExportBerkas.pdf))
-              .captured
-              .single as DraftInput;
+      final input = verify(
+              () => repository.exportPratinjau(captureAny(), ExportBerkas.pdf))
+          .captured
+          .single as DraftInput;
       expect(input.nama, 'Baru');
-      verifyNever(() => useCases.exportDraft(any(), any()));
-      verifyNever(() => useCases.updateDraft(any(), any()));
+      verifyNever(() => repository.exportDraft(any(), any()));
+      verifyNever(() => repository.updateDraft(any(), any()));
       expect(editor.state.dirty, isTrue);
       expect(editor.state.phase, EditorPhase.idle);
     });
 
     test('a draft never saved can be exported too', () async {
-      when(() => useCases.exportPratinjau(any(), ExportBerkas.xlsx)).thenAnswer(
-          (_) async =>
+      when(() => repository.exportPratinjau(any(), ExportBerkas.xlsx))
+          .thenAnswer((_) async =>
               Right(DraftExport(bytes: Uint8List(1), filename: 'x.xlsx')));
       final baru = baruDenganMock();
 
       expect(baru.state.draftId, isNull);
       expect(baru.state.canExport, isTrue);
       expect(await baru.export(ExportBerkas.xlsx), isNotNull);
-      verifyNever(() => useCases.createDraft(any()));
+      verifyNever(() => repository.createDraft(any()));
     });
 
     test('an edit that cannot be built is not exported', () async {
@@ -796,12 +796,12 @@ void lifecycleTests() {
 
       expect(baru.state.canExport, isFalse);
       expect(await baru.export(ExportBerkas.pdf), isNull);
-      verifyNever(() => useCases.exportPratinjau(any(), any()));
+      verifyNever(() => repository.exportPratinjau(any(), any()));
     });
 
     test('nothing to export while an export or save is under way', () async {
       final baru = baruDenganMock();
-      when(() => useCases.exportPratinjau(any(), any())).thenAnswer(
+      when(() => repository.exportPratinjau(any(), any())).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftExport>>().future);
 
       unawaited(baru.export(ExportBerkas.pdf));
@@ -813,7 +813,7 @@ void lifecycleTests() {
 
     test('a rejected pratinjau shows its reason and leaves the editor idle',
         () async {
-      when(() => useCases.exportPratinjau(any(), any()))
+      when(() => repository.exportPratinjau(any(), any()))
           .thenAnswer((_) async => Left(ConnectionTimeOutException()));
       final baru = baruDenganMock();
 
@@ -823,7 +823,7 @@ void lifecycleTests() {
     });
 
     test('a failed download reports a message and returns nothing', () async {
-      when(() => useCases.exportDraft('d-1', ExportBerkas.pdf))
+      when(() => repository.exportDraft('d-1', ExportBerkas.pdf))
           .thenAnswer((_) async => Left(ConnectionTimeOutException()));
 
       expect(await editor.export(ExportBerkas.pdf), isNull);
@@ -834,17 +834,17 @@ void lifecycleTests() {
 
   group('naming and the jumlah applied to everyone', () {
     test('a new draft is named at once with the date and time', () {
-      final editor = DraftEditorCubit(useCases)
+      final editor = DraftEditorCubit(repository)
         ..startNew(const [
           Kandidat(id: 'n-1', kode: 'K1', nama: 'Ahmad', saldo: 1000),
-        ], sekarang: DateTime(2026, 10, 8, 6, 4));
+        ], sekarang: DateTime.utc(2026, 10, 7, 23, 4));
 
       expect(editor.state.nama, 'Pencairan 8 Okt 2026, 06:04');
       expect(editor.state.dirty, isFalse);
     });
 
     test('the name can still be changed', () {
-      final editor = DraftEditorCubit(useCases)
+      final editor = DraftEditorCubit(repository)
         ..startNew(const [_ahmad, _budi, _citra])
         ..setNama('Cair Lebaran');
 
@@ -853,23 +853,23 @@ void lifecycleTests() {
 
     test('applying a jumlah keeps it, and it is saved with the draft',
         () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_serverDraft()));
-      final editor = DraftEditorCubit(useCases)
+      final editor = DraftEditorCubit(repository)
         ..startNew(const [_ahmad, _budi, _citra])
         ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.persen, 50));
 
       expect(editor.state.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
       await editor.save();
 
-      final input = verify(() => useCases.createDraft(captureAny()))
+      final input = verify(() => repository.createDraft(captureAny()))
           .captured
           .single as DraftInput;
       expect(input.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
     });
 
     test('applying only a method or potongan leaves the jumlah alone', () {
-      final editor = DraftEditorCubit(useCases)
+      final editor = DraftEditorCubit(repository)
         ..startNew(const [_ahmad, _budi, _citra])
         ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.rupiah, 75000))
         ..terapkanUmum(metode: MetodePencairan.transfer);
@@ -879,9 +879,9 @@ void lifecycleTests() {
     });
 
     test('a loaded draft brings its jumlah back', () async {
-      when(() => useCases.getDraft('d-1')).thenAnswer((_) async => Right(
+      when(() => repository.getDraft('d-1')).thenAnswer((_) async => Right(
           _serverDraft(jumlah: const JumlahUmum(JumlahJenis.persen, 25))));
-      final editor = DraftEditorCubit(useCases);
+      final editor = DraftEditorCubit(repository);
 
       await editor.load('d-1');
 

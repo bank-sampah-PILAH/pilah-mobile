@@ -23,10 +23,13 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
 
   /// Starts a draft for [kandidat]: each is paid their whole saldo, in cash. It
   /// is named at once ("Pencairan 8 Okt 2026, 06:04"), so even an export of it
-  /// before saving has a title. [sekarang] is for tests.
+  /// before saving has a title. [sekarang] is for tests. The clock is the
+  /// pengurus' (WIB), as in the names the server gives, wherever the phone is.
   void startNew(List<Kandidat> kandidat, {DateTime? sekarang}) {
+    final wib =
+        (sekarang ?? DateTime.now()).toUtc().add(const Duration(hours: 7));
     emit(DraftEditorState(
-      nama: 'Pencairan ${waktu(sekarang ?? DateTime.now())}',
+      nama: 'Pencairan ${waktu(wib)}',
       items: [
         for (final k in kandidat)
           EditorItem(
@@ -83,8 +86,19 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   void setItemMetode(String nasabahId, MetodePencairan metode) =>
       _editItem(nasabahId, (item) => item.copyWith(metode: metode));
 
-  void setItemNominal(String nasabahId, int nominal) =>
-      _editItem(nasabahId, (item) => item.copyWith(nominal: nominal));
+  /// A nominal typed by hand: the jumlah is no longer the same for everyone.
+  void setItemNominal(String nasabahId, int nominal) => _change(
+        state.copyWith(
+          items: [
+            for (final item in state.items)
+              item.nasabahId == nasabahId
+                  ? item.copyWith(nominal: nominal)
+                  : item,
+          ],
+          jumlahUmum: () => null,
+        ),
+        touched: {nasabahId},
+      );
 
   /// Gives the item its own potongan, or null to follow the general one.
   void setItemPotongan(String nasabahId, Potongan? potongan) =>
