@@ -10,7 +10,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
@@ -20,7 +20,7 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import '../../../support/pump_app.dart';
 
-class _MockUseCases extends Mock implements DraftPencairanUseCases {}
+class _MockRepository extends Mock implements DraftPencairanRepository {}
 
 const _ahmad =
     Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 465600);
@@ -67,7 +67,7 @@ DraftPencairan _saved({DraftStatus status = DraftStatus.draft}) =>
     );
 
 void main() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
   late DraftEditorCubit cubit;
 
   setUpAll(() {
@@ -75,10 +75,11 @@ void main() {
         const DraftInput(potonganDefault: Potongan.nol, items: []));
   });
 
-  setUp(() => useCases = _MockUseCases());
+  setUp(() => repository = _MockRepository());
 
   Future<void> pumpNew(WidgetTester tester) async {
-    cubit = DraftEditorCubit(useCases)..startNew(const [_ahmad, _budi, _citra]);
+    cubit = DraftEditorCubit(repository)
+      ..startNew(const [_ahmad, _budi, _citra]);
     _current = cubit;
     await _pump(tester);
   }
@@ -87,9 +88,9 @@ void main() {
     WidgetTester tester, {
     DraftStatus status = DraftStatus.draft,
   }) async {
-    when(() => useCases.getDraft('d-1'))
+    when(() => repository.getDraft('d-1'))
         .thenAnswer((_) async => Right(_saved(status: status)));
-    cubit = DraftEditorCubit(useCases);
+    cubit = DraftEditorCubit(repository);
     _current = cubit;
     await cubit.load('d-1');
     await _pump(tester);
@@ -362,7 +363,7 @@ void main() {
 
     testWidgets('the cards fit a narrow phone, even with big amounts',
         (tester) async {
-      cubit = DraftEditorCubit(useCases)
+      cubit = DraftEditorCubit(repository)
         ..startNew(const [
           Kandidat(
               id: 'n-9',
@@ -659,7 +660,7 @@ void main() {
 
     testWidgets('saving creates the draft and shows who made it',
         (tester) async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_saved()));
       await pumpNew(tester);
 
@@ -668,7 +669,7 @@ void main() {
       await tester.tap(find.byKey(const Key('simpan')));
       await tester.pumpAndSettle();
 
-      verify(() => useCases.createDraft(any())).called(1);
+      verify(() => repository.createDraft(any())).called(1);
       expect(find.textContaining('Ibu Sari'), findsWidgets);
       expect(
           tester
@@ -681,7 +682,7 @@ void main() {
     testWidgets(
         'the server\'s complaint about one nasabah appears on that nasabah',
         (tester) async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Left(UnprocessableEntityException(
                 message: 'Saldo nasabah tidak mencukupi',
                 response: Response<dynamic>(
@@ -744,9 +745,9 @@ void main() {
 
     testWidgets('opening an already cancelled draft does not announce it',
         (tester) async {
-      when(() => useCases.getDraft('d-1')).thenAnswer(
+      when(() => repository.getDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dibatalkan)));
-      cubit = DraftEditorCubit(useCases);
+      cubit = DraftEditorCubit(repository);
       _current = cubit;
       await _pump(tester);
 
@@ -759,7 +760,7 @@ void main() {
     });
 
     testWidgets('cancelling from here announces it', (tester) async {
-      when(() => useCases.cancelDraft('d-1')).thenAnswer(
+      when(() => repository.cancelDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dibatalkan)));
       await pumpSaved(tester);
 
@@ -771,7 +772,7 @@ void main() {
     });
 
     testWidgets('a save that fails says so in a toast', (tester) async {
-      when(() => useCases.updateDraft(any(), any()))
+      when(() => repository.updateDraft(any(), any()))
           .thenAnswer((_) async => Left(ConnectionTimeOutException()));
       await pumpSaved(tester);
       cubit.setNama('Revisi');
@@ -925,9 +926,9 @@ void main() {
     });
 
     testWidgets('there is no panel while the draft is loading', (tester) async {
-      when(() => useCases.getDraft('d-1')).thenAnswer(
+      when(() => repository.getDraft('d-1')).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
-      cubit = DraftEditorCubit(useCases);
+      cubit = DraftEditorCubit(repository);
       _current = cubit;
       unawaited(cubit.load('d-1'));
       await pumpRouted(tester, const _Host());
@@ -1349,7 +1350,7 @@ void main() {
     }
 
     Future<void> pumpBanyak(WidgetTester tester) async {
-      cubit = DraftEditorCubit(useCases)..startNew(banyak);
+      cubit = DraftEditorCubit(repository)..startNew(banyak);
       _current = cubit;
       await _pump(tester);
     }
@@ -1416,7 +1417,7 @@ void main() {
     ];
 
     Future<void> pumpBanyak(WidgetTester tester) async {
-      cubit = DraftEditorCubit(useCases)..startNew(banyak);
+      cubit = DraftEditorCubit(repository)..startNew(banyak);
       _current = cubit;
       await _pump(tester);
     }
@@ -1733,7 +1734,7 @@ void main() {
 
   testWidgets('leaving with unsaved edits asks before throwing them away',
       (tester) async {
-    cubit = DraftEditorCubit(useCases)..startNew(const [_ahmad]);
+    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
     _current = cubit;
     await _pump(tester, pushed: true);
     cubit.setNama('Belum disimpan');

@@ -1,15 +1,14 @@
 import 'package:dartz/dartz.dart';
 import 'package:pilah_mobile/features/draft_pencairan/data/draft_pencairan_repository_impl.dart';
 import 'package:pilah_mobile/features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/draft_pencairan_interactor.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 
 import 'stub_api.dart';
 
-/// The real draft pencairan use cases over the real data source, HTTP stubbed.
-DraftPencairanUseCases buildDraftPencairanUseCases(StubApi api) =>
-    DraftPencairanInteractor(DraftPencairanRepositoryImpl(
-        DraftPencairanRemoteDataSourceImpl(api.network)));
+/// The real draft pencairan repository over the real data source, HTTP stubbed.
+DraftPencairanRepository buildDraftPencairanRepository(StubApi api) =>
+    DraftPencairanRepositoryImpl(
+        DraftPencairanRemoteDataSourceImpl(api.network));
 
 const draftItemJson = {
   'id': 'i-1',

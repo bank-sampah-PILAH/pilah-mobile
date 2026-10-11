@@ -6,12 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
-class _MockUseCases extends Mock implements DraftPencairanUseCases {}
+class _MockRepository extends Mock implements DraftPencairanRepository {}
 
 const _ahmad =
     Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 465600);
@@ -20,8 +20,8 @@ const _budi =
 const _citra =
     Kandidat(id: 'n-3', kode: 'NAS-0003', nama: 'Citra Dewi', saldo: 250000);
 
-DraftEditorCubit _newEditor() =>
-    DraftEditorCubit(_MockUseCases())..startNew(const [_ahmad, _budi, _citra]);
+DraftEditorCubit _newEditor() => DraftEditorCubit(_MockRepository())
+  ..startNew(const [_ahmad, _budi, _citra]);
 
 void main() {
   persistenceTests();
@@ -156,7 +156,7 @@ void main() {
     });
 
     test('a draft with no items cannot be saved', () {
-      final editor = DraftEditorCubit(_MockUseCases())..startNew(const []);
+      final editor = DraftEditorCubit(_MockRepository())..startNew(const []);
 
       expect(editor.state.canSave, isFalse);
     });
@@ -218,7 +218,7 @@ UnprocessableEntityException _unprocessable(Map<String, List<String>> errors) =>
     );
 
 void persistenceTests() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
   late DraftEditorCubit editor;
 
   setUpAll(() {
@@ -227,8 +227,8 @@ void persistenceTests() {
   });
 
   setUp(() {
-    useCases = _MockUseCases();
-    editor = DraftEditorCubit(useCases)
+    repository = _MockRepository();
+    editor = DraftEditorCubit(repository)
       ..startNew(const [_ahmad, _budi])
       ..setNama('Cair Oktober')
       ..setPotonganDefault(const Potongan(PotonganJenis.persen, 10))
@@ -239,12 +239,12 @@ void persistenceTests() {
 
   group('saving', () {
     test('a new draft is created from the whole editor state', () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_serverDraft()));
 
       await editor.save();
 
-      final input = verify(() => useCases.createDraft(captureAny()))
+      final input = verify(() => repository.createDraft(captureAny()))
           .captured
           .single as DraftInput;
       expect(
@@ -277,9 +277,9 @@ void persistenceTests() {
     });
 
     test('a saved draft is updated rather than created again', () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_serverDraft()));
-      when(() => useCases.updateDraft(any(), any()))
+      when(() => repository.updateDraft(any(), any()))
           .thenAnswer((_) async => Right(_serverDraft(nama: 'Revisi')));
       await editor.save();
 
@@ -287,15 +287,15 @@ void persistenceTests() {
       expect(editor.state.dirty, isTrue);
       await editor.save();
 
-      verify(() => useCases.updateDraft('d-1', any())).called(1);
-      verify(() => useCases.createDraft(any())).called(1);
+      verify(() => repository.updateDraft('d-1', any())).called(1);
+      verify(() => repository.createDraft(any())).called(1);
       expect(editor.state.nama, 'Revisi');
       expect(editor.state.dirty, isFalse);
     });
 
     test('an edit marks the draft dirty and clears that item\'s server error',
         () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Left(_unprocessable({
                 'items[1].nominal': ['Saldo nasabah tidak mencukupi']
               })));
@@ -310,7 +310,7 @@ void persistenceTests() {
 
     test('an item the server no longer accepts says what to do about it',
         () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Left(_unprocessable({
                 'items[1].nasabah_id': [
                   'Nasabah tidak ditemukan atau tidak aktif'
@@ -326,7 +326,7 @@ void persistenceTests() {
     });
 
     test('a server rejection of one item is shown on that item', () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Left(_unprocessable({
                 'items[1].nominal': ['Saldo nasabah tidak mencukupi']
               })));
@@ -343,7 +343,7 @@ void persistenceTests() {
     });
 
     test('any other failure is reported as a message', () async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Left(ConnectionTimeOutException()));
 
       await editor.save();
@@ -357,27 +357,28 @@ void persistenceTests() {
 
       await editor.save();
 
-      verifyNever(() => useCases.createDraft(any()));
+      verifyNever(() => repository.createDraft(any()));
     });
 
     test('a second tap while saving is ignored', () async {
       final pending = Completer<Either<NetworkException, DraftPencairan>>();
-      when(() => useCases.createDraft(any())).thenAnswer((_) => pending.future);
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) => pending.future);
 
       final first = editor.save();
       await editor.save();
       pending.complete(Right(_serverDraft()));
       await first;
 
-      verify(() => useCases.createDraft(any())).called(1);
+      verify(() => repository.createDraft(any())).called(1);
     });
   });
 
   group('loading a saved draft', () {
     test('shows the saved state with the live saldo as the ceiling', () async {
-      when(() => useCases.getDraft('d-1'))
+      when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_serverDraft()));
-      final fresh = DraftEditorCubit(useCases);
+      final fresh = DraftEditorCubit(repository);
 
       await fresh.load('d-1');
 
@@ -399,7 +400,7 @@ void persistenceTests() {
 
     test('a nasabah whose saldo dropped below the nominal is flagged',
         () async {
-      when(() => useCases.getDraft('d-1'))
+      when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_serverDraft(items: const [
                 DraftItem(
                   id: 'i-1',
@@ -412,7 +413,7 @@ void persistenceTests() {
                   saldoSaatIni: 80000,
                 ),
               ])));
-      final fresh = DraftEditorCubit(useCases);
+      final fresh = DraftEditorCubit(repository);
 
       await fresh.load('d-1');
 
@@ -421,9 +422,9 @@ void persistenceTests() {
     });
 
     test('a load that fails says so', () async {
-      when(() => useCases.getDraft('d-1'))
+      when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Left(ConnectionTimeOutException()));
-      final fresh = DraftEditorCubit(useCases);
+      final fresh = DraftEditorCubit(repository);
 
       await fresh.load('d-1');
 
@@ -435,20 +436,20 @@ void persistenceTests() {
 }
 
 void lifecycleTests() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
   late DraftEditorCubit editor;
 
   setUp(() async {
-    useCases = _MockUseCases();
-    when(() => useCases.getDraft('d-1'))
+    repository = _MockRepository();
+    when(() => repository.getDraft('d-1'))
         .thenAnswer((_) async => Right(_serverDraft()));
-    editor = DraftEditorCubit(useCases);
+    editor = DraftEditorCubit(repository);
     await editor.load('d-1');
   });
 
   group('cancelling', () {
     test('marks the draft cancelled and locks it', () async {
-      when(() => useCases.cancelDraft('d-1')).thenAnswer(
+      when(() => repository.cancelDraft('d-1')).thenAnswer(
           (_) async => Right(_serverDraft(status: DraftStatus.dibatalkan)));
 
       await editor.cancel();
@@ -459,7 +460,7 @@ void lifecycleTests() {
     });
 
     test('a failure leaves the draft open and says why', () async {
-      when(() => useCases.cancelDraft('d-1')).thenAnswer((_) async =>
+      when(() => repository.cancelDraft('d-1')).thenAnswer((_) async =>
           Left(ConflictException(message: 'Draft sudah dikonfirmasi')));
 
       await editor.cancel();

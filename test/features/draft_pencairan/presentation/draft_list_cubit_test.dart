@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_state.dart';
 
-class _MockUseCases extends Mock implements DraftPencairanUseCases {}
+class _MockRepository extends Mock implements DraftPencairanRepository {}
 
 DraftPencairan _batal(String id) => DraftPencairan(
       id: id,
@@ -33,12 +33,12 @@ DraftRingkasan _ringkasan(String id, DraftStatus status) => DraftRingkasan(
     );
 
 void main() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
   late DraftListCubit cubit;
 
   setUp(() {
-    useCases = _MockUseCases();
-    cubit = DraftListCubit(useCases);
+    repository = _MockRepository();
+    cubit = DraftListCubit(repository);
   });
 
   test('loads the drafts, newest first as the server sends them', () async {
@@ -46,7 +46,7 @@ void main() {
       _ringkasan('d-2', DraftStatus.draft),
       _ringkasan('d-1', DraftStatus.dikonfirmasi),
     ];
-    when(() => useCases.getDrafts()).thenAnswer((_) async => Right(rows));
+    when(() => repository.getDrafts()).thenAnswer((_) async => Right(rows));
 
     await cubit.load();
 
@@ -55,7 +55,7 @@ void main() {
   });
 
   test('the filter narrows the list to one status, or shows all', () async {
-    when(() => useCases.getDrafts()).thenAnswer((_) async => Right([
+    when(() => repository.getDrafts()).thenAnswer((_) async => Right([
           _ringkasan('d-1', DraftStatus.draft),
           _ringkasan('d-2', DraftStatus.dikonfirmasi),
           _ringkasan('d-3', DraftStatus.dibatalkan),
@@ -70,7 +70,7 @@ void main() {
   });
 
   test('a reload keeps the old list on screen while it fetches', () async {
-    when(() => useCases.getDrafts())
+    when(() => repository.getDrafts())
         .thenAnswer((_) async => Right([_ringkasan('d-1', DraftStatus.draft)]));
     await cubit.load();
 
@@ -84,7 +84,7 @@ void main() {
   });
 
   test('a failed load says why', () async {
-    when(() => useCases.getDrafts())
+    when(() => repository.getDrafts())
         .thenAnswer((_) async => Left(ConnectionTimeOutException()));
 
     await cubit.load();
@@ -94,12 +94,12 @@ void main() {
   });
 
   test('cancelling a draft reloads the list and reports no error', () async {
-    when(() => useCases.getDrafts())
+    when(() => repository.getDrafts())
         .thenAnswer((_) async => Right([_ringkasan('d-1', DraftStatus.draft)]));
     await cubit.load();
-    when(() => useCases.cancelDraft('d-1'))
+    when(() => repository.cancelDraft('d-1'))
         .thenAnswer((_) async => Right(_batal('d-1')));
-    when(() => useCases.getDrafts()).thenAnswer(
+    when(() => repository.getDrafts()).thenAnswer(
         (_) async => Right([_ringkasan('d-1', DraftStatus.dibatalkan)]));
 
     final error = await cubit.batalkan('d-1');
@@ -109,16 +109,16 @@ void main() {
   });
 
   test('a cancel that fails says why and leaves the list alone', () async {
-    when(() => useCases.getDrafts())
+    when(() => repository.getDrafts())
         .thenAnswer((_) async => Right([_ringkasan('d-1', DraftStatus.draft)]));
     await cubit.load();
-    when(() => useCases.cancelDraft('d-1'))
+    when(() => repository.cancelDraft('d-1'))
         .thenAnswer((_) async => Left(ConnectionTimeOutException()));
 
     final error = await cubit.batalkan('d-1');
 
     expect(error, isNotNull);
     expect(cubit.state.drafts.single.status, DraftStatus.draft);
-    verify(() => useCases.getDrafts()).called(1);
+    verify(() => repository.getDrafts()).called(1);
   });
 }

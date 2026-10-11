@@ -2,12 +2,12 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/draft_format.dart';
 
-class _MockUseCases extends Mock implements DraftPencairanUseCases {}
+class _MockRepository extends Mock implements DraftPencairanRepository {}
 
 DraftRingkasan _draft(
   String id,
@@ -30,7 +30,7 @@ DraftRingkasan _draft(
     );
 
 void main() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
   late DraftListCubit cubit;
 
   final rows = [
@@ -48,9 +48,9 @@ void main() {
   ];
 
   setUp(() async {
-    useCases = _MockUseCases();
-    cubit = DraftListCubit(useCases);
-    when(() => useCases.getDrafts()).thenAnswer((_) async => Right(rows));
+    repository = _MockRepository();
+    cubit = DraftListCubit(repository);
+    when(() => repository.getDrafts()).thenAnswer((_) async => Right(rows));
     await cubit.load();
   });
 

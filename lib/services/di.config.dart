@@ -67,12 +67,8 @@ import '../features/draft_pencairan/data/draft_pencairan_repository_impl.dart'
     as _i363;
 import '../features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart'
     as _i142;
-import '../features/draft_pencairan/domain/draft_pencairan_interactor.dart'
-    as _i1006;
 import '../features/draft_pencairan/domain/repository/draft_pencairan_repository.dart'
     as _i511;
-import '../features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart'
-    as _i728;
 import '../features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart'
     as _i230;
 import '../features/draft_pencairan/presentation/blocs/draft_list_cubit.dart'
@@ -309,8 +305,6 @@ extension GetItInjectableX on _i174.GetIt {
         _i913.PencairanRepositoryImpl(gh<_i1037.PencairanRemoteDataSources>()));
     gh.lazySingleton<_i40.HargaRepository>(
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
-    gh.lazySingleton<_i728.DraftPencairanUseCases>(() =>
-        _i1006.DraftPencairanInteractor(gh<_i511.DraftPencairanRepository>()));
     gh.lazySingleton<_i260.SuperadminRepository>(() =>
         _i811.SuperadminRepositoryImpl(gh<_i309.SuperadminRemoteDataSource>()));
     gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
@@ -326,11 +320,11 @@ extension GetItInjectableX on _i174.GetIt {
         _i753.GetNasabahMembershipsUseCase(
             gh<_i390.BankSampahApprovalRepository>()));
     gh.factory<_i230.DraftEditorCubit>(
-        () => _i230.DraftEditorCubit(gh<_i728.DraftPencairanUseCases>()));
+        () => _i230.DraftEditorCubit(gh<_i511.DraftPencairanRepository>()));
     gh.factory<_i673.DraftListCubit>(
-        () => _i673.DraftListCubit(gh<_i728.DraftPencairanUseCases>()));
+        () => _i673.DraftListCubit(gh<_i511.DraftPencairanRepository>()));
     gh.factory<_i795.PilihNasabahCubit>(
-        () => _i795.PilihNasabahCubit(gh<_i728.DraftPencairanUseCases>()));
+        () => _i795.PilihNasabahCubit(gh<_i511.DraftPencairanRepository>()));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
     gh.factory<_i359.NasabahApprovalCubit>(() =>

@@ -2,19 +2,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../domain/model/draft_pencairan.dart';
-import '../../domain/use_cases/draft_pencairan_use_cases.dart';
+import '../../domain/repository/draft_pencairan_repository.dart';
 import 'pilih_nasabah_state.dart';
 
 /// Picking who to pay out: search, sort and the quick selects. The server
 /// holds the list unpaginated, so "select all" really means everyone.
 @injectable
 class PilihNasabahCubit extends Cubit<PilihNasabahState> {
-  final DraftPencairanUseCases _useCases;
+  final DraftPencairanRepository _repository;
 
   /// Only the newest search may land: a slow answer for an older one is dropped.
   int _generation = 0;
 
-  PilihNasabahCubit(this._useCases) : super(const PilihNasabahState());
+  PilihNasabahCubit(this._repository) : super(const PilihNasabahState());
 
   Future<void> load() => _fetch();
 
@@ -32,7 +32,7 @@ class PilihNasabahCubit extends Cubit<PilihNasabahState> {
     emit(state.kandidat.isEmpty
         ? next.copyWith(status: PilihStatus.loading)
         : next);
-    final result = await _useCases.getKandidat(
+    final result = await _repository.getKandidat(
       search: next.search,
       urutan: next.urutan,
     );
@@ -58,7 +58,7 @@ class PilihNasabahCubit extends Cubit<PilihNasabahState> {
 
   /// Everyone who can be paid out, whatever the search is showing.
   Future<void> pilihSemua() async {
-    final result = await _useCases.getKandidat();
+    final result = await _repository.getKandidat();
     result.fold(
       (failure) =>
           emit(state.copyWith(errorMessage: () => failure.displayMessage)),

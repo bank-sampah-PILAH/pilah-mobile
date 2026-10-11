@@ -5,11 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_state.dart';
 
-class _MockUseCases extends Mock implements DraftPencairanUseCases {}
+class _MockRepository extends Mock implements DraftPencairanRepository {}
 
 const _ahmad =
     Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 465600);
@@ -19,7 +19,7 @@ const _citra =
     Kandidat(id: 'n-3', kode: 'NAS-0003', nama: 'Citra Dewi', saldo: 250000);
 
 void main() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
   late PilihNasabahCubit cubit;
 
   void answer({
@@ -28,7 +28,7 @@ void main() {
     int saldoMin = 0,
     required List<Kandidat> rows,
   }) {
-    when(() => useCases.getKandidat(
+    when(() => repository.getKandidat(
           search: search,
           urutan: urutan,
           saldoMin: saldoMin,
@@ -36,9 +36,9 @@ void main() {
   }
 
   setUp(() async {
-    useCases = _MockUseCases();
+    repository = _MockRepository();
     answer(rows: [_ahmad, _budi, _citra]);
-    cubit = PilihNasabahCubit(useCases);
+    cubit = PilihNasabahCubit(repository);
     await cubit.load();
   });
 
@@ -72,7 +72,7 @@ void main() {
     answer(search: 'bud', urutan: KandidatUrutan.saldoTerbesar, rows: [_budi]);
     await cubit.setUrutan(KandidatUrutan.saldoTerbesar);
 
-    verify(() => useCases.getKandidat(
+    verify(() => repository.getKandidat(
           search: 'bud',
           urutan: KandidatUrutan.saldoTerbesar,
           saldoMin: 0,
@@ -92,7 +92,7 @@ void main() {
   test('select all that cannot reach the server says why and keeps the picks',
       () async {
     cubit.toggle('n-1');
-    when(() => useCases.getKandidat(
+    when(() => repository.getKandidat(
           search: '',
           urutan: KandidatUrutan.namaAZ,
           saldoMin: 0,
@@ -122,7 +122,7 @@ void main() {
   });
 
   test('a failed load says why', () async {
-    when(() => useCases.getKandidat(
+    when(() => repository.getKandidat(
           search: '',
           urutan: KandidatUrutan.namaAZ,
           saldoMin: 0,
@@ -137,7 +137,7 @@ void main() {
   test('a slow answer for an old search never overwrites the newer one',
       () async {
     final slow = Completer<Either<NetworkException, List<Kandidat>>>();
-    when(() => useCases.getKandidat(
+    when(() => repository.getKandidat(
           search: 'a',
           urutan: KandidatUrutan.namaAZ,
           saldoMin: 0,

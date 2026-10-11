@@ -9,14 +9,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
 import '../../../support/pump_app.dart';
 
-class _MockUseCases extends Mock implements DraftPencairanUseCases {}
+class _MockRepository extends Mock implements DraftPencairanRepository {}
 
 DraftRingkasan _draft(String id, String nama, DraftStatus status) =>
     DraftRingkasan(
@@ -45,19 +45,19 @@ DraftPencairan _batal() => DraftPencairan(
     );
 
 void main() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
 
-  setUp(() => useCases = _MockUseCases());
+  setUp(() => repository = _MockRepository());
 
   Future<GoRouter> pump(
     WidgetTester tester,
     List<DraftRingkasan> drafts,
   ) async {
-    when(() => useCases.getDrafts()).thenAnswer((_) async => Right(drafts));
+    when(() => repository.getDrafts()).thenAnswer((_) async => Right(drafts));
     return pumpRouted(
       tester,
       BlocProvider(
-        create: (_) => DraftListCubit(useCases)..load(),
+        create: (_) => DraftListCubit(repository)..load(),
         child: const DraftListView(),
       ),
       extraRoutes: const [
@@ -146,19 +146,19 @@ void main() {
   });
 
   testWidgets('a failed load can be retried', (tester) async {
-    when(() => useCases.getDrafts())
+    when(() => repository.getDrafts())
         .thenAnswer((_) async => Left(ConnectionTimeOutException()));
     await pumpRouted(
       tester,
       BlocProvider(
-        create: (_) => DraftListCubit(useCases)..load(),
+        create: (_) => DraftListCubit(repository)..load(),
         child: const DraftListView(),
       ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Coba lagi'), findsOneWidget);
 
-    when(() => useCases.getDrafts()).thenAnswer(
+    when(() => repository.getDrafts()).thenAnswer(
         (_) async => Right([_draft('d-1', 'Cair Oktober', DraftStatus.draft)]));
     await tester.tap(find.text('Coba lagi'));
     await tester.pumpAndSettle();
@@ -192,12 +192,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cair Oktober'));
     await tester.pumpAndSettle();
-    clearInteractions(useCases);
+    clearInteractions(repository);
 
     router.pop();
     await tester.pumpAndSettle();
 
-    verify(() => useCases.getDrafts()).called(1);
+    verify(() => repository.getDrafts()).called(1);
   });
 
   testWidgets('only a draft in progress can be cancelled from its card',
@@ -228,20 +228,20 @@ void main() {
       (tester) async {
     await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
     await tester.pumpAndSettle();
-    when(() => useCases.cancelDraft('d-1'))
+    when(() => repository.cancelDraft('d-1'))
         .thenAnswer((_) async => Right(_batal()));
-    when(() => useCases.getDrafts()).thenAnswer((_) async =>
+    when(() => repository.getDrafts()).thenAnswer((_) async =>
         Right([_draft('d-1', 'Cair Oktober', DraftStatus.dibatalkan)]));
 
     await tester.tap(find.byKey(const Key('batalkan-d-1')));
     await tester.pumpAndSettle();
     expect(find.text('Batalkan draft?'), findsOneWidget);
-    verifyNever(() => useCases.cancelDraft(any()));
+    verifyNever(() => repository.cancelDraft(any()));
 
     await tester.tap(find.text('Ya, batalkan'));
     await tester.pumpAndSettle();
 
-    verify(() => useCases.cancelDraft('d-1')).called(1);
+    verify(() => repository.cancelDraft('d-1')).called(1);
     expect(find.byKey(const Key('batalkan-d-1')), findsNothing);
   });
 
@@ -249,7 +249,7 @@ void main() {
       (tester) async {
     await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
     await tester.pumpAndSettle();
-    when(() => useCases.cancelDraft('d-1'))
+    when(() => repository.cancelDraft('d-1'))
         .thenAnswer((_) async => Left(ConnectionTimeOutException()));
 
     await tester.tap(find.byKey(const Key('batalkan-d-1')));
@@ -271,7 +271,7 @@ void main() {
     await tester.tap(find.text('Kembali'));
     await tester.pumpAndSettle();
 
-    verifyNever(() => useCases.cancelDraft(any()));
+    verifyNever(() => repository.cancelDraft(any()));
     expect(find.byKey(const Key('batalkan-d-1')), findsOneWidget);
   });
 
@@ -458,11 +458,11 @@ void main() {
         (tester) async {
       final pending =
           Completer<Either<NetworkException, List<DraftRingkasan>>>();
-      when(() => useCases.getDrafts()).thenAnswer((_) => pending.future);
+      when(() => repository.getDrafts()).thenAnswer((_) => pending.future);
       await pumpRouted(
         tester,
         BlocProvider(
-          create: (_) => DraftListCubit(useCases)..load(),
+          create: (_) => DraftListCubit(repository)..load(),
           child: const DraftListView(),
         ),
       );

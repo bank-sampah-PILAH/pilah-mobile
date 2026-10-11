@@ -5,7 +5,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import '../../domain/model/draft_pencairan.dart';
-import '../../domain/use_cases/draft_pencairan_use_cases.dart';
+import '../../domain/repository/draft_pencairan_repository.dart';
 import 'draft_editor_state.dart';
 
 const _tidakMemenuhiSyarat =
@@ -16,9 +16,9 @@ const _tidakMemenuhiSyarat =
 /// it is saved, and the saldo never moves until the payment is confirmed.
 @injectable
 class DraftEditorCubit extends Cubit<DraftEditorState> {
-  final DraftPencairanUseCases _useCases;
+  final DraftPencairanRepository _repository;
 
-  DraftEditorCubit(this._useCases) : super(const DraftEditorState());
+  DraftEditorCubit(this._repository) : super(const DraftEditorState());
 
   /// Starts a draft for [kandidat]: each is paid their whole saldo, in cash.
   void startNew(List<Kandidat> kandidat) {
@@ -102,7 +102,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   Future<void> load(String id) async {
     if (state.isBusy) return;
     emit(state.copyWith(phase: EditorPhase.loading, errorMessage: () => null));
-    final result = await _useCases.getDraft(id);
+    final result = await _repository.getDraft(id);
     result.fold(
       (failure) => emit(state.copyWith(
         phase: EditorPhase.idle,
@@ -120,8 +120,8 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     final input = _input();
     final id = state.draftId;
     final result = id == null
-        ? await _useCases.createDraft(input)
-        : await _useCases.updateDraft(id, input);
+        ? await _repository.createDraft(input)
+        : await _repository.updateDraft(id, input);
     result.fold(
       (failure) => emit(_rejected(failure)),
       (draft) => emit(_fromServer(draft)),
@@ -132,7 +132,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   Future<void> cancel() async {
     final id = state.draftId;
     if (id == null || state.isBusy || state.status.terkunci) return;
-    await _transition(EditorPhase.cancelling, _useCases.cancelDraft(id));
+    await _transition(EditorPhase.cancelling, _repository.cancelDraft(id));
   }
 
   Future<void> _transition(

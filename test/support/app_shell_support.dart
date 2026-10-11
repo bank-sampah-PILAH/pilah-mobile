@@ -104,11 +104,12 @@ class AppShell {
         () => RevisiPencairanCubit(useCases));
     di.registerFactory<RiwayatPencairanCubit>(
         () => RiwayatPencairanCubit(useCases));
-    final draftUseCases = buildDraftPencairanUseCases(api);
-    di.registerFactory<DraftListCubit>(() => DraftListCubit(draftUseCases));
+    final draftRepository = buildDraftPencairanRepository(api);
+    di.registerFactory<DraftListCubit>(() => DraftListCubit(draftRepository));
     di.registerFactory<PilihNasabahCubit>(
-        () => PilihNasabahCubit(draftUseCases));
-    di.registerFactory<DraftEditorCubit>(() => DraftEditorCubit(draftUseCases));
+        () => PilihNasabahCubit(draftRepository));
+    di.registerFactory<DraftEditorCubit>(
+        () => DraftEditorCubit(draftRepository));
     _approval = registerApprovedMembership();
   }
 

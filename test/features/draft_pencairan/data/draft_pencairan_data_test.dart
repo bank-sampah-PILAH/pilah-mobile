@@ -60,7 +60,7 @@ void main() {
       },
     ]);
 
-    final result = await buildDraftPencairanUseCases(api).getKandidat(
+    final result = await buildDraftPencairanRepository(api).getKandidat(
       search: 'ahm',
       urutan: KandidatUrutan.saldoTerbesar,
       saldoMin: 50000,
@@ -77,7 +77,7 @@ void main() {
   test('getKandidat leaves out an empty search and a zero minimum', () async {
     api.on('GET', '$_path/kandidat', json: []);
 
-    await buildDraftPencairanUseCases(api).getKandidat();
+    await buildDraftPencairanRepository(api).getKandidat();
 
     expect(api.last.query, {'ordering': 'nama'});
   });
@@ -104,7 +104,7 @@ void main() {
     );
 
     final draft =
-        (await buildDraftPencairanUseCases(api).createDraft(input)).right;
+        (await buildDraftPencairanRepository(api).createDraft(input)).right;
 
     expect(api.last.json, {
       'nama': 'Cair Oktober',
@@ -154,7 +154,7 @@ void main() {
         ]));
 
     final draft =
-        (await buildDraftPencairanUseCases(api).getDraft('d-1')).right;
+        (await buildDraftPencairanRepository(api).getDraft('d-1')).right;
 
     expect(draft.items.single.potongan,
         const Potongan(PotonganJenis.rupiah, 1500));
@@ -164,7 +164,7 @@ void main() {
       () async {
     api.on('PATCH', '$_path/d-1', json: draftJson());
 
-    await buildDraftPencairanUseCases(api).updateDraft(
+    await buildDraftPencairanRepository(api).updateDraft(
       'd-1',
       const DraftInput(
         nama: 'Revisi',
@@ -205,7 +205,7 @@ void main() {
       ],
     });
 
-    final drafts = (await buildDraftPencairanUseCases(api).getDrafts())
+    final drafts = (await buildDraftPencairanRepository(api).getDrafts())
         .getOrElse(() => []);
 
     expect(drafts.single.status, DraftStatus.dikonfirmasi);
@@ -216,7 +216,8 @@ void main() {
   test('getDrafts follows the pages until there is no next one', () async {
     final paged = _TwoPages();
 
-    final drafts = (await buildDraftPencairanUseCases(paged).getDrafts()).right;
+    final drafts =
+        (await buildDraftPencairanRepository(paged).getDrafts()).right;
 
     expect(drafts.map((d) => d.nama), ['Halaman satu', 'Halaman dua']);
     expect(paged.requests.map((r) => r.query['page']), [null, '2']);
@@ -224,10 +225,10 @@ void main() {
 
   test('the same draft read twice is equal, whatever it holds', () async {
     api.on('GET', '$_path/d-1', json: draftJson());
-    final useCases = buildDraftPencairanUseCases(api);
+    final repository = buildDraftPencairanRepository(api);
 
-    final first = (await useCases.getDraft('d-1')).right;
-    final second = (await useCases.getDraft('d-1')).right;
+    final first = (await repository.getDraft('d-1')).right;
+    final second = (await repository.getDraft('d-1')).right;
 
     expect(first, second);
     expect(first.items.single, second.items.single);
@@ -238,7 +239,7 @@ void main() {
         json: draftJson(status: 'dibatalkan'));
 
     final cancelled =
-        (await buildDraftPencairanUseCases(api).cancelDraft('d-1')).right;
+        (await buildDraftPencairanRepository(api).cancelDraft('d-1')).right;
 
     expect(cancelled.status, DraftStatus.dibatalkan);
   });
@@ -253,13 +254,13 @@ void main() {
       metode: MetodePencairan.tunai,
     );
 
-    await buildDraftPencairanUseCases(api).updateDraft(
+    await buildDraftPencairanRepository(api).updateDraft(
       'd-1',
       const DraftInput(nama: '  ', potonganDefault: potongan, items: [item]),
     );
     expect(api.last.json, containsPair('nama', ''));
 
-    await buildDraftPencairanUseCases(api).updateDraft(
+    await buildDraftPencairanRepository(api).updateDraft(
       'd-1',
       const DraftInput(potonganDefault: potongan, items: [item]),
     );
@@ -272,7 +273,7 @@ void main() {
     api.on('GET', '$_path/d-1', json: draftJson(status: 'diarsipkan'));
 
     final draft =
-        (await buildDraftPencairanUseCases(api).getDraft('d-1')).right;
+        (await buildDraftPencairanRepository(api).getDraft('d-1')).right;
 
     expect(draft.status, DraftStatus.tidakDikenal);
     expect(draft.status.terkunci, isTrue);

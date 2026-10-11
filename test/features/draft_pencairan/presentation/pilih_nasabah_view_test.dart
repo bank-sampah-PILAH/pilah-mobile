@@ -8,14 +8,14 @@ import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/domain/use_cases/draft_pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
-class _MockUseCases extends Mock implements DraftPencairanUseCases {}
+class _MockRepository extends Mock implements DraftPencairanRepository {}
 
 const _ahmad =
     Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 465600);
@@ -25,7 +25,7 @@ const _citra =
     Kandidat(id: 'n-3', kode: 'NAS-0003', nama: 'Citra Dewi', saldo: 250000);
 
 void main() {
-  late _MockUseCases useCases;
+  late _MockRepository repository;
   Object? openedWith;
 
   void answer({
@@ -34,7 +34,7 @@ void main() {
     int saldoMin = 0,
     List<Kandidat> rows = const [_ahmad, _budi, _citra],
   }) {
-    when(() => useCases.getKandidat(
+    when(() => repository.getKandidat(
           search: search,
           urutan: urutan,
           saldoMin: saldoMin,
@@ -42,7 +42,7 @@ void main() {
   }
 
   setUp(() {
-    useCases = _MockUseCases();
+    repository = _MockRepository();
     openedWith = null;
     answer();
   });
@@ -54,7 +54,7 @@ void main() {
         GoRoute(
           path: '/',
           builder: (_, __) => BlocProvider(
-            create: (_) => PilihNasabahCubit(useCases)..load(),
+            create: (_) => PilihNasabahCubit(repository)..load(),
             child: const PilihNasabahView(),
           ),
         ),
@@ -192,13 +192,13 @@ void main() {
     await tester.enterText(find.byType(TextField), 'b');
     await tester.enterText(find.byType(TextField), 'bud');
     await tester.pump(const Duration(milliseconds: 100));
-    verifyNever(() => useCases.getKandidat(
+    verifyNever(() => repository.getKandidat(
         search: 'bud', urutan: KandidatUrutan.namaAZ, saldoMin: 0));
 
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
-    verify(() => useCases.getKandidat(
+    verify(() => repository.getKandidat(
         search: 'bud', urutan: KandidatUrutan.namaAZ, saldoMin: 0)).called(1);
     expect(find.text('Ahmad Ridwan'), findsNothing);
     expect(find.text('Budi Santoso'), findsOneWidget);
@@ -224,7 +224,7 @@ void main() {
     await tester.tap(find.text('Saldo terbesar').last);
     await tester.pumpAndSettle();
 
-    verify(() => useCases.getKandidat(
+    verify(() => repository.getKandidat(
         search: '',
         urutan: KandidatUrutan.saldoTerbesar,
         saldoMin: 0)).called(1);
