@@ -191,7 +191,7 @@ class _List extends StatelessWidget {
                     IgnorePointer(
                       child: Checkbox(
                         value: dipilih,
-                        onChanged: (_) {},
+                        onChanged: (_) {}, // coverage:ignore-line
                         activeColor: AppColors.greenDark,
                       ),
                     ),
