@@ -71,7 +71,8 @@ void main() {
     await cubit.load();
     await cubit.loadMore();
     expect(cubit.state.items, [first, isA<ActivitasEntity>(), second, third]);
-    expect(cubit.state.items.where((row) => row.transaksi?.id == 'known'), hasLength(1));
+    expect(cubit.state.items.where((row) => row.transaksi?.id == 'known'),
+        hasLength(1));
   });
 
   test('custom dates and type are sent to the same endpoint', () async {

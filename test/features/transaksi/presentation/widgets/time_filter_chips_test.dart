@@ -157,9 +157,12 @@ void main() {
     });
   });
 
-  testWidgets('export control reacts to type and search filters', (tester) async {
+  testWidgets('export control reacts to type and search filters',
+      (tester) async {
     await open(tester);
-    InkWell exportControl() => tester.widget<InkWell>(find.ancestor(of: find.text('XLS Setoran'), matching: find.byType(InkWell)).first);
+    InkWell exportControl() => tester.widget<InkWell>(find
+        .ancestor(of: find.text('XLS Setoran'), matching: find.byType(InkWell))
+        .first);
     expect(exportControl().onTap, isNotNull);
     cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
     await tester.pumpAndSettle();

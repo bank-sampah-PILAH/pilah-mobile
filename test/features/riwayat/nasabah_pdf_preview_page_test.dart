@@ -29,10 +29,12 @@ void main() {
 
   List<Directory> previewCopies() {
     final matches = <Directory>[];
-    for (final directory in Directory.systemTemp.listSync().whereType<Directory>()) {
+    for (final directory
+        in Directory.systemTemp.listSync().whereType<Directory>()) {
       if (!directory.path.contains('riwayat_pdf')) continue;
       try {
-        if (directory.listSync().whereType<File>().any(holdsThisPdf)) matches.add(directory);
+        if (directory.listSync().whereType<File>().any(holdsThisPdf))
+          matches.add(directory);
       } on FileSystemException {
         // Other test isolates may dispose their preview between listing and reading.
       }

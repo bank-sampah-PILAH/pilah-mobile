@@ -66,7 +66,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
           loadingMore: false, errorMessage: failure.displayMessage)),
       (page) {
         _page++;
-        final ids = state.items.map(_key).toSet();
+        final ids = state.items.map(_key).whereType<String>().toSet();
         emit(state.copyWith(items: [
           ...state.items,
           ...page.items.where((item) {
@@ -115,8 +115,11 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
 
   /// XLSX expansion to include payouts is owned by PIL-248.
   Future<({TransaksiExport? export, String? error})> exportTransaksi() async {
-    if (state.tipeFilter != AktivitasTipeFilter.semua || state.search.trim().isNotEmpty) {
-      return (export: null, error: 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.');
+    if (!state.canExportSetoran) {
+      return (
+        export: null,
+        error: 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.'
+      );
     }
     final result = await _export.execute(_filter(1));
     return result.fold(

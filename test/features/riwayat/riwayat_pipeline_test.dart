@@ -68,7 +68,8 @@ void main() {
         .getOrElse(() => throw StateError('detail failed'));
     expect(loaded.amount, '25000.00');
     expect(api.last.query, {'keanggotaan_id': 'member-1'});
-    final statement = StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
+    final statement =
+        StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
     final pdf = (await statement.exportPdf('member-1'))
         .getOrElse(() => throw StateError('PDF failed'));
     expect(pdf.bytes, [37, 80, 68, 70]);
@@ -89,7 +90,8 @@ void main() {
     expect(api.last.query['keanggotaan_id'], '');
     expect((await GetRiwayatSetoranDetailUseCase(repo).execute()).isRight(),
         isTrue);
-    final statement = StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
+    final statement =
+        StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
     final pdf = (await statement.exportPdf(''))
         .getOrElse(() => throw StateError('PDF failed'));
     expect(pdf.filename, 'Riwayat_Aktivitas.pdf');
@@ -156,9 +158,11 @@ void main() {
     expect(cubit.state.status, StatementExportStatus.loading);
   });
 
-  test('offline history adapter returns empty history and a typed detail error', () async {
+  test('offline history adapter returns empty history and a typed detail error',
+      () async {
     final repo = PreviewRiwayatRepository(_Nasabah());
-    final history = (await repo.history('m')).getOrElse(() => throw StateError('history failed'));
+    final history = (await repo.history('m'))
+        .getOrElse(() => throw StateError('history failed'));
     expect(history.activities, isEmpty);
     expect(history.hasNext, isFalse);
     expect((await repo.setoranDetail('m', 'tx')).isLeft(), isTrue);

@@ -42,9 +42,14 @@ void main() {
     final export = Export();
     final cubit = RiwayatAktivitasCubit(feed, export);
     addTearDown(cubit.close);
-    when(() => feed.execute(any())).thenAnswer((_) async => const Right(AktivitasPage([], false)));
-    when(() => export.execute(any())).thenAnswer((_) async => Right(TransaksiExport(bytes: Uint8List(0), filename: 'all.xlsx')));
-    for (final type in [AktivitasTipeFilter.setoran, AktivitasTipeFilter.pencairan]) {
+    when(() => feed.execute(any()))
+        .thenAnswer((_) async => const Right(AktivitasPage([], false)));
+    when(() => export.execute(any())).thenAnswer((_) async =>
+        Right(TransaksiExport(bytes: Uint8List(0), filename: 'all.xlsx')));
+    for (final type in [
+      AktivitasTipeFilter.setoran,
+      AktivitasTipeFilter.pencairan
+    ]) {
       cubit.setTipeFilter(type);
       await Future<void>.delayed(Duration.zero);
       final result = await cubit.exportTransaksi();

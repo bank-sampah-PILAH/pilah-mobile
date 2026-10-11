@@ -4,13 +4,17 @@ import 'dart:typed_data';
 /// `periode` values: `hari_ini`, `minggu_ini`, `bulan_ini`, `bulan_lalu`,
 /// `custom` (with `dari_tanggal` / `sampai_tanggal`), plus [periodeSemua] for
 /// no date filter at all.
+///
+/// The constructor pins `bulan_ini` for the legacy transaction list/export.
+/// The unified `/aktivitas` API defaults an omitted period to `semua`; feed
+/// callers must pass their selected period explicitly.
 class TransaksiFilter {
   /// `periode` value meaning "every transaction, no date filter".
   ///
   /// It has to be sent explicitly: the backend's
   /// `TransactionFilterService.apply_period` defaults a *missing* `periode` to
-  /// `hari_ini`, and only leaves the queryset untouched for a value it doesn't
-  /// recognise. Omitting the param would quietly scope the request to today.
+  /// `hari_ini`. Send `semua` for all-time data; unknown values are rejected.
+  /// Omitting the param would quietly scope the legacy request to today.
   static const periodeSemua = 'semua';
 
   final String periode;

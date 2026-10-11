@@ -34,6 +34,10 @@ class RiwayatAktivitasState extends Equatable {
 
   bool get isCustomPeriode => periode == 'custom';
 
+  /// Legacy XLS exports cannot represent activity type or name filters.
+  bool get canExportSetoran =>
+      tipeFilter == AktivitasTipeFilter.semua && search.trim().isEmpty;
+
   RiwayatAktivitasState copyWith({
     AktivitasStatus? status,
     List<ActivitasEntity>? items,

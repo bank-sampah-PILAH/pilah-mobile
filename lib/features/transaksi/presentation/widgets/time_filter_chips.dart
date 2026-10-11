@@ -36,7 +36,7 @@ class TimeFilterChips extends StatelessWidget {
           previous.search != current.search,
       builder: (context, state) {
         final activePeriode = state.periode;
-        final canExport = state.tipeFilter == AktivitasTipeFilter.semua && state.search.trim().isEmpty;
+        final canExport = state.canExportSetoran;
         return Row(
           children: [
             Expanded(
@@ -85,32 +85,43 @@ class TimeFilterChips extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             // Export XLS Button
-            InkWell(
-              onTap: canExport ? () => _onExport(context) : null,
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.download_rounded,
-                        color: Color(0xFF374151), size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      'XLS Setoran',
-                      style: AppTextStyle.small.copyWith(
-                        color: const Color(0xFF374151),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+            Tooltip(
+              message: canExport
+                  ? 'Unduh XLS Setoran'
+                  : 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.',
+              child: InkWell(
+                onTap: canExport ? () => _onExport(context) : null,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: const Color(0xFFD1D5DB), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.download_rounded,
+                          color: canExport
+                              ? const Color(0xFF374151)
+                              : const Color(0xFF9CA3AF),
+                          size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        'XLS Setoran',
+                        style: AppTextStyle.small.copyWith(
+                          color: canExport
+                              ? const Color(0xFF374151)
+                              : const Color(0xFF9CA3AF),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
