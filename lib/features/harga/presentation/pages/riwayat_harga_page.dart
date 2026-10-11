@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -68,6 +69,14 @@ class _RiwayatHargaViewState extends State<RiwayatHargaView> {
             case RiwayatHargaStatus.failure:
               return const SizedBox.shrink();
             case RiwayatHargaStatus.loaded:
+              if (state.riwayat.isEmpty) {
+                return const EmptyView(
+                  title: 'Belum Ada Riwayat Harga',
+                  subtitle:
+                      'Harga yang diatur untuk jenis ini akan tampil di sini.',
+                  icon: Icons.history,
+                );
+              }
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: state.riwayat.length,
