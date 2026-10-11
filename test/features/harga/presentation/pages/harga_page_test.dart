@@ -65,7 +65,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('route:${RiwayatHargaPage.route}'), findsOneWidget);
-    final jenis = router.routerDelegate.currentConfiguration.extra;
+    final jenis = router.state.extra;
     expect((jenis as HargaEntity).name, 'Botol PET');
     expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
   });
