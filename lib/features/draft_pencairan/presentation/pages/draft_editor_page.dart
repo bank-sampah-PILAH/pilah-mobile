@@ -246,7 +246,8 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       ],
       child: BlocBuilder<DraftEditorCubit, DraftEditorState>(
         builder: (context, state) => PopScope(
-          canPop: !state.dirty,
+          // A draft that was never saved is all unsaved work, edited or not.
+          canPop: state.draftId != null && !state.dirty,
           onPopInvokedWithResult: (didPop, _) => _onPopBlocked(context, didPop),
           child: _scaffold(context, state),
         ),
