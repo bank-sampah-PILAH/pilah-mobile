@@ -169,6 +169,26 @@ void main() {
           'e');
     });
 
+    test('reads the error of a response that was asked for as bytes', () {
+      Uint8List bytes(String text) => Uint8List.fromList(utf8.encode(text));
+      final response = _response(
+          422, bytes('{"errors": {"items[0].nominal": ["Saldo kurang"]}}'));
+
+      expect(NetworkException.extractMessage(response), 'Saldo kurang');
+      expect(NetworkException(response: response).fieldErrors(),
+          {'items[0].nominal': 'Saldo kurang'});
+      expect(
+          NetworkException.extractMessage(
+              _response(404, bytes('{"error": "Tidak ada"}'))),
+          'Tidak ada');
+      expect(NetworkException.extractMessage(_response(500, bytes('<html>'))),
+          isNull);
+      expect(
+          NetworkException(response: _response(500, bytes('<html>')))
+              .fieldErrors(),
+          isEmpty);
+    });
+
     test('accepts a plain string body and ignores nothing useful', () {
       expect(NetworkException.extractMessage(_response(500, 'gagal')), 'gagal');
       expect(NetworkException.extractMessage(_response(500, '')), isNull);

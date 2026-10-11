@@ -259,6 +259,15 @@ void persistenceTests() {
       ..setItemPotongan('n-2', const Potongan(PotonganJenis.rupiah, 1500));
   });
 
+  test(
+      'a new draft is named by the pengurus\' WIB clock, wherever the phone is',
+      () {
+    final editor = DraftEditorCubit(_MockUseCases())
+      ..startNew(const [_ahmad], sekarang: DateTime.utc(2026, 10, 8, 23, 30));
+
+    expect(editor.state.nama, 'Pencairan 9 Okt 2026, 06:30');
+  });
+
   group('saving', () {
     test('a new draft is created from the whole editor state', () async {
       when(() => repository.createDraft(any()))

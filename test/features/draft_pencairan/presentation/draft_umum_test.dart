@@ -59,6 +59,19 @@ void main() {
   });
 
   group('terapkanUmum', () {
+    test('a hand-edited nominal is no longer the jumlah given to everyone', () {
+      final editor = _editor()
+        ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.rupiah, 100000));
+      expect(editor.state.jumlahUmum, isNotNull);
+
+      editor.setItemPotongan('n-1', const Potongan(PotonganJenis.rupiah, 500));
+      expect(editor.state.jumlahUmum, isNotNull,
+          reason: 'a potongan does not change the jumlah');
+
+      editor.setItemNominal('n-2', 40000);
+      expect(editor.state.jumlahUmum, isNull);
+    });
+
     test('a jumlah rewrites every nominal and nothing else', () {
       final editor = _editor();
 
