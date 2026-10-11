@@ -57,6 +57,26 @@ void main() {
     expect(find.text('Hari'), findsOneWidget);
   });
 
+  testWidgets('report section defaults both widgets to the current month',
+      (tester) async {
+    final source = _ReportingDataSource();
+    final expectedRange = DashboardReportRange.currentMonth(DateTime.now());
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: DashboardReportsSection(dataSource: source),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(source.requestedTrendRanges.single.start, expectedRange.start);
+    expect(source.requestedTrendRanges.single.end, expectedRange.end);
+    expect(source.requestedCategoryRanges.single.start, expectedRange.start);
+    expect(source.requestedCategoryRanges.single.end, expectedRange.end);
+  });
+
   testWidgets('category widget ranks by weight and displays kg and count',
       (tester) async {
     final source = _ReportingDataSource()
@@ -108,11 +128,11 @@ void main() {
 
     await tester.tap(find.text('2026-06-01 – 2026-06-30'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('10'));
+    await tester.tap(find.text('10').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('20'));
+    await tester.tap(find.text('20').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('OK'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(source.requestedTrendRanges.last.start, DateTime(2026, 6, 10));
@@ -168,7 +188,18 @@ void main() {
       amountGroup.barRods.first,
       0,
     );
-    expect(tooltip!.text, contains('Setoran: Rp 1.250'));
+    expect(tooltip!.text, contains('Setoran: Rp 1250'));
+
+    final countChart = tester.widget<BarChart>(find.byType(BarChart).last);
+    final countGroup = countChart.data.barGroups.first;
+    final countTooltip =
+        countChart.data.barTouchData.touchTooltipData.getTooltipItem(
+      countGroup,
+      0,
+      countGroup.barRods.first,
+      0,
+    );
+    expect(countTooltip!.text, contains('Setoran: 3 transaksi'));
   });
 
   testWidgets('empty and failed reports have independent feedback',

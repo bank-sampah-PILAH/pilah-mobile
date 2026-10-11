@@ -73,11 +73,13 @@ class DashboardReportRangeFilter extends StatelessWidget {
 class OperationalTrendsWidget extends StatefulWidget {
   final DashboardReportingDataSource dataSource;
   final DashboardReportRange? initialRange;
+  final DashboardReportRange? range;
 
   const OperationalTrendsWidget({
     super.key,
     required this.dataSource,
     this.initialRange,
+    this.range,
   });
 
   @override
@@ -93,13 +95,24 @@ class _OperationalTrendsWidgetState extends State<OperationalTrendsWidget> {
   @override
   void initState() {
     super.initState();
-    _range = widget.initialRange ?? DashboardReportRange.currentMonth();
+    _range = widget.range ??
+        widget.initialRange ??
+        DashboardReportRange.currentMonth();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant OperationalTrendsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.range != oldWidget.range && widget.range != null) {
+      _range = widget.range!;
+      _load();
+    }
   }
 
   void _load() {
     _request = widget.dataSource.getOperationalTrends(
-      range: _range,
+      range: widget.range ?? _range,
       granularity: _granularity,
     );
   }
@@ -116,8 +129,9 @@ class _OperationalTrendsWidgetState extends State<OperationalTrendsWidget> {
   Widget build(BuildContext context) => _ReportCard(
         title: 'Tren operasional',
         controls: [
-          DashboardReportRangeFilter(
-              range: _range, onChanged: (v) => _update(range: v)),
+          if (widget.range == null)
+            DashboardReportRangeFilter(
+                range: _range, onChanged: (v) => _update(range: v)),
           DropdownButton<TrendGranularity>(
             value: _granularity,
             onChanged: (value) {
@@ -145,7 +159,14 @@ class _OperationalTrendsWidgetState extends State<OperationalTrendsWidget> {
               return const _ReportMessage('Gagal memuat tren');
             }
             final buckets = snapshot.data ?? const [];
-            if (buckets.isEmpty) return const _ReportMessage('Belum ada data');
+            if (buckets.isEmpty ||
+                buckets.every((bucket) =>
+                    bucket.depositAmount == 0 &&
+                    bucket.depositCount == 0 &&
+                    bucket.withdrawalAmount == 0 &&
+                    bucket.withdrawalCount == 0)) {
+              return const _ReportMessage('Belum ada data');
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -156,6 +177,7 @@ class _OperationalTrendsWidgetState extends State<OperationalTrendsWidget> {
                   values: buckets
                       .map((b) => (b.depositAmount, b.withdrawalAmount))
                       .toList(),
+                  measure: 'Rp',
                 ),
                 const SizedBox(height: 16),
                 _TrendChart(
@@ -168,6 +190,7 @@ class _OperationalTrendsWidgetState extends State<OperationalTrendsWidget> {
                             b.withdrawalCount.toDouble()
                           ))
                       .toList(),
+                  measure: 'transaksi',
                 ),
                 const Row(children: [
                   _Legend(color: Color(0xFF16865B), label: 'Setoran'),
@@ -184,11 +207,13 @@ class _OperationalTrendsWidgetState extends State<OperationalTrendsWidget> {
 class WasteCategoriesWidget extends StatefulWidget {
   final DashboardReportingDataSource dataSource;
   final DashboardReportRange? initialRange;
+  final DashboardReportRange? range;
 
   const WasteCategoriesWidget({
     super.key,
     required this.dataSource,
     this.initialRange,
+    this.range,
   });
 
   @override
@@ -202,25 +227,39 @@ class _WasteCategoriesWidgetState extends State<WasteCategoriesWidget> {
   @override
   void initState() {
     super.initState();
-    _range = widget.initialRange ?? DashboardReportRange.currentMonth();
+    _range = widget.range ??
+        widget.initialRange ??
+        DashboardReportRange.currentMonth();
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant WasteCategoriesWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.range != oldWidget.range && widget.range != null) {
+      _range = widget.range!;
+      _load();
+    }
+  }
+
   void _load() {
-    _request = widget.dataSource.getWasteCategories(range: _range);
+    _request = widget.dataSource.getWasteCategories(
+      range: widget.range ?? _range,
+    );
   }
 
   @override
   Widget build(BuildContext context) => _ReportCard(
         title: 'Kategori sampah',
         controls: [
-          DashboardReportRangeFilter(
-            range: _range,
-            onChanged: (value) => setState(() {
-              _range = value;
-              _load();
-            }),
-          ),
+          if (widget.range == null)
+            DashboardReportRangeFilter(
+              range: _range,
+              onChanged: (value) => setState(() {
+                _range = value;
+                _load();
+              }),
+            ),
         ],
         child: FutureBuilder<List<WasteCategoryTotal>>(
           future: _request,
@@ -252,6 +291,52 @@ class _WasteCategoriesWidgetState extends State<WasteCategoriesWidget> {
       );
 }
 
+class DashboardReportsSection extends StatefulWidget {
+  final DashboardReportingDataSource dataSource;
+  final DashboardReportRange? initialRange;
+
+  const DashboardReportsSection({
+    super.key,
+    required this.dataSource,
+    this.initialRange,
+  });
+
+  @override
+  State<DashboardReportsSection> createState() =>
+      _DashboardReportsSectionState();
+}
+
+class _DashboardReportsSectionState extends State<DashboardReportsSection> {
+  late DashboardReportRange _range;
+
+  @override
+  void initState() {
+    super.initState();
+    _range = widget.initialRange ?? DashboardReportRange.currentMonth();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Periode laporan',
+              style: Theme.of(context).textTheme.titleSmall),
+          DashboardReportRangeFilter(
+            range: _range,
+            onChanged: (value) => setState(() => _range = value),
+          ),
+          OperationalTrendsWidget(
+            dataSource: widget.dataSource,
+            range: _range,
+          ),
+          WasteCategoriesWidget(
+            dataSource: widget.dataSource,
+            range: _range,
+          ),
+        ],
+      );
+}
+
 class _ReportCard extends StatelessWidget {
   final String title;
   final List<Widget> controls;
@@ -279,11 +364,13 @@ class _TrendChart extends StatelessWidget {
   final String title;
   final List<String> labels;
   final List<(double, double)> values;
+  final String measure;
 
   const _TrendChart({
     required this.title,
     required this.labels,
     required this.values,
+    required this.measure,
   });
 
   @override
@@ -317,8 +404,18 @@ class _TrendChart extends StatelessWidget {
                 rightTitles: const AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
                 ),
-                leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 42,
+                    getTitlesWidget: (value, meta) => SideTitleWidget(
+                      meta: meta,
+                      child: Text(
+                        _measureNumber(value),
+                        style: const TextStyle(fontSize: 9),
+                      ),
+                    ),
+                  ),
                 ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
@@ -340,6 +437,23 @@ class _TrendChart extends StatelessWidget {
                       );
                     },
                   ),
+                ),
+              ),
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final series = rodIndex == 0 ? 'Setoran' : 'Pencairan';
+                    return BarTooltipItem(
+                      '${labels[groupIndex]}\n$series: ${_formatMeasure(measure, rod.toY)}',
+                      const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  },
                 ),
               ),
               borderData: FlBorderData(show: false),
@@ -376,3 +490,10 @@ class _ReportMessage extends StatelessWidget {
 }
 
 String _number(double value) => value.toStringAsFixed(value % 1 == 0 ? 0 : 1);
+
+String _formatMeasure(String measure, double value) => measure == 'Rp'
+    ? 'Rp ${_measureNumber(value)}'
+    : '${_measureNumber(value)} $measure';
+
+String _measureNumber(double value) =>
+    value.toStringAsFixed(value % 1 == 0 ? 0 : 2);

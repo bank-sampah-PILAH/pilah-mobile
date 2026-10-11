@@ -58,4 +58,41 @@ void main() {
     expect(result.single.withdrawalAmount, 200);
     expect(result.single.withdrawalCount, 1);
   });
+
+  test('waste categories sends range and maps weight and deposit count',
+      () async {
+    when(() => network.get(
+          '/api/v1/dashboard/waste-categories',
+          queryParams: any(named: 'queryParams'),
+        )).thenAnswer((_) async => Response(
+          requestOptions: RequestOptions(path: ''),
+          data: {
+            'categories': [
+              {
+                'category': 'plastik',
+                'total_weight_kg': '12.750',
+                'deposit_count': 4,
+              },
+            ],
+          },
+        ));
+
+    final result = await source.getWasteCategories(
+      range: DashboardReportRange(
+        start: DateTime(2026, 6, 1),
+        end: DateTime(2026, 6, 30),
+      ),
+    );
+
+    verify(() => network.get(
+          '/api/v1/dashboard/waste-categories',
+          queryParams: {
+            'start_date': '2026-06-01',
+            'end_date': '2026-06-30',
+          },
+        )).called(1);
+    expect(result.single.category, 'plastik');
+    expect(result.single.totalWeightKg, 12.75);
+    expect(result.single.depositCount, 4);
+  });
 }
