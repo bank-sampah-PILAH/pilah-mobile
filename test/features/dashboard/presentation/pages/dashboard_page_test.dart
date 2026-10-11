@@ -27,7 +27,8 @@ class _ActivityCubit extends MockCubit<RecentActivityState>
 
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
-class _FakeProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {}
+class _FakeProfileCubit extends MockCubit<ProfileState>
+    implements ProfileCubit {}
 
 void main() {
   late StubApi api;
