@@ -100,4 +100,19 @@ void main() {
 
     expect(find.text('Rp 4.000 / kg'), findsOneWidget);
   });
+
+  testWidgets('the largest price and the widest badge fit a phone screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    api.on('GET', _path, json: {
+      'results': [_versi('999999999.00', '2026-10-01T02:30:00Z', 'berlaku')],
+    });
+
+    await pumpView(tester);
+
+    expect(find.text('Rp 999.999.999 / kg'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
