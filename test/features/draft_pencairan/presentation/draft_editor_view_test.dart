@@ -1070,11 +1070,9 @@ void main() {
           findsOneWidget);
       expect(find.byKey(const Key('konfirmasi-peringatan')), findsOneWidget);
       expect(find.textContaining('tidak bisa diulang'), findsOneWidget);
-      expect(find.byKey(const Key('konfirmasi-simpan-dulu')), findsNothing,
-          reason: 'nothing unsaved to mention');
     });
 
-    testWidgets('it says the draft is saved first when it has unsaved edits',
+    testWidgets('it does not announce saving first, even with unsaved edits',
         (tester) async {
       await pumpSaved(tester);
       cubit.setNama('Belum disimpan');
@@ -1084,7 +1082,8 @@ void main() {
       await tester.tap(find.byKey(const Key('konfirmasi')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('konfirmasi-simpan-dulu')), findsOneWidget);
+      expect(find.textContaining('disimpan terlebih dulu'), findsNothing);
+      expect(find.byKey(const Key('konfirmasi-peringatan')), findsOneWidget);
     });
 
     testWidgets('the header has a labelled Ekspor button, not a three-dot menu',
