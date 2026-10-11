@@ -84,7 +84,6 @@ class _DraftEditorViewState extends State<DraftEditorView> {
   Future<void> _confirmPayment() async {
     final cubit = context.read<DraftEditorCubit>();
     final state = cubit.state;
-    final disimpanDulu = state.draftId == null || state.dirty;
     final ok = await showPencairanKonfirmasi(
       context,
       icon: Icons.payments_outlined,
@@ -93,7 +92,6 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       isi: _RingkasanBayar(
         jumlah: state.items.length,
         total: state.totalDibayar,
-        disimpanDulu: disimpanDulu,
       ),
       ya: 'Ya, sudah dibayar',
       tidak: 'Belum',
@@ -629,12 +627,10 @@ class _BottomBar extends StatelessWidget {
 class _RingkasanBayar extends StatelessWidget {
   final int jumlah;
   final int total;
-  final bool disimpanDulu;
 
   const _RingkasanBayar({
     required this.jumlah,
     required this.total,
-    required this.disimpanDulu,
   });
 
   @override
@@ -701,22 +697,6 @@ class _RingkasanBayar extends StatelessWidget {
             ],
           ),
         ),
-        if (disimpanDulu) ...[
-          const SizedBox(height: 12),
-          Row(
-            key: const Key('konfirmasi-simpan-dulu'),
-            children: [
-              Icon(Icons.save_outlined, size: 18, color: Colors.grey[700]),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Draft akan disimpan terlebih dulu.',
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[700]),
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }
