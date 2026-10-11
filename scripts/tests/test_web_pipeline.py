@@ -68,6 +68,24 @@ class WebPipelineTest(unittest.TestCase):
         self.assertNotEqual(run({"FLAVOR": "staging"}), 0)
         self.assertEqual(run({"FLAVOR": "staging", "FLY_API_TOKEN": "test-only"}), 0)
 
+    def test_browser_favicon_kit_is_linked_and_branded(self):
+        index = (ROOT / "web/index.html").read_text()
+        manifest = (ROOT / "web/site.webmanifest").read_text()
+        for asset in (
+            "favicon.ico", "icons/favicon-16x16.png", "icons/favicon-32x32.png",
+            "apple-touch-icon.png", "site.webmanifest",
+        ):
+            with self.subTest(asset=asset):
+                self.assertIn(asset, index)
+                self.assertTrue((ROOT / "web" / asset).is_file())
+        for asset in ("android-chrome-192x192.png", "android-chrome-512x512.png"):
+            with self.subTest(asset=asset):
+                self.assertIn(asset, manifest)
+                self.assertTrue((ROOT / "web" / asset).is_file())
+        self.assertIn('<title>PILAH | Beranda</title>', index)
+        self.assertIn('"name": "PILAH"', manifest)
+        self.assertIn('"short_name": "PILAH"', manifest)
+
     def test_bootstrap_does_not_register_obsolete_service_worker(self):
         bootstrap = (ROOT / "web/flutter_bootstrap.js").read_text()
         self.assertIn("{{flutter_js}}", bootstrap)
