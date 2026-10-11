@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -251,6 +252,23 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+  });
+
+  testWidgets('previews a browser-selected logo from its bytes',
+      (tester) async {
+    await openPage(tester);
+    cubit.emit(cubit.state.copyWith(
+      selectedLogoBytes: Uint8List.fromList([1, 2, 3]),
+      selectedLogoFilename: 'bank-logo.png',
+    ));
+    await tester.pump();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Image && widget.image is MemoryImage,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a stored logo is shown from its URL', (tester) async {
