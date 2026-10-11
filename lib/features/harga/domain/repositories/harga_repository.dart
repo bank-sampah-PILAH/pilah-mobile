@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/versi_harga.dart';
 
 abstract class HargaRepository {
   Future<Either<NetworkException, List<HargaEntity>>> getHarga();
@@ -10,4 +11,5 @@ abstract class HargaRepository {
   Future<Either<NetworkException, void>> deactivateHarga(String id);
   Future<Either<NetworkException, void>> activateHarga(String id);
   Future<Either<NetworkException, void>> ubahHarga(UbahHarga perubahan);
+  Future<Either<NetworkException, List<VersiHarga>>> getRiwayatHarga(String id);
 }
