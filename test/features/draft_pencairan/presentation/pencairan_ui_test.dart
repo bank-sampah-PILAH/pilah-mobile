@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
 import '../../../support/pump_app.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 
 /// The look of Catat Pencairan, shared by the draft screens: a grey rounded
 /// back button, bold title, spaced grey section labels, white 12px inputs,
@@ -249,7 +250,7 @@ void main() {
   });
 
   test('inputs are white, 12px round, grey until focused, then green', () {
-    final decoration = pencairanInputDecoration(hintText: 'Contoh: 50000');
+    final decoration = appInputDecoration(hintText: 'Contoh: 50000');
 
     expect(decoration.hintText, 'Contoh: 50000');
     expect(decoration.filled, isTrue);

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -279,8 +280,8 @@ class _FormState extends State<_Form> {
                   controller: nama,
                   readOnly: locked,
                   onChanged: cubit.setNama,
-                  style: pencairanInputStyle,
-                  decoration: pencairanInputDecoration(
+                  style: appInputStyle,
+                  decoration: appInputDecoration(
                     hintText: 'Kosongkan untuk nama otomatis',
                   ),
                 ),

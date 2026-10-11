@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -142,8 +143,7 @@ class _TambahJenisSampahBottomSheetState
                     if (_serverKodeError != null) return _serverKodeError;
                     return null;
                   },
-                  decoration:
-                      _buildInputDecoration(hintText: 'Contoh: PLS-001'),
+                  decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -163,7 +163,7 @@ class _TambahJenisSampahBottomSheetState
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   decoration:
-                      _buildInputDecoration(hintText: 'Contoh: Plastik PET'),
+                      appInputDecoration(hintText: 'Contoh: Plastik PET'),
                 ),
                 const SizedBox(height: 20),
 
@@ -176,7 +176,7 @@ class _TambahJenisSampahBottomSheetState
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   hint: const Text('— Pilih Kategori —'),
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
                   items: _categories.map(_buildDropdownItem).toList(),
                   onChanged: (newValue) {
@@ -193,7 +193,7 @@ class _TambahJenisSampahBottomSheetState
                 TextFormField(
                   controller: _descController,
                   maxLines: 2,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                       hintText: 'Contoh: Botol bening, kemasan plastik'),
                 ),
                 const SizedBox(height: 20),
@@ -208,7 +208,7 @@ class _TambahJenisSampahBottomSheetState
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: '0',
                   ).copyWith(
                     prefixIcon: Padding(
@@ -441,32 +441,6 @@ class _TambahJenisSampahBottomSheetState
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
       ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({String? hintText}) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import 'pencairan_ui.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 
 /// Picks how much of each saldo everyone is paid: a share of it, or the same
 /// rupiah. [value] is what the form holds now, or null when nothing is chosen;
@@ -106,12 +107,12 @@ class _JumlahControlState extends State<JumlahControl> {
                       RegExp(r'^\d*[.,]?\d{0,2}'))
                   : FilteringTextInputFormatter.digitsOnly,
             ],
-            style: pencairanInputStyle,
-            decoration: pencairanInputDecoration(
+            style: appInputStyle,
+            decoration: appInputDecoration(
               hintText: persen ? 'Contoh: 50' : 'Contoh: 100000',
             ).copyWith(
               prefixText: persen ? null : 'Rp ',
-              prefixStyle: pencairanInputStyle,
+              prefixStyle: appInputStyle,
               suffixText: persen ? '% dari saldo' : 'paling banyak per nasabah',
             ),
             onChanged: (text) => widget.onChanged(JumlahUmum(

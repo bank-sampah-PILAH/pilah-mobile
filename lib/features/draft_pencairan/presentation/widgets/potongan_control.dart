@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import 'pencairan_ui.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 
 /// Picks a potongan: percent (with a slider) or fixed rupiah. Keys are
 /// `<keyPrefix>-persen`, `-rupiah`, `-nilai` and `-slider`.
@@ -100,12 +101,12 @@ class _PotonganControlState extends State<PotonganControl> {
                 ? FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d{0,2}'))
                 : FilteringTextInputFormatter.digitsOnly,
           ],
-          style: pencairanInputStyle,
-          decoration: pencairanInputDecoration(
+          style: appInputStyle,
+          decoration: appInputDecoration(
             hintText: persen ? 'Contoh: 10' : 'Contoh: 5000',
           ).copyWith(
             prefixText: persen ? null : 'Rp ',
-            prefixStyle: pencairanInputStyle,
+            prefixStyle: appInputStyle,
             suffixText: persen ? '%' : null,
           ),
           onChanged: (text) => widget.onChanged(Potongan(

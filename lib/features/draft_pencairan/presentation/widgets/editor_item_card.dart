@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -413,16 +414,16 @@ class _NominalFieldState extends State<_NominalField> {
       borderRadius: BorderRadius.circular(12),
       borderSide: const BorderSide(color: Colors.red),
     );
-    final base = pencairanInputDecoration(hintText: 'Contoh: 50000');
+    final base = appInputDecoration(hintText: 'Contoh: 50000');
     return TextField(
       key: widget.fieldKey,
       controller: _controller,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      style: pencairanInputStyle,
+      style: appInputStyle,
       decoration: base.copyWith(
         prefixText: 'Rp ',
-        prefixStyle: pencairanInputStyle,
+        prefixStyle: appInputStyle,
         enabledBorder: widget.hasError ? red : base.enabledBorder,
         focusedBorder: widget.hasError ? red : base.focusedBorder,
       ),

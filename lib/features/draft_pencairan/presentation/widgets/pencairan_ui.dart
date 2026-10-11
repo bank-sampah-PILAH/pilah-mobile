@@ -80,38 +80,6 @@ class SectionLabel extends StatelessWidget {
       );
 }
 
-InputDecoration pencairanInputDecoration({String? hintText}) => InputDecoration(
-      hintText: hintText,
-      hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[200]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    );
-
-/// Text style of what is typed into a [pencairanInputDecoration] field.
-TextStyle get pencairanInputStyle =>
-    AppTextStyle.small.copyWith(color: Colors.black87);
-
 /// A pill: solid green when selected, light grey otherwise.
 class PencairanChip extends StatelessWidget {
   final String label;
