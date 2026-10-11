@@ -8,6 +8,7 @@ import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_state.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/widgets/peta_bank_view.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -16,23 +17,30 @@ import 'package:pilah_mobile/services/di.dart';
 class CariBankPage extends StatelessWidget {
   static const route = '/cari-bank-sampah';
 
-  const CariBankPage({super.key});
+  const CariBankPage({super.key, this.tileLayerBuilder});
+
+  /// Test seam threaded to the map mode (PIL-330); null = the real OSM layer.
+  final Widget Function()? tileLayerBuilder;
 
   @override
   Widget build(BuildContext context) => BlocProvider(
         create: (_) => di<CariBankCubit>(),
-        child: const CariBankView(),
+        child: CariBankView(tileLayerBuilder: tileLayerBuilder),
       );
 }
 
 class CariBankView extends StatefulWidget {
-  const CariBankView({super.key});
+  const CariBankView({super.key, this.tileLayerBuilder});
+
+  final Widget Function()? tileLayerBuilder;
 
   @override
   State<CariBankView> createState() => _CariBankViewState();
 }
 
 class _CariBankViewState extends State<CariBankView> {
+  /// Daftar first: the map is the fancy view, not the default reading flow.
+  String _mode = 'Daftar';
   @override
   void initState() {
     super.initState();
@@ -68,6 +76,19 @@ class _CariBankViewState extends State<CariBankView> {
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: SegmentedButton<String>(
+                  key: const Key('cari_bank_mode'),
+                  segments: const [
+                    ButtonSegment(value: 'Daftar', label: Text('Daftar')),
+                    ButtonSegment(value: 'Peta', label: Text('Peta')),
+                  ],
+                  selected: {_mode},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _mode = selection.first),
                 ),
               ),
               Expanded(child: _body(context, state)),
@@ -117,6 +138,22 @@ class _CariBankViewState extends State<CariBankView> {
             ? 'Belum ada bank sampah terdaftar.'
             : 'Tidak ada bank yang cocok dengan pencarian.',
         icon: Icons.search_off,
+      );
+    }
+    if (_mode == 'Peta' &&
+        // Peta mode shows only banks a marker can stand on; banks without
+        // coordinates stay list-only (PIL-330).
+        !loaded.items.any((bank) => bank.lokasi != null)) {
+      return const EmptyView(
+        title: 'Tidak Ada Bank Dengan Lokasi',
+        subtitle: 'Bank yang dipilih tidak memasang koordinat di peta.',
+        icon: Icons.map_outlined,
+      );
+    }
+    if (_mode == 'Peta') {
+      return PetaBankView(
+        banks: loaded.items,
+        tileLayerBuilder: widget.tileLayerBuilder,
       );
     }
     return _DaftarBank(loaded: loaded);
