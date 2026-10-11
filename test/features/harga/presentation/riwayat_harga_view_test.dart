@@ -77,4 +77,13 @@ void main() {
     expect(find.text('Dicatat oleh Ibu Sari'), findsNWidgets(3));
     expect(find.text('Harga awal dari data lama'), findsOneWidget);
   });
+
+  testWidgets('says so when the jenis has no price history yet',
+      (tester) async {
+    api.on('GET', _path, json: {'results': <Object>[]});
+
+    await pumpView(tester);
+
+    expect(find.text('Belum Ada Riwayat Harga'), findsOneWidget);
+  });
 }
