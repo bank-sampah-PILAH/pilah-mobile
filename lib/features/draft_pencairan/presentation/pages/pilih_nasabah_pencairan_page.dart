@@ -204,7 +204,7 @@ class _BulkRow extends StatelessWidget {
                     child: Checkbox(
                       tristate: true,
                       value: nilai,
-                      onChanged: (_) {},
+                      onChanged: (_) {}, // coverage:ignore-line
                       activeColor: AppColors.greenDark,
                     ),
                   ),
