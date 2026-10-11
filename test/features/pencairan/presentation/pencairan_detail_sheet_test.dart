@@ -137,10 +137,12 @@ void main() {
     expect(find.text('Rp 140.000'), findsOneWidget);
   });
 
-  testWidgets('a pencairan without a potongan hides both rows', (tester) async {
+  testWidgets('a pencairan without a potongan still shows both rows',
+      (tester) async {
     await openSheet(tester, _pencairan());
 
-    expect(find.text('Potongan'), findsNothing);
-    expect(find.text('Dibayar'), findsNothing);
+    expect(find.text('Potongan'), findsOneWidget);
+    expect(find.text('Rp 0'), findsOneWidget);
+    expect(find.text('Dibayar'), findsOneWidget);
   });
 }

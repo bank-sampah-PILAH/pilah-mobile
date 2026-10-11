@@ -692,9 +692,9 @@ void main() {
     testWidgets(
         'a new draft can be paid right away: it is saved, then confirmed',
         (tester) async {
-      when(() => useCases.createDraft(any()))
+      when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_saved()));
-      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
       await pumpNew(tester);
       expect(
@@ -707,15 +707,15 @@ void main() {
 
       await tester.tap(find.byKey(const Key('konfirmasi')));
       await tester.pumpAndSettle();
-      verifyNever(() => useCases.createDraft(any()));
+      verifyNever(() => repository.createDraft(any()));
       expect(find.textContaining('Rp 765.600'), findsWidgets);
 
       await tester.tap(find.text('Ya, sudah dibayar'));
       await tester.pumpAndSettle();
 
       verifyInOrder([
-        () => useCases.createDraft(any()),
-        () => useCases.confirmDraft('d-1'),
+        () => repository.createDraft(any()),
+        () => repository.confirmDraft('d-1'),
       ]);
       expect(cubit.state.status, DraftStatus.dikonfirmasi);
     });
@@ -728,8 +728,8 @@ void main() {
       await tester.tap(find.text('Belum'));
       await tester.pumpAndSettle();
 
-      verifyNever(() => useCases.createDraft(any()));
-      verifyNever(() => useCases.confirmDraft(any()));
+      verifyNever(() => repository.createDraft(any()));
+      verifyNever(() => repository.confirmDraft(any()));
     });
 
     testWidgets('an invalid draft cannot be confirmed', (tester) async {
@@ -780,7 +780,8 @@ void main() {
     testWidgets('saving shows a spinner in the save button, labels unchanged',
         (tester) async {
       final pending = Completer<Either<NetworkException, DraftPencairan>>();
-      when(() => useCases.createDraft(any())).thenAnswer((_) => pending.future);
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) => pending.future);
       await pumpNew(tester);
 
       await tester.tap(find.byKey(const Key('simpan')));
@@ -799,7 +800,7 @@ void main() {
     });
 
     testWidgets('both labels still fit on a narrow phone', (tester) async {
-      cubit = DraftEditorCubit(useCases)..startNew(const [_ahmad]);
+      cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
       _current = cubit;
       await _pump(tester, size: const Size(320, 1800));
 
@@ -894,11 +895,11 @@ void main() {
       final recent = _MockRecent();
       when(() => riwayat.load(silent: true)).thenAnswer((_) async {});
       when(() => recent.load(silent: true)).thenAnswer((_) async {});
-      when(() => useCases.confirmDraft('d-1')).thenAnswer(
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
-      when(() => useCases.getDraft('d-1'))
+      when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_saved()));
-      cubit = DraftEditorCubit(useCases);
+      cubit = DraftEditorCubit(repository);
       _current = cubit;
       await cubit.load('d-1');
       await pumpRouted(
@@ -922,6 +923,34 @@ void main() {
 
       verify(() => riwayat.load(silent: true)).called(1);
       verify(() => recent.load(silent: true)).called(1);
+    });
+
+    testWidgets('after paying, the toast offers to open the riwayat',
+        (tester) async {
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
+      when(() => repository.getDraft('d-1'))
+          .thenAnswer((_) async => Right(_saved()));
+      cubit = DraftEditorCubit(repository);
+      _current = cubit;
+      await cubit.load('d-1');
+      await pumpRouted(
+        tester,
+        const _Host(),
+        size: const Size(420, 2600),
+        extraRoutes: ['/riwayat'],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ya, sudah dibayar'));
+      await pumpToast(tester);
+      await tester.tap(find.text('Lihat riwayat'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/riwayat'), findsOneWidget);
+      await settleToasts(tester);
     });
 
     testWidgets('confirming asks first, then records the payment',
