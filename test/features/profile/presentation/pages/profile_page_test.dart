@@ -47,7 +47,11 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  Future<void> openPage(WidgetTester tester, {MockAuthBloc? bloc}) async {
+  Future<void> openPage(
+    WidgetTester tester, {
+    MockAuthBloc? bloc,
+    Size size = const Size(800, 2400),
+  }) async {
     await pumpRouted(
       tester,
       MultiBlocProvider(
@@ -60,7 +64,7 @@ void main() {
         child: ProfilePage(),
       ),
       extraRoutes: ['/login'],
-      size: const Size(800, 2400),
+      size: size,
       pushed: true,
     );
     await tester.pumpAndSettle();
@@ -92,6 +96,16 @@ void main() {
     await openPage(tester);
 
     expect(find.text('siti@example.test'), findsOneWidget);
+  });
+
+  testWidgets('desktop places bank settings beside the WhatsApp template',
+      (tester) async {
+    await openPage(tester, size: const Size(1440, 900));
+
+    final bankSection = tester.getTopLeft(find.text('PROFIL BANK SAMPAH'));
+    final waSection = tester.getTopLeft(find.text('TEMPLATE NOTIFIKASI WA'));
+
+    expect(waSection.dx, greaterThan(bankSection.dx));
   });
 
   testWidgets('a failed load can be retried', (tester) async {
