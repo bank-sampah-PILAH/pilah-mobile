@@ -128,10 +128,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     final result = id == null
         ? await _repository.createDraft(input)
         : await _repository.updateDraft(id, input);
-    result.fold(
-      (failure) => emit(_rejected(failure)),
-      (draft) => emit(_fromServer(draft)),
-    );
+    await _apply(result);
   }
 
   /// Records that the pengurus has paid: the saldo and riwayat change, once.
@@ -153,7 +150,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     }
     await _transition(
       EditorPhase.confirming,
-      _useCases.confirmDraft(state.draftId!),
+      _repository.confirmDraft(state.draftId!),
     );
   }
 
@@ -169,10 +166,27 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     Future<Either<NetworkException, DraftPencairan>> call,
   ) async {
     emit(state.copyWith(phase: phase, errorMessage: () => null));
-    final result = await call;
-    result.fold(
-      (failure) => emit(_rejected(failure)),
-      (draft) => emit(_fromServer(draft)),
+    await _apply(await call);
+  }
+
+  Future<void> _apply(Either<NetworkException, DraftPencairan> result) =>
+      result.fold(
+        (failure) async {
+          emit(_rejected(failure));
+          // A 409 means the draft is final on the server; show it as it is there.
+          if (failure is ConflictException) await _resync();
+        },
+        (draft) async => emit(_fromServer(draft)),
+      );
+
+  /// Reloads the draft but keeps the message that explains why.
+  Future<void> _resync() async {
+    final id = state.draftId;
+    if (id == null) return;
+    final message = state.errorMessage;
+    (await _repository.getDraft(id)).fold(
+      (_) {},
+      (draft) => emit(_fromServer(draft).copyWith(errorMessage: () => message)),
     );
   }
 
