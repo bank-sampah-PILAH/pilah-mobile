@@ -64,19 +64,6 @@ class _BrowserTitleUpdaterState extends State<_BrowserTitleUpdater> {
     }
   }
 
-  @override
-  void didUpdateWidget(covariant _BrowserTitleUpdater oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.router != widget.router ||
-        oldWidget.enabled != widget.enabled) {
-      oldWidget.router.routeInformationProvider.removeListener(_scheduleUpdate);
-      if (widget.enabled) {
-        widget.router.routeInformationProvider.addListener(_scheduleUpdate);
-        _scheduleUpdate();
-      }
-    }
-  }
-
   void _scheduleUpdate() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !widget.enabled) return;
