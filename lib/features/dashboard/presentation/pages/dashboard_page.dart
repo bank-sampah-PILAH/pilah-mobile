@@ -1,5 +1,5 @@
 import 'package:pilah_mobile/core/router/app_locations.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -21,7 +21,11 @@ import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_reposito
 import 'package:pilah_mobile/services/di.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({super.key, this.isWeb});
+
+  // `kIsWeb` is compile-time constant, so VM tests need this branch override.
+  @visibleForTesting
+  final bool? isWeb;
 
   static const route = AppLocations.dashboard;
 
@@ -54,7 +58,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final webPengurusKey = kIsWeb
+    final webPengurusKey = (widget.isWeb ?? kIsWeb)
         ? context.select<AuthenticationBloc, String?>((bloc) {
             final state = bloc.state;
             if (state is! Authenticated ||

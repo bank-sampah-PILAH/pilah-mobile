@@ -1,6 +1,4 @@
-class CurrencyFormatter {
-  const CurrencyFormatter._();
-
+abstract final class CurrencyFormatter {
   static String formatRupiah(int value) {
     final digits = value.toString();
     var result = '';
