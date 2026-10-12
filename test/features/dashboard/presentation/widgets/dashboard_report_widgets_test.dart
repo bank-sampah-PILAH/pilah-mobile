@@ -1,0 +1,341 @@
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
+import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
+
+class _ReportingDataSource implements DashboardReportingDataSource {
+  List<OperationalTrendBucket> trends = const [];
+  List<WasteCategoryTotal> categories = const [];
+  Object? trendError;
+  Object? categoryError;
+  final requestedTrendRanges = <DashboardReportRange>[];
+  final requestedTrendGranularities = <TrendGranularity>[];
+  final requestedCategoryRanges = <DashboardReportRange>[];
+
+  @override
+  Future<List<OperationalTrendBucket>> getOperationalTrends({
+    required DashboardReportRange range,
+    required TrendGranularity granularity,
+  }) async {
+    requestedTrendRanges.add(range);
+    requestedTrendGranularities.add(granularity);
+    if (trendError case final error?) throw error;
+    return trends;
+  }
+
+  @override
+  Future<List<WasteCategoryTotal>> getWasteCategories({
+    required DashboardReportRange range,
+  }) async {
+    requestedCategoryRanges.add(range);
+    if (categoryError case final error?) throw error;
+    return categories;
+  }
+}
+
+void main() {
+  testWidgets('trend widget labels amount and count separately',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..trends = [
+        OperationalTrendBucket(
+          periodStart: DateTime(2026, 6),
+          depositAmount: 120,
+          depositCount: 3,
+          withdrawalAmount: 40,
+          withdrawalCount: 1,
+        ),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: OperationalTrendsWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nilai setoran dan pencairan (Rp)'), findsOneWidget);
+    expect(
+        find.text('Jumlah setoran dan pencairan (transaksi)'), findsOneWidget);
+    expect(find.text('Hari'), findsOneWidget);
+  });
+
+  testWidgets('report section defaults both widgets to the current month',
+      (tester) async {
+    final source = _ReportingDataSource();
+    final expectedRange = DashboardReportRange.currentMonth(DateTime.now());
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: DashboardReportsSection(dataSource: source),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(source.requestedTrendRanges.single.start, expectedRange.start);
+    expect(source.requestedTrendRanges.single.end, expectedRange.end);
+    expect(source.requestedCategoryRanges.single.start, expectedRange.start);
+    expect(source.requestedCategoryRanges.single.end, expectedRange.end);
+  });
+
+  testWidgets('category widget ranks by weight and displays kg and count',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 2, depositCount: 3),
+        WasteCategoryTotal(
+            category: 'Kertas', totalWeightKg: 8, depositCount: 1),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(find.text('Kertas')).dy,
+        lessThan(tester.getTopLeft(find.text('Plastik')).dy));
+    expect(find.text('8 kg'), findsOneWidget);
+    expect(find.text('1 setoran'), findsOneWidget);
+  });
+
+  testWidgets('shared report section applies one selected date range to both',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..trends = [
+        OperationalTrendBucket(
+          periodStart: DateTime(2026, 6, 1),
+          depositAmount: 1,
+          depositCount: 1,
+          withdrawalAmount: 0,
+          withdrawalCount: 0,
+        ),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: DashboardReportsSection(
+            dataSource: source,
+            initialRange: DashboardReportRange(
+              start: DateTime(2026, 6, 1),
+              end: DateTime(2026, 6, 30),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(source.requestedTrendRanges.single.start, DateTime(2026, 6, 1));
+    expect(source.requestedCategoryRanges.single.start, DateTime(2026, 6, 1));
+
+    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('10').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('20').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(source.requestedTrendRanges.last.start, DateTime(2026, 6, 10));
+    expect(source.requestedTrendRanges.last.end, DateTime(2026, 6, 20));
+    expect(source.requestedCategoryRanges.last.start, DateTime(2026, 6, 10));
+    expect(source.requestedCategoryRanges.last.end, DateTime(2026, 6, 20));
+  });
+
+  testWidgets('zero-filled trend buckets show the empty state', (tester) async {
+    final source = _ReportingDataSource()
+      ..trends = [
+        OperationalTrendBucket(
+          periodStart: DateTime(2026, 6, 1),
+          depositAmount: 0,
+          depositCount: 0,
+          withdrawalAmount: 0,
+          withdrawalCount: 0,
+        ),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: OperationalTrendsWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada data'), findsOneWidget);
+    expect(find.text('Nilai setoran dan pencairan (Rp)'), findsNothing);
+  });
+
+  testWidgets('trend chart exposes a numeric scale and exact value tooltip',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..trends = [
+        OperationalTrendBucket(
+          periodStart: DateTime(2026, 6, 1),
+          depositAmount: 1250,
+          depositCount: 3,
+          withdrawalAmount: 40,
+          withdrawalCount: 1,
+        ),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: OperationalTrendsWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    final amountChart = tester.widget<BarChart>(find.byType(BarChart).first);
+    expect(
+        amountChart.data.titlesData.leftTitles.sideTitles.showTitles, isTrue);
+    final amountGroup = amountChart.data.barGroups.first;
+    final tooltip =
+        amountChart.data.barTouchData.touchTooltipData.getTooltipItem(
+      amountGroup,
+      0,
+      amountGroup.barRods.first,
+      0,
+    );
+    expect(tooltip!.text, contains('Setoran: Rp 1250'));
+
+    final countChart = tester.widget<BarChart>(find.byType(BarChart).last);
+    final countGroup = countChart.data.barGroups.first;
+    final countTooltip =
+        countChart.data.barTouchData.touchTooltipData.getTooltipItem(
+      countGroup,
+      0,
+      countGroup.barRods.first,
+      0,
+    );
+    expect(countTooltip!.text, contains('Setoran: 3 transaksi'));
+  });
+
+  testWidgets('empty and failed reports have independent feedback',
+      (tester) async {
+    final source = _ReportingDataSource()..categoryError = Exception('offline');
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Column(children: [
+          Expanded(child: OperationalTrendsWidget(dataSource: source)),
+          Expanded(child: WasteCategoriesWidget(dataSource: source)),
+        ]),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada data'), findsOneWidget);
+    expect(find.text('Gagal memuat kategori'), findsOneWidget);
+  });
+
+  testWidgets('KPI cards display values with and without units',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: Column(
+          children: [
+            DashboardKpiCard(
+              label: 'Transaksi',
+              value: '7',
+              icon: Icons.show_chart,
+            ),
+            DashboardKpiCard(
+              label: 'Berat',
+              value: '2',
+              unit: 'kg',
+              icon: Icons.scale,
+            ),
+          ],
+        ),
+      ),
+    ));
+
+    expect(find.text('Transaksi'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('Berat'), findsOneWidget);
+    expect(find.text('2 kg'), findsOneWidget);
+  });
+
+  testWidgets('standalone trend controls update range and granularity',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..trends = [
+        OperationalTrendBucket(
+          periodStart: DateTime(2026, 6, 1),
+          depositAmount: 10,
+          depositCount: 1,
+          withdrawalAmount: 5,
+          withdrawalCount: 1,
+        ),
+      ];
+    final initialRange = DashboardReportRange(
+      start: DateTime(2026, 6, 1),
+      end: DateTime(2026, 6, 30),
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: OperationalTrendsWidget(
+            dataSource: source,
+            initialRange: initialRange,
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(source.requestedTrendGranularities.single, TrendGranularity.day);
+
+    await tester.tap(find.text('Hari'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Minggu').last);
+    await tester.pumpAndSettle();
+    expect(source.requestedTrendGranularities.last, TrendGranularity.week);
+
+    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.pumpAndSettle();
+    final datePicker = find.byType(DateRangePickerDialog);
+    await tester
+        .tap(find.descendant(of: datePicker, matching: find.text('10')).first);
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.descendant(of: datePicker, matching: find.text('20')).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(source.requestedTrendRanges.last.start, DateTime(2026, 6, 10));
+    expect(source.requestedTrendRanges.last.end, DateTime(2026, 6, 20));
+    expect(source.requestedTrendGranularities.last, TrendGranularity.week);
+  });
+
+  testWidgets('standalone category filter updates its request range',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+          category: 'Plastik',
+          totalWeightKg: 2,
+          depositCount: 1,
+        ),
+      ];
+    final initialRange = DashboardReportRange(
+      start: DateTime(2026, 6, 1),
+      end: DateTime(2026, 6, 30),
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: WasteCategoriesWidget(
+          dataSource: source,
+          initialRange: initialRange,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('10').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('20').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(source.requestedCategoryRanges.last.start, DateTime(2026, 6, 10));
+    expect(source.requestedCategoryRanges.last.end, DateTime(2026, 6, 20));
+  });
+}
