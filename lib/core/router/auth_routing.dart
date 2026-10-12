@@ -48,15 +48,17 @@ const _publicPaths = {
 /// On web the browser URL decides the first route, so refreshing on
 /// `/#/dashboard` skips the splash — the only place that restores the saved
 /// session — and the shell renders signed out although the token is still in
-/// storage. The splash restores it and routes the user back to [path], which
-/// it receives as `from`.
+/// storage. The splash restores it and routes the user back to [path] and its
+/// [query], which it receives as `from`.
 String? sessionRestoreRedirect({
   required bool sessionChecked,
   required String path,
-}) =>
-    sessionChecked || _publicPaths.contains(path)
-        ? null
-        : '/splash?from=${Uri.encodeComponent(path)}';
+  String query = '',
+}) {
+  if (sessionChecked || _publicPaths.contains(path)) return null;
+  final location = query.isEmpty ? path : '$path?$query';
+  return '/splash?from=${Uri.encodeComponent(location)}';
+}
 
 /// Sends a signed-out user who reaches a protected path to the login page.
 ///
@@ -80,7 +82,7 @@ String locationAfterRestore({required String target, String? from}) {
   final safe = from != null &&
       from.startsWith('/') &&
       !from.startsWith('//') &&
-      !_publicPaths.contains(from);
+      !_publicPaths.contains(Uri.tryParse(from)?.path);
   return safe && _homeLocations.contains(target) ? from : target;
 }
 

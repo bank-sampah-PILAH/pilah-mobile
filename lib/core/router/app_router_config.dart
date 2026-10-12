@@ -77,6 +77,7 @@ class AppRouterConfig {
         sessionChecked:
             context.read<AuthenticationBloc>().state is! AuthenticationInitial,
         path: path,
+        query: state.uri.query,
       );
       if (restore != null) return restore;
 
