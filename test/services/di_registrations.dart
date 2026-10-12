@@ -48,6 +48,16 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cub
     show DashboardCubit;
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart'
     show RecentActivityCubit;
+import 'package:pilah_mobile/features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart'
+    show DraftPencairanRemoteDataSource;
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart'
+    show DraftPencairanRepository;
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart'
+    show DraftEditorCubit;
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart'
+    show DraftListCubit;
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart'
+    show PilihNasabahCubit;
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source.dart'
     show HargaRemoteDataSource;
 import 'package:pilah_mobile/features/harga/domain/repositories/harga_repository.dart'
@@ -187,6 +197,11 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('AppEnvironment', AppKey.prodEnv, () => di<AppEnvironment>()),
   ('AuthLocalDataSources', null, () => di<AuthLocalDataSources>()),
   ('NetworkService', null, () => di<NetworkService>()),
+  (
+    'DraftPencairanRemoteDataSource',
+    null,
+    () => di<DraftPencairanRemoteDataSource>()
+  ),
   ('OnboardingRemoteDataSource', null, () => di<OnboardingRemoteDataSource>()),
   ('PencairanRemoteDataSources', null, () => di<PencairanRemoteDataSources>()),
   ('SuperadminRemoteDataSource', null, () => di<SuperadminRemoteDataSource>()),
@@ -212,10 +227,14 @@ final diRegistrations = <(String, String?, Object Function())>[
     null,
     () => di<BankSampahApprovalRepository>()
   ),
+  ('DraftPencairanRepository', null, () => di<DraftPencairanRepository>()),
   ('TransaksiRepository', null, () => di<TransaksiRepository>()),
   ('OnboardingCubit', null, () => di<OnboardingCubit>()),
   ('NasabahRepository', null, () => di<NasabahRepository>()),
   ('StatementRepository', null, () => di<StatementRepository>()),
+  ('DraftEditorCubit', null, () => di<DraftEditorCubit>()),
+  ('DraftListCubit', null, () => di<DraftListCubit>()),
+  ('PilihNasabahCubit', null, () => di<PilihNasabahCubit>()),
   ('PencairanRepository', null, () => di<PencairanRepository>()),
   ('HargaRepository', null, () => di<HargaRepository>()),
   ('SuperadminRepository', null, () => di<SuperadminRepository>()),
