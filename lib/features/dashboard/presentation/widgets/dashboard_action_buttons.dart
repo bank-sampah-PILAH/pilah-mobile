@@ -58,16 +58,17 @@ class DashboardActionButtons extends StatelessWidget {
             icon: const Icon(Icons.person_add_outlined,
                 color: AppColors.greenDark, size: 20),
             label: Text(
-              'Tambah\nNasabah',
+              'Tambah Nasabah',
               style: AppTextStyle.small.copyWith(
                 color: AppColors.black,
                 fontWeight: FontWeight.w600,
-                height: 1.2,
               ),
-              textAlign: TextAlign.center,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
             ),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),

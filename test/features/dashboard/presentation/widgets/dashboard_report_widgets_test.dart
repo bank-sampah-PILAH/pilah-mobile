@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
@@ -36,7 +38,88 @@ class _ReportingDataSource implements DashboardReportingDataSource {
 }
 
 void main() {
-  testWidgets('trend widget labels amount and count separately',
+  testWidgets('report cards use PILAH styles and fit a full month on mobile',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(375, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final source = _ReportingDataSource()
+      ..trends = List.generate(
+        31,
+        (index) => OperationalTrendBucket(
+          periodStart: DateTime(2026, 10, index + 1),
+          depositAmount: 100,
+          depositCount: 1,
+          withdrawalAmount: 50,
+          withdrawalCount: 1,
+        ),
+      );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: OperationalTrendsWidget(dataSource: source),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final title = tester.widget<Text>(find.text('Tren operasional'));
+    expect(title.style!.fontFamily, AppTextStyle.title1.fontFamily);
+    final chart = tester.widget<BarChart>(find.byType(BarChart).first);
+    expect(
+        chart.data.barGroups.first.barRods.single.color, AppColors.statPurple);
+    final line = tester.widget<LineChart>(find.byType(LineChart).first);
+    expect(line.data.lineBarsData.single.color, AppColors.greenDark);
+    final occupiedWidth = chart.data.barGroups.fold<double>(
+        0,
+        (total, group) =>
+            total +
+            group.barRods.fold<double>(0, (width, rod) => width + rod.width) +
+            group.barsSpace);
+    expect(occupiedWidth,
+        lessThan(tester.getSize(find.byType(BarChart).first).width - 116));
+    expect(find.text('10-02'), findsNothing);
+    expect(find.text('10-01'), findsNWidgets(2));
+    expect(find.text('10-31'), findsNWidgets(2));
+    final dateLabels = find.descendant(
+        of: find.byType(BarChart).first,
+        matching: find.byWidgetPredicate((widget) =>
+            widget is Text &&
+            RegExp(r'^\d{2}-\d{2}$').hasMatch(widget.data ?? '')));
+    final bounds = [
+      for (final element in dateLabels.evaluate())
+        tester.getRect(find.byWidget(element.widget))
+    ]..sort((a, b) => a.left.compareTo(b.left));
+    for (var i = 1; i < bounds.length; i++) {
+      expect(bounds[i].left - bounds[i - 1].right, greaterThanOrEqualTo(4));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reports fit a narrow viewport without clipping controls',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(375, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 2, depositCount: 1),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: DashboardReportsSection(dataSource: source),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Periode laporan'), findsOneWidget);
+    expect(find.text('2 kg'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Setoran and Pencairan combine counts and Rupiah on separate axes',
       (tester) async {
     final source = _ReportingDataSource()
       ..trends = [
@@ -49,14 +132,19 @@ void main() {
         ),
       ];
     await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: OperationalTrendsWidget(dataSource: source)),
+      home: Scaffold(
+          body: SingleChildScrollView(
+              child: OperationalTrendsWidget(dataSource: source))),
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('Nilai setoran dan pencairan (Rp)'), findsOneWidget);
-    expect(
-        find.text('Jumlah setoran dan pencairan (transaksi)'), findsOneWidget);
-    expect(find.text('Hari'), findsOneWidget);
+    expect(find.text('Setoran'), findsOneWidget);
+    expect(find.text('Pencairan'), findsOneWidget);
+    expect(find.text('Transaksi'), findsNWidgets(2));
+    expect(find.text('Rupiah (Rp)'), findsNWidgets(2));
+    expect(find.byType(BarChart), findsNWidgets(2));
+    expect(find.byType(LineChart), findsNWidgets(2));
+    expect(find.byType(DropdownButton<TrendGranularity>), findsNothing);
   });
 
   testWidgets('report section defaults both widgets to the current month',
@@ -128,13 +216,13 @@ void main() {
     expect(source.requestedTrendRanges.single.start, DateTime(2026, 6, 1));
     expect(source.requestedCategoryRanges.single.start, DateTime(2026, 6, 1));
 
-    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('10').first);
+    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('20').first);
+    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
 
     expect(source.requestedTrendRanges.last.start, DateTime(2026, 6, 10));
@@ -159,7 +247,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('Belum ada data'), findsOneWidget);
-    expect(find.text('Nilai setoran dan pencairan (Rp)'), findsNothing);
+    expect(find.byType(LineChart), findsNothing);
   });
 
   testWidgets('trend chart exposes a numeric scale and exact value tooltip',
@@ -175,33 +263,42 @@ void main() {
         ),
       ];
     await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: OperationalTrendsWidget(dataSource: source)),
+      home: Scaffold(
+          body: SingleChildScrollView(
+              child: OperationalTrendsWidget(dataSource: source))),
     ));
     await tester.pumpAndSettle();
 
-    final amountChart = tester.widget<BarChart>(find.byType(BarChart).first);
-    expect(
-        amountChart.data.titlesData.leftTitles.sideTitles.showTitles, isTrue);
-    final amountGroup = amountChart.data.barGroups.first;
-    final tooltip =
-        amountChart.data.barTouchData.touchTooltipData.getTooltipItem(
-      amountGroup,
-      0,
-      amountGroup.barRods.first,
-      0,
-    );
-    expect(tooltip!.text, contains('Setoran: Rp 1250'));
+    final deposit = tester.widget<BarChart>(find.byType(BarChart).first).data;
+    expect(deposit.titlesData.leftTitles.sideTitles.showTitles, isTrue);
+    expect(deposit.titlesData.rightTitles.sideTitles.showTitles, isTrue);
+    expect(deposit.titlesData.leftTitles.sideTitles.interval,
+        greaterThanOrEqualTo(1));
+    expect(deposit.barGroups.single.barRods.single.toY, 3);
+    final line = tester.widget<LineChart>(find.byType(LineChart).first).data;
+    final series = line.lineBarsData.single;
+    final tooltip = line.lineTouchData.touchTooltipData.getTooltipItems([
+      LineBarSpot(series, 0, series.spots.single),
+    ]).single!;
+    expect(tooltip.text, contains('Setoran: 3 transaksi'));
+    expect(tooltip.text, contains('Rp 1.250'));
+    expect(line.minX, -0.5);
+    expect(line.maxX, 0.5);
+    expect(line.maxY, deposit.maxY);
+    expect(line.lineBarsData.single.spots.single.y,
+        closeTo(1250 / (1250 * 1.15) * deposit.maxY, 0.00001));
+    expect(line.lineBarsData.single.isCurved, isTrue);
+    expect(line.lineBarsData.single.preventCurveOverShooting, isTrue);
 
-    final countChart = tester.widget<BarChart>(find.byType(BarChart).last);
-    final countGroup = countChart.data.barGroups.first;
-    final countTooltip =
-        countChart.data.barTouchData.touchTooltipData.getTooltipItem(
-      countGroup,
-      0,
-      countGroup.barRods.first,
-      0,
-    );
-    expect(countTooltip!.text, contains('Setoran: 3 transaksi'));
+    final withdrawal =
+        tester.widget<LineChart>(find.byType(LineChart).last).data;
+    final withdrawalSeries = withdrawal.lineBarsData.single;
+    final withdrawalTooltip =
+        withdrawal.lineTouchData.touchTooltipData.getTooltipItems([
+      LineBarSpot(withdrawalSeries, 0, withdrawalSeries.spots.single),
+    ]).single!;
+    expect(withdrawalTooltip.text, contains('Pencairan: 1 transaksi'));
+    expect(withdrawalTooltip.text, contains('Rp 40'));
   });
 
   testWidgets('empty and failed reports have independent feedback',
@@ -210,8 +307,12 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: Column(children: [
-          Expanded(child: OperationalTrendsWidget(dataSource: source)),
-          Expanded(child: WasteCategoriesWidget(dataSource: source)),
+          Expanded(
+              child: SingleChildScrollView(
+                  child: OperationalTrendsWidget(dataSource: source))),
+          Expanded(
+              child: SingleChildScrollView(
+                  child: WasteCategoriesWidget(dataSource: source))),
         ]),
       ),
     ));
@@ -249,7 +350,7 @@ void main() {
     expect(find.text('2 kg'), findsOneWidget);
   });
 
-  testWidgets('standalone trend controls update range and granularity',
+  testWidgets('standalone trend controls update range with daily buckets',
       (tester) async {
     final source = _ReportingDataSource()
       ..trends = [
@@ -279,27 +380,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(source.requestedTrendGranularities.single, TrendGranularity.day);
 
-    await tester.tap(find.text('Hari'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Minggu').last);
-    await tester.pumpAndSettle();
-    expect(source.requestedTrendGranularities.last, TrendGranularity.week);
+    expect(find.byType(DropdownButton<TrendGranularity>), findsNothing);
 
-    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    final datePicker = find.byType(DateRangePickerDialog);
-    await tester
-        .tap(find.descendant(of: datePicker, matching: find.text('10')).first);
+    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.descendant(of: datePicker, matching: find.text('20')).first);
+    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
 
     expect(source.requestedTrendRanges.last.start, DateTime(2026, 6, 10));
     expect(source.requestedTrendRanges.last.end, DateTime(2026, 6, 20));
-    expect(source.requestedTrendGranularities.last, TrendGranularity.week);
+    expect(source.requestedTrendGranularities.last, TrendGranularity.day);
   });
 
   testWidgets('standalone category filter updates its request range',
@@ -326,13 +420,13 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('10').first);
+    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('20').first);
+    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
 
     expect(source.requestedCategoryRanges.last.start, DateTime(2026, 6, 10));

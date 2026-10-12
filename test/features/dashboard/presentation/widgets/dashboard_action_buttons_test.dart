@@ -6,6 +6,20 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_l
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 void main() {
+  testWidgets('add customer label stays on one line on a narrow screen',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(375, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: DashboardActionButtons()),
+    ));
+
+    final label = tester.widget<Text>(find.text('Tambah Nasabah'));
+    expect(label.maxLines, 1);
+    expect(label.softWrap, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('opens the Nasabah tab and then the add form', (tester) async {
     final router = GoRouter(
       routes: [
@@ -24,7 +38,7 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
 
-    await tester.tap(find.text('Tambah\nNasabah'));
+    await tester.tap(find.text('Tambah Nasabah'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
