@@ -113,4 +113,20 @@ void main() {
     expect(find.text('Rp 999.999.999 / kg'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('shows a price with sen exactly as stored', (tester) async {
+    // Harga per kg boleh bersen (mis. 3333.99); riwayat menampilkan nilai
+    // yang tersimpan, bukan yang dibulatkan.
+    api.on('GET', _path, json: {
+      'results': [
+        _versi('3333.99', '2026-10-01T02:30:00Z', 'berlaku'),
+        _versi('3500.50', '2026-09-01T03:00:00Z', 'sebelumnya'),
+      ],
+    });
+
+    await pumpView(tester);
+
+    expect(find.text('Rp 3.333,99 / kg'), findsOneWidget);
+    expect(find.text('Rp 3.500,50 / kg'), findsOneWidget);
+  });
 }
