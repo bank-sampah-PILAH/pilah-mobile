@@ -236,4 +236,40 @@ void main() {
       expect(pendingInviteLocation('dashboard', role: null), isNull);
     });
   });
+
+  group('sessionRestoreRedirect', () {
+    test('sends a protected path to the splash until the session is checked',
+        () {
+      for (final path in ['/dashboard', '/nasabah', '/profile', '/laporan']) {
+        expect(
+          sessionRestoreRedirect(sessionChecked: false, path: path),
+          '/splash',
+          reason: path,
+        );
+      }
+    });
+
+    test('leaves public paths alone so the splash can finish its work', () {
+      for (final path in [
+        '/splash',
+        '/login',
+        '/choose-role',
+        '/forgot_password',
+        '/invite',
+      ]) {
+        expect(
+          sessionRestoreRedirect(sessionChecked: false, path: path),
+          isNull,
+          reason: path,
+        );
+      }
+    });
+
+    test('does nothing once the session has been checked', () {
+      expect(
+        sessionRestoreRedirect(sessionChecked: true, path: '/dashboard'),
+        isNull,
+      );
+    });
+  });
 }
