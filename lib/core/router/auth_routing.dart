@@ -15,6 +15,9 @@ const completeProfileLocation = '/complete-profile';
 /// profile, then routes onward.
 const inviteProcessingLocation = '/invite-processing';
 
+const superadminDashboardLocation = '/superadmin-dashboard';
+const pengelolaIndukDashboardLocation = '/pengelola-induk-dashboard';
+
 const _webSupportedRoles = {'superadmin', 'pengelola', 'pengelola_induk'};
 
 bool isSupportedWebRole(String? role) => _webSupportedRoles.contains(role);
@@ -62,6 +65,14 @@ String? sessionRestoreRedirect({
 String? signedOutRedirect({required bool signedOut, required String path}) =>
     signedOut && !_publicPaths.contains(path) ? '/login' : null;
 
+/// The home each fully onboarded role lands on. A [target] outside this set is
+/// an onboarding step, which always outranks the page being restored.
+const _homeLocations = {
+  AppLocations.dashboard,
+  superadminDashboardLocation,
+  pengelolaIndukDashboardLocation,
+};
+
 /// Where the splash sends a restored session. A fully onboarded user goes back
 /// to [from], the page they refreshed on; anyone still mid-onboarding keeps
 /// their [target] step.
@@ -70,7 +81,7 @@ String locationAfterRestore({required String target, String? from}) {
       from.startsWith('/') &&
       !from.startsWith('//') &&
       !_publicPaths.contains(from);
-  return safe && target == AppLocations.dashboard ? from : target;
+  return safe && _homeLocations.contains(target) ? from : target;
 }
 
 /// Maps the backend `user_state` / `next_step` value to the route a signed-in
@@ -106,7 +117,7 @@ String locationForAuthStep(
   }
   switch (step) {
     case 'superadmin_dashboard':
-      return '/superadmin-dashboard';
+      return superadminDashboardLocation;
     case 'register_nasabah':
       return '/register-nasabah';
     case 'nasabah_dashboard':
@@ -114,7 +125,7 @@ String locationForAuthStep(
     case 'register_bank_sampah_induk':
       return '/register-bank-sampah-induk';
     case 'pengelola_induk_dashboard':
-      return '/pengelola-induk-dashboard';
+      return pengelolaIndukDashboardLocation;
     case 'complete_profile':
       return completeProfileLocation;
     case 'register_bank_sampah':
