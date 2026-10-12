@@ -73,6 +73,7 @@ dependencies:
   image_cropper: ^12.2.1
   url_launcher: ^6.3.2
   pdfrx: ^2.4.4
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:

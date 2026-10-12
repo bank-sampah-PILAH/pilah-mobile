@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
@@ -890,31 +891,6 @@ class _JadwalFormState extends State<_JadwalForm> {
         ),
       );
 
-  InputDecoration _buildInputDecoration({String? hintText}) => InputDecoration(
-        hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey[400]),
-        filled: true,
-        fillColor: Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      );
-
   Future<void> _pickDateTime({required bool start}) async {
     final current = start ? _startsAt : _endsAt;
     final currentDate = DateUtils.dateOnly(current);
@@ -1021,7 +997,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _activity,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   items: const [
                     DropdownMenuItem(
                       value: 'penimbangan',
@@ -1039,7 +1015,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _locationController,
-                  decoration: _buildInputDecoration(hintText: 'Lokasi'),
+                  decoration: appInputDecoration(hintText: 'Lokasi'),
                   validator: (value) => value == null || value.trim().isEmpty
                       ? 'Lokasi wajib diisi'
                       : null,
@@ -1049,7 +1025,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: _buildInputDecoration(hintText: 'Keterangan'),
+                  decoration: appInputDecoration(hintText: 'Keterangan'),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 20),
@@ -1057,7 +1033,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   key: const ValueKey('jadwal-mulai'),
                   label: 'Mulai',
                   value: _startsAt,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   onTap: () => _pickDateTime(start: true),
                 ),
                 const SizedBox(height: 12),
@@ -1065,7 +1041,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   key: const ValueKey('jadwal-selesai'),
                   label: 'Selesai',
                   value: _endsAt,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   onTap: () => _pickDateTime(start: false),
                 ),
                 const SizedBox(height: 20),
@@ -1073,7 +1049,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _audience,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   items: [
                     const DropdownMenuItem(
                       value: 'semua_nasabah',

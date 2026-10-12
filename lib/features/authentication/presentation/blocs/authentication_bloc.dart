@@ -27,7 +27,6 @@ class AuthenticationBloc
   AuthenticationBloc(
     this._useCases,
     this._loginWithGoogleUseCase, {
-    // Tests only: keeps the generated DI graph from asking GetIt for a bool.
     @ignoreParam bool? isWebOverride,
   })  : _isWeb = isWebOverride ?? kIsWeb,
         super(AuthenticationInitial()) {
