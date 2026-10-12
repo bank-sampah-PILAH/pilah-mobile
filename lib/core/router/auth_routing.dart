@@ -43,12 +43,33 @@ const _publicPaths = {
 /// On web the browser URL decides the first route, so refreshing on
 /// `/#/dashboard` skips the splash — the only place that restores the saved
 /// session — and the shell renders signed out although the token is still in
-/// storage. The splash restores it and routes the user back in.
+/// storage. The splash restores it and routes the user back to [path], which
+/// it receives as `from`.
 String? sessionRestoreRedirect({
   required bool sessionChecked,
   required String path,
 }) =>
-    sessionChecked || _publicPaths.contains(path) ? null : '/splash';
+    sessionChecked || _publicPaths.contains(path)
+        ? null
+        : '/splash?from=${Uri.encodeComponent(path)}';
+
+/// Sends a signed-out user who reaches a protected path to the login page.
+///
+/// Logging out already navigates to login, but the browser's Back button can
+/// return to `/dashboard` afterwards, where the shell has no role to render.
+String? signedOutRedirect({required bool signedOut, required String path}) =>
+    signedOut && !_publicPaths.contains(path) ? '/login' : null;
+
+/// Where the splash sends a restored session. A fully onboarded user goes back
+/// to [from], the page they refreshed on; anyone still mid-onboarding keeps
+/// their [target] step.
+String locationAfterRestore({required String target, String? from}) {
+  final safe = from != null &&
+      from.startsWith('/') &&
+      !from.startsWith('//') &&
+      !_publicPaths.contains(from);
+  return safe && target == '/dashboard' ? from : target;
+}
 
 /// Maps the backend `user_state` / `next_step` value to the route a signed-in
 /// user should land on. Shared by the splash (session restore) and login flows
