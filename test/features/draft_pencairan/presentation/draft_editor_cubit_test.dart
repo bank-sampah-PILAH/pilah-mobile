@@ -99,6 +99,26 @@ void main() {
           [false, false, false]);
     });
 
+    test(
+        'a method set for everyone is the norm; only a nasabah that differs is adjusted',
+        () {
+      final editor = _newEditor()..setMetodeSemua(MetodePencairan.transfer);
+
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, false, false]);
+
+      editor.setItemMetode('n-2', MetodePencairan.tunai);
+
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, true, false]);
+
+      editor.resetItem('n-2');
+
+      expect(editor.state.items[1].metode, MetodePencairan.transfer);
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, false, false]);
+    });
+
     test('every method can be switched to transfer or cash at once', () {
       final editor = _newEditor()
         ..setItemMetode('n-1', MetodePencairan.transfer)
@@ -419,6 +439,32 @@ void persistenceTests() {
 
       expect(fresh.state.errorFor(fresh.state.items.single), contains('saldo'));
       expect(fresh.state.canSave, isFalse);
+    });
+
+    test('a reopened draft takes the method most nasabah share as the norm',
+        () async {
+      DraftItem item(String id, MetodePencairan metode) => DraftItem(
+            id: 'i-$id',
+            nasabahId: id,
+            nasabahNama: 'Nasabah $id',
+            nominal: 1000,
+            metode: metode,
+            potonganEfektif: 0,
+            dibayar: 1000,
+            saldoSaatIni: 1000,
+          );
+      when(() => repository.getDraft('d-1'))
+          .thenAnswer((_) async => Right(_serverDraft(items: [
+                item('n-1', MetodePencairan.transfer),
+                item('n-2', MetodePencairan.transfer),
+                item('n-3', MetodePencairan.tunai),
+              ])));
+      final fresh = DraftEditorCubit(repository);
+
+      await fresh.load('d-1');
+
+      expect(
+          fresh.state.items.map(fresh.state.disesuaikan), [false, false, true]);
     });
 
     test('a load that fails says so', () async {
