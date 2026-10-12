@@ -88,7 +88,9 @@ void main() {
       final bytes = Uint8List.fromList([1, 2, 3]);
       when(() => picker.pickImage(source: any(named: 'source'))).thenAnswer(
         (_) async => XFile.fromData(bytes,
-            path: 'bank-logo.png', name: 'bank-logo.png', mimeType: 'image/png'),
+            path: 'bank-logo.png',
+            name: 'bank-logo.png',
+            mimeType: 'image/png'),
       );
       final webCubit = ProfileCubit(dataSource, picker, cropper, isWeb: true);
       addTearDown(webCubit.close);
