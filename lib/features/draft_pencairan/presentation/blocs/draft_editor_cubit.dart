@@ -40,8 +40,14 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   void setPotonganDefault(Potongan potongan) =>
       _change(state.copyWith(potonganDefault: potongan));
 
-  void setMetodeSemua(MetodePencairan metode) => _editAll(
-        (item) => item.copyWith(metode: metode),
+  void setMetodeSemua(MetodePencairan metode) => _change(
+        state.copyWith(
+          items: [
+            for (final item in state.items) item.copyWith(metode: metode)
+          ],
+          metodeUmum: metode,
+        ),
+        touched: state.items.map((item) => item.nasabahId).toSet(),
       );
 
   /// Applies the general settings together, in one edit. Only what is given
@@ -84,7 +90,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
         nasabahId,
         (item) => item.copyWith(
           nominal: item.saldo,
-          metode: MetodePencairan.tunai,
+          metode: state.metodeUmum,
           potongan: () => null,
         ),
       );
@@ -180,7 +186,18 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     );
   }
 
+  /// The method most nasabah are on, taken as the one chosen for everyone; on
+  /// a tie the editor keeps what it already had.
+  MetodePencairan _metodeUmum(DraftPencairan draft) {
+    final transfer =
+        draft.items.where((i) => i.metode == MetodePencairan.transfer).length;
+    final tunai = draft.items.length - transfer;
+    if (transfer == tunai) return state.metodeUmum;
+    return transfer > tunai ? MetodePencairan.transfer : MetodePencairan.tunai;
+  }
+
   DraftEditorState _fromServer(DraftPencairan draft) => DraftEditorState(
+        metodeUmum: _metodeUmum(draft),
         draftId: draft.id,
         status: draft.status,
         nama: draft.nama,
@@ -214,11 +231,6 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
       },
     ));
   }
-
-  void _editAll(EditorItem Function(EditorItem) change) => _change(
-        state.copyWith(items: state.items.map(change).toList()),
-        touched: state.items.map((item) => item.nasabahId).toSet(),
-      );
 
   void _editItem(String nasabahId, EditorItem Function(EditorItem) change) =>
       _change(

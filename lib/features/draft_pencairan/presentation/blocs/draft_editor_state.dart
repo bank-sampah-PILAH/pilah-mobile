@@ -55,6 +55,9 @@ class DraftEditorState extends Equatable {
   final Potongan potonganDefault;
   final List<EditorItem> items;
 
+  /// The method chosen for everyone; a nasabah on another one is adjusted.
+  final MetodePencairan metodeUmum;
+
   /// Who made and last changed the saved draft; blank before the first save.
   final String dibuatOlehNama;
   final String diubahOlehNama;
@@ -77,6 +80,7 @@ class DraftEditorState extends Equatable {
     this.nama = '',
     this.potonganDefault = Potongan.nol,
     this.items = const [],
+    this.metodeUmum = MetodePencairan.tunai,
     this.dibuatOlehNama = '',
     this.diubahOlehNama = '',
     this.createdAt,
@@ -93,6 +97,7 @@ class DraftEditorState extends Equatable {
     String? nama,
     Potongan? potonganDefault,
     List<EditorItem>? items,
+    MetodePencairan? metodeUmum,
     String? dibuatOlehNama,
     String? diubahOlehNama,
     DateTime? createdAt,
@@ -108,6 +113,7 @@ class DraftEditorState extends Equatable {
         nama: nama ?? this.nama,
         potonganDefault: potonganDefault ?? this.potonganDefault,
         items: items ?? this.items,
+        metodeUmum: metodeUmum ?? this.metodeUmum,
         dibuatOlehNama: dibuatOlehNama ?? this.dibuatOlehNama,
         diubahOlehNama: diubahOlehNama ?? this.diubahOlehNama,
         createdAt: createdAt ?? this.createdAt,
@@ -131,11 +137,11 @@ class DraftEditorState extends Equatable {
 
   int get totalDibayar => totalNominal - totalPotongan;
 
-  /// True once the pengurus changed anything from the plain defaults.
+  /// True once the pengurus changed [item] away from what is set for everyone.
   bool disesuaikan(EditorItem item) =>
       item.nominal != item.saldo ||
       item.potongan != null ||
-      item.metode != MetodePencairan.tunai;
+      item.metode != metodeUmum;
 
   /// What the server said about [item], else what is wrong with it locally.
   String? errorFor(EditorItem item) =>
@@ -171,6 +177,7 @@ class DraftEditorState extends Equatable {
         nama,
         potonganDefault,
         items,
+        metodeUmum,
         dibuatOlehNama,
         diubahOlehNama,
         createdAt,
