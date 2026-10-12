@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -11,6 +14,7 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.d
 import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 
 class _MockGet extends Mock implements GetHargaUseCase {}
 
@@ -73,5 +77,39 @@ void main() {
 
     expect(error, failure);
     verifyNever(() => getHarga.execute());
+  });
+
+  test('an older reload that answers late never overwrites a newer one',
+      () async {
+    // Saving a price change reloads after the PUT and again after the POST;
+    // the first GET can answer last, with the old price.
+    HargaEntity jenis(int harga) => HargaEntity(
+          id: 'j-1',
+          kodeSampah: 'PLS-001',
+          name: 'Plastik PET',
+          price: harga,
+          priceFormatted: 'Rp $harga',
+          category: 'plastik',
+          subtitle: '',
+          badgeText: 'Anorganik',
+          icon: Icons.recycling,
+          iconColor: Colors.green,
+          isActive: true,
+        );
+    final lama = Completer<Either<NetworkException, List<HargaEntity>>>();
+    final baru = Completer<Either<NetworkException, List<HargaEntity>>>();
+    final jawaban = [lama, baru];
+    when(() => getHarga.execute())
+        .thenAnswer((_) => jawaban.removeAt(0).future);
+
+    final pertama = cubit.loadHarga();
+    final kedua = cubit.loadHarga();
+    baru.complete(Right([jenis(5000)]));
+    await kedua;
+    lama.complete(Right([jenis(3500)]));
+    await pertama;
+
+    final loaded = cubit.state as HargaLoaded;
+    expect(loaded.jenisSampahList.single.price, 5000);
   });
 }
