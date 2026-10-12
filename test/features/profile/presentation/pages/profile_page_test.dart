@@ -284,6 +284,30 @@ void main() {
     );
   });
 
+  testWidgets('a browser logo decode error uses the placeholder',
+      (tester) async {
+    await openPage(tester);
+    cubit.emit(cubit.state.copyWith(
+      selectedLogoBytes: Uint8List.fromList(base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
+      selectedLogoFilename: 'bank-logo.png',
+    ));
+    expect(cubit.state.selectedLogoBytes, isNotNull);
+    await tester.pumpAndSettle();
+
+    final logo = tester.widget<ClipOval>(find.byType(ClipOval)).child as Image;
+    expect(logo.image, isA<MemoryImage>());
+    final fallback = logo.errorBuilder!(
+      tester.element(find.byType(ClipOval)),
+      StateError('invalid logo bytes'),
+      StackTrace.current,
+    );
+    expect(fallback, isA<Center>());
+    final placeholder = fallback as Center;
+    expect(placeholder.child, isA<Icon>());
+    expect((placeholder.child as Icon).icon, Icons.home_outlined);
+  });
+
   testWidgets('a stored logo is shown from its URL', (tester) async {
     stubProfile(api, bank: bankJson(logo: 'https://img.test/logo.png'));
     await openPage(tester);
