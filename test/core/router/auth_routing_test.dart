@@ -243,7 +243,7 @@ void main() {
       for (final path in ['/dashboard', '/nasabah', '/profile', '/laporan']) {
         expect(
           sessionRestoreRedirect(sessionChecked: false, path: path),
-          '/splash',
+          '/splash?from=${Uri.encodeComponent(path)}',
           reason: path,
         );
       }
@@ -270,6 +270,52 @@ void main() {
         sessionRestoreRedirect(sessionChecked: true, path: '/dashboard'),
         isNull,
       );
+    });
+  });
+
+  group('locationAfterRestore', () {
+    test('returns to the page the user refreshed on', () {
+      expect(
+        locationAfterRestore(target: '/dashboard', from: '/nasabah'),
+        '/nasabah',
+      );
+    });
+
+    test('keeps the onboarding step when the user is not onboarded', () {
+      expect(
+        locationAfterRestore(target: '/pending-approval', from: '/nasabah'),
+        '/pending-approval',
+      );
+    });
+
+    test('ignores a missing or unsafe from', () {
+      for (final from in [null, '', 'nasabah', '//evil.test', '/login']) {
+        expect(
+          locationAfterRestore(target: '/dashboard', from: from),
+          '/dashboard',
+          reason: '$from',
+        );
+      }
+    });
+  });
+
+  group('signedOutRedirect', () {
+    test('sends a protected path to login once the user is signed out', () {
+      for (final path in ['/dashboard', '/nasabah', '/profile']) {
+        expect(signedOutRedirect(signedOut: true, path: path), '/login',
+            reason: path);
+      }
+    });
+
+    test('leaves public paths alone', () {
+      for (final path in ['/splash', '/login', '/choose-role']) {
+        expect(signedOutRedirect(signedOut: true, path: path), isNull,
+            reason: path);
+      }
+    });
+
+    test('does nothing while a session exists', () {
+      expect(signedOutRedirect(signedOut: false, path: '/dashboard'), isNull);
     });
   });
 }

@@ -32,6 +32,7 @@ void main() {
     WidgetTester tester, {
     required AuthenticationStates initial,
     List<AuthenticationStates> then = const [],
+    String? from,
   }) async {
     final bloc = MockAuthBloc();
     whenListen(bloc, Stream<AuthenticationStates>.fromIterable(then),
@@ -42,9 +43,9 @@ void main() {
         value: bloc,
         // A non-const instance so the constructor itself runs.
         // ignore: prefer_const_constructors
-        child: SplashPage(),
+        child: SplashPage(from: from),
       ),
-      extraRoutes: ['/login', '/dashboard', '/pending-approval'],
+      extraRoutes: ['/login', '/dashboard', '/pending-approval', '/nasabah'],
     );
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
@@ -66,6 +67,18 @@ void main() {
     ]);
 
     expect(find.text('route:/dashboard'), findsOneWidget);
+  });
+
+  testWidgets('a restored session returns to the page it came from',
+      (tester) async {
+    await open(tester,
+        initial: AuthenticationInitial(),
+        from: '/nasabah',
+        then: [
+          Authenticated(authEntity: testAuth()),
+        ]);
+
+    expect(find.text('route:/nasabah'), findsOneWidget);
   });
 
   testWidgets('a pending bank sampah lands on the review screen',
