@@ -281,6 +281,19 @@ void main() {
       );
     });
 
+    test('returns Super Admin and Pengurus Induk to the page they were on', () {
+      for (final home in [
+        '/superadmin-dashboard',
+        '/pengelola-induk-dashboard',
+      ]) {
+        expect(
+          locationAfterRestore(target: home, from: '/profile'),
+          '/profile',
+          reason: home,
+        );
+      }
+    });
+
     test('keeps the onboarding step when the user is not onboarded', () {
       expect(
         locationAfterRestore(target: '/pending-approval', from: '/nasabah'),
