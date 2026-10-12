@@ -145,7 +145,7 @@ class DraftEditorState extends Equatable {
 
   /// True once the pengurus changed [item] away from what is set for everyone.
   bool disesuaikan(EditorItem item) =>
-      item.nominal != item.saldo ||
+      item.nominal != (jumlahUmum ?? JumlahUmum.penuh).hitung(item.saldo) ||
       item.potongan != null ||
       item.metode != metodeUmum;
 

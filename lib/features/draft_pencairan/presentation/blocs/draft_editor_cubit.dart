@@ -78,6 +78,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
         ],
         potonganDefault: potongan,
         jumlahUmum: jumlah != null ? () => jumlah : null,
+        metodeUmum: metode,
       ),
       touched: berubah ? state.items.map((item) => item.nasabahId).toSet() : {},
     );
@@ -86,29 +87,21 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   void setItemMetode(String nasabahId, MetodePencairan metode) =>
       _editItem(nasabahId, (item) => item.copyWith(metode: metode));
 
-  /// A nominal typed by hand: the jumlah is no longer the same for everyone.
-  void setItemNominal(String nasabahId, int nominal) => _change(
-        state.copyWith(
-          items: [
-            for (final item in state.items)
-              item.nasabahId == nasabahId
-                  ? item.copyWith(nominal: nominal)
-                  : item,
-          ],
-          jumlahUmum: () => null,
-        ),
-        touched: {nasabahId},
-      );
+  /// A nominal typed by hand. The jumlah last given to everyone stays on the
+  /// draft as the record of it; this card now differs from it.
+  void setItemNominal(String nasabahId, int nominal) =>
+      _editItem(nasabahId, (item) => item.copyWith(nominal: nominal));
 
   /// Gives the item its own potongan, or null to follow the general one.
   void setItemPotongan(String nasabahId, Potongan? potongan) =>
       _editItem(nasabahId, (item) => item.copyWith(potongan: () => potongan));
 
-  /// Back to the plain defaults: the whole saldo, cash and the general potongan.
+  /// Back to what is set for everyone: the general jumlah and method, and the
+  /// general potongan.
   void resetItem(String nasabahId) => _editItem(
         nasabahId,
         (item) => item.copyWith(
-          nominal: item.saldo,
+          nominal: (state.jumlahUmum ?? JumlahUmum.penuh).hitung(item.saldo),
           metode: state.metodeUmum,
           potongan: () => null,
         ),
