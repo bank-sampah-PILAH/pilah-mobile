@@ -58,6 +58,13 @@ String formatRupiahId(int value) {
   return '${value < 0 ? '-' : ''}$buf';
 }
 
+/// Formats an amount held in sen: `3.333,99`, or `3.500` when it has none.
+String formatRupiahSenId(int sen) {
+  final sisa = sen.abs() % 100;
+  final rupiah = formatRupiahId(sen ~/ 100);
+  return sisa == 0 ? rupiah : '$rupiah,${sisa.toString().padLeft(2, '0')}';
+}
+
 /// Formats a date the way the message reads it: `24 Juli 2026`.
 String formatTanggalId(DateTime date) {
   const months = [

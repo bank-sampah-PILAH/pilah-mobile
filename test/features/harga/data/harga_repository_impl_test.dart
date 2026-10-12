@@ -113,14 +113,14 @@ void main() {
         result.getOrElse(() => const []),
         [
           VersiHarga(
-            harga: 5000,
+            hargaSen: 500000,
             satuan: 'kg',
             berlakuMulai: DateTime.utc(2026, 10, 14, 17),
             dibuatOleh: 'Ibu Sari',
             status: StatusVersiHarga.terjadwal,
           ),
           VersiHarga(
-            harga: 3500,
+            hargaSen: 350000,
             satuan: 'kg',
             berlakuMulai: DateTime.utc(2026, 9, 1, 3),
             status: StatusVersiHarga.berlaku,

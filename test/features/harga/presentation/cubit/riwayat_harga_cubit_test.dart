@@ -38,8 +38,8 @@ void main() {
     await cubit.load('j-1');
 
     expect(cubit.state.status, RiwayatHargaStatus.loaded);
-    expect(cubit.state.riwayat.map((v) => (v.harga, v.status)), [
-      (3500, StatusVersiHarga.berlaku),
+    expect(cubit.state.riwayat.map((v) => (v.hargaSen, v.status)), [
+      (350000, StatusVersiHarga.berlaku),
     ]);
   });
 

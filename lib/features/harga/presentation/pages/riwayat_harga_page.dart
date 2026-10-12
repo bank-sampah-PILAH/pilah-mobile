@@ -140,7 +140,7 @@ class _VersiHargaCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Rp ${formatRupiahId(versi.harga)} / ${versi.satuan}',
+                  'Rp ${formatRupiahSenId(versi.hargaSen)} / ${versi.satuan}',
                   style: AppTextStyle.title1.copyWith(
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,

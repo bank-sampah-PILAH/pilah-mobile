@@ -18,7 +18,9 @@ enum StatusVersiHarga {
 
 /// Satu baris riwayat harga jenis sampah (PIL-331).
 class VersiHarga extends Equatable {
-  final int harga;
+  /// Harga per [satuan] dalam sen, persis seperti yang tersimpan (3333.99
+  /// menjadi 333399): tanpa pembulatan dan tanpa `double`.
+  final int hargaSen;
   final String satuan;
 
   /// Waktu mulai berlaku dalam UTC, seperti yang disimpan backend.
@@ -29,7 +31,7 @@ class VersiHarga extends Equatable {
   final StatusVersiHarga status;
 
   const VersiHarga({
-    required this.harga,
+    required this.hargaSen,
     required this.satuan,
     required this.berlakuMulai,
     this.dibuatOleh,
@@ -37,5 +39,6 @@ class VersiHarga extends Equatable {
   });
 
   @override
-  List<Object?> get props => [harga, satuan, berlakuMulai, dibuatOleh, status];
+  List<Object?> get props =>
+      [hargaSen, satuan, berlakuMulai, dibuatOleh, status];
 }
