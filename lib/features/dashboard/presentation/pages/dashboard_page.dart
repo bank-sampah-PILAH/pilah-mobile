@@ -2,6 +2,7 @@ import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -72,7 +73,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final isPengurusWeb = webPengurusKey != null;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isPengurusWeb ? AppColors.cardOffWhite : Colors.white,
       body: SafeArea(
         child: AppRefreshIndicator(
           onRefresh: _onRefresh,
@@ -100,13 +101,48 @@ class _DashboardPageState extends State<DashboardPage> {
                     dataSource: di<DashboardReportingDataSource>(),
                   ),
                   const SizedBox(height: 24),
-                  DashboardUpcomingScheduleSection(
-                    key: ValueKey('schedule-$webPengurusKey'),
-                    repository: di<JadwalRepository>(),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth >= 900
+                          ? (constraints.maxWidth - 24) / 2
+                          : constraints.maxWidth;
+                      return Wrap(
+                        spacing: 24,
+                        runSpacing: 24,
+                        children: [
+                          for (final section in [
+                            DashboardUpcomingScheduleSection(
+                              key: ValueKey('schedule-$webPengurusKey'),
+                              repository: di<JadwalRepository>(),
+                            ),
+                            const RecentActivitySection(),
+                          ])
+                            SizedBox(
+                              width: width,
+                              child: Card(
+                                color: Colors.white,
+                                surfaceTintColor: Colors.transparent,
+                                elevation: 0,
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(
+                                    color: AppColors.grey200
+                                        .withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: section,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 32),
-                ],
-                const RecentActivitySection(),
+                ] else
+                  const RecentActivitySection(),
               ],
             ),
           ),

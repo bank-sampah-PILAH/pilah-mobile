@@ -23,6 +23,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_s
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_upcoming_schedule_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_web_kpi_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -123,6 +124,7 @@ void main() {
   Future<void> pumpDashboardPage(
     WidgetTester tester, {
     bool? isWeb,
+    Size size = const Size(800, 1600),
   }) async {
     final router = await pumpRouted(
       tester,
@@ -134,7 +136,7 @@ void main() {
         ],
         child: DashboardPage(isWeb: isWeb),
       ),
-      size: const Size(800, 1600),
+      size: size,
     );
     expect(router, isNotNull);
   }
@@ -254,6 +256,29 @@ void main() {
     expect(find.byType(DashboardReportsSection), findsOneWidget);
     expect(find.byType(DashboardUpcomingScheduleSection), findsOneWidget);
     expect(find.byType(TotalKasCard), findsNothing);
+  });
+
+  testWidgets('web details form a desktop grid and stack on narrow screens',
+      (tester) async {
+    arrange(dashboardCubit: emptyDashboardCubit());
+    await pumpDashboardPage(tester, isWeb: true, size: const Size(1440, 1800));
+    await tester.pumpAndSettle();
+
+    final schedule = find.byType(DashboardUpcomingScheduleSection);
+    final activitySection = find.byType(RecentActivitySection);
+    expect(
+        tester.getTopLeft(schedule).dy, tester.getTopLeft(activitySection).dy);
+    expect(tester.getTopLeft(schedule).dx,
+        lessThan(tester.getTopLeft(activitySection).dx));
+    expect(tester.takeException(), isNull);
+
+    tester.view.physicalSize = const Size(375, 1800);
+    await tester.pumpAndSettle();
+    expect(
+        tester.getTopLeft(schedule).dx, tester.getTopLeft(activitySection).dx);
+    expect(tester.getTopLeft(schedule).dy,
+        lessThan(tester.getTopLeft(activitySection).dy));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('web dashboard uses the web default for Pengurus',
