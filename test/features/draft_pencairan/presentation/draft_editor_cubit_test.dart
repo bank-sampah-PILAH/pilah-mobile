@@ -868,6 +868,47 @@ void lifecycleTests() {
       expect(input.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
     });
 
+    test('the jumlah last given to everyone is saved even after a hand edit',
+        () async {
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) async => Right(_serverDraft()));
+      final editor = DraftEditorCubit(repository)
+        ..startNew(const [_ahmad, _budi, _citra])
+        ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.persen, 50))
+        ..setItemNominal('n-2', 1000);
+
+      await editor.save();
+
+      final input = verify(() => repository.createDraft(captureAny()))
+          .captured
+          .single as DraftInput;
+      expect(input.jumlahUmum, const JumlahUmum(JumlahJenis.persen, 50));
+    });
+
+    test('a reopened draft still tells who differs from the jumlah it kept',
+        () async {
+      DraftItem item(String id, int nominal) => DraftItem(
+            id: 'i-$id',
+            nasabahId: id,
+            nasabahNama: 'Nasabah $id',
+            nominal: nominal,
+            metode: MetodePencairan.tunai,
+            potonganEfektif: 0,
+            dibayar: nominal,
+            saldoSaatIni: 1000,
+          );
+      when(() => repository.getDraft('d-1')).thenAnswer((_) async => Right(
+          _serverDraft(
+              jumlah: const JumlahUmum(JumlahJenis.persen, 50),
+              items: [item('n-1', 500), item('n-2', 500), item('n-3', 900)])));
+      final editor = DraftEditorCubit(repository);
+
+      await editor.load('d-1');
+
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, false, true]);
+    });
+
     test('applying only a method or potongan leaves the jumlah alone', () {
       final editor = DraftEditorCubit(repository)
         ..startNew(const [_ahmad, _budi, _citra])

@@ -59,7 +59,34 @@ void main() {
   });
 
   group('terapkanUmum', () {
-    test('a hand-edited nominal is no longer the jumlah given to everyone', () {
+    test(
+        'what is given to everyone is the norm; only a nasabah that differs is adjusted',
+        () {
+      final editor = _editor()
+        ..terapkanUmum(
+          metode: MetodePencairan.transfer,
+          jumlah: const JumlahUmum(JumlahJenis.persen, 50),
+        );
+
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, false, false]);
+
+      editor.setItemMetode('n-1', MetodePencairan.tunai);
+      editor.setItemNominal('n-2', 1000);
+
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [true, true, false]);
+    });
+
+    test('a nominal capped by a small saldo is still what everyone got', () {
+      final editor = _editor()
+        ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.rupiah, 100000));
+
+      expect(editor.state.items.map(editor.state.disesuaikan),
+          [false, false, false]);
+    });
+
+    test('a hand-edited nominal leaves the jumlah last given to everyone', () {
       final editor = _editor()
         ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.rupiah, 100000));
       expect(editor.state.jumlahUmum, isNotNull);
@@ -69,7 +96,8 @@ void main() {
           reason: 'a potongan does not change the jumlah');
 
       editor.setItemNominal('n-2', 40000);
-      expect(editor.state.jumlahUmum, isNull);
+      expect(editor.state.jumlahUmum, isNotNull,
+          reason: 'it stays the record of what was last given to everyone');
     });
 
     test('a jumlah rewrites every nominal and nothing else', () {
