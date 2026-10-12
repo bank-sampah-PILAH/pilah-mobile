@@ -73,6 +73,13 @@ class AppRouterConfig {
     redirect: (context, state) {
       final path = state.uri.path;
 
+      final restore = sessionRestoreRedirect(
+        sessionChecked:
+            context.read<AuthenticationBloc>().state is! AuthenticationInitial,
+        path: path,
+      );
+      if (restore != null) return restore;
+
       if (path == '/invite') {
         final token = state.uri.queryParameters['token'];
         if (token != null) {

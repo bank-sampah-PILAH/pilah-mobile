@@ -28,6 +28,28 @@ String? webRoleRedirect({
 }) =>
     isWeb && path != loginPath && !isSupportedWebRole(role) ? loginPath : null;
 
+/// Paths that make sense without a session, and so must not be bounced to the
+/// splash. `/splash` is where the restore itself happens.
+const _publicPaths = {
+  '/splash',
+  '/login',
+  '/choose-role',
+  '/forgot_password',
+  '/invite',
+};
+
+/// Sends a cold start that landed straight on a protected path to the splash.
+///
+/// On web the browser URL decides the first route, so refreshing on
+/// `/#/dashboard` skips the splash — the only place that restores the saved
+/// session — and the shell renders signed out although the token is still in
+/// storage. The splash restores it and routes the user back in.
+String? sessionRestoreRedirect({
+  required bool sessionChecked,
+  required String path,
+}) =>
+    sessionChecked || _publicPaths.contains(path) ? null : '/splash';
+
 /// Maps the backend `user_state` / `next_step` value to the route a signed-in
 /// user should land on. Shared by the splash (session restore) and login flows
 /// so onboarding routing stays consistent.
