@@ -301,6 +301,12 @@ extension GetItInjectableX on _i174.GetIt {
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
     gh.lazySingleton<_i664.StatementRepository>(() =>
         _i322.StatementRepositoryImpl(gh<_i987.StatementRemoteDataSources>()));
+    gh.factory<_i230.DraftEditorCubit>(
+        () => _i230.DraftEditorCubit(gh<_i511.DraftPencairanRepository>()));
+    gh.factory<_i673.DraftListCubit>(
+        () => _i673.DraftListCubit(gh<_i511.DraftPencairanRepository>()));
+    gh.factory<_i795.PilihNasabahCubit>(
+        () => _i795.PilihNasabahCubit(gh<_i511.DraftPencairanRepository>()));
     gh.lazySingleton<_i449.PencairanRepository>(() =>
         _i913.PencairanRepositoryImpl(gh<_i1037.PencairanRemoteDataSources>()));
     gh.lazySingleton<_i40.HargaRepository>(
@@ -319,12 +325,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i753.GetNasabahMembershipsUseCase>(() =>
         _i753.GetNasabahMembershipsUseCase(
             gh<_i390.BankSampahApprovalRepository>()));
-    gh.factory<_i230.DraftEditorCubit>(
-        () => _i230.DraftEditorCubit(gh<_i511.DraftPencairanRepository>()));
-    gh.factory<_i673.DraftListCubit>(
-        () => _i673.DraftListCubit(gh<_i511.DraftPencairanRepository>()));
-    gh.factory<_i795.PilihNasabahCubit>(
-        () => _i795.PilihNasabahCubit(gh<_i511.DraftPencairanRepository>()));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
     gh.factory<_i359.NasabahApprovalCubit>(() =>
