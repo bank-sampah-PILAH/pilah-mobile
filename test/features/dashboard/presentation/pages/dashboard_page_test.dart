@@ -1,19 +1,31 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
+import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_statistics_section.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_upcoming_schedule_section.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_web_kpi_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/dashboard_support.dart';
@@ -23,7 +35,41 @@ import '../../../../support/stub_api.dart';
 class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
 
+class _DashboardCubit extends MockCubit<DashboardState>
+    implements DashboardCubit {}
+
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
+
+class _EmptyReportingDataSource implements DashboardReportingDataSource {
+  @override
+  Future<List<OperationalTrendBucket>> getOperationalTrends({
+    required DashboardReportRange range,
+    required TrendGranularity granularity,
+  }) async =>
+      const [];
+
+  @override
+  Future<List<WasteCategoryTotal>> getWasteCategories({
+    required DashboardReportRange range,
+  }) async =>
+      const [];
+}
+
+class _EmptyJadwalRepository implements JadwalRepository {
+  @override
+  Future<Either<NetworkException, JadwalPageResult>> getJadwal({
+    required int page,
+    DateTime? date,
+  }) async =>
+      Right(JadwalPageResult(
+        items: const [],
+        totalCount: 0,
+        hasMore: false,
+      ));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   late StubApi api;
@@ -32,15 +78,23 @@ void main() {
   late MockAuthBloc auth;
 
   setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  setUp(() async {
+    await di.reset();
+    di.registerSingleton<DashboardReportingDataSource>(
+        _EmptyReportingDataSource());
+    di.registerSingleton<JadwalRepository>(_EmptyJadwalRepository());
+  });
+  tearDown(() => di.reset());
 
   void arrange({
     Map<String, dynamic> stats = const {},
     AuthenticationStates? session,
+    DashboardCubit? dashboardCubit,
   }) {
     api = StubApi();
     api.on('GET', '/api/v1/dashboard/stats', json: stats);
-    dashboard = buildDashboardCubit(api);
-    addTearDown(dashboard.close);
+    dashboard = dashboardCubit ?? buildDashboardCubit(api);
+    if (dashboardCubit == null) addTearDown(dashboard.close);
     activity = _ActivityCubit();
     whenListen(activity, const Stream<RecentActivityState>.empty(),
         initialState: RecentActivityLoaded(const []));
@@ -64,6 +118,37 @@ void main() {
       size: const Size(800, 1600),
     );
     expect(router, isNotNull);
+  }
+
+  Future<void> pumpDashboardPage(
+    WidgetTester tester, {
+    bool? isWeb,
+  }) async {
+    final router = await pumpRouted(
+      tester,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<DashboardCubit>.value(value: dashboard),
+          BlocProvider<RecentActivityCubit>.value(value: activity),
+          BlocProvider<AuthenticationBloc>.value(value: auth),
+        ],
+        child: DashboardPage(isWeb: isWeb),
+      ),
+      size: const Size(800, 1600),
+    );
+    expect(router, isNotNull);
+  }
+
+  _DashboardCubit emptyDashboardCubit() {
+    final cubit = _DashboardCubit();
+    whenListen(
+      cubit,
+      const Stream<DashboardState>.empty(),
+      initialState: const DashboardState(),
+    );
+    when(() => cubit.loadStats(silent: any(named: 'silent')))
+        .thenAnswer((_) async {});
+    return cubit;
   }
 
   testWidgets('header greets the pengelola and links to the profile',
@@ -132,6 +217,7 @@ void main() {
 
   testWidgets('the page loads both feeds and refreshes them on pull',
       (tester) async {
+    if (kIsWeb) return;
     arrange(stats: {'total_nilai_bulan_ini': '5000'});
     await pumpRouted(
       tester,
@@ -157,5 +243,58 @@ void main() {
     verify(() => auth.add(any(that: isA<RefreshUserRequested>()))).called(1);
     expect(api.requests.where((r) => r.path.endsWith('/stats')), hasLength(2));
     verify(() => activity.load(silent: true)).called(1);
+  });
+
+  testWidgets('web dashboard shows reports to Pengurus', (tester) async {
+    arrange(dashboardCubit: emptyDashboardCubit());
+    await pumpDashboardPage(tester, isWeb: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DashboardWebKpiSection), findsOneWidget);
+    expect(find.byType(DashboardReportsSection), findsOneWidget);
+    expect(find.byType(DashboardUpcomingScheduleSection), findsOneWidget);
+    expect(find.byType(TotalKasCard), findsNothing);
+  });
+
+  testWidgets('web dashboard uses the web default for Pengurus',
+      (tester) async {
+    if (!kIsWeb) return;
+    arrange(dashboardCubit: emptyDashboardCubit());
+    await pumpDashboardPage(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DashboardReportsSection), findsOneWidget);
+    expect(find.byType(DashboardUpcomingScheduleSection), findsOneWidget);
+  });
+
+  testWidgets('web dashboard uses native sections for other roles',
+      (tester) async {
+    arrange(
+      session: Authenticated(authEntity: testAuth(role: 'nasabah')),
+      dashboardCubit: emptyDashboardCubit(),
+    );
+    await pumpDashboardPage(tester, isWeb: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DashboardWebKpiSection), findsNothing);
+    expect(find.byType(DashboardReportsSection), findsNothing);
+    expect(find.byType(DashboardUpcomingScheduleSection), findsNothing);
+    expect(find.byType(TotalKasCard), findsOneWidget);
+    expect(find.byType(DashboardStatisticsSection), findsOneWidget);
+  });
+
+  testWidgets('web dashboard uses native sections without a session',
+      (tester) async {
+    arrange(
+      session: Unauthenticated(),
+      dashboardCubit: emptyDashboardCubit(),
+    );
+    await pumpDashboardPage(tester, isWeb: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DashboardWebKpiSection), findsNothing);
+    expect(find.byType(DashboardReportsSection), findsNothing);
+    expect(find.byType(DashboardUpcomingScheduleSection), findsNothing);
+    expect(find.byType(TotalKasCard), findsOneWidget);
   });
 }

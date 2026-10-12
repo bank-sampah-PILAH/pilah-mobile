@@ -84,6 +84,20 @@ void main() {
     expect(find.text('Tanggal: 2026-06-02'), findsOneWidget);
   });
 
+  testWidgets('opens the complete schedule list from the section header',
+      (tester) async {
+    final repository = _JadwalRepository();
+    when(() => repository.getJadwal(page: 1, date: null))
+        .thenAnswer((_) async => Right(_page(const [])));
+
+    await _pumpSection(tester, repository);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lihat Semua'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tanggal: none'), findsOneWidget);
+  });
+
   testWidgets('shows an error and retries without affecting the empty state',
       (tester) async {
     final repository = _JadwalRepository();
