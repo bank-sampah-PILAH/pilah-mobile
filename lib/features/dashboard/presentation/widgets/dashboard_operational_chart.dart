@@ -144,7 +144,7 @@ class DashboardOperationalChart extends StatelessWidget {
                 lineTouchData: LineTouchData(
                   touchSpotThreshold: slotWidth / 2 + 1,
                   getTouchedSpotIndicator: (bar, indexes) => indexes
-                      .map((index) => TouchedSpotIndicatorData(
+                      .map((index) => const TouchedSpotIndicatorData(
                             FlLine(
                                 color: AppColors.grey200,
                                 strokeWidth: 1,
@@ -251,8 +251,12 @@ String _rupiah(double value) {
   return '${CurrencyFormatter.formatRupiah(cents ~/ 100)}${fraction == 0 ? '' : ',${fraction.toString().padLeft(2, '0')}'}';
 }
 
-String _amountLabel(double value) => value >= 1000000
-    ? 'Rp ${(value / 1000000).toStringAsFixed(1)} jt'
-    : value >= 1000
-        ? 'Rp ${(value / 1000).toStringAsFixed(1)} rb'
-        : _rupiah(value);
+String _amountLabel(double value) {
+  if (value >= 1000000) {
+    return 'Rp ${(value / 1000000).toStringAsFixed(1)} jt';
+  }
+  if (value >= 1000) {
+    return 'Rp ${(value / 1000).toStringAsFixed(1)} rb';
+  }
+  return _rupiah(value);
+}

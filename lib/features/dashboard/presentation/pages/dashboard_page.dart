@@ -101,46 +101,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     dataSource: di<DashboardReportingDataSource>(),
                   ),
                   const SizedBox(height: 24),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth >= 900
-                          ? (constraints.maxWidth - 24) / 2
-                          : constraints.maxWidth;
-                      return Wrap(
-                        spacing: 24,
-                        runSpacing: 24,
-                        children: [
-                          for (final section in [
-                            DashboardUpcomingScheduleSection(
-                              key: ValueKey('schedule-$webPengurusKey'),
-                              repository: di<JadwalRepository>(),
-                            ),
-                            const RecentActivitySection(),
-                          ])
-                            SizedBox(
-                              width: width,
-                              child: Card(
-                                color: Colors.white,
-                                surfaceTintColor: Colors.transparent,
-                                elevation: 0,
-                                margin: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(
-                                    color: AppColors.grey200
-                                        .withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: section,
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
+                  _webDetails(webPengurusKey),
                 ] else
                   const RecentActivitySection(),
               ],
@@ -150,4 +111,41 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+
+  Widget _webDetails(String webPengurusKey) => LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth >= 900
+              ? (constraints.maxWidth - 24) / 2
+              : constraints.maxWidth;
+          return Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              for (final section in [
+                DashboardUpcomingScheduleSection(
+                  key: ValueKey('schedule-$webPengurusKey'),
+                  repository: di<JadwalRepository>(),
+                ),
+                const RecentActivitySection(),
+              ])
+                SizedBox(
+                  width: width,
+                  child: Card(
+                    color: Colors.white,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    margin: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                          color: AppColors.grey200.withValues(alpha: 0.3)),
+                    ),
+                    child: Padding(
+                        padding: const EdgeInsets.all(20), child: section),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
 }
