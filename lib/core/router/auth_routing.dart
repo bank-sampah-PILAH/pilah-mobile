@@ -5,6 +5,8 @@
 // app-lifecycle watcher can all share one answer instead of each re-deriving
 // onboarding routing.
 
+import 'package:pilah_mobile/core/router/app_locations.dart';
+
 /// The completion form. In invite mode it saves the profile *and* redeems the
 /// token in one submit.
 const completeProfileLocation = '/complete-profile';
@@ -68,7 +70,7 @@ String locationAfterRestore({required String target, String? from}) {
       from.startsWith('/') &&
       !from.startsWith('//') &&
       !_publicPaths.contains(from);
-  return safe && target == '/dashboard' ? from : target;
+  return safe && target == AppLocations.dashboard ? from : target;
 }
 
 /// Maps the backend `user_state` / `next_step` value to the route a signed-in
@@ -108,7 +110,7 @@ String locationForAuthStep(
     case 'register_nasabah':
       return '/register-nasabah';
     case 'nasabah_dashboard':
-      return '/dashboard';
+      return AppLocations.dashboard;
     case 'register_bank_sampah_induk':
       return '/register-bank-sampah-induk';
     case 'pengelola_induk_dashboard':
@@ -127,7 +129,7 @@ String locationForAuthStep(
     case 'dashboard':
     default:
       // `dashboard`, plus null/empty/unknown, land on the main dashboard.
-      return '/dashboard';
+      return AppLocations.dashboard;
   }
 }
 
