@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_terjadwal.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
+
+import '../../../support/pump_app.dart';
 
 class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
 
@@ -147,6 +150,31 @@ void main() {
               id: 'j-1', harga: 4000, berlakuMulai: DateTime(2026, 10, 8)),
         ),
       ).called(1);
+    });
+
+    testWidgets(
+        'says the other fields were saved when only the new price fails, '
+        'and keeps the sheet open to retry', (tester) async {
+      // The PUT has already stored the other fields; reporting a plain
+      // failure would hide that, and a retry only needs the price again.
+      when(() => cubit.ubahHarga(any()))
+          .thenAnswer((_) async => NetworkException(message: 'Server sibuk'));
+      await bukaSheet(tester, _jenis());
+
+      await isiHarga(tester, '4000');
+      final tombol = find.text('Simpan Perubahan');
+      await tester.ensureVisible(tombol);
+      await tester.tap(tombol);
+      await pumpToast(tester);
+
+      expect(find.text('Harga Belum Tersimpan'), findsOneWidget);
+      expect(
+        find.textContaining('Perubahan lain sudah tersimpan'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Server sibuk'), findsOneWidget);
+      expect(tombol, findsOneWidget);
+      await settleToasts(tester);
     });
 
     testWidgets('does not record a version when the price is unchanged',
