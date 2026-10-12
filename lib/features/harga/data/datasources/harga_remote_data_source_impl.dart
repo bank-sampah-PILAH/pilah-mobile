@@ -65,15 +65,18 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
 
   @override
   Future<List<VersiHarga>> getRiwayatHarga(String id) async {
-    // Riwayat satu jenis jarang lebih dari beberapa versi; satu halaman
-    // berukuran maksimum cukup tanpa memuat halaman berikutnya.
-    final response = await networkService.get(
-      '/api/v1/jenis-sampah/$id/harga',
-      queryParams: {'page_size': 100},
-    );
-    final List<dynamic> data = response.data['results'];
-    return data
-        .map((json) => versiHargaFromJson(json as Map<String, dynamic>))
-        .toList();
+    // Halaman 100 baris; riwayat yang lebih panjang dibaca sampai `next`
+    // habis, agar versi lama tidak hilang dari riwayat.
+    final riwayat = <VersiHarga>[];
+    for (var halaman = 1;; halaman++) {
+      final response = await networkService.get(
+        '/api/v1/jenis-sampah/$id/harga',
+        queryParams: {'page_size': 100, if (halaman > 1) 'page': halaman},
+      );
+      final Map<String, dynamic> data = response.data;
+      riwayat.addAll((data['results'] as List<dynamic>)
+          .map((json) => versiHargaFromJson(json as Map<String, dynamic>)));
+      if (data['next'] == null) return riwayat;
+    }
   }
 }
