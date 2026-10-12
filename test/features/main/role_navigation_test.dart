@@ -312,6 +312,19 @@ void main() {
     expect(find.text('Silakan masuk sebagai nasabah.'), findsNothing);
   });
 
+  for (final state in <AuthenticationStates>[
+    AuthenticationLoading(),
+    Unauthenticated(),
+  ]) {
+    testWidgets(
+        '${state.runtimeType} shows a blank shell, not the nasabah message',
+        (tester) async {
+      await mount(tester, state);
+
+      expect(find.text('Silakan masuk sebagai nasabah.'), findsNothing);
+    });
+  }
+
   testWidgets('signed-out session cannot display privileged navigation', (
     tester,
   ) async {
