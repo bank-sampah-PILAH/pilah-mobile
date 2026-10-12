@@ -11,6 +11,7 @@ class _ReportingDataSource implements DashboardReportingDataSource {
   Object? trendError;
   Object? categoryError;
   final requestedTrendRanges = <DashboardReportRange>[];
+  final requestedTrendGranularities = <TrendGranularity>[];
   final requestedCategoryRanges = <DashboardReportRange>[];
 
   @override
@@ -19,6 +20,7 @@ class _ReportingDataSource implements DashboardReportingDataSource {
     required TrendGranularity granularity,
   }) async {
     requestedTrendRanges.add(range);
+    requestedTrendGranularities.add(granularity);
     if (trendError case final error?) throw error;
     return trends;
   }
@@ -217,5 +219,123 @@ void main() {
 
     expect(find.text('Belum ada data'), findsOneWidget);
     expect(find.text('Gagal memuat kategori'), findsOneWidget);
+  });
+
+  testWidgets('KPI cards display values with and without units',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: Column(
+          children: [
+            DashboardKpiCard(
+              label: 'Transaksi',
+              value: '7',
+              icon: Icons.show_chart,
+            ),
+            DashboardKpiCard(
+              label: 'Berat',
+              value: '2',
+              unit: 'kg',
+              icon: Icons.scale,
+            ),
+          ],
+        ),
+      ),
+    ));
+
+    expect(find.text('Transaksi'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('Berat'), findsOneWidget);
+    expect(find.text('2 kg'), findsOneWidget);
+  });
+
+  testWidgets('standalone trend controls update range and granularity',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..trends = [
+        OperationalTrendBucket(
+          periodStart: DateTime(2026, 6, 1),
+          depositAmount: 10,
+          depositCount: 1,
+          withdrawalAmount: 5,
+          withdrawalCount: 1,
+        ),
+      ];
+    final initialRange = DashboardReportRange(
+      start: DateTime(2026, 6, 1),
+      end: DateTime(2026, 6, 30),
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: OperationalTrendsWidget(
+            dataSource: source,
+            initialRange: initialRange,
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(source.requestedTrendGranularities.single, TrendGranularity.day);
+
+    await tester.tap(find.text('Hari'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Minggu').last);
+    await tester.pumpAndSettle();
+    expect(source.requestedTrendGranularities.last, TrendGranularity.week);
+
+    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.pumpAndSettle();
+    final datePicker = find.byType(DateRangePickerDialog);
+    await tester
+        .tap(find.descendant(of: datePicker, matching: find.text('10')).first);
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.descendant(of: datePicker, matching: find.text('20')).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(source.requestedTrendRanges.last.start, DateTime(2026, 6, 10));
+    expect(source.requestedTrendRanges.last.end, DateTime(2026, 6, 20));
+    expect(source.requestedTrendGranularities.last, TrendGranularity.week);
+  });
+
+  testWidgets('standalone category filter updates its request range',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+          category: 'Plastik',
+          totalWeightKg: 2,
+          depositCount: 1,
+        ),
+      ];
+    final initialRange = DashboardReportRange(
+      start: DateTime(2026, 6, 1),
+      end: DateTime(2026, 6, 30),
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: WasteCategoriesWidget(
+          dataSource: source,
+          initialRange: initialRange,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2026-06-01 – 2026-06-30'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('10').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('20').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(source.requestedCategoryRanges.last.start, DateTime(2026, 6, 10));
+    expect(source.requestedCategoryRanges.last.end, DateTime(2026, 6, 20));
   });
 }
