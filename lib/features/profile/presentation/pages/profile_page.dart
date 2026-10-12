@@ -551,18 +551,14 @@ class _ProfileViewState extends State<_ProfileView>
                 _buildEditableField(
                   label: 'NAMA BANK SAMPAH',
                   controller: _namaBankController,
-                  validator: (v) => (v == null || v.trim().length < 3)
-                      ? 'Nama minimal 3 karakter'
-                      : null,
+                  validator: _validateNamaBank,
                 ),
                 const SizedBox(height: 16),
                 _buildEditableField(
                   label: 'ALAMAT BANK SAMPAH',
                   controller: _alamatBankController,
                   maxLines: 2,
-                  validator: (v) => (v == null || v.trim().length < 10)
-                      ? 'Alamat wajib diisi (minimal 10 karakter)'
-                      : null,
+                  validator: _validateAlamatBank,
                 ),
                 const SizedBox(height: 16),
                 _buildEditableField(
@@ -571,9 +567,7 @@ class _ProfileViewState extends State<_ProfileView>
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone,
                   iconColor: Colors.pink[400],
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Nomor HP wajib diisi'
-                      : null,
+                  validator: _validateNomorHpPic,
                 ),
               ],
             ),
@@ -627,6 +621,19 @@ class _ProfileViewState extends State<_ProfileView>
       },
     );
   }
+
+  String? _validateNamaBank(String? value) =>
+      value == null || value.trim().length < 3
+          ? 'Nama minimal 3 karakter'
+          : null;
+
+  String? _validateAlamatBank(String? value) =>
+      value == null || value.trim().length < 10
+          ? 'Alamat wajib diisi (minimal 10 karakter)'
+          : null;
+
+  String? _validateNomorHpPic(String? value) =>
+      value == null || value.trim().isEmpty ? 'Nomor HP wajib diisi' : null;
 
   /// The bank sampah logo, and the control for replacing it.
   ///
