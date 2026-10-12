@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +83,33 @@ void main() {
   tearDown(() => cubit.close());
 
   group('pickLogo', () {
+    test('uses browser file bytes without launching the native cropper',
+        () async {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      when(() => picker.pickImage(source: any(named: 'source'))).thenAnswer(
+        (_) async => XFile.fromData(bytes,
+            path: 'bank-logo.png',
+            name: 'bank-logo.png',
+            mimeType: 'image/png'),
+      );
+      final webCubit = ProfileCubit(dataSource, picker, cropper, isWeb: true);
+      addTearDown(webCubit.close);
+
+      await webCubit.pickLogo();
+
+      expect(webCubit.state.selectedLogoBytes, bytes);
+      expect(webCubit.state.selectedLogoFilename, 'bank-logo.png');
+      verifyNever(() => cropper.cropImage(
+            sourcePath: any(named: 'sourcePath'),
+            maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
+            aspectRatio: any(named: 'aspectRatio'),
+            compressFormat: any(named: 'compressFormat'),
+            compressQuality: any(named: 'compressQuality'),
+            uiSettings: any(named: 'uiSettings'),
+          ));
+    });
+
     test('holds the cropped file, not the one straight out of the gallery',
         () async {
       stubPickAndCrop('/tmp/picked.heic', '/tmp/image_cropper_1.jpg');
@@ -178,6 +206,41 @@ void main() {
   });
 
   group('updateBankSampah', () {
+    test('sends browser logo bytes with the profile update', () async {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      cubit.emit(cubit.state.copyWith(
+        selectedLogoBytes: bytes,
+        selectedLogoFilename: 'bank-logo.png',
+      ));
+      when(() => dataSource.updateBankSampah(
+            nama: any(named: 'nama'),
+            alamat: any(named: 'alamat'),
+            kota: any(named: 'kota'),
+            noHpPic: any(named: 'noHpPic'),
+            fotoLogoPath: any(named: 'fotoLogoPath'),
+            fotoLogoBytes: any(named: 'fotoLogoBytes'),
+            fotoLogoFilename: any(named: 'fotoLogoFilename'),
+          )).thenAnswer((_) async => _stored);
+
+      await cubit.updateBankSampah(
+        nama: 'Bank Sampah BTH',
+        alamat: 'Kel. Kukusan',
+        noHpPic: '081234567890',
+      );
+
+      verify(() => dataSource.updateBankSampah(
+            nama: 'Bank Sampah BTH',
+            alamat: 'Kel. Kukusan',
+            kota: null,
+            noHpPic: '081234567890',
+            fotoLogoPath: null,
+            fotoLogoBytes: bytes,
+            fotoLogoFilename: 'bank-logo.png',
+          )).called(1);
+      expect(cubit.state.selectedLogoBytes, isNull);
+      expect(cubit.state.selectedLogoFilename, isNull);
+    });
+
     test('sends the pending logo along with the text fields', () async {
       cubit.emit(cubit.state.copyWith(
         bankSampah: _stored,
