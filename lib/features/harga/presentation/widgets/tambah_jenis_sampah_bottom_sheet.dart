@@ -437,12 +437,14 @@ class _TambahJenisSampahBottomSheetState
         ? await cubit.updateHarga(harga)
         : await cubit.addHarga(harga);
     // Harga tidak ikut PUT: setiap perubahan harga dicatat sebagai versi baru.
+    var hanyaHargaGagal = false;
     if (error == null && hargaBerubah) {
       error = await cubit.ubahHarga(UbahHarga(
         id: harga.id,
         harga: priceVal,
         berlakuMulai: berlakuMulai,
       ));
+      hanyaHargaGagal = error != null;
     }
     if (!mounted) return;
     setState(() => _isSaving = false);
@@ -457,6 +459,19 @@ class _TambahJenisSampahBottomSheetState
           hargaBerubah: hargaBerubah,
           berlakuMulai: berlakuMulai,
         ),
+      );
+      return;
+    }
+
+    if (hanyaHargaGagal) {
+      // PUT sudah menyimpan isian lain; mengulang Simpan aman karena PUT yang
+      // sama tidak mengubah apa-apa, lalu harga dikirim lagi.
+      AppNotification.showError(
+        context,
+        title: 'Harga Belum Tersimpan',
+        message: 'Perubahan lain sudah tersimpan, tetapi harga baru gagal '
+            'disimpan: ${error.displayMessage}. Tekan Simpan lagi untuk '
+            'mencoba harganya.',
       );
       return;
     }
