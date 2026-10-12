@@ -71,6 +71,12 @@ jobs:
           flutter test --platform chrome
           test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
 
+      - name: Verify the web dashboard role layout
+        run: >-
+          flutter test --platform chrome
+          --plain-name "web dashboard uses the web default for Pengurus"
+          test/features/dashboard/presentation/pages/dashboard_page_test.dart
+
       # Java 21 for the scanner engine: with skipJreProvisioning the CLI never
       # calls api.sonarcloud.io/analysis/jres (GitHub runner IPs get a
       # deterministic 403 from SonarCloud's CDN), it just runs on this JDK.
