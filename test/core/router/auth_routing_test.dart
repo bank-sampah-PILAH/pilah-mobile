@@ -249,6 +249,17 @@ void main() {
       }
     });
 
+    test('carries the query string so the page keeps its state', () {
+      expect(
+        sessionRestoreRedirect(
+          sessionChecked: false,
+          path: '/jadwal',
+          query: 'date=2026-10-20',
+        ),
+        '/splash?from=${Uri.encodeComponent('/jadwal?date=2026-10-20')}',
+      );
+    });
+
     test('leaves public paths alone so the splash can finish its work', () {
       for (final path in [
         '/splash',
@@ -301,8 +312,25 @@ void main() {
       );
     });
 
+    test('restores the query string along with the path', () {
+      expect(
+        locationAfterRestore(
+          target: '/dashboard',
+          from: '/jadwal?date=2026-10-20',
+        ),
+        '/jadwal?date=2026-10-20',
+      );
+    });
+
     test('ignores a missing or unsafe from', () {
-      for (final from in [null, '', 'nasabah', '//evil.test', '/login']) {
+      for (final from in [
+        null,
+        '',
+        'nasabah',
+        '//evil.test',
+        '/login',
+        '/login?next=/nasabah',
+      ]) {
         expect(
           locationAfterRestore(target: '/dashboard', from: from),
           '/dashboard',
