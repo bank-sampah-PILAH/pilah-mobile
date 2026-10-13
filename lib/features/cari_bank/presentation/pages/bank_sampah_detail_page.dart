@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/domain/entities/cari_bank_entities.dart';
+import 'package:pilah_mobile/features/perbandingan_harga/presentation/pages/perbandingan_harga_page.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -129,6 +131,29 @@ class _IsiDetail extends StatelessWidget {
           )
         else
           ...detail.layanan.map(_LayananBaris.new),
+        if (detail.layanan.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: OutlinedButton.icon(
+              key: const Key('detail_bank_bandingkan_harga'),
+              onPressed: () {
+                final layanan = detail.layanan.first;
+                // Route through the router (registered for this page); the
+                // seed record carries the jenis + asal-bank fields.
+                context.push(
+                  PerbandinganHargaPage.route,
+                  extra: PerbandinganSeed(
+                    jenisSampahId: layanan.id,
+                    bankAsalId: detail.id,
+                    bankAsalNama: detail.nama,
+                    layananAsal: detail.layanan,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.compare_arrows, size: 18),
+              label: const Text('Bandingkan Harga'),
+            ),
+          ),
       ],
     );
   }
