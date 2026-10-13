@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'file_downloader.dart';
+import 'file_downloads.dart';
 import '../bases/widgets/app_notification.dart';
 
 /// The save-then-share confirmation shared by every report export

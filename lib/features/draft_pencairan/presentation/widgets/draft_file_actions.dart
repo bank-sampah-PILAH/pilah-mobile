@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/utils/file_downloader.dart';
+import 'package:pilah_mobile/core/utils/file_downloads.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../domain/model/draft_pencairan.dart';
