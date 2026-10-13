@@ -12,8 +12,8 @@ class PilihBankSampahSection extends StatelessWidget {
   final bool hasError;
   final String? errorText;
 
-  /// False when registration is locked (PIL-204: one membership per
-  /// nasabah for now) — the field renders but no longer opens the picker.
+  /// False only while finishing a saved profile with a pre-linked membership;
+  /// that flow must not create another bank application.
   final bool enabled;
 
   /// Bank sampah ids to hide from the picker, e.g. ones already joined.

@@ -37,10 +37,11 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
 
   List<NasabahMembershipEntity> _memberships = const [];
 
-  /// PIL-204 scope for now: one membership per nasabah. Any existing
-  /// membership — pending, approved, or rejected — locks further
-  /// registration rather than letting a second application through.
-  bool get _isLocked => _memberships.isNotEmpty;
+  /// A pre-linked membership can precede submission of the saved profile
+  /// draft. In that case, finish the profile without creating another request.
+  bool get _isProfileCompletionOnly =>
+      _memberships.isNotEmpty &&
+      context.read<OnboardingCubit>().hasProfileDraft;
 
   @override
   void initState() {
@@ -56,14 +57,11 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   }
 
   Future<void> _onSubmit() async {
-    // Locked means a membership already exists — usually because the
-    // pengurus-entered record auto-linked at login, before this draft was
-    // ever sent. There's no new bank to register, but the profile itself
-    // still needs to land: OnboardingCubit.submitNasabahRegistration skips
-    // its own registerNasabah call once completing the profile already
-    // reaches nasabah_dashboard, so a placeholder bank id here is never
-    // actually sent anywhere.
-    if (!_isLocked) {
+    // A pre-linked membership plus a saved profile draft means the profile
+    // still needs to land, but no new bank application should be submitted.
+    // OnboardingCubit skips registerNasabah when completing the profile
+    // already reaches nasabah_dashboard, so this placeholder id is not sent.
+    if (!_isProfileCompletionOnly) {
       setState(() => _showBankError = _selectedBank == null);
       final formValid = _formKey.currentState?.validate() ?? false;
       if (!formValid || _selectedBank == null) return;
@@ -72,8 +70,9 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
     setState(() => _isLoading = true);
 
     final request = RegisterNasabahRequest(
-      bankSampahId:
-          _isLocked ? _memberships.first.bankSampahId : _selectedBank!.id,
+      bankSampahId: _isProfileCompletionOnly
+          ? _memberships.first.bankSampahId
+          : _selectedBank!.id,
     );
     final (:result, :error) = await context
         .read<OnboardingCubit>()
@@ -379,24 +378,6 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_isLocked) ...[
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                'Saat ini Anda hanya dapat terdaftar di 1 '
-                                'bank sampah.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.brown[700],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
                           _buildFormField(
                             label: 'BANK SAMPAH',
                             description:
@@ -407,7 +388,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                               onBankSelected: _onBankSelected,
                               hasError: _showBankError,
                               errorText: 'Bank sampah wajib dipilih',
-                              enabled: !_isLocked,
+                              enabled: !_isProfileCompletionOnly,
                               excludedBankIds: _memberships
                                   .map((membership) => membership.bankSampahId)
                                   .toSet(),
@@ -483,7 +464,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      _isLocked
+                                      _isProfileCompletionOnly
                                           ? 'Lanjutkan'
                                           : 'Ajukan Pendaftaran',
                                       style: const TextStyle(
