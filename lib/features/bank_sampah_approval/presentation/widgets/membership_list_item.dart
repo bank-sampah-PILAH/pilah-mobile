@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_status_badge.dart';
 
@@ -11,11 +12,15 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/
 class MembershipListItem extends StatelessWidget {
   final NasabahMembershipEntity membership;
   final VoidCallback onTap;
+  final VoidCallback? onSelect;
+  final bool selected;
 
   const MembershipListItem({
     super.key,
     required this.membership,
     required this.onTap,
+    this.onSelect,
+    this.selected = false,
   });
 
   @override
@@ -71,11 +76,31 @@ class MembershipListItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Saldo: ${formatRupiahCents(rupiahToCents(membership.totalSaldo))}',
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            MembershipStatusBadge(status: membership.status),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                MembershipStatusBadge(status: membership.status),
+                if (onSelect != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: onSelect,
+                    child: Text(selected ? 'Bank aktif' : 'Pilih bank'),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),

@@ -21,6 +21,7 @@ const _pending = NasabahMembershipEntity(
   bankSampahAlamat: 'Jl. Melati No. 5',
   status: MembershipStatus.pending,
   isActive: true,
+  totalSaldo: '999.99',
 );
 
 const _approved = NasabahMembershipEntity(
@@ -31,6 +32,7 @@ const _approved = NasabahMembershipEntity(
   bankSampahAlamat: 'Jl. Sudirman No. 20',
   status: MembershipStatus.approved,
   isActive: true,
+  totalSaldo: '1234567.05',
 );
 
 Widget _wrap(NasabahApprovalCubit cubit) => MaterialApp(
@@ -60,6 +62,9 @@ void main() {
     expect(find.text('Bank Sampah Lestari'), findsOneWidget);
     expect(find.text('Jakarta · Jl. Sudirman No. 20'), findsOneWidget);
     expect(find.text('Disetujui'), findsOneWidget);
+    expect(find.text('Saldo: Rp 999,99'), findsOneWidget);
+    expect(find.text('Saldo: Rp 1.234.567,05'), findsOneWidget);
+    expect(find.text('Rp 1.234.567,05'), findsOneWidget);
     expect(find.byIcon(Icons.recycling), findsNWidgets(2));
   });
 

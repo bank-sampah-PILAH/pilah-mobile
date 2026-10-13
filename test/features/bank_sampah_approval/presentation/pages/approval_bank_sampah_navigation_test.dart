@@ -11,6 +11,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/na
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
@@ -40,6 +41,36 @@ const _second = NasabahMembershipEntity(
 );
 
 void main() {
+  testWidgets('apply at another bank opens the existing registration route',
+      (tester) async {
+    final cubit = _MockNasabahApprovalCubit();
+    when(() => cubit.state).thenReturn(const NasabahApprovalLoaded([]));
+    final router = GoRouter(
+      initialLocation: ApprovalBankSampahListPage.route,
+      routes: [
+        GoRoute(
+          path: ApprovalBankSampahListPage.route,
+          builder: (context, state) => BlocProvider<NasabahApprovalCubit>.value(
+            value: cubit,
+            child: const ApprovalBankSampahListView(),
+          ),
+        ),
+        GoRoute(
+          path: RegisterNasabahScreen.route,
+          builder: (context, state) => const Text('Registration route'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pump();
+    await tester.tap(find.text('Daftar di bank lain'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Registration route'), findsOneWidget);
+  });
+
   testWidgets('tapping a list card pushes the detail route with the entity',
       (tester) async {
     final cubit = _MockNasabahApprovalCubit();

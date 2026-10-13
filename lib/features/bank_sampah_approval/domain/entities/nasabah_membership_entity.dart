@@ -43,6 +43,7 @@ class NasabahMembershipEntity {
   final String bankSampahAlamat;
   final MembershipStatus status;
   final bool isActive;
+  final String totalSaldo;
 
   /// Only non-null when [status] is [MembershipStatus.rejected].
   final String? alasanPenolakan;
@@ -59,6 +60,7 @@ class NasabahMembershipEntity {
     required this.bankSampahAlamat,
     required this.status,
     required this.isActive,
+    this.totalSaldo = '0.00',
     this.alasanPenolakan,
     this.riwayat = const [],
   });
@@ -76,6 +78,7 @@ class NasabahMembershipEntity {
       bankSampahAlamat: bank['alamat']?.toString() ?? '',
       status: MembershipStatus.values.byName(json['status'] as String),
       isActive: json['is_active'] as bool? ?? false,
+      totalSaldo: json['total_saldo'] as String? ?? '0.00',
       alasanPenolakan: json['alasan_penolakan']?.toString(),
       riwayat: riwayat,
     );
