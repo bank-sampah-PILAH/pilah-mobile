@@ -82,13 +82,19 @@ void main() {
     final result = await JadwalRemoteDataSourceImpl(network).getJadwal(
       page: 1,
       date: DateTime(2026, 10, 10),
+      membershipId: 'membership-1',
     );
 
     expect(result.items.map((schedule) => schedule.id), ['schedule-1']);
     expect(result.totalCount, 21);
     expect(result.hasMore, isTrue);
     expect(queries, [
-      {'page_size': 20, 'page': 1, 'date': '2026-10-10'},
+      {
+        'page_size': 20,
+        'page': 1,
+        'date': '2026-10-10',
+        'keanggotaan_id': 'membership-1',
+      },
     ]);
   });
 
@@ -107,6 +113,7 @@ void main() {
     final dates = await JadwalRemoteDataSourceImpl(network).getCalendarDates(
       DateTime(2026, 10, 1),
       DateTime(2026, 10, 31),
+      membershipId: 'membership-1',
     );
 
     expect(dates, {DateTime(2026, 10, 10), DateTime(2026, 10, 12)});
@@ -115,6 +122,7 @@ void main() {
           queryParams: {
             'start_date': '2026-10-01',
             'end_date': '2026-10-31',
+            'keanggotaan_id': 'membership-1',
           },
         )).called(1);
   });
