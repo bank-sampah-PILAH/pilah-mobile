@@ -221,9 +221,12 @@ void main() {
 
       final berhasil = find.text('Pencairan Berhasil!');
       expect(berhasil, findsOneWidget);
-      expect(find.ancestor(of: berhasil, matching: find.byType(Dialog)),
-          findsOneWidget);
+      final dialog = find.ancestor(of: berhasil, matching: find.byType(Dialog));
+      expect(dialog, findsOneWidget);
       expect(find.byType(BottomSheet), findsNothing);
+      // The summary was drawn for a sheet, square at the bottom; the dialog
+      // must clip it to its own rounded corners.
+      expect(tester.widget<Dialog>(dialog).clipBehavior, Clip.antiAlias);
     });
   });
 
