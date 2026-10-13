@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
@@ -18,6 +20,22 @@ class _MemoryStorage implements AppStorage {
   Future<void> clear() async => values.clear();
   @override
   Future<bool> contains(String key) async => values.containsKey(key);
+}
+
+class _DelayedMemoryStorage extends _MemoryStorage {
+  final writeStarted = Completer<void>();
+  final releaseFirstWrite = Completer<void>();
+  var writes = 0;
+
+  @override
+  Future<void> put(String key, dynamic value) async {
+    writes++;
+    if (writes == 1) {
+      writeStarted.complete();
+      await releaseFirstWrite.future;
+    }
+    await super.put(key, value);
+  }
 }
 
 NasabahMembershipEntity _membership(
@@ -67,6 +85,22 @@ void main() {
 
     expect(await selection.read('user-1'), 'membership-b');
     expect(await selection.read('user-2'), isNull);
+  });
+
+  test('serializes overlapping resolutions so the newest state wins', () async {
+    final storage = _DelayedMemoryStorage();
+    final selection = ActiveMembershipSelection(storage);
+    final stale = selection.resolve('user-1', [_membership('old', '1.00')]);
+    await storage.writeStarted.future;
+    final latest = selection.resolve('user-1', [_membership('new', '2.00')]);
+    await Future<void>.delayed(Duration.zero);
+    final writesBeforeRelease = storage.writes;
+    storage.releaseFirstWrite.complete();
+
+    expect(await stale, 'old');
+    expect(await latest, 'new');
+    expect(writesBeforeRelease, 1);
+    expect(await selection.read('user-1'), 'new');
   });
 
   test(

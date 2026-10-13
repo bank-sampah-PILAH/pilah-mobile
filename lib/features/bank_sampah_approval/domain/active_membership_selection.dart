@@ -1,33 +1,50 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 
 /// Persists one user's active bank membership for the next request layer.
 class ActiveMembershipSelection {
   final AppStorage storage;
+  Future<void> _queue = Future<void>.value();
 
-  const ActiveMembershipSelection(this.storage);
+  ActiveMembershipSelection(this.storage);
 
   String _key(String userId) => 'active_membership_id:$userId';
 
-  Future<String?> read(String userId) => storage.get<String>(_key(userId));
+  Future<T> _serialize<T>(Future<T> Function() operation) {
+    final queued = _queue.then((_) => operation());
+    _queue = queued.then<void>((_) {}, onError: (Object _) {});
+    return queued;
+  }
+
+  Future<String?> read(String userId) =>
+      _serialize(() => storage.get<String>(_key(userId)));
 
   Future<void> select(String userId, String membershipId) =>
-      storage.put(_key(userId), membershipId);
+      _serialize(() => storage.put(_key(userId), membershipId));
 
   Future<String?> resolve(
     String userId,
     Iterable<NasabahMembershipEntity> memberships,
+  ) =>
+      _serialize(() => _resolve(userId, memberships));
+
+  Future<String?> _resolve(
+    String userId,
+    Iterable<NasabahMembershipEntity> memberships,
   ) async {
+    final key = _key(userId);
     final eligible = memberships
         .where(isSelectableMembership)
         .map((membership) => membership.id)
         .toList();
-    final saved = await read(userId);
+    final saved = await storage.get<String>(key);
     final selected = eligible.contains(saved) ? saved : eligible.firstOrNull;
     if (selected == null && saved != null) {
-      await storage.delete(_key(userId));
+      await storage.delete(key);
     } else if (selected != null && selected != saved) {
-      await select(userId, selected);
+      await storage.put(key, selected);
     }
     return selected;
   }
