@@ -350,11 +350,12 @@ class AppRouterConfig {
                       state.uri.queryParameters['date'] ?? '',
                     );
                     if (auth.role == 'nasabah') {
+                      final membershipId =
+                          state.uri.queryParameters['keanggotaan_id'];
                       return NasabahJadwalSession(
-                        key: ValueKey(auth.id ?? auth.email),
+                        key: ValueKey((auth.id ?? auth.email, membershipId)),
                         userId: auth.id ?? auth.email,
-                        membershipId:
-                            state.uri.queryParameters['keanggotaan_id'],
+                        membershipId: membershipId,
                         initialDate: initialDate,
                       );
                     }

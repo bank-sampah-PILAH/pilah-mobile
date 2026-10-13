@@ -9,6 +9,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
@@ -20,6 +21,8 @@ class MockAuth extends MockBloc<AuthenticationEvent, AuthenticationStates>
 
 class MockApproval extends MockCubit<NasabahApprovalState>
     implements NasabahApprovalCubit {}
+
+class MockStorage extends Mock implements AppStorage {}
 
 const pending = NasabahMembershipEntity(
   id: 'application-1',
@@ -86,7 +89,7 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
             '/customers',
             '/prices',
             '/reports',
-            '/schedule',
+            '/jadwal',
             '/history',
             '/bank',
             '/profile'
@@ -268,6 +271,31 @@ void main() {
     expect(find.text('body:/history'), findsOneWidget);
   });
 
+  testWidgets('customer schedule navigation uses the persisted membership', (
+    tester,
+  ) async {
+    if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
+      await di.unregister<AppStorage>(instanceName: 'shared_preferences');
+    }
+    final storage = MockStorage();
+    when(() => storage.get<String>('active_membership_id:siti@example.test'))
+        .thenAnswer((_) async => 'member-b');
+    di.registerSingleton<AppStorage>(storage,
+        instanceName: 'shared_preferences');
+    addTearDown(
+        () => di.unregister<AppStorage>(instanceName: 'shared_preferences'));
+
+    final router = await mount(tester, session('nasabah'));
+    await tester.tap(find.text('Jadwal'));
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, '/jadwal');
+    expect(router.routeInformationProvider.value.uri.queryParameters,
+        {'keanggotaan_id': 'member-b'});
+    verify(() => storage.get<String>('active_membership_id:siti@example.test'))
+        .called(1);
+  });
+
   testWidgets('customer history selection updates the shell and selected tab', (
     tester,
   ) async {
@@ -333,9 +361,9 @@ void main() {
   });
 
   testWidgets('an active nasabah opens the schedule tab', (tester) async {
-    await mount(tester, session('nasabah'), initialLocation: '/schedule');
+    await mount(tester, session('nasabah'), initialLocation: '/jadwal');
 
-    expect(find.text('body:/schedule'), findsOneWidget);
+    expect(find.text('body:/jadwal'), findsOneWidget);
     expect(find.text('Kembali ke Beranda'), findsNothing);
   });
 

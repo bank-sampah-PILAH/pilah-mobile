@@ -26,8 +26,10 @@ class _MockAuthenticationBloc
     implements AuthenticationBloc {}
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {
+  final membershipIds = <String?>[];
+
   @override
-  void setMembershipId(String? membershipId) {}
+  void setMembershipId(String? membershipId) => membershipIds.add(membershipId);
 }
 
 void main() {
@@ -151,6 +153,14 @@ void main() {
     expect(find.text('Jadwal Bank Sampah'), findsOneWidget);
     expect(find.text('Balai Warga'), findsOneWidget);
     verify(() => jadwalCubit.loadJadwal(date: selectedDate)).called(1);
+    router.go(
+      '${JadwalPage.route}?date=$dateParam&keanggotaan_id=member-b',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      jadwalCubit.membershipIds,
+      containsAllInOrder(['preview-membership', 'member-b']),
+    );
     expect(find.byType(FloatingActionButton), findsNothing);
     expect(find.text('Batalkan'), findsNothing);
     expect(find.text('Terbitkan'), findsNothing);
