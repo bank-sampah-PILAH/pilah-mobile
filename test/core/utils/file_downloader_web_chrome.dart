@@ -11,9 +11,11 @@ void main() {
       () async {
     web.HTMLAnchorElement? clicked;
     final listener = (web.Event event) {
-      final target = event.target;
-      if (target is web.HTMLAnchorElement) {
-        clicked = target;
+      // Interop types can't be checked with `is`; the tag name says what was
+      // clicked.
+      final target = event.target as web.Element?;
+      if (target?.tagName == 'A') {
+        clicked = target as web.HTMLAnchorElement;
         // Keep the test runner from actually saving a file.
         event.preventDefault();
       }
