@@ -207,6 +207,24 @@ void main() {
 
       verify(() => useCases.createPencairan(any())).called(1);
     });
+
+    testWidgets('confirms the payout in a centred dialog, not a bottom sheet',
+        (tester) async {
+      when(() => useCases.createPencairan(any()))
+          .thenAnswer((_) async => const Right(_created));
+      await pumpWide(tester);
+      await enterNominal(tester, '200000');
+
+      await tapSubmit(tester);
+      await tester.tap(find.text('Catat'));
+      await tester.pumpAndSettle();
+
+      final berhasil = find.text('Pencairan Berhasil!');
+      expect(berhasil, findsOneWidget);
+      expect(find.ancestor(of: berhasil, matching: find.byType(Dialog)),
+          findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
   });
 
   testWidgets('keeps the phone layout: no side panel, button at the bottom',
