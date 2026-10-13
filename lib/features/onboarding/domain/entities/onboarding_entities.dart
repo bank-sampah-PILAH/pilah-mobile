@@ -79,10 +79,9 @@ class BankSampahDirectoryEntity {
       );
 }
 
-/// One row from `GET /nasabah/me`: a calon/active nasabah's own membership.
-/// Used by the bank-sampah picker (PIL-204) to show what's already joined
-/// and lock further registrations under the current one-membership-per-
-/// nasabah scope.
+/// One row from `GET /nasabah/me`, representing one bank membership for a
+/// calon/active nasabah. The registration form displays it with its status
+/// and excludes its bank ID from new bank applications.
 class NasabahMembershipEntity {
   final String id;
   final String bankSampahId;
