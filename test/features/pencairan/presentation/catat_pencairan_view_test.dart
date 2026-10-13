@@ -162,6 +162,62 @@ void main() {
     await tester.pump();
   }
 
+  group('on a desktop browser window', () {
+    Future<void> pumpWide(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpView(tester);
+    }
+
+    testWidgets(
+        'puts saldo, ringkasan and the submit button in a side panel '
+        'beside the form', (tester) async {
+      await pumpWide(tester);
+      await enterNominal(tester, '50000');
+
+      final panel = find.byKey(const Key('catat-pencairan-panel'));
+      expect(panel, findsOneWidget);
+      for (final finder in [
+        find.text('Rp 465.600'),
+        find.text('Sisa saldo'),
+        find.byKey(const Key('submit-pencairan')),
+      ]) {
+        expect(find.descendant(of: panel, matching: finder), findsOneWidget);
+      }
+      // The panel sits to the right of the form, not under it.
+      expect(
+        tester.getTopLeft(panel).dx,
+        greaterThan(
+            tester.getTopRight(find.byKey(const Key('nominal-field'))).dx),
+      );
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+      expect(scaffold.bottomNavigationBar, isNull);
+    });
+
+    testWidgets('still records the payout from the panel', (tester) async {
+      when(() => useCases.createPencairan(any()))
+          .thenAnswer((_) async => const Right(_created));
+      await pumpWide(tester);
+      await enterNominal(tester, '200000');
+
+      await tapSubmit(tester);
+      await tester.tap(find.text('Catat'));
+      await tester.pumpAndSettle();
+
+      verify(() => useCases.createPencairan(any())).called(1);
+    });
+  });
+
+  testWidgets('keeps the phone layout: no side panel, button at the bottom',
+      (tester) async {
+    await pumpView(tester);
+
+    expect(find.byKey(const Key('catat-pencairan-panel')), findsNothing);
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(scaffold.bottomNavigationBar, isNotNull);
+  });
+
   testWidgets('shows the current saldo', (tester) async {
     await pumpView(tester);
 
