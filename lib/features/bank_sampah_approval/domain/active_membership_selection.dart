@@ -13,6 +13,24 @@ class ActiveMembershipSelection {
 
   Future<void> select(String userId, String membershipId) =>
       storage.put(_key(userId), membershipId);
+
+  Future<String?> resolve(
+    String userId,
+    Iterable<NasabahMembershipEntity> memberships,
+  ) async {
+    final eligible = memberships
+        .where(isSelectableMembership)
+        .map((membership) => membership.id)
+        .toList();
+    final saved = await read(userId);
+    final selected = eligible.contains(saved) ? saved : eligible.firstOrNull;
+    if (selected == null && saved != null) {
+      await storage.delete(_key(userId));
+    } else if (selected != null && selected != saved) {
+      await select(userId, selected);
+    }
+    return selected;
+  }
 }
 
 bool isSelectableMembership(NasabahMembershipEntity membership) =>

@@ -50,6 +50,8 @@ class _ApprovalBankSampahListViewState
     extends State<ApprovalBankSampahListView> {
   late final ActiveMembershipSelection? _selection;
   Future<String?>? _selectedMembership;
+  Set<String>? _eligibleMembershipIds;
+  var _selectionRevision = 0;
   String? _selectedId;
 
   @override
@@ -65,33 +67,56 @@ class _ApprovalBankSampahListViewState
     }
   }
 
-  Future<String?> _loadSelection(List<NasabahMembershipEntity> memberships) {
-    final userId = widget.userId!;
-    return _selection!.read(userId).then((saved) async {
-      final eligibleIds = memberships
-          .where(isSelectableMembership)
-          .map((membership) => membership.id)
-          .toSet();
-      final selected = eligibleIds.contains(saved)
-          ? saved
-          : memberships
-              .where(isSelectableMembership)
-              .map((membership) => membership.id)
-              .firstOrNull;
-      if (selected != null && selected != saved) {
-        await _selection!.select(userId, selected);
-      }
-      _selectedId = selected;
-      return selected;
-    });
+  Future<String?> _loadSelection(
+    List<NasabahMembershipEntity> memberships,
+    int revision,
+  ) async {
+    String? selected;
+    try {
+      selected = await _selection!.resolve(widget.userId!, memberships);
+    } catch (_) {
+      _showSelectionError('Gagal memuat pilihan bank aktif. Coba lagi.');
+    }
+    if (!mounted || revision != _selectionRevision) return null;
+    _selectedId = selected;
+    return selected;
+  }
+
+  Future<String?> _selectionFor(List<NasabahMembershipEntity> memberships) {
+    final eligibleIds = memberships
+        .where(isSelectableMembership)
+        .map((membership) => membership.id)
+        .toSet();
+    final previousIds = _eligibleMembershipIds;
+    if (previousIds != null &&
+        previousIds.length == eligibleIds.length &&
+        previousIds.containsAll(eligibleIds)) {
+      return _selectedMembership ?? Future.value(_selectedId);
+    }
+
+    _eligibleMembershipIds = eligibleIds;
+    _selectedId = null;
+    final revision = ++_selectionRevision;
+    return _selectedMembership = _loadSelection(memberships, revision);
   }
 
   Future<void> _selectMembership(String membershipId) async {
     final userId = widget.userId;
     if (userId == null) return;
-    await _selection!.select(userId, membershipId);
+    try {
+      await _selection!.select(userId, membershipId);
+    } catch (_) {
+      _showSelectionError('Gagal menyimpan pilihan bank aktif. Coba lagi.');
+      return;
+    }
     if (!mounted) return;
     setState(() => _selectedId = membershipId);
+  }
+
+  void _showSelectionError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -135,6 +160,8 @@ class _ApprovalBankSampahListViewState
                 }
                 final memberships = state.memberships;
                 final total = combinedActiveBalance(memberships);
+                final selectionFuture =
+                    _selection == null ? null : _selectionFor(memberships);
                 if (memberships.isEmpty) {
                   return Column(
                     children: [
@@ -150,16 +177,23 @@ class _ApprovalBankSampahListViewState
                     ],
                   );
                 }
-                if (_selection == null) {
+                if (selectionFuture == null) {
                   return _membershipList(context, memberships, total);
                 }
-                _selectedMembership ??= _loadSelection(memberships);
                 return FutureBuilder<String?>(
-                  future: _selectedMembership,
+                  future: selectionFuture,
                   builder: (context, snapshot) {
-                    final selected = _selectedId ?? snapshot.data;
-                    return _membershipList(context, memberships, total,
-                        selectedId: selected);
+                    final loading =
+                        snapshot.connectionState != ConnectionState.done;
+                    final selected =
+                        _selectedId ?? (loading ? null : snapshot.data);
+                    return _membershipList(
+                      context,
+                      memberships,
+                      total,
+                      selectedId: selected,
+                      selectionLoading: loading,
+                    );
                   },
                 );
               },
@@ -175,6 +209,7 @@ class _ApprovalBankSampahListViewState
     List<NasabahMembershipEntity> memberships,
     BigInt total, {
     String? selectedId,
+    bool selectionLoading = false,
   }) {
     return ListView.separated(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -203,8 +238,9 @@ class _ApprovalBankSampahListViewState
         }
         if (index == memberships.length + 1) return _applyButton(context);
         final membership = memberships[index - 1];
-        final selectable =
-            _selection != null && isSelectableMembership(membership);
+        final selectable = _selection != null &&
+            !selectionLoading &&
+            isSelectableMembership(membership);
         return MembershipListItem(
           membership: membership,
           selected: membership.id == selectedId,

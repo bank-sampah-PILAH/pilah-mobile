@@ -69,6 +69,29 @@ void main() {
     expect(await selection.read('user-2'), isNull);
   });
 
+  test(
+      'resolve replaces a no-longer-eligible choice and clears when none remain',
+      () async {
+    final storage = _MemoryStorage();
+    final selection = ActiveMembershipSelection(storage);
+    await selection.select('user-1', 'old');
+
+    final replacement = await selection.resolve('user-1', [
+      _membership('old', '100.00', status: MembershipStatus.pending),
+      _membership('new', '200.00'),
+    ]);
+
+    expect(replacement, 'new');
+    expect(await selection.read('user-1'), 'new');
+    expect(
+      await selection.resolve('user-1', [
+        _membership('new', '200.00', active: false),
+      ]),
+      isNull,
+    );
+    expect(await selection.read('user-1'), isNull);
+  });
+
   test('membership row parses total_saldo as the exact decimal string', () {
     final membership = NasabahMembershipEntity.fromJson({
       'id': 'm1',
