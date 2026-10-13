@@ -71,7 +71,8 @@ class _CariBankViewState extends State<CariBankView> {
                   key: const Key('cari_bank_kota'),
                   onChanged: context.read<CariBankCubit>().ketikKota,
                   decoration: const InputDecoration(
-                    hintText: 'Filter kota (mis. Depok)',
+                    hintText:
+                        'Filter kota (mis. Depok, Kota Depok, Kab. Depok)',
                     prefixIcon: Icon(Icons.location_city_outlined),
                     border: OutlineInputBorder(),
                     isDense: true,
