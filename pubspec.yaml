@@ -74,6 +74,7 @@ dependencies:
   share_plus: ^13.3.0
   image_cropper: ^12.2.1
   url_launcher: ^6.3.2
+  web: ^1.1.1
   pdfrx: ^2.4.4
   printing: ^5.14.3
 
