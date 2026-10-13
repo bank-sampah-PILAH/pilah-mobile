@@ -42,6 +42,9 @@ class CariBankLoaded extends CariBankState {
   final String searchQuery;
   final String kotaFilter;
 
+  /// Radius aktif mode lokasi (PIL-314); null = mode kata kunci biasa.
+  final double? dalamRadiusKm;
+
   const CariBankLoaded({
     required this.items,
     required this.hasMore,
@@ -49,9 +52,17 @@ class CariBankLoaded extends CariBankState {
     required this.totalCount,
     required this.searchQuery,
     required this.kotaFilter,
+    this.dalamRadiusKm,
   });
 
   @override
-  List<Object?> get props =>
-      [items, hasMore, isLoadingMore, totalCount, searchQuery, kotaFilter];
+  List<Object?> get props => [
+        items,
+        hasMore,
+        isLoadingMore,
+        totalCount,
+        searchQuery,
+        kotaFilter,
+        dalamRadiusKm,
+      ];
 }

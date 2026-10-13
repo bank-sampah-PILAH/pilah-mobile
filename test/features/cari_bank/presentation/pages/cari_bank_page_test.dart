@@ -159,4 +159,74 @@ void main() {
 
     expect(find.text('Tidak Ada Bank Dengan Lokasi'), findsOneWidget);
   });
+
+  testWidgets('location buttons show, radius chips after entering mode',
+      (tester) async {
+    api.on('GET', _directory, json: bankSampahPage([bankRow('b1', 'Bank A')]));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('cari_bank_dekat_saya')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_pilih_di_peta')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_radius_5')), findsNothing);
+
+    // Enter location mode from the cubit side (the map-picker flow itself is
+    // covered by the 326 picker tests); the page then swaps the buttons for
+    // the radius chips and reloads with the trio.
+    api.on('GET', _directory,
+        json: bankSampahPage([
+          bankRow('b1', 'Bank A',
+              latitude: -6.362829, longitude: 106.828655, jarakKm: '0.85'),
+        ]));
+    cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
+    // Debounce (300 ms) then load: pumpAndSettle alone can stop before the
+    // debounced reload chain fully lands.
+    await tester.pump(CariBankCubit.jedaPencarian);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('cari_bank_radius_1')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_radius_5')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_radius_10')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_radius_25')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_hapus_lokasi')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_dekat_saya')), findsNothing);
+
+    // The reload carried the trio.
+    expect(api.last.query['latitude'], isNotNull);
+    expect(api.last.query['radius_km'], '5.0');
+  });
+
+  testWidgets('distance chip renders meters under a kilometer, km over',
+      (tester) async {
+    api.on(
+      'GET',
+      _directory,
+      json: bankSampahPage([
+        bankRow('b1', 'Bank Dekat',
+            latitude: -6.362829, longitude: 106.828655, jarakKm: '0.85'),
+        bankRow('b2', 'Bank Jauh',
+            latitude: -6.4, longitude: 106.9, jarakKm: '5.02'),
+      ]),
+    );
+    cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('850 m'), findsOneWidget);
+    expect(find.text('5.0 km'), findsOneWidget);
+  });
+
+  testWidgets('the 1 km radius chip reloads with radius_km=1', (tester) async {
+    api.on('GET', _directory, json: bankSampahPage([bankRow('b1', 'Bank A')]));
+    cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('cari_bank_radius_1')));
+    await tester.pumpAndSettle();
+    expect(api.last.query['radius_km'], '1.0');
+  });
 }
