@@ -40,6 +40,8 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/na
     show NasabahApprovalCubit;
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     show DashboardRemoteDataSource;
+import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart'
+    show DashboardReportingDataSource;
 import 'package:pilah_mobile/features/dashboard/domain/repositories/dashboard_repository.dart'
     show DashboardRepository;
 import 'package:pilah_mobile/features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
@@ -206,6 +208,11 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('PencairanRemoteDataSources', null, () => di<PencairanRemoteDataSources>()),
   ('SuperadminRemoteDataSource', null, () => di<SuperadminRemoteDataSource>()),
   ('TransaksiRemoteDataSource', null, () => di<TransaksiRemoteDataSource>()),
+  (
+    'DashboardReportingDataSource',
+    null,
+    () => di<DashboardReportingDataSource>()
+  ),
   ('DashboardRemoteDataSource', null, () => di<DashboardRemoteDataSource>()),
   ('JadwalRemoteDataSource', null, () => di<JadwalRemoteDataSource>()),
   (
