@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -27,15 +28,22 @@ class _JadwalRepository extends Mock implements JadwalRepository {}
 
 /// A preview repository whose home carries the given balance and activities.
 class _HomeRepository extends PreviewNasabahRepository {
-  _HomeRepository(this.balanceUpdatedAt, this.activities);
+  _HomeRepository(this.balanceUpdatedAt, this.activities,
+      {this.requireSelection = false});
 
   final DateTime? balanceUpdatedAt;
   final List<NasabahActivity> activities;
+  final bool requireSelection;
   final asked = <String?>[];
 
   @override
   Future<NasabahHome> home({String? membershipId}) async {
     asked.add(membershipId);
+    if (requireSelection && membershipId == null) {
+      throw const NasabahApiException('Pilih bank sampah Anda.', choices: [
+        MembershipChoice('membership-2', 'Bank Sampah Lestari'),
+      ]);
+    }
     return NasabahHome(
       await profile(),
       membershipId ?? 'membership-1',
@@ -44,6 +52,40 @@ class _HomeRepository extends PreviewNasabahRepository {
       activities,
     );
   }
+}
+
+class _MemoryStorage implements AppStorage {
+  final values = <String, Object>{};
+
+  @override
+  Future<void> init() async {}
+  @override
+  Future<void> put(String key, dynamic value) async => values[key] = value;
+  @override
+  Future<T?> get<T>(String key) async => values[key] as T?;
+  @override
+  Future<void> delete(String key) async => values.remove(key);
+  @override
+  Future<void> clear() async => values.clear();
+  @override
+  Future<bool> contains(String key) async => values.containsKey(key);
+}
+
+void _registerStorage(AppStorage storage) {
+  const name = 'shared_preferences';
+  final previous = di.isRegistered<AppStorage>(instanceName: name)
+      ? di<AppStorage>(instanceName: name)
+      : null;
+  if (previous != null) di.unregister<AppStorage>(instanceName: name);
+  di.registerSingleton<AppStorage>(storage, instanceName: name);
+  addTearDown(() async {
+    if (di.isRegistered<AppStorage>(instanceName: name)) {
+      await di.unregister<AppStorage>(instanceName: name);
+    }
+    if (previous != null) {
+      di.registerSingleton<AppStorage>(previous, instanceName: name);
+    }
+  });
 }
 
 void main() {
@@ -127,6 +169,21 @@ void main() {
       });
     });
   }
+
+  testWidgets('restores and persists the saved bank selection', (tester) async {
+    const userId = 'nasabah-1';
+    final storage = _MemoryStorage()
+      ..values['active_membership_id:$userId'] = 'membership-2';
+    _registerStorage(storage);
+    final repository = _HomeRepository(null, const [], requireSelection: true);
+
+    await pumpHome(tester, repository);
+
+    expect(repository.asked.last, 'membership-2');
+    expect(storage.values['active_membership_id:$userId'], 'membership-2');
+    expect(find.text('Rp 12.500,50'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('the balance card names the latest activity and its date',
       (tester) async {

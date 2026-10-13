@@ -142,6 +142,46 @@ void main() {
     await cubit.close();
   });
 
+  test('loads the next page with the selected membership', () async {
+    const membershipId = 'membership-2';
+    when(() => repository.getJadwal(
+          page: 1,
+          date: null,
+          membershipId: membershipId,
+        )).thenAnswer(
+      (_) async => Right(_page([schedule], totalCount: 2, hasMore: true)),
+    );
+    when(() => repository.getJadwal(
+          page: 2,
+          date: null,
+          membershipId: membershipId,
+        )).thenAnswer(
+      (_) async =>
+          Right(_page([_existingSchedule(id: 'schedule-2')], totalCount: 2)),
+    );
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+    cubit.setMembershipId(membershipId);
+
+    await cubit.loadJadwal();
+    await cubit.loadNextPage();
+
+    verify(() => repository.getJadwal(
+          page: 1,
+          date: null,
+          membershipId: membershipId,
+        )).called(1);
+    verify(() => repository.getJadwal(
+          page: 2,
+          date: null,
+          membershipId: membershipId,
+        )).called(1);
+    expect((cubit.state as JadwalLoaded).items, [
+      schedule,
+      _existingSchedule(id: 'schedule-2'),
+    ]);
+  });
+
   blocTest<JadwalCubit, JadwalState>(
     'restores the loaded schedules and returns a failed save',
     build: () {
