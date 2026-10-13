@@ -7,10 +7,17 @@ import '../../domain/model/draft_pencairan.dart';
 
 /// Saves [file] to the downloads folder and says where it went, with a way to
 /// share it from there. Shared by the Excel export and the PDF preview.
-Future<void> simpanBerkasDraft(BuildContext context, DraftExport file) async {
+///
+/// A file the browser downloaded has no saved path to share, so the toast
+/// offers no Bagikan there.
+Future<void> simpanBerkasDraft(
+  BuildContext context,
+  DraftExport file, {
+  @visibleForTesting SimpanBerkas simpan = FileDownloader.save,
+}) async {
   final SavedFile saved;
   try {
-    saved = await FileDownloader.save(
+    saved = await simpan(
       filename: file.filename,
       bytes: file.bytes,
     );
@@ -28,10 +35,13 @@ Future<void> simpanBerkasDraft(BuildContext context, DraftExport file) async {
     context,
     title: 'Berhasil',
     message: 'Berkas disimpan ke folder ${saved.folder}',
-    actionLabel: 'Bagikan',
-    onAction: () => SharePlus.instance.share(
-      ShareParams(files: [XFile(saved.path)], text: 'Draft Pencairan PILAH'),
-    ),
+    actionLabel: saved.inBrowser ? null : 'Bagikan',
+    onAction: saved.inBrowser
+        ? null
+        : () => SharePlus.instance.share(
+              ShareParams(
+                  files: [XFile(saved.path)], text: 'Draft Pencairan PILAH'),
+            ),
   );
 }
 
