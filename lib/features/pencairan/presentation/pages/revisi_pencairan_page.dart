@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/pencairan.dart';
@@ -68,19 +70,23 @@ class _RevisiPencairanViewState extends State<RevisiPencairanView> {
               );
             case RevisiStatus.loaded:
               final riwayat = state.riwayat!;
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _VersiCard(
-                    judul: 'Versi sekarang',
-                    nominal: riwayat.pencairan.nominal,
-                    metode: riwayat.pencairan.metode,
-                    tanggal: riwayat.pencairan.tanggal,
-                    keterangan: riwayat.pencairan.keterangan,
-                    saldoSesudah: riwayat.pencairan.saldoSesudah,
-                  ),
-                  for (final versi in riwayat.revisi) _RevisiCard(versi: versi),
-                ],
+              return ContentBounds(
+                maxWidth: LayoutBreakpoint.formMaxWidth,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _VersiCard(
+                      judul: 'Versi sekarang',
+                      nominal: riwayat.pencairan.nominal,
+                      metode: riwayat.pencairan.metode,
+                      tanggal: riwayat.pencairan.tanggal,
+                      keterangan: riwayat.pencairan.keterangan,
+                      saldoSesudah: riwayat.pencairan.saldoSesudah,
+                    ),
+                    for (final versi in riwayat.revisi)
+                      _RevisiCard(versi: versi),
+                  ],
+                ),
               );
           }
         },
