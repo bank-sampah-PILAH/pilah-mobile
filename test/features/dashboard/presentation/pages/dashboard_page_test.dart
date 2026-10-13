@@ -61,6 +61,7 @@ class _EmptyJadwalRepository implements JadwalRepository {
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
+    String? membershipId,
   }) async =>
       Right(JadwalPageResult(
         items: const [],

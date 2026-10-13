@@ -346,11 +346,22 @@ class AppRouterConfig {
                       return const Center(child: CircularProgressIndicator());
                     }
                     final auth = authState.authEntity;
+                    final initialDate = DateTime.tryParse(
+                      state.uri.queryParameters['date'] ?? '',
+                    );
+                    if (auth.role == 'nasabah') {
+                      return NasabahJadwalSession(
+                        key: ValueKey(auth.id ?? auth.email),
+                        userId: auth.id ?? auth.email,
+                        membershipId:
+                            state.uri.queryParameters['keanggotaan_id'],
+                        initialDate: initialDate,
+                      );
+                    }
                     return JadwalPage(
                       key: ValueKey(auth.id ?? auth.email),
                       customerMode: auth.role != 'pengelola',
-                      initialDate: DateTime.tryParse(
-                          state.uri.queryParameters['date'] ?? ''),
+                      initialDate: initialDate,
                     );
                   },
                 ),

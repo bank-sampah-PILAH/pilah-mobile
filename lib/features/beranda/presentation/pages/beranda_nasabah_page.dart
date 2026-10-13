@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
@@ -33,21 +35,46 @@ class BerandaNasabahPage extends StatelessWidget {
           return _HomeSession(
               key: ObjectKey(auth),
               repository: di<NasabahRepository>(),
-              name: auth.name);
+              name: auth.name,
+              userId: auth.id ?? auth.email);
         },
       );
 }
 
 class _HomeSession extends StatefulWidget {
-  const _HomeSession({super.key, required this.repository, required this.name});
+  const _HomeSession({
+    super.key,
+    required this.repository,
+    required this.name,
+    required this.userId,
+  });
   final NasabahRepository repository;
   final String name;
+  final String userId;
   @override
   State<_HomeSession> createState() => _HomeSessionState();
 }
 
 class _HomeSessionState extends State<_HomeSession> {
   String? _membershipId;
+
+  @override
+  void initState() {
+    super.initState();
+    if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
+      ActiveMembershipSelection(
+        di<AppStorage>(instanceName: 'shared_preferences'),
+      ).read(widget.userId).then((id) {
+        if (mounted && id != null) {
+          setState(() {
+            _membershipId = id;
+            _selectionVersion++;
+          });
+        }
+      });
+    }
+  }
+
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
   Future<void> Function()? _reloadSchedule;
@@ -59,10 +86,21 @@ class _HomeSessionState extends State<_HomeSession> {
     ]);
   }
 
-  void _select(String? id) => setState(() {
-        _membershipId = id;
-        _selectionVersion++;
-      });
+  void _select(String? id) {
+    if (id != null) _saveSelection(id);
+    setState(() {
+      _membershipId = id;
+      _selectionVersion++;
+    });
+  }
+
+  Future<void> _saveSelection(String id) async {
+    if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
+      await ActiveMembershipSelection(
+        di<AppStorage>(instanceName: 'shared_preferences'),
+      ).select(widget.userId, id);
+    }
+  }
 
   void _details(String title, Widget body) {
     final initial = context.read<AuthenticationBloc>().state;
@@ -162,133 +200,146 @@ class _HomeSessionState extends State<_HomeSession> {
                           ),
                           onSelect: _select,
                           registerReload: (reload) => _reload = reload,
-                          builder: (context, home) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _BankUnitCard(
-                                unitName: home.bank.name,
-                                onSelect: () => _select(null),
-                                onOpen: () => _details(
-                                  'Detail Bank Sampah',
-                                  NasabahResource<NasabahBank>(
-                                    load: () => widget.repository
-                                        .bank(home.membershipId),
-                                    builder: (_, bank) => Padding(
-                                      padding: const EdgeInsets.only(top: 16),
-                                      child: NasabahBankDetail(bank: bank),
+                          builder: (context, home) {
+                            _saveSelection(home.membershipId);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _BankUnitCard(
+                                  unitName: home.bank.name,
+                                  onSelect: () => _select(null),
+                                  onOpen: () => _details(
+                                    'Detail Bank Sampah',
+                                    NasabahResource<NasabahBank>(
+                                      load: () => widget.repository
+                                          .bank(home.membershipId),
+                                      builder: (_, bank) => Padding(
+                                        padding: const EdgeInsets.only(top: 16),
+                                        child: NasabahBankDetail(bank: bank),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              _BalanceCard(
-                                balance: home.balance,
-                                bankName: home.bank.name,
-                                latestActivity: home.activities.isEmpty
-                                    ? null
-                                    : home.activities.first,
-                                onOpen: () => context.go(Uri(
-                                  path: AppLocations.history,
-                                  queryParameters: {
-                                    'keanggotaan_id': home.membershipId,
-                                  },
-                                ).toString()),
-                              ),
-                              const SizedBox(height: 24),
-                              _SectionHeading(
-                                title: 'Jadwal Terdekat',
-                                onAll: () => context.go(JadwalPage.route),
-                              ),
-                              const SizedBox(height: 8),
-                              NasabahResource<JadwalEntity?>(
-                                load: _loadNearestSchedule,
-                                registerReload: (reload) =>
-                                    _reloadSchedule = reload,
-                                builder: (context, schedule) {
-                                  if (schedule == null) {
-                                    return _card(
-                                      child: Row(children: [
-                                        const Icon(
-                                          Icons.calendar_month_outlined,
-                                          color: _emerald,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            'Belum ada jadwal mendatang.',
-                                            style: _text(13, color: _muted),
+                                const SizedBox(height: 12),
+                                _BalanceCard(
+                                  balance: home.balance,
+                                  bankName: home.bank.name,
+                                  latestActivity: home.activities.isEmpty
+                                      ? null
+                                      : home.activities.first,
+                                  onOpen: () => context.go(Uri(
+                                    path: AppLocations.history,
+                                    queryParameters: {
+                                      'keanggotaan_id': home.membershipId,
+                                    },
+                                  ).toString()),
+                                ),
+                                const SizedBox(height: 24),
+                                _SectionHeading(
+                                  title: 'Jadwal Terdekat',
+                                  onAll: () => context.go(Uri(
+                                    path: JadwalPage.route,
+                                    queryParameters: {
+                                      'keanggotaan_id': home.membershipId,
+                                    },
+                                  ).toString()),
+                                ),
+                                const SizedBox(height: 8),
+                                NasabahResource<JadwalEntity?>(
+                                  key: ValueKey(home.membershipId),
+                                  load: () =>
+                                      _loadNearestSchedule(home.membershipId),
+                                  registerReload: (reload) =>
+                                      _reloadSchedule = reload,
+                                  builder: (context, schedule) {
+                                    if (schedule == null) {
+                                      return _card(
+                                        child: Row(children: [
+                                          const Icon(
+                                            Icons.calendar_month_outlined,
+                                            color: _emerald,
                                           ),
-                                        ),
-                                      ]),
-                                    );
-                                  }
-                                  final start = schedule.mulaiPada.toLocal();
-                                  return InkWell(
-                                    borderRadius: BorderRadius.circular(16),
-                                    onTap: () => context.go(Uri(
-                                      path: JadwalPage.route,
-                                      queryParameters: {
-                                        'date': _scheduleDateParam(start),
-                                      },
-                                    ).toString()),
-                                    child: _card(
-                                      child: Row(children: [
-                                        const Icon(
-                                          Icons.calendar_month_outlined,
-                                          color: _emerald,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                schedule.jenisKegiatan,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: _text(14,
-                                                    weight: FontWeight.w600),
-                                              ),
-                                              Text(
-                                                '${nasabahDate(start)} · ${_scheduleTime(start)}',
-                                                style: _text(12, color: _muted),
-                                              ),
-                                              if (schedule.lokasi.isNotEmpty)
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Belum ada jadwal mendatang.',
+                                              style: _text(13, color: _muted),
+                                            ),
+                                          ),
+                                        ]),
+                                      );
+                                    }
+                                    final start = schedule.mulaiPada.toLocal();
+                                    return InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: () => context.go(Uri(
+                                        path: JadwalPage.route,
+                                        queryParameters: {
+                                          'date': _scheduleDateParam(start),
+                                          'keanggotaan_id': home.membershipId,
+                                        },
+                                      ).toString()),
+                                      child: _card(
+                                        child: Row(children: [
+                                          const Icon(
+                                            Icons.calendar_month_outlined,
+                                            color: _emerald,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
                                                 Text(
-                                                  schedule.lokasi,
+                                                  schedule.jenisKegiatan,
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
+                                                  style: _text(14,
+                                                      weight: FontWeight.w600),
+                                                ),
+                                                Text(
+                                                  '${nasabahDate(start)} · ${_scheduleTime(start)}',
                                                   style:
                                                       _text(12, color: _muted),
                                                 ),
-                                            ],
+                                                if (schedule.lokasi.isNotEmpty)
+                                                  Text(
+                                                    schedule.lokasi,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: _text(12,
+                                                        color: _muted),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const Icon(Icons.chevron_right,
-                                            color: _muted),
-                                      ]),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              _SectionHeading(
-                                title: 'Terbaru',
-                                onAll: () => context.go(Uri(
-                                  path: AppLocations.history,
-                                  queryParameters: {
-                                    'keanggotaan_id': home.membershipId,
+                                          const Icon(Icons.chevron_right,
+                                              color: _muted),
+                                        ]),
+                                      ),
+                                    );
                                   },
-                                ).toString()),
-                              ),
-                              const SizedBox(height: 8),
-                              NasabahActivityList(
-                                activities: home.activities.take(1).toList(),
-                              ),
-                            ],
-                          ),
+                                ),
+                                const SizedBox(height: 24),
+                                _SectionHeading(
+                                  title: 'Terbaru',
+                                  onAll: () => context.go(Uri(
+                                    path: AppLocations.history,
+                                    queryParameters: {
+                                      'keanggotaan_id': home.membershipId,
+                                    },
+                                  ).toString()),
+                                ),
+                                const SizedBox(height: 8),
+                                NasabahActivityList(
+                                  activities: home.activities.take(1).toList(),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -297,7 +348,7 @@ class _HomeSessionState extends State<_HomeSession> {
       );
 }
 
-Future<JadwalEntity?> _loadNearestSchedule() async {
+Future<JadwalEntity?> _loadNearestSchedule(String membershipId) async {
   final repository = di<JadwalRepository>();
   final now = DateTime.now();
   JadwalEntity? nearest;
@@ -305,7 +356,12 @@ Future<JadwalEntity?> _loadNearestSchedule() async {
   // ponytail: scans every upcoming page; add a server-side nearest query if
   // volume hurts homepage load time.
   while (true) {
-    final result = await repository.getJadwal(page: pageNumber);
+    final result = membershipId.isEmpty
+        ? await repository.getJadwal(page: pageNumber)
+        : await repository.getJadwal(
+            page: pageNumber,
+            membershipId: membershipId,
+          );
     final page = result.fold(
       (failure) => throw NasabahApiException(failure.displayMessage),
       (page) => page,

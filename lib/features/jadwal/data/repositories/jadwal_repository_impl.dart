@@ -17,9 +17,16 @@ class JadwalRepositoryImpl implements JadwalRepository {
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
+    String? membershipId,
   }) async {
     try {
-      final response = await remoteDataSource.getJadwal(page: page, date: date);
+      final response = membershipId == null
+          ? await remoteDataSource.getJadwal(page: page, date: date)
+          : await remoteDataSource.getJadwal(
+              page: page,
+              date: date,
+              membershipId: membershipId,
+            );
       return Right(JadwalPageResult(
         items: response.items,
         totalCount: response.totalCount,
@@ -33,10 +40,17 @@ class JadwalRepositoryImpl implements JadwalRepository {
   @override
   Future<Either<NetworkException, Set<DateTime>>> getCalendarDates(
     DateTime startDate,
-    DateTime endDate,
-  ) async {
+    DateTime endDate, {
+    String? membershipId,
+  }) async {
     try {
-      return Right(await remoteDataSource.getCalendarDates(startDate, endDate));
+      return Right(membershipId == null
+          ? await remoteDataSource.getCalendarDates(startDate, endDate)
+          : await remoteDataSource.getCalendarDates(
+              startDate,
+              endDate,
+              membershipId: membershipId,
+            ));
     } on Exception catch (error) {
       return Left(NetworkException.handleException(error));
     }

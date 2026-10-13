@@ -128,7 +128,8 @@ void main() {
       (_) async => const Right<NetworkException, List<Pencairan>>([]),
     );
 
-    when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
+    when(() => jadwalRepository.getJadwal(
+        page: 1, date: null, membershipId: 'preview-membership')).thenAnswer(
       (_) async => Right(const JadwalPageResult(
         items: [],
         totalCount: 0,

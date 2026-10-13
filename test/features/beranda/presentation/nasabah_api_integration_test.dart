@@ -82,7 +82,8 @@ void main() {
     auth = _Auth();
     jadwalRepository = _JadwalRepository();
     payoutUseCases = _PayoutUseCases();
-    when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
+    when(() => jadwalRepository.getJadwal(
+        page: 1, date: null, membershipId: 'membership-1')).thenAnswer(
       (_) async => Right(const JadwalPageResult(
         items: [],
         totalCount: 0,

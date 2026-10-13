@@ -21,8 +21,27 @@ class JadwalCubit extends Cubit<JadwalState> {
   DateTime? _calendarStart;
   DateTime? _calendarEnd;
   Set<DateTime> _scheduledDates = {};
+  String? _membershipId;
 
   JadwalCubit(this.repository) : super(const JadwalInitial());
+
+  Future<void> setMembershipId(String? membershipId) async {
+    if (_membershipId == membershipId) return;
+    _membershipId = membershipId;
+    _loadVersion++;
+    _calendarVersion++;
+    _page = 1;
+    _hasMore = false;
+    _isLoadingMore = false;
+    _scheduledDates = {};
+    emit(const JadwalInitial());
+    await loadJadwal(date: _dateFilter);
+    final start = _calendarStart;
+    final end = _calendarEnd;
+    if (start != null && end != null) {
+      await loadCalendarDates(startDate: start, endDate: end);
+    }
+  }
 
   List<JadwalEntity> get _items =>
       state is JadwalLoaded ? (state as JadwalLoaded).items : const [];
@@ -50,7 +69,13 @@ class JadwalCubit extends Cubit<JadwalState> {
       emit(const JadwalLoading());
     }
 
-    final result = await repository.getJadwal(page: 1, date: requestedDate);
+    final result = _membershipId == null
+        ? await repository.getJadwal(page: 1, date: requestedDate)
+        : await repository.getJadwal(
+            page: 1,
+            date: requestedDate,
+            membershipId: _membershipId,
+          );
     if (version != _loadVersion || sessionGeneration != _sessionGeneration) {
       return;
     }
@@ -86,8 +111,13 @@ class JadwalCubit extends Cubit<JadwalState> {
       clearLoadingMoreError: true,
     ));
 
-    final result =
-        await repository.getJadwal(page: _page + 1, date: _dateFilter);
+    final result = _membershipId == null
+        ? await repository.getJadwal(page: _page + 1, date: _dateFilter)
+        : await repository.getJadwal(
+            page: _page + 1,
+            date: _dateFilter,
+            membershipId: _membershipId,
+          );
     if (version != _loadVersion || state is! JadwalLoaded) return;
     _isLoadingMore = false;
     result.fold(
@@ -135,7 +165,13 @@ class JadwalCubit extends Cubit<JadwalState> {
       }
     }
     final version = ++_calendarVersion;
-    final result = await repository.getCalendarDates(start, end);
+    final result = _membershipId == null
+        ? await repository.getCalendarDates(start, end)
+        : await repository.getCalendarDates(
+            start,
+            end,
+            membershipId: _membershipId,
+          );
     if (version != _calendarVersion) return;
     result.fold(
       (_) {},
@@ -243,6 +279,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     _hasMore = false;
     _isLoadingMore = false;
     _dateFilter = null;
+    _membershipId = null;
     _calendarStart = null;
     _calendarEnd = null;
     _scheduledDates = {};

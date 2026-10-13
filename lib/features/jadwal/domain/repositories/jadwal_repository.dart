@@ -7,11 +7,13 @@ abstract class JadwalRepository {
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
+    String? membershipId,
   });
   Future<Either<NetworkException, Set<DateTime>>> getCalendarDates(
     DateTime startDate,
-    DateTime endDate,
-  );
+    DateTime endDate, {
+    String? membershipId,
+  });
   Future<Either<NetworkException, JadwalEntity>> createJadwal(
       JadwalEntity jadwal);
   Future<Either<NetworkException, JadwalEntity>> updateJadwal(

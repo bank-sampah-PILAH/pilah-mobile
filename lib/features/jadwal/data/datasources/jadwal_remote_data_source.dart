@@ -4,8 +4,16 @@ import 'package:pilah_mobile/features/jadwal/data/models/jadwal_model.dart';
 import 'package:pilah_mobile/features/jadwal/data/models/jadwal_page_model.dart';
 
 abstract class JadwalRemoteDataSource {
-  Future<JadwalPageModel> getJadwal({required int page, DateTime? date});
-  Future<Set<DateTime>> getCalendarDates(DateTime startDate, DateTime endDate);
+  Future<JadwalPageModel> getJadwal({
+    required int page,
+    DateTime? date,
+    String? membershipId,
+  });
+  Future<Set<DateTime>> getCalendarDates(
+    DateTime startDate,
+    DateTime endDate, {
+    String? membershipId,
+  });
   Future<JadwalModel> createJadwal(JadwalModel jadwal);
   Future<JadwalModel> updateJadwal(JadwalModel jadwal);
   Future<JadwalModel> transition(String id, String action);
@@ -18,13 +26,18 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   JadwalRemoteDataSourceImpl(this.networkService);
 
   @override
-  Future<JadwalPageModel> getJadwal({required int page, DateTime? date}) async {
+  Future<JadwalPageModel> getJadwal({
+    required int page,
+    DateTime? date,
+    String? membershipId,
+  }) async {
     final response = await networkService.get(
       '/api/v1/jadwal',
       queryParams: {
         'page_size': 20,
         'page': page,
         if (date != null) 'date': _formatDate(date),
+        if (membershipId != null) 'keanggotaan_id': membershipId,
       },
     );
     return JadwalPageModel.fromJson(response.data as Map<String, dynamic>);
@@ -33,13 +46,15 @@ class JadwalRemoteDataSourceImpl implements JadwalRemoteDataSource {
   @override
   Future<Set<DateTime>> getCalendarDates(
     DateTime startDate,
-    DateTime endDate,
-  ) async {
+    DateTime endDate, {
+    String? membershipId,
+  }) async {
     final response = await networkService.get(
       '/api/v1/jadwal/calendar-dates',
       queryParams: {
         'start_date': _formatDate(startDate),
         'end_date': _formatDate(endDate),
+        if (membershipId != null) 'keanggotaan_id': membershipId,
       },
     );
     final data = response.data as Map<String, dynamic>;

@@ -7,17 +7,100 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
+import 'package:pilah_mobile/core/storage/app_storage.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/services/di.dart';
+
+class NasabahJadwalSession extends StatefulWidget {
+  const NasabahJadwalSession({
+    super.key,
+    required this.userId,
+    this.membershipId,
+    this.initialDate,
+  });
+
+  final String userId;
+  final String? membershipId;
+  final DateTime? initialDate;
+
+  @override
+  State<NasabahJadwalSession> createState() => _NasabahJadwalSessionState();
+}
+
+class _NasabahJadwalSessionState extends State<NasabahJadwalSession> {
+  String? _membershipId;
+  int _revision = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _membershipId = widget.membershipId;
+    if (_membershipId == null &&
+        di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
+      ActiveMembershipSelection(
+        di<AppStorage>(instanceName: 'shared_preferences'),
+      ).read(widget.userId).then((id) {
+        if (mounted && _membershipId == null && id != null) {
+          setState(() {
+            _membershipId = id;
+            _revision++;
+          });
+        }
+      });
+    }
+  }
+
+  void _select(String id) {
+    setState(() {
+      _membershipId = id;
+      _revision++;
+    });
+    if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
+      ActiveMembershipSelection(
+        di<AppStorage>(instanceName: 'shared_preferences'),
+      ).select(widget.userId, id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => NasabahResource<NasabahHome>(
+        key: ValueKey((_revision, _membershipId)),
+        load: () => di<NasabahRepository>().home(membershipId: _membershipId),
+        onSelect: _select,
+        builder: (context, home) {
+          if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
+            ActiveMembershipSelection(
+              di<AppStorage>(instanceName: 'shared_preferences'),
+            ).select(widget.userId, home.membershipId);
+          }
+          return JadwalPage(
+            key: ValueKey(home.membershipId),
+            customerMode: true,
+            initialDate: widget.initialDate,
+            membershipId: home.membershipId,
+          );
+        },
+      );
+}
 
 class JadwalPage extends StatefulWidget {
   static const route = '/jadwal';
   final bool customerMode;
   final DateTime? initialDate;
+  final String? membershipId;
 
-  const JadwalPage({super.key, this.customerMode = false, this.initialDate});
+  const JadwalPage({
+    super.key,
+    this.customerMode = false,
+    this.initialDate,
+    this.membershipId,
+  });
 
   @override
   State<JadwalPage> createState() => _JadwalPageState();
@@ -34,7 +117,11 @@ class _JadwalPageState extends State<JadwalPage> {
     super.initState();
     _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
-    context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
+    final cubit = context.read<JadwalCubit>();
+    if (widget.customerMode && widget.membershipId != null) {
+      cubit.setMembershipId(widget.membershipId);
+    }
+    cubit.loadJadwal(date: _selectedDate);
     _loadCalendarDatesFor(_selectedDate);
   }
 

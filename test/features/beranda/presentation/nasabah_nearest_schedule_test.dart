@@ -71,14 +71,16 @@ void main() {
       status: 'diterbitkan',
     );
 
-    when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
+    when(() => jadwalRepository.getJadwal(
+        page: 1, date: null, membershipId: 'preview-membership')).thenAnswer(
       (_) async => Right(JadwalPageResult(
         items: [ongoing, far],
         totalCount: 4,
         hasMore: true,
       )),
     );
-    when(() => jadwalRepository.getJadwal(page: 2, date: null)).thenAnswer(
+    when(() => jadwalRepository.getJadwal(
+        page: 2, date: null, membershipId: 'preview-membership')).thenAnswer(
       (_) async => Right(JadwalPageResult(
         items: [later, nearest],
         totalCount: 4,

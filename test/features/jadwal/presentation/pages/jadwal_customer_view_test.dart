@@ -9,7 +9,10 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dar
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 
-class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
+class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {
+  @override
+  Future<void> setMembershipId(String? membershipId) async {}
+}
 
 void main() {
   testWidgets('customer sees only published schedules in a read-only view', (
