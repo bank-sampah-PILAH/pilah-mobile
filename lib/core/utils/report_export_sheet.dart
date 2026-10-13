@@ -25,10 +25,11 @@ Future<void> saveAndOfferShare(
   required List<int> bytes,
   required String Function(SavedFile saved) successMessage,
   required String shareText,
+  @visibleForTesting SimpanBerkas simpan = FileDownloader.save,
 }) async {
   final SavedFile saved;
   try {
-    saved = await FileDownloader.save(
+    saved = await simpan(
       filename: filename,
       bytes: Uint8List.fromList(bytes),
     );
@@ -46,12 +47,15 @@ Future<void> saveAndOfferShare(
     context,
     title: 'Berhasil',
     message: successMessage(saved),
-    actionLabel: 'Bagikan',
-    onAction: () => SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(saved.path)],
-        text: shareText,
-      ),
-    ),
+    // A browser download leaves no path the page can share.
+    actionLabel: saved.inBrowser ? null : 'Bagikan',
+    onAction: saved.inBrowser
+        ? null
+        : () => SharePlus.instance.share(
+              ShareParams(
+                files: [XFile(saved.path)],
+                text: shareText,
+              ),
+            ),
   );
 }
