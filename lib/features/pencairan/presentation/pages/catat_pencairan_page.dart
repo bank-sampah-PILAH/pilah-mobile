@@ -166,6 +166,8 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
         barrierDismissible: false,
         builder: (dialogContext) => Dialog(
           backgroundColor: Colors.white,
+          // The summary is square at the bottom (it is drawn for a sheet).
+          clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
