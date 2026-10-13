@@ -179,9 +179,9 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   }
 
   /// Lists the calling nasabah's own memberships (`GET /nasabah/me`), used
-  /// to show what's already joined and lock the picker under the current
-  /// one-membership-per-nasabah scope. Returns the backend list on success;
-  /// otherwise the [NetworkException].
+  /// to display existing memberships and exclude their bank IDs from the
+  /// picker. Returns the backend list on success; otherwise the
+  /// [NetworkException].
   Future<({List<NasabahMembershipEntity>? result, NetworkException? error})>
       loadMyMemberships() async {
     final either = await apiCall<List<NasabahMembershipEntity>>(
