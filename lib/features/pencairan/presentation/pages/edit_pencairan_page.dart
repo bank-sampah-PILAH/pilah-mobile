@@ -53,6 +53,10 @@ class _EditPencairanViewState extends State<EditPencairanView> {
   late MetodePencairan _metode = widget.pencairan.metode;
   late DateTime _tanggal = widget.pencairan.tanggal ?? widget.now();
 
+  /// A pencairan confirmed with a potongan keeps its nominal and tanggal, so
+  /// the potongan stays consistent with them; only the rest can be corrected.
+  bool get _terkunci => widget.pencairan.potongan > 0;
+
   /// Falls back to the current tanggal when the backend did not send a limit.
   DateTime get _tanggalMinimum =>
       widget.pencairan.tanggalEditMinimum ?? _tanggal;
@@ -68,6 +72,7 @@ class _EditPencairanViewState extends State<EditPencairanView> {
   int? get _nominal => int.tryParse(_nominalController.text);
 
   Future<void> _pickTanggal() async {
+    if (_terkunci) return;
     final now = widget.now();
     final picked = await showDatePicker(
       context: context,
@@ -155,9 +160,18 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                   Text(widget.pencairan.nasabahNama,
                       style: AppTextStyle.title1),
                   const SizedBox(height: 24),
+                  if (_terkunci) ...[
+                    Text(
+                      'Pencairan ini memakai potongan, jadi hanya metode dan '
+                      'keterangan yang bisa diubah.',
+                      style: AppTextStyle.small,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   TextField(
                     key: const Key('nominal-field'),
                     controller: _nominalController,
+                    enabled: !_terkunci,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setState(() {}),
@@ -197,11 +211,12 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Tanggal hanya bisa dimundurkan sampai '
-                    '${formatTanggalId(_tanggalMinimum)}',
-                    style: AppTextStyle.small,
-                  ),
+                  if (!_terkunci)
+                    Text(
+                      'Tanggal hanya bisa dimundurkan sampai '
+                      '${formatTanggalId(_tanggalMinimum)}',
+                      style: AppTextStyle.small,
+                    ),
                   const SizedBox(height: 16),
                   TextField(
                     key: const Key('keterangan-field'),

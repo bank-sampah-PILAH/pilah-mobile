@@ -54,6 +54,8 @@ import '../features/bank_sampah_approval/presentation/cubit/nasabah_approval_cub
     as _i359;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
+import '../features/dashboard/data/datasources/dashboard_reporting_data_source.dart'
+    as _i3;
 import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
     as _i650;
 import '../features/dashboard/domain/repositories/dashboard_repository.dart'
@@ -63,6 +65,18 @@ import '../features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
 import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
 import '../features/dashboard/presentation/cubit/recent_activity_cubit.dart'
     as _i200;
+import '../features/draft_pencairan/data/draft_pencairan_repository_impl.dart'
+    as _i363;
+import '../features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart'
+    as _i142;
+import '../features/draft_pencairan/domain/repository/draft_pencairan_repository.dart'
+    as _i511;
+import '../features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart'
+    as _i230;
+import '../features/draft_pencairan/presentation/blocs/draft_list_cubit.dart'
+    as _i673;
+import '../features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart'
+    as _i795;
 import '../features/harga/data/datasources/harga_remote_data_source.dart'
     as _i960;
 import '../features/harga/data/datasources/harga_remote_data_source_impl.dart'
@@ -245,6 +259,8 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i184.AktivitasRepository>(
         () => _i694.AktivitasRepositoryImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i142.DraftPencairanRemoteDataSource>(() =>
+        _i142.DraftPencairanRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i646.GetAktivitasUseCase>(
         () => _i646.GetAktivitasUseCase(gh<_i184.AktivitasRepository>()));
     gh.lazySingleton<_i247.OnboardingRemoteDataSource>(
@@ -255,6 +271,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i495.SuperadminRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i881.TransaksiRemoteDataSource>(
         () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i3.DashboardReportingDataSource>(
+        () => _i3.DashboardReportingDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i377.DashboardRemoteDataSource>(
         () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i915.JadwalRemoteDataSource>(
@@ -286,6 +304,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i390.BankSampahApprovalRepository>(() =>
         _i807.BankSampahApprovalRepositoryImpl(
             gh<_i335.BankSampahApprovalRemoteDataSource>()));
+    gh.lazySingleton<_i511.DraftPencairanRepository>(() =>
+        _i363.DraftPencairanRepositoryImpl(
+            gh<_i142.DraftPencairanRemoteDataSource>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
     gh.lazySingleton<_i244.OnboardingCubit>(
@@ -294,6 +315,12 @@ extension GetItInjectableX on _i174.GetIt {
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
     gh.lazySingleton<_i664.StatementRepository>(() =>
         _i322.StatementRepositoryImpl(gh<_i987.StatementRemoteDataSources>()));
+    gh.factory<_i230.DraftEditorCubit>(
+        () => _i230.DraftEditorCubit(gh<_i511.DraftPencairanRepository>()));
+    gh.factory<_i673.DraftListCubit>(
+        () => _i673.DraftListCubit(gh<_i511.DraftPencairanRepository>()));
+    gh.factory<_i795.PilihNasabahCubit>(
+        () => _i795.PilihNasabahCubit(gh<_i511.DraftPencairanRepository>()));
     gh.lazySingleton<_i449.PencairanRepository>(() =>
         _i913.PencairanRepositoryImpl(gh<_i1037.PencairanRemoteDataSources>()));
     gh.lazySingleton<_i40.HargaRepository>(

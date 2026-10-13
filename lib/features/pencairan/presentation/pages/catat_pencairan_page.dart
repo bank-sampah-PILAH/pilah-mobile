@@ -6,6 +6,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -93,31 +94,6 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           fontWeight: FontWeight.bold,
           letterSpacing: 1.0,
         ),
-      );
-
-  InputDecoration _buildInputDecoration({String? hintText}) => InputDecoration(
-        hintText: hintText,
-        hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
-        filled: true,
-        fillColor: Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       );
 
   void _onCustomerSelected(NasabahEntity customer) {
@@ -298,7 +274,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                                   .clearNominalError();
                               setState(() {});
                             },
-                            decoration: _buildInputDecoration(
+                            decoration: appInputDecoration(
                               hintText: 'Contoh: 50000',
                             ).copyWith(
                               prefixText: 'Rp ',
@@ -346,7 +322,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                             key: const Key('tanggal-field'),
                             onTap: _pickTanggal,
                             child: InputDecorator(
-                              decoration: _buildInputDecoration().copyWith(
+                              decoration: appInputDecoration().copyWith(
                                 suffixIcon: const Icon(Icons.calendar_month,
                                     color: Colors.grey),
                               ),
@@ -367,7 +343,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                             maxLines: 2,
                             style: AppTextStyle.small
                                 .copyWith(color: Colors.black87),
-                            decoration: _buildInputDecoration(
+                            decoration: appInputDecoration(
                               hintText: 'Keterangan (opsional)',
                             ),
                           ),

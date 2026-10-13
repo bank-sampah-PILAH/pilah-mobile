@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -198,7 +199,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   decoration:
-                      _buildInputDecoration(hintText: 'Contoh: Budi Santoso'),
+                      appInputDecoration(hintText: 'Contoh: Budi Santoso'),
                 ),
                 const SizedBox(height: 20),
 
@@ -239,7 +240,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                               }
                               return null;
                             },
-                            decoration: _buildInputDecoration(
+                            decoration: appInputDecoration(
                                 hintText: 'Contoh: NAS-0900'),
                           ),
                         ],
@@ -259,7 +260,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                                     ? 'Pilih jenis kelamin.'
                                     : null,
                             hint: const Text('— Pilih —'),
-                            decoration: _buildInputDecoration(),
+                            decoration: appInputDecoration(),
                             icon: const Icon(Icons.arrow_drop_down,
                                 color: Colors.grey),
                             items:
@@ -306,7 +307,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     if (_serverEmailError != null) return _serverEmailError;
                     return null;
                   },
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: 'Contoh: budi@gmail.com',
                   ),
                 ),
@@ -322,7 +323,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: 'dd/mm/yyyy',
                   ).copyWith(
                     suffixIcon: Icon(Icons.calendar_today,
@@ -351,7 +352,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     }
                     return null;
                   },
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: '812-3456-7890',
                   ).copyWith(
                     prefixIcon: Row(
@@ -391,7 +392,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                       (value == null || value.trim().runes.length < 10)
                           ? 'Alamat minimal 10 karakter.'
                           : null,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: 'Nama jalan, RT/RW, Kelurahan...',
                   ),
                 ),
@@ -551,32 +552,6 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
       ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({String? hintText}) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

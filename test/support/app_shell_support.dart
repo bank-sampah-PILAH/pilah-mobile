@@ -1,5 +1,3 @@
-import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
-import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -13,6 +11,9 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository_impl.dart';
@@ -27,8 +28,10 @@ import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.d
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
+import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -38,6 +41,7 @@ import 'package:pilah_mobile/services/di.dart';
 import 'approved_membership.dart';
 import 'auth_support.dart';
 import 'dashboard_support.dart';
+import 'draft_pencairan_support.dart';
 import 'harga_support.dart';
 import 'nasabah_support.dart';
 import 'onboarding_support.dart';
@@ -103,6 +107,12 @@ class AppShell {
         () => RevisiPencairanCubit(useCases));
     di.registerFactory<RiwayatPencairanCubit>(
         () => RiwayatPencairanCubit(useCases));
+    final draftRepository = buildDraftPencairanRepository(api);
+    di.registerFactory<DraftListCubit>(() => DraftListCubit(draftRepository));
+    di.registerFactory<PilihNasabahCubit>(
+        () => PilihNasabahCubit(draftRepository));
+    di.registerFactory<DraftEditorCubit>(
+        () => DraftEditorCubit(draftRepository));
     _approval = registerApprovedMembership();
   }
 
@@ -115,6 +125,9 @@ class AppShell {
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<DraftListCubit>();
+    await di.unregister<PilihNasabahCubit>();
+    await di.unregister<DraftEditorCubit>();
     final approval = _approval;
     if (approval != null) await unregisterApprovedMembership(approval);
     // Not awaited: with listeners attached a broadcast controller's close()

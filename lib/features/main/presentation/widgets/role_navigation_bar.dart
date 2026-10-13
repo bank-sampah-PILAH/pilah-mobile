@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 
-/// Keeps each role's labels and router branch destinations together.
+/// Bentuk navigasi untuk layar sempit.
+///
+/// Destinasinya tidak lagi ditentukan di sini: daftarnya dibaca dari
+/// [RoleDestinations], yang juga dipakai navigation rail pada layar lebar.
+/// Widget ini hanya memutuskan cara menggambar.
 class RoleNavigationBar extends StatelessWidget {
   const RoleNavigationBar({
     super.key,
@@ -17,29 +22,17 @@ class RoleNavigationBar extends StatelessWidget {
   final ValueChanged<int> onSelected;
   final bool limitedNasabah;
 
-  static bool isStaff(String? role) =>
-      role == 'pengelola' || role == 'pengelola_induk';
-  static bool supports(String? role) => role == 'nasabah' || isStaff(role);
+  static bool isStaff(String? role) => RoleDestinations.isStaff(role);
+  static bool supports(String? role) => RoleDestinations.supports(role);
 
   static List<int> branchIndicesFor(String? role,
           {bool limitedNasabah = false}) =>
-      _destinationsFor(role, limitedNasabah: limitedNasabah)
-          .map((destination) => destination.branchIndex)
-          .toList(growable: false);
-
-  static List<_RoleDestination> _destinationsFor(String? role,
-          {bool limitedNasabah = false}) =>
-      role == 'nasabah'
-          ? limitedNasabah
-              ? _limitedNasabahDestinations
-              : _nasabahDestinations
-          : isStaff(role)
-              ? _staffDestinations
-              : const [];
+      RoleDestinations.branchIndicesFor(role, limitedNasabah: limitedNasabah);
 
   @override
   Widget build(BuildContext context) {
-    final destinations = _destinationsFor(role, limitedNasabah: limitedNasabah);
+    final destinations =
+        RoleDestinations.forRole(role, limitedNasabah: limitedNasabah);
     if (destinations.isEmpty) return const SizedBox.shrink();
     return Container(
       decoration: const BoxDecoration(
@@ -70,33 +63,3 @@ class RoleNavigationBar extends StatelessWidget {
     );
   }
 }
-
-class _RoleDestination {
-  const _RoleDestination(this.branchIndex, this.icon, this.label);
-
-  final int branchIndex;
-  final IconData icon;
-  final String label;
-}
-
-// StatefulShellRoute order: dashboard, nasabah, harga, laporan, jadwal,
-// customer history, customer bank, profile.
-const _nasabahDestinations = <_RoleDestination>[
-  _RoleDestination(0, Icons.home_outlined, 'Beranda'),
-  _RoleDestination(5, Icons.account_balance_wallet_outlined, 'Tabungan'),
-  _RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
-  _RoleDestination(7, Icons.person_outline, 'Profil'),
-];
-
-const _limitedNasabahDestinations = <_RoleDestination>[
-  _RoleDestination(0, Icons.home_outlined, 'Beranda'),
-  _RoleDestination(7, Icons.person_outline, 'Profil'),
-];
-
-const _staffDestinations = <_RoleDestination>[
-  _RoleDestination(0, Icons.grid_view_rounded, 'Dashboard'),
-  _RoleDestination(1, Icons.people_outline, 'Nasabah'),
-  _RoleDestination(2, Icons.local_offer_outlined, 'Harga'),
-  _RoleDestination(3, Icons.insert_drive_file_outlined, 'Laporan'),
-  _RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
-];
