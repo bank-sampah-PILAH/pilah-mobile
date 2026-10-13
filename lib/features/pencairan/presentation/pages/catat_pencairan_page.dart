@@ -157,15 +157,36 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
         );
   }
 
+  /// A bottom sheet on a phone; on a wide window a sheet would stretch across
+  /// the whole screen, so the same summary opens as a centred dialog.
   Future<void> _showBerhasil(Pencairan created) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isDismissible: false,
-      isScrollControlled: true,
-      builder: (sheetContext) => _PencairanBerhasilSheet(created: created),
-    );
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _lebarDialogBerhasil),
+            child: _PencairanBerhasilSheet(created: created),
+          ),
+        ),
+      );
+    } else {
+      await showModalBottomSheet<void>(
+        context: context,
+        isDismissible: false,
+        isScrollControlled: true,
+        builder: (sheetContext) => _PencairanBerhasilSheet(created: created),
+      );
+    }
     if (mounted) Navigator.of(context).pop(true);
   }
+
+  static const double _lebarDialogBerhasil = 420;
 
   /// Nominal, metode, tanggal and keterangan: the same fields in either
   /// layout.
