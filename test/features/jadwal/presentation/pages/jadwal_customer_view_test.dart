@@ -11,7 +11,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calenda
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {
   @override
-  Future<void> setMembershipId(String? membershipId) async {}
+  void setMembershipId(String? membershipId) {}
 }
 
 void main() {

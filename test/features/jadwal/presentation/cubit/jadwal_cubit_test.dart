@@ -121,17 +121,12 @@ void main() {
     final selectedDate = DateTime(2026, 10, 10);
     when(() => repository.getJadwal(
           page: 1,
-          date: null,
-          membershipId: membershipId,
-        )).thenAnswer((_) async => Right(_page([])));
-    when(() => repository.getJadwal(
-          page: 1,
           date: selectedDate,
           membershipId: membershipId,
         )).thenAnswer((_) async => Right(_page([])));
     final cubit = JadwalCubit(repository);
 
-    await cubit.setMembershipId(membershipId);
+    cubit.setMembershipId(membershipId);
     await cubit.loadJadwal(date: selectedDate);
 
     verify(() => repository.getJadwal(

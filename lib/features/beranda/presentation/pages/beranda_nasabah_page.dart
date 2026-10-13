@@ -356,12 +356,10 @@ Future<JadwalEntity?> _loadNearestSchedule(String membershipId) async {
   // ponytail: scans every upcoming page; add a server-side nearest query if
   // volume hurts homepage load time.
   while (true) {
-    final result = membershipId.isEmpty
-        ? await repository.getJadwal(page: pageNumber)
-        : await repository.getJadwal(
-            page: pageNumber,
-            membershipId: membershipId,
-          );
+    final result = await repository.getJadwal(
+      page: pageNumber,
+      membershipId: membershipId,
+    );
     final page = result.fold(
       (failure) => throw NasabahApiException(failure.displayMessage),
       (page) => page,

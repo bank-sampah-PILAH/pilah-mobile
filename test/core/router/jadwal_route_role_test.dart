@@ -27,7 +27,7 @@ class _MockAuthenticationBloc
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {
   @override
-  Future<void> setMembershipId(String? membershipId) async {}
+  void setMembershipId(String? membershipId) {}
 }
 
 void main() {

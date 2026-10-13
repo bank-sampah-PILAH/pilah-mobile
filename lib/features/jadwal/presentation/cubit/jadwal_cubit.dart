@@ -25,7 +25,7 @@ class JadwalCubit extends Cubit<JadwalState> {
 
   JadwalCubit(this.repository) : super(const JadwalInitial());
 
-  Future<void> setMembershipId(String? membershipId) async {
+  void setMembershipId(String? membershipId) {
     if (_membershipId == membershipId) return;
     _membershipId = membershipId;
     _loadVersion++;
@@ -35,12 +35,6 @@ class JadwalCubit extends Cubit<JadwalState> {
     _isLoadingMore = false;
     _scheduledDates = {};
     emit(const JadwalInitial());
-    await loadJadwal(date: _dateFilter);
-    final start = _calendarStart;
-    final end = _calendarEnd;
-    if (start != null && end != null) {
-      await loadCalendarDates(startDate: start, endDate: end);
-    }
   }
 
   List<JadwalEntity> get _items =>
