@@ -5,6 +5,8 @@
 // app-lifecycle watcher can all share one answer instead of each re-deriving
 // onboarding routing.
 
+import 'package:pilah_mobile/core/router/app_locations.dart';
+
 /// The completion form. In invite mode it saves the profile *and* redeems the
 /// token in one submit.
 const completeProfileLocation = '/complete-profile';
@@ -12,6 +14,9 @@ const completeProfileLocation = '/complete-profile';
 /// The invite gate — redeems a token for a user who already has a complete
 /// profile, then routes onward.
 const inviteProcessingLocation = '/invite-processing';
+
+const superadminDashboardLocation = '/superadmin-dashboard';
+const pengelolaIndukDashboardLocation = '/pengelola-induk-dashboard';
 
 const _webSupportedRoles = {'superadmin', 'pengelola', 'pengelola_induk'};
 
@@ -27,6 +32,59 @@ String? webRoleRedirect({
   required String? role,
 }) =>
     isWeb && path != loginPath && !isSupportedWebRole(role) ? loginPath : null;
+
+/// Paths that make sense without a session, and so must not be bounced to the
+/// splash. `/splash` is where the restore itself happens.
+const _publicPaths = {
+  '/splash',
+  '/login',
+  '/choose-role',
+  '/forgot_password',
+  '/invite',
+};
+
+/// Sends a cold start that landed straight on a protected path to the splash.
+///
+/// On web the browser URL decides the first route, so refreshing on
+/// `/#/dashboard` skips the splash — the only place that restores the saved
+/// session — and the shell renders signed out although the token is still in
+/// storage. The splash restores it and routes the user back to [path] and its
+/// [query], which it receives as `from`.
+String? sessionRestoreRedirect({
+  required bool sessionChecked,
+  required String path,
+  String query = '',
+}) {
+  if (sessionChecked || _publicPaths.contains(path)) return null;
+  final location = query.isEmpty ? path : '$path?$query';
+  return '/splash?from=${Uri.encodeComponent(location)}';
+}
+
+/// Sends a signed-out user who reaches a protected path to the login page.
+///
+/// Logging out already navigates to login, but the browser's Back button can
+/// return to `/dashboard` afterwards, where the shell has no role to render.
+String? signedOutRedirect({required bool signedOut, required String path}) =>
+    signedOut && !_publicPaths.contains(path) ? '/login' : null;
+
+/// The home each fully onboarded role lands on. A [target] outside this set is
+/// an onboarding step, which always outranks the page being restored.
+const _homeLocations = {
+  AppLocations.dashboard,
+  superadminDashboardLocation,
+  pengelolaIndukDashboardLocation,
+};
+
+/// Where the splash sends a restored session. A fully onboarded user goes back
+/// to [from], the page they refreshed on; anyone still mid-onboarding keeps
+/// their [target] step.
+String locationAfterRestore({required String target, String? from}) {
+  final safe = from != null &&
+      from.startsWith('/') &&
+      !from.startsWith('//') &&
+      !_publicPaths.contains(Uri.tryParse(from)?.path);
+  return safe && _homeLocations.contains(target) ? from : target;
+}
 
 /// Maps the backend `user_state` / `next_step` value to the route a signed-in
 /// user should land on. Shared by the splash (session restore) and login flows
@@ -61,15 +119,15 @@ String locationForAuthStep(
   }
   switch (step) {
     case 'superadmin_dashboard':
-      return '/superadmin-dashboard';
+      return superadminDashboardLocation;
     case 'register_nasabah':
       return '/register-nasabah';
     case 'nasabah_dashboard':
-      return '/dashboard';
+      return AppLocations.dashboard;
     case 'register_bank_sampah_induk':
       return '/register-bank-sampah-induk';
     case 'pengelola_induk_dashboard':
-      return '/pengelola-induk-dashboard';
+      return pengelolaIndukDashboardLocation;
     case 'complete_profile':
       return completeProfileLocation;
     case 'register_bank_sampah':
@@ -84,7 +142,7 @@ String locationForAuthStep(
     case 'dashboard':
     default:
       // `dashboard`, plus null/empty/unknown, land on the main dashboard.
-      return '/dashboard';
+      return AppLocations.dashboard;
   }
 }
 

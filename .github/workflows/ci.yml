@@ -101,6 +101,12 @@ jobs:
           flutter test --platform chrome
           test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
 
+      - name: Verify the web dashboard role layout
+        run: >-
+          flutter test --platform chrome
+          --plain-name "web dashboard uses the web default for Pengurus"
+          test/features/dashboard/presentation/pages/dashboard_page_test.dart
+
       # Blocking gate. The suite is young (26% at gate introduction — large
       # feature areas predate it), so the floor starts at 25% and must only
       # move UP as tests are added. Parse the lcov directly: no lcov/genhtml

@@ -73,6 +73,20 @@ class AppRouterConfig {
     redirect: (context, state) {
       final path = state.uri.path;
 
+      final restore = sessionRestoreRedirect(
+        sessionChecked:
+            context.read<AuthenticationBloc>().state is! AuthenticationInitial,
+        path: path,
+        query: state.uri.query,
+      );
+      if (restore != null) return restore;
+
+      final signedOut = signedOutRedirect(
+        signedOut: context.read<AuthenticationBloc>().state is Unauthenticated,
+        path: path,
+      );
+      if (signedOut != null) return signedOut;
+
       if (path == '/invite') {
         final token = state.uri.queryParameters['token'];
         if (token != null) {
@@ -104,7 +118,8 @@ class AppRouterConfig {
       GoRoute(
         path: SplashPage.route,
         name: SplashPage.route,
-        builder: (context, state) => const SplashPage(),
+        builder: (context, state) =>
+            SplashPage(from: state.uri.queryParameters['from']),
       ),
       GoRoute(
         path: LoginPage.route,

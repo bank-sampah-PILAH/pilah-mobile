@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
@@ -19,6 +21,8 @@ abstract class ProfileRemoteDataSource {
     String? kota,
     required String noHpPic,
     String? fotoLogoPath,
+    Uint8List? fotoLogoBytes,
+    String? fotoLogoFilename,
   });
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
@@ -52,13 +56,20 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     String? kota,
     required String noHpPic,
     String? fotoLogoPath,
+    Uint8List? fotoLogoBytes,
+    String? fotoLogoFilename,
   }) async {
     final formData = FormData.fromMap({
       'nama': nama,
       'alamat': alamat,
       if (kota != null) 'kota': kota,
       'no_hp_pic': noHpPic,
-      if (fotoLogoPath != null && fotoLogoPath.isNotEmpty)
+      if (fotoLogoBytes != null)
+        'foto_logo': MultipartFile.fromBytes(
+          fotoLogoBytes,
+          filename: fotoLogoFilename ?? 'logo.jpg',
+        )
+      else if (fotoLogoPath != null && fotoLogoPath.isNotEmpty)
         'foto_logo': await MultipartFile.fromFile(
           fotoLogoPath,
           filename: fotoLogoPath.split(RegExp(r'[\\/]')).last,
