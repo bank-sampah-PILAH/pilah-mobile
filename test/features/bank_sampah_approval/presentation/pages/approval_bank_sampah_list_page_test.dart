@@ -19,6 +19,7 @@ class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
 
 class _MemoryStorage implements AppStorage {
   final values = <String, Object>{};
+  var reads = 0;
   bool failReads = false;
   bool failWrites = false;
 
@@ -33,6 +34,7 @@ class _MemoryStorage implements AppStorage {
 
   @override
   Future<T?> get<T>(String key) async {
+    reads++;
     if (failReads) throw StateError('storage unavailable');
     return values[key] as T?;
   }
@@ -203,6 +205,49 @@ void main() {
 
     updates.add(const NasabahApprovalLoaded([_noLongerActive, _otherApproved]));
     await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(storage.values['active_membership_id:user-1'], _otherApproved.id);
+    expect(find.text('Bank aktif'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'reuses the saved selection when eligible memberships are unchanged',
+      (tester) async {
+    final storage = _MemoryStorage()
+      ..values['active_membership_id:user-1'] = _approved.id;
+    _registerStorage(storage);
+    final updates = StreamController<NasabahApprovalState>.broadcast();
+    addTearDown(updates.close);
+    whenListen(
+      cubit,
+      updates.stream,
+      initialState: const NasabahApprovalLoaded([_approved, _otherApproved]),
+    );
+
+    await tester.pumpWidget(_wrap(cubit, userId: 'user-1'));
+    await tester.pumpAndSettle();
+    expect(storage.reads, 1);
+
+    updates.add(const NasabahApprovalLoaded([_approved, _otherApproved]));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(storage.reads, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('saves a newly selected active membership', (tester) async {
+    final storage = _MemoryStorage()
+      ..values['active_membership_id:user-1'] = _approved.id;
+    _registerStorage(storage);
+    when(() => cubit.state)
+        .thenReturn(const NasabahApprovalLoaded([_approved, _otherApproved]));
+
+    await tester.pumpWidget(_wrap(cubit, userId: 'user-1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pilih bank'));
     await tester.pumpAndSettle();
 
     expect(storage.values['active_membership_id:user-1'], _otherApproved.id);

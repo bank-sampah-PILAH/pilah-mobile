@@ -62,6 +62,13 @@ void main() {
     expect(formatRupiahCents(rupiahToCents('1234567.05')), 'Rp 1.234.567,05');
   });
 
+  test('rejects malformed decimal balances', () {
+    expect(
+      () => rupiahToCents('123.456'),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('combined balance includes approved active memberships only', () {
     final memberships = [
       _membership('one', '123456789012345678.90'),
