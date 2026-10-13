@@ -5,30 +5,36 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 
 /// Persists one user's active bank membership for the next request layer.
 class ActiveMembershipSelection {
-  final AppStorage storage;
-  Future<void> _queue = Future<void>.value();
+  static final _queues = <String, Future<void>>{};
 
-  ActiveMembershipSelection(this.storage);
+  final AppStorage storage;
+
+  const ActiveMembershipSelection(this.storage);
 
   String _key(String userId) => 'active_membership_id:$userId';
 
-  Future<T> _serialize<T>(Future<T> Function() operation) {
-    final queued = _queue.then((_) => operation());
-    _queue = queued.then<void>((_) {}, onError: (Object _) {});
+  Future<T> _serialize<T>(String userId, Future<T> Function() operation) {
+    final queued =
+        (_queues[userId] ?? Future<void>.value()).then((_) => operation());
+    final tail = queued.then<void>((_) {}, onError: (Object _) {});
+    _queues[userId] = tail;
+    tail.whenComplete(() {
+      if (identical(_queues[userId], tail)) _queues.remove(userId);
+    });
     return queued;
   }
 
   Future<String?> read(String userId) =>
-      _serialize(() => storage.get<String>(_key(userId)));
+      _serialize(userId, () => storage.get<String>(_key(userId)));
 
   Future<void> select(String userId, String membershipId) =>
-      _serialize(() => storage.put(_key(userId), membershipId));
+      _serialize(userId, () => storage.put(_key(userId), membershipId));
 
   Future<String?> resolve(
     String userId,
     Iterable<NasabahMembershipEntity> memberships,
   ) =>
-      _serialize(() => _resolve(userId, memberships));
+      _serialize(userId, () => _resolve(userId, memberships));
 
   Future<String?> _resolve(
     String userId,

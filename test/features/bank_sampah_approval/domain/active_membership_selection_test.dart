@@ -90,9 +90,11 @@ void main() {
   test('serializes overlapping resolutions so the newest state wins', () async {
     final storage = _DelayedMemoryStorage();
     final selection = ActiveMembershipSelection(storage);
+    final otherSelection = ActiveMembershipSelection(storage);
     final stale = selection.resolve('user-1', [_membership('old', '1.00')]);
     await storage.writeStarted.future;
-    final latest = selection.resolve('user-1', [_membership('new', '2.00')]);
+    final latest =
+        otherSelection.resolve('user-1', [_membership('new', '2.00')]);
     await Future<void>.delayed(Duration.zero);
     final writesBeforeRelease = storage.writes;
     storage.releaseFirstWrite.complete();
@@ -100,7 +102,7 @@ void main() {
     expect(await stale, 'old');
     expect(await latest, 'new');
     expect(writesBeforeRelease, 1);
-    expect(await selection.read('user-1'), 'new');
+    expect(await otherSelection.read('user-1'), 'new');
   });
 
   test(
