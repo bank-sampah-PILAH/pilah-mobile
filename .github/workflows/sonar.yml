@@ -108,7 +108,7 @@ jobs:
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart,**/di.config.dart
-            -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart
+            -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart,**/file_downloader_web.dart
             -Dsonar.scanner.skipJreProvisioning=true
 
       - name: SonarCloud Scan (retry)
@@ -123,5 +123,5 @@ jobs:
             -Dsonar.sources=lib
             -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
             -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart,**/di.config.dart
-            -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart
+            -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart,**/file_downloader_web.dart
             -Dsonar.scanner.skipJreProvisioning=true
