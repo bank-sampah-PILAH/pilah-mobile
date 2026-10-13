@@ -38,14 +38,36 @@ const _bank = BankSampahDirectoryEntity(
   kota: 'Depok',
   fotoLogo: '',
 );
+const _otherJoinedBank = BankSampahDirectoryEntity(
+  id: 'bank-2',
+  nama: 'Bank Sampah Lain',
+  alamat: 'Jl. Anggrek',
+  kota: 'Depok',
+  fotoLogo: '',
+);
+const _availableBank = BankSampahDirectoryEntity(
+  id: 'bank-3',
+  nama: 'Bank Sampah Baru',
+  alamat: 'Jl. Mawar',
+  kota: 'Depok',
+  fotoLogo: '',
+);
 
 const _joinedMembership = NasabahMembershipEntity(
   id: 'membership-1',
-  bankSampahId: 'bank-joined',
+  bankSampahId: 'bank-1',
   bankSampahNama: 'Bank Sampah Lama',
   bankSampahKota: 'Bogor',
   status: 'approved',
   isActive: true,
+);
+const _secondJoinedMembership = NasabahMembershipEntity(
+  id: 'membership-2',
+  bankSampahId: 'bank-2',
+  bankSampahNama: 'Bank Sampah Lain',
+  bankSampahKota: 'Depok',
+  status: 'pending',
+  isActive: false,
 );
 
 const _draft = CompleteProfileRequest(
@@ -77,7 +99,7 @@ void main() {
     dataSource = _MockOnboardingDataSource();
     onboarding = OnboardingCubit(dataSource);
     when(() => dataSource.listBankSampahDirectory())
-        .thenAnswer((_) async => [_bank]);
+        .thenAnswer((_) async => [_bank, _otherJoinedBank, _availableBank]);
     when(() => dataSource.listMyMemberships()).thenAnswer((_) async => []);
   });
 
@@ -236,8 +258,8 @@ void main() {
     expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
   });
 
-  group('existing membership lock', () {
-    testWidgets('shows the joined bank sampah and its status', (tester) async {
+  group('existing memberships', () {
+    testWidgets('shows each joined bank sampah and its status', (tester) async {
       when(() => dataSource.listMyMemberships())
           .thenAnswer((_) async => [_joinedMembership]);
 
@@ -245,11 +267,42 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Bank Sampah Lama'), findsOneWidget);
+      expect(find.text('Aktif'), findsOneWidget);
       expect(find.textContaining('hanya dapat terdaftar di 1 bank sampah'),
-          findsOneWidget);
+          findsNothing);
     });
 
-    testWidgets('locks the picker so it no longer opens', (tester) async {
+    testWidgets('excludes all joined banks and submits another application',
+        (tester) async {
+      when(() => dataSource.listMyMemberships()).thenAnswer(
+          (_) async => [_joinedMembership, _secondJoinedMembership]);
+      when(() => dataSource.registerNasabah(
+          const RegisterNasabahRequest(bankSampahId: 'bank-3'))).thenAnswer(
+        (_) async => const OnboardingResult(nextStep: 'nasabah_dashboard'),
+      );
+
+      await pump(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('Aktif'), findsOneWidget);
+
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bank Sampah Baru'), findsOneWidget);
+      expect(find.text('Bank Sampah BTH'), findsNothing);
+      expect(find.text('Bank Sampah Lain'), findsOneWidget);
+
+      await tester.tap(find.text('Bank Sampah Baru'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Ajukan Pendaftaran'));
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await tester.pumpAndSettle();
+
+      verify(() => dataSource.registerNasabah(
+          const RegisterNasabahRequest(bankSampahId: 'bank-3'))).called(1);
+      expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
+    });
+
+    testWidgets('allows the picker to open for another bank', (tester) async {
       when(() => dataSource.listMyMemberships())
           .thenAnswer((_) async => [_joinedMembership]);
 
@@ -259,11 +312,12 @@ void main() {
       await tester.tap(find.text('Tap untuk pilih bank sampah'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cari nama bank sampah...'), findsNothing);
+      expect(find.text('Cari nama bank sampah...'), findsOneWidget);
+      expect(find.text('Bank Sampah BTH'), findsNothing);
     });
 
     testWidgets(
-        'submitting while locked lands the profile without a new '
+        'completing a saved profile with a pre-linked membership skips a new '
         'registration', (tester) async {
       // Realistic shape of this state: the pengurus-entered record already
       // linked at login, before the profile draft banked on step one was
