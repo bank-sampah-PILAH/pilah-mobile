@@ -109,4 +109,16 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('profile avatar fills meet WCAG AA behind white initials', () {
+    test('there are several fills to pick from', () {
+      expect(AppColors.avatarFills.length, greaterThan(1));
+    });
+
+    for (final fill in AppColors.avatarFills) {
+      test('#${fill.toARGB32().toRadixString(16).substring(2)}', () {
+        expect(contrast(Colors.white, fill), greaterThanOrEqualTo(_aa));
+      });
+    }
+  });
 }
