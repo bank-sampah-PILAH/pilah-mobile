@@ -38,7 +38,7 @@ void main() {
 
     // The nama shows in both the app bar and the detail header.
     expect(find.text('Bank Garis'), findsWidgets);
-    expect(find.text('-6.362829, 106.828655'), findsOneWidget);
+    expect(find.byKey(const Key('detail_bank_buka_peta')), findsOneWidget);
     expect(find.text('K-1 · Kardus'), findsOneWidget);
     expect(find.text('Rp 1.500/kg'), findsOneWidget);
     expect(find.text('Rp 2.000/kg'), findsOneWidget);

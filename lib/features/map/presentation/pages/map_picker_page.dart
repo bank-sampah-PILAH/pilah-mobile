@@ -20,12 +20,16 @@ import 'package:pilah_mobile/services/di.dart';
 /// reads the fields back (they either match the camera or hold a manual,
 /// validated entry), so both input paths resolve through the same values.
 ///
+/// Marketplace-style radius: a circle around the center whose top handle is
+/// dragged to resize. The popped record carries the radius beside the point.
+///
 /// Tests inject [tileLayerBuilder] to swap in a fake tile provider; the OSM
 /// layer here must never be fetched inside `flutter test`.
 class MapPickerPage extends StatefulWidget {
   const MapPickerPage({
     super.key,
     this.initialCenter,
+    this.initialRadiusKm,
     this.tileLayerBuilder = osmTileLayer,
   });
 
@@ -33,10 +37,16 @@ class MapPickerPage extends StatefulWidget {
   /// caller has nothing saved; zoomed out enough to see, in enough to pick.
   final LatLng? initialCenter;
 
+  /// Starting radius of the marketplace circle; defaults [radiusDefault].
+  final double? initialRadiusKm;
+
   /// Test seam: builds the tile layer rendered under the pin. Loosely typed
   /// as any map child so a test can park a blank widget there instead of
   /// hand-rolling a TileProvider.
   final Widget Function() tileLayerBuilder;
+
+  /// The default search radius when nothing was saved before.
+  static const radiusDefault = 5.0;
 
   @override
   State<MapPickerPage> createState() => _MapPickerPageState();
@@ -51,7 +61,13 @@ class _MapPickerPageState extends State<MapPickerPage> {
   Timer? _jedaCari;
   int _percobaanCari = 0;
 
+  /// Marketplace circle radius in km; handle drag updates it live.
+  late double _radiusKm = widget.initialRadiusKm ?? MapPickerPage.radiusDefault;
+
   static const _defaultCenter = LatLng(-2.5, 118.0);
+
+  /// Backend search cap (apps/bank_sampah/views.py JARAK_MAKSIMAL_KM).
+  static const double _radiusMaksimalKm = 100;
 
   final _latitudeField = TextEditingController();
   final _longitudeField = TextEditingController();
@@ -195,7 +211,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
     final pair = _validatedFields(context);
     if (pair == null) return;
     if (Navigator.canPop(context)) {
-      Navigator.pop(context, (latitude: pair.$1, longitude: pair.$2));
+      Navigator.pop(
+        context,
+        (latitude: pair.$1, longitude: pair.$2, radiusKm: _radiusKm),
+      );
     }
   }
 
@@ -221,35 +240,54 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     options: MapOptions(
                       initialCenter: widget.initialCenter ?? _defaultCenter,
                       initialZoom: 16,
-                      onMapEvent: (event) => _syncFieldsTo(event.camera.center),
+                      onMapEvent: (event) {
+                        _syncFieldsTo(event.camera.center);
+                        // The circle is drawn anchored to the camera center;
+                        // every pan/zoom repaints it around the new center.
+                        if (mounted) setState(() {});
+                      },
                     ),
                     children: [
                       widget.tileLayerBuilder(),
                       osmAttribution(),
-                    ],
-                  ),
-                  // The fixed center pin: the map moves, the marker does not.
-                  // Green drop-pin with a soft shadow halo (GM-style).
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 52,
-                          color: AppColors.greenDark,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
+                      _LingkaranRadius(
+                        controller: _controller,
+                        radiusKm: _radiusKm,
+                      ),
+                      // The fixed center pin: the map moves, the marker does
+                      // not. Green drop-pin with a soft shadow halo (GM-style).
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              size: 46,
+                              color: AppColors.greenDark,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 46),
                           ],
                         ),
-                        const SizedBox(height: 46),
-                      ],
-                    ),
+                      ),
+                      // Marketplace-style resize handle: drag it up/down and
+                      // the circle around the center pin follows in km.
+                      _GagangRadius(
+                        controller: _controller,
+                        radiusKm: _radiusKm,
+                        maksimalKm: _radiusMaksimalKm,
+                        onRadius: (km) => setState(() => _radiusKm = km),
+                      ),
+                    ],
                   ),
+                  // The fixed center pin now lives inside the FlutterMap
+                  // children so the radius circle tracks the same camera.
                   // Floating locate-me button over the map (GM-chrome).
                   Positioned(
                     right: 16,
@@ -397,6 +435,26 @@ class _MapPickerPageState extends State<MapPickerPage> {
                   children: [
                     Row(
                       children: [
+                        Text(
+                          'Radius:',
+                          style:
+                              NasabahStyle.text(14, color: NasabahStyle.muted),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_radiusKm.toStringAsFixed(_radiusKm == _radiusKm.roundToDouble() ? 0 : 1)} km',
+                          key: const Key('peta_radius_label'),
+                          style: NasabahStyle.text(
+                            14,
+                            weight: FontWeight.w600,
+                            color: AppColors.greenDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
                         Expanded(
                           child: TextField(
                             key: const Key('latitude_field'),
@@ -494,4 +552,126 @@ class _MapFab extends StatelessWidget {
           child: Icon(icon, size: 22, color: AppColors.greenDark),
         ),
       );
+}
+
+/// Lingkaran radius marketplace: hitungan kilometer di sekeliling titik
+/// pusat, digambar ulang pada setiap gerak kamera supaya tetap melingkar
+/// di permukaan peta.
+class _LingkaranRadius extends StatelessWidget {
+  final MapController controller;
+  final double radiusKm;
+
+  const _LingkaranRadius({required this.controller, required this.radiusKm});
+
+  @override
+  Widget build(BuildContext context) {
+    final camera = controller.camera;
+    return CircleLayer(
+      circles: [
+        CircleMarker(
+          point: camera.center,
+          // CircleLayer's meters mode is the honest ground-truth circle; the
+          // pixel approximation below only positions the handle.
+          useRadiusInMeter: true,
+          radius: radiusKm * 1000,
+          color: AppColors.greenDark.withValues(alpha: 0.12),
+          borderStrokeWidth: 2,
+          borderColor: AppColors.greenDark.withValues(alpha: 0.6),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pegangan di tepi atas lingkaran: digeser vertikal, radius mengikuti
+/// jarak piksel antara pegangan dan pusat kamera (dikonversi ke kilometer).
+class _GagangRadius extends StatefulWidget {
+  final MapController controller;
+  final double radiusKm;
+  final double maksimalKm;
+  final ValueChanged<double> onRadius;
+
+  const _GagangRadius({
+    required this.controller,
+    required this.radiusKm,
+    required this.maksimalKm,
+    required this.onRadius,
+  });
+
+  @override
+  State<_GagangRadius> createState() => _GagangRadiusState();
+}
+
+class _GagangRadiusState extends State<_GagangRadius> {
+  /// Titik tepi-atas lingkaran pada layar — basis posisi pegangan.
+  Offset _posisiGagang() {
+    final camera = widget.controller.camera;
+    final tengah = camera.center;
+    final pusat = camera.latLngToScreenOffset(tengah);
+    final tepi = camera.latLngToScreenOffset(
+      Distance().offset(tengah, widget.radiusKm * 1000, -180),
+    );
+    return Offset(pusat.dx, tepi.dy);
+  }
+
+  /// Satu piksel layar bernilai berapa kilometer tanah di zoom kini — dihitung
+  /// dari pasangan titik tetangga supaya akurat di lintang mana pun.
+  double _kmPerPixel() {
+    final camera = widget.controller.camera;
+    final pusat = camera.latLngToScreenOffset(camera.center);
+    final tetangga = camera.screenOffsetToLatLng(pusat - const Offset(0, 1));
+    return Distance().as(
+          LengthUnit.Kilometer,
+          camera.center,
+          tetangga,
+        ) *
+        1000;
+  }
+
+  /// Radius saat geseran dimulai; update menggeser dari nilai ini, bukan
+  /// dari posisi pegangan yang sendiri ikut berubah (umpan balik loop).
+  double? _radiusAwalGeser;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.controller.camera.center.latitude.isFinite) {
+      return const SizedBox.shrink();
+    }
+    final posisi = _posisiGagang();
+    return Positioned(
+      left: posisi.dx - 18,
+      top: posisi.dy - 18,
+      child: GestureDetector(
+        key: const Key('peta_gagang_radius'),
+        onVerticalDragStart: (_) => _radiusAwalGeser = widget.radiusKm,
+        onVerticalDragUpdate: (detail) {
+          final awal = _radiusAwalGeser;
+          if (awal == null) return;
+          // Pegangan di tepi atas: geser ke atas membesarkan radius,
+          // ke bawah mengecilkan (mendekati pusat).
+          final berikut = awal - detail.delta.dy * _kmPerPixel();
+          widget.onRadius(berikut.clamp(0.5, widget.maksimalKm));
+        },
+        onVerticalDragEnd: (_) => _radiusAwalGeser = null,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.greenDark, width: 2),
+            boxShadow: const [
+              BoxShadow(color: Color(0x29000000), blurRadius: 6),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.expand_less,
+            size: 20,
+            color: AppColors.greenDark,
+          ),
+        ),
+      ),
+    );
+  }
 }

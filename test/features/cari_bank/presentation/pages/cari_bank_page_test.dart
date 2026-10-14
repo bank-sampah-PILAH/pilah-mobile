@@ -167,9 +167,8 @@ void main() {
     await pump(tester);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('cari_bank_dekat_saya')), findsOneWidget);
     expect(find.byKey(const Key('cari_bank_pilih_di_peta')), findsOneWidget);
-    expect(find.byKey(const Key('cari_bank_radius_5')), findsNothing);
+    expect(find.byKey(const Key('cari_bank_dekat_saya')), findsNothing);
 
     // Enter location mode from the cubit side (the map-picker flow itself is
     // covered by the 326 picker tests); the page then swaps the buttons for
@@ -185,11 +184,9 @@ void main() {
     await tester.pump(CariBankCubit.jedaPencarian);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('cari_bank_radius_1')), findsOneWidget);
-    expect(find.byKey(const Key('cari_bank_radius_5')), findsOneWidget);
-    expect(find.byKey(const Key('cari_bank_radius_10')), findsOneWidget);
-    expect(find.byKey(const Key('cari_bank_radius_25')), findsOneWidget);
-    expect(find.byKey(const Key('cari_bank_hapus_lokasi')), findsOneWidget);
+    expect(find.byKey(const Key('cari_bank_radius_1')), findsNothing);
+    expect(find.byKey(const Key('cari_bank_radius_5')), findsNothing);
+    expect(find.byKey(const Key('cari_bank_hapus_lokasi')), findsNothing);
     expect(find.byKey(const Key('cari_bank_dekat_saya')), findsNothing);
 
     // The reload carried the trio.
@@ -218,18 +215,16 @@ void main() {
     expect(find.text('5.0 km'), findsOneWidget);
   });
 
-  testWidgets('the 1 km radius chip reloads with radius_km=1', (tester) async {
+  testWidgets('pilihDariPeta now awaits, but the trio still lands on reload',
+      (tester) async {
     api.on('GET', _directory, json: bankSampahPage([bankRow('b1', 'Bank A')]));
-    cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
 
     await pump(tester);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('cari_bank_radius_1')));
-    // The chip is static (no Material ripple): the 300 ms search debounce
-    // must be advanced manually before the reload request fires.
+    await cubit.pilihDariPeta((latitude: -6.362829, longitude: 106.828655));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    expect(api.last.query['radius_km'], '1.0');
+    expect(api.last.query['radius_km'], '5.0');
   });
 }

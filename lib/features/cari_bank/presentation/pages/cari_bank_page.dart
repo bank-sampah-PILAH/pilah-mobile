@@ -49,7 +49,10 @@ class _CariBankViewState extends State<CariBankView> {
   @override
   void initState() {
     super.initState();
+    // Marketplace-style default: the origin starts on its own — a saved
+    // manual pick from local storage, else the device fix.
     context.read<CariBankCubit>().load();
+    context.read<CariBankCubit>().muatLokasiAwal();
   }
 
   @override
@@ -83,48 +86,11 @@ class _CariBankViewState extends State<CariBankView> {
                 child: _ModeSwitch(
                   key: const Key('cari_bank_mode'),
                   mode: _mode,
-                  dekatSaya: () =>
-                      context.read<CariBankCubit>().pilihLokasiSaya(),
                   pilihDiPeta: () =>
                       _pilihDiPeta(context, widget.tileLayerBuilder),
                   onPilih: (mode) => setState(() => _mode = mode),
-                  tampilkanLokasi:
-                      state is CariBankLoaded && state.dalamRadiusKm == null,
                 ),
               ),
-              // Radius aktif: chips 1/5/10/25 km + keluar dari mode lokasi.
-              if (state is CariBankLoaded && state.dalamRadiusKm != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: SizedBox(
-                    height: 34,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        for (final km in const [1.0, 5.0, 10.0, 25.0])
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: _RadiusChip(
-                              key: Key('cari_bank_radius_${km.toInt()}'),
-                              label: '${km.toInt()} km',
-                              dipilih: km == state.dalamRadiusKm,
-                              onTap: () => context
-                                  .read<CariBankCubit>()
-                                  .pilihRadiusKm(km),
-                            ),
-                          ),
-                        _RadiusChip(
-                          key: const Key('cari_bank_hapus_lokasi'),
-                          label: 'Hapus lokasi',
-                          icon: Icons.close,
-                          dipilih: false,
-                          onTap: () =>
-                              context.read<CariBankCubit>().hapusLokasi(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               Expanded(child: _CariBankBody(state: state)),
             ],
           ),
@@ -138,8 +104,9 @@ Future<void> _pilihDiPeta(
   BuildContext context,
   Widget Function()? tileLayerBuilder,
 ) async {
+  final cubit = context.read<CariBankCubit>();
   final titik = await Navigator.of(context, rootNavigator: true)
-      .push<({double latitude, double longitude})>(
+      .push<({double latitude, double longitude, double radiusKm})>(
     MaterialPageRoute(
       builder: (_) => tileLayerBuilder == null
           ? const MapPickerPage()
@@ -147,7 +114,10 @@ Future<void> _pilihDiPeta(
     ),
   );
   if (titik != null && context.mounted) {
-    context.read<CariBankCubit>().pilihDariPeta(titik);
+    await cubit.pilihDariPeta(
+      (latitude: titik.latitude, longitude: titik.longitude),
+    );
+    cubit.pilihRadiusKm(titik.radiusKm);
   }
 }
 
@@ -401,17 +371,13 @@ class PillTag extends StatelessWidget {
 class _ModeSwitch extends StatelessWidget {
   final String mode;
   final ValueChanged<String> onPilih;
-  final VoidCallback dekatSaya;
   final VoidCallback pilihDiPeta;
-  final bool tampilkanLokasi;
 
   const _ModeSwitch({
     super.key,
     required this.mode,
     required this.onPilih,
-    required this.dekatSaya,
     required this.pilihDiPeta,
-    required this.tampilkanLokasi,
   });
 
   @override
@@ -434,22 +400,13 @@ class _ModeSwitch extends StatelessWidget {
               onTap: () => onPilih('Peta'),
             ),
           ),
-          if (tampilkanLokasi) ...[
-            const SizedBox(width: 8),
-            _IkonAksi(
-              key: const Key('cari_bank_dekat_saya'),
-              icon: Icons.near_me_outlined,
-              pesan: 'Di dekat saya',
-              onTap: dekatSaya,
-            ),
-            const SizedBox(width: 8),
-            _IkonAksi(
-              key: const Key('cari_bank_pilih_di_peta'),
-              icon: Icons.travel_explore_outlined,
-              pesan: 'Pilih titik pencarian di peta',
-              onTap: pilihDiPeta,
-            ),
-          ],
+          const SizedBox(width: 8),
+          _IkonAksi(
+            key: const Key('cari_bank_pilih_di_peta'),
+            icon: Icons.travel_explore_outlined,
+            pesan: 'Pilih titik pencarian di peta',
+            onTap: pilihDiPeta,
+          ),
         ],
       );
 }
@@ -526,55 +483,6 @@ class _ModePill extends StatelessWidget {
                 label,
                 style: AppTextStyle.small.copyWith(
                   color: dipilih ? Colors.white : NasabahStyle.muted,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-}
-
-/// Chip radius atau aksi hapus — pola nasabah_filter_chips.
-class _RadiusChip extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final bool dipilih;
-  final VoidCallback onTap;
-
-  const _RadiusChip({
-    super.key,
-    required this.label,
-    required this.dipilih,
-    required this.onTap,
-    this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: dipilih ? AppColors.greenDark : AppColors.greenLight,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 16,
-                  color: dipilih ? Colors.white : AppColors.greenDark,
-                ),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                label,
-                style: AppTextStyle.small.copyWith(
-                  color: dipilih ? Colors.white : AppColors.greenDark,
                   fontWeight: FontWeight.w600,
                 ),
               ),

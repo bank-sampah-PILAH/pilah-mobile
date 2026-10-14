@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
 
@@ -64,3 +65,10 @@ Map<String, dynamic> layananJson(String kode, String nama, String harga) => {
       'satuan': 'kg',
       'harga_per_kg': harga,
     };
+
+/// Hand-built cubit with optional storage injection (persistence tests).
+CariBankCubit buildCariBankCubitWithStorage(StubApi api, AppStorage? storage) =>
+    CariBankCubit(
+      CariBankRemoteDataSourceImpl(api.network),
+      storage: storage,
+    );

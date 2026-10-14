@@ -10,6 +10,7 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/domain/entities/cari_bank_entities.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_lokasi_map_page.dart';
 import 'package:pilah_mobile/features/perbandingan_harga/presentation/pages/perbandingan_harga_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -125,7 +126,37 @@ class _IsiDetail extends StatelessWidget {
         const SizedBox(height: 8),
         _row('Kota', detail.kota),
         _row('Alamat', detail.alamat),
-        _row('Lokasi di peta', tampilkanLokasi(detail)),
+        if (detail.lokasi != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: OutlinedButton.icon(
+              key: const Key('detail_bank_buka_peta'),
+              onPressed: () => Navigator.of(context, rootNavigator: true)
+                  .push(MaterialPageRoute(
+                builder: (_) => BankLokasiMapPage(
+                  nama: detail.nama,
+                  latitude: detail.lokasi!.latitude,
+                  longitude: detail.lokasi!.longitude,
+                ),
+              )),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.greenDark,
+                side: const BorderSide(color: AppColors.greenDark),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              icon: const Icon(Icons.map_outlined, size: 18),
+              label: Text(
+                'Lihat Lokasi di Peta',
+                style: AppTextStyle.small.copyWith(
+                  color: AppColors.greenDark,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
         const SizedBox(height: 12),
         Text(
           'Layanan',
@@ -188,15 +219,6 @@ class _IsiDetail extends StatelessWidget {
           ],
         ),
       );
-}
-
-/// Coordinates as a readable text pair; the full map view on search arrives
-/// with PIL-330.
-String tampilkanLokasi(BankSampahDetailEntity detail) {
-  final lokasi = detail.lokasi;
-  if (lokasi == null) return 'Belum dipasang';
-  return '${lokasi.latitude.toStringAsFixed(6)}, '
-      '${lokasi.longitude.toStringAsFixed(6)}';
 }
 
 class _Header extends StatelessWidget {

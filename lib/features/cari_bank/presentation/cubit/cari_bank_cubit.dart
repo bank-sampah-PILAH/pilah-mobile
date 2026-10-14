@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
+import 'package:pilah_mobile/core/storage/app_storage.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_state.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
@@ -19,11 +20,27 @@ import 'package:pilah_mobile/services/di.dart';
 /// device or the map picker) plus a radius; while it is set every request
 /// carries the trio (and optionally sort=radius default) and rows come back
 /// with `jarak_km`.
+///
+/// The origin is set automatically on page open ([muatLokasiAwal]): a
+/// previously-picked point wins if one was saved in local storage, otherwise
+/// the device fix is tried; both paths then persist whatever a later
+/// [pilihDariPeta] puts in its place.
 @lazySingleton
 class CariBankCubit extends Cubit<CariBankState> {
   final CariBankRemoteDataSource _dataSource;
 
-  CariBankCubit(this._dataSource) : super(const CariBankInitial());
+  // ponytail: null storage when hand-built (tests); DI passes the real one.
+  @Named('shared_preferences')
+  final AppStorage? storage;
+
+  CariBankCubit(this._dataSource, {@Named('shared_preferences') this.storage})
+      : super(const CariBankInitial());
+
+  /// Local-storage keys persisting the last manually picked origin. The
+  /// saved point beats the device fix on every page open.
+  static const _kunciLat = 'cari_bank_manual_lat';
+  static const _kunciLng = 'cari_bank_manual_lng';
+  static const _kunciRadius = 'cari_bank_manual_radius';
 
   /// Jeda ketik sebelum pencarian dikirim, supaya satu kata tidak memicu
   /// satu panggilan API per huruf.
@@ -44,6 +61,44 @@ class CariBankCubit extends Cubit<CariBankState> {
   /// True while a coordinate origin is active; rows then carry distances.
   bool get modeLokasi => _pusat != null;
 
+  /// Saves the last manually picked origin so it can win the next page open.
+  Future<void> _simpanManual() async {
+    final storage = this.storage;
+    final pusat = _pusat;
+    final radius = _radiusKm;
+    if (storage == null || pusat == null || radius == null) return;
+    await storage.put(_kunciLat, pusat.latitude);
+    await storage.put(_kunciLng, pusat.longitude);
+    await storage.put(_kunciRadius, radius);
+  }
+
+  /// Default origin on page open (marketplace-style): a saved manual pick
+  /// beats the device fix; a device fix becomes the origin too — its radius
+  /// default (5 km) stays, only manual picks persist their radius. Either
+  /// path just kicks off load; failures degrade into quiet keyword mode.
+  Future<void> muatLokasiAwal() async {
+    if (_pusat != null) return;
+    final storage = this.storage;
+    if (storage != null) {
+      final lat = await storage.get<double>(_kunciLat);
+      final lng = await storage.get<double>(_kunciLng);
+      final radius = await storage.get<double>(_kunciRadius);
+      if (lat != null && lng != null) {
+        _pusat = (latitude: lat, longitude: lng);
+        _radiusKm = radius ?? 5;
+        _jadwalkanMuat();
+        return;
+      }
+    }
+    final lokasi = await di<LocationService>().currentLocation();
+    if (_pusat != null || isClosed) return;
+    if (lokasi != null) {
+      _pusat = lokasi;
+      _radiusKm ??= 5;
+      _jadwalkanMuat();
+    }
+  }
+
   void ketikKataKunci(String nilai) {
     final q = nilai.trim();
     if (q == _q) return;
@@ -59,42 +114,26 @@ class CariBankCubit extends Cubit<CariBankState> {
     _jadwalkanMuat();
   }
 
-  /// Uses the device location as the search origin (PIL-314). A denied
-  /// permission or missing fix stays in keyword mode silently — no error
-  /// burst for something the user never asked to block.
-  Future<void> pilihLokasiSaya() async {
-    if (_pusat != null) return;
-    final lokasi = await di<LocationService>().currentLocation();
-    if (lokasi == null || _pusat != null) return;
-    _pusat = lokasi;
-    _radiusKm ??= 5;
-    _jadwalkanMuat();
-  }
-
   /// Uses the map-picker's popped point as the search origin (PIL-314).
-  void pilihDariPeta(Lokasi lokasi) {
+  /// A manual pick persists, so the next page open reuses it instead of
+  /// jumping back to the device fix.
+  Future<void> pilihDariPeta(Lokasi lokasi) async {
     _pusat = lokasi;
     _radiusKm ??= 5;
+    await _simpanManual();
     _jadwalkanMuat();
   }
 
   /// Sets the search radius and reloads; nothing to do when not in mode.
   void pilihRadiusKm(double km) {
-    if (_radiusKm == km) return;
+    if (_radiusKm == null || _radiusKm == km) return;
     _radiusKm = km;
-    _jadwalkanMuat();
-  }
-
-  /// Leaves location mode back to plain keyword search (PIL-314).
-  void hapusLokasi() {
-    if (_pusat == null) return;
-    _pusat = null;
-    _radiusKm = null;
     _jadwalkanMuat();
   }
 
   void _jadwalkanMuat() {
     _jeda?.cancel();
+    if (isClosed) return;
     _jeda = Timer(jedaPencarian, load);
   }
 
@@ -103,6 +142,7 @@ class CariBankCubit extends Cubit<CariBankState> {
     _jeda?.cancel();
     final generation = ++_generation;
     _isLoadingMore = false;
+    if (isClosed) return;
     if (state is! CariBankLoaded) emit(const CariBankLoading());
     final either = await apiCall<CariBankPage>(
       func: _dataSource.search(

@@ -30,7 +30,7 @@ void main() {
                 key: const Key('open'),
                 onPressed: () async {
                   await Navigator.of(context)
-                      .push<({double latitude, double longitude})>(
+                      .push<({double latitude, double longitude, double radiusKm})>(
                     MaterialPageRoute(
                       builder: (_) => MapPickerPage(
                         initialCenter: center,
@@ -76,7 +76,7 @@ void main() {
               key: const Key('open'),
               onPressed: () async {
                 final result = await Navigator.of(context)
-                    .push<({double latitude, double longitude})>(
+                    .push<({double latitude, double longitude, double radiusKm})>(
                   MaterialPageRoute(
                     builder: (_) => MapPickerPage(
                       tileLayerBuilder: () => _noTilesMap,
@@ -101,7 +101,13 @@ void main() {
     await tester.tap(find.byKey(const Key('simpan_lokasi')));
     await tester.pumpAndSettle();
 
-    expect(finder.single, (latitude: -6.362829, longitude: 106.828655));
+    expect(
+        finder.single,
+        (
+          latitude: -6.362829,
+          longitude: 106.828655,
+          radiusKm: 5.0,
+        ));
   });
 
   for (final (lat, lng, why) in const [
