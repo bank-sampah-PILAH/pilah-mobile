@@ -322,17 +322,16 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
+    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
+          gh<_i521.AuthenticationUseCases>(),
+          gh<_i934.LoginWithGoogleUseCase>(),
+        ));
     gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
         () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i268.GetBankSampahUseCase>(
         () => _i268.GetBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i868.RejectBankSampahUseCase>(
         () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
-    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
-          gh<_i521.AuthenticationUseCases>(),
-          gh<_i934.LoginWithGoogleUseCase>(),
-          isWebOverride: gh<bool>(),
-        ));
     gh.lazySingleton<_i839.AddTransaksiUseCase>(
         () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i67.ExportTransaksiUseCase>(
