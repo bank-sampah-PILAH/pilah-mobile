@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -203,6 +204,23 @@ void main() {
   });
 
   group('export', () {
+    testWidgets('shows preparation while pending then reports an export error',
+        (tester) async {
+      final pending = Completer<Either<NetworkException, TransaksiExport>>();
+      when(() => export.execute(any())).thenAnswer((_) => pending.future);
+      await openPlain(tester);
+      await tester.tap(find.text('XLSX Laporan'));
+      await pumpToast(tester);
+      expect(find.text('Menyiapkan laporan XLSX...'), findsOneWidget);
+      expect(find.text('Bagikan'), findsNothing);
+      pending
+          .complete(Left(NetworkException(message: 'Akses laporan ditolak')));
+      await pumpUntilFound(tester, find.text('Akses laporan ditolak'));
+      expect(find.text('Menyiapkan laporan XLSX...'), findsNothing);
+      expect(find.text('Akses laporan ditolak'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
     // A real request takes a moment; the "preparing" toast must be on screen
     // before it is dismissed.
     void slowExport(Either<NetworkException, TransaksiExport> result) {

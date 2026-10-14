@@ -27,6 +27,16 @@ Future<void> saveReportFile(
       title: 'Berhasil',
       message: successMessage(saved.folder),
       actionLabel: 'Bagikan',
-      onAction: () => SharePlus.instance
-          .share(ShareParams(files: [XFile(saved.path)], text: shareText)));
+      onAction: () => SharePlus.instance.share(ShareParams(
+          files: [
+            saved.isBrowserDownload
+                ? XFile.fromData(bytes,
+                    name: filename,
+                    mimeType: filename.toLowerCase().endsWith('.pdf')
+                        ? 'application/pdf'
+                        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                : XFile(saved.path)
+          ],
+          text: shareText,
+          fileNameOverrides: [filename])));
 }

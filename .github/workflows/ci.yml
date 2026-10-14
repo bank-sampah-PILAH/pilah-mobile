@@ -93,6 +93,7 @@ jobs:
         run: >-
           flutter test --platform chrome
           test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
+          test/report_download_browser_test.dart
 
       - name: Verify the web dashboard role layout
         run: >-
