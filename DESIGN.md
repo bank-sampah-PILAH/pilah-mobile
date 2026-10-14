@@ -83,7 +83,7 @@ Use these instead of building another one.
 | Loading list | `SkeletonListItem` | Avoid a bare spinner for lists. |
 | Loading / empty / error / content in one | `PageStateView` (`design/layout`) | New; adopt on new pages. |
 | Pull to refresh | `AppRefreshIndicator` | |
-| Feedback after an action | `AppNotification.showSuccess` / `showError` / `showWarning` | Do not use `SnackBar` (only `jadwal` does). |
+| Feedback after an action | `AppNotification.showSuccess` / `showError` / `showWarning` | Do not use `SnackBar`. |
 | Form field look | `appInputDecoration`, `appInputStyle` (`design/constants/form_style.dart`) | Text-field borders are intentionally not in the theme, see 5.2. |
 | Nasabah cards and app bar | `NasabahCard`, `NasabahPageAppBar` | |
 | Nasabah data screens | `NasabahResource` | One load/error/retry/reload shape. |

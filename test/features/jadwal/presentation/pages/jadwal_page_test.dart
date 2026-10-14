@@ -399,13 +399,16 @@ void main() {
     final submit = find.widgetWithText(ElevatedButton, 'Simpan Perubahan');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(
       find.text('Waktu selesai harus setelah waktu mulai'),
       findsOneWidget,
     );
     expect(find.byType(SnackBar), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
     verifyNever(() => repository.updateJadwal(any()));
   });
 
@@ -431,7 +434,8 @@ void main() {
     final submit = find.widgetWithText(ElevatedButton, 'Simpan Jadwal');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Jadwal gagal disimpan'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);

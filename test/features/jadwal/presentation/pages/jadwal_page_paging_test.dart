@@ -122,6 +122,7 @@ void main() {
       await tester.ensureVisible(submit);
       await tester.tap(submit);
       await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('Waktu mulai harus di masa depan'), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);

@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dar
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
 class JadwalPage extends StatefulWidget {
   static const route = '/jadwal';
@@ -128,9 +129,11 @@ class _JadwalPageState extends State<JadwalPage> {
           action,
         );
     if (!mounted || failure == null) return;
-    ScaffoldMessenger.of(
+    AppNotification.showError(
       context,
-    ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+      title: 'Gagal',
+      message: failure.displayMessage,
+    );
   }
 
   Future<void> _confirmCancellation(JadwalEntity item) async {
@@ -912,16 +915,18 @@ class _JadwalFormState extends State<_JadwalForm> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (widget.initial == null && _startsAt.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Waktu mulai harus di masa depan')),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu mulai harus di masa depan',
       );
       return;
     }
     if (!_endsAt.isAfter(_startsAt)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Waktu selesai harus setelah waktu mulai'),
-        ),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu selesai harus setelah waktu mulai',
       );
       return;
     }
@@ -945,9 +950,11 @@ class _JadwalFormState extends State<_JadwalForm> {
     if (failure == null) {
       Navigator.of(context).pop();
     } else {
-      ScaffoldMessenger.of(
+      AppNotification.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+        title: 'Gagal',
+        message: failure.displayMessage,
+      );
     }
   }
 
