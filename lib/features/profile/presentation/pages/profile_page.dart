@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/mini_lokasi_map.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -613,32 +614,45 @@ class _ProfileViewState extends State<_ProfileView>
           ),
         ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
+        // Mini-map (Marketplace-style): a small real map with the pin on it;
+        // tapping anywhere opens the full picker. Coordinates live in the
+        // picker, not on this form.
+        GestureDetector(
           key: const Key('pilih_lokasi_peta'),
-          onPressed: _openMapPicker,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            side: BorderSide(color: Colors.grey[300]!),
-            backgroundColor: Colors.grey[50],
-          ),
-          icon: Icon(
-            Icons.location_on_outlined,
-            size: 20,
-            color: lokasi != null ? AppColors.greenDark : Colors.grey[500],
-          ),
-          label: Text(
-            lokasi != null
-                ? '${lokasi.latitude.toStringAsFixed(6)}, '
-                    '${lokasi.longitude.toStringAsFixed(6)}'
-                    '${pending != null ? ' (belum disimpan)' : ''}'
-                : 'Belum diatur — pilih di peta',
-            style: AppTextStyle.small.copyWith(
-              color: lokasi != null ? Colors.black87 : Colors.grey[500],
-            ),
-          ),
+          onTap: _openMapPicker,
+          child: lokasi == null
+              ? Container(
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.map_outlined,
+                        size: 28,
+                        color: AppColors.greenDark,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Belum diatur — ketuk untuk memilih di peta',
+                        style: AppTextStyle.extraSmall.copyWith(
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: MiniLokasiMap(
+                    titik: LatLng(lokasi.latitude, lokasi.longitude),
+                  ),
+                ),
         ),
         if (pending != null)
           Padding(
@@ -658,15 +672,22 @@ class _ProfileViewState extends State<_ProfileView>
     final bank = context.read<ProfileCubit>().state.bankSampah?.lokasi;
     final initial = _pendingLokasi ?? bank;
     final picked = await Navigator.of(context, rootNavigator: true)
-        .push<Lokasi>(MaterialPageRoute(
-      builder: (_) => MapPickerPage(
-        initialCenter: initial == null
-            ? null
-            : LatLng(initial.latitude, initial.longitude),
+        .push<({double latitude, double longitude, double radiusKm})>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(
+          initialCenter: initial == null
+              ? null
+              : LatLng(initial.latitude, initial.longitude),
+        ),
       ),
-    ));
+    );
     if (picked != null && mounted) {
-      setState(() => _pendingLokasi = picked);
+      // The picker always returns the cari-bank trio; a stored bank
+      // coordinate is just the pair.
+      setState(
+        () => _pendingLokasi =
+            (latitude: picked.latitude, longitude: picked.longitude),
+      );
     }
   }
 

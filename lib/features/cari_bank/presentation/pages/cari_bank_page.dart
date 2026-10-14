@@ -109,8 +109,11 @@ Future<void> _pilihDiPeta(
       .push<({double latitude, double longitude, double radiusKm})>(
     MaterialPageRoute(
       builder: (_) => tileLayerBuilder == null
-          ? const MapPickerPage()
-          : MapPickerPage(tileLayerBuilder: tileLayerBuilder),
+          ? const MapPickerPage(showRadius: true)
+          : MapPickerPage(
+              tileLayerBuilder: tileLayerBuilder,
+              showRadius: true,
+            ),
     ),
   );
   if (titik != null && context.mounted) {

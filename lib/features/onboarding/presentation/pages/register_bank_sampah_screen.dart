@@ -124,13 +124,18 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   /// result (back) leaves the current selection untouched.
   Future<void> _pickLokasi() async {
     final picked = await Navigator.of(context, rootNavigator: true)
-        .push<({double latitude, double longitude})>(
+        .push<({double latitude, double longitude, double radiusKm})>(
       MaterialPageRoute(
         builder: (pickerContext) => const MapPickerPage(),
       ),
     );
     if (picked != null && mounted) {
-      setState(() => _lokasi = picked);
+      // The picker always returns the cari-bank trio; registration stores
+      // just the coordinate pair.
+      setState(
+        () =>
+            _lokasi = (latitude: picked.latitude, longitude: picked.longitude),
+      );
     }
   }
 

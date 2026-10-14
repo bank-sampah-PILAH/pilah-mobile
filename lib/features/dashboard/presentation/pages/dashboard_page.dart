@@ -12,7 +12,6 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_acti
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_statistics_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
 import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
-import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -84,19 +83,27 @@ class _DashboardPageState extends State<DashboardPage> {
                 final navigator =
                     Navigator.of(sheetContext, rootNavigator: true);
                 final cubit = sheetContext.read<ProfileCubit>();
-                final picked = await navigator.push<Lokasi>(MaterialPageRoute(
-                  builder: (_) => const MapPickerPage(),
-                ));
+                final picked = await navigator.push<
+                    ({double latitude, double longitude, double radiusKm})>(
+                  MaterialPageRoute(
+                    builder: (_) => const MapPickerPage(),
+                  ),
+                );
                 if (picked == null) return;
                 // Save immediately with the rest of the record untouched —
                 // ensureBank() has the full profile in state for the call.
+                // The picker always returns the cari-bank trio; the stored
+                // coordinate is just the pair.
                 final bank = cubit.state.bankSampah;
                 if (bank == null) return;
                 await cubit.updateBankSampah(
                   nama: bank.nama,
                   alamat: bank.alamat,
                   noHpPic: bank.noHpPic,
-                  lokasi: picked,
+                  lokasi: (
+                    latitude: picked.latitude,
+                    longitude: picked.longitude
+                  ),
                 );
               },
               child: const Text('Pilih di Peta'),

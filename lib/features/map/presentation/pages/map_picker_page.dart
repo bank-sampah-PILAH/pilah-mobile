@@ -31,6 +31,7 @@ class MapPickerPage extends StatefulWidget {
     super.key,
     this.initialCenter,
     this.initialRadiusKm,
+    this.showRadius = false,
     this.tileLayerBuilder = osmTileLayer,
   });
 
@@ -40,6 +41,11 @@ class MapPickerPage extends StatefulWidget {
 
   /// Starting radius of the marketplace circle; defaults [radiusDefault].
   final double? initialRadiusKm;
+
+  /// Shows the marketplace radius circle + slider (cari-bank flow). Plain
+  /// coordinate pickers (bank registration/profile/dashboard) hide them —
+  /// a radius belongs to the distance search, not to a stored coordinate.
+  final bool showRadius;
 
   /// Test seam: builds the tile layer rendered under the pin. Loosely typed
   /// as any map child so a test can park a blank widget there instead of
@@ -272,10 +278,11 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     children: [
                       widget.tileLayerBuilder(),
                       osmAttribution(),
-                      _LingkaranRadius(
-                        controller: _controller,
-                        radiusKm: _radiusKm,
-                      ),
+                      if (widget.showRadius)
+                        _LingkaranRadius(
+                          controller: _controller,
+                          radiusKm: _radiusKm,
+                        ),
                       // The fixed center dot: the map moves, the marker does
                       // not. Marketplace-style: a solid dot with a white ring.
                       const Center(
@@ -296,31 +303,32 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     ),
                   ),
                   // Marketplace hint pill above the bottom panel.
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 12,
-                    child: Center(
-                      child: Container(
-                        key: const Key('peta_petunjuk_geser'),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Geser peta untuk memilih lokasi',
-                          style: NasabahStyle.text(
-                            13,
-                            color: Colors.white,
+                  if (widget.showRadius)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 12,
+                      child: Center(
+                        child: Container(
+                          key: const Key('peta_petunjuk_geser'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Geser peta untuk memilih lokasi',
+                            style: NasabahStyle.text(
+                              13,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
                   // GM-style place search over the map: type a place, tap a
                   // result, camera moves there.
                   Positioned(
@@ -456,43 +464,47 @@ class _MapPickerPageState extends State<MapPickerPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Radius:',
-                          style:
-                              NasabahStyle.text(14, color: NasabahStyle.muted),
-                        ),
-                        Expanded(
-                          child: Slider(
-                            key: const Key('peta_radius_slider'),
-                            // Log scale on 0.5–20: linear sliders crush the
-                            // sub-5 km range where real bank distances live.
-                            value:
-                                _log(_radiusKm.clamp(0.5, _radiusMaksimalKm)),
-                            min: _log(0.5),
-                            max: _log(_radiusMaksimalKm),
-                            activeColor: AppColors.greenDark,
-                            onChanged: (t) {
-                              setState(
-                                () => _radiusKm = _exp(t),
-                              );
-                              _pusatkanDenganRadius(_controller.camera.center);
-                            },
+                    // Marketplace radius row only in the cari-bank flow.
+                    if (widget.showRadius) ...[
+                      Row(
+                        children: [
+                          Text(
+                            'Radius:',
+                            style: NasabahStyle.text(
+                              14,
+                              color: NasabahStyle.muted,
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${_radiusKm.toStringAsFixed(_radiusKm == _radiusKm.roundToDouble() ? 0 : 1)} km',
-                          key: const Key('peta_radius_label'),
-                          style: NasabahStyle.text(
-                            14,
-                            weight: FontWeight.w600,
-                            color: AppColors.greenDark,
+                          Expanded(
+                            child: Slider(
+                              key: const Key('peta_radius_slider'),
+                              // Log scale on 0.5–20: linear sliders crush the
+                              // sub-5 km range where real distances live.
+                              value:
+                                  _log(_radiusKm.clamp(0.5, _radiusMaksimalKm)),
+                              min: _log(0.5),
+                              max: _log(_radiusMaksimalKm),
+                              activeColor: AppColors.greenDark,
+                              onChanged: (t) {
+                                setState(() => _radiusKm = _exp(t));
+                                _pusatkanDenganRadius(
+                                    _controller.camera.center);
+                              },
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+                          Text(
+                            '${_radiusKm.toStringAsFixed(_radiusKm == _radiusKm.roundToDouble() ? 0 : 1)} km',
+                            key: const Key('peta_radius_label'),
+                            style: NasabahStyle.text(
+                              14,
+                              weight: FontWeight.w600,
+                              color: AppColors.greenDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Row(
                       children: [
                         Expanded(
