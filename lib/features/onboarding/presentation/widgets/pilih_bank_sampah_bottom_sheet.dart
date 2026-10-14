@@ -133,7 +133,11 @@ class _PilihBankSampahBottomSheetState
     final filtered = query.isEmpty
         ? _banks
         : _banks
-            .where((bank) => bank.nama.toLowerCase().contains(query))
+            .where(
+              (bank) =>
+                  bank.nama.toLowerCase().contains(query) ||
+                  bank.kota.toLowerCase().contains(query),
+            )
             .toList();
 
     if (filtered.isEmpty) {
