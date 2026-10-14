@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:web/web.dart' as web;
 
 import 'saved_file.dart';
+import 'report_file_metadata.dart';
 
 /// Browser downloads are handed to the browser, never to native filesystem APIs.
 abstract final class FileDownloader {
@@ -11,10 +12,8 @@ abstract final class FileDownloader {
       {required String filename, required Uint8List bytes}) async {
     final body = web.document.body;
     if (body == null) throw StateError('Halaman belum siap untuk mengunduh');
-    final mime = filename.toLowerCase().endsWith('.pdf')
-        ? 'application/pdf'
-        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    final blob = web.Blob([bytes.toJS].toJS, web.BlobPropertyBag(type: mime));
+    final blob = web.Blob(
+        [bytes.toJS].toJS, web.BlobPropertyBag(type: reportMimeType(filename)));
     final url = web.URL.createObjectURL(blob);
     final anchor = web.HTMLAnchorElement()
       ..href = url

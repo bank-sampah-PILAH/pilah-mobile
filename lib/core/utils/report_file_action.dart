@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/file_downloader.dart';
 import 'package:share_plus/share_plus.dart';
+import 'report_share_file.dart';
 
 /// Shared save/notification/share policy for downloaded reports.
 Future<void> saveReportFile(
@@ -29,13 +30,8 @@ Future<void> saveReportFile(
       actionLabel: 'Bagikan',
       onAction: () => SharePlus.instance.share(ShareParams(
           files: [
-            saved.isBrowserDownload
-                ? XFile.fromData(bytes,
-                    name: filename,
-                    mimeType: filename.toLowerCase().endsWith('.pdf')
-                        ? 'application/pdf'
-                        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                : XFile(saved.path)
+            createReportShareFile(
+                saved: saved, filename: filename, bytes: bytes)
           ],
           text: shareText,
           fileNameOverrides: [filename])));
