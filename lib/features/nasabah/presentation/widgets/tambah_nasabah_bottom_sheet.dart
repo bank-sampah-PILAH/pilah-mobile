@@ -179,7 +179,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                                     ? 'Bagian ini wajib diisi.'
                                     : null,
                             decoration: _buildInputDecoration(
-                              hintText: 'Contoh: NAS-0900',
+                              hintText: 'NAS-0900',
                               hasError: _kodeHasError,
                             ),
                           ),
