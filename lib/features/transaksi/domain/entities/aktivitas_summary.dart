@@ -20,18 +20,9 @@ class AktivitasSummary extends Equatable {
     if (raw is! Map<String, dynamic>) {
       throw const FormatException('Ringkasan laporan tidak valid');
     }
-    final count = raw['jumlah_transaksi'];
-    if (count is! int || count < 0) {
-      throw const FormatException('Jumlah transaksi tidak valid');
-    }
-    final deposit = raw['total_setoran'];
-    if (deposit is! int || deposit < 0) {
-      throw const FormatException('Nilai setoran tidak valid');
-    }
-    final payout = raw['total_pencairan'];
-    if (payout is! int || payout < 0) {
-      throw const FormatException('Total pencairan tidak valid');
-    }
+    final count = _nonNegativeInt(raw, 'jumlah_transaksi');
+    final deposit = _nonNegativeInt(raw, 'total_setoran');
+    final payout = _nonNegativeInt(raw, 'total_pencairan');
     final weight = raw['total_berat'];
     final kg = weight is String ? double.tryParse(weight) : null;
     if (kg == null || !kg.isFinite || kg < 0) {
@@ -48,6 +39,14 @@ class AktivitasSummary extends Equatable {
       totalPencairan: payout,
       saldo: balance,
     );
+  }
+
+  static int _nonNegativeInt(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value is! int || value < 0) {
+      throw FormatException('$key tidak valid');
+    }
+    return value;
   }
 
   @override

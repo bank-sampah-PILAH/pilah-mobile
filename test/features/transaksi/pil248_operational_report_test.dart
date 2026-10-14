@@ -11,6 +11,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_summary.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -64,19 +65,37 @@ void main() {
   test(
       'positive: parses whole filtered summary, including negative period balance',
       () async {
-    final dynamic page = await _page(_totals);
-    expect(page.summary.jumlahTransaksi, 25);
-    expect(page.summary.totalBerat, 12.5);
-    expect(page.summary.totalSetoran, 150000);
-    expect(page.summary.totalPencairan, 200000);
-    expect(page.summary.saldo, -50000);
+    final page = await _page(_totals);
+    expect(page.summary!.jumlahTransaksi, 25);
+    expect(page.summary!.totalBerat, 12.5);
+    expect(page.summary!.totalSetoran, 150000);
+    expect(page.summary!.totalPencairan, 200000);
+    expect(page.summary!.saldo, -50000);
   });
 
   test('corner: empty results preserve genuine zero summary', () async {
-    final dynamic page = await _page(_zero);
+    final page = await _page(_zero);
     expect(page.items, isEmpty);
-    expect(page.summary.jumlahTransaksi, 0);
-    expect(page.summary.saldo, 0);
+    expect(page.summary!.jumlahTransaksi, 0);
+    expect(page.summary!.saldo, 0);
+  });
+
+  test('summary value equality keeps state comparisons deterministic',
+      () async {
+    final summary = (await _page(_totals)).summary!;
+    const equivalent = AktivitasSummary(
+        jumlahTransaksi: 25,
+        totalBerat: 12.5,
+        totalSetoran: 150000,
+        totalPencairan: 200000,
+        saldo: -50000);
+    expect(summary, equivalent);
+    expect(summary.hashCode, equivalent.hashCode);
+    final state = RiwayatAktivitasState(summary: summary, periode: 'custom');
+    expect(state.isCustomPeriode, isTrue);
+    expect(state.copyWith(search: 'Ani').summary, summary);
+    expect(state.copyWith(clearSummary: true).summary, isNull);
+    expect(state.copyWith(summary: (await _page(_zero)).summary), isNot(state));
   });
 
   for (final bad in [
@@ -85,11 +104,17 @@ void main() {
     {..._totals}..remove('saldo'),
     {..._totals, 'jumlah_transaksi': -1},
     {..._totals, 'jumlah_transaksi': 1.5},
+    {..._totals, 'jumlah_transaksi': true},
     {..._totals, 'total_setoran': '150000'},
+    {..._totals, 'total_setoran': -1},
     {..._totals, 'total_pencairan': -1},
+    {..._totals, 'total_pencairan': 0.5},
     {..._totals, 'total_berat': 'NaN'},
+    {..._totals, 'total_berat': 'Infinity'},
+    {..._totals, 'total_berat': 12.5},
     {..._totals, 'total_berat': '-1.00'},
     {..._totals, 'saldo': 42},
+    {..._totals, 'saldo': '-50000'},
   ]) {
     test('negative: malformed summary fails closed: $bad', () async {
       expect((await _response(bad)).isLeft(), isTrue);
@@ -144,23 +169,92 @@ void main() {
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_totals)));
     await cubit.load();
-    final dynamic loaded = cubit.state;
-    expect(loaded.summary.saldo, -50000);
+    final loaded = cubit.state;
+    expect(loaded.summary!.saldo, -50000);
     final old = Completer<Either<NetworkException, AktivitasPage>>();
     when(() => feed.execute(any())).thenAnswer((_) => old.future);
     final pending = cubit.load(silent: true);
-    final dynamic loading = cubit.state;
+    final loading = cubit.state;
     expect(loading.summary, isNull);
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_zero)));
     await cubit.load();
     old.complete(Right(await _page(_totals)));
     await pending;
-    final dynamic latest = cubit.state;
-    expect(latest.summary.saldo, 0);
+    final latest = cubit.state;
+    expect(latest.summary!.saldo, 0);
     cubit.reset();
-    final dynamic reset = cubit.state;
+    final reset = cubit.state;
     expect(reset.summary, isNull);
+  });
+
+  test('edge: pagination keeps whole-filter summary without summing pages',
+      () async {
+    final feed = _Feed();
+    final cubit = RiwayatAktivitasCubit(feed, _Export());
+    addTearDown(cubit.close);
+    when(() => feed.execute(any())).thenAnswer((invocation) async {
+      final filter = invocation.positionalArguments.first as TransaksiFilter;
+      return Right(await _page(filter.page == 1 ? _totals : _zero,
+          next: filter.page == 1));
+    });
+    await cubit.load();
+    final summary = cubit.state.summary;
+    await cubit.loadMore();
+    expect(cubit.state.summary, summary);
+    expect(cubit.state.hasNext, isFalse);
+    verify(() => feed.execute(any())).called(2);
+  });
+
+  test('negative: refresh failure clears totals; retry restores zero summary',
+      () async {
+    final feed = _Feed();
+    final cubit = RiwayatAktivitasCubit(feed, _Export());
+    addTearDown(cubit.close);
+    when(() => feed.execute(any()))
+        .thenAnswer((_) async => Right(await _page(_totals)));
+    await cubit.load();
+    when(() => feed.execute(any())).thenAnswer(
+        (_) async => Left(NetworkException(message: 'Tidak diizinkan')));
+    await cubit.load(silent: true);
+    expect(cubit.state.summary, isNull);
+    expect(cubit.state.status, AktivitasStatus.failure);
+    when(() => feed.execute(any()))
+        .thenAnswer((_) async => Right(await _page(_zero)));
+    await cubit.load();
+    expect(cubit.state.summary?.jumlahTransaksi, 0);
+  });
+
+  testWidgets(
+      'loading, empty and failure display explicit states without stale totals',
+      (tester) async {
+    final feed = _Feed();
+    final pending = Completer<Either<NetworkException, AktivitasPage>>();
+    when(() => feed.execute(any())).thenAnswer((_) => pending.future);
+    final cubit = RiwayatAktivitasCubit(feed, _Export());
+    addTearDown(cubit.close);
+    await tester.pumpWidget(MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const LaporanPage())));
+    await tester.pump();
+    expect(find.bySemanticsLabel('Memuat ringkasan laporan'), findsOneWidget);
+    expect(find.text('Saldo periode'), findsNothing);
+    pending.complete(Right(await _page(_zero)));
+    await tester.pumpAndSettle();
+    expect(find.text('Rp 0'), findsNWidgets(3));
+    expect(find.text('Belum Ada Aktivitas'), findsOneWidget);
+    when(() => feed.execute(any())).thenAnswer(
+        (_) async => Left(NetworkException(message: 'Gagal memuat')));
+    await cubit.load();
+    await tester.pumpAndSettle();
+    expect(find.text('Ringkasan gagal dimuat. Silakan coba lagi.'),
+        findsOneWidget);
+    expect(find.text('Rp 0'), findsNothing);
+    expect(find.text('Coba Lagi'), findsOneWidget);
+    when(() => feed.execute(any()))
+        .thenAnswer((_) async => Right(await _page(_zero)));
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saldo periode'), findsOneWidget);
   });
 
   testWidgets(

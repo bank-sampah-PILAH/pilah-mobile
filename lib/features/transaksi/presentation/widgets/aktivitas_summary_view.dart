@@ -56,30 +56,41 @@ class AktivitasSummaryView extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: values
-                    .map((metric) => Container(
-                          width: width,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0F7F2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(metric.$1,
-                                  style: const TextStyle(fontSize: 12)),
-                              const SizedBox(height: 4),
-                              Text(metric.$2,
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ))
+                    .map((metric) => _SummaryMetric(
+                        label: metric.$1, value: metric.$2, width: width))
                     .toList(),
               ),
             );
           });
         },
+      );
+}
+
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric(
+      {required this.label, required this.value, required this.width});
+
+  final String label;
+  final String value;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: width,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F7F2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(value,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
       );
 }
