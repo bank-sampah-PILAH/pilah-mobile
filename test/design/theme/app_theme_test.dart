@@ -1,0 +1,122 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/theme/app_theme.dart';
+
+Widget _app(Widget child) => MaterialApp(
+      theme: AppTheme.light,
+      home: Scaffold(body: Center(child: child)),
+    );
+
+/// The colour a rendered label ends up with, which is what a user sees.
+Color? _labelColor(WidgetTester tester, String text) =>
+    tester.renderObject<RenderParagraph>(find.text(text)).text.style?.color;
+
+void main() {
+  group('typography', () {
+    testWidgets('plain text renders in Poppins, not the platform default',
+        (tester) async {
+      await tester.pumpWidget(_app(const Text('Belum ada jadwal')));
+
+      final style = tester
+          .renderObject<RenderParagraph>(find.text('Belum ada jadwal'))
+          .text
+          .style;
+      expect(style?.fontFamily, contains('Poppins'));
+    });
+  });
+
+  group('buttons', () {
+    testWidgets('a plain TextButton uses the app green, not the seed colour',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(TextButton(onPressed: () {}, child: const Text('Semua'))),
+      );
+
+      expect(_labelColor(tester, 'Semua'), AppColors.greenDark);
+    });
+  });
+
+  group('dialogs', () {
+    testWidgets(
+        'a stock AlertDialog is white and rounded, with no tinted surface',
+        (tester) async {
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      final context = tester.element(find.byType(Scaffold));
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Batalkan jadwal?'),
+          actions: [TextButton(onPressed: () {}, child: const Text('Kembali'))],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final surface = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(surface.color, Colors.white);
+      expect(surface.surfaceTintColor, Colors.transparent);
+      expect(
+        surface.shape,
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      );
+    });
+  });
+
+  group('app bar', () {
+    testWidgets('a plain AppBar is white with a semibold Poppins title',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(appBar: AppBar(title: const Text('Edit Pencairan'))),
+      ));
+
+      final bar = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.byType(AppBar),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(bar.color, Colors.white);
+      expect(bar.surfaceTintColor, Colors.transparent);
+      final title = tester
+          .renderObject<RenderParagraph>(find.text('Edit Pencairan'))
+          .text
+          .style;
+      expect(title?.fontWeight, FontWeight.w600);
+    });
+  });
+
+  group('bottom sheets', () {
+    testWidgets('a stock modal sheet is white with rounded top corners',
+        (tester) async {
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      final context = tester.element(find.byType(Scaffold));
+      showModalBottomSheet<void>(
+        context: context,
+        builder: (_) => const SizedBox(height: 120, child: Text('Pilih akun')),
+      );
+      await tester.pumpAndSettle();
+
+      final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
+      final theme = Theme.of(context).bottomSheetTheme;
+      expect(sheet.backgroundColor ?? theme.backgroundColor, Colors.white);
+      expect(theme.surfaceTintColor, Colors.transparent);
+      expect(
+        theme.shape,
+        const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      );
+    });
+  });
+}

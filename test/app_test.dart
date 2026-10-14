@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
@@ -84,6 +85,15 @@ void main() {
 
     expect(location(), '/dashboard');
     expect(find.text('Flutter Pilah Mobile'), findsNothing);
+  });
+
+  testWidgets('every screen inherits the app theme, not the Material default',
+      (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final theme = Theme.of(tester.element(find.byType(Scaffold).first));
+    expect(theme.colorScheme.primary, AppColors.greenDark);
   });
 
   testWidgets('web document title follows the current route', (tester) async {
