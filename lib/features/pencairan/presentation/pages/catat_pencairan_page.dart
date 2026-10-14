@@ -19,6 +19,7 @@ import '../../domain/pencairan_validator.dart';
 import '../blocs/pencairan_cubit.dart';
 import '../blocs/pencairan_state.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Pengurus records a payout. Nasabah is picked inside the form — the same
 /// active-nasabah sheet Setoran Baru uses — rather than supplied by the
@@ -123,7 +124,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Konfirmasi pencairan'),
         content: Text(
-          'Pencairan Rp ${formatRupiahId(nominal)} akan dicatat sebagai '
+          'Pencairan Rp ${CurrencyFormatter.formatNumber(nominal)} akan dicatat sebagai '
           'pembayaran ${_metode.label}.',
         ),
         actions: [
@@ -377,7 +378,7 @@ class _SaldoCard extends StatelessWidget {
     switch (state.saldoStatus) {
       case SaldoStatus.loaded:
         saldo = Text(
-          'Rp ${formatRupiahId(state.saldo)}',
+          'Rp ${CurrencyFormatter.formatNumber(state.saldo)}',
           style: AppTextStyle.title1.copyWith(
             color: AppColors.greenDark,
             fontWeight: FontWeight.bold,
@@ -442,7 +443,9 @@ class _RingkasanCard extends StatelessWidget {
         children: [
           _row(
             'Dicairkan',
-            nominal == null ? '-' : 'Rp ${formatRupiahId(nominal)}',
+            nominal == null
+                ? '-'
+                : 'Rp ${CurrencyFormatter.formatNumber(nominal)}',
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
@@ -450,7 +453,9 @@ class _RingkasanCard extends StatelessWidget {
           ),
           _row(
             'Sisa saldo',
-            nominal == null ? '-' : 'Rp ${formatRupiahId(saldo - nominal)}',
+            nominal == null
+                ? '-'
+                : 'Rp ${CurrencyFormatter.formatNumber(saldo - nominal)}',
             emphasized: true,
           ),
         ],
@@ -537,13 +542,14 @@ class _PencairanBerhasilSheet extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _row('Dicairkan', 'Rp ${formatRupiahId(created.nominal)}'),
+                _row('Dicairkan',
+                    'Rp ${CurrencyFormatter.formatNumber(created.nominal)}'),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(height: 1, color: AppColors.border),
                 ),
                 _row('Saldo sesudah',
-                    'Rp ${formatRupiahId(created.saldoSesudah)}',
+                    'Rp ${CurrencyFormatter.formatNumber(created.saldoSesudah)}',
                     isPrimary: true),
               ],
             ),

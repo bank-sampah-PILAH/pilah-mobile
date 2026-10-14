@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 @LazySingleton(as: TransaksiRemoteDataSource)
 class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
@@ -190,13 +191,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   int _toInt(dynamic value) =>
       (double.tryParse(value?.toString() ?? '') ?? 0).round();
 
-  String _rupiah(dynamic value) {
-    final digits = _toInt(value).abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(digits[i]);
-    }
-    return 'Rp ${buffer.toString()}';
-  }
+  /// Amounts in a detail are shown unsigned; the label says which way they go.
+  String _rupiah(dynamic value) =>
+      CurrencyFormatter.formatRupiah(_toInt(value).abs());
 }

@@ -114,7 +114,7 @@ Known gaps against this baseline, not yet audited screen by screen: light grey h
 
 ## 6. Content and formatting rules
 
-- **Rupiah** with a dot as thousands separator and `Rp ` prefix: `Rp 41.250`, never `Rp 3500`. Use `CurrencyFormatter.formatRupiah`.
+- **Rupiah** with a dot as thousands separator and `Rp ` prefix: `Rp 41.250`, never `Rp 3500`. Use `CurrencyFormatter` (`formatRupiah`, `formatNumber` without the prefix, `formatRupiahValue` for backend values); `test/design/single_rupiah_formatter_test.dart` fails if a file groups digits by hand.
 - **Weight** in kg with a decimal comma and no trailing zeros: `3 kg`, `1,5 kg`. Never `3.000 kg` (reads as three thousand). Use `WeightFormatter.formatKg`.
 - **Dates** `dd/MM/yyyy`; Indonesian month names in long form.
 - **Role names**: Pengurus is the operator of a bank sampah unit (role key `pengelola`); Pengelola is reserved for the induk (parent) organisation (`pengelola_induk`, a later feature); Nasabah is the customer; Superadmin. Never show "Pengelola" for a bank sampah unit.

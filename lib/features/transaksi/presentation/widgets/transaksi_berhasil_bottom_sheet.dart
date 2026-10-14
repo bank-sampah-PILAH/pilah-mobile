@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class TransaksiBerhasilBottomSheet extends StatefulWidget {
   final String customerName;
@@ -26,20 +27,6 @@ class TransaksiBerhasilBottomSheet extends StatefulWidget {
 class _TransaksiBerhasilBottomSheetState
     extends State<TransaksiBerhasilBottomSheet> {
   bool _isSending = false;
-
-  String _formatCurrency(int value) {
-    String str = value.toString();
-    String result = '';
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      result = str[i] + result;
-      count++;
-      if (count % 3 == 0 && i != 0) {
-        result = '.$result';
-      }
-    }
-    return 'Rp $result';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,15 +85,15 @@ class _TransaksiBerhasilBottomSheetState
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(height: 1, color: AppColors.border),
                 ),
-                _buildSummaryRow(
-                    'Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}',
+                _buildSummaryRow('Nilai Setoran',
+                    '+${CurrencyFormatter.formatRupiah(widget.totalSetoran)}',
                     isPrimary: true),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(height: 1, color: AppColors.border),
                 ),
-                _buildSummaryRow(
-                    'Saldo Terbaru', _formatCurrency(widget.newBalance),
+                _buildSummaryRow('Saldo Terbaru',
+                    CurrencyFormatter.formatRupiah(widget.newBalance),
                     isPrimary: true),
               ],
             ),

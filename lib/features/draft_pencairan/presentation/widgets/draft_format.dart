@@ -1,4 +1,4 @@
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 const _bulan = [
   'Jan',
@@ -16,7 +16,7 @@ const _bulan = [
 ];
 
 /// `Rp 138.500`, the way the rest of the app writes money.
-String rupiah(int value) => 'Rp ${formatRupiahId(value)}';
+String rupiah(int value) => 'Rp ${CurrencyFormatter.formatNumber(value)}';
 
 /// `7 Okt 2026, 09:05`, or an empty string when the time is unknown.
 String waktu(DateTime? value) {
