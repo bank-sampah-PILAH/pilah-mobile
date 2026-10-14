@@ -658,6 +658,32 @@ class _ProfileViewState extends State<_ProfileView>
                   ),
           ),
         ),
+        const SizedBox(height: 8),
+        // Explicit Edit button — some platform channel plumbing inside the
+        // map keeps winning the gesture arena, so the tap goes to a button.
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            key: const Key('edit_lokasi_peta'),
+            onPressed: _openMapPicker,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.greenDark,
+              side: const BorderSide(color: AppColors.greenDark),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
+            label: Text(
+              pending != null ? 'Edit lokasi belum disimpan' : 'Edit',
+              style: AppTextStyle.small.copyWith(
+                color: AppColors.greenDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
         if (pending != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
