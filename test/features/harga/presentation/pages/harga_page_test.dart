@@ -56,7 +56,7 @@ void main() {
     expect(find.text('Botol PET'), findsOneWidget);
     expect(find.text('Kardus'), findsOneWidget);
     expect(find.text('Kaleng'), findsNothing);
-    expect(find.text('Rp 2500'), findsNWidgets(2));
+    expect(find.text('Rp 2.500'), findsNWidgets(2));
   });
 
   testWidgets('the Tidak Aktif chip switches to deactivated items',
