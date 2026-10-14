@@ -9,9 +9,11 @@ import 'package:pilah_mobile/services/di.dart';
 /// activity statement through [StatementExportCubit] and opens the in-app
 /// preview; from there the user downloads or shares it.
 class NasabahPdfPreviewButton extends StatelessWidget {
-  const NasabahPdfPreviewButton({super.key, required this.membershipId});
+  const NasabahPdfPreviewButton(
+      {super.key, required this.membershipId, this.previewViewer});
 
   final String membershipId;
+  final Widget? previewViewer;
 
   Future<void> _openPreview(BuildContext context) async {
     final cubit = di<StatementExportCubit>();
@@ -33,18 +35,17 @@ class NasabahPdfPreviewButton extends StatelessWidget {
       );
       return;
     }
-    // Start the push, then dismiss the loading toast before awaiting: the
-    // toast is non-dismissible and awaiting the push would leave it mounted
-    // under the PDF preview for the whole session (and trap the app behind
-    // an invisible barrier on return). Dismissing a non-current route is
-    // instant — removeRoute, no animation, and no Navigator._debugLocked
-    // (the lock outlives the push's completer by a frame, the race that
-    // started this dance).
+    // Push while the loading Flushbar is still up, then dismiss it: a route
+    // pushed right after Flushbar.dismiss() can hit Navigator._debugLocked
+    // (the lock outlives the completer by a frame). Dismissing a non-current
+    // route uses removeRoute — instant, no animation, no lock.
     final navigator = Navigator.of(context, rootNavigator: true);
-    final route = MaterialPageRoute<void>(
-      builder: (_) => NasabahPdfPreviewPage(export: export),
+    final pushed = navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            NasabahPdfPreviewPage(export: export, viewer: previewViewer),
+      ),
     );
-    final pushed = navigator.push(route);
     await loading.dismiss();
     await pushed;
   }
