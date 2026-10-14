@@ -64,6 +64,37 @@ void main() {
     ));
   }
 
+  testWidgets('rolling one month sends its own period and resets custom dates',
+      (tester) async {
+    cubit.applyCustomRange(DateTime(2026, 9, 1), DateTime(2026, 9, 30));
+    await open(tester);
+    await tester.pumpAndSettle();
+    clearInteractions(getTransaksi);
+
+    final chip = find.text('1 Bulan');
+    expect(chip, findsOneWidget);
+    await tester.ensureVisible(chip);
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+
+    expect(cubit.state.periode, '1_bulan');
+    expect(cubit.state.dariTanggal, isNull);
+    expect(cubit.state.sampaiTanggal, isNull);
+    final filter = verify(() => getTransaksi.execute(captureAny()))
+        .captured.single as TransaksiFilter;
+    expect(filter.toQueryParams()['periode'], '1_bulan');
+
+    await tester.ensureVisible(find.text('Bulan Ini'));
+    await tester.tap(find.text('Bulan Ini'));
+    await tester.pumpAndSettle();
+    expect(cubit.state.periode, 'bulan_ini');
+
+    await tester.ensureVisible(find.text('Bulan Lalu'));
+    await tester.tap(find.text('Bulan Lalu'));
+    await tester.pumpAndSettle();
+    expect(cubit.state.periode, 'bulan_lalu');
+  });
+
   testWidgets('the chips switch between this month and last month',
       (tester) async {
     await open(tester);
