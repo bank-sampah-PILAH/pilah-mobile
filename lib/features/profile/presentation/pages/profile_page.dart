@@ -121,7 +121,7 @@ class _ProfileViewState extends State<_ProfileView>
     const palette = [
       AppColors.greenDark,
       Color(0xFF7C3AED),
-      Color(0xFFD4A843),
+      AppColors.warning,
       Color(0xFF0F766E),
       Color(0xFF9A3412),
     ];

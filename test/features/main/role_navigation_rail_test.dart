@@ -57,7 +57,8 @@ void main() {
       final tapped = await taps(tester, role: 'pengelola');
       await tester.tap(find.text('Aktivitas'));
       await tester.pumpAndSettle();
-      expect(tapped, [3], reason: 'Aktivitas is menu index 3, not branch index');
+      expect(tapped, [3],
+          reason: 'Aktivitas is menu index 3, not branch index');
     });
 
     testWidgets('shows labels beside icons on a desktop window',

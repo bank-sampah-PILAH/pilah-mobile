@@ -21,8 +21,8 @@ class DetailNasabahBottomSheet extends StatefulWidget {
     this.nasabahCubit,
   });
 
-  static const Color mintTint = Color(0xFFF0FDF4);
-  static const Color errorColor = Color(0xFFBA1A1A);
+  static const Color mintTint = AppColors.greenLight;
+  static const Color errorColor = AppColors.danger;
 
   @override
   State<DetailNasabahBottomSheet> createState() =>

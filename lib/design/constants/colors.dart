@@ -18,10 +18,29 @@ class AppColors {
   static const Color greenDark = Color(0xFF006D44);
   static const Color cardOffWhite = Color(0xFFFAFAFA);
 
+  // Neutral greys. These replaced ten near-identical greys copied into screens.
+  /// Page and card background.
+  static const Color surface = Color(0xFFF9FAFB);
+
+  /// Chips, inputs and badges.
+  static const Color fill = Color(0xFFF3F4F6);
+
+  /// Dividers and outlines.
+  static const Color border = Color(0xFFE5E7EB);
+
+  /// Strong secondary text (10:1 on white). Muted text is [grey100].
+  static const Color inkSoft = Color(0xFF374151);
+
   // Danger red and its tint. #C62828 is 5.6:1 on white and 5.1:1 on the tint
   // (WCAG AA); it replaced #DC2626, which fell to 4.4:1 on the tint.
   static const Color danger = Color(0xFFC62828);
   static const Color dangerLight = Color(0xFFFEF2F2);
+
+  // Warning amber and its tint. #976200 is 5.2:1 on white and 4.6:1 on the
+  // tint (WCAG AA); it replaced thirteen ambers, five of which failed AA as
+  // text.
+  static const Color warning = Color(0xFF976200);
+  static const Color warningLight = Color(0xFFFEF3C7);
 
   // Dashboard Colors
   static const Color statOrangeLight = Color(0xFFFFF5E6);

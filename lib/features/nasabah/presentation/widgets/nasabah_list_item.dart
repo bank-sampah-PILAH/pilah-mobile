@@ -232,13 +232,13 @@ class _PendingBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
+        color: AppColors.warningLight,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         'Menunggu',
         style: AppTextStyle.extraSmall.copyWith(
-          color: const Color(0xFFB26A00),
+          color: AppColors.warning,
           fontWeight: FontWeight.w600,
         ),
       ),

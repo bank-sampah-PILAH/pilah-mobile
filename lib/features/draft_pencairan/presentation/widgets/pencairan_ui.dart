@@ -101,13 +101,13 @@ class PencairanChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : const Color(0xFF6B7280);
+    final color = selected ? Colors.white : AppColors.grey100;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.greenDark : const Color(0xFFF3F4F6),
+          color: selected ? AppColors.greenDark : AppColors.fill,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -130,7 +130,7 @@ class PencairanChip extends StatelessWidget {
                 constraints: const BoxConstraints(minWidth: 20),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white : const Color(0xFFE5E7EB),
+                  color: selected ? Colors.white : AppColors.border,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -296,8 +296,8 @@ class PencairanPopupMenu<T> extends StatelessWidget {
   });
 
   static const _merah = AppColors.danger;
-  static const _merahMuda = Color(0xFFFDECEC);
-  static const _hijauMuda = Color(0xFFE8F5E9);
+  static const _merahMuda = AppColors.dangerLight;
+  static const _hijauMuda = AppColors.greenLight;
 
   @override
   Widget build(BuildContext context) {

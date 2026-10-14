@@ -470,7 +470,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: AppColors.greenLight,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

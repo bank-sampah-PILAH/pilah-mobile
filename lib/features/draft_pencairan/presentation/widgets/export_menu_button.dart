@@ -42,7 +42,7 @@ class ExportMenuButton extends StatelessWidget {
           berkas: ExportBerkas.pdf,
           label: 'PDF',
           icon: Icons.picture_as_pdf_outlined,
-          tint: const Color(0xFFFDECEC),
+          tint: AppColors.dangerLight,
           iconColor: AppColors.danger,
         ),
         _ExportItem(
@@ -50,7 +50,7 @@ class ExportMenuButton extends StatelessWidget {
           berkas: ExportBerkas.xlsx,
           label: 'Excel',
           icon: Icons.table_chart_outlined,
-          tint: const Color(0xFFE8F5E9),
+          tint: AppColors.greenLight,
           iconColor: AppColors.greenDark,
         ),
       ],

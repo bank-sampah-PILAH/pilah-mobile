@@ -35,7 +35,7 @@ class AktivitasTipeChips extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: state.tipeFilter == entry.key
                         ? AppColors.greenDark
-                        : const Color(0xFFF3F4F6),
+                        : AppColors.fill,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -43,7 +43,7 @@ class AktivitasTipeChips extends StatelessWidget {
                     style: AppTextStyle.small.copyWith(
                       color: state.tipeFilter == entry.key
                           ? Colors.white
-                          : const Color(0xFF6B7280),
+                          : AppColors.grey100,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

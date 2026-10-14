@@ -210,7 +210,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
         child: Scaffold(
-          backgroundColor: const Color(0xFFF9FAFB),
+          backgroundColor: AppColors.surface,
           body: SingleChildScrollView(
             child: Column(
               children: [
@@ -363,7 +363,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
+                                color: AppColors.warningLight,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(

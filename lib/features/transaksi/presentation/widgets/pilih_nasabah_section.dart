@@ -58,7 +58,7 @@ class PilihNasabahSection extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF5F5F5), // grey[100]
+                          color: AppColors.fill, // grey[100]
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.person_outline,

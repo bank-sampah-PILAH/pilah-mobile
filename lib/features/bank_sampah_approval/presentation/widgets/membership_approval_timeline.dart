@@ -58,7 +58,7 @@ class _CurrentStatusStep extends StatelessWidget {
     final (icon, color, title, subtitle) = switch (status) {
       MembershipStatus.pending => (
           Icons.hourglass_top_rounded,
-          const Color(0xFF9A6400),
+          AppColors.warning,
           'Menunggu verifikasi pengurus',
           'Pengurus sedang meninjau pengajuan Anda.',
         ),

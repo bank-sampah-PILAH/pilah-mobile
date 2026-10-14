@@ -96,14 +96,14 @@ class _TransaksiBerhasilBottomSheetState
                 _buildSummaryRow('Nasabah', widget.customerName, isBold: false),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  child: Divider(height: 1, color: AppColors.border),
                 ),
                 _buildSummaryRow(
                     'Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}',
                     isPrimary: true),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  child: Divider(height: 1, color: AppColors.border),
                 ),
                 _buildSummaryRow(
                     'Saldo Terbaru', _formatCurrency(widget.newBalance),

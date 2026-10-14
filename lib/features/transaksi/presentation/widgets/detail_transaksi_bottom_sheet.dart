@@ -23,7 +23,7 @@ class DetailTransaksiBottomSheet extends StatefulWidget {
 class _DetailTransaksiBottomSheetState
     extends State<DetailTransaksiBottomSheet> {
   // Local tokens (candidates for AppColors)
-  static const Color mintTint = Color(0xFFF0FDF4); // or #ecfdf5 as requested
+  static const Color mintTint = AppColors.greenLight; // or #ecfdf5 as requested
   static const Color errorColor = AppColors.danger; // red for failed WA
 
   String currentWaStatus = '';
@@ -171,7 +171,7 @@ class _DetailTransaksiBottomSheetState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB), // surface-container-low
+                  color: AppColors.surface, // surface-container-low
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -233,7 +233,7 @@ class _DetailTransaksiBottomSheetState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -285,7 +285,7 @@ class _DetailTransaksiBottomSheetState
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                    const Divider(height: 1, color: AppColors.border),
                     const SizedBox(height: 12),
 
                     // Loading indicator while fetching the item breakdown
@@ -350,7 +350,7 @@ class _DetailTransaksiBottomSheetState
                         )),
 
                     // Total Row
-                    const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                    const Divider(height: 1, color: AppColors.border),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

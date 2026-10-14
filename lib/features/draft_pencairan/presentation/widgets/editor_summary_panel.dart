@@ -112,7 +112,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                       child: Column(
                         children: [
-                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                          const Divider(height: 1, color: AppColors.border),
                           const SizedBox(height: 12),
                           _Baris(
                             label: 'Total pencairan',

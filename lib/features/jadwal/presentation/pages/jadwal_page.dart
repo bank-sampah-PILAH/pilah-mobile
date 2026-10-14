@@ -746,17 +746,17 @@ class _ScheduleStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final background = switch (status) {
-      'draft' => const Color(0xFFFFF4DE),
+      'draft' => AppColors.warningLight,
       'diterbitkan' => AppColors.greenLight,
-      'dibatalkan' => const Color(0xFFFDECEC),
-      'selesai' => const Color(0xFFF0F2F0),
+      'dibatalkan' => AppColors.dangerLight,
+      'selesai' => AppColors.fill,
       _ => AppColors.cardOffWhite,
     };
     final foreground = switch (status) {
-      'draft' => const Color(0xFF8A5A00),
+      'draft' => AppColors.warning,
       'diterbitkan' => AppColors.greenDark,
-      'dibatalkan' => const Color(0xFF9B3D3D),
-      'selesai' => const Color(0xFF59665C),
+      'dibatalkan' => AppColors.danger,
+      'selesai' => AppColors.inkSoft,
       _ => Colors.grey.shade700,
     };
 

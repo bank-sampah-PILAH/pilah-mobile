@@ -25,7 +25,15 @@ Read this before adding or changing a screen. Each rule is marked **in code** (e
 | Border | `AppColors.grey200` | `#686777` at 38% | in code |
 | Card off-white | `AppColors.cardOffWhite` | `#FAFAFA` | in code |
 | Danger (errors, destructive actions) | `AppColors.danger`, tint `AppColors.dangerLight` | `#C62828`, `#FEF2F2` | in code; WCAG AA (5.6:1 on white, 5.1:1 on the tint) |
-| Warning | none | amber family, 10+ shades in use | proposed: one pair (text + tint) |
+| Warning (pending, draft, caution) | `AppColors.warning`, tint `AppColors.warningLight` | `#976200`, `#FEF3C7` | in code; WCAG AA (5.2:1 on white, 4.6:1 on the tint) |
+| Page / card background | `AppColors.surface` | `#F9FAFB` | in code |
+| Chips, inputs, badges | `AppColors.fill` | `#F3F4F6` | in code |
+| Dividers and outlines | `AppColors.border` | `#E5E7EB` | in code |
+| Strong secondary text | `AppColors.inkSoft` | `#374151` | in code; 10:1 on white |
+
+The avatar palette (`core/utils/avatar_style.dart`) is the one place that keeps several hues on purpose: light tint with dark initials, six pairs, each guarded for contrast in `test/core/utils/avatar_style_contrast_test.dart`.
+
+Retired colors: the greys, ambers, green tints and reds that used to be copied into screens are listed in `test/design/retired_palette_test.dart`, which fails if one comes back. If a screen needs a new color, add a token here and a contrast pair in `test/design/contrast_test.dart` instead of a literal.
 
 `AppColors.primary` (`#2B637B`, teal-blue) is **not** the app's accent. It was the Material seed until this theme change and still leaks into the browser tab color in `lib/app.dart`. Do not use it for new UI.
 

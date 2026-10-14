@@ -62,7 +62,7 @@ class TransactionSummarySection extends StatelessWidget {
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+            child: Divider(height: 1, color: AppColors.border),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

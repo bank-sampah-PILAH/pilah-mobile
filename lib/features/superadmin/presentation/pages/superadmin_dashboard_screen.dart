@@ -119,7 +119,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             }
           },
           child: Scaffold(
-            backgroundColor: const Color(0xFFF3F4F6),
+            backgroundColor: AppColors.fill,
             body: Column(
               children: [
                 _buildHeader(context),
@@ -402,15 +402,15 @@ class _PendingBankCardState extends State<PendingBankCard> {
   Widget build(BuildContext context) {
     final bank = widget.bank;
     return _CardShell(
-      accentColor: const Color(0xFFF59E0B),
+      accentColor: AppColors.warning,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CardHeader(
             title: bank.nama,
             badgeText: 'PENDING',
-            badgeBg: const Color(0xFFFEF3C7),
-            badgeFg: const Color(0xFFD97706),
+            badgeBg: AppColors.warningLight,
+            badgeFg: AppColors.warning,
           ),
           // No location line here on purpose: the full address is listed in the
           // detail rows below, so a city above it is redundant.

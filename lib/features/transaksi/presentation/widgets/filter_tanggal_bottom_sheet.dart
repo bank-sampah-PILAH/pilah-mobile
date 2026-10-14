@@ -15,7 +15,7 @@ class FilterTanggalBottomSheet extends StatefulWidget {
 
 class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
   // Local tokens (candidates for AppColors)
-  static const Color mintTint = Color(0xFFF0FDF4);
+  static const Color mintTint = AppColors.greenLight;
 
   late DateTime startDate;
   late DateTime endDate;

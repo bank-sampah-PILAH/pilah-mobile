@@ -170,7 +170,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       decoration: BoxDecoration(
         color: AppColors.dangerLight, // red-50
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFECACA)), // red-200
+        border: Border.all(color: AppColors.dangerLight), // red-200
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +276,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
         child: Scaffold(
-          backgroundColor: const Color(0xFFF9FAFB),
+          backgroundColor: AppColors.surface,
           body: SingleChildScrollView(
             child: Column(
               children: [

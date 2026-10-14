@@ -297,7 +297,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                                     decoration: BoxDecoration(
                                       color: _metode == metode
                                           ? AppColors.greenDark
-                                          : const Color(0xFFF3F4F6),
+                                          : AppColors.fill,
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
@@ -305,7 +305,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                                       style: AppTextStyle.small.copyWith(
                                         color: _metode == metode
                                             ? Colors.white
-                                            : const Color(0xFF6B7280),
+                                            : AppColors.grey100,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -462,7 +462,7 @@ class _RingkasanCard extends StatelessWidget {
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+            child: Divider(height: 1, color: AppColors.border),
           ),
           _row(
             'Sisa saldo',
@@ -556,7 +556,7 @@ class _PencairanBerhasilSheet extends StatelessWidget {
                 _row('Dicairkan', 'Rp ${formatRupiahId(created.nominal)}'),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  child: Divider(height: 1, color: AppColors.border),
                 ),
                 _row('Saldo sesudah',
                     'Rp ${formatRupiahId(created.saldoSesudah)}',

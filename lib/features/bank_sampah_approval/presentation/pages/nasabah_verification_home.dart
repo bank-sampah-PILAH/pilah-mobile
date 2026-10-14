@@ -138,7 +138,7 @@ class _StatusCard extends StatelessWidget {
           Icons.hourglass_top_rounded,
           'Pengajuan sedang ditinjau',
           'Pengurus bank sampah sedang memverifikasi keanggotaan Anda. Belum ada tindakan yang perlu dilakukan.',
-          const Color(0xFF9A6400),
+          AppColors.warning,
         ),
       MembershipStatus.rejected => (
           Icons.info_outline_rounded,
