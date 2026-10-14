@@ -39,6 +39,10 @@ class _PetaBankViewState extends State<PetaBankView> {
   static const double _zoomAwal = 5;
   static const double _zoomUser = 15;
 
+  /// User's own fix; drawn as the blue-style dot (kept green, per design)
+  /// so "where am I" is visible while browsing bank markers (PIL-330).
+  Lokasi? _titikSaya;
+
   /// Camera zoom the clusters were built for; the map view only ever reacts
   /// through this — nothing re-clusters silently behind a still frame.
   late double _zoom = _zoomAwal;
@@ -87,6 +91,7 @@ class _PetaBankViewState extends State<PetaBankView> {
   Future<void> _lokasiPengguna() async {
     final lokasi = await di<LocationService>().currentLocation();
     if (lokasi == null || !mounted) return;
+    setState(() => _titikSaya = lokasi);
     _controller.move(
       LatLng(lokasi.latitude, lokasi.longitude),
       _zoomUser,
@@ -205,6 +210,21 @@ class _PetaBankViewState extends State<PetaBankView> {
         osmAttribution(),
         MarkerLayer(
           markers: [
+            // Titik pengguna di bawah pin-pin bank, supaya "di mana saya"
+            // terlihat sambil menelusuri hasil.
+            if (_titikSaya != null)
+              Marker(
+                point: LatLng(
+                  _titikSaya!.latitude,
+                  _titikSaya!.longitude,
+                ),
+                width: 26,
+                height: 26,
+                child: const KeyedSubtree(
+                  key: Key('cari_bank_titik_saya'),
+                  child: _TitikSaya(),
+                ),
+              ),
             for (final k in kelompok)
               Marker(
                 point: k.center,
@@ -300,6 +320,35 @@ class _BadgeKelompok extends StatelessWidget {
           style: AppTextStyle.small.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+}
+
+/// Titik lokasi pengguna: bulatan hijau dengan cincin putih transparan —
+/// beda bentuk dari pin bank supaya tak tertukar.
+class _TitikSaya extends StatelessWidget {
+  const _TitikSaya();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.greenDark.withValues(alpha: 0.3),
+            width: 4,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Container(
+          width: 14,
+          height: 14,
+          decoration: const BoxDecoration(
+            color: AppColors.greenDark,
+            shape: BoxShape.circle,
+            border: Border.fromBorderSide(
+              BorderSide(color: Colors.white, width: 2),
+            ),
           ),
         ),
       );

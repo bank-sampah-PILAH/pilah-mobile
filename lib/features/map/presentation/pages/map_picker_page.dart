@@ -254,35 +254,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
                         controller: _controller,
                         radiusKm: _radiusKm,
                       ),
-                      // The fixed center pin: the map moves, the marker does
-                      // not. Green drop-pin with a soft shadow halo (GM-style).
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 46,
-                              color: AppColors.greenDark,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.25),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 46),
-                          ],
-                        ),
-                      ),
-                      // Marketplace-style resize handle: drag it up/down and
-                      // the circle around the center pin follows in km.
-                      _GagangRadius(
-                        controller: _controller,
-                        radiusKm: _radiusKm,
-                        maksimalKm: _radiusMaksimalKm,
-                        onRadius: (km) => setState(() => _radiusKm = km),
+                      // The fixed center dot: the map moves, the marker does
+                      // not. Marketplace-style: a solid dot with a white ring.
+                      const Center(
+                        child: _TitikPusat(key: Key('peta_titik_pusat')),
                       ),
                     ],
                   ),
@@ -296,6 +271,32 @@ class _MapPickerPageState extends State<MapPickerPage> {
                       key: const Key('peta_lokasi_saya'),
                       icon: Icons.my_location,
                       onTap: _useMyLocation,
+                    ),
+                  ),
+                  // Marketplace hint pill above the bottom panel.
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 12,
+                    child: Center(
+                      child: Container(
+                        key: const Key('peta_petunjuk_geser'),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Geser peta untuk memilih lokasi',
+                          style: NasabahStyle.text(
+                            13,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   // GM-style place search over the map: type a place, tap a
@@ -440,7 +441,16 @@ class _MapPickerPageState extends State<MapPickerPage> {
                           style:
                               NasabahStyle.text(14, color: NasabahStyle.muted),
                         ),
-                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Slider(
+                            key: const Key('peta_radius_slider'),
+                            value: _radiusKm.clamp(0.5, _radiusMaksimalKm),
+                            min: 0.5,
+                            max: _radiusMaksimalKm,
+                            activeColor: AppColors.greenDark,
+                            onChanged: (km) => setState(() => _radiusKm = km),
+                          ),
+                        ),
                         Text(
                           '${_radiusKm.toStringAsFixed(_radiusKm == _radiusKm.roundToDouble() ? 0 : 1)} km',
                           key: const Key('peta_radius_label'),
@@ -523,6 +533,29 @@ class _MapPickerPageState extends State<MapPickerPage> {
       );
 }
 
+/// Titik pusat Marketplace-style: bulatan hijau pekat dengan cincin putih.
+class _TitikPusat extends StatelessWidget {
+  const _TitikPusat({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          color: AppColors.greenDark,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+      );
+}
+
 /// Lingkaran putih melayang di atas peta, ikon hijau — kontrol peta ala
 /// Google Maps.
 class _MapFab extends StatelessWidget {
@@ -579,99 +612,6 @@ class _LingkaranRadius extends StatelessWidget {
           borderColor: AppColors.greenDark.withValues(alpha: 0.6),
         ),
       ],
-    );
-  }
-}
-
-/// Pegangan di tepi atas lingkaran: digeser vertikal, radius mengikuti
-/// jarak piksel antara pegangan dan pusat kamera (dikonversi ke kilometer).
-class _GagangRadius extends StatefulWidget {
-  final MapController controller;
-  final double radiusKm;
-  final double maksimalKm;
-  final ValueChanged<double> onRadius;
-
-  const _GagangRadius({
-    required this.controller,
-    required this.radiusKm,
-    required this.maksimalKm,
-    required this.onRadius,
-  });
-
-  @override
-  State<_GagangRadius> createState() => _GagangRadiusState();
-}
-
-class _GagangRadiusState extends State<_GagangRadius> {
-  /// Titik tepi-atas lingkaran pada layar — basis posisi pegangan.
-  Offset _posisiGagang() {
-    final camera = widget.controller.camera;
-    final tengah = camera.center;
-    final pusat = camera.latLngToScreenOffset(tengah);
-    final tepi = camera.latLngToScreenOffset(
-      Distance().offset(tengah, widget.radiusKm * 1000, -180),
-    );
-    return Offset(pusat.dx, tepi.dy);
-  }
-
-  /// Satu piksel layar bernilai berapa kilometer tanah di zoom kini — dihitung
-  /// dari pasangan titik tetangga supaya akurat di lintang mana pun.
-  double _kmPerPixel() {
-    final camera = widget.controller.camera;
-    final pusat = camera.latLngToScreenOffset(camera.center);
-    final tetangga = camera.screenOffsetToLatLng(pusat - const Offset(0, 1));
-    return Distance().as(
-          LengthUnit.Kilometer,
-          camera.center,
-          tetangga,
-        ) *
-        1000;
-  }
-
-  /// Radius saat geseran dimulai; update menggeser dari nilai ini, bukan
-  /// dari posisi pegangan yang sendiri ikut berubah (umpan balik loop).
-  double? _radiusAwalGeser;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.controller.camera.center.latitude.isFinite) {
-      return const SizedBox.shrink();
-    }
-    final posisi = _posisiGagang();
-    return Positioned(
-      left: posisi.dx - 18,
-      top: posisi.dy - 18,
-      child: GestureDetector(
-        key: const Key('peta_gagang_radius'),
-        onVerticalDragStart: (_) => _radiusAwalGeser = widget.radiusKm,
-        onVerticalDragUpdate: (detail) {
-          final awal = _radiusAwalGeser;
-          if (awal == null) return;
-          // Pegangan di tepi atas: geser ke atas membesarkan radius,
-          // ke bawah mengecilkan (mendekati pusat).
-          final berikut = awal - detail.delta.dy * _kmPerPixel();
-          widget.onRadius(berikut.clamp(0.5, widget.maksimalKm));
-        },
-        onVerticalDragEnd: (_) => _radiusAwalGeser = null,
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.greenDark, width: 2),
-            boxShadow: const [
-              BoxShadow(color: Color(0x29000000), blurRadius: 6),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.expand_less,
-            size: 20,
-            color: AppColors.greenDark,
-          ),
-        ),
-      ),
     );
   }
 }
