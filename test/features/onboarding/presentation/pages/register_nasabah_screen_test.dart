@@ -106,10 +106,15 @@ void main() {
   tearDown(() => onboarding.close());
 
   Future<GoRouter> pump(WidgetTester tester,
-      {bool pushed = false, List<String> extraRoutes = const []}) async {
+      {bool pushed = false,
+      bool pushedFromMembershipList = false,
+      List<String> extraRoutes = const []}) async {
     final router = GoRouter(
-      initialLocation:
-          pushed ? '/complete-profile' : RegisterNasabahScreen.route,
+      initialLocation: pushed
+          ? '/complete-profile'
+          : pushedFromMembershipList
+              ? '/memberships'
+              : RegisterNasabahScreen.route,
       routes: [
         GoRoute(
           path: '/complete-profile',
@@ -120,6 +125,10 @@ void main() {
               builder: (_, __) => const RegisterNasabahScreen(),
             ),
           ],
+        ),
+        GoRoute(
+          path: '/memberships',
+          builder: (_, __) => const Scaffold(body: Text('MEMBERSHIPS')),
         ),
         GoRoute(
           path: RegisterNasabahScreen.route,
@@ -151,6 +160,9 @@ void main() {
 
     if (pushed) {
       router.push('/complete-profile/register-nasabah');
+      await tester.pumpAndSettle();
+    } else if (pushedFromMembershipList) {
+      router.push(RegisterNasabahScreen.route);
       await tester.pumpAndSettle();
     }
 
@@ -415,6 +427,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+    });
+
+    testWidgets(
+        'system back from an existing-member application returns to its list',
+        (tester) async {
+      await pump(tester, pushedFromMembershipList: true);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('MEMBERSHIPS'), findsOneWidget);
+      expect(find.text('Keluar dari Pendaftaran?'), findsNothing);
+      verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
     });
 
     testWidgets('system back mid-wizard returns to the profile screen',

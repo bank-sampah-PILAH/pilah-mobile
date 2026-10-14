@@ -75,6 +75,10 @@ class _ApprovalBankSampahListViewState
     try {
       selected = await _selection!.resolve(widget.userId!, memberships);
     } catch (_) {
+      if (revision == _selectionRevision) {
+        _selectedMembership = null;
+        _eligibleMembershipIds = null;
+      }
       _showSelectionError('Gagal memuat pilihan bank aktif. Coba lagi.');
     }
     if (!mounted || revision != _selectionRevision) return null;

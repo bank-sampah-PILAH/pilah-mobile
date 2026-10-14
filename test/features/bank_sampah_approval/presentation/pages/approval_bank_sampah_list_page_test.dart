@@ -255,18 +255,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('shows an error when stored selection cannot be read',
+  testWidgets('retries a failed saved-selection read after membership refresh',
       (tester) async {
     final storage = _MemoryStorage()..failReads = true;
     _registerStorage(storage);
-    when(() => cubit.state)
-        .thenReturn(const NasabahApprovalLoaded([_approved]));
+    final updates = StreamController<NasabahApprovalState>.broadcast();
+    addTearDown(updates.close);
+    whenListen(
+      cubit,
+      updates.stream,
+      initialState: const NasabahApprovalLoaded([_approved]),
+    );
 
     await tester.pumpWidget(_wrap(cubit, userId: 'user-1'));
     await tester.pumpAndSettle();
 
+    expect(storage.reads, 1);
     expect(find.text('Gagal memuat pilihan bank aktif. Coba lagi.'),
         findsOneWidget);
+
+    storage
+      ..failReads = false
+      ..values['active_membership_id:user-1'] = _approved.id;
+    updates.add(const NasabahApprovalLoaded([_approved]));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(storage.reads, 2);
+    expect(find.text('Bank aktif'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

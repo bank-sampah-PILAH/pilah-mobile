@@ -226,7 +226,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
       listenWhen: (previous, current) => current is Unauthenticated,
       listener: (context, state) => context.go(LoginPage.route),
       child: PopScope(
-        canPop: false,
+        canPop: context.canPop(),
         onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
         child: Scaffold(
           backgroundColor: const Color(0xFFF9FAFB),
