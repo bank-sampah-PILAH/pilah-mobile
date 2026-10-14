@@ -368,7 +368,7 @@ class _PendingBankCardState extends State<PendingBankCard> {
       title: approve ? 'Setujui Bank Sampah?' : 'Tolak Pendaftaran?',
       message: approve
           ? 'Setujui pendaftaran ${bank.nama}? Bank sampah akan dapat mulai beroperasi.'
-          : 'Tolak pendaftaran ${bank.nama}? Pengelola tidak dapat mengakses dashboard.',
+          : 'Tolak pendaftaran ${bank.nama}? Pengurus tidak dapat mengakses dashboard.',
       confirmLabel: approve ? 'Ya, Setujui' : 'Ya, Tolak',
       destructive: !approve,
     );

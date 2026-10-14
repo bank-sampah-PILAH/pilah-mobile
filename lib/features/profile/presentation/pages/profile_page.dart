@@ -109,9 +109,11 @@ class _ProfileViewState extends State<_ProfileView>
     switch (role) {
       case 'superadmin':
         return 'Superadmin';
+      case 'pengelola_induk':
+        return 'Pengelola Induk';
       case 'pengelola':
       default:
-        return 'Pengelola';
+        return 'Pengurus';
     }
   }
 
@@ -795,7 +797,7 @@ class _ProfileViewState extends State<_ProfileView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Undang Pengelola Baru',
+                      'Undang Pengurus Baru',
                       style: AppTextStyle.title1.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -804,7 +806,7 @@ class _ProfileViewState extends State<_ProfileView>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
+                      'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
                       style: AppTextStyle.small.copyWith(
                         color: Colors.white.withValues(alpha: 0.8),
                         height: 1.4,
@@ -876,7 +878,7 @@ class _ProfileViewState extends State<_ProfileView>
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Text(
-                  'Belum ada pengelola lain yang tergabung.',
+                  'Belum ada pengurus lain yang tergabung.',
                   textAlign: TextAlign.center,
                   style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
                 ),
@@ -976,7 +978,7 @@ class _ProfileViewState extends State<_ProfileView>
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              member.isPrimary ? 'Pengelola Utama' : 'Pengelola',
+              member.isPrimary ? 'Pengurus Utama' : 'Pengurus',
               style: AppTextStyle.extraSmall.copyWith(
                 color: AppColors.greenDark,
                 fontWeight: FontWeight.bold,

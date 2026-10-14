@@ -173,7 +173,7 @@ void main() {
     await pump(tester, const DashboardHeader());
 
     expect(find.text('Bank Sampah'), findsOneWidget);
-    expect(find.textContaining('Selamat datang, Pengelola'), findsOneWidget);
+    expect(find.textContaining('Selamat datang, Pengurus'), findsOneWidget);
     expect(find.text('P'), findsOneWidget);
   });
 
@@ -181,7 +181,7 @@ void main() {
     arrange(session: Unauthenticated());
     await pump(tester, const DashboardHeader());
 
-    expect(find.textContaining('Selamat datang, Pengelola'), findsOneWidget);
+    expect(find.textContaining('Selamat datang, Pengurus'), findsOneWidget);
   });
 
   testWidgets('total kas shows each loading state', (tester) async {

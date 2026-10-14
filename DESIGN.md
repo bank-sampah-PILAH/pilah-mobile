@@ -106,7 +106,8 @@ Known gaps against this baseline, not yet audited screen by screen: light grey h
 - **Rupiah** with a dot as thousands separator and `Rp ` prefix: `Rp 41.250`, never `Rp 3500`. Use `CurrencyFormatter.formatRupiah`.
 - **Weight** in kg with a decimal comma and no trailing zeros: `3 kg`, `1,5 kg`. Never `3.000 kg` (reads as three thousand). Use `WeightFormatter.formatKg`.
 - **Dates** `dd/MM/yyyy`; Indonesian month names in long form.
-- **Role names**: Pengurus for the bank-sampah operator, Nasabah for the customer, Pengelola Induk, Superadmin. Do not show "Pengelola" for a Pengurus account.
+- **Role names**: Pengurus is the operator of a bank sampah unit (role key `pengelola`); Pengelola is reserved for the induk (parent) organisation (`pengelola_induk`, a later feature); Nasabah is the customer; Superadmin. Never show "Pengelola" for a bank sampah unit.
+- **Navigation**: the tab is called Aktivitas and opens the screen titled Riwayat Aktivitas.
 - **Language**: all user-visible text is Indonesian, including Material widgets such as the date picker (`locale: id` with `flutter_localizations` in `lib/app.dart`).
 - **Destructive actions** (logout, delete, cancel) ask for confirmation with `showAppConfirmDialog` (`destructive: true` paints the confirm button red). Do not build an `AlertDialog` per screen.
 

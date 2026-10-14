@@ -22,7 +22,7 @@ class DashboardHeader extends StatelessWidget {
       builder: (context, state) {
         final auth = state is Authenticated ? state.authEntity : null;
         final name =
-            (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengelola';
+            (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengurus';
         final bankName = (auth?.bankSampahNama?.trim().isNotEmpty ?? false)
             ? auth!.bankSampahNama!
             : 'Bank Sampah';

@@ -346,8 +346,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Siti'), findsOneWidget);
     expect(find.text('Anda'), findsOneWidget);
-    expect(find.text('Pengelola Utama'), findsOneWidget);
-    expect(find.text('Pengelola'), findsWidgets);
+    expect(find.text('Pengurus Utama'), findsOneWidget);
+    expect(find.text('Pengurus'), findsWidgets);
     expect(find.text('Simpan Pengaturan'), findsNothing);
 
     await tester.tap(find.text('Salin Link Undangan'));
@@ -383,7 +383,7 @@ void main() {
 
     expect(find.text('Salin Link Undangan'), findsNothing);
     expect(
-        find.text('Belum ada pengelola lain yang tergabung.'), findsOneWidget);
+        find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });
 
   testWidgets('a member without a name shows their email', (tester) async {
@@ -398,6 +398,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('anon@x.test'), findsOneWidget);
+  });
+
+  testWidgets('a bank sampah operator is labelled Pengurus, not Pengelola',
+      (tester) async {
+    await openPage(tester);
+
+    expect(find.text('Pengurus'), findsOneWidget);
+    expect(find.text('Pengelola'), findsNothing);
   });
 
   testWidgets('logging out asks first, then signs out on confirm',
