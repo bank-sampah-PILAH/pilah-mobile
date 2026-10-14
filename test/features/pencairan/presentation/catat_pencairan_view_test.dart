@@ -380,21 +380,28 @@ void main() {
       (tester) async {
     await pumpView(tester);
 
-    final selected = tester.widget<Container>(
-      find.byKey(const Key('metode-chip-tunai')),
-    );
-    expect(
-      (selected.decoration as BoxDecoration).color,
-      AppColors.greenDark,
-    );
+    Material pill(String key) => tester.widget<Material>(find.descendant(
+          of: find.byKey(Key(key)),
+          matching: find.byType(Material),
+        ));
+    expect(pill('metode-chip-tunai').color, AppColors.greenDark);
+    expect(pill('metode-chip-transfer').color, AppColors.fill);
+  });
 
-    final unselected = tester.widget<Container>(
-      find.byKey(const Key('metode-chip-transfer')),
+  testWidgets('the metode chips announce which method is selected',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpView(tester);
+
+    expect(
+      tester.getSemantics(find.byKey(const Key('metode-chip-tunai'))),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: true),
     );
     expect(
-      (unselected.decoration as BoxDecoration).color,
-      const Color(0xFFF3F4F6),
+      tester.getSemantics(find.byKey(const Key('metode-chip-transfer'))),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
     );
+    handle.dispose();
   });
 
   testWidgets('gives the nominal field the app\'s Poppins text style',

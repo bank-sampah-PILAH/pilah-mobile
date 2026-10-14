@@ -133,8 +133,8 @@ void main() {
     // The fix sits on the fitted camera (the single bank's own point): the
     // dot is inside the viewport when the layer builds.
     final location = di<LocationService>() as _FakeLocationService;
-    when(() => location.currentLocation()).thenAnswer(
-        (_) async => (latitude: -6.362829, longitude: 106.828655));
+    when(() => location.currentLocation())
+        .thenAnswer((_) async => (latitude: -6.362829, longitude: 106.828655));
     api.on('GET', _directory,
         json: bankSampahPage([
           bankRow('b1', 'Bank Garis',
@@ -341,5 +341,4 @@ void main() {
     expect(find.text('Depok · Jl. Bank Garis'), findsOneWidget);
     expect(find.byType(FlutterMap), findsNothing);
   });
-
 }

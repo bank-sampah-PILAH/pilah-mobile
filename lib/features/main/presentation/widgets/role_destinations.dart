@@ -71,6 +71,6 @@ const _staff = <RoleDestination>[
   RoleDestination(0, Icons.grid_view_rounded, 'Dashboard'),
   RoleDestination(1, Icons.people_outline, 'Nasabah'),
   RoleDestination(2, Icons.local_offer_outlined, 'Harga'),
-  RoleDestination(3, Icons.insert_drive_file_outlined, 'Laporan'),
+  RoleDestination(3, Icons.insert_drive_file_outlined, 'Aktivitas'),
   RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
 ];

@@ -314,7 +314,11 @@ void main() {
   group('parseNominatimRows (the real search body)', () {
     test('parses display_name and the lat/lon pair', () {
       final hasil = parseNominatimRows([
-        {'display_name': 'Fakultas Ilmu Komputer', 'lat': '-6.36', 'lon': '106.83'},
+        {
+          'display_name': 'Fakultas Ilmu Komputer',
+          'lat': '-6.36',
+          'lon': '106.83'
+        },
       ]);
       expect(hasil.single.nama, 'Fakultas Ilmu Komputer');
       expect(hasil.single.titik.latitude, -6.36);
@@ -332,8 +336,8 @@ void main() {
     test('a malformed coordinate throws — the caller catches to empty', () {
       expect(
         () => parseNominatimRows([
-              {'lat': 'y', 'lon': '106.8'},
-            ]),
+          {'lat': 'y', 'lon': '106.8'},
+        ]),
         throwsFormatException,
       );
     });
@@ -374,7 +378,8 @@ void main() {
       ],
     ));
 
-    await tester.enterText(find.byKey(const Key('peta_cari_tempat')), 'Universitas');
+    await tester.enterText(
+        find.byKey(const Key('peta_cari_tempat')), 'Universitas');
     await tester.pump(const Duration(milliseconds: 550));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('peta_hasil_cari')), findsOneWidget);

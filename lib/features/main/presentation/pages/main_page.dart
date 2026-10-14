@@ -62,8 +62,13 @@ class _RoleShell extends StatelessWidget {
     final auth = context.watch<AuthenticationBloc>().state;
     final role = auth is Authenticated ? auth.authEntity.role : null;
     if (!RoleNavigationBar.supports(role)) {
-      return const Scaffold(
-          body: Center(child: Text('Silakan masuk sebagai nasabah.')));
+      // Fail closed either way. The message is for a signed-in account whose
+      // role has no navigation; while signing out there is no account to
+      // address, and the router is already on its way to the login page.
+      return Scaffold(
+          body: auth is Authenticated
+              ? const Center(child: Text('Silakan masuk sebagai nasabah.'))
+              : null);
     }
     if (role == 'nasabah') {
       final session = auth as Authenticated;

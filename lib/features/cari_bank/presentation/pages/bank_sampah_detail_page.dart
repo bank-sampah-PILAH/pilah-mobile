@@ -4,7 +4,7 @@ import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -309,7 +309,7 @@ class _LayananBaris extends StatelessWidget {
             ),
           ),
           Text(
-            'Rp ${formatRupiahId(harga.round())}/kg',
+            '${CurrencyFormatter.formatRupiah(harga.round())}/kg',
             style: NasabahStyle.text(
               14,
               weight: FontWeight.w600,

@@ -71,10 +71,7 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Balai Warga');
-    final startTile = find.ancestor(
-      of: find.text('Mulai'),
-      matching: find.byType(GestureDetector),
-    );
+    final startTile = find.byKey(const ValueKey('jadwal-mulai'));
     await tester.ensureVisible(startTile);
     await tester.tap(startTile);
     await tester.pumpAndSettle();
@@ -82,6 +79,28 @@ void main() {
       find.byType(CalendarDatePicker),
     );
     expect(DateUtils.isSameDay(picker.initialDate, DateTime.now()), isTrue);
+  });
+
+  testWidgets('the date fields are announced as buttons', (tester) async {
+    final handle = tester.ensureSemantics();
+    final repository = _MockJadwalRepository();
+    _stubJadwal(repository, const []);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('jadwal-mulai'))),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
   });
 
   // The suggested start depends on the current time, so each case runs against
@@ -380,12 +399,16 @@ void main() {
     final submit = find.widgetWithText(ElevatedButton, 'Simpan Perubahan');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(
       find.text('Waktu selesai harus setelah waktu mulai'),
       findsOneWidget,
     );
+    expect(find.byType(SnackBar), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
     verifyNever(() => repository.updateJadwal(any()));
   });
 
@@ -411,9 +434,11 @@ void main() {
     final submit = find.widgetWithText(ElevatedButton, 'Simpan Jadwal');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Jadwal gagal disimpan'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('jadwal-form')),
@@ -505,10 +530,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
-    final endTile = find.ancestor(
-      of: find.text('Selesai'),
-      matching: find.byType(GestureDetector),
-    );
+    final endTile = find.byKey(const ValueKey('jadwal-selesai'));
     await tester.ensureVisible(endTile);
     final endSubtitle = find.descendant(
       of: endTile,
@@ -549,10 +571,7 @@ void main() {
     await _selectCalendarDate(tester, start);
     await tester.tap(find.text(schedule.lokasi));
     await tester.pumpAndSettle();
-    final startTile = find.ancestor(
-      of: find.text('Mulai'),
-      matching: find.byType(GestureDetector),
-    );
+    final startTile = find.byKey(const ValueKey('jadwal-mulai'));
     await tester.ensureVisible(startTile);
     await tester.tap(startTile);
     await tester.pumpAndSettle();

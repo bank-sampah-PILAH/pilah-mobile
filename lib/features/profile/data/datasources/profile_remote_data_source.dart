@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
@@ -26,6 +28,8 @@ abstract class ProfileRemoteDataSource {
     required String noHpPic,
     String? fotoLogoPath,
     ({double latitude, double longitude})? lokasi,
+    Uint8List? fotoLogoBytes,
+    String? fotoLogoFilename,
   });
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
@@ -60,6 +64,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     required String noHpPic,
     String? fotoLogoPath,
     ({double latitude, double longitude})? lokasi,
+    Uint8List? fotoLogoBytes,
+    String? fotoLogoFilename,
   }) async {
     final formData = FormData.fromMap({
       'nama': nama,
@@ -70,7 +76,12 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       // places=6), so a longer string would be rejected as "too many digits".
       if (lokasi != null) 'latitude': lokasi.latitude.toStringAsFixed(6),
       if (lokasi != null) 'longitude': lokasi.longitude.toStringAsFixed(6),
-      if (fotoLogoPath != null && fotoLogoPath.isNotEmpty)
+      if (fotoLogoBytes != null)
+        'foto_logo': MultipartFile.fromBytes(
+          fotoLogoBytes,
+          filename: fotoLogoFilename ?? 'logo.jpg',
+        )
+      else if (fotoLogoPath != null && fotoLogoPath.isNotEmpty)
         'foto_logo': await MultipartFile.fromFile(
           fotoLogoPath,
           filename: fotoLogoPath.split(RegExp(r'[\\/]')).last,

@@ -119,8 +119,10 @@ void main() {
       _detail,
       json: bankDetailJson(
         layanan: [
-          {...layananJson('K-1', 'Kardus', '1500.00'),
-            'deskripsi': 'Kardus bekas olahan'},
+          {
+            ...layananJson('K-1', 'Kardus', '1500.00'),
+            'deskripsi': 'Kardus bekas olahan'
+          },
         ],
       ),
     );

@@ -199,7 +199,8 @@ void main() {
     api.on(
       'GET',
       _endpoint,
-      json: perbandinganJson(rows: [hargaRow('b1', 'Bank A', harga: '3000.00')]),
+      json:
+          perbandinganJson(rows: [hargaRow('b1', 'Bank A', harga: '3000.00')]),
     );
     // Opening the sheet: two matching banks; already-picked b1 is hidden.
     api.on(
@@ -214,12 +215,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('perbandingan_picker_bank_b1')), findsNothing);
-    expect(find.byKey(const Key('perbandingan_picker_bank_b2')), findsOneWidget);
+    expect(
+        find.byKey(const Key('perbandingan_picker_bank_b2')), findsOneWidget);
 
     // A keyword refetches the directory: anything not matching disappears.
     api.on('GET', _directory, json: bankSampahPage(const [], count: 0));
-    await tester.enterText(find.byKey(const Key('perbandingan_picker_cari')),
-        'tidak-ada');
+    await tester.enterText(
+        find.byKey(const Key('perbandingan_picker_cari')), 'tidak-ada');
     await tester.pumpAndSettle();
 
     // The empty state replaced the list.
@@ -228,8 +230,8 @@ void main() {
 
     // A directory failure inside the sheet shows the error card, not a blank.
     api.on('GET', _directory, status: 500, json: {});
-    await tester
-        .enterText(find.byKey(const Key('perbandingan_picker_cari')), 'Bank B');
+    await tester.enterText(
+        find.byKey(const Key('perbandingan_picker_cari')), 'Bank B');
     await tester.pumpAndSettle();
 
     expect(find.text('Gagal Memuat Daftar Bank'), findsOneWidget);
@@ -330,8 +332,7 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('perbandingan_tambah_bank')));
       await tester.pumpAndSettle();
-      await tester.tap(
-          find.byKey(Key('perbandingan_picker_bank_bX$tambahan')));
+      await tester.tap(find.byKey(Key('perbandingan_picker_bank_bX$tambahan')));
       await tester.pumpAndSettle();
       tambahan += 1;
     }
@@ -339,8 +340,8 @@ void main() {
     // Cap reached: the next tap shows the snackbar instead of the sheet.
     await tester.tap(find.byKey(const Key('perbandingan_tambah_bank')));
     await tester.pump();
-    expect(find.text('Maksimal 10 bank dalam satu perbandingan.'),
-        findsOneWidget);
+    expect(
+        find.text('Maksimal 10 bank dalam satu perbandingan.'), findsOneWidget);
     expect(find.byKey(const Key('perbandingan_picker_cari')), findsNothing);
   });
 
@@ -357,7 +358,8 @@ void main() {
     api.on(
       'GET',
       _endpoint,
-      json: perbandinganJson(rows: [hargaRow('b1', 'Bank A', harga: '3000.00')]),
+      json:
+          perbandinganJson(rows: [hargaRow('b1', 'Bank A', harga: '3000.00')]),
     );
     // The sheet answers with TWO banks so its ListView's separator builds.
     api.on(
@@ -371,7 +373,9 @@ void main() {
     await tester.tap(find.byKey(const Key('perbandingan_tambah_bank')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('perbandingan_picker_bank_b2')), findsOneWidget);
-    expect(find.byKey(const Key('perbandingan_picker_bank_b3')), findsOneWidget);
+    expect(
+        find.byKey(const Key('perbandingan_picker_bank_b2')), findsOneWidget);
+    expect(
+        find.byKey(const Key('perbandingan_picker_bank_b3')), findsOneWidget);
   });
 }

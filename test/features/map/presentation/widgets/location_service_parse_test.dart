@@ -5,7 +5,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-
 class FakeGeolocator extends Mock
     with MockPlatformInterfaceMixin
     implements GeolocatorPlatform {}
@@ -47,17 +46,17 @@ void main() {
       when(() => geolocator.getCurrentPosition(
             locationSettings: any(named: 'locationSettings'),
           )).thenAnswer((_) async => Position(
-                latitude: -6.3,
-                longitude: 106.8,
-                timestamp: DateTime(2026),
-                accuracy: 5,
-                altitude: 0,
-                altitudeAccuracy: 0,
-                heading: 0,
-                headingAccuracy: 0,
-                speed: 0,
-                speedAccuracy: 0,
-              ));
+            latitude: -6.3,
+            longitude: 106.8,
+            timestamp: DateTime(2026),
+            accuracy: 5,
+            altitude: 0,
+            altitudeAccuracy: 0,
+            heading: 0,
+            headingAccuracy: 0,
+            speed: 0,
+            speedAccuracy: 0,
+          ));
     });
 
     test('granted permission returns the fix', () async {

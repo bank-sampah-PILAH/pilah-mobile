@@ -1,4 +1,7 @@
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/cari_bank_page.dart';
+import 'package:pilah_mobile/features/perbandingan_harga/presentation/pages/perbandingan_harga_page.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
@@ -19,9 +22,6 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
-import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
-import 'package:pilah_mobile/features/perbandingan_harga/presentation/pages/perbandingan_harga_page.dart';
-import 'package:pilah_mobile/features/cari_bank/presentation/pages/cari_bank_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -31,6 +31,10 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
@@ -72,6 +76,20 @@ class AppRouterConfig {
     redirect: (context, state) {
       final path = state.uri.path;
 
+      final restore = sessionRestoreRedirect(
+        sessionChecked:
+            context.read<AuthenticationBloc>().state is! AuthenticationInitial,
+        path: path,
+        query: state.uri.query,
+      );
+      if (restore != null) return restore;
+
+      final signedOut = signedOutRedirect(
+        signedOut: context.read<AuthenticationBloc>().state is Unauthenticated,
+        path: path,
+      );
+      if (signedOut != null) return signedOut;
+
       if (path == '/invite') {
         final token = state.uri.queryParameters['token'];
         if (token != null) {
@@ -103,7 +121,8 @@ class AppRouterConfig {
       GoRoute(
         path: SplashPage.route,
         name: SplashPage.route,
-        builder: (context, state) => const SplashPage(),
+        builder: (context, state) =>
+            SplashPage(from: state.uri.queryParameters['from']),
       ),
       GoRoute(
         path: LoginPage.route,
@@ -136,6 +155,26 @@ class AppRouterConfig {
         path: CatatPencairanPage.route,
         name: CatatPencairanPage.route,
         builder: (context, state) => const CatatPencairanPage(),
+      ),
+      GoRoute(
+        path: DraftListPage.route,
+        name: DraftListPage.route,
+        builder: (context, state) => const DraftListPage(),
+      ),
+      GoRoute(
+        path: PilihNasabahPencairanPage.route,
+        name: PilihNasabahPencairanPage.route,
+        builder: (context, state) => const PilihNasabahPencairanPage(),
+      ),
+      GoRoute(
+        path: DraftEditorPage.route,
+        name: DraftEditorPage.route,
+        // The editor needs to know which draft; without it (a stale link, or a
+        // router restored on its own) there is nothing to show.
+        redirect: (context, state) =>
+            state.extra is DraftEditorArgs ? null : DraftListPage.route,
+        builder: (context, state) =>
+            DraftEditorPage(args: state.extra! as DraftEditorArgs),
       ),
       GoRoute(
         path: BankSampahDetailPage.route,

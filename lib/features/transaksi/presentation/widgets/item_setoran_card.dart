@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
@@ -25,23 +27,8 @@ class ItemSetoranCard extends StatelessWidget {
     this.errorText,
   });
 
-  static const Color emeraldPrimary = Color(0xFF006D44);
-  static const Color errorLight = Color(0xFFFEF2F2);
-  static const Color errorColor = Color(0xFFDC2626);
-
-  String _formatCurrency(int value) {
-    String str = value.toString();
-    String result = '';
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      result = str[i] + result;
-      count++;
-      if (count % 3 == 0 && i != 0) {
-        result = '.$result';
-      }
-    }
-    return 'Rp $result';
-  }
+  static const Color errorLight = AppColors.dangerLight;
+  static const Color errorColor = AppColors.danger;
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +84,7 @@ class ItemSetoranCard extends StatelessWidget {
                           hint: Row(
                             children: [
                               const Icon(Icons.recycling,
-                                  color: emeraldPrimary, size: 20),
+                                  color: AppColors.greenDark, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'Pilih Jenis',
@@ -202,7 +189,8 @@ class ItemSetoranCard extends StatelessWidget {
                       child: TextFormField(
                         key: ValueKey(harga),
                         initialValue: harga > 0
-                            ? _formatCurrency(harga).replaceAll('Rp ', '')
+                            ? CurrencyFormatter.formatRupiah(harga)
+                                .replaceAll('Rp ', '')
                             : '',
                         readOnly: true,
                         decoration: const InputDecoration(
@@ -289,9 +277,9 @@ class ItemSetoranCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    _formatCurrency(subtotal),
+                    CurrencyFormatter.formatRupiah(subtotal),
                     style: AppTextStyle.title1.copyWith(
-                      color: emeraldPrimary,
+                      color: AppColors.greenDark,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
