@@ -8,8 +8,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktiv
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
 
-/// Shared period controls for the unified activity feed. XLSX still exports
-/// setoran until PIL-248 extends the existing export endpoint.
+/// Shared period controls and filtered operational XLSX export.
 class TimeFilterChips extends StatelessWidget {
   const TimeFilterChips({super.key});
 
@@ -37,7 +36,7 @@ class TimeFilterChips extends StatelessWidget {
           previous.search != current.search,
       builder: (context, state) {
         final activePeriode = state.periode;
-        final canExport = state.canExportSetoran;
+
         return Row(
           children: [
             Expanded(
@@ -87,11 +86,9 @@ class TimeFilterChips extends StatelessWidget {
             const SizedBox(width: 8),
             // Export XLS Button
             Tooltip(
-              message: canExport
-                  ? 'Unduh XLS Setoran'
-                  : 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.',
+              message: 'Unduh XLSX Laporan',
               child: InkWell(
-                onTap: canExport ? () => _onExport(context) : null,
+                onTap: () => _onExport(context),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   padding:
@@ -106,17 +103,12 @@ class TimeFilterChips extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.download_rounded,
-                          color: canExport
-                              ? const Color(0xFF374151)
-                              : const Color(0xFF9CA3AF),
-                          size: 16),
+                          color: const Color(0xFF374151), size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        'XLS Setoran',
+                        'XLSX Laporan',
                         style: AppTextStyle.small.copyWith(
-                          color: canExport
-                              ? const Color(0xFF374151)
-                              : const Color(0xFF9CA3AF),
+                          color: const Color(0xFF374151),
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -145,7 +137,7 @@ class TimeFilterChips extends StatelessWidget {
     final loading = AppNotification.showLoading(
       context,
       title: 'Informasi',
-      message: 'Menyiapkan laporan XLS...',
+      message: 'Menyiapkan laporan XLSX...',
     );
 
     final (:export, :error) = await cubit.exportTransaksi();

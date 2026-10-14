@@ -102,7 +102,7 @@ void main() {
       when(() => export.execute(any())).thenAnswer(
           (_) async => Left(NetworkException(message: 'Tidak ada data')));
       final result = await cubit.exportTransaksi();
-      expect(result.export, isNotNull);
+      expect(result.export, isNull);
       expect(result.error, 'Tidak ada data');
     });
     test('copyWith preserves unrelated fields', () {
