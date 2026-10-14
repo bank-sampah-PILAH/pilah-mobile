@@ -34,6 +34,8 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   // the user has done anything.
   bool _showBankError = false;
   bool _isLoading = false;
+  bool _isLoadingMemberships = true;
+  String? _membershipsLoadError;
 
   List<NasabahMembershipEntity> _memberships = const [];
 
@@ -49,14 +51,25 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
     _loadMemberships();
   }
 
-  Future<void> _loadMemberships() async {
+  Future<void> _loadMemberships({bool retry = false}) async {
+    if (retry) {
+      setState(() {
+        _isLoadingMemberships = true;
+        _membershipsLoadError = null;
+      });
+    }
     final (:result, :error) =
         await context.read<OnboardingCubit>().loadMyMemberships();
-    if (!mounted || error != null) return;
-    setState(() => _memberships = result ?? const []);
+    if (!mounted) return;
+    setState(() {
+      _isLoadingMemberships = false;
+      _membershipsLoadError = error?.displayMessage;
+      if (error == null) _memberships = result ?? const [];
+    });
   }
 
   Future<void> _onSubmit() async {
+    if (_isLoadingMemberships || _membershipsLoadError != null) return;
     // A pre-linked membership plus a saved profile draft means the profile
     // still needs to land, but no new bank application should be submitted.
     // OnboardingCubit skips registerNasabah when completing the profile
@@ -383,15 +396,45 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                             description:
                                 'Bank sampah yang akan menjadi tempat Anda '
                                 'menabung sampah',
-                            child: PilihBankSampahSection(
-                              selectedBank: _selectedBank,
-                              onBankSelected: _onBankSelected,
-                              hasError: _showBankError,
-                              errorText: 'Bank sampah wajib dipilih',
-                              enabled: !_isProfileCompletionOnly,
-                              excludedBankIds: _memberships
-                                  .map((membership) => membership.bankSampahId)
-                                  .toSet(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                PilihBankSampahSection(
+                                  selectedBank: _selectedBank,
+                                  onBankSelected: _onBankSelected,
+                                  hasError: _showBankError,
+                                  errorText: 'Bank sampah wajib dipilih',
+                                  enabled: !_isProfileCompletionOnly &&
+                                      !_isLoadingMemberships &&
+                                      _membershipsLoadError == null,
+                                  excludedBankIds: _memberships
+                                      .map((membership) =>
+                                          membership.bankSampahId)
+                                      .toSet(),
+                                ),
+                                if (_isLoadingMemberships) ...[
+                                  const SizedBox(height: 8),
+                                  const LinearProgressIndicator(),
+                                  const SizedBox(height: 4),
+                                  const Text('Memuat keanggotaan...'),
+                                ],
+                                if (_membershipsLoadError != null) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _membershipsLoadError!,
+                                    style: TextStyle(
+                                      color: Colors.red.shade700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () =>
+                                        _loadMemberships(retry: true),
+                                    icon: const Icon(Icons.refresh, size: 18),
+                                    label: const Text('Coba lagi'),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                           if (_memberships.isNotEmpty) ...[
@@ -442,7 +485,11 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _onSubmit,
+                          onPressed: _isLoading ||
+                                  _isLoadingMemberships ||
+                                  _membershipsLoadError != null
+                              ? null
+                              : _onSubmit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.greenDark,
                             padding: const EdgeInsets.symmetric(vertical: 16),

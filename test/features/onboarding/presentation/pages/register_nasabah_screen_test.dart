@@ -406,15 +406,40 @@ void main() {
       }
     });
 
-    testWidgets('a failed membership lookup leaves the form open',
+    testWidgets('a failed membership lookup can be retried before applying',
         (tester) async {
-      when(() => dataSource.listMyMemberships())
-          .thenAnswer((_) async => throw StateError('offline'));
+      var calls = 0;
+      when(() => dataSource.listMyMemberships()).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) throw StateError('offline');
+        return [_joinedMembership];
+      });
 
       await pump(tester);
       await tester.pumpAndSettle();
 
-      expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+      expect(find.text('Coba lagi'), findsOneWidget);
+      expect(
+        tester
+            .widget<ElevatedButton>(
+              find.widgetWithText(ElevatedButton, 'Ajukan Pendaftaran'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cari nama bank sampah...'), findsNothing);
+      verifyNever(() => dataSource.registerNasabah(any()));
+
+      await tester.tap(find.text('Coba lagi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Coba lagi'), findsNothing);
+
+      await tester.tap(find.text('Tap untuk pilih bank sampah'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bank Sampah BTH'), findsNothing);
+      expect(find.text('Bank Sampah Baru'), findsOneWidget);
     });
 
     testWidgets('system back mid-wizard returns to the profile screen',
