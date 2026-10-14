@@ -154,7 +154,7 @@ void main() {
     verify(() => repo.setoranDetail('member-b', 'transaction-1')).called(1);
     expect(find.text('Detail Setoran'), findsOneWidget);
     expect(find.text('Plastik PET'), findsOneWidget);
-    expect(find.text('1.000 kg'), findsOneWidget);
+    expect(find.text('1 kg'), findsOneWidget);
     expect(find.text('Setoran rutin'), findsOneWidget);
   });
 

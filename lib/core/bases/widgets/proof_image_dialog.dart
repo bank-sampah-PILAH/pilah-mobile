@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Shows a bank sampah's foto kegiatan so a superadmin can review it.
 ///
@@ -42,7 +43,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
             ),
 
             const SizedBox(height: 8),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            const Divider(height: 1, color: AppColors.border),
 
             // Image Area
             Padding(
@@ -93,7 +94,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
               ),
             ),
 
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            const Divider(height: 1, color: AppColors.border),
 
             // Bottom Bar
             Padding(
@@ -104,7 +105,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6B7280), // Cool gray
+                      backgroundColor: AppColors.grey100, // Cool gray
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(

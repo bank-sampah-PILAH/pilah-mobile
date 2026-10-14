@@ -291,7 +291,7 @@ const _roleOptions = [
   ),
   _RoleOption(
     GoogleRegistrationRole.pengelola,
-    'Pengelola Bank Sampah',
+    'Pengurus Bank Sampah',
     'Mengelola transaksi dan anggota bank sampah.',
     Icons.storefront_outlined,
   ),

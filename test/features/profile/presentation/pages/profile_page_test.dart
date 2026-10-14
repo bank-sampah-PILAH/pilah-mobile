@@ -346,8 +346,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Siti'), findsOneWidget);
     expect(find.text('Anda'), findsOneWidget);
-    expect(find.text('Pengelola Utama'), findsOneWidget);
-    expect(find.text('Pengelola'), findsWidgets);
+    expect(find.text('Pengurus Utama'), findsOneWidget);
+    expect(find.text('Pengurus'), findsWidgets);
     expect(find.text('Simpan Pengaturan'), findsNothing);
 
     await tester.tap(find.text('Salin Link Undangan'));
@@ -383,7 +383,7 @@ void main() {
 
     expect(find.text('Salin Link Undangan'), findsNothing);
     expect(
-        find.text('Belum ada pengelola lain yang tergabung.'), findsOneWidget);
+        find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });
 
   testWidgets('a member without a name shows their email', (tester) async {
@@ -400,13 +400,39 @@ void main() {
     expect(find.text('anon@x.test'), findsOneWidget);
   });
 
-  testWidgets('logging out is requested from the settings tab', (tester) async {
+  testWidgets('a bank sampah operator is labelled Pengurus, not Pengelola',
+      (tester) async {
+    await openPage(tester);
+
+    expect(find.text('Pengurus'), findsOneWidget);
+    expect(find.text('Pengelola'), findsNothing);
+  });
+
+  testWidgets('logging out asks first, then signs out on confirm',
+      (tester) async {
     await openPage(tester);
 
     await tester.tap(find.text('Keluar dari Aplikasi'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keluar dari akun?'), findsOneWidget);
+    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+
+    await tester.tap(find.text('Ya, Keluar'));
+    await tester.pumpAndSettle();
 
     verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+  });
+
+  testWidgets('cancelling the logout keeps the session', (tester) async {
+    await openPage(tester);
+
+    await tester.tap(find.text('Keluar dari Aplikasi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {

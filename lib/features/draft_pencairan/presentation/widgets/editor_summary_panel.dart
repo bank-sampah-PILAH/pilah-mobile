@@ -20,7 +20,6 @@ class EditorSummaryPanel extends StatefulWidget {
 }
 
 class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
-  static const _emerald = Color(0xFF006D44);
   bool _terbuka = false;
 
   void _atur(bool terbuka) => setState(() => _terbuka = terbuka);
@@ -46,63 +45,70 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            GestureDetector(
-              key: const Key('ringkasan-toggle'),
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _atur(!_terbuka),
-              onVerticalDragEnd: (detail) {
-                final kecepatan = detail.primaryVelocity ?? 0;
-                if (kecepatan < -100) _atur(true);
-                if (kecepatan > 100) _atur(false);
-              },
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(
-                          'Total dibayar',
-                          style: AppTextStyle.small
-                              .copyWith(color: Colors.grey[600]),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              rupiah(state.totalDibayar),
-                              key: const Key('total-dibayar'),
-                              style: AppTextStyle.headline1.copyWith(
-                                color: _emerald,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
+            // Keeps GestureDetector for the vertical swipe; the semantics give it
+            // a button role and say whether the panel is open.
+            MergeSemantics(
+              child: Semantics(
+                  button: true,
+                  expanded: _terbuka,
+                  child: GestureDetector(
+                    key: const Key('ringkasan-toggle'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _atur(!_terbuka),
+                    onVerticalDragEnd: (detail) {
+                      final kecepatan = detail.primaryVelocity ?? 0;
+                      if (kecepatan < -100) _atur(true);
+                      if (kecepatan > 100) _atur(false);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          _terbuka
-                              ? Icons.keyboard_arrow_down
-                              : Icons.keyboard_arrow_up,
-                          color: Colors.grey[600],
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                'Total dibayar',
+                                style: AppTextStyle.small
+                                    .copyWith(color: Colors.grey[600]),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    rupiah(state.totalDibayar),
+                                    key: const Key('total-dibayar'),
+                                    style: AppTextStyle.headline1.copyWith(
+                                      color: AppColors.greenDark,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _terbuka
+                                    ? Icons.keyboard_arrow_down
+                                    : Icons.keyboard_arrow_up,
+                                color: Colors.grey[600],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
+                  )),
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 180),
@@ -113,7 +119,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                       child: Column(
                         children: [
-                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                          const Divider(height: 1, color: AppColors.border),
                           const SizedBox(height: 12),
                           _Baris(
                             label: 'Total pencairan',

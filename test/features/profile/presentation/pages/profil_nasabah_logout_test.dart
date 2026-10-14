@@ -51,7 +51,7 @@ void main() {
     await di.unregister<NasabahRepository>();
   });
 
-  testWidgets('tapping logout dispatches LogoutRequested to AuthenticationBloc',
+  testWidgets('logging out asks first, then dispatches LogoutRequested',
       (tester) async {
     await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
         value: auth, child: const MaterialApp(home: ProfilNasabahPage())));
@@ -61,11 +61,35 @@ void main() {
     await tester.ensureVisible(logoutButton);
     await tester.pumpAndSettle();
     await tester.tap(logoutButton);
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keluar dari akun?'), findsOneWidget);
+    verifyNever(
+        () => auth.add(any<AuthenticationEvent>(that: isA<LogoutRequested>())));
+
+    await tester.tap(find.text('Ya, Keluar'));
+    await tester.pumpAndSettle();
 
     verify(() =>
             auth.add(any<AuthenticationEvent>(that: isA<LogoutRequested>())))
         .called(1);
+  });
+
+  testWidgets('cancelling the logout keeps the session', (tester) async {
+    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
+        value: auth, child: const MaterialApp(home: ProfilNasabahPage())));
+    await tester.pumpAndSettle();
+
+    final logoutButton = find.text('Keluar');
+    await tester.ensureVisible(logoutButton);
+    await tester.pumpAndSettle();
+    await tester.tap(logoutButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    verifyNever(
+        () => auth.add(any<AuthenticationEvent>(that: isA<LogoutRequested>())));
   });
 
   // Post-logout navigation to LoginPage is MainPage's shell listener's job

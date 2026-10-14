@@ -14,6 +14,8 @@ import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_c
 import 'dart:io';
 import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 class RegisterBankSampahScreen extends StatefulWidget {
   /// True when the user is re-applying after a previous registration was
@@ -167,9 +169,9 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       margin: const EdgeInsets.fromLTRB(24, 20, 24, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2), // red-50
+        color: AppColors.dangerLight, // red-50
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFECACA)), // red-200
+        border: Border.all(color: AppColors.dangerLight), // red-200
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,37 +254,16 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   /// in [build] handles the redirect to login. Cancelling or dismissing leaves
   /// the form and its input untouched.
   Future<void> _confirmExit() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Keluar dari Pendaftaran?',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: const Text(
+    final shouldLogout = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari Pendaftaran?',
+      message:
           'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
           'tersimpan dan Anda akan dialihkan ke halaman login.',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: const Text('Ya, Keluar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
     );
-    if (shouldLogout == true && mounted) {
+    if (shouldLogout && mounted) {
       context.read<AuthenticationBloc>().add(LogoutRequested());
     }
   }
@@ -296,7 +277,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
         child: Scaffold(
-          backgroundColor: const Color(0xFFF9FAFB),
+          backgroundColor: AppColors.surface,
           body: SingleChildScrollView(
             child: Column(
               children: [
@@ -653,9 +634,13 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                                     fit: BoxFit.cover,
                                                   ),
                                                   Positioned(
-                                                    top: 8,
-                                                    right: 8,
-                                                    child: GestureDetector(
+                                                    top: 0,
+                                                    right: 0,
+                                                    child: AppTapTarget(
+                                                      label: 'Hapus foto',
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              24),
                                                       onTap: () {
                                                         setState(() {
                                                           _selectedImage = null;

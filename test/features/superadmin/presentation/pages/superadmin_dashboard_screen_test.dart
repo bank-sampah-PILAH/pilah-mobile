@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
@@ -75,6 +76,24 @@ void main() {
     expect(find.text('Diajukan: -'), findsOneWidget);
     expect(find.text('Menunggu: 0 hari'), findsOneWidget);
     expect(find.text('PENDING'), findsNWidgets(2));
+  });
+
+  testWidgets('the status tabs announce which one is selected', (tester) async {
+    final handle = tester.ensureSemantics();
+    stubTabs();
+    await openScreen(tester);
+    Finder tab(String label) =>
+        find.ancestor(of: find.text(label), matching: find.byType(AppChip));
+
+    expect(
+      tester.getSemantics(tab('Menunggu')),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: true),
+    );
+    expect(
+      tester.getSemantics(tab('Disetujui')),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
+    );
+    handle.dispose();
   });
 
   testWidgets('approving asks first, posts and reports success',

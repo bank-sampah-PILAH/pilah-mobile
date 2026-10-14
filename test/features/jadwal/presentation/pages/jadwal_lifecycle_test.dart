@@ -115,10 +115,13 @@ void main() {
     await tester.tap(find.text('Batalkan'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ya, batalkan'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     verify(() => cubit.changeStatus('jadwal-1', 'batalkan')).called(1);
     expect(find.text('offline'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('published schedule confirms completion before transitioning',

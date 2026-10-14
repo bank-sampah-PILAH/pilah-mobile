@@ -122,7 +122,7 @@ void main() {
     await open(tester, _user(step: 'register_bank_sampah'));
 
     expect(find.text('route:/register-bank-sampah'), findsOneWidget);
-    expect(find.text('Sudah Menjadi Pengelola'), findsOneWidget);
+    expect(find.text('Sudah Menjadi Pengurus'), findsOneWidget);
     await settleToasts(tester);
   });
 

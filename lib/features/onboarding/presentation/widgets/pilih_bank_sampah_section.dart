@@ -56,11 +56,11 @@ class PilihBankSampahSection extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: enabled ? Colors.white : const Color(0xFFF5F5F5),
+              color: enabled ? Colors.white : AppColors.fill,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: hasError
-                    ? const Color(0xFFDC2626)
+                    ? AppColors.danger
                     : (selectedBank != null
                         ? AppColors.greenDark
                         : Colors.grey[300]!),
@@ -74,7 +74,7 @@ class PilihBankSampahSection extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF5F5F5),
+                          color: AppColors.fill,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.recycling_outlined,
@@ -141,7 +141,7 @@ class PilihBankSampahSection extends StatelessWidget {
             child: Text(
               errorText!,
               style: AppTextStyle.small.copyWith(
-                color: const Color(0xFFDC2626),
+                color: AppColors.danger,
               ),
             ),
           ),

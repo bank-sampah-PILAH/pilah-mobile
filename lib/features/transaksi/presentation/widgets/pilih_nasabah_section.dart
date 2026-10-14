@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class PilihNasabahSection extends StatelessWidget {
   final NasabahEntity? selectedCustomer;
@@ -45,9 +46,9 @@ class PilihNasabahSection extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                   color: hasError
-                      ? const Color(0xFFDC2626) // errorColor
+                      ? AppColors.danger // errorColor
                       : (selectedCustomer != null
-                          ? const Color(0xFF006D44)
+                          ? AppColors.greenDark
                           : Colors.grey[300]!),
                   width: 1.5),
             ),
@@ -57,7 +58,7 @@ class PilihNasabahSection extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF5F5F5), // grey[100]
+                          color: AppColors.fill, // grey[100]
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.person_outline,
@@ -137,7 +138,7 @@ class PilihNasabahSection extends StatelessWidget {
             child: Text(
               errorText!,
               style: AppTextStyle.small.copyWith(
-                color: const Color(0xFFDC2626),
+                color: AppColors.danger,
               ),
             ),
           ),

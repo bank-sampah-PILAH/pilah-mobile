@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmat
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class TambahJenisSampahBottomSheet extends StatefulWidget {
   final HargaEntity? initialData;
@@ -385,8 +386,7 @@ class _TambahJenisSampahBottomSheetState
     final isEditMode = widget.initialData != null;
 
     final int priceVal = int.tryParse(_priceController.text) ?? 0;
-    final String formattedPrice =
-        'Rp ${_priceController.text.replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), ".")}';
+    final String formattedPrice = CurrencyFormatter.formatRupiah(priceVal);
 
     final harga = HargaEntity(
       id: widget.initialData?.id ?? '',

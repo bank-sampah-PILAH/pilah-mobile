@@ -43,7 +43,7 @@ void main() {
         'Dashboard',
         'Nasabah',
         'Harga',
-        'Laporan',
+        'Aktivitas',
         'Jadwal'
       ]) {
         expect(find.text(label), findsOneWidget,
@@ -117,13 +117,13 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
-      expect(find.text('Laporan'), findsOneWidget);
+      expect(find.text('Aktivitas'), findsOneWidget);
 
-      await tester.tap(find.text('Laporan'));
+      await tester.tap(find.text('Aktivitas'));
       await tester.pumpAndSettle();
 
       expect(selected, [3]);
-      expect(find.text('Laporan'), findsNothing,
+      expect(find.text('Aktivitas'), findsNothing,
           reason: 'a drawer that stays open hides the page it just opened');
     });
   });
