@@ -21,7 +21,9 @@ class AktivitasTipeChips extends StatelessWidget {
       buildWhen: (previous, current) =>
           previous.tipeFilter != current.tipeFilter,
       builder: (context, state) {
-        return Row(
+        return Wrap(
+          spacing: 6,
+          runSpacing: 6,
           children: [
             for (final entry in _labels.entries) ...[
               AppChip(
@@ -31,7 +33,6 @@ class AktivitasTipeChips extends StatelessWidget {
                     .read<RiwayatAktivitasCubit>()
                     .setTipeFilter(entry.key),
               ),
-              const SizedBox(width: 6),
             ],
           ],
         );

@@ -5,18 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
-import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
-import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_tipe_chips.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/time_filter_chips.dart';
 
-class _MockGet extends Mock implements GetTransaksiUseCase {}
-
-class _MockPencairan extends Mock implements PencairanUseCases {}
+class _MockGet extends Mock implements GetAktivitasUseCase {}
 
 class _MockExport extends Mock implements ExportTransaksiUseCase {}
 
@@ -25,16 +21,13 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const TransaksiFilter());
-    registerFallbackValue(const RiwayatPencairanFilter());
   });
 
   setUp(() {
     final get = _MockGet();
-    final pencairan = _MockPencairan();
-    when(() => get.execute(any())).thenAnswer((_) async => const Right([]));
-    when(() => pencairan.getRiwayat(any()))
-        .thenAnswer((_) async => const Right([]));
-    cubit = RiwayatAktivitasCubit(get, pencairan, _MockExport());
+    when(() => get.execute(any()))
+        .thenAnswer((_) async => const Right(AktivitasPage([], false)));
+    cubit = RiwayatAktivitasCubit(get, _MockExport());
   });
 
   tearDown(() => cubit.close());

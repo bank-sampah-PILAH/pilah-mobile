@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
@@ -84,7 +85,9 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
                             Text(
                               error is NasabahApiException
                                   ? error.message
-                                  : 'Rincian setoran gagal dimuat.',
+                                  : error is NetworkException
+                                      ? error.displayMessage
+                                      : 'Rincian setoran gagal dimuat.',
                               textAlign: TextAlign.center,
                               style: NasabahStyle.text(13),
                             ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -157,6 +158,63 @@ void main() {
     expect(find.text('Setoran rutin'), findsOneWidget);
   });
 
+  testWidgets('pulling down reloads the first page', (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (_) async => Right(RiwayatHistory([row('a', '12500.00')], false)),
+    );
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+    clearInteractions(repo);
+    unawaited(tester
+        .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+        .show());
+    await tester.pumpAndSettle();
+    verify(() => repo.history('member-b', page: 1)).called(1);
+  });
+
+  testWidgets('detail failure retains its message and retries', (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+      (_) async => Right(RiwayatHistory([row('a', '12500.00')], false)),
+    );
+    var calls = 0;
+    when(() => repo.setoranDetail(any(), any())).thenAnswer((_) async {
+      if (++calls == 1) {
+        return Left(NetworkException(message: 'Data tidak ditemukan.'));
+      }
+      return Right(NasabahSetoranDetail.fromJson({
+        'tanggal': '2026-09-23T08:00:00+07:00',
+        'tipe': 'setoran',
+        'total_nilai': '12500.00',
+        'saldo_setelah_transaksi': '25000.00',
+        'catatan': '',
+        'items': [],
+      }));
+    });
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Setoran'));
+    await tester.pumpAndSettle();
+    expect(find.text('Data tidak ditemukan.'), findsOneWidget);
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(find.text('Data tidak ditemukan.'), findsNothing);
+  });
+  testWidgets('the reload icon resets history to the first page',
+      (tester) async {
+    final repo = TestRiwayatRepository();
+    when(() => repo.history(any(), page: any(named: 'page'))).thenAnswer(
+        (_) async => Right(RiwayatHistory([row('a', '12500.00')], false)));
+    await host(tester, repo);
+    await tester.pumpAndSettle();
+    clearInteractions(repo);
+    await tester.tap(find.byTooltip('Muat ulang'));
+    await tester.pumpAndSettle();
+    verify(() => repo.history('member-b', page: 1)).called(1);
+    verifyNever(() => repo.history('member-b', page: 2));
+  });
   testWidgets('retries the detail request after a failed sheet load',
       (tester) async {
     final repo = TestRiwayatRepository();

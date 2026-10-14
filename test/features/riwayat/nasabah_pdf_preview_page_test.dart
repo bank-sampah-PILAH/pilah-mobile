@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,10 +12,11 @@ import '../../support/pump_app.dart';
 void main() {
   // A minimal but structurally valid PDF, so the viewer's document load has
   // something to open once its temp file is written.
-  const pdfBytes = <int>[
+  final pdfBytes = <int>[
     0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, // %PDF-1.4
+    ...utf8.encode("%test-${DateTime.now().microsecondsSinceEpoch}\n"),
   ];
-  const export =
+  final export =
       StatementExport(bytes: pdfBytes, filename: 'Riwayat_Aktivitas_NSB-1.pdf');
 
   // Parallel test files also create riwayat_pdf temp dirs in /tmp; every
@@ -25,9 +27,27 @@ void main() {
         data.toString() == pdfBytes.toString();
   }
 
+  List<Directory> previewCopies() {
+    final matches = <Directory>[];
+    for (final directory
+        in Directory.systemTemp.listSync().whereType<Directory>()) {
+      if (!directory.path.contains('riwayat_pdf')) continue;
+      try {
+        if (directory.listSync().whereType<File>().any(holdsThisPdf)) {
+          matches.add(directory);
+        }
+      } on FileSystemException {
+        // Other test isolates may dispose their preview between listing and reading.
+      }
+    }
+    return matches;
+  }
+
   Future<void> pumpPreview(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
-      const MaterialApp(home: NasabahPdfPreviewPage(export: export)),
+      MaterialApp(home: NasabahPdfPreviewPage(export: export)),
     );
     // The viewer writes its temp copy and starts loading the document.
     await tester.pump();
@@ -47,13 +67,7 @@ void main() {
     await pumpPreview(tester);
     await pumpReal(tester);
 
-    final ours = Directory.systemTemp
-        .listSync()
-        .whereType<Directory>()
-        .where((d) =>
-            d.path.contains('riwayat_pdf') &&
-            d.listSync().whereType<File>().any(holdsThisPdf))
-        .toList();
+    final ours = previewCopies();
     expect(ours, isNotEmpty,
         reason: 'the preview copy is a disposable temp file, not the download');
     expect(ours.single.listSync().whereType<File>().first.readAsBytesSync(),
@@ -66,13 +80,7 @@ void main() {
     installFakePathProvider(downloads: 'Downloads', temporary: 'tmp');
     await pumpPreview(tester);
     await pumpReal(tester);
-    final ours = Directory.systemTemp
-        .listSync()
-        .whereType<Directory>()
-        .where((d) =>
-            d.path.contains('riwayat_pdf') &&
-            d.listSync().whereType<File>().any(holdsThisPdf))
-        .toList();
+    final ours = previewCopies();
     expect(ours.single.existsSync(), isTrue);
 
     await tester.pumpWidget(const MaterialApp(home: Scaffold()));

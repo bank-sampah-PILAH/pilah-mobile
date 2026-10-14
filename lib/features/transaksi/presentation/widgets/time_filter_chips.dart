@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/utils/report_export_sheet.dart';
+import 'package:pilah_mobile/core/utils/report_file_action.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -9,17 +9,22 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktiv
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
-/// Period chips, custom range, and setoran-only export for the unified
-/// Riwayat Aktivitas screen (PIL-282). Export and the custom range operate
-/// on setoran regardless of the type filter — pencairan has no backend
-/// support for either.
+/// Shared period controls for the unified activity feed. XLSX still exports
+/// setoran until PIL-248 extends the existing export endpoint.
 class TimeFilterChips extends StatelessWidget {
   const TimeFilterChips({super.key});
 
   // Chip label → backend `periode` value.
   static const Map<String, String> _chips = {
+    'Hari Ini': 'hari_ini',
+    'Minggu Ini': 'minggu_ini',
     'Bulan Ini': 'bulan_ini',
     'Bulan Lalu': 'bulan_lalu',
+    '1 Bulan': '1_bulan',
+    '3 Bulan': '3_bulan',
+    '6 Bulan': '6_bulan',
+    '12 Bulan': '12_bulan',
+    'Semua Waktu': 'semua',
   };
 
   @override
@@ -28,16 +33,26 @@ class TimeFilterChips extends StatelessWidget {
       buildWhen: (previous, current) =>
           previous.periode != current.periode ||
           previous.dariTanggal != current.dariTanggal ||
-          previous.sampaiTanggal != current.sampaiTanggal,
+          previous.sampaiTanggal != current.sampaiTanggal ||
+          previous.tipeFilter != current.tipeFilter ||
+          previous.search != current.search,
       builder: (context, state) {
         final activePeriode = state.periode;
+        final canExport = state.canExportSetoran;
         return Row(
           children: [
-            for (final entry in _chips.entries) ...[
-              _buildFilterChip(context, entry.key, entry.value, activePeriode),
-              const SizedBox(width: 6),
-            ],
-            const Spacer(),
+            Expanded(
+                child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (final entry in _chips.entries) ...[
+                  _buildFilterChip(
+                      context, entry.key, entry.value, activePeriode),
+                  const SizedBox(width: 6),
+                ],
+              ]),
+            )),
+            const SizedBox(width: 6),
             // Calendar Button (custom date range)
             InkWell(
               onTap: () {
@@ -72,32 +87,40 @@ class TimeFilterChips extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             // Export XLS Button
-            InkWell(
-              onTap: () => _onExport(context),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border, width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.download_rounded,
-                        color: AppColors.inkSoft, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      'XLS',
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.inkSoft,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+            Tooltip(
+              message: canExport
+                  ? 'Unduh XLS Setoran'
+                  : 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.',
+              child: InkWell(
+                onTap: canExport ? () => _onExport(context) : null,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.download_rounded,
+                          color:
+                              canExport ? AppColors.inkSoft : AppColors.grey100,
+                          size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        'XLS Setoran',
+                        style: AppTextStyle.small.copyWith(
+                          color:
+                              canExport ? AppColors.inkSoft : AppColors.grey100,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -107,8 +130,13 @@ class TimeFilterChips extends StatelessWidget {
     );
   }
 
-  /// Downloads the report, then offers to share it — the app-wide
-  /// save-then-share flow shared with the PDF export.
+  /// Downloads the report, then offers to share it.
+  ///
+  /// Sharing used to be the only outcome: the file went to the cache directory
+  /// and the system share sheet opened over it, so a user who just wanted the
+  /// spreadsheet on their phone had to mail it to themselves. Saving to
+  /// Download and putting "Bagikan" on the confirmation covers both, and asks
+  /// nothing of the majority who only wanted the file.
   Future<void> _onExport(BuildContext context) async {
     final cubit = context.read<RiwayatAktivitasCubit>();
 
@@ -127,12 +155,11 @@ class TimeFilterChips extends StatelessWidget {
       return;
     }
 
-    await saveAndOfferShare(
+    await saveReportFile(
       context,
       filename: export!.filename,
       bytes: export.bytes,
-      successMessage: (saved) =>
-          'Laporan berhasil disimpan ke folder ${saved.folder}',
+      successMessage: (folder) => 'Laporan berhasil disimpan ke folder $folder',
       shareText: 'Laporan Transaksi PILAH',
     );
   }
