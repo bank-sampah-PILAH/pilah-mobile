@@ -234,8 +234,10 @@ void main() {
                   data: {'error': 'private detail'})));
       await expectLater(
           repository.home(),
-          throwsA(isA<NasabahApiException>().having(
-              (e) => e.message, 'message', isNot(contains('private detail')))));
+          throwsA(isA<NasabahApiException>()
+              .having((e) => e.message, 'message',
+                  isNot(contains('private detail')))
+              .having((e) => e.statusCode, 'status code', status)));
     });
   }
 

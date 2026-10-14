@@ -271,15 +271,13 @@ void main() {
     expect(find.text('body:/history'), findsOneWidget);
   });
 
-  testWidgets('customer schedule navigation uses the persisted membership', (
+  testWidgets('customer schedule navigation is immediate and later tabs win', (
     tester,
   ) async {
     if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
       await di.unregister<AppStorage>(instanceName: 'shared_preferences');
     }
     final storage = MockStorage();
-    when(() => storage.get<String>('active_membership_id:siti@example.test'))
-        .thenAnswer((_) async => 'member-b');
     di.registerSingleton<AppStorage>(storage,
         instanceName: 'shared_preferences');
     addTearDown(
@@ -288,12 +286,15 @@ void main() {
     final router = await mount(tester, session('nasabah'));
     await tester.tap(find.text('Jadwal'));
     await tester.pumpAndSettle();
-
     expect(router.routeInformationProvider.value.uri.path, '/jadwal');
-    expect(router.routeInformationProvider.value.uri.queryParameters,
-        {'keanggotaan_id': 'member-b'});
-    verify(() => storage.get<String>('active_membership_id:siti@example.test'))
-        .called(1);
+    expect(router.routeInformationProvider.value.uri.queryParameters, isEmpty);
+
+    await tester.tap(find.text('Tabungan'));
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, '/history');
+    verifyNever(
+        () => storage.get<String>('active_membership_id:siti@example.test'));
   });
 
   testWidgets('customer history selection updates the shell and selected tab', (

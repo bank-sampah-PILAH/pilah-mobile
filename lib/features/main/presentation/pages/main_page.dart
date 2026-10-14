@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,8 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/core/storage/app_storage.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/domain/active_membership_selection.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
@@ -87,7 +83,6 @@ class _RoleShell extends StatelessWidget {
         child: _ShellContent(
           role: role!,
           name: session.authEntity.name,
-          userId: session.authEntity.id ?? session.authEntity.email,
           bankSampahNama: session.authEntity.bankSampahNama,
           navigationShell: navigationShell,
           isWebOverride: isWebOverride,
@@ -110,13 +105,11 @@ class _ShellContent extends StatelessWidget {
     required this.navigationShell,
     this.bankSampahNama,
     this.name = '',
-    this.userId,
     this.isWebOverride,
   });
 
   final String role;
   final String name;
-  final String? userId;
 
   /// Bank sampah sesi ini, diteruskan ke rail sebagai konteks. Null bagi
   /// sesi yang tidak terikat bank sampah.
@@ -199,11 +192,8 @@ class _ShellContent extends StatelessWidget {
       if (role == 'nasabah' && branch == 0) {
         context.read<NasabahApprovalCubit>().load(silent: true);
       }
-      if (role == 'nasabah' &&
-          branch == 4 &&
-          userId != null &&
-          di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
-        unawaited(_openNasabahSchedule(context, userId!));
+      if (role == 'nasabah' && branch == 4) {
+        context.go(JadwalPage.route);
         return;
       }
       navigationShell.goBranch(branch, initialLocation: index == selected);
@@ -266,23 +256,6 @@ class _ShellContent extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _openNasabahSchedule(BuildContext context, String userId) async {
-    String? membershipId;
-    try {
-      membershipId = await ActiveMembershipSelection(
-        di<AppStorage>(instanceName: 'shared_preferences'),
-      ).read(userId);
-    } catch (_) {
-      // Let the API offer membership choices if the saved selection is unreadable.
-    }
-    if (!context.mounted) return;
-    context.go(Uri(
-      path: JadwalPage.route,
-      queryParameters:
-          membershipId == null ? null : {'keanggotaan_id': membershipId},
-    ).toString());
   }
 }
 

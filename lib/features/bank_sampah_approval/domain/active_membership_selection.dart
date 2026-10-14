@@ -30,6 +30,9 @@ class ActiveMembershipSelection {
   Future<void> select(String userId, String membershipId) =>
       _serialize(userId, () => storage.put(_key(userId), membershipId));
 
+  Future<void> clear(String userId) =>
+      _serialize(userId, () => storage.delete(_key(userId)));
+
   Future<String?> resolve(
     String userId,
     Iterable<NasabahMembershipEntity> memberships,

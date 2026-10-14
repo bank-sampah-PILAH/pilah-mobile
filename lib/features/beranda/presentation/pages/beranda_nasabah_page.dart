@@ -57,27 +57,64 @@ class _HomeSession extends StatefulWidget {
 
 class _HomeSessionState extends State<_HomeSession> {
   String? _membershipId;
+  int _selectionVersion = 0;
+  Future<void> Function()? _reload;
+  Future<void> Function()? _reloadSchedule;
+
+  ActiveMembershipSelection? get _membershipSelection =>
+      di.isRegistered<AppStorage>(instanceName: 'shared_preferences')
+          ? ActiveMembershipSelection(
+              di<AppStorage>(instanceName: 'shared_preferences'))
+          : null;
 
   @override
   void initState() {
     super.initState();
-    if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
-      ActiveMembershipSelection(
-        di<AppStorage>(instanceName: 'shared_preferences'),
-      ).read(widget.userId).then((id) {
-        if (mounted && id != null) {
-          setState(() {
-            _membershipId = id;
-            _selectionVersion++;
-          });
-        }
+    _restoreSelection();
+  }
+
+  Future<void> _restoreSelection() async {
+    final revision = _selectionVersion;
+    try {
+      final id = await _membershipSelection?.read(widget.userId);
+      if (!mounted || revision != _selectionVersion || id == _membershipId) {
+        return;
+      }
+      setState(() {
+        _membershipId = id;
+        _selectionVersion++;
       });
+    } catch (_) {
+      // The unscoped request can still offer the available membership choices.
     }
   }
 
-  int _selectionVersion = 0;
-  Future<void> Function()? _reload;
-  Future<void> Function()? _reloadSchedule;
+  Future<void> _openApprovalList() async {
+    await context.push<void>(ApprovalBankSampahListPage.route);
+    if (mounted) await _restoreSelection();
+  }
+
+  Future<NasabahHome> _loadHome() async {
+    final requestedId = _membershipId;
+    try {
+      return await widget.repository.home(membershipId: requestedId);
+    } on NasabahApiException catch (error) {
+      if (requestedId == null ||
+          (error.statusCode != 403 && error.statusCode != 404) ||
+          _membershipId != requestedId) {
+        rethrow;
+      }
+      final selection = _membershipSelection;
+      if (selection != null) await selection.clear(widget.userId);
+      if (mounted && _membershipId == requestedId) {
+        setState(() {
+          _membershipId = null;
+          _selectionVersion++;
+        });
+      }
+      rethrow;
+    }
+  }
 
   Future<void> _refresh() async {
     await Future.wait([
@@ -95,11 +132,8 @@ class _HomeSessionState extends State<_HomeSession> {
   }
 
   Future<void> _saveSelection(String id) async {
-    if (di.isRegistered<AppStorage>(instanceName: 'shared_preferences')) {
-      await ActiveMembershipSelection(
-        di<AppStorage>(instanceName: 'shared_preferences'),
-      ).select(widget.userId, id);
-    }
+    final selection = _membershipSelection;
+    if (selection != null) await selection.select(widget.userId, id);
   }
 
   void _details(String title, Widget body) {
@@ -175,9 +209,7 @@ class _HomeSessionState extends State<_HomeSession> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
-                            onPressed: () => context.push(
-                              ApprovalBankSampahListPage.route,
-                            ),
+                            onPressed: _openApprovalList,
                             icon:
                                 const Icon(Icons.fact_check_outlined, size: 16),
                             label: Text(
@@ -195,13 +227,10 @@ class _HomeSessionState extends State<_HomeSession> {
                         const SizedBox(height: 8),
                         NasabahResource<NasabahHome>(
                           key: ValueKey(_selectionVersion),
-                          load: () => widget.repository.home(
-                            membershipId: _membershipId,
-                          ),
+                          load: _loadHome,
                           onSelect: _select,
                           registerReload: (reload) => _reload = reload,
                           builder: (context, home) {
-                            _saveSelection(home.membershipId);
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [

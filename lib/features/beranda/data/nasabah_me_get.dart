@@ -25,19 +25,25 @@ Future<Map<String, dynamic>> nasabahMeGet(
     final errors = data is Map ? data['errors'] : null;
     final choices = errors is Map ? errors['pilihan'] : null;
     if (status == 422 && choices is List && choices.isNotEmpty) {
-      throw NasabahApiException('Pilih bank sampah Anda.',
-          choices: choices
-              .map((v) => MembershipChoice(
-                  v['id'] as String, v['bank_sampah_nama'] as String))
-              .toList());
+      throw NasabahApiException(
+        'Pilih bank sampah Anda.',
+        choices: choices
+            .map((v) => MembershipChoice(
+                v['id'] as String, v['bank_sampah_nama'] as String))
+            .toList(),
+        statusCode: status,
+      );
     }
-    throw NasabahApiException(switch (status) {
-      401 => 'Sesi berakhir. Silakan masuk kembali.',
-      403 =>
-        'Akses belum tersedia. Pastikan akun, keanggotaan, dan bank sampah aktif.',
-      404 => 'Data tidak ditemukan. Muat ulang atau pilih keanggotaan lain.',
-      422 => 'Pilihan keanggotaan tidak valid. Silakan pilih kembali.',
-      _ => 'Data gagal dimuat. Periksa koneksi dan coba lagi.',
-    });
+    throw NasabahApiException(
+      switch (status) {
+        401 => 'Sesi berakhir. Silakan masuk kembali.',
+        403 =>
+          'Akses belum tersedia. Pastikan akun, keanggotaan, dan bank sampah aktif.',
+        404 => 'Data tidak ditemukan. Muat ulang atau pilih keanggotaan lain.',
+        422 => 'Pilihan keanggotaan tidak valid. Silakan pilih kembali.',
+        _ => 'Data gagal dimuat. Periksa koneksi dan coba lagi.',
+      },
+      statusCode: status,
+    );
   }
 }

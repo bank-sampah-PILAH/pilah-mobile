@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
@@ -13,6 +15,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -29,16 +32,25 @@ class _JadwalRepository extends Mock implements JadwalRepository {}
 /// A preview repository whose home carries the given balance and activities.
 class _HomeRepository extends PreviewNasabahRepository {
   _HomeRepository(this.balanceUpdatedAt, this.activities,
-      {this.requireSelection = false});
+      {this.requireSelection = false,
+      this.invalidMembershipId,
+      this.invalidMembershipStatusCode});
 
   final DateTime? balanceUpdatedAt;
   final List<NasabahActivity> activities;
   final bool requireSelection;
+  final String? invalidMembershipId;
+  final int? invalidMembershipStatusCode;
   final asked = <String?>[];
 
   @override
   Future<NasabahHome> home({String? membershipId}) async {
     asked.add(membershipId);
+    if (membershipId == invalidMembershipId &&
+        invalidMembershipStatusCode != null) {
+      throw NasabahApiException('Saved membership is no longer eligible.',
+          statusCode: invalidMembershipStatusCode);
+    }
     if (requireSelection && membershipId == null) {
       throw const NasabahApiException('Pilih bank sampah Anda.', choices: [
         MembershipChoice('membership-2', 'Bank Sampah Lestari'),
@@ -69,6 +81,18 @@ class _MemoryStorage implements AppStorage {
   Future<void> clear() async => values.clear();
   @override
   Future<bool> contains(String key) async => values.containsKey(key);
+}
+
+class _DelayedReadStorage extends _MemoryStorage {
+  final savedSelection = Completer<Object?>();
+
+  @override
+  Future<T?> get<T>(String key) async {
+    if (key == 'active_membership_id:nasabah-1') {
+      return (await savedSelection.future) as T?;
+    }
+    return super.get<T>(key);
+  }
 }
 
 void _registerStorage(AppStorage storage) {
@@ -137,6 +161,10 @@ void main() {
         builder: (_, state) => const Scaffold(body: Text('halaman jadwal')),
       ),
       GoRoute(
+        path: ApprovalBankSampahListPage.route,
+        builder: (_, __) => const Scaffold(body: Text('approval list')),
+      ),
+      GoRoute(
         path: AppLocations.history,
         builder: (_, state) => Scaffold(
             body:
@@ -183,6 +211,65 @@ void main() {
     expect(storage.values['active_membership_id:$userId'], 'membership-2');
     expect(find.text('Rp 12.500,50'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a new selection wins over a delayed saved-selection read',
+      (tester) async {
+    final storage = _DelayedReadStorage()
+      ..values['active_membership_id:nasabah-1'] = 'membership-1';
+    _registerStorage(storage);
+    final repository = _HomeRepository(null, const [], requireSelection: true);
+
+    await pumpHome(tester, repository);
+    await tester.tap(find.text('Bank Sampah Lestari'));
+    await tester.pumpAndSettle();
+    expect(repository.asked.last, 'membership-2');
+
+    storage.savedSelection.complete('membership-1');
+    await tester.pumpAndSettle();
+
+    expect(repository.asked.last, 'membership-2');
+    expect(repository.asked, isNot(contains('membership-1')));
+    expect(storage.values['active_membership_id:nasabah-1'], 'membership-2');
+  });
+
+  testWidgets(
+      'home reloads the stored selection after returning from approvals',
+      (tester) async {
+    const key = 'active_membership_id:nasabah-1';
+    final storage = _MemoryStorage()..values[key] = 'membership-1';
+    _registerStorage(storage);
+    final repository = _HomeRepository(null, const []);
+
+    await pumpHome(tester, repository);
+    expect(repository.asked.last, 'membership-1');
+    await tester.tap(find.text('Lihat Status Approval Bank Sampah'));
+    await tester.pumpAndSettle();
+    expect(find.text('approval list'), findsOneWidget);
+
+    storage.values[key] = 'membership-2';
+    GoRouter.of(tester.element(find.text('approval list'))).pop();
+    await tester.pumpAndSettle();
+
+    expect(repository.asked.last, 'membership-2');
+  });
+
+  testWidgets('clears an invalid saved membership and offers another bank',
+      (tester) async {
+    const key = 'active_membership_id:nasabah-1';
+    final storage = _MemoryStorage()..values[key] = 'membership-stale';
+    _registerStorage(storage);
+    final repository = _HomeRepository(null, const [],
+        requireSelection: true,
+        invalidMembershipId: 'membership-stale',
+        invalidMembershipStatusCode: 404);
+
+    await pumpHome(tester, repository);
+
+    expect(repository.asked, contains('membership-stale'));
+    expect(repository.asked.last, isNull);
+    expect(storage.values.containsKey(key), isFalse);
+    expect(find.text('Bank Sampah Lestari'), findsOneWidget);
   });
 
   testWidgets('the balance card names the latest activity and its date',

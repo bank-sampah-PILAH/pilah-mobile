@@ -12,9 +12,11 @@ class MembershipChoice {
 }
 
 class NasabahApiException implements Exception {
-  const NasabahApiException(this.message, {this.choices = const []});
+  const NasabahApiException(this.message,
+      {this.choices = const [], this.statusCode});
   final String message;
   final List<MembershipChoice> choices;
+  final int? statusCode;
 }
 
 class NasabahIdentity {
