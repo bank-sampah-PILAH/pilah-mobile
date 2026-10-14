@@ -47,7 +47,7 @@ class ApprovalLogStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color) = switch (entry.status) {
       ApprovalLogStatus.approved => (Icons.check, AppColors.greenDark),
-      ApprovalLogStatus.rejected => (Icons.close, const Color(0xFFC62828)),
+      ApprovalLogStatus.rejected => (Icons.close, AppColors.danger),
       ApprovalLogStatus.appealed => (Icons.forward, const Color(0xFFB26A00)),
     };
     final title = switch (entry.status) {

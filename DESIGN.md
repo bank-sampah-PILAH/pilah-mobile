@@ -24,7 +24,7 @@ Read this before adding or changing a screen. Each rule is marked **in code** (e
 | Secondary text | `AppColors.grey100` | `#686777` | in code |
 | Border | `AppColors.grey200` | `#686777` at 38% | in code |
 | Card off-white | `AppColors.cardOffWhite` | `#FAFAFA` | in code |
-| Danger | none | `#DC2626` | proposed token; also `#C62828` in use |
+| Danger (errors, destructive actions) | `AppColors.danger`, tint `AppColors.dangerLight` | `#C62828`, `#FEF2F2` | in code; WCAG AA (5.6:1 on white, 5.1:1 on the tint) |
 | Warning | none | amber family, 10+ shades in use | proposed: one pair (text + tint) |
 
 `AppColors.primary` (`#2B637B`, teal-blue) is **not** the app's accent. It was the Material seed until this theme change and still leaks into the browser tab color in `lib/app.dart`. Do not use it for new UI.

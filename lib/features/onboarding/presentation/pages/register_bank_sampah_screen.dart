@@ -168,7 +168,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       margin: const EdgeInsets.fromLTRB(24, 20, 24, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2), // red-50
+        color: AppColors.dangerLight, // red-50
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFECACA)), // red-200
       ),

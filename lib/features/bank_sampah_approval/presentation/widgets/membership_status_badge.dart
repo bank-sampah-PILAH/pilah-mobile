@@ -27,7 +27,7 @@ class MembershipStatusBadge extends StatelessWidget {
       MembershipStatus.rejected => (
           'Ditolak',
           const Color(0xFFFDECEA),
-          const Color(0xFFC62828),
+          AppColors.danger,
         ),
     };
 

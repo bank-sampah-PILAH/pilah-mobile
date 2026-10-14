@@ -357,7 +357,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                   color: (_hasSubmitted && setoranItems.isEmpty)
-                                      ? const Color(0xFFDC2626)
+                                      ? AppColors.danger
                                       : Colors.grey[300]!,
                                   width: 1.5),
                             ),
@@ -399,7 +399,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                               child: Text(
                                 'Daftar setoran tidak boleh kosong',
                                 style: AppTextStyle.small.copyWith(
-                                  color: const Color(0xFFDC2626),
+                                  color: AppColors.danger,
                                 ),
                               ),
                             ),

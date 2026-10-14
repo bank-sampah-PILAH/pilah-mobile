@@ -10,6 +10,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/na
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Replaces unavailable savings content while a membership needs a decision.
 class NasabahVerificationHome extends StatelessWidget {
@@ -143,7 +144,7 @@ class _StatusCard extends StatelessWidget {
           Icons.info_outline_rounded,
           'Pengajuan belum disetujui',
           'Lihat alasan penolakan dan ajukan banding dari detail pengajuan.',
-          const Color(0xFFC62828),
+          AppColors.danger,
         ),
       MembershipStatus.approved => (
           Icons.info_outline_rounded,

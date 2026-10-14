@@ -24,7 +24,7 @@ class _DetailTransaksiBottomSheetState
     extends State<DetailTransaksiBottomSheet> {
   // Local tokens (candidates for AppColors)
   static const Color mintTint = Color(0xFFF0FDF4); // or #ecfdf5 as requested
-  static const Color errorColor = Color(0xFFDC2626); // red for failed WA
+  static const Color errorColor = AppColors.danger; // red for failed WA
 
   String currentWaStatus = '';
   bool isLoadingWa = false;
@@ -499,7 +499,7 @@ class _DetailTransaksiBottomSheetState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2), // very light red
+                color: AppColors.dangerLight, // very light red
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.wechat, color: errorColor, size: 24),

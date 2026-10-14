@@ -40,6 +40,23 @@ void main() {
     });
   });
 
+  group('the danger red meets WCAG AA for normal text', () {
+    const danger = AppColors.danger;
+
+    test('as text on white', () {
+      expect(contrast(danger, Colors.white), greaterThanOrEqualTo(_aa));
+    });
+
+    test('as text on its tint', () {
+      expect(
+          contrast(danger, AppColors.dangerLight), greaterThanOrEqualTo(_aa));
+    });
+
+    test('as a fill behind white text', () {
+      expect(contrast(Colors.white, danger), greaterThanOrEqualTo(_aa));
+    });
+  });
+
   group('rendered buttons', () {
     Future<void> pump(WidgetTester tester, Widget button) => tester.pumpWidget(
           MaterialApp(

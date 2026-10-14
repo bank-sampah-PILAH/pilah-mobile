@@ -18,6 +18,11 @@ class AppColors {
   static const Color greenDark = Color(0xFF006D44);
   static const Color cardOffWhite = Color(0xFFFAFAFA);
 
+  // Danger red and its tint. #C62828 is 5.6:1 on white and 5.1:1 on the tint
+  // (WCAG AA); it replaced #DC2626, which fell to 4.4:1 on the tint.
+  static const Color danger = Color(0xFFC62828);
+  static const Color dangerLight = Color(0xFFFEF2F2);
+
   // Dashboard Colors
   static const Color statOrangeLight = Color(0xFFFFF5E6);
   static const Color statOrange = Color(0xFFEBA658);

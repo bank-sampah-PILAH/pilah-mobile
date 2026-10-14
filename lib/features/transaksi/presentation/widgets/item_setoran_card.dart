@@ -26,8 +26,8 @@ class ItemSetoranCard extends StatelessWidget {
     this.errorText,
   });
 
-  static const Color errorLight = Color(0xFFFEF2F2);
-  static const Color errorColor = Color(0xFFDC2626);
+  static const Color errorLight = AppColors.dangerLight;
+  static const Color errorColor = AppColors.danger;
 
   String _formatCurrency(int value) {
     String str = value.toString();

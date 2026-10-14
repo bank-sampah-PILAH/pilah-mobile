@@ -39,7 +39,7 @@ Future<bool> showAppConfirmDialog(
         FilledButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
           style: destructive
-              ? FilledButton.styleFrom(backgroundColor: Colors.red)
+              ? FilledButton.styleFrom(backgroundColor: AppColors.danger)
               : null,
           child: Text(
             confirmLabel,

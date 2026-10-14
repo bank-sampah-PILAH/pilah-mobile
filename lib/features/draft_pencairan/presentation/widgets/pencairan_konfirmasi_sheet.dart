@@ -6,7 +6,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 /// away, amber for a warning.
 enum KonfirmasiNada {
   normal(AppColors.greenDark, Color(0xFFE8F5E9)),
-  bahaya(Color(0xFFC62828), Color(0xFFFDECEC)),
+  bahaya(AppColors.danger, Color(0xFFFDECEC)),
   peringatan(Color(0xFFB45309), Color(0xFFFEF3C7));
 
   const KonfirmasiNada(this.warna, this.latar);

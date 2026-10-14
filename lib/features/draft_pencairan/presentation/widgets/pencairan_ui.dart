@@ -295,7 +295,7 @@ class PencairanPopupMenu<T> extends StatelessWidget {
     this.tooltip = 'Menu',
   });
 
-  static const _merah = Color(0xFFC62828);
+  static const _merah = AppColors.danger;
   static const _merahMuda = Color(0xFFFDECEC);
   static const _hijauMuda = Color(0xFFE8F5E9);
 

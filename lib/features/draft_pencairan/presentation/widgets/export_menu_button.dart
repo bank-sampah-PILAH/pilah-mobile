@@ -43,7 +43,7 @@ class ExportMenuButton extends StatelessWidget {
           label: 'PDF',
           icon: Icons.picture_as_pdf_outlined,
           tint: const Color(0xFFFDECEC),
-          iconColor: const Color(0xFFC62828),
+          iconColor: AppColors.danger,
         ),
         _ExportItem(
           key: const Key('ekspor-xlsx'),

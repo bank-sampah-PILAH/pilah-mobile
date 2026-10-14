@@ -1,6 +1,6 @@
 {
   "lib/core/bases/widgets/app_notification.dart": {
-    "color": 3,
+    "color": 2,
     "fontSize": 8
   },
   "lib/core/bases/widgets/bottom_sheet_header.dart": {
@@ -52,15 +52,15 @@
     "fontSize": 4
   },
   "lib/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart": {
-    "color": 2,
+    "color": 1,
     "fontSize": 0
   },
   "lib/features/bank_sampah_approval/presentation/widgets/approval_log_step.dart": {
-    "color": 2,
+    "color": 1,
     "fontSize": 0
   },
   "lib/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart": {
-    "color": 2,
+    "color": 1,
     "fontSize": 0
   },
   "lib/features/bank_sampah_approval/presentation/widgets/membership_list_item.dart": {
@@ -68,7 +68,7 @@
     "fontSize": 1
   },
   "lib/features/bank_sampah_approval/presentation/widgets/membership_status_badge.dart": {
-    "color": 4,
+    "color": 3,
     "fontSize": 0
   },
   "lib/features/beranda/presentation/pages/beranda_nasabah_page.dart": {
@@ -104,15 +104,15 @@
     "fontSize": 2
   },
   "lib/features/draft_pencairan/presentation/widgets/export_menu_button.dart": {
-    "color": 3,
+    "color": 2,
     "fontSize": 0
   },
   "lib/features/draft_pencairan/presentation/widgets/pencairan_konfirmasi_sheet.dart": {
-    "color": 5,
+    "color": 4,
     "fontSize": 0
   },
   "lib/features/draft_pencairan/presentation/widgets/pencairan_ui.dart": {
-    "color": 6,
+    "color": 5,
     "fontSize": 3
   },
   "lib/features/harga/presentation/pages/harga_page.dart": {
@@ -120,7 +120,7 @@
     "fontSize": 4
   },
   "lib/features/harga/presentation/widgets/harga_confirmation_dialog.dart": {
-    "color": 1,
+    "color": 0,
     "fontSize": 1
   },
   "lib/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart": {
@@ -145,14 +145,14 @@
   },
   "lib/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart": {
     "color": 1,
-    "fontSize": 3
+    "fontSize": 2
   },
   "lib/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart": {
     "color": 0,
     "fontSize": 2
   },
   "lib/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart": {
-    "color": 1,
+    "color": 0,
     "fontSize": 3
   },
   "lib/features/nasabah/presentation/widgets/nasabah_list_item.dart": {
@@ -161,7 +161,7 @@
   },
   "lib/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart": {
     "color": 0,
-    "fontSize": 2
+    "fontSize": 1
   },
   "lib/features/onboarding/presentation/pages/complete_profile_screen.dart": {
     "color": 3,
@@ -172,7 +172,7 @@
     "fontSize": 8
   },
   "lib/features/onboarding/presentation/pages/register_bank_sampah_screen.dart": {
-    "color": 3,
+    "color": 2,
     "fontSize": 15
   },
   "lib/features/onboarding/presentation/pages/register_nasabah_screen.dart": {
@@ -192,7 +192,7 @@
     "fontSize": 1
   },
   "lib/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart": {
-    "color": 4,
+    "color": 2,
     "fontSize": 0
   },
   "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": {
@@ -216,7 +216,7 @@
     "fontSize": 1
   },
   "lib/features/transaksi/presentation/pages/transaksi_baru_page.dart": {
-    "color": 2,
+    "color": 0,
     "fontSize": 2
   },
   "lib/features/transaksi/presentation/widgets/aktivitas_tipe_chips.dart": {
@@ -224,7 +224,7 @@
     "fontSize": 0
   },
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": {
-    "color": 7,
+    "color": 5,
     "fontSize": 5
   },
   "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": {
@@ -232,7 +232,7 @@
     "fontSize": 4
   },
   "lib/features/transaksi/presentation/widgets/item_setoran_card.dart": {
-    "color": 2,
+    "color": 0,
     "fontSize": 2
   },
   "lib/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart": {
@@ -240,7 +240,7 @@
     "fontSize": 3
   },
   "lib/features/transaksi/presentation/widgets/pilih_nasabah_section.dart": {
-    "color": 3,
+    "color": 1,
     "fontSize": 1
   },
   "lib/features/transaksi/presentation/widgets/time_filter_chips.dart": {

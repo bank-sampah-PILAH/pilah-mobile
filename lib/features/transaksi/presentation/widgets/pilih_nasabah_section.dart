@@ -46,7 +46,7 @@ class PilihNasabahSection extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                   color: hasError
-                      ? const Color(0xFFDC2626) // errorColor
+                      ? AppColors.danger // errorColor
                       : (selectedCustomer != null
                           ? AppColors.greenDark
                           : Colors.grey[300]!),
@@ -138,7 +138,7 @@ class PilihNasabahSection extends StatelessWidget {
             child: Text(
               errorText!,
               style: AppTextStyle.small.copyWith(
-                color: const Color(0xFFDC2626),
+                color: AppColors.danger,
               ),
             ),
           ),

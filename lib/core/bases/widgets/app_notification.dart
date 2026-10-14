@@ -154,7 +154,7 @@ class AppNotification {
         style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
       ),
       flushbarPosition: FlushbarPosition.TOP,
-      backgroundColor: const Color(0xFFDC2626), // error red
+      backgroundColor: AppColors.danger, // error red
       margin: const EdgeInsets.all(16),
       borderRadius: BorderRadius.circular(12),
       icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),

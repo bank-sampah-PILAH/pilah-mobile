@@ -19,7 +19,7 @@ class NasabahConfirmationDialog extends StatefulWidget {
     required this.nasabahCubit,
   });
 
-  static const Color errorColor = Color(0xFFDC2626);
+  static const Color errorColor = AppColors.danger;
 
   @override
   State<NasabahConfirmationDialog> createState() =>

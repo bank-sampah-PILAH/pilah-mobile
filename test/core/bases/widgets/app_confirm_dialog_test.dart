@@ -42,6 +42,14 @@ void main() {
     expect(find.text('Ya, Keluar'), findsOneWidget);
   });
 
+  testWidgets('the destructive confirm button is readable', (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+
+    await expectLater(tester, meetsGuideline(textContrastGuideline));
+    handle.dispose();
+  });
+
   testWidgets('confirming answers true', (tester) async {
     await open(tester);
 

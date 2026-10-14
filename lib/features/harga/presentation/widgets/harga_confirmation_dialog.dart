@@ -19,7 +19,7 @@ class HargaConfirmationDialog extends StatelessWidget {
     required this.wasteName,
   });
 
-  static const Color errorColor = Color(0xFFDC2626);
+  static const Color errorColor = AppColors.danger;
 
   /// Shows the dialog and resolves to whether the user confirmed.
   static Future<bool> show(

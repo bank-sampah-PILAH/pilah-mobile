@@ -8,6 +8,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 
 class TambahNasabahBottomSheet extends StatefulWidget {
   const TambahNasabahBottomSheet({super.key});
@@ -88,46 +89,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Tambah Nasabah',
-                      style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.close,
-                            color: Colors.grey[600], size: 20),
-                      ),
-                    ),
-                  ],
-                ),
+                BottomSheetHeader(title: 'Tambah Nasabah'),
                 const SizedBox(height: 12),
 
                 // Subtitle
