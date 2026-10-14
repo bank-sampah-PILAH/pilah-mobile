@@ -68,13 +68,18 @@ class _HomeRepository extends PreviewNasabahRepository {
 
 class _MemoryStorage implements AppStorage {
   final values = <String, Object>{};
+  bool failReads = false;
 
   @override
   Future<void> init() async {}
   @override
   Future<void> put(String key, dynamic value) async => values[key] = value;
   @override
-  Future<T?> get<T>(String key) async => values[key] as T?;
+  Future<T?> get<T>(String key) async {
+    if (failReads) throw StateError('storage unavailable');
+    return values[key] as T?;
+  }
+
   @override
   Future<void> delete(String key) async => values.remove(key);
   @override
@@ -210,6 +215,19 @@ void main() {
     expect(repository.asked.last, 'membership-2');
     expect(storage.values['active_membership_id:$userId'], 'membership-2');
     expect(find.text('Rp 12.500,50'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unreadable saved selection falls back to membership choices',
+      (tester) async {
+    final storage = _MemoryStorage()..failReads = true;
+    _registerStorage(storage);
+    final repository = _HomeRepository(null, const [], requireSelection: true);
+
+    await pumpHome(tester, repository);
+
+    expect(repository.asked.last, isNull);
+    expect(find.text('Bank Sampah Lestari'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
