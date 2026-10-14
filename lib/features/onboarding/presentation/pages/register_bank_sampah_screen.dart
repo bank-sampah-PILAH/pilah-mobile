@@ -123,8 +123,8 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   /// Opens the map picker and keeps the result until submit. A pop without a
   /// result (back) leaves the current selection untouched.
   Future<void> _pickLokasi() async {
-    final picked =
-        await Navigator.of(context).push<({double latitude, double longitude})>(
+    final picked = await Navigator.of(context, rootNavigator: true)
+        .push<({double latitude, double longitude})>(
       MaterialPageRoute(
         builder: (pickerContext) => const MapPickerPage(),
       ),

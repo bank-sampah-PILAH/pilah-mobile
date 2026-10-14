@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -41,6 +44,12 @@ class MapPickerPage extends StatefulWidget {
 
 class _MapPickerPageState extends State<MapPickerPage> {
   late final MapController _controller = MapController();
+  final _cari = TextEditingController();
+  final _cariFocus = FocusNode();
+  List<({String nama, LatLng titik})> _hasilCari = [];
+  bool _mencari = false;
+  Timer? _jedaCari;
+  int _percobaanCari = 0;
 
   static const _defaultCenter = LatLng(-2.5, 118.0);
 
@@ -61,7 +70,70 @@ class _MapPickerPageState extends State<MapPickerPage> {
     _longitudeField.dispose();
     _latitudeFocus.dispose();
     _longitudeFocus.dispose();
+    _cari.dispose();
+    _cariFocus.dispose();
+    _jedaCari?.cancel();
     super.dispose();
+  }
+
+  /// Nominatim place search (OpenStreetMap) — types "Universitas Indonesia",
+  /// moves the camera to the best hit. Debounced per keystroke.
+  Future<void> _cariTempat(String kata) async {
+    _jedaCari?.cancel();
+    final kueri = kata.trim();
+    if (kueri.length < 3) {
+      if (mounted) setState(() => _hasilCari = []);
+      return;
+    }
+    _jedaCari = Timer(const Duration(milliseconds: 500), () {
+      _panggilNominatim(kueri);
+    });
+  }
+
+  Future<void> _panggilNominatim(String kueri) async {
+    final percobaan = ++_percobaanCari;
+    setState(() => _mencari = true);
+    try {
+      final response = await Dio().get<List<dynamic>>(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {
+          'q': kueri,
+          'format': 'json',
+          'limit': '5',
+          'accept-language': 'id',
+        },
+        options: Options(
+          headers: {'User-Agent': 'pilah-mobile/1.0 (pemilihan lokasi)'},
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
+      if (!mounted || percobaan != _percobaanCari) return;
+      setState(() {
+        _hasilCari = [
+          for (final row in response.data ?? const [])
+            (
+              nama: (row as Map<String, dynamic>)['display_name'] as String? ??
+                  '',
+              titik: LatLng(
+                double.parse(row['lat'] as String),
+                double.parse(row['lon'] as String),
+              ),
+            ),
+        ];
+      });
+    } on Exception {
+      if (!mounted || percobaan != _percobaanCari) return;
+      setState(() => _hasilCari = []);
+    } finally {
+      if (mounted) setState(() => _mencari = false);
+    }
+  }
+
+  void _pilihHasil(({String nama, LatLng titik}) hasil) {
+    _controller.move(hasil.titik, 17);
+    _syncFieldsTo(hasil.titik);
+    FocusScope.of(context).unfocus();
+    setState(() => _hasilCari = []);
   }
 
   void _syncFieldsTo(LatLng point) {
@@ -186,6 +258,117 @@ class _MapPickerPageState extends State<MapPickerPage> {
                       key: const Key('peta_lokasi_saya'),
                       icon: Icons.my_location,
                       onTap: _useMyLocation,
+                    ),
+                  ),
+                  // GM-style place search over the map: type a place, tap a
+                  // result, camera moves there.
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    top: 12,
+                    child: Column(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x29000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            key: const Key('peta_cari_tempat'),
+                            controller: _cari,
+                            focusNode: _cariFocus,
+                            style: NasabahStyle.text(14),
+                            onChanged: _cariTempat,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Cari tempat (mis. Universitas Indonesia)',
+                              hintStyle: NasabahStyle.text(13,
+                                  color: NasabahStyle.muted),
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: AppColors.greenDark,
+                              ),
+                              suffixIcon: _mencari
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    )
+                                  : (_cari.text.isEmpty
+                                      ? null
+                                      : IconButton(
+                                          icon: const Icon(
+                                            Icons.close,
+                                            size: 18,
+                                          ),
+                                          onPressed: () {
+                                            _cari.clear();
+                                            _cariTempat('');
+                                          },
+                                        )),
+                              isDense: true,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(28),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_hasilCari.isNotEmpty)
+                          Container(
+                            key: const Key('peta_hasil_cari'),
+                            margin: const EdgeInsets.only(top: 4),
+                            constraints: const BoxConstraints(maxHeight: 240),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x29000000),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: _hasilCari.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, i) => ListTile(
+                                key: Key('peta_hasil_$i'),
+                                dense: true,
+                                leading: const Icon(
+                                  Icons.place_outlined,
+                                  color: AppColors.greenDark,
+                                  size: 20,
+                                ),
+                                title: Text(
+                                  _hasilCari[i].nama,
+                                  style: NasabahStyle.text(12),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                onTap: () => _pilihHasil(_hasilCari[i]),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],

@@ -76,61 +76,24 @@ class _CariBankViewState extends State<CariBankView> {
                   onChanged: context.read<CariBankCubit>().ketikKataKunci,
                 ),
               ),
+              // Satu kolom pencarian: q mencocokkan nama + alamat + kota
+              // di backend, jadi kolom kota terpisah tidak diperlukan.
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: TextField(
-                  key: const Key('cari_bank_kota'),
-                  onChanged: context.read<CariBankCubit>().ketikKota,
-                  style: NasabahStyle.text(14),
-                  decoration:
-                      NasabahStyle.input(hint: 'Filter kota (mis. Depok)')
-                          .copyWith(
-                    prefixIcon: const Icon(
-                      Icons.location_city_outlined,
-                      size: 20,
-                      color: NasabahStyle.emerald,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: _ModeSwitch(
                   key: const Key('cari_bank_mode'),
                   mode: _mode,
+                  dekatSaya: () =>
+                      context.read<CariBankCubit>().pilihLokasiSaya(),
+                  pilihDiPeta: () =>
+                      _pilihDiPeta(context, widget.tileLayerBuilder),
                   onPilih: (mode) => setState(() => _mode = mode),
+                  tampilkanLokasi:
+                      state is CariBankLoaded && state.dalamRadiusKm == null,
                 ),
               ),
-              // Mode lokasi (PIL-314): dua pintu masuk — titik sekarang atau
-              // titik pilihan peta — lalu chips radius hanya saat aktif.
-              if (state is CariBankLoaded && state.dalamRadiusKm == null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _PillButton(
-                          key: const Key('cari_bank_dekat_saya'),
-                          onPressed: () =>
-                              context.read<CariBankCubit>().pilihLokasiSaya(),
-                          icon: Icons.near_me_outlined,
-                          label: 'Di dekat saya',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _PillButton(
-                          key: const Key('cari_bank_pilih_di_peta'),
-                          onPressed: () =>
-                              _pilihDiPeta(context, widget.tileLayerBuilder),
-                          icon: Icons.map_outlined,
-                          label: 'Di peta',
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else if (state is CariBankLoaded)
+              // Radius aktif: chips 1/5/10/25 km + keluar dari mode lokasi.
+              if (state is CariBankLoaded && state.dalamRadiusKm != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: SizedBox(
@@ -175,8 +138,8 @@ Future<void> _pilihDiPeta(
   BuildContext context,
   Widget Function()? tileLayerBuilder,
 ) async {
-  final titik =
-      await Navigator.of(context).push<({double latitude, double longitude})>(
+  final titik = await Navigator.of(context, rootNavigator: true)
+      .push<({double latitude, double longitude})>(
     MaterialPageRoute(
       builder: (_) => tileLayerBuilder == null
           ? const MapPickerPage()
@@ -432,12 +395,24 @@ class PillTag extends StatelessWidget {
       );
 }
 
-/// Daftar/Peta switch — pil bertema hijau, pola nasabah_filter_chips.
+/// Satu baris kontrol: Daftar/Peta + (saat berlaku) dua pintu lokasi —
+/// dekat-saya (ikon) dan pilih-titik-di-peta (ikon). Empat tombol jadi satu
+/// baris kecil supaya pilihan jelas.
 class _ModeSwitch extends StatelessWidget {
   final String mode;
   final ValueChanged<String> onPilih;
+  final VoidCallback dekatSaya;
+  final VoidCallback pilihDiPeta;
+  final bool tampilkanLokasi;
 
-  const _ModeSwitch({super.key, required this.mode, required this.onPilih});
+  const _ModeSwitch({
+    super.key,
+    required this.mode,
+    required this.onPilih,
+    required this.dekatSaya,
+    required this.pilihDiPeta,
+    required this.tampilkanLokasi,
+  });
 
   @override
   Widget build(BuildContext context) => Row(
@@ -459,10 +434,59 @@ class _ModeSwitch extends StatelessWidget {
               onTap: () => onPilih('Peta'),
             ),
           ),
+          if (tampilkanLokasi) ...[
+            const SizedBox(width: 8),
+            _IkonAksi(
+              key: const Key('cari_bank_dekat_saya'),
+              icon: Icons.near_me_outlined,
+              pesan: 'Di dekat saya',
+              onTap: dekatSaya,
+            ),
+            const SizedBox(width: 8),
+            _IkonAksi(
+              key: const Key('cari_bank_pilih_di_peta'),
+              icon: Icons.travel_explore_outlined,
+              pesan: 'Pilih titik pencarian di peta',
+              onTap: pilihDiPeta,
+            ),
+          ],
         ],
       );
 }
 
+/// Tombol ikon bulat hijau muda untuk aksi lokasi.
+class _IkonAksi extends StatelessWidget {
+  final IconData icon;
+  final String pesan;
+  final VoidCallback onTap;
+
+  const _IkonAksi({
+    super.key,
+    required this.icon,
+    required this.pesan,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: pesan,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.greenLight,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 20, color: AppColors.greenDark),
+          ),
+        ),
+      );
+}
+
+/// Pil Daftar/Peta bertema hijau (pola nasabah_filter_chips).
 class _ModePill extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -506,41 +530,6 @@ class _ModePill extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      );
-}
-
-/// Tombol aksi pil berbingkai (Di dekat saya / Di peta).
-class _PillButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final IconData icon;
-  final String label;
-
-  const _PillButton({
-    super.key,
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.greenDark,
-          side: const BorderSide(color: AppColors.greenDark),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-        ),
-        icon: Icon(icon, size: 18),
-        label: Text(
-          label,
-          style: AppTextStyle.small.copyWith(
-            color: AppColors.greenDark,
-            fontWeight: FontWeight.w600,
           ),
         ),
       );

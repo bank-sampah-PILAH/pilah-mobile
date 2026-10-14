@@ -657,7 +657,8 @@ class _ProfileViewState extends State<_ProfileView>
   Future<void> _openMapPicker() async {
     final bank = context.read<ProfileCubit>().state.bankSampah?.lokasi;
     final initial = _pendingLokasi ?? bank;
-    final picked = await Navigator.of(context).push<Lokasi>(MaterialPageRoute(
+    final picked = await Navigator.of(context, rootNavigator: true)
+        .push<Lokasi>(MaterialPageRoute(
       builder: (_) => MapPickerPage(
         initialCenter: initial == null
             ? null

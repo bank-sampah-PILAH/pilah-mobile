@@ -81,7 +81,8 @@ class _DashboardPageState extends State<DashboardPage> {
               onPressed: () async {
                 // Everything the save needs is captured before the await so
                 // no BuildContext is used across the picker gap.
-                final navigator = Navigator.of(sheetContext);
+                final navigator =
+                    Navigator.of(sheetContext, rootNavigator: true);
                 final cubit = sheetContext.read<ProfileCubit>();
                 final picked = await navigator.push<Lokasi>(MaterialPageRoute(
                   builder: (_) => const MapPickerPage(),
