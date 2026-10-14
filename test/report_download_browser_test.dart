@@ -97,7 +97,11 @@ void main() {
     expect(file.name, 'laporan.xlsx');
     expect(file.mimeType,
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    expect(await file.readAsBytes(), bytes);
+    // Web XFile reads its Blob through a real FileReader event. Awaiting it
+    // inside the widget test's fake-async zone leaves that event pending.
+    final sharedBytes = await tester
+        .runAsync(() => file.readAsBytes().timeout(const Duration(seconds: 5)));
+    expect(sharedBytes, bytes);
     await settleToasts(tester);
-  });
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }
