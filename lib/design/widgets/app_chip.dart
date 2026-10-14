@@ -40,14 +40,24 @@ class AppChip extends StatelessWidget {
     this.count,
   }) : onColor = true;
 
+  /// Text/icon colour and fill for the current mode and selection.
+  ({Color color, Color background}) get _palette {
+    if (onColor) {
+      return selected
+          ? (color: AppColors.greenDark, background: Colors.white)
+          : (
+              color: Colors.white,
+              background: Colors.white.withValues(alpha: 0.15)
+            );
+    }
+    return selected
+        ? (color: Colors.white, background: AppColors.greenDark)
+        : (color: AppColors.grey100, background: AppColors.fill);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = onColor
-        ? (selected ? AppColors.greenDark : Colors.white)
-        : (selected ? Colors.white : AppColors.grey100);
-    final background = onColor
-        ? (selected ? Colors.white : Colors.white.withValues(alpha: 0.15))
-        : (selected ? AppColors.greenDark : AppColors.fill);
+    final (:color, :background) = _palette;
     return Semantics(
       button: true,
       selected: selected,
@@ -84,31 +94,46 @@ class AppChip extends StatelessWidget {
                     ),
                     if (count != null) ...[
                       const SizedBox(width: 6),
-                      Container(
-                        constraints: const BoxConstraints(minWidth: 20),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: selected ? Colors.white : AppColors.border,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '$count',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyle.extraSmall.copyWith(
-                            color: selected ? AppColors.greenDark : color,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      _CountBadge(
+                          count: count!, selected: selected, color: color),
                     ],
                   ],
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({
+    required this.count,
+    required this.selected,
+    required this.color,
+  });
+
+  final int count;
+  final bool selected;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: selected ? Colors.white : AppColors.border,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$count',
+        textAlign: TextAlign.center,
+        style: AppTextStyle.extraSmall.copyWith(
+          color: selected ? AppColors.greenDark : color,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

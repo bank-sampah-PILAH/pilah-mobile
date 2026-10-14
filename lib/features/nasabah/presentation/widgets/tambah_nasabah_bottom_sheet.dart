@@ -89,7 +89,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                BottomSheetHeader(title: 'Tambah Nasabah'),
+                const BottomSheetHeader(title: 'Tambah Nasabah'),
                 const SizedBox(height: 12),
 
                 // Subtitle
