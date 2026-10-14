@@ -26,6 +26,9 @@ class MiniLokasiMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
+        // Keyed on the coordinate: FlutterMap reads initialCenter only at
+        // creation, so a parent rebuild with a moved pin must recreate it.
+        key: ValueKey('mini-map-${titik.latitude}-${titik.longitude}'),
         height: height,
         width: double.infinity,
         child: FlutterMap(
