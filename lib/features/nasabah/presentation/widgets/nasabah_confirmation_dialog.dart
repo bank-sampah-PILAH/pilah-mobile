@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class NasabahConfirmationDialog extends StatefulWidget {
   final bool isActivating;
@@ -18,7 +19,6 @@ class NasabahConfirmationDialog extends StatefulWidget {
     required this.nasabahCubit,
   });
 
-  static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color errorColor = Color(0xFFDC2626);
 
   @override
@@ -163,10 +163,10 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
                     onPressed: _isProcessing ? null : _confirm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: widget.isActivating
-                          ? NasabahConfirmationDialog.emeraldPrimary
+                          ? AppColors.greenDark
                           : NasabahConfirmationDialog.errorColor,
                       disabledBackgroundColor: (widget.isActivating
-                              ? NasabahConfirmationDialog.emeraldPrimary
+                              ? AppColors.greenDark
                               : NasabahConfirmationDialog.errorColor)
                           .withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 14),

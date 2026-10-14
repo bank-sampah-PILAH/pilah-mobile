@@ -514,7 +514,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lock_outline, size: 18, color: Color(0xFF006D44)),
+          const Icon(Icons.lock_outline, size: 18, color: AppColors.greenDark),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -523,7 +523,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 Text(
                   'Email dikelola oleh nasabah',
                   style: AppTextStyle.title1.copyWith(
-                    color: const Color(0xFF006D44),
+                    color: AppColors.greenDark,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),

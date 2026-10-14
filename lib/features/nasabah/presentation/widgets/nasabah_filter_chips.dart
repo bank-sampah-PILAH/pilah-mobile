@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// `true` = Aktif, `false` = Tidak Aktif, `null` = Menunggu (PIL-188).
 class NasabahFilterChips extends StatelessWidget {
@@ -14,8 +15,7 @@ class NasabahFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Emerald Eco System Design tokens
-    const Color emeraldPrimary = Color(0xFF006D44);
+    // Local tokens (candidates for AppColors)
 
     Widget chip(String label, bool? value) {
       final selected = activeTab == value;
@@ -24,7 +24,7 @@ class NasabahFilterChips extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? emeraldPrimary : Colors.grey[100],
+            color: selected ? AppColors.greenDark : Colors.grey[100],
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(

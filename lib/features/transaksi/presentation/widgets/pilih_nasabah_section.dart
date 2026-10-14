@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
 
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class PilihNasabahSection extends StatelessWidget {
   final NasabahEntity? selectedCustomer;
@@ -47,7 +48,7 @@ class PilihNasabahSection extends StatelessWidget {
                   color: hasError
                       ? const Color(0xFFDC2626) // errorColor
                       : (selectedCustomer != null
-                          ? const Color(0xFF006D44)
+                          ? AppColors.greenDark
                           : Colors.grey[300]!),
                   width: 1.5),
             ),

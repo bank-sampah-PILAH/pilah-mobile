@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class TransaksiBerhasilBottomSheet extends StatefulWidget {
   final String customerName;
@@ -24,7 +25,6 @@ class TransaksiBerhasilBottomSheet extends StatefulWidget {
 
 class _TransaksiBerhasilBottomSheetState
     extends State<TransaksiBerhasilBottomSheet> {
-  static const Color emeraldPrimary = Color(0xFF006D44);
   bool _isSending = false;
 
   String _formatCurrency(int value) {
@@ -60,8 +60,8 @@ class _TransaksiBerhasilBottomSheetState
               color: Colors.green[50],
               shape: BoxShape.circle,
             ),
-            child:
-                const Icon(Icons.check_circle, color: emeraldPrimary, size: 40),
+            child: const Icon(Icons.check_circle,
+                color: AppColors.greenDark, size: 40),
           ),
           const SizedBox(height: 24),
 
@@ -124,7 +124,7 @@ class _TransaksiBerhasilBottomSheetState
                     setState(() => _isSending = false);
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: emeraldPrimary,
+              backgroundColor: AppColors.greenDark,
               padding: const EdgeInsets.symmetric(vertical: 16),
               minimumSize: const Size(double.infinity, 0),
               shape: RoundedRectangleBorder(
@@ -167,7 +167,7 @@ class _TransaksiBerhasilBottomSheetState
         Text(
           value,
           style: AppTextStyle.title1.copyWith(
-            color: isPrimary ? emeraldPrimary : Colors.black87,
+            color: isPrimary ? AppColors.greenDark : Colors.black87,
             fontWeight: isBold || isPrimary ? FontWeight.bold : FontWeight.w600,
             fontSize: isPrimary ? 16 : 14,
           ),

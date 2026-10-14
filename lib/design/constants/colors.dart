@@ -12,7 +12,10 @@ class AppColors {
 
   // Login & Shared Colors
   static const Color greenLight = Color(0xFFEAF5EC);
-  static const Color greenDark = Color(0xFF5D8E6C);
+  // Primary green, the emerald of the logo. 6.4:1 on white, so it meets WCAG AA
+  // (4.5:1) for text and for white text on it. Replaced the muted sage #5D8E6C
+  // (3.78:1) and the copies of this emerald that lived in a dozen screens.
+  static const Color greenDark = Color(0xFF006D44);
   static const Color cardOffWhite = Color(0xFFFAFAFA);
 
   // Dashboard Colors

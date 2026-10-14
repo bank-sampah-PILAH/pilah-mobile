@@ -51,8 +51,6 @@ class CatatPencairanView extends StatefulWidget {
     this.initialCustomer,
   });
 
-  static const Color emeraldPrimary = Color(0xFF006D44);
-
   @override
   State<CatatPencairanView> createState() => _CatatPencairanViewState();
 }
@@ -397,7 +395,7 @@ class _SaldoCard extends StatelessWidget {
         saldo = Text(
           'Rp ${formatRupiahId(state.saldo)}',
           style: AppTextStyle.title1.copyWith(
-            color: CatatPencairanView.emeraldPrimary,
+            color: AppColors.greenDark,
             fontWeight: FontWeight.bold,
           ),
         );
@@ -491,9 +489,7 @@ class _RingkasanCard extends StatelessWidget {
             value,
             style: (emphasized ? AppTextStyle.headline1 : AppTextStyle.title1)
                 .copyWith(
-              color: emphasized
-                  ? CatatPencairanView.emeraldPrimary
-                  : Colors.black87,
+              color: emphasized ? AppColors.greenDark : Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: emphasized ? 20 : 15,
             ),
@@ -529,7 +525,7 @@ class _PencairanBerhasilSheet extends StatelessWidget {
             ),
             child: const Icon(
               Icons.check_circle,
-              color: CatatPencairanView.emeraldPrimary,
+              color: AppColors.greenDark,
               size: 40,
             ),
           ),
@@ -586,9 +582,7 @@ class _PencairanBerhasilSheet extends StatelessWidget {
           Text(
             value,
             style: AppTextStyle.title1.copyWith(
-              color: isPrimary
-                  ? CatatPencairanView.emeraldPrimary
-                  : Colors.black87,
+              color: isPrimary ? AppColors.greenDark : Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: isPrimary ? 16 : 14,
             ),

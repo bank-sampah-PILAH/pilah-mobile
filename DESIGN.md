@@ -10,6 +10,7 @@ Read this before adding or changing a screen. Each rule is marked **in code** (e
 3. **Money first.** On any screen with an amount, the amount is the most prominent element.
 4. **Two audiences, one system.** Nasabah screens and Pengurus screens may differ in density and card style. They share the same palette, type, radii, and component behavior.
 5. **Every list has loading, empty, and error states.**
+6. **WCAG 2.1 AA is the accessibility baseline** (see 5.3).
 
 ## 2. Foundations
 
@@ -17,13 +18,12 @@ Read this before adding or changing a screen. Each rule is marked **in code** (e
 
 | Role | Token | Value | Status |
 |---|---|---|---|
-| Primary action (buttons, FAB, nav, hero cards, links) | `AppColors.greenDark` | `#5D8E6C` | in code; also `colorScheme.primary` |
+| Primary action (buttons, FAB, nav, hero cards, links) | `AppColors.greenDark` | `#006D44` | in code; also `colorScheme.primary`; the logo's emerald; WCAG AA (6.4:1 on white) |
 | Primary tint (avatars, soft backgrounds) | `AppColors.greenLight` | `#EAF5EC` | in code |
 | Text | `AppColors.black` | `#04021D` | in code |
 | Secondary text | `AppColors.grey100` | `#686777` | in code |
 | Border | `AppColors.grey200` | `#686777` at 38% | in code |
 | Card off-white | `AppColors.cardOffWhite` | `#FAFAFA` | in code |
-| Brand emerald (selected filter chips, money in detail sheets) | none | `#006D44` | **undecided**, see 5.1 |
 | Danger | none | `#DC2626` | proposed token; also `#C62828` in use |
 | Warning | none | amber family, 10+ shades in use | proposed: one pair (text + tint) |
 
@@ -88,13 +88,17 @@ These came out of the audit as the strongest existing screens.
 
 ## 5. Open decisions
 
-### 5.1 One green or two
+### 5.1 One green (decided)
 
-The app uses two greens: sage `#5D8E6C` (buttons, FAB, nav, hero cards) and emerald `#006D44` (selected filter chips in Nasabah and Harga, money in transaction detail). They sit side by side on the Nasabah tab. Pick one for "selected/primary", or define emerald as a deliberate "money/positive" color and use it only for amounts. Until decided, `AppTheme` uses sage because that is what most controls use.
+`AppColors.greenDark` (`#006D44`) is the only primary green: buttons, FAB, nav, hero cards, links, selected filter chips and amounts. It is the emerald of the logo (the logo's main green is about `#04845C`). The earlier muted sage `#5D8E6C` was a different color family and failed contrast, so it is gone; `test/design/single_primary_green_test.dart` pins the value and fails if a screen defines its own copy. `NasabahStyle.emerald` and `emeraldDark` are aliases of the same green.
 
-### 5.2 Text-field borders in the theme
+Still open: a few local tint colors next to it (for example the mint `#F0FDF4` behind status badges and the saldo block) are not tokens yet. Pick one tint, `AppColors.greenLight` (`#EAF5EC`) or the mint, and move it into `AppColors`.
 
-`AppTheme` does not set `inputDecorationTheme`. A theme-level `enabledBorder`/`focusedBorder` overrides a screen's own `border: InputBorder.none`, which would draw outlines on fields that have none today. Doing it safely needs a `WidgetStateInputBorder` and a pass over the borderless fields. Use `appInputDecoration` for now.
+### 5.3 Accessibility baseline: WCAG 2.1 AA (decided)
+
+The app follows WCAG 2.1 AA for color: 4.5:1 for normal-size text and for white text on a fill, 3:1 for large text and UI components. The primary emerald `#006D44` is 6.4:1 on white and clears 4.5:1 on the card off-white, `greenLight` and the mint tint. (The earlier sage `#5D8E6C` was 3.78:1; a darkened sage `#4D765A` passed but looked olive next to the logo.) `test/design/contrast_test.dart` checks these pairs and runs Flutter's `textContrastGuideline` on themed buttons. A new color pair used for text should be added to that test.
+
+Known gaps against this baseline, not yet audited screen by screen: light grey hint and caption text (`Colors.grey[400]` and similar), touch targets under 48 dp, and missing semantics labels on bare `GestureDetector`s.
 
 ## 6. Content and formatting rules
 

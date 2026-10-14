@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
@@ -25,7 +26,6 @@ class ItemSetoranCard extends StatelessWidget {
     this.errorText,
   });
 
-  static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color errorLight = Color(0xFFFEF2F2);
   static const Color errorColor = Color(0xFFDC2626);
 
@@ -97,7 +97,7 @@ class ItemSetoranCard extends StatelessWidget {
                           hint: Row(
                             children: [
                               const Icon(Icons.recycling,
-                                  color: emeraldPrimary, size: 20),
+                                  color: AppColors.greenDark, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'Pilih Jenis',
@@ -291,7 +291,7 @@ class ItemSetoranCard extends StatelessWidget {
                   Text(
                     _formatCurrency(subtotal),
                     style: AppTextStyle.title1.copyWith(
-                      color: emeraldPrimary,
+                      color: AppColors.greenDark,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),

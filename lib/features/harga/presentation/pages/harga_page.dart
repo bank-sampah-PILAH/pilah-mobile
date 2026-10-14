@@ -31,8 +31,6 @@ class _HargaPageBody extends StatefulWidget {
 }
 
 class _HargaPageBodyState extends State<_HargaPageBody> {
-  static const Color emeraldPrimary = Color(0xFF006D44);
-
   @override
   void initState() {
     super.initState();
@@ -109,8 +107,9 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 8),
                           decoration: BoxDecoration(
-                            color:
-                                isActiveTab ? emeraldPrimary : Colors.grey[100],
+                            color: isActiveTab
+                                ? AppColors.greenDark
+                                : Colors.grey[100],
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -132,7 +131,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                               horizontal: 20, vertical: 8),
                           decoration: BoxDecoration(
                             color: !isActiveTab
-                                ? emeraldPrimary
+                                ? AppColors.greenDark
                                 : Colors.grey[100],
                             borderRadius: BorderRadius.circular(20),
                           ),

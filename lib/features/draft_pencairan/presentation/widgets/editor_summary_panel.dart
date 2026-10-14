@@ -20,7 +20,6 @@ class EditorSummaryPanel extends StatefulWidget {
 }
 
 class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
-  static const _emerald = Color(0xFF006D44);
   bool _terbuka = false;
 
   void _atur(bool terbuka) => setState(() => _terbuka = terbuka);
@@ -84,7 +83,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                               rupiah(state.totalDibayar),
                               key: const Key('total-dibayar'),
                               style: AppTextStyle.headline1.copyWith(
-                                color: _emerald,
+                                color: AppColors.greenDark,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
                               ),

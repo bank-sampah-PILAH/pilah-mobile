@@ -109,7 +109,7 @@ class NasabahListItem extends StatelessWidget {
               ListTile(
                 leading: const Icon(
                   Icons.check_circle_outline,
-                  color: Color(0xFF006D44),
+                  color: AppColors.greenDark,
                 ),
                 title: const Text('Setujui'),
                 onTap: () => Navigator.of(sheetContext).pop(false),

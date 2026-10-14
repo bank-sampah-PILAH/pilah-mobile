@@ -252,7 +252,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
       initialDate: _tanggalLahir ?? DateTime(now.year - 20),
       firstDate: DateTime(1900),
       lastDate: now,
-      // The app theme's primary is teal-blue; this screen speaks emerald.
+      // NasabahStyle.emerald is the app's primary green, same as the theme; kept
+      // explicit so this picker does not depend on the theme.
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context)

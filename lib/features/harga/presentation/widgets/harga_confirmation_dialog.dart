@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Confirmation step for activating / deactivating a jenis sampah.
 ///
@@ -18,7 +19,6 @@ class HargaConfirmationDialog extends StatelessWidget {
     required this.wasteName,
   });
 
-  static const Color emeraldPrimary = Color(0xFF006D44);
   static const Color errorColor = Color(0xFFDC2626);
 
   /// Shows the dialog and resolves to whether the user confirmed.
@@ -137,7 +137,7 @@ class HargaConfirmationDialog extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          isActivating ? emeraldPrimary : errorColor,
+                          isActivating ? AppColors.greenDark : errorColor,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
