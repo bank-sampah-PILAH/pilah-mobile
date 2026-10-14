@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
@@ -13,13 +14,12 @@ class ProfileState extends Equatable {
   final String? error;
   final bool isSavingTemplate;
 
-  /// A logo the user has picked but not yet saved.
-  ///
-  /// Held separately from [bankSampah] rather than written into it, because
-  /// until the save lands it is a local file and not what the bank sampah has
-  /// on record. The avatar prefers it so the choice shows immediately, and
-  /// discarding it is all it takes to return to the stored logo.
+  /// A logo the user has picked but not yet saved on native platforms.
   final File? selectedLogoFile;
+
+  /// Browser-selected image bytes and filename, held until the profile saves.
+  final Uint8List? selectedLogoBytes;
+  final String? selectedLogoFilename;
 
   const ProfileState({
     this.status = ProfileStatus.initial,
@@ -29,6 +29,8 @@ class ProfileState extends Equatable {
     this.error,
     this.isSavingTemplate = false,
     this.selectedLogoFile,
+    this.selectedLogoBytes,
+    this.selectedLogoFilename,
   });
 
   /// [clearSelectedLogo] drops the pending pick, which `selectedLogoFile: null`
@@ -45,6 +47,8 @@ class ProfileState extends Equatable {
     String? error,
     bool? isSavingTemplate,
     File? selectedLogoFile,
+    Uint8List? selectedLogoBytes,
+    String? selectedLogoFilename,
     bool clearSelectedLogo = false,
   }) {
     return ProfileState(
@@ -57,6 +61,12 @@ class ProfileState extends Equatable {
       selectedLogoFile: clearSelectedLogo
           ? null
           : (selectedLogoFile ?? this.selectedLogoFile),
+      selectedLogoBytes: clearSelectedLogo
+          ? null
+          : (selectedLogoBytes ?? this.selectedLogoBytes),
+      selectedLogoFilename: clearSelectedLogo
+          ? null
+          : (selectedLogoFilename ?? this.selectedLogoFilename),
     );
   }
 
@@ -72,5 +82,7 @@ class ProfileState extends Equatable {
         // so re-picking the same image would look like a change and rebuild for
         // nothing.
         selectedLogoFile?.path,
+        selectedLogoBytes,
+        selectedLogoFilename,
       ];
 }

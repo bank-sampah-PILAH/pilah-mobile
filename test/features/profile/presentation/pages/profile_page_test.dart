@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -47,7 +48,11 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  Future<void> openPage(WidgetTester tester, {MockAuthBloc? bloc}) async {
+  Future<void> openPage(
+    WidgetTester tester, {
+    MockAuthBloc? bloc,
+    Size size = const Size(800, 2400),
+  }) async {
     await pumpRouted(
       tester,
       MultiBlocProvider(
@@ -60,7 +65,7 @@ void main() {
         child: ProfilePage(),
       ),
       extraRoutes: ['/login'],
-      size: const Size(800, 2400),
+      size: size,
       pushed: true,
     );
     await tester.pumpAndSettle();
@@ -85,6 +90,34 @@ void main() {
     expect(
         find.widgetWithText(TextFormField, '+6281234567890'), findsOneWidget);
     expect(find.text('Simpan Pengaturan'), findsOneWidget);
+  });
+
+  testWidgets('shows the signed-in account email in the profile',
+      (tester) async {
+    await openPage(tester);
+
+    expect(find.text('siti@example.test'), findsOneWidget);
+  });
+
+  testWidgets('desktop places bank settings beside the WhatsApp template',
+      (tester) async {
+    await openPage(tester, size: const Size(1440, 900));
+
+    final bankSection = tester.getTopLeft(find.text('PROFIL BANK SAMPAH'));
+    final waSection = tester.getTopLeft(find.text('TEMPLATE NOTIFIKASI WA'));
+
+    expect(waSection.dx, greaterThan(bankSection.dx));
+  });
+
+  testWidgets('mobile stacks bank settings above the WhatsApp template',
+      (tester) async {
+    await openPage(tester, size: const Size(390, 844));
+
+    final bankSection = tester.getTopLeft(find.text('PROFIL BANK SAMPAH'));
+    final waSection = tester.getTopLeft(find.text('TEMPLATE NOTIFIKASI WA'));
+
+    expect(waSection.dx, bankSection.dx);
+    expect(waSection.dy, greaterThan(bankSection.dy));
   });
 
   testWidgets('a failed load can be retried', (tester) async {
@@ -230,6 +263,49 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+  });
+
+  testWidgets('previews a browser-selected logo from its bytes',
+      (tester) async {
+    await openPage(tester);
+    expect(cubit.state.status.toString(), 'ProfileStatus.loaded');
+    cubit.emit(cubit.state.copyWith(
+      selectedLogoBytes: Uint8List.fromList(base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
+      selectedLogoFilename: 'bank-logo.png',
+    ));
+    expect(cubit.state.selectedLogoBytes, isNotNull);
+    await tester.pumpAndSettle();
+
+    expect(cubit.state.selectedLogoBytes, isNotNull);
+    expect(
+      tester.widget<ClipOval>(find.byType(ClipOval)).child,
+      isA<Image>(),
+    );
+  });
+
+  testWidgets('a browser logo decode error uses the placeholder',
+      (tester) async {
+    await openPage(tester);
+    cubit.emit(cubit.state.copyWith(
+      selectedLogoBytes: Uint8List.fromList(base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
+      selectedLogoFilename: 'bank-logo.png',
+    ));
+    expect(cubit.state.selectedLogoBytes, isNotNull);
+    await tester.pumpAndSettle();
+
+    final logo = tester.widget<ClipOval>(find.byType(ClipOval)).child as Image;
+    expect(logo.image, isA<MemoryImage>());
+    final fallback = logo.errorBuilder!(
+      tester.element(find.byType(ClipOval)),
+      StateError('invalid logo bytes'),
+      StackTrace.current,
+    );
+    expect(fallback, isA<Center>());
+    final placeholder = fallback as Center;
+    expect(placeholder.child, isA<Icon>());
+    expect((placeholder.child as Icon).icon, Icons.home_outlined);
   });
 
   testWidgets('a stored logo is shown from its URL', (tester) async {

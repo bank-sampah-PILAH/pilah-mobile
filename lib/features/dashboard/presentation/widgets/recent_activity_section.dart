@@ -31,11 +31,13 @@ class RecentActivitySection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Aktivitas Terbaru',
-              style: AppTextStyle.title1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Aktivitas Terbaru',
+                style: AppTextStyle.title1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             TextButton(
