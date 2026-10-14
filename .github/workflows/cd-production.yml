@@ -23,6 +23,17 @@ jobs:
       contents: read
       id-token: write
 
+  # Scans what was just deployed. It only flags the tag red; the deploy is already live.
+  nuclei_post_deploy:
+    name: Exposure scan (Nuclei, production web)
+    needs: deploy_web_production
+    permissions:
+      contents: read
+    uses: ./.github/workflows/nuclei-scan.yml
+    with:
+      environment: production
+      target_url: ${{ needs.deploy_web_production.outputs.url }}
+
   release:
     name: Build production APK artifact
     runs-on: ubuntu-latest
