@@ -7,8 +7,13 @@ import 'layout_breakpoint.dart';
 /// Wadah yang dipakai sebuah picker modal pada lebar jendela tertentu.
 ///
 /// Dipisahkan dari widget mana pun supaya aturannya dapat diuji tanpa
-/// membangun tree, dan supaya keempat picker pada fitur transaksi memakai
-/// jawaban yang sama alih-alih masing-masing memeriksa MediaQuery.
+/// membangun tree, dan supaya picker yang memakainya menjawab sama alih-alih
+/// masing-masing memeriksa MediaQuery.
+///
+/// Dipakai dua tempat: picker nasabah (`pilih_nasabah_section.dart`) dan
+/// konfirmasi berhasil (`transaksi_baru_page.dart`). `aktivitas_list_view.dart`
+/// dan `time_filter_chips.dart` masih memanggil `showModalBottomSheet`
+/// langsung; keduanya di luar lingkup PIL-340 dan belum disentuh.
 ///
 /// Perhatikan bahwa pembedanya di sini adalah **lebar**, bukan platform seperti
 /// pada [NavigationForm]. Aturan lead dev — bottom bar di aplikasi, navigasi
