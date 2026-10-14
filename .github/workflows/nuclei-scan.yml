@@ -11,7 +11,7 @@
 #
 # Passive GET requests only. The target is a fixed choice, not a free URL. URLs come from
 # repository variables (Settings -> Secrets and variables -> Actions -> Variables):
-#   NUCLEI_STAGING_WEB_URL      (optional, default below)
+#   NUCLEI_STAGING_WEB_URL      (required for staging)
 #   NUCLEI_PRODUCTION_WEB_URL   (required for production; the Cloud Run URL is generated,
 #                                read it from the deploy job summary, do not guess it)
 name: Nuclei scan
@@ -48,7 +48,7 @@ jobs:
     env:
       NUCLEI_IMAGE: projectdiscovery/nuclei:v3.11.0
       ENVIRONMENT: ${{ inputs.environment || 'staging' }}
-      STAGING_WEB_URL: ${{ vars.NUCLEI_STAGING_WEB_URL || 'https://pilah-web-staging.fly.dev' }}
+      STAGING_WEB_URL: ${{ vars.NUCLEI_STAGING_WEB_URL }}
       PRODUCTION_WEB_URL: ${{ vars.NUCLEI_PRODUCTION_WEB_URL }}
     steps:
       - name: Resolve target
@@ -60,7 +60,7 @@ jobs:
           esac
           case "$url" in
             https://*) ;;
-            *) echo "::error::Missing or non-HTTPS web URL for $ENVIRONMENT; set the NUCLEI_*_WEB_URL repository variable."; exit 1 ;;
+            *) echo "::error::Missing or non-HTTPS web URL for $ENVIRONMENT; set the NUCLEI_${ENVIRONMENT^^}_WEB_URL repository variable."; exit 1 ;;
           esac
           echo "TARGET=$url" >> "$GITHUB_ENV"
 
