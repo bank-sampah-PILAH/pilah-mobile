@@ -33,6 +33,7 @@ class MapPickerPage extends StatefulWidget {
     this.initialRadiusKm,
     this.showRadius = false,
     this.tileLayerBuilder = osmTileLayer,
+    this.placeSearch,
   });
 
   /// Where the pin starts. Defaults to somewhere over Indonesia when the
@@ -51,6 +52,11 @@ class MapPickerPage extends StatefulWidget {
   /// as any map child so a test can park a blank widget there instead of
   /// hand-rolling a TileProvider.
   final Widget Function() tileLayerBuilder;
+
+  /// Test seam for the Nominatim place search: null = the real HTTP call,
+  /// a test injects its own shaped results. Same contract as tileLayerBuilder.
+  final Future<List<({String nama, LatLng titik})>> Function(String kueri)?
+      placeSearch;
 
   /// The default search radius when nothing was saved before.
   static const radiusDefault = 5.0;
@@ -121,33 +127,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
     final percobaan = ++_percobaanCari;
     setState(() => _mencari = true);
     try {
-      final response = await Dio().get<List<dynamic>>(
-        'https://nominatim.openstreetmap.org/search',
-        queryParameters: {
-          'q': kueri,
-          'format': 'json',
-          'limit': '5',
-          'accept-language': 'id',
-        },
-        options: Options(
-          headers: {'User-Agent': 'pilah-mobile/1.0 (pemilihan lokasi)'},
-          receiveTimeout: const Duration(seconds: 10),
-        ),
-      );
+      final hasil = await (widget.placeSearch ?? _cariNominatimAsli)(kueri);
       if (!mounted || percobaan != _percobaanCari) return;
-      setState(() {
-        _hasilCari = [
-          for (final row in response.data ?? const [])
-            (
-              nama: (row as Map<String, dynamic>)['display_name'] as String? ??
-                  '',
-              titik: LatLng(
-                double.parse(row['lat'] as String),
-                double.parse(row['lon'] as String),
-              ),
-            ),
-        ];
-      });
+      setState(() => _hasilCari = hasil);
     } on Exception {
       if (!mounted || percobaan != _percobaanCari) return;
       setState(() => _hasilCari = []);
@@ -155,6 +137,30 @@ class _MapPickerPageState extends State<MapPickerPage> {
       if (mounted) setState(() => _mencari = false);
     }
   }
+
+  // Raw network glue; its parsing is extracted (and tested) as
+  // parseNominatimRows, and a live Nominatim call inside `flutter test` is
+  // exactly what the seam avoids.
+  // coverage:ignore-start
+  /// The real HTTP place search against Nominatim (OpenStreetMap).
+  Future<List<({String nama, LatLng titik})>> _cariNominatimAsli(
+      String kueri) async {
+    final response = await Dio().get<List<dynamic>>(
+      'https://nominatim.openstreetmap.org/search',
+      queryParameters: {
+        'q': kueri,
+        'format': 'json',
+        'limit': '5',
+        'accept-language': 'id',
+      },
+      options: Options(
+        headers: {'User-Agent': 'pilah-mobile/1.0 (pemilihan lokasi)'},
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
+    return parseNominatimRows(response.data);
+  }
+  // coverage:ignore-end
 
   void _pilihHasil(({String nama, LatLng titik}) hasil) {
     _controller.move(hasil.titik, 17);
@@ -574,6 +580,20 @@ class _MapPickerPageState extends State<MapPickerPage> {
         ),
       );
 }
+
+/// Shaping for a Nominatim `/search` JSON array; null data parses as an
+/// empty result list. Pure so the real HTTP body's parsing can be tested
+/// without a network stack.
+List<({String nama, LatLng titik})> parseNominatimRows(List<dynamic>? rows) => [
+      for (final row in rows ?? const [])
+        (
+          nama: (row as Map<String, dynamic>)['display_name'] as String? ?? '',
+          titik: LatLng(
+            double.parse(row['lat'] as String),
+            double.parse(row['lon'] as String),
+          ),
+        ),
+    ];
 
 /// Titik pusat Marketplace-style: bulatan hijau pekat dengan cincin putih.
 class _TitikPusat extends StatelessWidget {

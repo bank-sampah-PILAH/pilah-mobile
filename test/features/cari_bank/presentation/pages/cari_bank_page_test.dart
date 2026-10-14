@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/cari_bank_page.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -124,6 +126,29 @@ void main() {
     expect(find.textContaining('OpenStreetMap contributors'), findsOneWidget);
   });
 
+  testWidgets('peta mode with location fix draws the user dot', (tester) async {
+    // The page open's own location call already consumed the first stub;
+    // PetaBankView asks again on mount — the second answer is the fix that
+    // the user dot draws from.
+    // The fix sits on the fitted camera (the single bank's own point): the
+    // dot is inside the viewport when the layer builds.
+    final location = di<LocationService>() as _FakeLocationService;
+    when(() => location.currentLocation()).thenAnswer(
+        (_) async => (latitude: -6.362829, longitude: 106.828655));
+    api.on('GET', _directory,
+        json: bankSampahPage([
+          bankRow('b1', 'Bank Garis',
+              latitude: -6.362829, longitude: 106.828655),
+        ]));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    await keModePeta(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('cari_bank_titik_saya')), findsOneWidget);
+  });
+
   testWidgets('tapping a marker opens the summary and routes to detail',
       (tester) async {
     api.on('GET', _directory,
@@ -227,4 +252,94 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.last.query['radius_km'], '5.0');
   });
+
+  testWidgets('scrolling near the end of a long list fetches the next page',
+      (tester) async {
+    api.on('GET', _directory,
+        json: bankSampahPage(
+          [
+            for (final i in List<int>.generate(12, (n) => n + 1))
+              bankRow('b$i', 'Bank $i')
+          ],
+          count: 20,
+          hasNext: true,
+        ));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    api.on('GET', _directory,
+        json: bankSampahPage(
+          [bankRow('b20', 'Bank 20')],
+          count: 20,
+        ));
+    await tester.drag(find.byType(ListView).last, const Offset(0, -800));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(api.requests.last.query['page'], '2');
+  });
+
+  testWidgets('a cancelled map pick leaves the origin untouched',
+      (tester) async {
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b1', 'Bank Garis')]));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    final permintaanSebelum = api.requests.length;
+
+    await tester.tap(find.byKey(const Key('cari_bank_pilih_di_peta')));
+    await tester.pumpAndSettle();
+    expect(find.byType(MapPickerPage), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MapPickerPage), findsNothing);
+    expect(api.requests.length, permintaanSebelum);
+  });
+
+  testWidgets('a saved pick re-searches with sort=distance and the trio',
+      (tester) async {
+    api.on('GET', _directory,
+        json: bankSampahPage([bankRow('b1', 'Bank Garis')]));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('cari_bank_pilih_di_peta')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('latitude_field')), '-6.36');
+    await tester.enterText(find.byKey(const Key('longitude_field')), '106.82');
+    await tester.tap(find.byKey(const Key('simpan_lokasi')));
+    await tester.pumpAndSettle();
+
+    final terakhir = api.requests.last.query;
+    expect(terakhir['latitude'], '-6.36');
+    expect(terakhir['longitude'], '106.82');
+    expect(terakhir['radius_km'], '5.0');
+    expect(terakhir['sort'], 'distance');
+  });
+
+  testWidgets('the Daftar pill returns from Peta to the list', (tester) async {
+    api.on('GET', _directory,
+        json: bankSampahPage([
+          bankRow('b1', 'Bank Garis',
+              latitude: -6.362829, longitude: 106.828655),
+        ]));
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+    await keModePeta(tester);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('cari_bank_marker_b1')), findsOneWidget);
+
+    await tester.tap(find.text('Daftar'));
+    await tester.pumpAndSettle();
+    // The rows are back on the plain scroll view.
+    expect(find.text('Depok · Jl. Bank Garis'), findsOneWidget);
+    expect(find.byType(FlutterMap), findsNothing);
+  });
+
 }

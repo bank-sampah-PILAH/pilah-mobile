@@ -64,4 +64,103 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('K-1 · Kardus'), findsOneWidget);
   });
+
+  testWidgets('a bank without coordinates shows no map button', (tester) async {
+    api.on(
+      'GET',
+      _detail,
+      // lat/lng omitted: the entity's fallbacks take over as no-location.
+      json: bankDetailJson(layanan: [])
+        ..remove('latitude')
+        ..remove('longitude'),
+    );
+
+    await pumpRouted(
+      tester,
+      const BankSampahDetailPage(bankSampahId: 'b1'),
+      size: const Size(600, 1200),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('detail_bank_buka_peta')), findsNothing);
+    // Empty layanan: the note replaces the list and there is no comparison
+    // button either.
+    expect(find.text('Belum ada jenis sampah aktif pada bank ini.'),
+        findsOneWidget);
+    expect(find.byKey(const Key('detail_bank_bandingkan_harga')), findsNothing);
+  });
+
+  testWidgets('Buka peta pushes the full-screen lokasi map', (tester) async {
+    api.on(
+      'GET',
+      _detail,
+      json: bankDetailJson(layanan: [layananJson('K-1', 'Kardus', '1500.00')]),
+    );
+
+    await pumpRouted(
+      tester,
+      const BankSampahDetailPage(bankSampahId: 'b1'),
+      size: const Size(600, 1200),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('detail_bank_buka_peta')));
+    await tester.pumpAndSettle();
+
+    // The map page pushed: its title and the pin are visible.
+    expect(find.text('Lokasi Bank Sampah'), findsOneWidget);
+    expect(find.byKey(const Key('detail_bank_marker')), findsOneWidget);
+  });
+
+  testWidgets('a deskripsi row shows under the kode line when present',
+      (tester) async {
+    api.on(
+      'GET',
+      _detail,
+      json: bankDetailJson(
+        layanan: [
+          {...layananJson('K-1', 'Kardus', '1500.00'),
+            'deskripsi': 'Kardus bekas olahan'},
+        ],
+      ),
+    );
+
+    await pumpRouted(
+      tester,
+      const BankSampahDetailPage(bankSampahId: 'b1'),
+      size: const Size(600, 1200),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kardus bekas olahan'), findsOneWidget);
+  });
+
+  testWidgets('Bandingkan Harga pushes the comparison page with the seed',
+      (tester) async {
+    api.on(
+      'GET',
+      _detail,
+      json: bankDetailJson(layanan: [layananJson('K-1', 'Kardus', '1500.00')]),
+    );
+
+    await pumpRouted(
+      tester,
+      const BankSampahDetailPage(bankSampahId: 'b1'),
+      extraRoutes: [
+        '/perbandingan-harga',
+      ],
+      size: const Size(600, 1200),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('detail_bank_bandingkan_harga')));
+    await tester.pumpAndSettle();
+
+    // The comparison page route rendered its stub line.
+    expect(
+      find.textContaining('route:/perbandingan-harga'),
+      findsOneWidget,
+      reason: 'the seed push landed on the registered extra route',
+    );
+  });
 }
