@@ -620,39 +620,43 @@ class _ProfileViewState extends State<_ProfileView>
         GestureDetector(
           key: const Key('pilih_lokasi_peta'),
           onTap: _openMapPicker,
-          child: lokasi == null
-              ? Container(
-                  height: 140,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.map_outlined,
-                        size: 28,
-                        color: AppColors.greenDark,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Belum diatur — ketuk untuk memilih di peta',
-                        style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
+          // The map's own recognizers never lose a tap to the wrapper in the
+          // arena; IgnorePointer routes every touch straight to this onTap.
+          child: IgnorePointer(
+            child: lokasi == null
+                ? Container(
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.map_outlined,
+                          size: 28,
+                          color: AppColors.greenDark,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Text(
+                          'Belum diatur — ketuk untuk memilih di peta',
+                          style: AppTextStyle.extraSmall.copyWith(
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: MiniLokasiMap(
+                      titik: LatLng(lokasi.latitude, lokasi.longitude),
+                    ),
                   ),
-                )
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: MiniLokasiMap(
-                    titik: LatLng(lokasi.latitude, lokasi.longitude),
-                  ),
-                ),
+          ),
         ),
         if (pending != null)
           Padding(
