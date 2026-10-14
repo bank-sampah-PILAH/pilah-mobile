@@ -111,7 +111,7 @@ Known gaps against this baseline, not yet audited screen by screen: light grey h
 
 ## 7. Checklist for a new screen
 
-- [ ] Colors and text from tokens, no new literals.
+- [ ] Colors and text from tokens, no new literals. `test/design/hardcoded_styles_test.dart` fails on any new raw `Color(0x…)` or `fontSize:` outside `lib/design/`; after removing some, lower its baseline with `UPDATE_BASELINE=1 flutter test test/design/hardcoded_styles_test.dart`.
 - [ ] Stock widgets left alone, so the theme applies.
 - [ ] Sheets use `BottomSheetHeader`.
 - [ ] Loading, empty and error states handled.
