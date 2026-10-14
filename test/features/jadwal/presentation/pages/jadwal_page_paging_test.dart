@@ -124,6 +124,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Waktu mulai harus di masa depan'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
       verifyNever(() => repository.createJadwal(any()));
       await tester.pumpAndSettle(const Duration(seconds: 5));
     });

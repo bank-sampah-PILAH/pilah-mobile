@@ -405,6 +405,7 @@ void main() {
       find.text('Waktu selesai harus setelah waktu mulai'),
       findsOneWidget,
     );
+    expect(find.byType(SnackBar), findsNothing);
     verifyNever(() => repository.updateJadwal(any()));
   });
 
@@ -433,6 +434,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Jadwal gagal disimpan'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('jadwal-form')),
