@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/domain/entities/cari_bank_entities.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/perbandingan_harga/domain/entities/perbandingan_harga_entities.dart';
 import 'package:pilah_mobile/features/perbandingan_harga/presentation/cubit/perbandingan_harga_cubit.dart';
 import 'package:pilah_mobile/features/perbandingan_harga/presentation/cubit/perbandingan_harga_state.dart';
@@ -23,6 +25,13 @@ class PerbandinganSeed {
     required this.layananAsal,
   });
 }
+
+/// Jumlah bank maksimal pada satu perbandingan — sama dengan batas endpoint.
+const int _bankMaksimal = 10;
+
+String _formatTanggal(DateTime date) =>
+    '${date.day.toString().padLeft(2, '0')}/'
+    '${date.month.toString().padLeft(2, '0')}/${date.year}';
 
 /// Perbandingan harga satu jenis sampah antar bank (PIL-309), diambil dari
 /// layanan (kode) sebuah bank acuan — kode yang sama mencari baris yang
@@ -52,14 +61,45 @@ class PerbandinganHargaPage extends StatefulWidget {
 
 class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
   late final PerbandinganHargaCubit _cubit = di<PerbandinganHargaCubit>();
+  late final List<String> _bankIds = [widget.bankAsalId];
+  late String _jenisSampahId = widget.jenisSampahId;
 
   @override
   void initState() {
     super.initState();
-    _cubit.muat(
-      jenisSampahId: widget.jenisSampahId,
-      bankIds: [widget.bankAsalId],
+    _muat();
+  }
+
+  void _muat() => _cubit.muat(
+        jenisSampahId: _jenisSampahId,
+        bankIds: _bankIds,
+      );
+
+  Future<void> _pilihJenis(String? layananId) async {
+    if (layananId == null || layananId == _jenisSampahId) return;
+    setState(() => _jenisSampahId = layananId);
+    _muat();
+  }
+
+  Future<void> _tambahBank() async {
+    if (_bankIds.length >= _bankMaksimal) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Maksimal $_bankMaksimal bank dalam satu perbandingan.'),
+        ),
+      );
+      return;
+    }
+    final terpilih = await showModalBottomSheet<BankSampahDirectoryEntity>(
+      context: context,
+      builder: (_) => _PilihBankSheet(
+        bankTerpilih: _bankIds.toSet(),
+      ),
     );
+    if (terpilih == null || !mounted) return;
+    setState(() => _bankIds.add(terpilih.id));
+    _muat();
   }
 
   @override
@@ -100,10 +140,34 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        DropdownButtonFormField<String>(
+          initialValue: _jenisSampahId,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Jenis sampah',
+            border: OutlineInputBorder(),
+          ),
+          items: widget.layananAsal
+              .map(
+                (layanan) => DropdownMenuItem(
+                  value: layanan.id,
+                  child: Text('${layanan.kode} · ${layanan.namaSampah}'),
+                ),
+              )
+              .toList(),
+          onChanged: _pilihJenis,
+        ),
+        const SizedBox(height: 8),
+        // Satuan comes from the backend envelope of the loaded comparison.
         Text(
-          'Jenis: ${loaded.data.jenisSampah.namaSampah} '
-          '(${loaded.data.jenisSampah.nomor})',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          'Satuan: ${loaded.data.jenisSampah.satuan}',
+          style: const TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+        OutlinedButton.icon(
+          key: const Key('perbandingan_tambah_bank'),
+          onPressed: _tambahBank,
+          icon: const Icon(Icons.add_business_outlined, size: 18),
+          label: const Text('Tambah bank pembanding'),
         ),
         const SizedBox(height: 12),
         ...loaded.data.perbandingan.map(_barisBank),
@@ -119,12 +183,18 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
         ? 'Harga belum tersedia'
         : 'Rp ${formatRupiahId(rupiah)}';
     final nama = row.nama ?? '(bank tidak bisa dibandingkan)';
+    final berlaku = row.berlakuMulai == null
+        ? null
+        : 'Berlaku ${_formatTanggal(DateTime.parse(row.berlakuMulai!).toLocal())}';
     return Card(
       key: Key('perbandingan_baris_${row.bankSampahId}'),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(nama, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(row.kota ?? ''),
+        subtitle: Text(
+          berlaku == null ? row.kota ?? '' : '${row.kota ?? ''}\n$berlaku',
+        ),
+        isThreeLine: berlaku != null,
         trailing: Text(
           hargaTampil,
           style: TextStyle(
@@ -136,3 +206,103 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
     );
   }
 }
+
+/// Sheet pemilih bank pembanding: satu halaman direktori (joinable-filtered
+/// di backend), pencarian klien, bank yang sudah dibandingkan disembunyikan.
+class _PilihBankSheet extends StatefulWidget {
+  final Set<String> bankTerpilih;
+
+  const _PilihBankSheet({required this.bankTerpilih});
+
+  @override
+  State<_PilihBankSheet> createState() => _PilihBankSheetState();
+}
+
+class _PilihBankSheetState extends State<_PilihBankSheet> {
+  List<BankSampahDirectoryEntity> _semua = [];
+  String _query = '';
+  _MuatSheet _state = _MuatSheet.loading;
+  String? _pesan;
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    setState(() => _state = _MuatSheet.loading);
+    try {
+      final page =
+          await di<CariBankRemoteDataSource>().search(page: 1, q: _query);
+      if (!mounted) return;
+      setState(() {
+        _semua = page.items
+            .where((b) => !widget.bankTerpilih.contains(b.id))
+            .toList();
+        _state = _semua.isEmpty ? _MuatSheet.kosong : _MuatSheet.selesai;
+      });
+    } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _state = _MuatSheet.gagal;
+        _pesan = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        child: SizedBox(
+          height: 480,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: TextField(
+                  key: const Key('perbandingan_picker_cari'),
+                  decoration: const InputDecoration(
+                    hintText: 'Cari bank sampah',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (v) {
+                    _query = v;
+                    _muat();
+                  },
+                ),
+              ),
+              Expanded(
+                child: switch (_state) {
+                  _MuatSheet.loading =>
+                    const Center(child: CircularProgressIndicator()),
+                  _MuatSheet.gagal => Center(
+                      child: Text(_pesan ?? 'Gagal memuat daftar bank'),
+                    ),
+                  _MuatSheet.kosong => const Center(
+                      child: Text('Tidak ada bank sampah lain'),
+                    ),
+                  _MuatSheet.selesai => ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _semua.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final bank = _semua[i];
+                        return ListTile(
+                          key: Key('perbandingan_picker_bank_${bank.id}'),
+                          title: Text(bank.nama),
+                          subtitle: Text(bank.kota),
+                          onTap: () => Navigator.pop(context, bank),
+                        );
+                      },
+                    ),
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+enum _MuatSheet { loading, gagal, kosong, selesai }
