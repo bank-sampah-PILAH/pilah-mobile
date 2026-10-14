@@ -27,6 +27,25 @@ void main() {
     });
   });
 
+  group('typography weights', () {
+    testWidgets('bold plain text is real Poppins, not a lighter face',
+        (tester) async {
+      await tester.pumpWidget(_app(
+        const Text(
+          'Oktober 2026',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+      ));
+
+      final style = tester
+          .renderObject<RenderParagraph>(find.text('Oktober 2026'))
+          .text
+          .style;
+      expect(style?.fontFamily, 'Poppins');
+      expect(style?.fontWeight, FontWeight.w700);
+    });
+  });
+
   group('buttons', () {
     testWidgets('a plain TextButton uses the app green, not the seed colour',
         (tester) async {

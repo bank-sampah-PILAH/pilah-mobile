@@ -31,7 +31,7 @@ Read this before adding or changing a screen. Each rule is marked **in code** (e
 
 ### Typography (`lib/design/constants/text_style.dart`)
 
-Font: **Poppins**. `AppTheme` sets it as the default text font, so a bare `Text` is Poppins.
+Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). `AppTheme` sets it as the default text font, so a bare `Text` is Poppins and `fontWeight` picks the real face. `AppTextStyle` still loads Poppins through `google_fonts` at runtime; both look the same.
 
 | Style | Size / weight | Use |
 |---|---|---|
