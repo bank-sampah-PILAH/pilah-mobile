@@ -197,6 +197,7 @@ class NasabahListItem extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.center,

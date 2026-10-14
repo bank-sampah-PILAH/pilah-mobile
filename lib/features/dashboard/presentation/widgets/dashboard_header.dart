@@ -40,21 +40,21 @@ class DashboardHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Selamat datang, $name ',
-                          style: AppTextStyle.title1.copyWith(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Text('👋', style: TextStyle(fontSize: 18)),
-                    ],
+                  // Wraps to a second line instead of cutting a long name off.
+                  Text.rich(
+                    TextSpan(
+                      text: 'Selamat datang, $name ',
+                      children: const [
+                        TextSpan(text: '👋', style: TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

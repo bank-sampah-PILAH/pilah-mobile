@@ -159,7 +159,7 @@ void main() {
     await pump(tester, const DashboardHeader());
 
     expect(find.text('Bank Sampah Melati'), findsOneWidget);
-    expect(find.text('Selamat datang, Siti Aminah '), findsOneWidget);
+    expect(find.textContaining('Selamat datang, Siti Aminah'), findsOneWidget);
     expect(find.text('SA'), findsOneWidget);
 
     await tester.tap(find.text('SA'));
@@ -173,7 +173,7 @@ void main() {
     await pump(tester, const DashboardHeader());
 
     expect(find.text('Bank Sampah'), findsOneWidget);
-    expect(find.text('Selamat datang, Pengelola '), findsOneWidget);
+    expect(find.textContaining('Selamat datang, Pengelola'), findsOneWidget);
     expect(find.text('P'), findsOneWidget);
   });
 
@@ -181,7 +181,7 @@ void main() {
     arrange(session: Unauthenticated());
     await pump(tester, const DashboardHeader());
 
-    expect(find.text('Selamat datang, Pengelola '), findsOneWidget);
+    expect(find.textContaining('Selamat datang, Pengelola'), findsOneWidget);
   });
 
   testWidgets('total kas shows each loading state', (tester) async {
