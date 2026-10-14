@@ -75,6 +75,7 @@ Use these instead of building another one.
 | Primary / secondary button | `CustomPrimaryButton`, `CustomOutlinedButton`, `design/widgets/atom/primary_button.dart` | Plain `FilledButton`/`TextButton` pick up the theme color. |
 | Search | `CustomSearchField` | |
 | Status chip | `CustomStatusBadge` | |
+| Filter / tab pill | `AppChip` (`design/widgets`) | Announced to screen readers as a selected or unselected button, ripple, 48 dp hit area, optional icon and count. Used by the nasabah, harga, aktivitas and pencairan filters; `PencairanChip` wraps it. |
 | Confirm dialog | `showAppConfirmDialog` (`core/bases/widgets`) | Answers `true` only on confirm. Used by logout, leaving onboarding and Jadwal cancel/complete. |
 | Empty state | `EmptyView` | |
 | Loading list | `SkeletonListItem` | Avoid a bare spinner for lists. |
@@ -107,7 +108,7 @@ Still open: a few local tint colors next to it (for example the mint `#F0FDF4` b
 
 The app follows WCAG 2.1 AA for color: 4.5:1 for normal-size text and for white text on a fill, 3:1 for large text and UI components. The primary emerald `#006D44` is 6.4:1 on white and clears 4.5:1 on the card off-white, `greenLight` and the mint tint. (The earlier sage `#5D8E6C` was 3.78:1; a darkened sage `#4D765A` passed but looked olive next to the logo.) `test/design/contrast_test.dart` checks these pairs and runs Flutter's `textContrastGuideline` on themed buttons. A new color pair used for text should be added to that test.
 
-Known gaps against this baseline, not yet audited screen by screen: light grey hint and caption text (`Colors.grey[400]` and similar), touch targets under 48 dp, and missing semantics labels on bare `GestureDetector`s.
+Known gaps against this baseline, not yet audited screen by screen: light grey hint and caption text (`Colors.grey[400]` and similar), touch targets under 48 dp, and remaining bare `GestureDetector`s (the filter chips now use `AppChip`).
 
 ## 6. Content and formatting rules
 

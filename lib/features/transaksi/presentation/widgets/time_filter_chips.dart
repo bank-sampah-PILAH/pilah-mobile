@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// Period chips, custom range, and setoran-only export for the unified
 /// Riwayat Aktivitas screen (PIL-282). Export and the custom range operate
@@ -142,25 +143,10 @@ class TimeFilterChips extends StatelessWidget {
     String periode,
     String activePeriode,
   ) {
-    final bool isSelected = activePeriode == periode;
-    return GestureDetector(
-      onTap: () {
-        context.read<RiwayatAktivitasCubit>().setPeriode(periode);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.greenDark : AppColors.fill,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyle.small.copyWith(
-            color: isSelected ? Colors.white : AppColors.grey100,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+    return AppChip(
+      label: label,
+      selected: activePeriode == periode,
+      onTap: () => context.read<RiwayatAktivitasCubit>().setPeriode(periode),
     );
   }
 }

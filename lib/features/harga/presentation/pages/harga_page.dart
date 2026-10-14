@@ -11,6 +11,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 class HargaPage extends StatelessWidget {
   const HargaPage({super.key});
@@ -100,51 +101,18 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                       state is HargaLoaded ? state.isActiveTab : true;
                   return Row(
                     children: [
-                      GestureDetector(
+                      AppChip(
+                        label: 'Aktif',
+                        selected: isActiveTab,
                         onTap: () =>
                             context.read<HargaCubit>().setActiveTab(true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isActiveTab
-                                ? AppColors.greenDark
-                                : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Aktif',
-                            style: AppTextStyle.small.copyWith(
-                              color:
-                                  isActiveTab ? Colors.white : Colors.grey[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
                       ),
                       const SizedBox(width: 8),
-                      GestureDetector(
+                      AppChip(
+                        label: 'Tidak Aktif',
+                        selected: !isActiveTab,
                         onTap: () =>
                             context.read<HargaCubit>().setActiveTab(false),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: !isActiveTab
-                                ? AppColors.greenDark
-                                : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Tidak Aktif',
-                            style: AppTextStyle.small.copyWith(
-                              color: !isActiveTab
-                                  ? Colors.white
-                                  : Colors.grey[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
                       ),
                     ],
                   );

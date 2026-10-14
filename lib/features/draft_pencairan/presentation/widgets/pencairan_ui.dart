@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// The look of Catat Pencairan, shared by the draft screens so they read as
 /// one flow: a grey rounded back button, bold title, spaced section labels,
@@ -80,7 +81,9 @@ class SectionLabel extends StatelessWidget {
       );
 }
 
-/// A pill: solid green when selected, light grey otherwise.
+/// A pill: solid green when selected, light grey otherwise. It is an
+/// [AppChip] under the hood, so it is announced to screen readers as a
+/// selected or unselected button.
 class PencairanChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -100,54 +103,13 @@ class PencairanChip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final color = selected ? Colors.white : AppColors.grey100;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.greenDark : AppColors.fill,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: AppTextStyle.small.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (count != null) ...[
-              const SizedBox(width: 6),
-              Container(
-                constraints: const BoxConstraints(minWidth: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white : AppColors.border,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: selected ? AppColors.greenDark : color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppChip(
+        label: label,
+        selected: selected,
+        onTap: onTap,
+        icon: icon,
+        count: count,
+      );
 }
 
 /// White box with a 2px green outline, for a panel such as the options that

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// `true` = Aktif, `false` = Tidak Aktif, `null` = Menunggu (PIL-188).
 class NasabahFilterChips extends StatelessWidget {
@@ -15,28 +14,11 @@ class NasabahFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Local tokens (candidates for AppColors)
-
-    Widget chip(String label, bool? value) {
-      final selected = activeTab == value;
-      return GestureDetector(
-        onTap: () => onTabChanged(value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.greenDark : Colors.grey[100],
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: AppTextStyle.small.copyWith(
-              color: selected ? Colors.white : Colors.grey[600],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      );
-    }
+    Widget chip(String label, bool? value) => AppChip(
+          label: label,
+          selected: activeTab == value,
+          onTap: () => onTabChanged(value),
+        );
 
     return Row(
       children: [
