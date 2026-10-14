@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -132,50 +133,28 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   Future<void> _confirmCancellation(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Batalkan jadwal?'),
-        content: const Text('Jadwal yang dibatalkan tidak dapat dipulihkan.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, batalkan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Batalkan jadwal?',
+      message: 'Jadwal yang dibatalkan tidak dapat dipulihkan.',
+      confirmLabel: 'Ya, batalkan',
+      cancelLabel: 'Kembali',
+      destructive: true,
     );
-    if (!mounted || confirmed != true) return;
+    if (!mounted || !confirmed) return;
     await _changeStatus(item, 'batalkan');
   }
 
   Future<void> _confirmCompletion(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tandai jadwal selesai?'),
-        content: const Text('Jadwal yang diselesaikan tidak dapat diubah.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, selesaikan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Tandai jadwal selesai?',
+      message: 'Jadwal yang diselesaikan tidak dapat diubah.',
+      confirmLabel: 'Ya, selesaikan',
+      cancelLabel: 'Kembali',
+      destructive: false,
     );
-    if (!mounted || confirmed != true) return;
+    if (!mounted || !confirmed) return;
     await _changeStatus(item, 'selesaikan');
   }
 

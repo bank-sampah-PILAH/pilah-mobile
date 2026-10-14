@@ -165,7 +165,7 @@
   },
   "lib/features/onboarding/presentation/pages/complete_profile_screen.dart": {
     "color": 3,
-    "fontSize": 10
+    "fontSize": 8
   },
   "lib/features/onboarding/presentation/pages/pending_approval_screen.dart": {
     "color": 1,
@@ -173,11 +173,11 @@
   },
   "lib/features/onboarding/presentation/pages/register_bank_sampah_screen.dart": {
     "color": 3,
-    "fontSize": 17
+    "fontSize": 15
   },
   "lib/features/onboarding/presentation/pages/register_nasabah_screen.dart": {
     "color": 2,
-    "fontSize": 14
+    "fontSize": 12
   },
   "lib/features/onboarding/presentation/pages/role_handoff_page.dart": {
     "color": 0,

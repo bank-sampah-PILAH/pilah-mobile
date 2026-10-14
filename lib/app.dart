@@ -2,6 +2,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
@@ -180,6 +181,10 @@ class App extends StatelessWidget {
               child: MaterialApp.router(
                 title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
                 theme: AppTheme.light,
+                // Material widgets (date pickers, dialog buttons) in Indonesian.
+                locale: const Locale('id'),
+                supportedLocales: const [Locale('id')],
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
                 routerConfig: router,
               ),
             ),

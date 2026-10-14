@@ -67,6 +67,7 @@ Use these instead of building another one.
 | Primary / secondary button | `CustomPrimaryButton`, `CustomOutlinedButton`, `design/widgets/atom/primary_button.dart` | Plain `FilledButton`/`TextButton` pick up the theme color. |
 | Search | `CustomSearchField` | |
 | Status chip | `CustomStatusBadge` | |
+| Confirm dialog | `showAppConfirmDialog` (`core/bases/widgets`) | Answers `true` only on confirm. Used by logout, leaving onboarding and Jadwal cancel/complete. |
 | Empty state | `EmptyView` | |
 | Loading list | `SkeletonListItem` | Avoid a bare spinner for lists. |
 | Loading / empty / error / content in one | `PageStateView` (`design/layout`) | New; adopt on new pages. |
@@ -106,8 +107,8 @@ Known gaps against this baseline, not yet audited screen by screen: light grey h
 - **Weight** in kg with a decimal comma and no trailing zeros: `3 kg`, `1,5 kg`. Never `3.000 kg` (reads as three thousand). Use `WeightFormatter.formatKg`.
 - **Dates** `dd/MM/yyyy`; Indonesian month names in long form.
 - **Role names**: Pengurus for the bank-sampah operator, Nasabah for the customer, Pengelola Induk, Superadmin. Do not show "Pengelola" for a Pengurus account.
-- **Language**: all user-visible text is Indonesian. The Material date picker is still English until `flutter_localizations` is added (**proposed**).
-- **Destructive actions** (logout, delete, cancel) ask for confirmation, using the app dialog style.
+- **Language**: all user-visible text is Indonesian, including Material widgets such as the date picker (`locale: id` with `flutter_localizations` in `lib/app.dart`).
+- **Destructive actions** (logout, delete, cancel) ask for confirmation with `showAppConfirmDialog` (`destructive: true` paints the confirm button red). Do not build an `AlertDialog` per screen.
 
 ## 7. Checklist for a new screen
 

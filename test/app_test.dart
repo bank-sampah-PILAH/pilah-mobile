@@ -96,6 +96,23 @@ void main() {
     expect(theme.colorScheme.primary, AppColors.greenDark);
   });
 
+  testWidgets('date pickers speak Indonesian, not English', (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final context = tester.element(find.byType(Scaffold).first);
+    showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDate: DateTime(2026, 10, 14),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Batal'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+  });
+
   testWidgets('web document title follows the current route', (tester) async {
     final labels = <String>[];
     final messenger =

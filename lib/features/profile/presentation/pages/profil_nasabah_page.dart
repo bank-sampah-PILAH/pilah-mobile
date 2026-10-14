@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -18,8 +19,18 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 class ProfilNasabahPage extends StatelessWidget {
   const ProfilNasabahPage({super.key});
 
-  void _logout(BuildContext context) =>
+  Future<void> _logout(BuildContext context) async {
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari akun?',
+      message: 'Anda perlu masuk kembali untuk mengakses akun ini.',
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
+    );
+    if (confirmed && context.mounted) {
       context.read<AuthenticationBloc>().add(LogoutRequested());
+    }
+  }
 
   @override
   Widget build(BuildContext context) =>

@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/login_pa
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 
 /// The nasabah half of PIL-204: a calon nasabah, having already completed
 /// their profile (including address) on the shared complete_profile step,
@@ -151,37 +152,16 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   }
 
   Future<void> _confirmExit() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Keluar dari Pendaftaran?',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: const Text(
+    final shouldLogout = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari Pendaftaran?',
+      message:
           'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
           'tersimpan dan Anda akan dialihkan ke halaman login.',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: const Text('Ya, Keluar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
     );
-    if (shouldLogout == true && mounted) {
+    if (shouldLogout && mounted) {
       context.read<AuthenticationBloc>().add(LogoutRequested());
     }
   }

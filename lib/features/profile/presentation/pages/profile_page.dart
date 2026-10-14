@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -374,10 +375,20 @@ class _ProfileViewState extends State<_ProfileView>
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            context
-                                .read<AuthenticationBloc>()
-                                .add(LogoutRequested());
+                          onPressed: () async {
+                            final confirmed = await showAppConfirmDialog(
+                              context,
+                              title: 'Keluar dari akun?',
+                              message: 'Anda perlu masuk kembali untuk '
+                                  'mengakses akun ini.',
+                              confirmLabel: 'Ya, Keluar',
+                              destructive: true,
+                            );
+                            if (confirmed && context.mounted) {
+                              context
+                                  .read<AuthenticationBloc>()
+                                  .add(LogoutRequested());
+                            }
                           },
                           icon: Icon(Icons.logout,
                               color: Colors.red[600], size: 20),

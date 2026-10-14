@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_c
 import 'dart:io';
 import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 
 class RegisterBankSampahScreen extends StatefulWidget {
   /// True when the user is re-applying after a previous registration was
@@ -252,37 +253,16 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   /// in [build] handles the redirect to login. Cancelling or dismissing leaves
   /// the form and its input untouched.
   Future<void> _confirmExit() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Keluar dari Pendaftaran?',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: const Text(
+    final shouldLogout = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari Pendaftaran?',
+      message:
           'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
           'tersimpan dan Anda akan dialihkan ke halaman login.',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: const Text('Ya, Keluar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
     );
-    if (shouldLogout == true && mounted) {
+    if (shouldLogout && mounted) {
       context.read<AuthenticationBloc>().add(LogoutRequested());
     }
   }

@@ -400,13 +400,31 @@ void main() {
     expect(find.text('anon@x.test'), findsOneWidget);
   });
 
-  testWidgets('logging out is requested from the settings tab', (tester) async {
+  testWidgets('logging out asks first, then signs out on confirm',
+      (tester) async {
     await openPage(tester);
 
     await tester.tap(find.text('Keluar dari Aplikasi'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keluar dari akun?'), findsOneWidget);
+    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+
+    await tester.tap(find.text('Ya, Keluar'));
+    await tester.pumpAndSettle();
 
     verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+  });
+
+  testWidgets('cancelling the logout keeps the session', (tester) async {
+    await openPage(tester);
+
+    await tester.tap(find.text('Keluar dari Aplikasi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {
