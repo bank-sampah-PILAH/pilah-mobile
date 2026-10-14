@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/domain/entities/cari_bank_entities.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -93,6 +98,8 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
     }
     final terpilih = await showModalBottomSheet<BankSampahDirectoryEntity>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => _PilihBankSheet(
         bankTerpilih: _bankIds.toSet(),
       ),
@@ -107,9 +114,15 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
         value: _cubit,
         child: BlocBuilder<PerbandinganHargaCubit, PerbandinganHargaState>(
           builder: (context, state) => Scaffold(
+            backgroundColor: Colors.white,
             appBar: AppBar(
-              title: const Text('Bandingkan Harga'),
+              title: Text(
+                'Bandingkan Harga',
+                style: AppTextStyle.appBar.copyWith(color: NasabahStyle.ink),
+              ),
               centerTitle: true,
+              backgroundColor: Colors.white,
+              scrolledUnderElevation: 0,
             ),
             body: _body(state),
           ),
@@ -143,10 +156,10 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
         DropdownButtonFormField<String>(
           initialValue: _jenisSampahId,
           isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Jenis sampah',
-            border: OutlineInputBorder(),
-          ),
+          style: NasabahStyle.text(14),
+          dropdownColor: Colors.white,
+          decoration: NasabahStyle.input(hint: 'Jenis sampah')
+              .copyWith(labelText: 'Jenis sampah'),
           items: widget.layananAsal
               .map(
                 (layanan) => DropdownMenuItem(
@@ -161,13 +174,28 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
         // Satuan comes from the backend envelope of the loaded comparison.
         Text(
           'Satuan: ${loaded.data.jenisSampah.satuan}',
-          style: const TextStyle(color: Colors.grey, fontSize: 13),
+          style: NasabahStyle.text(13, color: NasabahStyle.muted),
         ),
+        const SizedBox(height: 8),
         OutlinedButton.icon(
           key: const Key('perbandingan_tambah_bank'),
           onPressed: _tambahBank,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.greenDark,
+            side: const BorderSide(color: AppColors.greenDark),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+          ),
           icon: const Icon(Icons.add_business_outlined, size: 18),
-          label: const Text('Tambah bank pembanding'),
+          label: Text(
+            'Tambah bank pembanding',
+            style: AppTextStyle.small.copyWith(
+              color: AppColors.greenDark,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         ...loaded.data.perbandingan.map(_barisBank),
@@ -186,22 +214,77 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
     final berlaku = row.berlakuMulai == null
         ? null
         : 'Berlaku ${_formatTanggal(DateTime.parse(row.berlakuMulai!).toLocal())}';
-    return Card(
+    final tersedia = !row.hargaTidakTersedia && rupiah != null;
+    return Container(
       key: Key('perbandingan_baris_${row.bankSampahId}'),
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(nama, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(
-          berlaku == null ? row.kota ?? '' : '${row.kota ?? ''}\n$berlaku',
-        ),
-        isThreeLine: berlaku != null,
-        trailing: Text(
-          hargaTampil,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: row.hargaTidakTersedia ? Colors.grey : Colors.green.shade700,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: tersedia ? AppColors.greenLight : Colors.grey[200],
+              borderRadius: BorderRadius.circular(14),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.storefront_outlined,
+              size: 22,
+              color: tersedia ? AppColors.greenDark : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nama,
+                  style: AppTextStyle.title1.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    if (row.kota != null && row.kota!.isNotEmpty) row.kota!,
+                    if (berlaku != null) berlaku,
+                  ].join(' · '),
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.grey[400],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            hargaTampil,
+            style: AppTextStyle.title1.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: tersedia ? AppColors.greenDark : Colors.grey[500],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -252,52 +335,144 @@ class _PilihBankSheetState extends State<_PilihBankSheet> {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-        child: SizedBox(
-          height: 480,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: TextField(
-                  key: const Key('perbandingan_picker_cari'),
-                  decoration: const InputDecoration(
+  Widget build(BuildContext context) => Container(
+        // Sheet mengambang dengan radius atas — pola sheet pemilih lainnya.
+        margin: const EdgeInsets.only(top: 48),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            height: 480,
+            child: Column(
+              children: [
+                const BottomSheetHeader(title: 'Pilih Bank Pembanding'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: CustomSearchField(
+                    key: const Key('perbandingan_picker_cari'),
                     hintText: 'Cari bank sampah',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    isDense: true,
+                    onChanged: (v) {
+                      _query = v;
+                      _muat();
+                    },
                   ),
-                  onChanged: (v) {
-                    _query = v;
-                    _muat();
-                  },
+                ),
+                Expanded(child: _isi()),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Widget _isi() => switch (_state) {
+        _MuatSheet.loading => const Center(child: CircularProgressIndicator()),
+        _MuatSheet.gagal => Center(
+            child: EmptyView(
+              title: 'Gagal Memuat Daftar Bank',
+              subtitle: _pesan,
+              icon: Icons.wifi_off_outlined,
+            ),
+          ),
+        _MuatSheet.kosong => const Center(
+            child: EmptyView(
+              title: 'Tidak Ada Bank Sampah Lain',
+              subtitle: 'Semua bank sudah masuk perbandingan.',
+              icon: Icons.search_off,
+            ),
+          ),
+        _MuatSheet.selesai => ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            shrinkWrap: true,
+            itemCount: _semua.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, i) {
+              final bank = _semua[i];
+              return _PilihanBank(bank: bank);
+            },
+          ),
+      };
+}
+
+/// Baris pilihan bank — pola kartu daftar nasabah (avatar inisial + nama
+/// tegas + kota), ketuk untuk memilih.
+class _PilihanBank extends StatelessWidget {
+  final BankSampahDirectoryEntity bank;
+
+  const _PilihanBank({required this.bank});
+
+  String get _initials => bank.nama
+      .split(RegExp(r'\s+'))
+      .where((kata) => kata.isNotEmpty)
+      .take(2)
+      .map((kata) => kata[0].toUpperCase())
+      .join();
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        key: Key('perbandingan_picker_bank_${bank.id}'),
+        onTap: () => Navigator.pop(context, bank),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.greenLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  _initials,
+                  style: AppTextStyle.title1.copyWith(
+                    color: AppColors.greenDark,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              const SizedBox(width: 14),
               Expanded(
-                child: switch (_state) {
-                  _MuatSheet.loading =>
-                    const Center(child: CircularProgressIndicator()),
-                  _MuatSheet.gagal => Center(
-                      child: Text(_pesan ?? 'Gagal memuat daftar bank'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bank.nama,
+                      style: AppTextStyle.title1.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  _MuatSheet.kosong => const Center(
-                      child: Text('Tidak ada bank sampah lain'),
+                    const SizedBox(height: 2),
+                    Text(
+                      bank.kota,
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.grey[400],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  _MuatSheet.selesai => ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: _semua.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, i) {
-                        final bank = _semua[i];
-                        return ListTile(
-                          key: Key('perbandingan_picker_bank_${bank.id}'),
-                          title: Text(bank.nama),
-                          subtitle: Text(bank.kota),
-                          onTap: () => Navigator.pop(context, bank),
-                        );
-                      },
-                    ),
-                },
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.greenDark,
               ),
             ],
           ),

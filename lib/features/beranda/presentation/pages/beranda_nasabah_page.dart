@@ -133,25 +133,6 @@ class _HomeSessionState extends State<_HomeSession> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                       children: [
                         _HomeGreeting(name: widget.name),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () =>
-                                context.push(AppLocations.cariBank),
-                            icon: const Icon(Icons.search, size: 16),
-                            label: Text(
-                              'Cari Bank Sampah',
-                              style: _text(12,
-                                  weight: FontWeight.w600, color: _emerald),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: _emerald,
-                              padding: EdgeInsets.zero,
-                              alignment: Alignment.centerLeft,
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerLeft,

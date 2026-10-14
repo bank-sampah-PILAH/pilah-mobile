@@ -6,6 +6,9 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/core/utils/formatter/jarak_formatter.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_state.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
@@ -53,9 +56,15 @@ class _CariBankViewState extends State<CariBankView> {
   Widget build(BuildContext context) =>
       BlocBuilder<CariBankCubit, CariBankState>(
         builder: (context, state) => Scaffold(
+          backgroundColor: Colors.white,
           appBar: AppBar(
-            title: const Text('Cari Bank Sampah'),
+            title: Text(
+              'Cari Bank Sampah',
+              style: AppTextStyle.appBar.copyWith(color: NasabahStyle.ink),
+            ),
             centerTitle: true,
+            backgroundColor: Colors.white,
+            scrolledUnderElevation: 0,
           ),
           body: Column(
             children: [
@@ -72,73 +81,50 @@ class _CariBankViewState extends State<CariBankView> {
                 child: TextField(
                   key: const Key('cari_bank_kota'),
                   onChanged: context.read<CariBankCubit>().ketikKota,
-                  decoration: const InputDecoration(
-                    hintText:
-                        'Filter kota (mis. Depok, Kota Depok, Kab. Depok)',
-                    prefixIcon: Icon(Icons.location_city_outlined),
-                    border: OutlineInputBorder(),
-                    isDense: true,
+                  style: NasabahStyle.text(14),
+                  decoration:
+                      NasabahStyle.input(hint: 'Filter kota (mis. Depok)')
+                          .copyWith(
+                    prefixIcon: const Icon(
+                      Icons.location_city_outlined,
+                      size: 20,
+                      color: NasabahStyle.emerald,
+                    ),
                   ),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: SegmentedButton<String>(
+                child: _ModeSwitch(
                   key: const Key('cari_bank_mode'),
-                  segments: const [
-                    ButtonSegment(value: 'Daftar', label: Text('Daftar')),
-                    ButtonSegment(value: 'Peta', label: Text('Peta')),
-                  ],
-                  selected: {_mode},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _mode = selection.first),
+                  mode: _mode,
+                  onPilih: (mode) => setState(() => _mode = mode),
                 ),
               ),
               // Mode lokasi (PIL-314): dua pintu masuk — titik sekarang atau
-              // titik pilihan peta — lalu cip radius hanya saat aktif.
+              // titik pilihan peta — lalu chips radius hanya saat aktif.
               if (state is CariBankLoaded && state.dalamRadiusKm == null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: _PillButton(
                           key: const Key('cari_bank_dekat_saya'),
                           onPressed: () =>
                               context.read<CariBankCubit>().pilihLokasiSaya(),
-                          icon: const Icon(Icons.near_me_outlined, size: 18),
-                          label: const Text('Di dekat saya'),
+                          icon: Icons.near_me_outlined,
+                          label: 'Di dekat saya',
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: _PillButton(
                           key: const Key('cari_bank_pilih_di_peta'),
-                          onPressed: () async {
-                            // Same Navigator pattern as profile's map picker —
-                            // MapPickerPage is not go_router-registered.
-                            final titik = await Navigator.of(context)
-                                .push<({double latitude, double longitude})>(
-                              MaterialPageRoute(
-                                // Thread the test seam (PIL-330) when set so no
-                                // real OSM tile is fetched inside tests; null
-                                // lets MapPickerPage default to the real layer.
-                                builder: (_) => widget.tileLayerBuilder == null
-                                    ? const MapPickerPage()
-                                    : MapPickerPage(
-                                        tileLayerBuilder:
-                                            widget.tileLayerBuilder!,
-                                      ),
-                              ),
-                            );
-                            if (titik != null && context.mounted) {
-                              context
-                                  .read<CariBankCubit>()
-                                  .pilihDariPeta(titik);
-                            }
-                          },
-                          icon: const Icon(Icons.map_outlined, size: 18),
-                          label: const Text('Di peta'),
+                          onPressed: () =>
+                              _pilihDiPeta(context, widget.tileLayerBuilder),
+                          icon: Icons.map_outlined,
+                          label: 'Di peta',
                         ),
                       ),
                     ],
@@ -148,47 +134,70 @@ class _CariBankViewState extends State<CariBankView> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: SizedBox(
-                    height: 32,
+                    height: 34,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
                         for (final km in const [1.0, 5.0, 10.0, 25.0])
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
-                            child: OutlinedButton(
+                            child: _RadiusChip(
                               key: Key('cari_bank_radius_${km.toInt()}'),
-                              style: OutlinedButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                backgroundColor: km == state.dalamRadiusKm
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer
-                                    : null,
-                              ),
-                              onPressed: () => context
+                              label: '${km.toInt()} km',
+                              dipilih: km == state.dalamRadiusKm,
+                              onTap: () => context
                                   .read<CariBankCubit>()
                                   .pilihRadiusKm(km),
-                              child: Text('${km.toInt()} km'),
                             ),
                           ),
-                        ActionChip(
+                        _RadiusChip(
                           key: const Key('cari_bank_hapus_lokasi'),
-                          avatar: const Icon(Icons.close, size: 16),
-                          label: const Text('Hapus lokasi'),
-                          onPressed: () =>
+                          label: 'Hapus lokasi',
+                          icon: Icons.close,
+                          dipilih: false,
+                          onTap: () =>
                               context.read<CariBankCubit>().hapusLokasi(),
                         ),
                       ],
                     ),
                   ),
                 ),
-              Expanded(child: _body(context, state)),
+              Expanded(child: _CariBankBody(state: state)),
             ],
           ),
         ),
       );
+}
 
-  Widget _body(BuildContext context, CariBankState state) {
+/// Dua pintu masuk titik lokasi (PIL-314): perangkat sekarang atau titik yang
+/// dipilih di peta (MapPickerPage — bukan rute go_router, pola Navigator push).
+Future<void> _pilihDiPeta(
+  BuildContext context,
+  Widget Function()? tileLayerBuilder,
+) async {
+  final titik =
+      await Navigator.of(context).push<({double latitude, double longitude})>(
+    MaterialPageRoute(
+      builder: (_) => tileLayerBuilder == null
+          ? const MapPickerPage()
+          : MapPickerPage(tileLayerBuilder: tileLayerBuilder),
+    ),
+  );
+  if (titik != null && context.mounted) {
+    context.read<CariBankCubit>().pilihDariPeta(titik);
+  }
+}
+
+class _CariBankBody extends StatelessWidget {
+  final CariBankState state;
+
+  const _CariBankBody({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = this.state;
+    // Body reads the view's mode through the enclosing state widget.
+    final view = context.findAncestorStateOfType<_CariBankViewState>()!;
     if (state is CariBankError) {
       return Column(
         children: [
@@ -231,7 +240,7 @@ class _CariBankViewState extends State<CariBankView> {
         icon: Icons.search_off,
       );
     }
-    if (_mode == 'Peta' &&
+    if (view._mode == 'Peta' &&
         // Peta mode shows only banks a marker can stand on; banks without
         // coordinates stay list-only (PIL-330).
         !loaded.items.any((bank) => bank.lokasi != null)) {
@@ -241,10 +250,10 @@ class _CariBankViewState extends State<CariBankView> {
         icon: Icons.map_outlined,
       );
     }
-    if (_mode == 'Peta') {
+    if (view._mode == 'Peta') {
       return PetaBankView(
         banks: loaded.items,
-        tileLayerBuilder: widget.tileLayerBuilder,
+        tileLayerBuilder: view.widget.tileLayerBuilder,
       );
     }
     return _DaftarBank(loaded: loaded);
@@ -282,9 +291,9 @@ class _DaftarBank extends StatelessWidget {
         },
         child: ListView.separated(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           itemCount: loaded.items.length + (loaded.hasMore ? 1 : 0),
-          separatorBuilder: (context, index) => const SizedBox(height: 8),
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             if (index == loaded.items.length) {
               // Ujung daftar: pemuat halaman berikutnya, atau diam.
@@ -309,36 +318,91 @@ class _DaftarBank extends StatelessWidget {
   }
 }
 
+/// Kartu bank — pola [NasabahListItem]: avatar inisial, nama tegas, sub
+/// kota/alamat, jarak sebagai tag hijau di kanan.
 class _BankTile extends StatelessWidget {
   final BankSampahDirectoryEntity bank;
 
   const _BankTile({required this.bank});
 
+  String get _initials => bank.nama
+      .split(RegExp(r'\s+'))
+      .where((kata) => kata.isNotEmpty)
+      .take(2)
+      .map((kata) => kata[0].toUpperCase())
+      .join();
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
+    final sub = '${bank.kota} · ${bank.alamat}';
+    return GestureDetector(
+      onTap: () => context.push(
+        BankSampahDetailPage.route,
+        extra: bank.id,
+      ),
+      child: Container(
         key: Key('cari_bank_row_${bank.id}'),
-        margin: EdgeInsets.zero,
-        child: ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.storefront_outlined)),
-          title: Text(
-            bank.nama,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(
-            '${bank.kota} · ${bank.alamat}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: bank.jarakKm == null
-              ? null
-              : PillTag(text: formatJarakId(double.parse(bank.jarakKm!))),
-          onTap: () => context.push(
-            BankSampahDetailPage.route,
-            extra: bank.id,
-          ),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.greenLight,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                _initials,
+                style: AppTextStyle.title1.copyWith(
+                  color: AppColors.greenDark,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    bank.nama,
+                    style: AppTextStyle.title1.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    sub,
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.grey[400],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (bank.jarakKm != null) ...[
+              const SizedBox(width: 8),
+              PillTag(text: formatJarakId(double.parse(bank.jarakKm!))),
+            ],
+          ],
         ),
       ),
     );
@@ -353,14 +417,180 @@ class PillTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.secondaryContainer,
+          color: AppColors.greenLight,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           text,
-          style: Theme.of(context).textTheme.labelSmall,
+          style: AppTextStyle.extraSmall.copyWith(
+            color: AppColors.greenDark,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+}
+
+/// Daftar/Peta switch — pil bertema hijau, pola nasabah_filter_chips.
+class _ModeSwitch extends StatelessWidget {
+  final String mode;
+  final ValueChanged<String> onPilih;
+
+  const _ModeSwitch({super.key, required this.mode, required this.onPilih});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(
+            child: _ModePill(
+              label: 'Daftar',
+              icon: Icons.list_outlined,
+              dipilih: mode == 'Daftar',
+              onTap: () => onPilih('Daftar'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ModePill(
+              label: 'Peta',
+              icon: Icons.map_outlined,
+              dipilih: mode == 'Peta',
+              onTap: () => onPilih('Peta'),
+            ),
+          ),
+        ],
+      );
+}
+
+class _ModePill extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool dipilih;
+  final VoidCallback onTap;
+
+  const _ModePill({
+    required this.label,
+    required this.icon,
+    required this.dipilih,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: dipilih ? AppColors.greenDark : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: dipilih ? AppColors.greenDark : NasabahStyle.line,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: dipilih ? Colors.white : NasabahStyle.muted,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppTextStyle.small.copyWith(
+                  color: dipilih ? Colors.white : NasabahStyle.muted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+/// Tombol aksi pil berbingkai (Di dekat saya / Di peta).
+class _PillButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String label;
+
+  const _PillButton({
+    super.key,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.greenDark,
+          side: const BorderSide(color: AppColors.greenDark),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          style: AppTextStyle.small.copyWith(
+            color: AppColors.greenDark,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+}
+
+/// Chip radius atau aksi hapus — pola nasabah_filter_chips.
+class _RadiusChip extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final bool dipilih;
+  final VoidCallback onTap;
+
+  const _RadiusChip({
+    super.key,
+    required this.label,
+    required this.dipilih,
+    required this.onTap,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: dipilih ? AppColors.greenDark : AppColors.greenLight,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 16,
+                  color: dipilih ? Colors.white : AppColors.greenDark,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: AppTextStyle.small.copyWith(
+                  color: dipilih ? Colors.white : AppColors.greenDark,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }

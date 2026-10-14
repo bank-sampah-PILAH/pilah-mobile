@@ -134,7 +134,7 @@ void main() {
         .thenAnswer((_) async => (latitude: -7.0, longitude: 110.0));
     await openOverHost(tester);
 
-    await tester.tap(find.text('Gunakan Lokasi Saya'));
+    await tester.tap(find.byKey(const Key('peta_lokasi_saya')));
     await tester.pump();
 
     final latField = tester
@@ -147,7 +147,7 @@ void main() {
     when(() => location.currentLocation()).thenAnswer((_) async => null);
     await openOverHost(tester);
 
-    await tester.tap(find.text('Gunakan Lokasi Saya'));
+    await tester.tap(find.byKey(const Key('peta_lokasi_saya')));
     await tester.pump();
 
     expect(find.text('Izin lokasi tidak tersedia.'), findsOneWidget);

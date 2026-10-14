@@ -226,6 +226,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('cari_bank_radius_1')));
+    // The chip is static (no Material ripple): the 300 ms search debounce
+    // must be advanced manually before the reload request fires.
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
     expect(api.last.query['radius_km'], '1.0');
   });

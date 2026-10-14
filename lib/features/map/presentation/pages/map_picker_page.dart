@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/osm_tiles.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -80,7 +84,11 @@ class _MapPickerPageState extends State<MapPickerPage> {
     }
     if (message != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.black.withValues(alpha: 0.85),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return null;
     }
@@ -121,35 +129,85 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Pilih Lokasi di Peta')),
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: Text(
+            'Pilih Lokasi di Peta',
+            style: AppTextStyle.appBar.copyWith(color: NasabahStyle.ink),
+          ),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          scrolledUnderElevation: 0,
+        ),
         body: Column(
           children: [
             Expanded(
-              child: FlutterMap(
-                mapController: _controller,
-                options: MapOptions(
-                  initialCenter: widget.initialCenter ?? _defaultCenter,
-                  initialZoom: 16,
-                  onMapEvent: (event) => _syncFieldsTo(event.camera.center),
-                ),
+              child: Stack(
                 children: [
-                  widget.tileLayerBuilder(),
-                  osmAttribution(),
+                  FlutterMap(
+                    mapController: _controller,
+                    options: MapOptions(
+                      initialCenter: widget.initialCenter ?? _defaultCenter,
+                      initialZoom: 16,
+                      onMapEvent: (event) => _syncFieldsTo(event.camera.center),
+                    ),
+                    children: [
+                      widget.tileLayerBuilder(),
+                      osmAttribution(),
+                    ],
+                  ),
                   // The fixed center pin: the map moves, the marker does not.
-                  const Center(
-                    child: Icon(
-                      Icons.location_on,
-                      size: 40,
-                      color: Colors.indigo,
-                      shadows: [Shadow(color: Colors.white, blurRadius: 4)],
+                  // Green drop-pin with a soft shadow halo (GM-style).
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 52,
+                          color: AppColors.greenDark,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 46),
+                      ],
+                    ),
+                  ),
+                  // Floating locate-me button over the map (GM-chrome).
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: _MapFab(
+                      key: const Key('peta_lokasi_saya'),
+                      icon: Icons.my_location,
+                      onTap: _useMyLocation,
                     ),
                   ),
                 ],
               ),
             ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            // Bottom coordinate panel — rounded white card over the map.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 16,
+                    offset: Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -165,9 +223,18 @@ class _MapPickerPageState extends State<MapPickerPage> {
                               signed: true,
                               decimal: true,
                             ),
-                            decoration: const InputDecoration(
+                            style: NasabahStyle.text(14),
+                            decoration:
+                                NasabahStyle.input(hint: 'Lintang').copyWith(
                               labelText: 'Lintang',
-                              border: OutlineInputBorder(),
+                              labelStyle: NasabahStyle.text(
+                                13,
+                                color: NasabahStyle.muted,
+                              ),
+                              floatingLabelStyle: NasabahStyle.text(
+                                13,
+                                color: AppColors.greenDark,
+                              ),
                             ),
                             onSubmitted: (_) => _moveCameraToFields(),
                           ),
@@ -182,36 +249,66 @@ class _MapPickerPageState extends State<MapPickerPage> {
                               signed: true,
                               decimal: true,
                             ),
-                            decoration: const InputDecoration(
+                            style: NasabahStyle.text(14),
+                            decoration:
+                                NasabahStyle.input(hint: 'Bujur').copyWith(
                               labelText: 'Bujur',
-                              border: OutlineInputBorder(),
+                              labelStyle: NasabahStyle.text(
+                                13,
+                                color: NasabahStyle.muted,
+                              ),
+                              floatingLabelStyle: NasabahStyle.text(
+                                13,
+                                color: AppColors.greenDark,
+                              ),
                             ),
                             onSubmitted: (_) => _moveCameraToFields(),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        TextButton.icon(
-                          onPressed: _useMyLocation,
-                          icon: const Icon(Icons.my_location),
-                          label: const Text('Gunakan Lokasi Saya'),
-                        ),
-                        const Spacer(),
-                        FilledButton(
-                          onPressed: _simpan,
-                          key: const Key('simpan_lokasi'),
-                          child: const Text('Simpan'),
-                        ),
-                      ],
+                    const SizedBox(height: 12),
+                    CustomPrimaryButton(
+                      key: const Key('simpan_lokasi'),
+                      title: 'Simpan Lokasi',
+                      onPressed: _simpan,
                     ),
                   ],
                 ),
               ),
             ),
           ],
+        ),
+      );
+}
+
+/// Lingkaran putih melayang di atas peta, ikon hijau — kontrol peta ala
+/// Google Maps.
+class _MapFab extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _MapFab({super.key, required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x29000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 22, color: AppColors.greenDark),
         ),
       );
 }

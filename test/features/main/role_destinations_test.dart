@@ -26,11 +26,11 @@ void main() {
       );
     });
 
-    test('an approved nasabah gets four destinations', () {
+    test('an approved nasabah gets five destinations', () {
       final nasabah = RoleDestinations.forRole('nasabah');
       expect(nasabah.map((d) => d.label),
-          ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
-      expect(nasabah.map((d) => d.branchIndex), [0, 5, 4, 7]);
+          ['Beranda', 'Tabungan', 'Jadwal', 'Bank Sampah', 'Profil']);
+      expect(nasabah.map((d) => d.branchIndex), [0, 5, 4, 8, 7]);
     });
 
     test('a nasabah awaiting approval only gets Beranda and Profil', () {

@@ -138,11 +138,6 @@ class AppRouterConfig {
         builder: (context, state) => const CatatPencairanPage(),
       ),
       GoRoute(
-        path: CariBankPage.route,
-        name: CariBankPage.route,
-        builder: (context, state) => const CariBankPage(),
-      ),
-      GoRoute(
         path: BankSampahDetailPage.route,
         name: BankSampahDetailPage.route,
         builder: (context, state) => BankSampahDetailPage(
@@ -371,6 +366,14 @@ class AppRouterConfig {
                 path: ProfilePage.route,
                 name: ProfilePage.route,
                 builder: (_, __) => const ProfilePage()),
+          ]),
+          // Branch 8 — Cari Bank Sampah: nasabah's bottom-nav tab (replaces
+          // the old Beranda button entry).
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: CariBankPage.route,
+                name: CariBankPage.route,
+                builder: (_, __) => const CariBankPage()),
           ]),
         ],
       ),
