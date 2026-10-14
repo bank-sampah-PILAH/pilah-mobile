@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class TransactionSummarySection extends StatelessWidget {
   final int grandTotal;
@@ -9,20 +10,6 @@ class TransactionSummarySection extends StatelessWidget {
     super.key,
     required this.grandTotal,
   });
-
-  String _formatCurrency(int value) {
-    String str = value.toString();
-    String result = '';
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      result = str[i] + result;
-      count++;
-      if (count % 3 == 0 && i != 0) {
-        result = '.$result';
-      }
-    }
-    return 'Rp $result';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +38,7 @@ class TransactionSummarySection extends StatelessWidget {
                 ),
               ),
               Text(
-                _formatCurrency(grandTotal),
+                CurrencyFormatter.formatRupiah(grandTotal),
                 style: AppTextStyle.title1.copyWith(
                   color: Colors.black87,
                   fontWeight: FontWeight.bold,
@@ -62,7 +49,7 @@ class TransactionSummarySection extends StatelessWidget {
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+            child: Divider(height: 1, color: AppColors.border),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -76,7 +63,7 @@ class TransactionSummarySection extends StatelessWidget {
                 ),
               ),
               Text(
-                _formatCurrency(grandTotal),
+                CurrencyFormatter.formatRupiah(grandTotal),
                 style: AppTextStyle.headline1.copyWith(
                   color: AppColors.greenDark,
                   fontWeight: FontWeight.bold,

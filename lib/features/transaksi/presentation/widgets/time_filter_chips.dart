@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// Shared period controls for the unified activity feed. XLSX still exports
 /// setoran until PIL-248 extends the existing export endpoint.
@@ -72,14 +73,14 @@ class TimeFilterChips extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: activePeriode == 'custom'
                       ? AppColors.greenDark
-                      : const Color(0xFFF3F4F6),
+                      : AppColors.fill,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.calendar_today_outlined,
                   color: activePeriode == 'custom'
                       ? Colors.white
-                      : const Color(0xFF6B7280),
+                      : AppColors.grey100,
                   size: 20,
                 ),
               ),
@@ -99,24 +100,21 @@ class TimeFilterChips extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: const Color(0xFFD1D5DB), width: 1),
+                    border: Border.all(color: AppColors.border, width: 1),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.download_rounded,
-                          color: canExport
-                              ? const Color(0xFF374151)
-                              : const Color(0xFF9CA3AF),
+                          color:
+                              canExport ? AppColors.inkSoft : AppColors.grey100,
                           size: 16),
                       const SizedBox(width: 4),
                       Text(
                         'XLS Setoran',
                         style: AppTextStyle.small.copyWith(
-                          color: canExport
-                              ? const Color(0xFF374151)
-                              : const Color(0xFF9CA3AF),
+                          color:
+                              canExport ? AppColors.inkSoft : AppColors.grey100,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -172,25 +170,10 @@ class TimeFilterChips extends StatelessWidget {
     String periode,
     String activePeriode,
   ) {
-    final bool isSelected = activePeriode == periode;
-    return GestureDetector(
-      onTap: () {
-        context.read<RiwayatAktivitasCubit>().setPeriode(periode);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.greenDark : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyle.small.copyWith(
-            color: isSelected ? Colors.white : const Color(0xFF6B7280),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+    return AppChip(
+      label: label,
+      selected: activePeriode == periode,
+      onTap: () => context.read<RiwayatAktivitasCubit>().setPeriode(periode),
     );
   }
 }

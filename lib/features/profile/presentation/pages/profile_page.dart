@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -108,20 +109,16 @@ class _ProfileViewState extends State<_ProfileView>
     switch (role) {
       case 'superadmin':
         return 'Superadmin';
+      case 'pengelola_induk':
+        return 'Pengelola Induk';
       case 'pengelola':
       default:
-        return 'Pengelola';
+        return 'Pengurus';
     }
   }
 
   Color _avatarColorFor(String seed) {
-    const palette = [
-      AppColors.greenDark,
-      Color(0xFF7C3AED),
-      Color(0xFFD4A843),
-      Color(0xFF0F766E),
-      Color(0xFF9A3412),
-    ];
+    const palette = AppColors.avatarFills;
     if (seed.isEmpty) return palette.first;
     return palette[seed.hashCode.abs() % palette.length];
   }
@@ -374,10 +371,20 @@ class _ProfileViewState extends State<_ProfileView>
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            context
-                                .read<AuthenticationBloc>()
-                                .add(LogoutRequested());
+                          onPressed: () async {
+                            final confirmed = await showAppConfirmDialog(
+                              context,
+                              title: 'Keluar dari akun?',
+                              message: 'Anda perlu masuk kembali untuk '
+                                  'mengakses akun ini.',
+                              confirmLabel: 'Ya, Keluar',
+                              destructive: true,
+                            );
+                            if (confirmed && context.mounted) {
+                              context
+                                  .read<AuthenticationBloc>()
+                                  .add(LogoutRequested());
+                            }
                           },
                           icon: Icon(Icons.logout,
                               color: Colors.red[600], size: 20),
@@ -784,7 +791,7 @@ class _ProfileViewState extends State<_ProfileView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Undang Pengelola Baru',
+                      'Undang Pengurus Baru',
                       style: AppTextStyle.title1.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -793,7 +800,7 @@ class _ProfileViewState extends State<_ProfileView>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
+                      'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
                       style: AppTextStyle.small.copyWith(
                         color: Colors.white.withValues(alpha: 0.8),
                         height: 1.4,
@@ -865,7 +872,7 @@ class _ProfileViewState extends State<_ProfileView>
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Text(
-                  'Belum ada pengelola lain yang tergabung.',
+                  'Belum ada pengurus lain yang tergabung.',
                   textAlign: TextAlign.center,
                   style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
                 ),
@@ -965,7 +972,7 @@ class _ProfileViewState extends State<_ProfileView>
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              member.isPrimary ? 'Pengelola Utama' : 'Pengelola',
+              member.isPrimary ? 'Pengurus Utama' : 'Pengurus',
               style: AppTextStyle.extraSmall.copyWith(
                 color: AppColors.greenDark,
                 fontWeight: FontWeight.bold,

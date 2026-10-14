@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -11,6 +12,8 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
 class JadwalPage extends StatefulWidget {
   static const route = '/jadwal';
@@ -126,56 +129,36 @@ class _JadwalPageState extends State<JadwalPage> {
           action,
         );
     if (!mounted || failure == null) return;
-    ScaffoldMessenger.of(
+    AppNotification.showError(
       context,
-    ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+      title: 'Gagal',
+      message: failure.displayMessage,
+    );
   }
 
   Future<void> _confirmCancellation(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Batalkan jadwal?'),
-        content: const Text('Jadwal yang dibatalkan tidak dapat dipulihkan.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, batalkan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Batalkan jadwal?',
+      message: 'Jadwal yang dibatalkan tidak dapat dipulihkan.',
+      confirmLabel: 'Ya, batalkan',
+      cancelLabel: 'Kembali',
+      destructive: true,
     );
-    if (!mounted || confirmed != true) return;
+    if (!mounted || !confirmed) return;
     await _changeStatus(item, 'batalkan');
   }
 
   Future<void> _confirmCompletion(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tandai jadwal selesai?'),
-        content: const Text('Jadwal yang diselesaikan tidak dapat diubah.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, selesaikan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Tandai jadwal selesai?',
+      message: 'Jadwal yang diselesaikan tidak dapat diubah.',
+      confirmLabel: 'Ya, selesaikan',
+      cancelLabel: 'Kembali',
+      destructive: false,
     );
-    if (!mounted || confirmed != true) return;
+    if (!mounted || !confirmed) return;
     await _changeStatus(item, 'selesaikan');
   }
 
@@ -767,17 +750,17 @@ class _ScheduleStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final background = switch (status) {
-      'draft' => const Color(0xFFFFF4DE),
+      'draft' => AppColors.warningLight,
       'diterbitkan' => AppColors.greenLight,
-      'dibatalkan' => const Color(0xFFFDECEC),
-      'selesai' => const Color(0xFFF0F2F0),
+      'dibatalkan' => AppColors.dangerLight,
+      'selesai' => AppColors.fill,
       _ => AppColors.cardOffWhite,
     };
     final foreground = switch (status) {
-      'draft' => const Color(0xFF8A5A00),
+      'draft' => AppColors.warning,
       'diterbitkan' => AppColors.greenDark,
-      'dibatalkan' => const Color(0xFF9B3D3D),
-      'selesai' => const Color(0xFF59665C),
+      'dibatalkan' => AppColors.danger,
+      'selesai' => AppColors.inkSoft,
       _ => Colors.grey.shade700,
     };
 
@@ -932,16 +915,18 @@ class _JadwalFormState extends State<_JadwalForm> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (widget.initial == null && _startsAt.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Waktu mulai harus di masa depan')),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu mulai harus di masa depan',
       );
       return;
     }
     if (!_endsAt.isAfter(_startsAt)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Waktu selesai harus setelah waktu mulai'),
-        ),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu selesai harus setelah waktu mulai',
       );
       return;
     }
@@ -965,9 +950,11 @@ class _JadwalFormState extends State<_JadwalForm> {
     if (failure == null) {
       Navigator.of(context).pop();
     } else {
-      ScaffoldMessenger.of(
+      AppNotification.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+        title: 'Gagal',
+        message: failure.displayMessage,
+      );
     }
   }
 
@@ -1104,9 +1091,9 @@ class _DateTimeTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => AppTapTarget(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: InputDecorator(
           decoration: decoration.copyWith(
             labelText: label,

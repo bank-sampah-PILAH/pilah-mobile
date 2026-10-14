@@ -1,15 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 void main() {
   // Weight formatting itself lives in (and is tested by) WeightFormatter; these
   // suites cover how the template preview composes it.
   group('formatRupiahId', () {
     test('groups thousands with dots', () {
-      expect(formatRupiahId(1500), '1.500');
-      expect(formatRupiahId(3450), '3.450');
-      expect(formatRupiahId(125000), '125.000');
-      expect(formatRupiahId(750), '750');
+      expect(CurrencyFormatter.formatNumber(1500), '1.500');
+      expect(CurrencyFormatter.formatNumber(3450), '3.450');
+      expect(CurrencyFormatter.formatNumber(125000), '125.000');
+      expect(CurrencyFormatter.formatNumber(750), '750');
     });
   });
 

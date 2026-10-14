@@ -341,7 +341,7 @@ class _HasilStrip extends StatelessWidget {
               style: AppTextStyle.title1.copyWith(
                 fontSize: emphasized ? 20 : 15,
                 fontWeight: emphasized ? FontWeight.bold : FontWeight.w600,
-                color: emphasized ? const Color(0xFF006D44) : valueColor,
+                color: emphasized ? AppColors.greenDark : valueColor,
               ),
             ),
           ),

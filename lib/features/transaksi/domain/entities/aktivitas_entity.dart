@@ -3,6 +3,7 @@ import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import 'transaksi_entity.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 enum ActivitasTipe { setoran, pencairan }
 
@@ -102,13 +103,5 @@ class ActivitasEntity {
     ];
   }
 
-  static String _rupiah(int value) {
-    final digits = value.abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(digits[i]);
-    }
-    return buffer.toString();
-  }
+  static String _rupiah(int value) => CurrencyFormatter.formatNumber(value);
 }

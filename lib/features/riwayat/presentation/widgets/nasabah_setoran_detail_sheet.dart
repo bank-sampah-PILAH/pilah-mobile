@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -137,7 +138,8 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
                       style: NasabahStyle.text(14, weight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
-                    _row('Berat', '${item.weight} kg'),
+                    _row(
+                        'Berat', '${WeightFormatter.formatKg(item.weight)} kg'),
                     _row('Harga/kg', nasabahRupiah(item.price)),
                     _row('Subtotal', nasabahRupiah(item.subtotal)),
                   ],

@@ -17,7 +17,7 @@ class LoginFooter extends StatelessWidget {
         const SizedBox(width: 8),
         Flexible(
           child: Text(
-            'Hanya untuk Pengelola & Admin terdaftar • Aman & Terenkripsi',
+            'Hanya untuk Pengurus & Admin terdaftar • Aman & Terenkripsi',
             textAlign: TextAlign.center,
             style: AppTextStyle.extraSmall.copyWith(
               color: Colors.grey.shade400,

@@ -149,7 +149,7 @@ void main() {
       'Dashboard',
       'Nasabah',
       'Harga',
-      'Laporan',
+      'Aktivitas',
       'Jadwal',
     ]);
     expect(router.routeInformationProvider.value.uri.path, '/home');
@@ -161,7 +161,7 @@ void main() {
       await mount(tester, session('nasabah'));
       expect(labels(tester), ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
       expect(find.text('Nasabah'), findsNothing);
-      expect(find.text('Laporan'), findsNothing);
+      expect(find.text('Aktivitas'), findsNothing);
     },
   );
 
@@ -172,7 +172,7 @@ void main() {
         'Dashboard',
         'Nasabah',
         'Harga',
-        'Laporan',
+        'Aktivitas',
         'Jadwal',
       ]);
     });

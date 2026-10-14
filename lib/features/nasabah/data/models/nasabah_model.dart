@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Read model: maps the PILAH `NasabahSerializer` JSON to [NasabahEntity].
 ///
@@ -76,17 +77,8 @@ class NasabahModel extends NasabahEntity {
 
   // ---- formatting helpers -------------------------------------------------
 
-  static String formatRupiah(dynamic value) {
-    final amount = double.tryParse(value?.toString() ?? '') ?? 0;
-    final digits = amount.round().abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(digits[i]);
-    }
-    final sign = amount < 0 ? '-' : '';
-    return 'Rp $sign${buffer.toString()}';
-  }
+  static String formatRupiah(dynamic value) =>
+      CurrencyFormatter.formatRupiahValue(value);
 
   /// Maps the backend gender value to the UI label used by the dropdowns.
   static String genderLabel(String? value) {

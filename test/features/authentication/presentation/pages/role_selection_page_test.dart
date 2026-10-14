@@ -79,7 +79,7 @@ void main() {
     expect(find.text('Langkah 1'), findsOneWidget);
     expect(find.text('ayu@example.com'), findsOneWidget);
     expect(find.text('Nasabah'), kIsWeb ? findsNothing : findsOneWidget);
-    expect(find.text('Pengelola Bank Sampah'), findsOneWidget);
+    expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
     expect(find.text('Pengelola Bank Sampah Induk'), findsOneWidget);
     expect(find.text('Superadmin'), findsNothing);
     expect(tester.takeException(), isNull);

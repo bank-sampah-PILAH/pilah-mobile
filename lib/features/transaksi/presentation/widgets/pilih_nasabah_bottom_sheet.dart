@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class PilihNasabahBottomSheet extends StatefulWidget {
   const PilihNasabahBottomSheet({super.key});
@@ -21,8 +22,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   late Future<List<NasabahEntity>> _nasabahFuture;
 
-  // Emerald Eco System Tokens
-  static const Color emeraldPrimary = Color(0xFF006D44);
+  // Local tokens (candidates for AppColors)
 
   @override
   void initState() {
@@ -195,7 +195,7 @@ class _PilihNasabahBottomSheetState extends State<PilihNasabahBottomSheet> {
                                   Text(
                                     customer.balance,
                                     style: AppTextStyle.title1.copyWith(
-                                      color: emeraldPrimary,
+                                      color: AppColors.greenDark,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),

@@ -7,6 +7,7 @@ import 'package:pilah_mobile/services/di.dart';
 import '../../domain/model/pencairan.dart';
 import '../../domain/model/revisi_pencairan.dart';
 import '../blocs/revisi_pencairan_cubit.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Pengurus-only change history of one pencairan (PIL-230): the current
 /// version, then every replaced version with why, who and when.
@@ -147,7 +148,8 @@ class _VersiCard extends StatelessWidget {
           children: [
             Text(judul, style: AppTextStyle.small),
             const SizedBox(height: 4),
-            Text('Rp ${formatRupiahId(nominal)}', style: AppTextStyle.title1),
+            Text('Rp ${CurrencyFormatter.formatNumber(nominal)}',
+                style: AppTextStyle.title1),
             Text(
               '${metode.label} · ${_waktu(tanggal)}',
               style: AppTextStyle.small,
@@ -155,7 +157,7 @@ class _VersiCard extends StatelessWidget {
             if (keterangan.isNotEmpty)
               Text(keterangan, style: AppTextStyle.small),
             Text(
-              'Saldo sesudah Rp ${formatRupiahId(saldoSesudah)}',
+              'Saldo sesudah Rp ${CurrencyFormatter.formatNumber(saldoSesudah)}',
               style: AppTextStyle.small,
             ),
             ...footer,

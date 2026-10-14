@@ -197,6 +197,12 @@ void main() {
     expect(find.text('Pilih foto'), findsNothing);
 
     await tester.ensureVisible(find.byIcon(Icons.close));
+    final handle = tester.ensureSemantics();
+    expect(
+      tester.getSemantics(find.byIcon(Icons.close)),
+      isSemantics(label: 'Hapus foto', isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
 

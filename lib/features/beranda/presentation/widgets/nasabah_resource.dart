@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_activity_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Owns one request. Re-key on session/selection changes to discard stale data.
 ///
@@ -84,8 +85,7 @@ class NasabahResourceState<T> extends State<NasabahResource<T>> {
 
 String nasabahRupiah(String amount) {
   final parts = amount.split('.');
-  final whole = parts.first
-      .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+  final whole = CurrencyFormatter.formatNumber(int.tryParse(parts.first) ?? 0);
   return 'Rp $whole${parts.length > 1 && parts[1] != '00' ? ',${parts[1]}' : ''}';
 }
 
