@@ -185,18 +185,18 @@ void main() {
       (tester) async {
     await open(tester);
     InkWell exportControl() => tester.widget<InkWell>(find
-        .ancestor(of: find.text('XLS Setoran'), matching: find.byType(InkWell))
+        .ancestor(of: find.text('XLSX Laporan'), matching: find.byType(InkWell))
         .first);
     expect(exportControl().onTap, isNotNull);
     cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNull);
+    expect(exportControl().onTap, isNotNull);
     cubit.setTipeFilter(AktivitasTipeFilter.semua);
     await tester.pumpAndSettle();
     expect(exportControl().onTap, isNotNull);
     cubit.search('Budi');
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNull);
+    expect(exportControl().onTap, isNotNull);
     cubit.search('');
     await tester.pumpAndSettle();
     expect(exportControl().onTap, isNotNull);
@@ -219,7 +219,7 @@ void main() {
           bytes: Uint8List.fromList([1, 2]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(
           tester, find.textContaining('disimpan ke folder Download'));
 
@@ -239,7 +239,7 @@ void main() {
       slowExport(Left(NetworkException(message: 'Tidak ada data')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(tester, find.text('Tidak ada data'));
 
       expect(find.text('Tidak ada data'), findsOneWidget);
@@ -253,7 +253,7 @@ void main() {
           TransaksiExport(bytes: Uint8List.fromList([1]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(tester, find.text('Gagal Menyimpan'));
 
       expect(find.text('Gagal Menyimpan'), findsOneWidget);

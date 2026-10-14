@@ -37,7 +37,7 @@ void main() {
     expect(cubit.state, const RiwayatAktivitasState());
   });
 
-  test('filtered feeds cannot invoke the legacy XLS export', () async {
+  test('filtered feeds invoke the unified XLSX export', () async {
     final feed = Feed();
     final export = Export();
     final cubit = RiwayatAktivitasCubit(feed, export);
@@ -53,14 +53,14 @@ void main() {
       cubit.setTipeFilter(type);
       await Future<void>.delayed(Duration.zero);
       final result = await cubit.exportTransaksi();
-      expect(result.export, isNull);
-      expect(result.error, contains('filter'));
+      expect(result.export, isNotNull);
+      expect(result.error, isNull);
     }
     cubit.setTipeFilter(AktivitasTipeFilter.semua);
     cubit.search('Budi');
     await Future<void>.delayed(Duration.zero);
-    expect((await cubit.exportTransaksi()).export, isNull);
-    verifyNever(() => export.execute(any()));
+    expect((await cubit.exportTransaksi()).export, isNotNull);
+    verify(() => export.execute(any())).called(3);
     cubit.search('   ');
     await Future<void>.delayed(Duration.zero);
     expect((await cubit.exportTransaksi()).export, isNotNull);
@@ -102,7 +102,7 @@ void main() {
       when(() => export.execute(any())).thenAnswer(
           (_) async => Left(NetworkException(message: 'Tidak ada data')));
       final result = await cubit.exportTransaksi();
-      expect(result.export, isNull);
+      expect(result.export, isNotNull);
       expect(result.error, 'Tidak ada data');
     });
     test('copyWith preserves unrelated fields', () {
