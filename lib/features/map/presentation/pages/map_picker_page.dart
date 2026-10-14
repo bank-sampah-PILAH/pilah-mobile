@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -66,8 +67,12 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   static const _defaultCenter = LatLng(-2.5, 118.0);
 
-  /// Backend search cap (apps/bank_sampah/views.py JARAK_MAKSIMAL_KM).
-  static const double _radiusMaksimalKm = 100;
+  /// Backend search cap (apps/bank_sampah/views.py JARAK_MAKSIMAL_KM) capped
+  /// further for the picker (20 km covers city-scale bank hunting).
+  static const double _radiusMaksimalKm = 20;
+
+  static double _log(double km) => math.log(km);
+  static double _exp(double t) => math.exp(t);
 
   final _latitudeField = TextEditingController();
   final _longitudeField = TextEditingController();
@@ -201,8 +206,25 @@ class _MapPickerPageState extends State<MapPickerPage> {
       return;
     }
     if (mounted) {
-      _controller.move(LatLng(lokasi.latitude, lokasi.longitude), 17);
+      _pusatkanDenganRadius(LatLng(lokasi.latitude, lokasi.longitude));
     }
+  }
+
+  /// Centers the point and zooms so the radius circle fits on screen —
+  /// Marketplace always keeps the circle edge visible, otherwise "5 km"
+  /// is just a number drawn off-screen.
+  void _pusatkanDenganRadius(LatLng titik) {
+    // Wanted: radius (meters) spans 30% of the map height in pixels.
+    // Web-mercator meters per pixel at zoom z: 156543.03·cos(lat)/2^z, so
+    // set them equal and solve for z: z = log2(radius·2^?/pxWanted ...).
+    final radiusMeters = _radiusKm * 1000;
+    final pxWanted = _controller.camera.size.height * 0.3;
+    final cosLat = math.cos(titik.latitudeInRad);
+    // 156543.03·cos(lat)/2^z = radiusMeters/pxWanted
+    final z =
+        math.log((156543.03 * cosLat * pxWanted) / radiusMeters) / math.ln2;
+    _controller.move(titik, z.clamp(4.0, 15.0));
+    setState(() {});
   }
 
   // Simpan reads the fields — mirror of the camera or a manual entry that
@@ -444,11 +466,19 @@ class _MapPickerPageState extends State<MapPickerPage> {
                         Expanded(
                           child: Slider(
                             key: const Key('peta_radius_slider'),
-                            value: _radiusKm.clamp(0.5, _radiusMaksimalKm),
-                            min: 0.5,
-                            max: _radiusMaksimalKm,
+                            // Log scale on 0.5–20: linear sliders crush the
+                            // sub-5 km range where real bank distances live.
+                            value:
+                                _log(_radiusKm.clamp(0.5, _radiusMaksimalKm)),
+                            min: _log(0.5),
+                            max: _log(_radiusMaksimalKm),
                             activeColor: AppColors.greenDark,
-                            onChanged: (km) => setState(() => _radiusKm = km),
+                            onChanged: (t) {
+                              setState(
+                                () => _radiusKm = _exp(t),
+                              );
+                              _pusatkanDenganRadius(_controller.camera.center);
+                            },
                           ),
                         ),
                         Text(
