@@ -703,7 +703,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   child: Row(
                                     children: [
                                       Icon(Icons.male,
-                                          size: 20, color: Color(0xFF2563EB)),
+                                          size: 20, color: AppColors.inkSoft),
                                       SizedBox(width: 8),
                                       Text('Laki-laki'),
                                     ],
@@ -714,7 +714,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   child: Row(
                                     children: [
                                       Icon(Icons.female,
-                                          size: 20, color: Color(0xFFDB2777)),
+                                          size: 20, color: AppColors.inkSoft),
                                       SizedBox(width: 8),
                                       Text('Perempuan'),
                                     ],

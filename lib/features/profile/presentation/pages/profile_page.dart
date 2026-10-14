@@ -118,13 +118,7 @@ class _ProfileViewState extends State<_ProfileView>
   }
 
   Color _avatarColorFor(String seed) {
-    const palette = [
-      AppColors.greenDark,
-      Color(0xFF7C3AED),
-      AppColors.warning,
-      Color(0xFF0F766E),
-      Color(0xFF9A3412),
-    ];
+    const palette = AppColors.avatarFills;
     if (seed.isEmpty) return palette.first;
     return palette[seed.hashCode.abs() % palette.length];
   }

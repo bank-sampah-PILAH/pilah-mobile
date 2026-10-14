@@ -52,7 +52,7 @@
     "fontSize": 1
   },
   "lib/features/beranda/presentation/pages/beranda_nasabah_page.dart": {
-    "color": 1,
+    "color": 0,
     "fontSize": 1
   },
   "lib/features/dashboard/presentation/widgets/dashboard_header.dart": {
@@ -132,7 +132,7 @@
     "fontSize": 1
   },
   "lib/features/onboarding/presentation/pages/complete_profile_screen.dart": {
-    "color": 2,
+    "color": 0,
     "fontSize": 8
   },
   "lib/features/onboarding/presentation/pages/pending_approval_screen.dart": {
@@ -164,7 +164,7 @@
     "fontSize": 2
   },
   "lib/features/profile/presentation/pages/profile_page.dart": {
-    "color": 3,
+    "color": 0,
     "fontSize": 10
   },
   "lib/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart": {

@@ -31,7 +31,7 @@ Read this before adding or changing a screen. Each rule is marked **in code** (e
 | Dividers and outlines | `AppColors.border` | `#E5E7EB` | in code |
 | Strong secondary text | `AppColors.inkSoft` | `#374151` | in code; 10:1 on white |
 
-The avatar palette (`core/utils/avatar_style.dart`) is the one place that keeps several hues on purpose: light tint with dark initials, six pairs, each guarded for contrast in `test/core/utils/avatar_style_contrast_test.dart`.
+Avatars are the one place that keeps several hues on purpose. The list avatars (`core/utils/avatar_style.dart`) are light tints with dark initials, six pairs, guarded in `test/core/utils/avatar_style_contrast_test.dart`. The profile header avatar picks from `AppColors.avatarFills` (dark fills behind white initials), guarded in `test/design/contrast_test.dart`. The gender icons in the profile form are neutral (`AppColors.inkSoft`), not blue and pink.
 
 Retired colors: the greys, ambers, green tints and reds that used to be copied into screens are listed in `test/design/retired_palette_test.dart`, which fails if one comes back. If a screen needs a new color, add a token here and a contrast pair in `test/design/contrast_test.dart` instead of a literal.
 
@@ -104,7 +104,7 @@ These came out of the audit as the strongest existing screens.
 
 `AppColors.greenDark` (`#006D44`) is the only primary green: buttons, FAB, nav, hero cards, links, selected filter chips and amounts. It is the emerald of the logo (the logo's main green is about `#04845C`). The earlier muted sage `#5D8E6C` was a different color family and failed contrast, so it is gone; `test/design/single_primary_green_test.dart` pins the value and fails if a screen defines its own copy. `NasabahStyle.emerald` and `emeraldDark` are aliases of the same green.
 
-Still open: a few local tint colors next to it (for example the mint `#F0FDF4` behind status badges and the saldo block) are not tokens yet. Pick one tint, `AppColors.greenLight` (`#EAF5EC`) or the mint, and move it into `AppColors`.
+The mint tint that used to sit next to it is gone; badges and the saldo block use `AppColors.greenLight`.
 
 ### 5.3 Accessibility baseline: WCAG 2.1 AA (decided)
 

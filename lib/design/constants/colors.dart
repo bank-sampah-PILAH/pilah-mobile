@@ -31,6 +31,16 @@ class AppColors {
   /// Strong secondary text (10:1 on white). Muted text is [grey100].
   static const Color inkSoft = Color(0xFF374151);
 
+  /// Fills behind white initials on the profile header avatar. Each is at least
+  /// 4.5:1 against white (checked in test/design/contrast_test.dart).
+  static const List<Color> avatarFills = [
+    greenDark,
+    Color(0xFF7C3AED),
+    warning,
+    Color(0xFF0F766E),
+    Color(0xFF9A3412),
+  ];
+
   // Danger red and its tint. #C62828 is 5.6:1 on white and 5.1:1 on the tint
   // (WCAG AA); it replaced #DC2626, which fell to 4.4:1 on the tint.
   static const Color danger = Color(0xFFC62828);
