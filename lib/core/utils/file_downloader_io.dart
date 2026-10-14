@@ -105,8 +105,8 @@ class FileDownloader {
       for (final dir in downloads.where((d) => !d.existsSync())) {
         candidates.add(_Candidate(dir, 'Download'));
       }
-      candidates.addAll(
-          _maybe(await getExternalStorageDirectory(), 'Dokumen Aplikasi'));
+      // If explicit public export fails, fall through to private application
+      // documents below rather than silently storing financial data externally.
       // coverage:ignore-end
     } else if (Platform.isIOS) {
       // Surfaced in the Files app under "On My iPhone › Pilah Mobile", which
