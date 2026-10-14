@@ -173,7 +173,7 @@
   },
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": {
     "color": 0,
-    "fontSize": 12
+    "fontSize": 11
   },
   "lib/features/transaksi/presentation/pages/laporan/laporan_page.dart": {
     "color": 0,

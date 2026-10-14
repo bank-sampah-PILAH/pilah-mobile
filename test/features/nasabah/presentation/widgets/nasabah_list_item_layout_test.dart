@@ -43,4 +43,23 @@ void main() {
     final balance = tester.getRect(find.text('Rp 484.250'));
     expect(balance.left - name.right, greaterThanOrEqualTo(8));
   });
+
+  testWidgets('the card is announced as a button that reads the nasabah',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: NasabahListItem(nasabah: _nasabah('Nasabah Kedua')),
+        ),
+      ),
+    ));
+
+    final node = tester.getSemantics(find.byType(NasabahListItem));
+    expect(node, isSemantics(isButton: true, hasTapAction: true));
+    expect(node.getSemanticsData().label, contains('Nasabah Kedua'));
+    handle.dispose();
+  });
 }

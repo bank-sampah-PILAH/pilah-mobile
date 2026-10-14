@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 /// Text truncated to [maxLines], with a "Lihat Selengkapnya" / "Sembunyikan"
 /// toggle that appears only when the text actually overflows that limit —
@@ -69,7 +70,7 @@ class _ExpandableTextState extends State<ExpandableText> {
           overflow: _expanded ? null : TextOverflow.ellipsis,
         ),
         if (_overflows)
-          GestureDetector(
+          AppTapTarget(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
               padding: const EdgeInsets.only(top: 4),

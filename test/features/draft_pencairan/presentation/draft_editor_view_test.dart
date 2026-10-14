@@ -1338,6 +1338,31 @@ void main() {
       expect(find.byKey(const Key('total-nominal')), findsNothing);
     });
 
+    testWidgets('announces itself as a button that is expanded or collapsed',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpNew(tester);
+
+      expect(
+        tester.getSemantics(find.byKey(const Key('ringkasan-toggle'))),
+        isSemantics(
+          isButton: true,
+          hasExpandedState: true,
+          isExpanded: false,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.byKey(const Key('ringkasan-toggle'))),
+        isSemantics(isButton: true, hasExpandedState: true, isExpanded: true),
+      );
+      handle.dispose();
+    });
+
     testWidgets('a swipe up opens it and a swipe down closes it',
         (tester) async {
       await pumpNew(tester);

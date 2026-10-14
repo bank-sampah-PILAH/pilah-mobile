@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_ent
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 const List<String> _monthsId = [
   'Jan',
@@ -211,28 +212,16 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   // BlocProvider inside build(), so the surrounding State's own context sits
   // above it and cannot resolve the cubit.
   Widget _buildTab(BuildContext context, String label) {
-    final isActive = _activeTab == label;
-    return GestureDetector(
-      onTap: () {
-        if (_activeTab == label) return;
-        setState(() => _activeTab = label);
-        context.read<SuperadminCubit>().loadBankSampah(_tabStatus[label]!);
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppColors.greenDark : Colors.white,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: AppChip.onColor(
+        label: label,
+        selected: _activeTab == label,
+        onTap: () {
+          if (_activeTab == label) return;
+          setState(() => _activeTab = label);
+          context.read<SuperadminCubit>().loadBankSampah(_tabStatus[label]!);
+        },
       ),
     );
   }

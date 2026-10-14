@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 
 class NasabahListItem extends StatelessWidget {
   /// Satu nasabah sebagaimana dikembalikan API, dipakai apa adanya.
@@ -128,99 +129,85 @@ class NasabahListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppTappableCard(
       onTap: () => _onTap(context),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: avatarColor,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: avatarColor,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                initials,
-                style: AppTextStyle.title1.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
-                ),
+            alignment: Alignment.center,
+            child: Text(
+              initials,
+              style: AppTextStyle.title1.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          style: AppTextStyle.title1.copyWith(
-                            color: isActive ? Colors.black87 : Colors.grey[600],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isPending) ...[
-                        const SizedBox(width: 8),
-                        _PendingBadge(),
-                      ] else if (!isActive) ...[
-                        const SizedBox(width: 8),
-                        CustomStatusBadge(isActive: false),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    phone,
-                    style: AppTextStyle.small.copyWith(color: Colors.grey[400]),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  balance,
-                  style: AppTextStyle.title1.copyWith(
-                    color: isActive ? AppColors.greenDark : Colors.grey[500],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: AppTextStyle.title1.copyWith(
+                          color: isActive ? Colors.black87 : Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isPending) ...[
+                      const SizedBox(width: 8),
+                      _PendingBadge(),
+                    ] else if (!isActive) ...[
+                      const SizedBox(width: 8),
+                      CustomStatusBadge(isActive: false),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'saldo',
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[400],
-                  ),
+                  phone,
+                  style: AppTextStyle.small.copyWith(color: Colors.grey[400]),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                balance,
+                style: AppTextStyle.title1.copyWith(
+                  color: isActive ? AppColors.greenDark : Colors.grey[500],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'saldo',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: Colors.grey[400],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

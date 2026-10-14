@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 /// Shows the nasabah's own profile and lets them edit the fields the backend
 /// allows (nama, no_hp, jenis_kelamin, tanggal_lahir, alamat). Email, role and
@@ -458,8 +459,11 @@ class _ProfileEditForm extends StatelessWidget {
   Widget _genderOption(String value, String label) {
     final selected = jenisKelamin == value;
     return Expanded(
-      child: GestureDetector(
+      child: AppTapTarget(
         onTap: () => onJenisKelamin(value),
+        selected: selected,
+        inGroup: true,
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 10),

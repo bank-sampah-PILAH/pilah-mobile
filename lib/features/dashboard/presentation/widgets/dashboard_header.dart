@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
@@ -60,8 +61,9 @@ class DashboardHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
+            AppTapTarget(
+              label: 'Buka profil',
+              borderRadius: BorderRadius.circular(24),
               onTap: () {
                 context.push('/profile');
               },

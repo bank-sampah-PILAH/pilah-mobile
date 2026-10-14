@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 class JadwalPage extends StatefulWidget {
   static const route = '/jadwal';
@@ -1083,9 +1084,9 @@ class _DateTimeTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => AppTapTarget(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: InputDecorator(
           decoration: decoration.copyWith(
             labelText: label,

@@ -80,6 +80,17 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a price card is announced as a button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await openPage(tester);
+
+    expect(
+      tester.getSemantics(find.text('Botol PET')),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
+  });
+
   testWidgets('the Tidak Aktif chip switches to deactivated items',
       (tester) async {
     await openPage(tester);

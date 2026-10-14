@@ -18,6 +18,10 @@ class AppChip extends StatelessWidget {
   /// A small count after the label, such as how many items the filter holds.
   final int? count;
 
+  /// For a chip on a coloured header: white when selected, translucent white
+  /// otherwise (readable on the primary green).
+  final bool onColor;
+
   const AppChip({
     super.key,
     required this.label,
@@ -25,11 +29,25 @@ class AppChip extends StatelessWidget {
     required this.onTap,
     this.icon,
     this.count,
-  });
+  }) : onColor = false;
+
+  const AppChip.onColor({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+    this.count,
+  }) : onColor = true;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : AppColors.grey100;
+    final color = onColor
+        ? (selected ? AppColors.greenDark : Colors.white)
+        : (selected ? Colors.white : AppColors.grey100);
+    final background = onColor
+        ? (selected ? Colors.white : Colors.white.withValues(alpha: 0.15))
+        : (selected ? AppColors.greenDark : AppColors.fill);
     return Semantics(
       button: true,
       selected: selected,
@@ -42,7 +60,7 @@ class AppChip extends StatelessWidget {
         child: Center(
           widthFactor: 1,
           child: Material(
-            color: selected ? AppColors.greenDark : AppColors.fill,
+            color: background,
             borderRadius: BorderRadius.circular(20),
             child: InkWell(
               onTap: onTap,

@@ -18,6 +18,7 @@ import '../../domain/model/pencairan.dart';
 import '../../domain/pencairan_validator.dart';
 import '../blocs/pencairan_cubit.dart';
 import '../blocs/pencairan_state.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// Pengurus records a payout. Nasabah is picked inside the form — the same
 /// active-nasabah sheet Setoran Baru uses — rather than supplied by the
@@ -288,28 +289,11 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                             spacing: 8,
                             children: [
                               for (final metode in MetodePencairan.values)
-                                GestureDetector(
+                                AppChip(
+                                  key: Key('metode-chip-${metode.name}'),
+                                  label: metode.label,
+                                  selected: _metode == metode,
                                   onTap: () => setState(() => _metode = metode),
-                                  child: Container(
-                                    key: Key('metode-chip-${metode.name}'),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _metode == metode
-                                          ? AppColors.greenDark
-                                          : AppColors.fill,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      metode.label,
-                                      style: AppTextStyle.small.copyWith(
-                                        color: _metode == metode
-                                            ? Colors.white
-                                            : AppColors.grey100,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
                                 ),
                             ],
                           ),

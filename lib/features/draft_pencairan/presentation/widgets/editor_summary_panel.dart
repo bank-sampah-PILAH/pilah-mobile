@@ -45,63 +45,70 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            GestureDetector(
-              key: const Key('ringkasan-toggle'),
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _atur(!_terbuka),
-              onVerticalDragEnd: (detail) {
-                final kecepatan = detail.primaryVelocity ?? 0;
-                if (kecepatan < -100) _atur(true);
-                if (kecepatan > 100) _atur(false);
-              },
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(
-                          'Total dibayar',
-                          style: AppTextStyle.small
-                              .copyWith(color: Colors.grey[600]),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              rupiah(state.totalDibayar),
-                              key: const Key('total-dibayar'),
-                              style: AppTextStyle.headline1.copyWith(
-                                color: AppColors.greenDark,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
+            // Keeps GestureDetector for the vertical swipe; the semantics give it
+            // a button role and say whether the panel is open.
+            MergeSemantics(
+              child: Semantics(
+                  button: true,
+                  expanded: _terbuka,
+                  child: GestureDetector(
+                    key: const Key('ringkasan-toggle'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _atur(!_terbuka),
+                    onVerticalDragEnd: (detail) {
+                      final kecepatan = detail.primaryVelocity ?? 0;
+                      if (kecepatan < -100) _atur(true);
+                      if (kecepatan > 100) _atur(false);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          _terbuka
-                              ? Icons.keyboard_arrow_down
-                              : Icons.keyboard_arrow_up,
-                          color: Colors.grey[600],
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                'Total dibayar',
+                                style: AppTextStyle.small
+                                    .copyWith(color: Colors.grey[600]),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    rupiah(state.totalDibayar),
+                                    key: const Key('total-dibayar'),
+                                    style: AppTextStyle.headline1.copyWith(
+                                      color: AppColors.greenDark,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _terbuka
+                                    ? Icons.keyboard_arrow_down
+                                    : Icons.keyboard_arrow_up,
+                                color: Colors.grey[600],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
+                  )),
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 180),

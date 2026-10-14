@@ -15,6 +15,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 class RegisterBankSampahScreen extends StatefulWidget {
   /// True when the user is re-applying after a previous registration was
@@ -633,9 +634,13 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                                     fit: BoxFit.cover,
                                                   ),
                                                   Positioned(
-                                                    top: 8,
-                                                    right: 8,
-                                                    child: GestureDetector(
+                                                    top: 0,
+                                                    right: 0,
+                                                    child: AppTapTarget(
+                                                      label: 'Hapus foto',
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              24),
                                                       onTap: () {
                                                         setState(() {
                                                           _selectedImage = null;
