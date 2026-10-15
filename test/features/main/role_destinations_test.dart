@@ -15,7 +15,7 @@ void main() {
     test('staff get the five operational destinations in order', () {
       final staff = RoleDestinations.forRole('pengelola');
       expect(staff.map((d) => d.label),
-          ['Dashboard', 'Nasabah', 'Harga', 'Laporan', 'Jadwal']);
+          ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal']);
       expect(staff.map((d) => d.branchIndex), [0, 1, 2, 3, 4]);
     });
 

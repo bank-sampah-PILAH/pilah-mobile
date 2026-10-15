@@ -295,4 +295,59 @@ void main() {
     expect(find.text('Perubahan gagal disimpan'), findsOneWidget);
     expect(find.text('Perubahan ditolak'), findsOneWidget);
   });
+
+  group('a pencairan with a potongan', () {
+    final berpotongan = Pencairan(
+      id: 'p-2',
+      nasabahNama: 'Ahmad Ridwan',
+      nominal: 100000,
+      potongan: 10000,
+      metode: MetodePencairan.transfer,
+      tanggal: DateTime(2026, 9, 21, 9, 30),
+      keterangan: '',
+      status: 'tercatat',
+      saldoSebelum: 465600,
+      saldoSesudah: 365600,
+      tanggalEditMinimum: DateTime(2026, 9, 14, 9, 30),
+    );
+
+    testWidgets('locks the nominal and tanggal and says why', (tester) async {
+      await pumpView(tester, pencairan: berpotongan);
+
+      expect(
+          tester
+              .widget<TextField>(find.byKey(const Key('nominal-field')))
+              .enabled,
+          isFalse);
+      expect(
+          find.textContaining('hanya metode dan keterangan'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('tanggal-field')));
+      await tester.pumpAndSettle();
+      expect(find.byType(DatePickerDialog), findsNothing);
+    });
+
+    testWidgets(
+        'still lets the metode be corrected, sending the values as recorded',
+        (tester) async {
+      when(() => useCases.editPencairan(any()))
+          .thenAnswer((_) async => Right(berpotongan));
+      await pumpView(tester, pencairan: berpotongan);
+
+      await tester.tap(find.text('Tunai'));
+      await tester.pump();
+      await tester.enterText(
+          find.byKey(const Key('alasan-field')), 'Dibayar tunai');
+      await tester.pump();
+      await tapSubmit(tester);
+      await tester.tap(find.text('Simpan'));
+      await tester.pumpAndSettle();
+
+      final request = verify(() => useCases.editPencairan(captureAny()))
+          .captured
+          .single as EditPencairanRequest;
+      expect(request.nominal, 100000);
+      expect(request.tanggal, DateTime(2026, 9, 21, 9, 30));
+      expect(request.metode, MetodePencairan.tunai);
+    });
+  });
 }

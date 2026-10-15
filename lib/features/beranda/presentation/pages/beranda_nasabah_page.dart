@@ -405,8 +405,8 @@ class _BalanceCard extends StatelessWidget {
                     ),
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0x22FFFFFF),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.13),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(

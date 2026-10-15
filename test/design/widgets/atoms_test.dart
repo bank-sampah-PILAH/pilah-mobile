@@ -87,6 +87,20 @@ void main() {
     });
   });
 
+  group('AppTextButton semantics', () {
+    testWidgets('is announced as a button with its label', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester
+          .pumpWidget(_host(AppTextButton(label: 'Lupa?', onTap: () {})));
+
+      expect(
+        tester.getSemantics(find.text('Lupa?')),
+        isSemantics(label: 'Lupa?', isButton: true),
+      );
+      handle.dispose();
+    });
+  });
+
   group('PageIndicator', () {
     testWidgets('draws one dot per page', (tester) async {
       await tester.pumpWidget(_host(PageIndicator(length: 4, activeIndex: 2)));
@@ -144,6 +158,32 @@ void main() {
       await tester.pump();
       expect(
           tester.widget<TextField>(find.byType(TextField)).obscureText, isTrue);
+    });
+  });
+
+  group('AppTextField password toggle', () {
+    testWidgets('is labelled for screen readers and flips its label',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(text: 'rahasia'),
+        hint: 'Sandi',
+        obscureText: true,
+      )));
+
+      expect(
+        tester.getSemantics(find.byIcon(Icons.visibility)),
+        isSemantics(tooltip: 'Tampilkan kata sandi', isButton: true),
+      );
+
+      await tester.tap(find.byIcon(Icons.visibility));
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(find.byIcon(Icons.visibility_off)),
+        isSemantics(tooltip: 'Sembunyikan kata sandi', isButton: true),
+      );
+      handle.dispose();
     });
   });
 
