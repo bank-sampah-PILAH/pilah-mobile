@@ -29,6 +29,7 @@ class _ReviewerLoginPanelState extends State<ReviewerLoginPanel>
   bool _isLoadingConfig = true;
   bool _enabled = false;
   bool _configFailed = false;
+  bool _isSubmitting = false;
 
   bool get _isRelease => widget.isReleaseModeOverride ?? kReleaseMode;
 
@@ -47,6 +48,14 @@ class _ReviewerLoginPanelState extends State<ReviewerLoginPanel>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _isRelease) {
       _loadConfig();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ReviewerLoginPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isLoading && !widget.isLoading) {
+      _isSubmitting = false;
     }
   }
 
@@ -81,7 +90,9 @@ class _ReviewerLoginPanelState extends State<ReviewerLoginPanel>
   }
 
   void _submit() {
+    if (_isSubmitting || widget.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSubmitting = true);
     context.read<AuthenticationBloc>().add(
           LoginWithReviewerRequested(
             email: _emailController.text.trim(),
@@ -163,7 +174,7 @@ class _ReviewerLoginPanelState extends State<ReviewerLoginPanel>
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: widget.isLoading ? null : _submit,
+                  onPressed: widget.isLoading || _isSubmitting ? null : _submit,
                   child: const Text('Masuk dengan akun peninjau'),
                 ),
               ),
