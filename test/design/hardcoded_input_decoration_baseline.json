@@ -1,0 +1,12 @@
+{
+  "lib/core/bases/widgets/custom_search_field.dart": 1,
+  "lib/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart": 1,
+  "lib/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart": 1,
+  "lib/features/nasabah/presentation/widgets/nasabah_search_bar.dart": 1,
+  "lib/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart": 1,
+  "lib/features/onboarding/presentation/pages/complete_profile_screen.dart": 5,
+  "lib/features/onboarding/presentation/pages/register_bank_sampah_screen.dart": 3,
+  "lib/features/pencairan/presentation/pages/edit_pencairan_page.dart": 4,
+  "lib/features/profile/presentation/pages/profile_page.dart": 2,
+  "lib/features/transaksi/presentation/widgets/item_setoran_card.dart": 2
+}
