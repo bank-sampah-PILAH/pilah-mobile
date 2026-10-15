@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -209,7 +209,7 @@ class _PerbandinganHargaPageState extends State<PerbandinganHargaPage> {
     final rupiah = double.tryParse(row.hargaPerKg ?? '')?.floor();
     final hargaTampil = row.hargaTidakTersedia || rupiah == null
         ? 'Harga belum tersedia'
-        : 'Rp ${formatRupiahId(rupiah)}';
+        : CurrencyFormatter.formatRupiah(rupiah);
     final nama = row.nama ?? '(bank tidak bisa dibandingkan)';
     final berlaku = row.berlakuMulai == null
         ? null

@@ -1,6 +1,7 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
 /// Pumps a screen whose only job is to raise [show] on tap, taps it, and lets
@@ -61,8 +62,8 @@ void main() {
       );
 
       final flushbar = tester.widget<Flushbar>(find.byType(Flushbar));
-      expect(flushbar.backgroundColor, const Color(0xFFFEF3C7));
-      expect(flushbar.borderColor, const Color(0xFFD97706));
+      expect(flushbar.backgroundColor, AppColors.warningLight);
+      expect(flushbar.borderColor, AppColors.warning);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       expect(find.byIcon(Icons.check_circle), findsNothing);
       expect(find.byIcon(Icons.error_outline), findsNothing);

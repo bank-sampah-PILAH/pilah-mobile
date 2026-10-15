@@ -12,6 +12,7 @@ class PencairanMapper {
       bankSampahNama: response.bankSampahNama,
       dicatatOlehNama: response.dicatatOlehNama,
       nominal: rupiah(response.nominal),
+      potongan: rupiah(response.potongan),
       metode: MetodePencairan.fromApi(response.metode),
       tanggal: DateTime.tryParse(response.tanggal ?? '')?.toLocal(),
       keterangan: response.keterangan,

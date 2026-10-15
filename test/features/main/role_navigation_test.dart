@@ -149,7 +149,7 @@ void main() {
       'Dashboard',
       'Nasabah',
       'Harga',
-      'Laporan',
+      'Aktivitas',
       'Jadwal',
     ]);
     expect(router.routeInformationProvider.value.uri.path, '/home');
@@ -162,7 +162,7 @@ void main() {
       expect(labels(tester),
           ['Beranda', 'Tabungan', 'Jadwal', 'Bank Sampah', 'Profil']);
       expect(find.text('Nasabah'), findsNothing);
-      expect(find.text('Laporan'), findsNothing);
+      expect(find.text('Aktivitas'), findsNothing);
     },
   );
 
@@ -173,7 +173,7 @@ void main() {
         'Dashboard',
         'Nasabah',
         'Harga',
-        'Laporan',
+        'Aktivitas',
         'Jadwal',
       ]);
     });
@@ -313,6 +313,19 @@ void main() {
     expect(find.text('login page'), findsOneWidget);
     expect(find.text('Silakan masuk sebagai nasabah.'), findsNothing);
   });
+
+  for (final state in <AuthenticationStates>[
+    AuthenticationLoading(),
+    Unauthenticated(),
+  ]) {
+    testWidgets(
+        '${state.runtimeType} shows a blank shell, not the nasabah message',
+        (tester) async {
+      await mount(tester, state);
+
+      expect(find.text('Silakan masuk sebagai nasabah.'), findsNothing);
+    });
+  }
 
   testWidgets('signed-out session cannot display privileged navigation', (
     tester,
