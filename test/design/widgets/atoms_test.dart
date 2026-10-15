@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_button.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/design/widgets/atom/page_indicator.dart';
@@ -72,7 +73,40 @@ void main() {
         isError: true,
       )));
 
-      expect(tester.widget<Text>(find.text('Nama')).style?.color, Colors.red);
+      expect(
+        tester.widget<Text>(find.text('Nama')).style?.color,
+        AppColors.danger,
+      );
+    });
+
+    testWidgets('looks like every other field: white, 12 rounded, green focus',
+        (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(),
+        hint: 'Isi nama',
+      )));
+
+      final decoration =
+          tester.widget<TextField>(find.byType(TextField)).decoration!;
+      expect(decoration.filled, isTrue);
+      expect(decoration.fillColor, Colors.white);
+      final focused = decoration.focusedBorder! as OutlineInputBorder;
+      expect(focused.borderRadius, BorderRadius.circular(12));
+      expect(focused.borderSide.color, AppColors.greenDark);
+    });
+
+    testWidgets('the reveal icon is the app green, not the retired seed blue',
+        (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(text: 'rahasia'),
+        hint: 'Sandi',
+        obscureText: true,
+      )));
+
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.visibility)).color,
+        AppColors.greenDark,
+      );
     });
 
     testWidgets('a password field can reveal and hide its text',
