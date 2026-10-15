@@ -157,17 +157,11 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
               ElevatedButton(
                 key: const Key('terapkan-saldo-min'),
                 onPressed: () => Navigator.of(context).pop(_nilai),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.greenDark,
-                  foregroundColor: Colors.white,
-                ),
                 child: const Text('Terapkan'),
               ),
               const SizedBox(width: 12),
               TextButton(
                 key: const Key('batal-saldo-min'),
-                style:
-                    TextButton.styleFrom(foregroundColor: AppColors.greenDark),
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Batal'),
               ),

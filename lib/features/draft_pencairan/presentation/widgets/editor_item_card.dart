@@ -68,10 +68,6 @@ class EditorItemCard extends StatelessWidget {
                     key: const Key('terapkan-item'),
                     onPressed: () => Navigator.of(sheetContext)
                         .pop(_PotonganChoice(pilihan)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      foregroundColor: Colors.white,
-                    ),
                     child: const Text('Terapkan'),
                   ),
                   const SizedBox(width: 12),
