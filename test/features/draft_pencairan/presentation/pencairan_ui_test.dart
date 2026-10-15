@@ -262,7 +262,7 @@ void main() {
     expect(focused.borderSide.color, AppColors.greenDark);
     expect(focused.borderSide.width, 1.5);
     final error = decoration.errorBorder! as OutlineInputBorder;
-    expect(error.borderSide.color, Colors.red);
+    expect(error.borderSide.color, AppColors.danger);
   });
 
   group('PencairanChip', () {
