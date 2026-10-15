@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,20 +34,27 @@ void main() {
   Future<void> pumpPanel(
     WidgetTester tester, {
     required Future<bool> Function() loadEnabled,
+    ValueListenable<bool>? loadingState,
   }) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<AuthenticationBloc>.value(
+    Widget buildPanel(bool isLoading) => BlocProvider<AuthenticationBloc>.value(
           value: auth,
           child: Scaffold(
             body: ReviewerLoginPanel(
               loadReviewerLoginEnabled: loadEnabled,
               isReleaseModeOverride: true,
+              isLoading: isLoading,
             ),
           ),
-        ),
-      ),
-    );
+        );
+
+    await tester.pumpWidget(MaterialApp(
+      home: loadingState == null
+          ? buildPanel(false)
+          : ValueListenableBuilder<bool>(
+              valueListenable: loadingState,
+              builder: (context, isLoading, _) => buildPanel(isLoading),
+            ),
+    ));
     await tester.pumpAndSettle();
   }
 
@@ -79,6 +87,61 @@ void main() {
       expect(event.password, 'secret password');
     },
   );
+
+  testWidgets(
+    'ignores repeated reviewer login submissions while one is in flight',
+    (tester) async {
+      await pumpPanel(tester, loadEnabled: () async => true);
+
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'reviewer@test.id',
+      );
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'secret password',
+      );
+
+      final submit = find.text('Masuk dengan akun peninjau');
+      await tester.tap(submit);
+      await tester.tap(submit);
+      await tester.pump();
+
+      final submissions = verify(() => auth.add(captureAny()))
+          .captured
+          .whereType<LoginWithReviewerRequested>();
+      expect(submissions, hasLength(1));
+    },
+  );
+
+  testWidgets('allows another reviewer login after the request completes', (
+    tester,
+  ) async {
+    final loading = ValueNotifier(false);
+    await pumpPanel(
+      tester,
+      loadEnabled: () async => true,
+      loadingState: loading,
+    );
+    await tester.enterText(
+        find.byType(TextFormField).at(0), 'reviewer@test.id');
+    await tester.enterText(find.byType(TextFormField).at(1), 'secret password');
+
+    final submit = find.text('Masuk dengan akun peninjau');
+    await tester.tap(submit);
+    await tester.pump();
+    loading.value = true;
+    await tester.pump();
+    loading.value = false;
+    await tester.pump();
+    await tester.tap(submit);
+    await tester.pump();
+
+    final submissions = verify(() => auth.add(captureAny()))
+        .captured
+        .whereType<LoginWithReviewerRequested>();
+    expect(submissions, hasLength(2));
+  });
 
   testWidgets('hides the form after config failure and offers a retry', (
     tester,
