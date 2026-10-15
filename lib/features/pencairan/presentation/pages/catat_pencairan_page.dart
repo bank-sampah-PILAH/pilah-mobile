@@ -8,6 +8,8 @@ import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -52,6 +54,10 @@ class CatatPencairanView extends StatefulWidget {
   });
 
   static const Color emeraldPrimary = Color(0xFF006D44);
+
+  /// Width of the saldo and submit panel on a wide window; the same as
+  /// Setoran Baru's summary panel.
+  static const double lebarPanel = 340;
 
   @override
   State<CatatPencairanView> createState() => _CatatPencairanViewState();
@@ -151,15 +157,125 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
         );
   }
 
+  /// A bottom sheet on a phone; on a wide window a sheet would stretch across
+  /// the whole screen, so the same summary opens as a centred dialog.
   Future<void> _showBerhasil(Pencairan created) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isDismissible: false,
-      isScrollControlled: true,
-      builder: (sheetContext) => _PencairanBerhasilSheet(created: created),
-    );
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => Dialog(
+          backgroundColor: Colors.white,
+          // The summary is square at the bottom (it is drawn for a sheet).
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _lebarDialogBerhasil),
+            child: _PencairanBerhasilSheet(created: created),
+          ),
+        ),
+      );
+    } else {
+      await showModalBottomSheet<void>(
+        context: context,
+        isDismissible: false,
+        isScrollControlled: true,
+        builder: (sheetContext) => _PencairanBerhasilSheet(created: created),
+      );
+    }
     if (mounted) Navigator.of(context).pop(true);
   }
+
+  static const double _lebarDialogBerhasil = 420;
+
+  /// Nominal, metode, tanggal and keterangan: the same fields in either
+  /// layout.
+  List<Widget> _buildIsian(PencairanState state, String? localError) => [
+        _buildLabel('NOMINAL'),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('nominal-field'),
+          controller: _nominalController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: AppTextStyle.small.copyWith(color: Colors.black87),
+          onChanged: (_) {
+            // The server's rejection was about the old value.
+            context.read<PencairanCubit>().clearNominalError();
+            setState(() {});
+          },
+          decoration: appInputDecoration(
+            hintText: 'Contoh: 50000',
+          ).copyWith(
+            prefixText: 'Rp ',
+            prefixStyle: AppTextStyle.small.copyWith(color: Colors.black87),
+            errorText: localError ?? state.nominalError,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildLabel('METODE'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final metode in MetodePencairan.values)
+              GestureDetector(
+                onTap: () => setState(() => _metode = metode),
+                child: Container(
+                  key: Key('metode-chip-${metode.name}'),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _metode == metode
+                        ? AppColors.greenDark
+                        : const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    metode.label,
+                    style: AppTextStyle.small.copyWith(
+                      color: _metode == metode
+                          ? Colors.white
+                          : const Color(0xFF6B7280),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildLabel('TANGGAL'),
+        const SizedBox(height: 8),
+        InkWell(
+          key: const Key('tanggal-field'),
+          onTap: _pickTanggal,
+          child: InputDecorator(
+            decoration: appInputDecoration().copyWith(
+              suffixIcon: const Icon(Icons.calendar_month, color: Colors.grey),
+            ),
+            child: Text(
+              formatTanggalId(_tanggal),
+              style: AppTextStyle.small.copyWith(color: Colors.black87),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildLabel('KETERANGAN (OPSIONAL)'),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('keterangan-field'),
+          controller: _keteranganController,
+          maxLength: 255,
+          maxLines: 2,
+          style: AppTextStyle.small.copyWith(color: Colors.black87),
+          decoration: appInputDecoration(
+            hintText: 'Keterangan (opsional)',
+          ),
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -191,190 +307,153 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
             state.submitStatus != SubmitStatus.submitting &&
             PencairanValidator.nominal(nominal, saldo: state.saldo) == null;
 
+        final lebar = context.layoutBreakpoint == LayoutBreakpoint.expanded;
+        final saldoCard = customer == null
+            ? null
+            : _SaldoCard(
+                state: state,
+                onRetry: () =>
+                    context.read<PencairanCubit>().loadSaldo(customer.id),
+              );
+        final ringkasan = customer == null
+            ? null
+            : _RingkasanCard(
+                saldo: state.saldo,
+                nominal: localError == null ? nominal : null,
+              );
+        final submitButton = CustomPrimaryButton(
+          key: const Key('submit-pencairan'),
+          title: state.submitStatus == SubmitStatus.submitting
+              ? 'Menyimpan...'
+              : 'Catat Pencairan',
+          onPressed: canSubmit
+              ? () => _confirmAndSubmit(nominal!)
+              : (customer == null
+                  ? () => setState(() => _hasSubmitted = true)
+                  : null),
+        );
+        final header = Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child:
+                      Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Catat Pencairan',
+                style: AppTextStyle.headline1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+        );
+        final formScroll = SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PILIH NASABAH',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 16),
+              PilihNasabahSection(
+                selectedCustomer: customer,
+                onCustomerSelected: _onCustomerSelected,
+                hasError: _hasSubmitted && customer == null,
+                errorText: 'Nasabah harus dipilih',
+              ),
+              if (customer != null) ...[
+                if (!lebar) ...[
+                  const SizedBox(height: 24),
+                  saldoCard!,
+                ],
+                const SizedBox(height: 24),
+                ..._buildIsian(state, localError),
+                if (!lebar) ...[
+                  const SizedBox(height: 8),
+                  ringkasan!,
+                ],
+              ],
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+
+        // A wide window keeps the money in view: saldo, what is left after
+        // the payout, and the button that records it sit in a panel beside
+        // the form, not in a bar stretched across the bottom of the screen.
+        if (lebar) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: ContentBounds(
+                child: Column(
+                  children: [
+                    header,
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: formScroll),
+                          SizedBox(
+                            width: CatatPencairanView.lebarPanel,
+                            child: SingleChildScrollView(
+                              key: const Key('catat-pencairan-panel'),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (saldoCard != null) ...[
+                                    saldoCard,
+                                    const SizedBox(height: 16),
+                                    ringkasan!,
+                                    const SizedBox(height: 16),
+                                  ],
+                                  submitButton,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
             child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      InkWell(
-                        onTap: () => context.pop(),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.arrow_back,
-                              color: Colors.grey[800], size: 20),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Catat Pencairan',
-                        style: AppTextStyle.headline1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'PILIH NASABAH',
-                          style: AppTextStyle.extraSmall.copyWith(
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        PilihNasabahSection(
-                          selectedCustomer: customer,
-                          onCustomerSelected: _onCustomerSelected,
-                          hasError: _hasSubmitted && customer == null,
-                          errorText: 'Nasabah harus dipilih',
-                        ),
-                        if (customer != null) ...[
-                          const SizedBox(height: 24),
-                          _SaldoCard(
-                            state: state,
-                            onRetry: () => context
-                                .read<PencairanCubit>()
-                                .loadSaldo(customer.id),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildLabel('NOMINAL'),
-                          const SizedBox(height: 8),
-                          TextField(
-                            key: const Key('nominal-field'),
-                            controller: _nominalController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
-                            style: AppTextStyle.small
-                                .copyWith(color: Colors.black87),
-                            onChanged: (_) {
-                              // The server's rejection was about the old value.
-                              context
-                                  .read<PencairanCubit>()
-                                  .clearNominalError();
-                              setState(() {});
-                            },
-                            decoration: appInputDecoration(
-                              hintText: 'Contoh: 50000',
-                            ).copyWith(
-                              prefixText: 'Rp ',
-                              prefixStyle: AppTextStyle.small
-                                  .copyWith(color: Colors.black87),
-                              errorText: localError ?? state.nominalError,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildLabel('METODE'),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              for (final metode in MetodePencairan.values)
-                                GestureDetector(
-                                  onTap: () => setState(() => _metode = metode),
-                                  child: Container(
-                                    key: Key('metode-chip-${metode.name}'),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _metode == metode
-                                          ? AppColors.greenDark
-                                          : const Color(0xFFF3F4F6),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      metode.label,
-                                      style: AppTextStyle.small.copyWith(
-                                        color: _metode == metode
-                                            ? Colors.white
-                                            : const Color(0xFF6B7280),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildLabel('TANGGAL'),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            key: const Key('tanggal-field'),
-                            onTap: _pickTanggal,
-                            child: InputDecorator(
-                              decoration: appInputDecoration().copyWith(
-                                suffixIcon: const Icon(Icons.calendar_month,
-                                    color: Colors.grey),
-                              ),
-                              child: Text(
-                                formatTanggalId(_tanggal),
-                                style: AppTextStyle.small
-                                    .copyWith(color: Colors.black87),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildLabel('KETERANGAN (OPSIONAL)'),
-                          const SizedBox(height: 8),
-                          TextField(
-                            key: const Key('keterangan-field'),
-                            controller: _keteranganController,
-                            maxLength: 255,
-                            maxLines: 2,
-                            style: AppTextStyle.small
-                                .copyWith(color: Colors.black87),
-                            decoration: appInputDecoration(
-                              hintText: 'Keterangan (opsional)',
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          _RingkasanCard(
-                            saldo: state.saldo,
-                            nominal: localError == null ? nominal : null,
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              children: [header, Expanded(child: formScroll)],
             ),
           ),
           bottomNavigationBar: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: CustomPrimaryButton(
-                key: const Key('submit-pencairan'),
-                title: state.submitStatus == SubmitStatus.submitting
-                    ? 'Menyimpan...'
-                    : 'Catat Pencairan',
-                onPressed: canSubmit
-                    ? () => _confirmAndSubmit(nominal!)
-                    : (customer == null
-                        ? () => setState(() => _hasSubmitted = true)
-                        : null),
-              ),
+              child: submitButton,
             ),
           ),
         );
@@ -476,26 +555,38 @@ class _RingkasanCard extends StatelessWidget {
     );
   }
 
+  // Both sides may shrink: in the narrow side panel of a wide window a large
+  // nominal and its label have to share well under 300 px.
   Widget _row(String label, String value, {bool emphasized = false}) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: AppTextStyle.small.copyWith(
-              color: emphasized ? Colors.black87 : Colors.grey[500],
-              fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
-              fontSize: emphasized ? 16 : null,
+          Flexible(
+            child: Text(
+              label,
+              style: AppTextStyle.small.copyWith(
+                color: emphasized ? Colors.black87 : Colors.grey[500],
+                fontWeight: emphasized ? FontWeight.bold : FontWeight.normal,
+                fontSize: emphasized ? 16 : null,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: (emphasized ? AppTextStyle.headline1 : AppTextStyle.title1)
-                .copyWith(
-              color: emphasized
-                  ? CatatPencairanView.emeraldPrimary
-                  : Colors.black87,
-              fontWeight: FontWeight.bold,
-              fontSize: emphasized ? 20 : 15,
+          const SizedBox(width: 12),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                value,
+                style:
+                    (emphasized ? AppTextStyle.headline1 : AppTextStyle.title1)
+                        .copyWith(
+                  color: emphasized
+                      ? CatatPencairanView.emeraldPrimary
+                      : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: emphasized ? 20 : 15,
+                ),
+              ),
             ),
           ),
         ],

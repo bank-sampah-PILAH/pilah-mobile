@@ -173,15 +173,22 @@ class AppRouterConfig {
         builder: (context, state) =>
             DraftEditorPage(args: state.extra! as DraftEditorArgs),
       ),
+      // Both pages take their pencairan as extra, which a refreshed web tab
+      // or a pasted link doesn't carry; those go back to the laporan, where
+      // the pencairan is picked from the activity list.
       GoRoute(
         path: EditPencairanPage.route,
         name: EditPencairanPage.route,
+        redirect: (context, state) =>
+            state.extra is Pencairan ? null : LaporanPage.route,
         builder: (context, state) =>
             EditPencairanPage(pencairan: state.extra! as Pencairan),
       ),
       GoRoute(
         path: RevisiPencairanPage.route,
         name: RevisiPencairanPage.route,
+        redirect: (context, state) =>
+            state.extra is String ? null : LaporanPage.route,
         builder: (context, state) =>
             RevisiPencairanPage(pencairanId: state.extra! as String),
       ),
