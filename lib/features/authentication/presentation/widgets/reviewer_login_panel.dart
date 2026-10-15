@@ -30,6 +30,7 @@ class _ReviewerLoginPanelState extends State<ReviewerLoginPanel>
   bool _enabled = false;
   bool _configFailed = false;
   bool _isSubmitting = false;
+  int _configRequestId = 0;
 
   bool get _isRelease => widget.isReleaseModeOverride ?? kReleaseMode;
 
@@ -68,6 +69,7 @@ class _ReviewerLoginPanelState extends State<ReviewerLoginPanel>
   }
 
   Future<void> _loadConfig() async {
+    final requestId = ++_configRequestId;
     setState(() {
       _isLoadingConfig = true;
       _enabled = false;
@@ -75,13 +77,13 @@ class _ReviewerLoginPanelState extends State<ReviewerLoginPanel>
     });
     try {
       final enabled = await widget.loadReviewerLoginEnabled();
-      if (!mounted) return;
+      if (!mounted || requestId != _configRequestId) return;
       setState(() {
         _enabled = enabled;
         _isLoadingConfig = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _configRequestId) return;
       setState(() {
         _configFailed = true;
         _isLoadingConfig = false;

@@ -1,3 +1,5 @@
+import 'dart:async' show Completer;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter/material.dart';
@@ -166,6 +168,42 @@ void main() {
     expect(calls, 2);
     expect(find.bySemanticsLabel('Email'), findsOneWidget);
   });
+
+  testWidgets(
+    'ignores a stale retry response after a newer resume refresh',
+    (tester) async {
+      var calls = 0;
+      final retryResponse = Completer<bool>();
+      await pumpPanel(
+        tester,
+        loadEnabled: () async {
+          calls++;
+          if (calls == 1) throw Exception('temporary failure');
+          if (calls == 2) return retryResponse.future;
+          return false;
+        },
+      );
+
+      expect(find.text('Coba muat ulang'), findsOneWidget);
+      await tester.tap(find.text('Coba muat ulang'));
+      await tester.pump();
+      expect(calls, 2);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(calls, 3);
+      expect(find.bySemanticsLabel('Email'), findsNothing);
+      expect(find.text('Coba muat ulang'), findsNothing);
+
+      retryResponse.complete(true);
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Email'), findsNothing);
+      expect(find.text('Coba muat ulang'), findsNothing);
+    },
+  );
 
   testWidgets('hides the form when runtime config disables reviewer access', (
     tester,
