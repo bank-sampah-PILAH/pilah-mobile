@@ -15,6 +15,10 @@ enum AppButtonVariant {
   /// An action that cannot be undone, such as logging out or rejecting: red,
   /// filled.
   destructive,
+
+  /// The lighter form of [destructive], for an action next to a primary one,
+  /// such as "Tolak" beside "Setujui": red outline.
+  destructiveOutlined,
 }
 
 /// The one button of the app. Use it instead of styling an `ElevatedButton`
@@ -31,6 +35,7 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.variant = AppButtonVariant.primary,
     this.icon,
+    this.leading,
     this.isLoading = false,
     this.expand = true,
   });
@@ -39,6 +44,9 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final IconData? icon;
+
+  /// Replaces [icon] with any widget, such as a brand logo.
+  final Widget? leading;
   final bool isLoading;
 
   /// Whether the button fills the width it is given. When false it is only as
@@ -50,6 +58,7 @@ class AppButton extends StatelessWidget {
   Color get _spinnerColor => switch (variant) {
         AppButtonVariant.outlined => AppColors.greenDark,
         AppButtonVariant.neutral => AppColors.inkSoft,
+        AppButtonVariant.destructiveOutlined => AppColors.danger,
         _ => Colors.white,
       };
 
@@ -86,8 +95,18 @@ class AppButton extends StatelessWidget {
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
             minimumSize: size,
+            backgroundColor: Colors.white,
             foregroundColor: AppColors.inkSoft,
             side: const BorderSide(color: AppColors.border, width: 1.5),
+          ),
+          child: child,
+        ),
+      AppButtonVariant.destructiveOutlined => OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            minimumSize: size,
+            foregroundColor: AppColors.danger,
+            side: const BorderSide(color: AppColors.danger, width: 1.5),
           ),
           child: child,
         ),
@@ -105,12 +124,13 @@ class AppButton extends StatelessWidget {
 
   Widget _content() {
     final text = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
-    if (icon == null) return text;
+    final lead = leading ?? (icon == null ? null : Icon(icon, size: 20));
+    if (lead == null) return text;
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 20),
+        lead,
         const SizedBox(width: 8),
         Flexible(child: text),
       ],
