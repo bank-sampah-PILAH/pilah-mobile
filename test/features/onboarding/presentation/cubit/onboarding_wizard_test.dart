@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,11 +20,13 @@ const _draft = CompleteProfileRequest(
   noHp: '81234567890',
 );
 
-const _registration = RegisterBankSampahRequest(
+final _registration = RegisterBankSampahRequest(
   nama: 'Bank Sampah BTH',
   alamat: 'Kel. Kukusan',
   noHpPic: '81234567890',
-  fotoKegiatanPath: '/tmp/kegiatan.jpg',
+  fotoKegiatanPath: '',
+  fotoKegiatanBytes: Uint8List.fromList([1, 2, 3]),
+  fotoKegiatanFilename: 'kegiatan.jpg',
 );
 
 /// A backend refusal carrying [message], shaped the way the API returns one.
