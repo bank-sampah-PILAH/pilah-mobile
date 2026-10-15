@@ -98,6 +98,7 @@ import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
     as _i928;
 import '../features/jadwal/domain/repositories/jadwal_repository.dart' as _i73;
 import '../features/jadwal/presentation/cubit/jadwal_cubit.dart' as _i942;
+import '../features/map/presentation/widgets/location_service.dart' as _i558;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     as _i307;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart'
@@ -228,6 +229,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i183.ImagePicker>(() => imagePickerModule.imagePicker);
     gh.lazySingleton<_i183.ImageCropper>(() => imagePickerModule.imageCropper);
     gh.lazySingleton<_i901.InviteTokenStore>(() => _i901.InviteTokenStore());
+    gh.lazySingleton<_i558.LocationService>(() => _i558.LocationService());
     gh.factory<_i119.AppEnvironment>(
       () => _i119.DevEnvironment(),
       registerFor: {_dev},

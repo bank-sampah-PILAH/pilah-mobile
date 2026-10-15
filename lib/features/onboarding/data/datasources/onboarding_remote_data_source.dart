@@ -41,6 +41,10 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
       if (request.kota != null && request.kota!.trim().isNotEmpty)
         'kota': request.kota!.trim(),
       'no_hp_pic': request.noHpPic,
+      if (request.lokasi != null)
+        'latitude': request.lokasi!.latitude.toStringAsFixed(6),
+      if (request.lokasi != null)
+        'longitude': request.lokasi!.longitude.toStringAsFixed(6),
       'foto_kegiatan': await MultipartFile.fromFile(
         request.fotoKegiatanPath,
         filename: fileName,

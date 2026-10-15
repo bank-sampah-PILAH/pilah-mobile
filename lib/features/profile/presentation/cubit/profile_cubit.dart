@@ -9,6 +9,7 @@ import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
@@ -160,11 +161,13 @@ class ProfileCubit extends Cubit<ProfileState> {
   ///
   /// Carries the pending logo when there is one. It is only released once the
   /// response is in hand — a failed save keeps the pick, so the user can retry
-  /// without hunting through the gallery again.
+  /// without hunting through the gallery again. [lokasi] goes out whenever the
+  /// caller passes one; omitting it leaves the stored coordinates untouched.
   Future<NetworkException?> updateBankSampah({
     required String nama,
     required String alamat,
     required String noHpPic,
+    Lokasi? lokasi,
   }) async {
     try {
       final updated = await _dataSource.updateBankSampah(
@@ -175,12 +178,39 @@ class ProfileCubit extends Cubit<ProfileState> {
         fotoLogoPath: state.selectedLogoFile?.path,
         fotoLogoBytes: state.selectedLogoBytes,
         fotoLogoFilename: state.selectedLogoFilename,
+        lokasi: lokasi,
       );
       emit(state.copyWith(bankSampah: updated, clearSelectedLogo: true));
       return null;
     } on Exception catch (e) {
       return NetworkException.handleException(e);
     }
+  }
+
+  /// The bank profile for background callers (the dashboard's coordinate
+  /// prompt), without the template/team fetches a full [load] performs.
+  ///
+  /// Returns the cached profile when there is one; otherwise a single
+  /// `bank-sampah/me` call, folded into the current state rather than a fresh
+  /// emit, so it cannot clobber a concurrent save or the WA template already
+  /// held here. Null means the fetch failed or the session has no bank —
+  /// a background prompt must never surface an error for that.
+  Future<BankSampahProfile?> ensureBank() async {
+    final cached = state.bankSampah;
+    if (cached != null) return cached;
+    final either = await apiCall<BankSampahProfile>(
+      func: _dataSource.getBankSampah(),
+      mapper: (value) => value as BankSampahProfile,
+    );
+    return either.fold(
+      (_) => null,
+      (bank) {
+        // Cached for the next caller (ProfilePage itself uses [load] and a
+        // fresh GET, so a stale window is possible but harmless for display).
+        emit(state.copyWith(bankSampah: bank));
+        return bank;
+      },
+    );
   }
 
   /// Clears cached data and returns to the initial state (used on logout, since
