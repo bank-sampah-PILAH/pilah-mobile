@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
@@ -332,14 +333,13 @@ class _PendingBankCardState extends State<PendingBankCard> {
             onPressed: () => Navigator.of(context).pop(false),
             child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
           ),
-          ElevatedButton(
+          AppButton(
+            label: confirmLabel,
+            variant: destructive
+                ? AppButtonVariant.destructive
+                : AppButtonVariant.primary,
+            expand: false,
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: destructive ? Colors.red : AppColors.greenDark,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: Text(confirmLabel),
           ),
         ],
       ),
