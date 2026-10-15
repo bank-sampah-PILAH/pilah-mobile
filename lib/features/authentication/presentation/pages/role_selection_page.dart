@@ -8,6 +8,7 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -183,34 +184,16 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                       ),
                     ],
                   ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _selectedRole == null || isLoading
-                          ? null
-                          : () => context.read<AuthenticationBloc>().add(
-                                RegisterGoogleRoleRequested(
-                                  role: _selectedRole!,
-                                ),
+                  child: AppButton(
+                    label: 'Lanjutkan',
+                    isLoading: isLoading,
+                    onPressed: _selectedRole == null
+                        ? null
+                        : () => context.read<AuthenticationBloc>().add(
+                              RegisterGoogleRoleRequested(
+                                role: _selectedRole!,
                               ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.greenDark,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const SizedBox.square(
-                              dimension: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Lanjutkan'),
-                    ),
+                            ),
                   ),
                 ),
               ],
