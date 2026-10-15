@@ -9,6 +9,11 @@ abstract class AuthenticationUseCases {
     String password,
   );
 
+  Future<Either<NetworkException, AuthEntity>> loginWithReviewer(
+    String email,
+    String password,
+  );
+
   Future<Either<Exception, void>> saveToken(
     String accessToken,
     String refreshToken,

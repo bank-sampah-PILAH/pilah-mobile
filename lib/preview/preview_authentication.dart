@@ -46,6 +46,11 @@ class PreviewAuthenticationSession
   }
 
   @override
+  Future<Either<NetworkException, AuthEntity>> loginWithReviewer(
+      String email, String password) async =>
+      const Right(auth);
+
+  @override
   Future<Either<NetworkException, GoogleAuthOutcome>> loginWithGoogle(
       String idToken) async {
     _hasSession = true;

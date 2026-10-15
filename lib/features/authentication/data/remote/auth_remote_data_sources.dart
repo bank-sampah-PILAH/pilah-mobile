@@ -9,6 +9,7 @@ import 'model/responses/auth_response.dart';
 
 abstract class AuthRemoteDataSources {
   Future<AuthResponse> postLogin(PostLoginRequest request);
+  Future<Map<String, dynamic>> loginWithReviewer(String email, String password);
   Future<Map<String, dynamic>> loginWithGoogle(String idToken);
   Future<Map<String, dynamic>> registerGoogleUser(
       String registrationToken, String role);
@@ -31,6 +32,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSources {
     const url = Endpoints.login;
     final response = await networkService.post(url, data: request.toJson());
     return AuthResponse.fromJson(response.data);
+  }
+
+  @override
+  Future<Map<String, dynamic>> loginWithReviewer(
+      String email, String password) async {
+    final response = await networkService.post(
+      Endpoints.loginWithReviewer,
+      data: {'email': email, 'password': password},
+    );
+    return response.data as Map<String, dynamic>;
   }
 
   @override

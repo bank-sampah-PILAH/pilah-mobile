@@ -1,6 +1,7 @@
 class Endpoints {
   // auth
   static const String login = "auth/login";
+  static const String loginWithReviewer = "/api/v1/auth/reviewer";
   static const String loginWithGoogle = "/api/v1/auth/google";
   static const String registerGoogleUser = "/api/v1/auth/google/register";
   static const String authMe = "/api/v1/auth/me";
@@ -22,4 +23,7 @@ class Endpoints {
 
   // dashboard
   static const String dashboardStats = "/api/v1/dashboard/stats";
+
+  // public config
+  static const String publicConfig = "/api/public-config";
 }
