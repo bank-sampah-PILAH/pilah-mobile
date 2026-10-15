@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -204,10 +205,7 @@ class ItemSetoranCard extends StatelessWidget {
                         // pengelola, jadi ia tidak punya urusan dengan papan
                         // tik sama sekali.
                         canRequestFocus: false,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.only(bottom: 12),
-                        ),
+                        decoration: appBorderlessInputDecoration(),
                         style: AppTextStyle.small.copyWith(
                           color: Colors.grey.shade700,
                           fontWeight: FontWeight.bold,
@@ -261,10 +259,7 @@ class ItemSetoranCard extends StatelessWidget {
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.only(bottom: 12),
-                  ),
+                  decoration: appBorderlessInputDecoration(),
                   onChanged: (value) {
                     final cleanValue = value.replaceAll(',', '.');
                     final newBerat = num.tryParse(cleanValue) ?? 0.0;

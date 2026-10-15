@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Approve/reject confirmation for a pending nasabah membership (PIL-188).
@@ -50,19 +51,11 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
           TextField(
             controller: _catatanController,
             maxLines: 2,
-            decoration: InputDecoration(
+            decoration: appInputDecoration(
               hintText: widget.isApproving
                   ? 'Catatan (opsional)'
                   : 'Alasan penolakan',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: widget.isApproving ? AppColors.greenDark : Colors.red,
-                ),
-              ),
+              focusColor: widget.isApproving ? null : AppColors.danger,
             ),
           ),
         ],

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
@@ -239,10 +240,8 @@ class _AppealMessageDialogState extends State<_AppealMessageDialog> {
       content: TextField(
         controller: _controller,
         maxLines: 3,
-        decoration: const InputDecoration(
-          hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)',
-          border: OutlineInputBorder(),
-        ),
+        decoration: appInputDecoration(
+            hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)'),
       ),
       actions: [
         TextButton(
