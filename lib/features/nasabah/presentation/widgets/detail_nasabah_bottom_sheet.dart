@@ -21,9 +21,8 @@ class DetailNasabahBottomSheet extends StatefulWidget {
     this.nasabahCubit,
   });
 
-  static const Color emeraldPrimary = Color(0xFF006D44);
-  static const Color mintTint = Color(0xFFF0FDF4);
-  static const Color errorColor = Color(0xFFBA1A1A);
+  static const Color mintTint = AppColors.greenLight;
+  static const Color errorColor = AppColors.danger;
 
   @override
   State<DetailNasabahBottomSheet> createState() =>
@@ -112,9 +111,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                     child: Text(
                       initials,
                       style: AppTextStyle.headline1.copyWith(
-                        color: isActive
-                            ? DetailNasabahBottomSheet.emeraldPrimary
-                            : Colors.red[400],
+                        color: isActive ? AppColors.greenDark : Colors.red[400],
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
                       ),
@@ -189,7 +186,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                       'Saldo',
                       balance,
                       isBold: true,
-                      valueColor: DetailNasabahBottomSheet.emeraldPrimary,
+                      valueColor: AppColors.greenDark,
                     ),
                     const SizedBox(height: 16),
                     _buildInfoRow(
@@ -247,10 +244,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit Data'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor:
-                            DetailNasabahBottomSheet.emeraldPrimary,
-                        side: const BorderSide(
-                            color: DetailNasabahBottomSheet.emeraldPrimary),
+                        foregroundColor: AppColors.greenDark,
+                        side: const BorderSide(color: AppColors.greenDark),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -287,7 +282,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isActive
                             ? DetailNasabahBottomSheet.errorColor
-                            : DetailNasabahBottomSheet.emeraldPrimary,
+                            : AppColors.greenDark,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -329,7 +324,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
           const Icon(
             Icons.lock_outline,
             size: 18,
-            color: DetailNasabahBottomSheet.emeraldPrimary,
+            color: AppColors.greenDark,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -339,7 +334,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                 Text(
                   'Email dikelola oleh nasabah',
                   style: AppTextStyle.title1.copyWith(
-                    color: DetailNasabahBottomSheet.emeraldPrimary,
+                    color: AppColors.greenDark,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),

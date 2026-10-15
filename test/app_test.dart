@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
@@ -58,12 +60,12 @@ void main() {
 
   /// Starts the app on its splash and lets the restored session in [shell.auth]
   /// route it, as the session check does at cold start.
-  Future<void> boot(WidgetTester tester) async {
+  Future<void> boot(WidgetTester tester, {bool isWeb = false}) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(const App());
+    await tester.pumpWidget(App(isWebOverride: isWeb));
     // Unmount first: the providers close their cubits on disposal, which only
     // completes once their listeners are gone.
     addTearDown(() => tester.pumpWidget(const SizedBox()));
@@ -83,6 +85,59 @@ void main() {
 
     expect(location(), '/dashboard');
     expect(find.text('Flutter Pilah Mobile'), findsNothing);
+  });
+
+  testWidgets('every screen inherits the app theme, not the Material default',
+      (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final theme = Theme.of(tester.element(find.byType(Scaffold).first));
+    expect(theme.colorScheme.primary, AppColors.greenDark);
+  });
+
+  testWidgets('date pickers speak Indonesian, not English', (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final context = tester.element(find.byType(Scaffold).first);
+    showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDate: DateTime(2026, 10, 14),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Batal'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+  });
+
+  testWidgets('web document title follows the current route', (tester) async {
+    final labels = <String>[];
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'SystemChrome.setApplicationSwitcherDescription') {
+        labels
+            .add((call.arguments as Map<dynamic, dynamic>)['label'] as String);
+      }
+      return null;
+    });
+    addTearDown(() =>
+        messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester, isWeb: true);
+    expect(labels.last, 'PILAH | Dashboard');
+    expect(
+      browserTitleForPath('/approval-bank-sampah/detail'),
+      'PILAH | Approval Bank Sampah Detail',
+    );
+
+    AppRouterConfig.getRouter().go('/login');
+    await tester.pumpAndSettle();
+    expect(labels.last, 'PILAH | Login');
   });
 
   testWidgets('a rejected session resets the cubits that outlive it',

@@ -1,83 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
-import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/widgets/nasabah_setoran_detail_sheet.dart';
 
-typedef HistoryLoader = Future<NasabahHistory> Function(int page);
-typedef HistoryDetailLoader = Future<NasabahSetoranDetail> Function(
-    String transactionId);
+/// The Setoran tab: reads [RiwayatHistoryCubit] (provided by the host
+/// screen scoped to one membership) and renders loading/empty/error/list.
+/// Row taps open the itemized detail bottom sheet, which loads through the
+/// same cubit.
+class RiwayatNasabahPage extends StatelessWidget {
+  const RiwayatNasabahPage({super.key});
 
-class RiwayatNasabahPage extends StatefulWidget {
-  const RiwayatNasabahPage({
-    super.key,
-    required this.loadPage,
-    required this.loadDetail,
-  });
-
-  final HistoryLoader loadPage;
-  final HistoryDetailLoader loadDetail;
-
-  @override
-  State<RiwayatNasabahPage> createState() => _RiwayatNasabahPageState();
-}
-
-class _RiwayatNasabahPageState extends State<RiwayatNasabahPage> {
-  final _activities = <NasabahActivity>[];
-  int _page = 0;
-  bool _loading = false;
-  bool _hasNext = false;
-  bool _retryReset = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load(reset: true);
-  }
-
-  void _showDetail(NasabahActivity activity) {
+  void _showDetail(BuildContext context, String activityId) {
+    final cubit = context.read<RiwayatHistoryCubit>();
+    final membershipId = cubit.membershipId ?? '';
     showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => NasabahSetoranDetailSheet(
-        loadDetail: () => widget.loadDetail(activity.id),
+      builder: (sheetContext) => NasabahSetoranDetailSheet(
+        loadDetail: () => cubit.loadDetail(membershipId, activityId),
       ),
     );
-  }
-
-  Future<void> _load({bool reset = false}) async {
-    if (_loading) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-      _retryReset = reset;
-    });
-    final requestedPage = reset ? 1 : _page + 1;
-    try {
-      final response = await widget.loadPage(requestedPage);
-      if (!mounted) return;
-      setState(() {
-        if (reset) _activities.clear();
-        final knownIds = _activities.map((activity) => activity.id).toSet();
-        _activities
-            .addAll(response.activities.where((item) => knownIds.add(item.id)));
-        _page = requestedPage;
-        _hasNext = response.hasNext;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error is NasabahApiException
-            ? error.message
-            : 'Riwayat gagal dimuat. Periksa koneksi dan coba lagi.';
-      });
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
   }
 
   @override
@@ -86,103 +33,120 @@ class _RiwayatNasabahPageState extends State<RiwayatNasabahPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
           child: RefreshIndicator(
-            onRefresh: () => _load(reset: true),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Riwayat Setoran',
-                        style: NasabahStyle.text(20, weight: FontWeight.w600),
+            // Refresh means re-ask page 1: reset:false would request the
+            // page after the last one and append its rows below.
+            onRefresh: () => context
+                .read<RiwayatHistoryCubit>()
+                .loadHistoryCurrent(reset: true),
+            child: BlocBuilder<RiwayatHistoryCubit, RiwayatHistoryState>(
+              builder: (context, state) => ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Riwayat Setoran',
+                          style: NasabahStyle.text(20, weight: FontWeight.w600),
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: 'Muat ulang',
-                      onPressed: _loading ? null : () => _load(reset: true),
-                      icon: const Icon(Icons.refresh),
-                      color: NasabahStyle.emerald,
-                    ),
-                  ],
-                ),
-                Text(
-                  'Daftar aktivitas yang tercatat pada keanggotaan ini.',
-                  style: NasabahStyle.text(13, color: NasabahStyle.muted),
-                ),
-                const SizedBox(height: 16),
-                if (_activities.isNotEmpty)
-                  NasabahActivityList(
-                    activities: _activities,
-                    onTap: _showDetail,
+                      IconButton(
+                        tooltip: 'Muat ulang',
+                        onPressed: state.status == RiwayatHistoryStatus.loading
+                            ? null
+                            : () => context
+                                .read<RiwayatHistoryCubit>()
+                                .loadHistoryCurrent(reset: true),
+                        icon: const Icon(Icons.refresh),
+                        color: NasabahStyle.emerald,
+                      ),
+                    ],
                   ),
-                if (_loading)
-                  const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Center(
-                          child: CircularProgressIndicator(
-                              color: NasabahStyle.emerald)))
-                else if (_error != null) ...[
-                  NasabahCard(
-                    child: Column(
-                      children: [
-                        const Icon(Icons.cloud_off_outlined,
-                            color: NasabahStyle.muted, size: 28),
-                        const SizedBox(height: 8),
-                        Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: NasabahStyle.text(13)),
-                        TextButton(
-                          onPressed: () => _load(reset: _retryReset),
-                          child: Text(
-                            'Coba Lagi',
-                            style: NasabahStyle.text(
-                              13,
-                              weight: FontWeight.w600,
-                              color: NasabahStyle.emerald,
+                  Text(
+                    'Daftar aktivitas yang tercatat pada keanggotaan ini.',
+                    style: NasabahStyle.text(13, color: NasabahStyle.muted),
+                  ),
+                  const SizedBox(height: 16),
+                  if (state.activities.isNotEmpty)
+                    NasabahActivityList(
+                      activities: state.activities,
+                      onTap: (activity) => _showDetail(context, activity.id),
+                    ),
+                  if (state.status == RiwayatHistoryStatus.loading)
+                    const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(
+                            child: CircularProgressIndicator(
+                                color: NasabahStyle.emerald)))
+                  else if (state.error != null) ...[
+                    NasabahCard(
+                      child: Column(
+                        children: [
+                          const Icon(Icons.cloud_off_outlined,
+                              color: NasabahStyle.muted, size: 28),
+                          const SizedBox(height: 8),
+                          Text(state.error!,
+                              textAlign: TextAlign.center,
+                              style: NasabahStyle.text(13)),
+                          TextButton(
+                            onPressed: () => context
+                                .read<RiwayatHistoryCubit>()
+                                .loadHistoryCurrent(),
+                            child: Text(
+                              'Coba Lagi',
+                              style: NasabahStyle.text(
+                                13,
+                                weight: FontWeight.w600,
+                                color: NasabahStyle.emerald,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else if (_activities.isEmpty)
-                  NasabahCard(
-                    child: Column(
-                      children: [
-                        const Icon(Icons.receipt_long_outlined,
-                            color: NasabahStyle.emerald, size: 28),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Belum ada aktivitas',
-                          textAlign: TextAlign.center,
-                          style: NasabahStyle.text(14, weight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (!_loading && _error == null && _hasNext)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: NasabahStyle.emerald,
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      onPressed: () => _load(),
-                      icon: const Icon(Icons.expand_more),
-                      label: Text(
-                        'Muat Lagi',
-                        style: NasabahStyle.text(
-                          14,
-                          weight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
+                        ],
                       ),
                     ),
-                  ),
-              ],
+                  ] else if (state.activities.isEmpty)
+                    NasabahCard(
+                      child: Column(
+                        children: [
+                          const Icon(Icons.receipt_long_outlined,
+                              color: NasabahStyle.emerald, size: 28),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Belum ada aktivitas',
+                            textAlign: TextAlign.center,
+                            style:
+                                NasabahStyle.text(14, weight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (state.status != RiwayatHistoryStatus.loading &&
+                      state.error == null &&
+                      state.hasNext)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: NasabahStyle.emerald,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                        onPressed: () => context
+                            .read<RiwayatHistoryCubit>()
+                            .loadHistoryCurrent(),
+                        icon: const Icon(Icons.expand_more),
+                        label: Text(
+                          'Muat Lagi',
+                          style: NasabahStyle.text(
+                            14,
+                            weight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

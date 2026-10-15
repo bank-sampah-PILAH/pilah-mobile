@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_ent
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
 import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 const List<String> _monthsId = [
   'Jan',
@@ -119,7 +120,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             }
           },
           child: Scaffold(
-            backgroundColor: const Color(0xFFF3F4F6),
+            backgroundColor: AppColors.fill,
             body: Column(
               children: [
                 _buildHeader(context),
@@ -211,28 +212,16 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   // BlocProvider inside build(), so the surrounding State's own context sits
   // above it and cannot resolve the cubit.
   Widget _buildTab(BuildContext context, String label) {
-    final isActive = _activeTab == label;
-    return GestureDetector(
-      onTap: () {
-        if (_activeTab == label) return;
-        setState(() => _activeTab = label);
-        context.read<SuperadminCubit>().loadBankSampah(_tabStatus[label]!);
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppColors.greenDark : Colors.white,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: AppChip.onColor(
+        label: label,
+        selected: _activeTab == label,
+        onTap: () {
+          if (_activeTab == label) return;
+          setState(() => _activeTab = label);
+          context.read<SuperadminCubit>().loadBankSampah(_tabStatus[label]!);
+        },
       ),
     );
   }
@@ -368,7 +357,7 @@ class _PendingBankCardState extends State<PendingBankCard> {
       title: approve ? 'Setujui Bank Sampah?' : 'Tolak Pendaftaran?',
       message: approve
           ? 'Setujui pendaftaran ${bank.nama}? Bank sampah akan dapat mulai beroperasi.'
-          : 'Tolak pendaftaran ${bank.nama}? Pengelola tidak dapat mengakses dashboard.',
+          : 'Tolak pendaftaran ${bank.nama}? Pengurus tidak dapat mengakses dashboard.',
       confirmLabel: approve ? 'Ya, Setujui' : 'Ya, Tolak',
       destructive: !approve,
     );
@@ -402,15 +391,15 @@ class _PendingBankCardState extends State<PendingBankCard> {
   Widget build(BuildContext context) {
     final bank = widget.bank;
     return _CardShell(
-      accentColor: const Color(0xFFF59E0B),
+      accentColor: AppColors.warning,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CardHeader(
             title: bank.nama,
             badgeText: 'PENDING',
-            badgeBg: const Color(0xFFFEF3C7),
-            badgeFg: const Color(0xFFD97706),
+            badgeBg: AppColors.warningLight,
+            badgeFg: AppColors.warning,
           ),
           // No location line here on purpose: the full address is listed in the
           // detail rows below, so a city above it is redundant.

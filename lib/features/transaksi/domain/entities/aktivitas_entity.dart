@@ -3,6 +3,7 @@ import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import 'transaksi_entity.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 enum ActivitasTipe { setoran, pencairan }
 
@@ -59,7 +60,9 @@ class ActivitasEntity {
       title: t.name,
       subtitleLines: [t.subtitle],
       amount: t.amount,
-      trailingCaptions: [if (t.time != null) t.time!],
+      trailingCaptions: t.tanggal != null
+          ? _timestamp(t.tanggal!)
+          : [if (t.time != null) t.time!],
       searchTerm: t.name,
       transaksi: t,
     );
@@ -85,22 +88,20 @@ class ActivitasEntity {
       amount: '-Rp ${_rupiah(p.nominal)}',
       // No amountColor override: falls through to ActivityItem's own
       // default (AppColors.greenDark), the same accent setoran rows use.
-      trailingCaptions: [if (p.tanggal != null) _time(p.tanggal!)],
+      trailingCaptions: [if (p.tanggal != null) ..._timestamp(p.tanggal!)],
       searchTerm: p.nasabahNama,
       pencairan: p,
     );
   }
 
-  static String _time(DateTime tanggal) =>
-      '${tanggal.hour.toString().padLeft(2, '0')}:${tanggal.minute.toString().padLeft(2, '0')}';
-
-  static String _rupiah(int value) {
-    final digits = value.abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(digits[i]);
-    }
-    return buffer.toString();
+  static List<String> _timestamp(DateTime tanggal) {
+    final local = tanggal.toLocal();
+    String pad(int value) => value.toString().padLeft(2, '0');
+    return [
+      '${pad(local.day)}/${pad(local.month)}/${local.year}',
+      '${pad(local.hour)}:${pad(local.minute)}',
+    ];
   }
+
+  static String _rupiah(int value) => CurrencyFormatter.formatNumber(value);
 }

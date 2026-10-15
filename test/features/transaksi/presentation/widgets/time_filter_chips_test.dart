@@ -7,43 +7,35 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
-import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/time_filter_chips.dart';
 
 import '../../../../support/platform_fakes.dart';
 import '../../../../support/pump_app.dart';
 
-class _MockGet extends Mock implements GetTransaksiUseCase {}
-
-class _MockPencairan extends Mock implements PencairanUseCases {}
+class _MockGet extends Mock implements GetAktivitasUseCase {}
 
 class _MockExport extends Mock implements ExportTransaksiUseCase {}
 
 void main() {
   late _MockGet getTransaksi;
-  late _MockPencairan pencairan;
   late _MockExport export;
   late RiwayatAktivitasCubit cubit;
 
   setUpAll(() {
     registerFallbackValue(const TransaksiFilter());
-    registerFallbackValue(const RiwayatPencairanFilter());
   });
 
   setUp(() {
     getTransaksi = _MockGet();
-    pencairan = _MockPencairan();
     export = _MockExport();
     when(() => getTransaksi.execute(any()))
-        .thenAnswer((_) async => const Right([]));
-    when(() => pencairan.getRiwayat(any()))
-        .thenAnswer((_) async => const Right([]));
-    cubit = RiwayatAktivitasCubit(getTransaksi, pencairan, export);
+        .thenAnswer((_) async => const Right(AktivitasPage([], false)));
+    cubit = RiwayatAktivitasCubit(getTransaksi, export);
   });
 
   tearDown(() => cubit.close());
@@ -72,17 +64,41 @@ void main() {
     ));
   }
 
+  Future<void> selectPeriod(
+      WidgetTester tester, String label, String period) async {
+    final chip = find.text(label);
+    expect(chip, findsOneWidget);
+    await tester.ensureVisible(chip);
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+    expect(cubit.state.periode, period);
+  }
+
+  testWidgets('rolling one month sends its own period and resets custom dates',
+      (tester) async {
+    cubit.applyCustomRange(DateTime(2026, 9, 1), DateTime(2026, 9, 30));
+    await open(tester);
+    await tester.pumpAndSettle();
+    clearInteractions(getTransaksi);
+
+    await selectPeriod(tester, '1 Bulan', '1_bulan');
+    expect(cubit.state.dariTanggal, isNull);
+    expect(cubit.state.sampaiTanggal, isNull);
+    final filter = verify(() => getTransaksi.execute(captureAny()))
+        .captured
+        .single as TransaksiFilter;
+    expect(filter.toQueryParams()['periode'], '1_bulan');
+
+    await selectPeriod(tester, 'Bulan Ini', 'bulan_ini');
+    await selectPeriod(tester, 'Bulan Lalu', 'bulan_lalu');
+  });
+
   testWidgets('the chips switch between this month and last month',
       (tester) async {
     await open(tester);
 
-    await tester.tap(find.text('Bulan Lalu'));
-    await tester.pumpAndSettle();
-    expect(cubit.state.periode, 'bulan_lalu');
-
-    await tester.tap(find.text('Bulan Ini'));
-    await tester.pumpAndSettle();
-    expect(cubit.state.periode, 'bulan_ini');
+    await selectPeriod(tester, 'Bulan Lalu', 'bulan_lalu');
+    await selectPeriod(tester, 'Bulan Ini', 'bulan_ini');
   });
 
   testWidgets('the calendar button opens the range sheet and applies it',
@@ -165,6 +181,27 @@ void main() {
     });
   });
 
+  testWidgets('export control reacts to type and search filters',
+      (tester) async {
+    await open(tester);
+    InkWell exportControl() => tester.widget<InkWell>(find
+        .ancestor(of: find.text('XLS Setoran'), matching: find.byType(InkWell))
+        .first);
+    expect(exportControl().onTap, isNotNull);
+    cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNull);
+    cubit.setTipeFilter(AktivitasTipeFilter.semua);
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNotNull);
+    cubit.search('Budi');
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNull);
+    cubit.search('');
+    await tester.pumpAndSettle();
+    expect(exportControl().onTap, isNotNull);
+  });
+
   group('export', () {
     // A real request takes a moment; the "preparing" toast must be on screen
     // before it is dismissed.
@@ -182,7 +219,7 @@ void main() {
           bytes: Uint8List.fromList([1, 2]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS'));
+      await tester.tap(find.text('XLS Setoran'));
       await pumpUntilFound(
           tester, find.textContaining('disimpan ke folder Download'));
 
@@ -202,7 +239,7 @@ void main() {
       slowExport(Left(NetworkException(message: 'Tidak ada data')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS'));
+      await tester.tap(find.text('XLS Setoran'));
       await pumpUntilFound(tester, find.text('Tidak ada data'));
 
       expect(find.text('Tidak ada data'), findsOneWidget);
@@ -216,7 +253,7 @@ void main() {
           TransaksiExport(bytes: Uint8List.fromList([1]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS'));
+      await tester.tap(find.text('XLS Setoran'));
       await pumpUntilFound(tester, find.text('Gagal Menyimpan'));
 
       expect(find.text('Gagal Menyimpan'), findsOneWidget);

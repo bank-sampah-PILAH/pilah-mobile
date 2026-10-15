@@ -71,12 +71,15 @@ class _AppTextFieldState extends State<AppTextField> {
                 hintStyle: AppTextStyle.regularSemiBold.copyWith(
                   color: AppColors.grey200,
                 ),
-                suffix: widget.obscureText
-                    ? GestureDetector(
-                        onTap: () {
+                suffixIcon: widget.obscureText
+                    ? IconButton(
+                        tooltip: obscure
+                            ? 'Tampilkan kata sandi'
+                            : 'Sembunyikan kata sandi',
+                        onPressed: () {
                           isObscure.value = !obscure;
                         },
-                        child: Icon(
+                        icon: Icon(
                           obscure ? Icons.visibility : Icons.visibility_off,
                           color: obscure ? AppColors.primary : Colors.black45,
                         ),
