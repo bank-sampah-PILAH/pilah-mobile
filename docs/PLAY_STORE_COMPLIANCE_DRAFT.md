@@ -84,10 +84,17 @@ These descriptions avoid claims about environmental impact, security guarantees,
 availability, pricing, or service coverage that were not verified in source.
 Product/operator review is still needed before publication.
 
-## Play Console completion checklist — not inspected
+## Play Console completion checklist — partially inspected
 
-No Play Console page or form was inspected for this draft. Complete and verify
-the actual app’s fields before submission; do not copy guessed answers:
+On 2026-10-16, the authorized policy-issue details page was inspected. It says
+Google could not review the app because the supplied login requires the device
+to be linked to that account, and asks for a dedicated test bypass or standard
+credentials that work without device linking. The page locates the issue in the
+in-app experience and displays “Enforced on Error, 9 Oct”. It also says the
+previous version remains available on Google Play. It does not show the
+highest uploaded version code, verify an app bundle, or expose the Sign in
+details declaration. Those items remain unverified; complete and check the
+actual app’s fields before submission, without copying guessed answers:
 
 - Data safety: collected/shared data types, collection required/optional,
   purposes, third-party/service-provider handling, encryption in transit, and
@@ -119,6 +126,9 @@ the actual app’s fields before submission; do not copy guessed answers:
 
 ## Evidence references
 
+- The inspected Play Console policy issue reports “Login credentials restricted
+  by device authentication”; the supplied reviewer login cannot depend on a
+  device being linked to the account.
 - [Google Play Console Help — Data safety](https://support.google.com/googleplay/android-developer/answer/10787469)
 - `docs/PLAY_RELEASE.md` describes the repo’s release workflow; it is not proof
   that Play Console forms, listing content, reviewer access, or release approval
