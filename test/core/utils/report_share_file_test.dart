@@ -19,11 +19,12 @@ void main() {
 
   test('browser sharing preserves bytes, original filename and XLSX MIME',
       () async {
-    const saved = SavedFile.browser();
+    final saved = SavedFile.browser();
     final file = createReportShareFile(
         saved: saved, filename: 'LAPORAN.XLSX', bytes: bytes);
     expect(saved.isBrowserDownload, isTrue);
     expect(saved.path, isEmpty);
+    expect(saved.folder, 'Unduhan browser');
     // IO cross_file has no name for pathless data. Callers set fileNameOverrides;
     // the Chrome regression verifies the browser XFile.name metadata itself.
     expect(file.mimeType,
