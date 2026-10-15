@@ -36,6 +36,7 @@ class AppButton extends StatelessWidget {
     this.variant = AppButtonVariant.primary,
     this.icon,
     this.leading,
+    this.trailingIcon,
     this.isLoading = false,
     this.expand = true,
   });
@@ -47,6 +48,9 @@ class AppButton extends StatelessWidget {
 
   /// Replaces [icon] with any widget, such as a brand logo.
   final Widget? leading;
+
+  /// An icon after the label, such as the arrow of a "next" action.
+  final IconData? trailingIcon;
   final bool isLoading;
 
   /// Whether the button fills the width it is given. When false it is only as
@@ -130,14 +134,17 @@ class AppButton extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
     );
     final lead = leading ?? (icon == null ? null : Icon(icon, size: 20));
-    if (lead == null) return text;
+    if (lead == null && trailingIcon == null) return text;
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        lead,
-        const SizedBox(width: 8),
+        if (lead != null) ...[lead, const SizedBox(width: 8)],
         Flexible(child: text),
+        if (trailingIcon != null) ...[
+          const SizedBox(width: 8),
+          Icon(trailingIcon, size: 20),
+        ],
       ],
     );
   }
