@@ -109,6 +109,18 @@ class PlayReleasePipelineTest(unittest.TestCase):
         self.assertNotIn("PLAY_TEST_SERVICE_ACCOUNT_JSON", str(production_promotion))
         self.assertNotIn("||", str(production_promotion["env"]))
 
+    def test_manual_promotion_checks_out_script_before_invocation(self):
+        steps = workflow()["jobs"]["promote_production"]["steps"]
+        checkout_index = next(
+            index for index, step in enumerate(steps)
+            if step.get("uses", "").startswith("actions/checkout@")
+        )
+        script_index = next(
+            index for index, step in enumerate(steps)
+            if "scripts/promote_play_release.py" in step.get("run", "")
+        )
+        self.assertLess(checkout_index, script_index)
+
     def test_play_version_is_newer_than_rejected_version_code(self):
         pubspec = (ROOT / "pubspec.yaml").read_text()
         self.assertIn("version: 1.0.3+7", pubspec)
