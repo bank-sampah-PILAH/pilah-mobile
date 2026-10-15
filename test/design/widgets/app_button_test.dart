@@ -205,6 +205,37 @@ void main() {
     );
   });
 
+  testWidgets('two half-width buttons still show a long label in full',
+      (tester) async {
+    await tester.pumpWidget(_host(
+      Row(
+        children: [
+          Expanded(
+            child: AppButton(
+              label: 'Batal',
+              variant: AppButtonVariant.neutral,
+              onPressed: () {},
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppButton(
+              label: 'Ya, Nonaktifkan',
+              variant: AppButtonVariant.destructive,
+              onPressed: () {},
+            ),
+          ),
+        ],
+      ),
+      width: 358,
+    ));
+
+    final label = tester.renderObject<RenderParagraph>(
+      find.text('Ya, Nonaktifkan'),
+    );
+    expect(label.didExceedMaxLines, isFalse);
+  });
+
   group('AppButton behaviour', () {
     testWidgets('reports taps', (tester) async {
       var taps = 0;
