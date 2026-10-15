@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -180,10 +181,9 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
+                      decoration: appInputDecoration(
                         labelText: 'Nominal',
                         prefixText: 'Rp ',
-                        border: const OutlineInputBorder(),
                         errorText: nominalError ?? state.fieldErrors['nominal'],
                       ),
                     ),
@@ -206,9 +206,8 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       key: const Key('tanggal-field'),
                       onTap: _pickTanggal,
                       child: InputDecorator(
-                        decoration: InputDecoration(
+                        decoration: appInputDecoration(
                           labelText: 'Tanggal',
-                          border: const OutlineInputBorder(),
                           suffixIcon: const Icon(Icons.calendar_month),
                           errorText: state.fieldErrors['tanggal'],
                         ),
@@ -228,10 +227,8 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       controller: _keteranganController,
                       maxLength: 255,
                       maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Keterangan (opsional)',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration:
+                          appInputDecoration(labelText: 'Keterangan (opsional)'),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -240,11 +237,10 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       maxLength: 255,
                       maxLines: 2,
                       onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
+                      decoration: appInputDecoration(
                         labelText: 'Alasan perubahan',
                         helperText:
                             'Wajib diisi, tercatat di riwayat perubahan',
-                        border: const OutlineInputBorder(),
                         errorText: state.fieldErrors['alasan'],
                       ),
                     ),

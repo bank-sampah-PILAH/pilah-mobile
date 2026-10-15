@@ -4,7 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -651,30 +653,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             label: 'NAMA LENGKAP',
                             child: TextFormField(
                               controller: _nameController,
-                              decoration: InputDecoration(
-                                hintText: 'Contoh: Siti Rahayu',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                              ),
+                              decoration: appInputDecoration(
+                                  hintText: 'Contoh: Siti Rahayu'),
                               validator: (value) {
                                 if (value == null || value.trim().length < 3) {
                                   return 'Nama minimal 3 karakter';
@@ -727,25 +707,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   _gender = val;
                                 });
                               },
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                              ),
+                              decoration: appInputDecoration(),
                               validator: (value) {
                                 if (value == null) {
                                   return 'Jenis kelamin wajib dipilih';
@@ -762,33 +724,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               controller: _dobController,
                               readOnly: true,
                               onTap: _selectDate,
-                              decoration: InputDecoration(
-                                hintText: 'dd/mm/yyyy',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                                suffixIcon: const Icon(
-                                    Icons.calendar_today_outlined,
-                                    color: Colors.black87),
-                              ),
+                              decoration: appInputDecoration(
+                                  hintText: 'dd/mm/yyyy',
+                                  suffixIcon: const Icon(
+                                      Icons.calendar_today_outlined,
+                                      color: Colors.black87)),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Tanggal lahir wajib diisi';
@@ -804,53 +744,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             child: TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
-                              decoration: InputDecoration(
-                                hintText: '812-3456-7890',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                prefixIcon: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '+62',
-                                        style: TextStyle(
-                                          color: Colors.grey.shade700,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        height: 24,
-                                        width: 1,
-                                        color: Colors.grey.shade300,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 0, vertical: 16),
-                              ),
+                              decoration: appInputDecoration(
+                                  hintText: '812-3456-7890',
+                                  prefixIcon: const PhonePrefix()),
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                               ],
@@ -875,31 +771,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 controller: _alamatController,
                                 maxLines: 5,
                                 minLines: 3,
-                                decoration: InputDecoration(
-                                  hintText:
-                                      'Jl. Nama Jalan, RT/RW, Kelurahan,\nKecamatan, Kota',
-                                  hintStyle: TextStyle(
-                                    color: Colors.grey.shade400,
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey.shade300),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide:
-                                        BorderSide(color: Colors.grey.shade300),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: AppColors.greenDark, width: 1.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 16),
-                                ),
+                                decoration: appInputDecoration(
+                                    hintText:
+                                        'Jl. Nama Jalan, RT/RW, Kelurahan,\nKecamatan, Kota'),
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return 'Alamat wajib diisi';
