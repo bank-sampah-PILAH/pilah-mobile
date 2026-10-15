@@ -1,5 +1,6 @@
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -486,7 +487,7 @@ class _ProfileEditForm extends StatelessWidget {
               controller: namaCtrl,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           const SizedBox(height: 16),
           _fieldLabel('NOMOR HP'),
           TextField(
@@ -494,7 +495,7 @@ class _ProfileEditForm extends StatelessWidget {
               keyboardType: TextInputType.phone,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           const SizedBox(height: 16),
           _fieldLabel('JENIS KELAMIN'),
           Row(children: [
@@ -531,7 +532,7 @@ class _ProfileEditForm extends StatelessWidget {
               maxLines: 3,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           if (error != null) ...[
             const SizedBox(height: 12),
             Text(error!,
