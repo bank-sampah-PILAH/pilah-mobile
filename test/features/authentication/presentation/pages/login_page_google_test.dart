@@ -53,9 +53,17 @@ void main() {
     unawaited(states.close());
   });
 
-  Future<void> pumpPage(WidgetTester tester) => pumpRouted(
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    bool reviewerLoginReleaseModeOverride = false,
+    Future<bool> Function()? reviewerLoginConfigLoader,
+  }) => pumpRouted(
         tester,
-        const LoginPage(debugShowDemoLogin: false),
+        LoginPage(
+          debugShowDemoLogin: false,
+          reviewerLoginReleaseModeOverride: reviewerLoginReleaseModeOverride,
+          reviewerLoginConfigLoader: reviewerLoginConfigLoader,
+        ),
         extraRoutes: ['/dashboard', RoleSelectionPage.route],
         wrap: (app) =>
             BlocProvider<AuthenticationBloc>.value(value: auth, child: app),
@@ -68,6 +76,37 @@ void main() {
   }
 
   group('Google button', () {
+    testWidgets('config failure leaves Google login available', (tester) async {
+      when(() => platform.authenticate(any())).thenAnswer(
+        (_) async => const google_sign_in.AuthenticationResults(
+          user: google_sign_in.GoogleSignInUserData(
+            email: 'ayu@example.com',
+            id: 'g1',
+            displayName: 'Ayu',
+          ),
+          authenticationTokens: google_sign_in.AuthenticationTokenData(
+            idToken: 'id-token',
+          ),
+        ),
+      );
+      await pumpPage(
+        tester,
+        reviewerLoginReleaseModeOverride: true,
+        reviewerLoginConfigLoader: () async =>
+            throw Exception('private detail'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Masuk dengan Google'), findsOneWidget);
+      expect(find.bySemanticsLabel('Email'), findsNothing);
+      expect(find.text('Coba muat ulang'), findsOneWidget);
+
+      await tapGoogle(tester);
+
+      final event = verify(() => auth.add(captureAny())).captured.single;
+      expect(event, isA<LoginWithGoogleRequested>());
+    });
+
     testWidgets('hands the chosen account and ID token to the auth bloc',
         (tester) async {
       when(() => platform.authenticate(any()))

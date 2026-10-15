@@ -19,6 +19,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_reviewer_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
@@ -407,6 +408,60 @@ void main() {
           ),
         ),
         expect: () => <dynamic>[],
+      );
+    });
+
+    group('Reviewer Login', () {
+      const email = 'reviewer@example.com';
+      const password = 'private-password';
+      final auth = AuthEntity(
+        id: 'reviewer-1',
+        name: 'Reviewer',
+        email: email,
+        photoUrl: '',
+        token: 'access-token',
+        role: 'superadmin',
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'authenticates a reviewer through the existing session state',
+        build: () {
+          when(() => mockUseCases.loginWithReviewer(email, password))
+              .thenAnswer((_) async => Right(auth));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const LoginWithReviewerRequested(email: email, password: password),
+        ),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<Authenticated>().having(
+            (state) => state.authEntity.role,
+            'role',
+            'superadmin',
+          ),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'shows a generic failure without exposing server details',
+        build: () {
+          when(() => mockUseCases.loginWithReviewer(email, password))
+              .thenAnswer((_) async =>
+                  Left(GeneralException(message: 'private backend details')));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const LoginWithReviewerRequested(email: email, password: password),
+        ),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<AuthenticationFailure>().having(
+            (state) => state.message,
+            'message',
+            'Tidak dapat masuk. Periksa email dan kata sandi, lalu coba lagi.',
+          ),
+        ],
       );
     });
 

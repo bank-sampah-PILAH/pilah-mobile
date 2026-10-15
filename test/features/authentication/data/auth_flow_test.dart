@@ -71,6 +71,29 @@ void main() {
     });
   });
 
+  group('reviewer login', () {
+    test('posts credentials and persists the standard auth session', () async {
+      api.on('POST', '/api/v1/auth/reviewer', json: authPayload());
+
+      final result = await stack.interactor.loginWithReviewer(
+        'reviewer@example.com',
+        'private-password',
+      );
+
+      final auth = result.getOrElse(() => throw StateError('failed'));
+      expect(auth.name, 'Siti Aminah');
+      expect(auth.token, 'access-1');
+      expect(auth.role, 'pengelola');
+      expect(api.last.json, {
+        'email': 'reviewer@example.com',
+        'password': 'private-password',
+      });
+      expect(api.utils.accessToken, 'access-1');
+      expect(await stack.database.getString('token'), 'access-1');
+      expect(await stack.database.getString('refresh_token'), 'refresh-1');
+    });
+  });
+
   group('Google sign-in', () {
     test('a known account is persisted and returned as a session', () async {
       api.on('POST', '/api/v1/auth/google', json: authPayload());
