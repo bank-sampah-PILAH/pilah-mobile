@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -11,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 /// Shows the nasabah's own profile and lets them edit the fields the backend
 /// allows (nama, no_hp, jenis_kelamin, tanggal_lahir, alamat). Email, role and
@@ -18,8 +20,18 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 class ProfilNasabahPage extends StatelessWidget {
   const ProfilNasabahPage({super.key});
 
-  void _logout(BuildContext context) =>
+  Future<void> _logout(BuildContext context) async {
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari akun?',
+      message: 'Anda perlu masuk kembali untuk mengakses akun ini.',
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
+    );
+    if (confirmed && context.mounted) {
       context.read<AuthenticationBloc>().add(LogoutRequested());
+    }
+  }
 
   @override
   Widget build(BuildContext context) =>
@@ -252,7 +264,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
       initialDate: _tanggalLahir ?? DateTime(now.year - 20),
       firstDate: DateTime(1900),
       lastDate: now,
-      // The app theme's primary is teal-blue; this screen speaks emerald.
+      // NasabahStyle.emerald is the app's primary green, same as the theme; kept
+      // explicit so this picker does not depend on the theme.
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context)
@@ -446,8 +459,11 @@ class _ProfileEditForm extends StatelessWidget {
   Widget _genderOption(String value, String label) {
     final selected = jenisKelamin == value;
     return Expanded(
-      child: GestureDetector(
+      child: AppTapTarget(
         onTap: () => onJenisKelamin(value),
+        selected: selected,
+        inGroup: true,
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 10),

@@ -77,7 +77,7 @@ void main() {
     expect(byId['4']!.icon, Icons.wine_bar);
     expect(byId['5']!.badgeText, 'Organik');
     expect(byId['6']!.badgeText, 'Anorganik');
-    expect(byId['1']!.priceFormatted, 'Rp 2500');
+    expect(byId['1']!.priceFormatted, 'Rp 2.500');
   });
 
   test('inactive tab shows only deactivated items, and tab state is kept',

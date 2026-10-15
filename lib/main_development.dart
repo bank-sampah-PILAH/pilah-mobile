@@ -3,8 +3,9 @@
 // runnable in a unit-test VM.
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/services/di.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:pilah_mobile/core/utils/platform_initialization.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -27,16 +28,13 @@ Future<void> main() async {
   await di.get<AppStorage>(instanceName: 'shared_preferences').init();
   await di<NetworkUtils>().init();
 
-  // ponytail: Web has no Firebase-backed features yet; add FlutterFire options
-  // before one is introduced.
-  if (!kIsWeb) await Firebase.initializeApp();
-
-  // Initialize Google Sign-In (required for v7+)
-  final googleClientId = dotenv.env['GOOGLE_SERVER_CLIENT_ID'];
-  await GoogleSignIn.instance.initialize(
-    clientId: kIsWeb ? googleClientId : null,
-    serverClientId: kIsWeb ? null : googleClientId,
+  await initializePlatformServices(
+    isWeb: kIsWeb,
+    oauthClientId: dotenv.env['GOOGLE_SERVER_CLIENT_ID'],
+    initializeFirebase: () async {
+      await Firebase.initializeApp();
+    },
+    initializeGoogle: GoogleSignIn.instance.initialize,
   );
-
   runApp(const App());
 }

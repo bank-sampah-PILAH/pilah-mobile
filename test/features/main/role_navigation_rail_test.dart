@@ -43,7 +43,7 @@ void main() {
       expect(rail.destinations.length, 5);
       expect(
         rail.destinations.map((d) => (d.label as Text).data),
-        ['Dashboard', 'Nasabah', 'Harga', 'Laporan', 'Jadwal'],
+        ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal'],
       );
     });
 
@@ -55,9 +55,10 @@ void main() {
 
     testWidgets('reports the menu index that was tapped', (tester) async {
       final tapped = await taps(tester, role: 'pengelola');
-      await tester.tap(find.text('Laporan'));
+      await tester.tap(find.text('Aktivitas'));
       await tester.pumpAndSettle();
-      expect(tapped, [3], reason: 'Laporan is menu index 3, not branch index');
+      expect(tapped, [3],
+          reason: 'Aktivitas is menu index 3, not branch index');
     });
 
     testWidgets('shows labels beside icons on a desktop window',

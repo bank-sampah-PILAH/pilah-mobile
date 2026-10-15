@@ -15,6 +15,7 @@ abstract class PencairanResponse with _$PencairanResponse {
     @JsonKey(name: 'dicatat_oleh_nama') @Default('') String dicatatOlehNama,
     String? tanggal,
     required String nominal,
+    @Default('0') String potongan,
     required String metode,
     @Default('') String keterangan,
     @Default('tercatat') String status,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Approve/reject confirmation for a pending nasabah membership (PIL-188).
 /// Pops with the trimmed catatan (alasan) the pengurus typed, or `null` when
@@ -19,8 +20,6 @@ class NasabahApprovalDialog extends StatefulWidget {
 
 class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
   final TextEditingController _catatanController = TextEditingController();
-
-  static const Color emeraldPrimary = Color(0xFF006D44);
 
   @override
   void dispose() {
@@ -60,7 +59,7 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: widget.isApproving ? emeraldPrimary : Colors.red,
+                  color: widget.isApproving ? AppColors.greenDark : Colors.red,
                 ),
               ),
             ),
@@ -76,7 +75,8 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
           onPressed: () =>
               Navigator.of(context).pop(_catatanController.text.trim()),
           style: ElevatedButton.styleFrom(
-            backgroundColor: widget.isApproving ? emeraldPrimary : Colors.red,
+            backgroundColor:
+                widget.isApproving ? AppColors.greenDark : Colors.red,
             foregroundColor: Colors.white,
             elevation: 0,
           ),

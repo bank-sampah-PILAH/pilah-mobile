@@ -4,7 +4,7 @@ import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 class DashboardActionButtons extends StatelessWidget {
@@ -58,16 +58,17 @@ class DashboardActionButtons extends StatelessWidget {
             icon: const Icon(Icons.person_add_outlined,
                 color: AppColors.greenDark, size: 20),
             label: Text(
-              'Tambah\nNasabah',
+              'Tambah Nasabah',
               style: AppTextStyle.small.copyWith(
                 color: AppColors.black,
                 fontWeight: FontWeight.w600,
-                height: 1.2,
               ),
-              textAlign: TextAlign.center,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
             ),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -93,7 +94,7 @@ class DashboardActionButtons extends StatelessWidget {
       case _TransaksiChoice.setoran:
         context.push(TransaksiBaruPage.route);
       case _TransaksiChoice.pencairan:
-        context.push(CatatPencairanPage.route);
+        context.push(DraftListPage.route);
     }
   }
 }
@@ -130,8 +131,8 @@ class _TransaksiChooserSheet extends StatelessWidget {
           const SizedBox(height: 8),
           _ChoiceTile(
             icon: Icons.payments_outlined,
-            title: 'Catat Pencairan',
-            subtitle: 'Rekam pencairan saldo untuk nasabah',
+            title: 'Pencairan',
+            subtitle: 'Buat draft, potongan, dan pencairan banyak nasabah',
             onTap: () => Navigator.of(context).pop(_TransaksiChoice.pencairan),
           ),
         ],

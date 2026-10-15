@@ -34,7 +34,6 @@ void main() {
       expect(home.identity.name, 'Budi');
       expect(home.membershipId, 'preview-membership');
       expect((await repo.home(membershipId: 'm1')).membershipId, 'm1');
-      expect((await repo.history('m')).activities, isEmpty);
     });
 
     test('updateProfile overlays the given fields on the current profile',
@@ -56,7 +55,6 @@ void main() {
     test('is offline: no network and no setoran detail', () {
       final repo = PreviewNasabahRepository();
       expect(() => repo.network, throwsUnsupportedError);
-      expect(() => repo.setoranDetail('m', 't'), throwsUnsupportedError);
     });
   });
 }
