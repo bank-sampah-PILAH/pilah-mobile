@@ -86,15 +86,41 @@ void main() {
       expect(_shape(tester, OutlinedButton)?.side.color, AppColors.border);
     });
 
+    testWidgets('destructive outlined has a red border and a red label',
+        (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Tolak',
+        variant: AppButtonVariant.destructiveOutlined,
+        onPressed: () {},
+      )));
+
+      expect(find.byType(OutlinedButton), findsOneWidget);
+      expect(_labelColor(tester, 'Tolak'), AppColors.danger);
+      expect(_shape(tester, OutlinedButton)?.side.color, AppColors.danger);
+    });
+
+    testWidgets('neutral keeps a white fill so it reads on a tinted page',
+        (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Kembali',
+        variant: AppButtonVariant.neutral,
+        onPressed: () {},
+      )));
+
+      expect(_fill(tester, OutlinedButton), Colors.white);
+    });
+
     testWidgets('every variant uses the 12 radius of the design scale',
         (tester) async {
       for (final variant in AppButtonVariant.values) {
         await tester.pumpWidget(_host(
             AppButton(label: 'Aksi', variant: variant, onPressed: () {})));
-        final type = variant == AppButtonVariant.outlined ||
-                variant == AppButtonVariant.neutral
-            ? OutlinedButton
-            : ElevatedButton;
+        final type = switch (variant) {
+          AppButtonVariant.primary ||
+          AppButtonVariant.destructive =>
+            ElevatedButton,
+          _ => OutlinedButton,
+        };
 
         expect(
           _shape(tester, type)?.borderRadiusResolve(),
@@ -139,6 +165,23 @@ void main() {
         lessThan(tester.getCenter(find.text('Transaksi Baru')).dx),
       );
     });
+  });
+
+  testWidgets(
+      'shows a custom leading widget, such as a brand logo, instead '
+      'of an icon', (tester) async {
+    await tester.pumpWidget(_host(AppButton(
+      label: 'Masuk dengan Google',
+      variant: AppButtonVariant.neutral,
+      leading: const SizedBox(key: Key('logo'), width: 24, height: 24),
+      onPressed: () {},
+    )));
+
+    expect(find.byKey(const Key('logo')), findsOneWidget);
+    expect(
+      tester.getCenter(find.byKey(const Key('logo'))).dx,
+      lessThan(tester.getCenter(find.text('Masuk dengan Google')).dx),
+    );
   });
 
   group('AppButton behaviour', () {
