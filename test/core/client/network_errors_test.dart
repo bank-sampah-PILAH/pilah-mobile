@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +72,25 @@ void main() {
                   as UnprocessableEntityException)
               .getErrorMessage(),
           'X');
+    });
+
+    test('a 400 with a byte-typed body still carries the backend message', () {
+      // ResponseType.bytes endpoints (PDF/XLSX export) deliver the error
+      // body as raw bytes, not a Map — the message must still surface.
+      final bytes = Uint8List.fromList(
+          utf8.encode('{"error":"Tidak ada data pada periode ini"}'));
+      final error = NetworkException.handleBadResponse(_response(400, bytes))
+          as BadRequestException;
+
+      expect(error.displayMessage, 'Tidak ada data pada periode ini');
+    });
+
+    test('an undecodable byte body falls back to the generic prefix', () {
+      final error = NetworkException.handleBadResponse(
+              _response(400, Uint8List.fromList([0xff, 0xfe])))
+          as BadRequestException;
+
+      expect(error.displayMessage, 'Invalid Request');
     });
   });
 
@@ -146,6 +167,26 @@ void main() {
           NetworkException.extractMessage(
               _response(400, {'errors': <String, dynamic>{}, 'error': 'e'})),
           'e');
+    });
+
+    test('reads the error of a response that was asked for as bytes', () {
+      Uint8List bytes(String text) => Uint8List.fromList(utf8.encode(text));
+      final response = _response(
+          422, bytes('{"errors": {"items[0].nominal": ["Saldo kurang"]}}'));
+
+      expect(NetworkException.extractMessage(response), 'Saldo kurang');
+      expect(NetworkException(response: response).fieldErrors(),
+          {'items[0].nominal': 'Saldo kurang'});
+      expect(
+          NetworkException.extractMessage(
+              _response(404, bytes('{"error": "Tidak ada"}'))),
+          'Tidak ada');
+      expect(NetworkException.extractMessage(_response(500, bytes('<html>'))),
+          isNull);
+      expect(
+          NetworkException(response: _response(500, bytes('<html>')))
+              .fieldErrors(),
+          isEmpty);
     });
 
     test('accepts a plain string body and ignores nothing useful', () {

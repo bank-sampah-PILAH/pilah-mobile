@@ -236,4 +236,127 @@ void main() {
       expect(pendingInviteLocation('dashboard', role: null), isNull);
     });
   });
+
+  group('sessionRestoreRedirect', () {
+    test('sends a protected path to the splash until the session is checked',
+        () {
+      for (final path in ['/dashboard', '/nasabah', '/profile', '/laporan']) {
+        expect(
+          sessionRestoreRedirect(sessionChecked: false, path: path),
+          '/splash?from=${Uri.encodeComponent(path)}',
+          reason: path,
+        );
+      }
+    });
+
+    test('carries the query string so the page keeps its state', () {
+      expect(
+        sessionRestoreRedirect(
+          sessionChecked: false,
+          path: '/jadwal',
+          query: 'date=2026-10-20',
+        ),
+        '/splash?from=${Uri.encodeComponent('/jadwal?date=2026-10-20')}',
+      );
+    });
+
+    test('leaves public paths alone so the splash can finish its work', () {
+      for (final path in [
+        '/splash',
+        '/login',
+        '/choose-role',
+        '/forgot_password',
+        '/invite',
+      ]) {
+        expect(
+          sessionRestoreRedirect(sessionChecked: false, path: path),
+          isNull,
+          reason: path,
+        );
+      }
+    });
+
+    test('does nothing once the session has been checked', () {
+      expect(
+        sessionRestoreRedirect(sessionChecked: true, path: '/dashboard'),
+        isNull,
+      );
+    });
+  });
+
+  group('locationAfterRestore', () {
+    test('returns to the page the user refreshed on', () {
+      expect(
+        locationAfterRestore(target: '/dashboard', from: '/nasabah'),
+        '/nasabah',
+      );
+    });
+
+    test('returns Super Admin and Pengurus Induk to the page they were on', () {
+      for (final home in [
+        '/superadmin-dashboard',
+        '/pengelola-induk-dashboard',
+      ]) {
+        expect(
+          locationAfterRestore(target: home, from: '/profile'),
+          '/profile',
+          reason: home,
+        );
+      }
+    });
+
+    test('keeps the onboarding step when the user is not onboarded', () {
+      expect(
+        locationAfterRestore(target: '/pending-approval', from: '/nasabah'),
+        '/pending-approval',
+      );
+    });
+
+    test('restores the query string along with the path', () {
+      expect(
+        locationAfterRestore(
+          target: '/dashboard',
+          from: '/jadwal?date=2026-10-20',
+        ),
+        '/jadwal?date=2026-10-20',
+      );
+    });
+
+    test('ignores a missing or unsafe from', () {
+      for (final from in [
+        null,
+        '',
+        'nasabah',
+        '//evil.test',
+        '/login',
+        '/login?next=/nasabah',
+      ]) {
+        expect(
+          locationAfterRestore(target: '/dashboard', from: from),
+          '/dashboard',
+          reason: '$from',
+        );
+      }
+    });
+  });
+
+  group('signedOutRedirect', () {
+    test('sends a protected path to login once the user is signed out', () {
+      for (final path in ['/dashboard', '/nasabah', '/profile']) {
+        expect(signedOutRedirect(signedOut: true, path: path), '/login',
+            reason: path);
+      }
+    });
+
+    test('leaves public paths alone', () {
+      for (final path in ['/splash', '/login', '/choose-role']) {
+        expect(signedOutRedirect(signedOut: true, path: path), isNull,
+            reason: path);
+      }
+    });
+
+    test('does nothing while a session exists', () {
+      expect(signedOutRedirect(signedOut: false, path: '/dashboard'), isNull);
+    });
+  });
 }

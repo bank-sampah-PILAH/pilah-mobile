@@ -124,6 +124,36 @@ void main() {
     expect(repository.updateCalls.single, {'no_hp': '089900001111'});
   });
 
+  testWidgets('the gender options announce which one is selected',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(
+      tester,
+      identity: NasabahIdentity(
+          'u', 'Siti Aminah', 'siti@example.test', 'nasabah',
+          noHp: '081234567890', jenisKelamin: 'perempuan'),
+    );
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Laki-laki'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSemantics(find.text('Perempuan')),
+      isSemantics(
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        isInMutuallyExclusiveGroup: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.text('Laki-laki')),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
+    );
+    handle.dispose();
+  });
+
   testWidgets('memilih Laki-laki pada kontrol jenis kelamin dan menyimpan',
       (tester) async {
     await open(tester);

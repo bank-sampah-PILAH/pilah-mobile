@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/domain/entities/cari_bank_entities.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -238,7 +238,7 @@ class _LayananBaris extends StatelessWidget {
             ),
           ),
           Text(
-            'Rp ${formatRupiahId(harga.round())}/kg',
+            '${CurrencyFormatter.formatRupiah(harga.round())}/kg',
             style: AppTextStyle.small,
           ),
         ],

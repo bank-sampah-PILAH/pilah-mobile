@@ -31,6 +31,7 @@ import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_penca
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../support/approved_membership.dart';
+import '../../../support/fake_riwayat.dart';
 
 class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -104,6 +105,12 @@ void main() {
   final router = AppRouterConfig.getRouter();
   tearDownAll(router.dispose);
   setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
+  // Setoran rows for the Tabungan screen's RiwayatHistoryCubit (one page).
+  final riwayatFixture = FakeRiwayatRemoteDataSource(pages: [
+    [
+      NasabahActivity('t1', DateTime(2026, 9, 23), 'setoran', '12500.00'),
+    ],
+  ]);
 
   Future<void> loginAsNasabah(
     WidgetTester tester, {
@@ -138,6 +145,7 @@ void main() {
     di.registerFactory<RiwayatPencairanCubit>(
       () => RiwayatPencairanCubit(payoutUseCases),
     );
+    registerFakeRiwayat(riwayatFixture);
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
     whenListen(
       dashboard,
@@ -161,6 +169,7 @@ void main() {
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       await di.unregister<RiwayatPencairanCubit>();
+      await unregisterFakeRiwayat();
       await di.unregister<NasabahRepository>();
       await di.unregister<JadwalRepository>();
       invites.dispose();

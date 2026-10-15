@@ -16,8 +16,8 @@ class MembershipStatusBadge extends StatelessWidget {
     final (label, background, foreground) = switch (status) {
       MembershipStatus.pending => (
           'Menunggu',
-          const Color(0xFFFFF8E1),
-          const Color(0xFFB26A00),
+          AppColors.warningLight,
+          AppColors.warning,
         ),
       MembershipStatus.approved => (
           'Disetujui',
@@ -26,8 +26,8 @@ class MembershipStatusBadge extends StatelessWidget {
         ),
       MembershipStatus.rejected => (
           'Ditolak',
-          const Color(0xFFFDECEA),
-          const Color(0xFFC62828),
+          AppColors.dangerLight,
+          AppColors.danger,
         ),
     };
 
