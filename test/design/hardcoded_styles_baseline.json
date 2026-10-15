@@ -63,6 +63,10 @@
     "color": 0,
     "fontSize": 1
   },
+  "lib/features/cari_bank/presentation/widgets/peta_bank_view.dart": {
+    "color": 0,
+    "fontSize": 3
+  },
   "lib/features/dashboard/presentation/widgets/dashboard_header.dart": {
     "color": 0,
     "fontSize": 3
