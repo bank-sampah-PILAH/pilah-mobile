@@ -24,12 +24,11 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_u
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_web_kpi_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
 
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
-
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
@@ -92,8 +91,6 @@ void main() {
     registerFallbackValue(_FakeAuthEvent());
     when(() => profile.ensureBank()).thenAnswer((_) async => null);
   });
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
   setUp(() async {
     await di.reset();
     di.registerSingleton<DashboardReportingDataSource>(

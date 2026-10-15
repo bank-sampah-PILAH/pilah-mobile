@@ -27,9 +27,9 @@ abstract class ProfileRemoteDataSource {
     String? kota,
     required String noHpPic,
     String? fotoLogoPath,
-    ({double latitude, double longitude})? lokasi,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
+    ({double latitude, double longitude})? lokasi,
   });
   Future<WaTemplate> getWaTemplate();
   Future<void> updateWaTemplate(String template);
@@ -63,9 +63,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     String? kota,
     required String noHpPic,
     String? fotoLogoPath,
-    ({double latitude, double longitude})? lokasi,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
+    ({double latitude, double longitude})? lokasi,
   }) async {
     final formData = FormData.fromMap({
       'nama': nama,

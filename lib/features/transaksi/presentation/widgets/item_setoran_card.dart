@@ -14,6 +14,10 @@ class ItemSetoranCard extends StatelessWidget {
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
+
+  /// Dipanggil ketika pengelola menekan Enter pada kotak berat. Opsional, jadi
+  /// pemanggil yang tidak peduli tidak perlu berubah.
+  final VoidCallback? onSubmitted;
   final bool hasError;
   final String? errorText;
 
@@ -23,6 +27,7 @@ class ItemSetoranCard extends StatelessWidget {
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
+    this.onSubmitted,
     this.hasError = false,
     this.errorText,
   });
@@ -193,6 +198,12 @@ class ItemSetoranCard extends StatelessWidget {
                                 .replaceAll('Rp ', '')
                             : '',
                         readOnly: true,
+                        // readOnly sendiri masih menerima fokus, sehingga Tab
+                        // berhenti pada kolom yang tidak bisa diketik. Harga
+                        // datang dari master jenis sampah, bukan dari
+                        // pengelola, jadi ia tidak punya urusan dengan papan
+                        // tik sama sekali.
+                        canRequestFocus: false,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.only(bottom: 12),
@@ -242,6 +253,10 @@ class ItemSetoranCard extends StatelessWidget {
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
                   ],
                   textAlign: TextAlign.center,
+                  // Satu baris, jadi Enter tidak punya makna lain di sini dan
+                  // bebas dipakai untuk mengirim.
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => onSubmitted?.call(),
                   style: AppTextStyle.small.copyWith(
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,

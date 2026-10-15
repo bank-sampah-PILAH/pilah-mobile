@@ -219,7 +219,7 @@
     "color": 0,
     "fontSize": 2
   },
-  "lib/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart": {
+  "lib/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart": {
     "color": 0,
     "fontSize": 3
   },
@@ -235,7 +235,7 @@
     "color": 0,
     "fontSize": 3
   },
-  "lib/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart": {
+  "lib/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart": {
     "color": 0,
     "fontSize": 2
   }
