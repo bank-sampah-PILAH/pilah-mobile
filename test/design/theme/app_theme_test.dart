@@ -103,6 +103,28 @@ void main() {
       expect(_labelColor(tester, 'Tambah'), AppColors.greenDark);
     });
 
+    for (final entry in <String, Widget Function()>{
+      'ElevatedButton': () =>
+          ElevatedButton(onPressed: () {}, child: const Text('Simpan')),
+      'FilledButton': () =>
+          FilledButton(onPressed: () {}, child: const Text('Simpan')),
+      'OutlinedButton': () =>
+          OutlinedButton(onPressed: () {}, child: const Text('Simpan')),
+    }.entries) {
+      testWidgets(
+          'a plain ${entry.key} label is 14 semibold, small enough for two '
+          'buttons side by side', (tester) async {
+        await tester.pumpWidget(_app(entry.value()));
+
+        final style = tester
+            .renderObject<RenderParagraph>(find.text('Simpan'))
+            .text
+            .style;
+        expect(style?.fontSize, 14);
+        expect(style?.fontWeight, FontWeight.w600);
+      });
+    }
+
     testWidgets('a disabled filled button is grey, not a faded green',
         (tester) async {
       await tester.pumpWidget(
