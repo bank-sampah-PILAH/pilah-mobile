@@ -10,6 +10,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/widgets/bank_item_card.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_state.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/widgets/peta_bank_view.dart';
@@ -261,13 +262,6 @@ class _BankTile extends StatelessWidget {
 
   const _BankTile({required this.bank});
 
-  String get _initials => bank.nama
-      .split(RegExp(r'\s+'))
-      .where((kata) => kata.isNotEmpty)
-      .take(2)
-      .map((kata) => kata[0].toUpperCase())
-      .join();
-
   @override
   Widget build(BuildContext context) {
     final sub = '${bank.kota} · ${bank.alamat}';
@@ -276,70 +270,17 @@ class _BankTile extends StatelessWidget {
         BankSampahDetailPage.route,
         extra: bank.id,
       ),
-      child: Container(
+      child: BankItemCard(
         key: Key('cari_bank_row_${bank.id}'),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.greenLight,
-                borderRadius: BorderRadius.circular(16),
+        bank: bank,
+        subtitle: sub,
+        trailing: bank.jarakKm == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child:
+                    PillTag(text: formatJarakId(double.parse(bank.jarakKm!))),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                _initials,
-                style: AppTextStyle.title1.copyWith(
-                  color: AppColors.greenDark,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    bank.nama,
-                    style: AppTextStyle.title1.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    sub,
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[400],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (bank.jarakKm != null) ...[
-              const SizedBox(width: 8),
-              PillTag(text: formatJarakId(double.parse(bank.jarakKm!))),
-            ],
-          ],
-        ),
       ),
     );
   }
