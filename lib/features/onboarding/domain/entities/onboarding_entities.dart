@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 // Request/result models for the real onboarding endpoints
 // (PUT /onboarding/profile, POST /onboarding/bank-sampah).
 
@@ -43,12 +45,18 @@ class RegisterBankSampahRequest {
   /// Absolute path to the selected `foto_kegiatan` image (sent as multipart).
   final String fotoKegiatanPath;
 
+  /// Picker bytes take precedence over the path, which may be a browser blob URL.
+  final Uint8List? fotoKegiatanBytes;
+  final String? fotoKegiatanFilename;
+
   const RegisterBankSampahRequest({
     required this.nama,
     required this.alamat,
     this.kota,
     required this.noHpPic,
     required this.fotoKegiatanPath,
+    this.fotoKegiatanBytes,
+    this.fotoKegiatanFilename,
   });
 }
 
