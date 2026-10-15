@@ -17,7 +17,12 @@ abstract final class AppTheme {
     );
     final shape =
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
-    final label = AppTextStyle.headline3.copyWith(fontWeight: FontWeight.w600);
+    // 14 rather than the 16 of headline3: two half-width buttons, such as
+    // "Batal" and "Simpan Perubahan", must fit a phone.
+    final label = AppTextStyle.headline3.copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+    );
     const padding = EdgeInsets.symmetric(horizontal: 24, vertical: 12);
     return base.copyWith(
       appBarTheme: AppBarTheme(

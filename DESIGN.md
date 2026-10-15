@@ -73,7 +73,7 @@ Use these instead of building another one.
 | Need | Use | Notes |
 |---|---|---|
 | Sheet header (title + close) | `BottomSheetHeader` | Do not hand-build the drag handle (about 17 copies exist today). |
-| Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive` and `destructiveOutlined`; 48 high, radius 12, optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
+| Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive` and `destructiveOutlined`; 48 high, radius 12, 14 semibold label, optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
 | Search | `CustomSearchField` | |
 | Status chip | `CustomStatusBadge` | |
 | Filter / tab pill | `AppChip` (`design/widgets`) | Announced to screen readers as a selected or unselected button, ripple, 48 dp hit area, optional icon and count. Used by the nasabah, harga, aktivitas and pencairan filters; `PencairanChip` wraps it. |
