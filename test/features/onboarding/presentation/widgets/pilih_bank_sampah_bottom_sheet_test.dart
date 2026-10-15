@@ -87,10 +87,16 @@ void main() {
     await openSheet(tester);
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'mawar');
+    await tester.enterText(find.byType(TextField), 'Bank Melati');
     await tester.pump();
-    expect(find.text('Bank Melati'), findsNothing);
-    expect(find.text('Bank Mawar'), findsOneWidget);
+    expect(find.text('Bank Mawar'), findsNothing);
+    expect(find.text('Depok · Jl. Bank Melati'), findsOneWidget);
+
+    // Matching by kota too — Mawar has an empty kota so only Melati matches.
+    await tester.enterText(find.byType(TextField), 'depok');
+    await tester.pump();
+    expect(find.text('Depok · Jl. Bank Melati'), findsOneWidget);
+    expect(find.text('Jl. Bank Mawar'), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'zzz');
     await tester.pump();

@@ -148,6 +148,10 @@ import '../features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart'
     as _i700;
 import '../features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart'
     as _i8;
+import '../features/perbandingan_harga/data/datasources/perbandingan_harga_remote_data_source.dart'
+    as _i573;
+import '../features/perbandingan_harga/presentation/cubit/perbandingan_harga_cubit.dart'
+    as _i172;
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
     as _i1053;
 import '../features/profile/presentation/cubit/profile_cubit.dart' as _i300;
@@ -268,6 +272,9 @@ extension GetItInjectableX on _i174.GetIt {
         _i142.DraftPencairanRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i646.GetAktivitasUseCase>(
         () => _i646.GetAktivitasUseCase(gh<_i184.AktivitasRepository>()));
+    gh.lazySingleton<_i573.PerbandinganHargaRemoteDataSource>(() =>
+        _i573.PerbandinganHargaRemoteDataSourceImpl(
+            gh<_i941.NetworkService>()));
     gh.lazySingleton<_i144.CariBankRemoteDataSource>(
         () => _i144.CariBankRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i247.OnboardingRemoteDataSource>(
@@ -308,8 +315,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i183.ImagePicker>(),
           gh<_i183.ImageCropper>(),
         ));
-    gh.lazySingleton<_i206.CariBankCubit>(
-        () => _i206.CariBankCubit(gh<_i144.CariBankRemoteDataSource>()));
     gh.lazySingleton<_i390.BankSampahApprovalRepository>(() =>
         _i807.BankSampahApprovalRepositoryImpl(
             gh<_i335.BankSampahApprovalRemoteDataSource>()));
@@ -318,6 +323,9 @@ extension GetItInjectableX on _i174.GetIt {
             gh<_i142.DraftPencairanRemoteDataSource>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
+    gh.lazySingleton<_i172.PerbandinganHargaCubit>(() =>
+        _i172.PerbandinganHargaCubit(
+            gh<_i573.PerbandinganHargaRemoteDataSource>()));
     gh.lazySingleton<_i244.OnboardingCubit>(
         () => _i244.OnboardingCubit(gh<_i247.OnboardingRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
@@ -336,6 +344,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i260.SuperadminRepository>(() =>
         _i811.SuperadminRepositoryImpl(gh<_i309.SuperadminRemoteDataSource>()));
+    gh.lazySingleton<_i206.CariBankCubit>(() => _i206.CariBankCubit(
+          gh<_i144.CariBankRemoteDataSource>(),
+          storage: gh<_i812.AppStorage>(instanceName: 'shared_preferences'),
+        ));
     gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
           gh<_i24.AuthRemoteDataSources>(),
           gh<_i981.AuthLocalDataSources>(),

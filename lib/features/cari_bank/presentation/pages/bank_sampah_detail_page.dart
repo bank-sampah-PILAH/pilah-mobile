@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/data/datasources/cari_bank_remote_data_source.dart';
 import 'package:pilah_mobile/features/cari_bank/domain/entities/cari_bank_entities.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_lokasi_map_page.dart';
+import 'package:pilah_mobile/features/perbandingan_harga/presentation/pages/perbandingan_harga_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Detail layanan satu bank sampah (PIL-308): profil, status, koordinat, dan
@@ -59,10 +66,16 @@ class _BankSampahDetailPageState extends State<BankSampahDetailPage> {
   Widget build(BuildContext context) {
     final detail = _detail;
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(detail?.nama ?? 'Bank Sampah',
-            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600)),
+            style: AppTextStyle.small.copyWith(
+              fontWeight: FontWeight.w600,
+              color: NasabahStyle.ink,
+            )),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        scrolledUnderElevation: 0,
       ),
       body: _body(),
     );
@@ -113,28 +126,77 @@ class _IsiDetail extends StatelessWidget {
         const SizedBox(height: 8),
         _row('Kota', detail.kota),
         _row('Alamat', detail.alamat),
-        _row('Lokasi di peta', tampilkanLokasi(detail)),
+        if (detail.lokasi != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: OutlinedButton.icon(
+              key: const Key('detail_bank_buka_peta'),
+              onPressed: () => Navigator.of(context, rootNavigator: true)
+                  .push(MaterialPageRoute(
+                builder: (_) => BankLokasiMapPage(
+                  nama: detail.nama,
+                  latitude: detail.lokasi!.latitude,
+                  longitude: detail.lokasi!.longitude,
+                ),
+              )),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.greenDark,
+                side: const BorderSide(color: AppColors.greenDark),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              icon: const Icon(Icons.map_outlined, size: 18),
+              label: Text(
+                'Lihat Lokasi di Peta',
+                style: AppTextStyle.small.copyWith(
+                  color: AppColors.greenDark,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
         const SizedBox(height: 12),
         Text(
           'Layanan',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          style: NasabahStyle.text(15, weight: FontWeight.w600),
         ),
         if (detail.layanan.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
               'Belum ada jenis sampah aktif pada bank ini.',
-              style: TextStyle(color: Colors.grey),
+              style: NasabahStyle.text(14, color: NasabahStyle.muted),
             ),
           )
         else
           ...detail.layanan.map(_LayananBaris.new),
+        if (detail.layanan.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: CustomPrimaryButton(
+              key: const Key('detail_bank_bandingkan_harga'),
+              title: 'Bandingkan Harga',
+              onPressed: () {
+                final layanan = detail.layanan.first;
+                // Route through the router (registered for this page); the
+                // seed record carries the jenis + asal-bank fields.
+                context.push(
+                  PerbandinganHargaPage.route,
+                  extra: PerbandinganSeed(
+                    jenisSampahId: layanan.id,
+                    bankAsalId: detail.id,
+                    bankAsalNama: detail.nama,
+                    layananAsal: detail.layanan,
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
-
-  static const _labelStyle = TextStyle(color: Colors.grey, fontSize: 13);
-  static const _valueStyle = TextStyle(fontSize: 14);
 
   Widget _row(String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
@@ -143,23 +205,20 @@ class _IsiDetail extends StatelessWidget {
           children: [
             SizedBox(
               width: 110,
-              child: Text(label, style: _labelStyle),
+              child: Text(
+                label,
+                style: NasabahStyle.text(13, color: NasabahStyle.muted),
+              ),
             ),
             Expanded(
-              child: Text(value.isEmpty ? '—' : value, style: _valueStyle),
+              child: Text(
+                value.isEmpty ? '—' : value,
+                style: NasabahStyle.text(14),
+              ),
             ),
           ],
         ),
       );
-}
-
-/// Coordinates as a readable text pair; the full map view on search arrives
-/// with PIL-330.
-String tampilkanLokasi(BankSampahDetailEntity detail) {
-  final lokasi = detail.lokasi;
-  if (lokasi == null) return 'Belum dipasang';
-  return '${lokasi.latitude.toStringAsFixed(6)}, '
-      '${lokasi.longitude.toStringAsFixed(6)}';
 }
 
 class _Header extends StatelessWidget {
@@ -167,13 +226,32 @@ class _Header extends StatelessWidget {
 
   const _Header({required this.detail});
 
+  String get _initials => detail.nama
+      .split(RegExp(r'\s+'))
+      .where((kata) => kata.isNotEmpty)
+      .take(2)
+      .map((kata) => kata[0].toUpperCase())
+      .join();
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 28,
-          child: Icon(Icons.storefront_outlined, size: 28),
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.greenLight,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _initials,
+            style: AppTextStyle.title1.copyWith(
+              color: AppColors.greenDark,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -182,22 +260,15 @@ class _Header extends StatelessWidget {
             children: [
               Text(
                 detail.nama,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyle.title1.copyWith(
+                  fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
               ),
               const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text(
-                  'Aktif',
-                  style: TextStyle(fontSize: 12, color: Colors.green),
-                ),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: CustomStatusBadge(isActive: true),
               ),
             ],
           ),
@@ -226,13 +297,13 @@ class _LayananBaris extends StatelessWidget {
               children: [
                 Text(
                   '${layanan.kode} · ${layanan.namaSampah}',
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500),
+                  style: NasabahStyle.text(14, weight: FontWeight.w500),
                 ),
                 if (layanan.deskripsi.isNotEmpty)
                   Text(
                     layanan.deskripsi,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    style:
+                        NasabahStyle.text(12, color: NasabahStyle.labelMuted),
                   ),
               ],
             ),

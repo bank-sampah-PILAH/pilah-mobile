@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/widgets/bank_marker_cluster.dart';
 import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
@@ -33,6 +38,10 @@ class _PetaBankViewState extends State<PetaBankView> {
 
   static const double _zoomAwal = 5;
   static const double _zoomUser = 15;
+
+  /// User's own fix; drawn as the blue-style dot (kept green, per design)
+  /// so "where am I" is visible while browsing bank markers (PIL-330).
+  Lokasi? _titikSaya;
 
   /// Camera zoom the clusters were built for; the map view only ever reacts
   /// through this — nothing re-clusters silently behind a still frame.
@@ -82,6 +91,7 @@ class _PetaBankViewState extends State<PetaBankView> {
   Future<void> _lokasiPengguna() async {
     final lokasi = await di<LocationService>().currentLocation();
     if (lokasi == null || !mounted) return;
+    setState(() => _titikSaya = lokasi);
     _controller.move(
       LatLng(lokasi.latitude, lokasi.longitude),
       _zoomUser,
@@ -107,43 +117,69 @@ class _PetaBankViewState extends State<PetaBankView> {
     final lokasi = bank.lokasi!;
     showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                bank.nama,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        // Sheet mengambang dengan radius atas — pola Google Maps place card.
+        margin: const EdgeInsets.only(top: 48),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const BottomSheetHeader(title: 'Bank Sampah'),
+                const SizedBox(height: 12),
+                Text(
+                  bank.nama,
+                  style: AppTextStyle.title1.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${bank.kota} · ${bank.alamat}',
-                style: const TextStyle(fontSize: 13),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${lokasi.latitude.toStringAsFixed(6)}, '
-                '${lokasi.longitude.toStringAsFixed(6)}',
-                style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                key: const Key('cari_bank_lihat_detail'),
-                onPressed: () {
-                  Navigator.pop(sheetContext);
-                  context.push(BankSampahDetailPage.route, extra: bank.id);
-                },
-                icon: const Icon(Icons.description_outlined),
-                label: const Text('Lihat Detail'),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.place_outlined,
+                      size: 16,
+                      color: AppColors.greenDark,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${bank.kota} · ${bank.alamat}',
+                        style: NasabahStyle.text(13, color: NasabahStyle.muted),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${lokasi.latitude.toStringAsFixed(6)}, '
+                  '${lokasi.longitude.toStringAsFixed(6)}',
+                  style: NasabahStyle.text(
+                    12,
+                    color: NasabahStyle.muted,
+                    tabularFigures: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CustomPrimaryButton(
+                  key: const Key('cari_bank_lihat_detail'),
+                  title: 'Lihat Detail',
+                  icon: Icons.description_outlined,
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    context.push(BankSampahDetailPage.route, extra: bank.id);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -174,6 +210,21 @@ class _PetaBankViewState extends State<PetaBankView> {
         osmAttribution(),
         MarkerLayer(
           markers: [
+            // Titik pengguna di bawah pin-pin bank, supaya "di mana saya"
+            // terlihat sambil menelusuri hasil.
+            if (_titikSaya != null)
+              Marker(
+                point: LatLng(
+                  _titikSaya!.latitude,
+                  _titikSaya!.longitude,
+                ),
+                width: 26,
+                height: 26,
+                child: const KeyedSubtree(
+                  key: Key('cari_bank_titik_saya'),
+                  child: _TitikSaya(),
+                ),
+              ),
             for (final k in kelompok)
               Marker(
                 point: k.center,
@@ -200,11 +251,45 @@ class _MarkerBank extends StatelessWidget {
   const _MarkerBank();
 
   @override
-  Widget build(BuildContext context) => const Icon(
-        Icons.store,
-        size: 32,
-        color: Colors.indigo,
-        shadows: [Shadow(color: Colors.white, blurRadius: 4)],
+  Widget build(BuildContext context) => const _PinHijau(
+        child: Icon(
+          Icons.store,
+          size: 18,
+          color: Colors.white,
+        ),
+      );
+}
+
+/// Pin tetangga setengah turun (GM-style): lingkaran hijau dengan titik
+/// runcing di bawah, latar tetap terlihat di sekelilingnya.
+class _PinHijau extends StatelessWidget {
+  const _PinHijau({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.greenDark,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: child,
+          ),
+        ],
       );
 }
 
@@ -215,18 +300,55 @@ class _BadgeKelompok extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 32,
-        height: 32,
-        decoration: const BoxDecoration(
-          color: Colors.indigo,
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.greenDark,
           shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         alignment: Alignment.center,
         child: Text(
           '$count',
-          style: const TextStyle(
+          style: AppTextStyle.small.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+}
+
+/// Titik lokasi pengguna: bulatan hijau dengan cincin putih transparan —
+/// beda bentuk dari pin bank supaya tak tertukar.
+class _TitikSaya extends StatelessWidget {
+  const _TitikSaya();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.greenDark.withValues(alpha: 0.3),
+            width: 4,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Container(
+          width: 14,
+          height: 14,
+          decoration: const BoxDecoration(
+            color: AppColors.greenDark,
+            shape: BoxShape.circle,
+            border: Border.fromBorderSide(
+              BorderSide(color: Colors.white, width: 2),
+            ),
           ),
         ),
       );

@@ -55,9 +55,13 @@
     "color": 0,
     "fontSize": 1
   },
+  "lib/features/cari_bank/presentation/pages/bank_lokasi_map_page.dart": {
+    "color": 1,
+    "fontSize": 1
+  },
   "lib/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart": {
     "color": 0,
-    "fontSize": 7
+    "fontSize": 1
   },
   "lib/features/cari_bank/presentation/pages/cari_bank_page.dart": {
     "color": 0,
@@ -65,7 +69,7 @@
   },
   "lib/features/cari_bank/presentation/widgets/peta_bank_view.dart": {
     "color": 0,
-    "fontSize": 3
+    "fontSize": 1
   },
   "lib/features/dashboard/presentation/widgets/dashboard_header.dart": {
     "color": 0,
@@ -114,6 +118,10 @@
   "lib/features/jadwal/presentation/widgets/jadwal_calendar.dart": {
     "color": 0,
     "fontSize": 4
+  },
+  "lib/features/map/presentation/pages/map_picker_page.dart": {
+    "color": 4,
+    "fontSize": 0
   },
   "lib/features/nasabah/presentation/pages/nasabah_page.dart": {
     "color": 0,
@@ -174,6 +182,10 @@
   "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": {
     "color": 0,
     "fontSize": 2
+  },
+  "lib/features/perbandingan_harga/presentation/pages/perbandingan_harga_page.dart": {
+    "color": 0,
+    "fontSize": 3
   },
   "lib/features/profile/presentation/pages/profile_page.dart": {
     "color": 0,
