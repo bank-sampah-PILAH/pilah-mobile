@@ -9,14 +9,8 @@
   "lib/features/draft_pencairan/presentation/pages/draft_editor_page.dart": 1,
   "lib/features/draft_pencairan/presentation/widgets/pencairan_konfirmasi_sheet.dart": 2,
   "lib/features/draft_pencairan/presentation/widgets/pencairan_ui.dart": 2,
-  "lib/features/harga/presentation/widgets/harga_confirmation_dialog.dart": 2,
-  "lib/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart": 2,
   "lib/features/jadwal/presentation/pages/jadwal_page.dart": 8,
-  "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": 3,
-  "lib/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart": 1,
-  "lib/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart": 1,
-  "lib/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart": 2,
-  "lib/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart": 1,
+  "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": 1,
   "lib/features/onboarding/presentation/pages/complete_profile_screen.dart": 1,
   "lib/features/onboarding/presentation/pages/pending_approval_screen.dart": 1,
   "lib/features/onboarding/presentation/pages/register_bank_sampah_screen.dart": 2,
@@ -27,6 +21,5 @@
   "lib/features/riwayat/presentation/pages/riwayat_nasabah_page.dart": 1,
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": 4,
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": 1,
-  "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": 2,
-  "lib/features/transaksi/presentation/widgets/transaksi_berhasil_bottom_sheet.dart": 1
+  "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": 1
 }

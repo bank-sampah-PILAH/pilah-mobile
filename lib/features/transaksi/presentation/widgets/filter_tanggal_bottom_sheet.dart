@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
@@ -242,32 +243,14 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
               const SizedBox(height: 24),
 
               // Primary Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    context
-                        .read<RiwayatAktivitasCubit>()
-                        .applyCustomRange(startDate, endDate);
-                    context.pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.greenDark,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    'Terapkan Filter',
-                    style: AppTextStyle.title1.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
+              AppButton(
+                label: 'Terapkan Filter',
+                onPressed: () {
+                  context
+                      .read<RiwayatAktivitasCubit>()
+                      .applyCustomRange(startDate, endDate);
+                  context.pop();
+                },
               ),
             ],
           ),
