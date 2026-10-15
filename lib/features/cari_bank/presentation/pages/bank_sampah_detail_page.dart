@@ -310,7 +310,11 @@ class _LayananBaris extends StatelessWidget {
           ),
           Text(
             '${CurrencyFormatter.formatRupiah(harga.round())}/kg',
-            style: AppTextStyle.small,
+            style: NasabahStyle.text(
+              14,
+              weight: FontWeight.w600,
+              color: AppColors.greenDark,
+            ),
           ),
         ],
       ),

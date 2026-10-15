@@ -586,7 +586,7 @@ class _ProfileViewState extends State<_ProfileView>
                   iconColor: Colors.pink[400],
                   validator: _validateNomorHpPic,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 _buildLokasiRow(state),
               ],
             ),

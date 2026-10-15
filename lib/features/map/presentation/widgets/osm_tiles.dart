@@ -12,5 +12,3 @@ Widget osmTileLayer() => TileLayer(
 RichAttributionWidget osmAttribution() => const RichAttributionWidget(
       attributions: [TextSourceAttribution('© OpenStreetMap contributors')],
     );
-
-List<Widget> osmMapBase() => [osmTileLayer(), osmAttribution()];
