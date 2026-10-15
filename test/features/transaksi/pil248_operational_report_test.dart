@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_u
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 
 class _Network extends Mock implements NetworkService {}
 
@@ -237,7 +238,7 @@ void main() {
         home: BlocProvider.value(value: cubit, child: const LaporanPage())));
     await tester.pump();
     expect(find.bySemanticsLabel('Memuat ringkasan laporan'), findsOneWidget);
-    expect(find.text('Saldo periode'), findsNothing);
+    expect(find.text('Saldo Periode'), findsNothing);
     pending.complete(Right(await _page(_zero)));
     await tester.pumpAndSettle();
     expect(find.text('Rp 0'), findsNWidgets(3));
@@ -254,7 +255,7 @@ void main() {
         .thenAnswer((_) async => Right(await _page(_zero)));
     await tester.tap(find.text('Coba Lagi'));
     await tester.pumpAndSettle();
-    expect(find.text('Saldo periode'), findsOneWidget);
+    expect(find.text('Saldo Periode'), findsOneWidget);
   });
 
   testWidgets(
@@ -273,11 +274,11 @@ void main() {
         home: BlocProvider.value(value: cubit, child: const LaporanPage())));
     await tester.pumpAndSettle();
     for (final label in [
-      'Jumlah transaksi',
-      'Total berat',
-      'Nilai setoran',
-      'Total pencairan',
-      'Saldo periode'
+      'Total Transaksi',
+      'Total Berat Sampah',
+      'Total Nilai Setoran',
+      'Total Pencairan',
+      'Saldo Periode'
     ]) {
       expect(find.text(label), findsOneWidget);
     }
@@ -285,6 +286,64 @@ void main() {
     expect(find.text('12,5 kg'), findsOneWidget);
     expect(find.text('-Rp 50.000'), findsOneWidget);
     expect(find.text('XLSX Laporan'), findsOneWidget);
+    expect(tester.getSize(find.byType(AktivitasSummaryView)).height,
+        lessThanOrEqualTo(168),
+        reason: 'The summary must leave more room for transaction history.');
     expect(tester.takeException(), isNull);
   });
+
+  for (final (width, scale) in [(320.0, 1.0), (360.0, 2.0), (1440.0, 1.0)]) {
+    testWidgets(
+        'full summary values remain readable at width $width, scale $scale',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final feed = _Feed();
+      when(() => feed.execute(any()))
+          .thenAnswer((_) async => Right(await _page({
+                'jumlah_transaksi': 12345678,
+                'total_berat': '1234567.89',
+                'total_setoran': 2000000000000,
+                'total_pencairan': 3000000000000,
+                'saldo': -1000000000000,
+              })));
+      final cubit = RiwayatAktivitasCubit(feed, _Export());
+      addTearDown(cubit.close);
+      await cubit.load();
+      await tester.pumpWidget(MaterialApp(
+          builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(scale)),
+              child: child!),
+          home: Scaffold(
+              body: SingleChildScrollView(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: BlocProvider.value(
+                          value: cubit,
+                          child: const AktivitasSummaryView()))))));
+      await tester.pumpAndSettle();
+      for (final text in [
+        'Total Transaksi',
+        'Total Berat Sampah',
+        'Total Nilai Setoran',
+        'Total Pencairan',
+        'Saldo Periode',
+        '12345678',
+        '1234567,89 kg',
+        'Rp 2.000.000.000.000',
+        'Rp 3.000.000.000.000',
+        '-Rp 1.000.000.000.000'
+      ]) {
+        expect(find.text(text), findsOneWidget);
+        final bounds = tester.getRect(find.text(text));
+        expect(bounds.left, greaterThanOrEqualTo(16));
+        expect(bounds.right, lessThanOrEqualTo(width - 16));
+      }
+      expect(find.text('Saldo Akhir Periode'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
