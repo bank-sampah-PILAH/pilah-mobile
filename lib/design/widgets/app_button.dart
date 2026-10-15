@@ -75,30 +75,36 @@ class AppButton extends StatelessWidget {
         ? Semantics(label: label, excludeSemantics: true, child: content)
         : content;
     final size = Size(expand ? double.infinity : 0, height);
+    // A button that fills its width needs no side padding to look roomy, and
+    // two of them side by side must still fit a label like "Ya, Nonaktifkan".
+    final padding =
+        EdgeInsets.symmetric(horizontal: expand ? 12 : 24, vertical: 12);
 
     return switch (variant) {
       AppButtonVariant.primary => ElevatedButton(
           onPressed: onTap,
-          style: ElevatedButton.styleFrom(minimumSize: size),
+          style: ElevatedButton.styleFrom(minimumSize: size, padding: padding),
           child: child,
         ),
       AppButtonVariant.destructive => ElevatedButton(
           onPressed: onTap,
           style: ElevatedButton.styleFrom(
             minimumSize: size,
+            padding: padding,
             backgroundColor: AppColors.danger,
           ),
           child: child,
         ),
       AppButtonVariant.outlined => OutlinedButton(
           onPressed: onTap,
-          style: OutlinedButton.styleFrom(minimumSize: size),
+          style: OutlinedButton.styleFrom(minimumSize: size, padding: padding),
           child: child,
         ),
       AppButtonVariant.neutral => OutlinedButton(
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
             minimumSize: size,
+            padding: padding,
             backgroundColor: Colors.white,
             foregroundColor: AppColors.inkSoft,
             side: const BorderSide(color: AppColors.border, width: 1.5),
@@ -109,6 +115,7 @@ class AppButton extends StatelessWidget {
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
             minimumSize: size,
+            padding: padding,
             foregroundColor: AppColors.danger,
             side: const BorderSide(color: AppColors.danger, width: 1.5),
           ),

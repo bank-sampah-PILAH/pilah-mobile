@@ -205,35 +205,25 @@ void main() {
     );
   });
 
-  testWidgets('two half-width buttons still show a long label in full',
-      (tester) async {
+  testWidgets(
+      'a button that fills its width keeps only 12 of side padding, '
+      'so two side by side fit a long label', (tester) async {
+    EdgeInsetsGeometry? padding(Finder finder) =>
+        tester.widget<ElevatedButton>(finder).style?.padding?.resolve({});
+
     await tester.pumpWidget(_host(
-      Row(
+      Column(
         children: [
-          Expanded(
-            child: AppButton(
-              label: 'Batal',
-              variant: AppButtonVariant.neutral,
-              onPressed: () {},
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: AppButton(
-              label: 'Ya, Nonaktifkan',
-              variant: AppButtonVariant.destructive,
-              onPressed: () {},
-            ),
-          ),
+          AppButton(label: 'Ya, Nonaktifkan', onPressed: () {}),
+          AppButton(label: 'Simpan', expand: false, onPressed: () {}),
         ],
       ),
-      width: 358,
     ));
 
-    final label = tester.renderObject<RenderParagraph>(
-      find.text('Ya, Nonaktifkan'),
-    );
-    expect(label.didExceedMaxLines, isFalse);
+    expect(padding(find.widgetWithText(ElevatedButton, 'Ya, Nonaktifkan')),
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 12));
+    expect(padding(find.widgetWithText(ElevatedButton, 'Simpan')),
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 12));
   });
 
   group('AppButton behaviour', () {
