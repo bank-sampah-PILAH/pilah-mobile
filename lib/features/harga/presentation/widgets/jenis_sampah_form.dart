@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -323,72 +324,23 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     // membuat dua ternary bersarang, dan yang di dalam menjawab pertanyaan
     // yang berbeda — mode form, bukan keadaan simpan.
     final label = _isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah';
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isSaving ? null : _handleSimpan,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.greenDark,
-          disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-        ),
-        child: _isSaving
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Text(
-                label,
-                // headline3 sudah berukuran 16, jadi tidak ada fontSize yang
-                // perlu ditulis ulang di luar `lib/design/`.
-                style: AppTextStyle.headline3.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-      ),
+    return AppButton(
+      label: label,
+      isLoading: _isSaving,
+      onPressed: _handleSimpan,
     );
   }
 
   Widget _buildToggleStatusButton() {
-    final warna = _isActive ? Colors.red[600] : AppColors.greenDark;
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: _isSaving ? null : _handleToggleStatus,
-          icon: Icon(
-            _isActive ? Icons.block : Icons.check_circle_outline,
-            size: 20,
-            color: warna,
-          ),
-          label: Text(
-            _isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
-            style: AppTextStyle.headline3.copyWith(
-              color: warna,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            side: BorderSide(
-              color: _isActive ? Colors.red[200]! : AppColors.greenLight,
-            ),
-            backgroundColor: Colors.white,
-          ),
-        ),
+      child: AppButton(
+        label: _isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
+        variant: _isActive
+            ? AppButtonVariant.destructiveOutlined
+            : AppButtonVariant.outlined,
+        icon: _isActive ? Icons.block : Icons.check_circle_outline,
+        onPressed: _isSaving ? null : _handleToggleStatus,
       ),
     );
   }

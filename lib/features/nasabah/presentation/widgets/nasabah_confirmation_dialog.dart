@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
@@ -138,63 +139,23 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: AppButton(
+                    label: 'Batal',
+                    variant: AppButtonVariant.neutral,
                     onPressed: _isProcessing ? null : () => context.pop(),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      'Batal',
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isProcessing ? null : _confirm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: widget.isActivating
-                          ? AppColors.greenDark
-                          : NasabahConfirmationDialog.errorColor,
-                      disabledBackgroundColor: (widget.isActivating
-                              ? AppColors.greenDark
-                              : NasabahConfirmationDialog.errorColor)
-                          .withValues(alpha: 0.6),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isProcessing
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            widget.isActivating
-                                ? 'Ya, Aktifkan'
-                                : 'Ya, Nonaktifkan',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
+                  child: AppButton(
+                    label: widget.isActivating
+                        ? 'Ya, Aktifkan'
+                        : 'Ya, Nonaktifkan',
+                    variant: widget.isActivating
+                        ? AppButtonVariant.primary
+                        : AppButtonVariant.destructive,
+                    isLoading: _isProcessing,
+                    onPressed: _confirm,
                   ),
                 ),
               ],
