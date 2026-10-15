@@ -184,6 +184,20 @@ void main() {
     );
   });
 
+  testWidgets('puts a trailing icon after the label', (tester) async {
+    await tester.pumpWidget(_host(AppButton(
+      label: 'Simpan Profil & Lanjut',
+      trailingIcon: Icons.arrow_forward,
+      onPressed: () {},
+    )));
+
+    expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+    expect(
+      tester.getCenter(find.byIcon(Icons.arrow_forward)).dx,
+      greaterThan(tester.getCenter(find.text('Simpan Profil & Lanjut')).dx),
+    );
+  });
+
   group('AppButton behaviour', () {
     testWidgets('reports taps', (tester) async {
       var taps = 0;
