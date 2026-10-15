@@ -15,6 +15,10 @@ abstract final class AppTheme {
         seedColor: AppColors.greenDark,
       ).copyWith(primary: AppColors.greenDark),
     );
+    final shape =
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
+    final label = AppTextStyle.headline3.copyWith(fontWeight: FontWeight.w600);
+    const padding = EdgeInsets.symmetric(horizontal: 24, vertical: 12);
     return base.copyWith(
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
@@ -27,6 +31,43 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      // A plain Material button looks like an `AppButton`: green, flat, rounded
+      // 12. Only the sizing and the red/grey variants live in `AppButton`.
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.greenDark,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.border,
+          disabledForegroundColor: AppColors.grey100,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          shape: shape,
+          textStyle: label,
+          padding: padding,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.greenDark,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.border,
+          disabledForegroundColor: AppColors.grey100,
+          elevation: 0,
+          shape: shape,
+          textStyle: label,
+          padding: padding,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.greenDark,
+          disabledForegroundColor: AppColors.grey100,
+          side: const BorderSide(color: AppColors.greenDark, width: 1.5),
+          shape: shape,
+          textStyle: label,
+          padding: padding,
         ),
       ),
       dialogTheme: DialogThemeData(

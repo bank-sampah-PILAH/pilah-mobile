@@ -39,8 +39,8 @@ void main() {
   group('AppButton variants', () {
     testWidgets('primary is a green filled button with a white label',
         (tester) async {
-      await tester.pumpWidget(
-          _host(AppButton(label: 'Simpan', onPressed: () {})));
+      await tester
+          .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
 
       expect(find.byType(ElevatedButton), findsOneWidget);
       expect(_fill(tester, ElevatedButton), AppColors.greenDark);
@@ -89,8 +89,8 @@ void main() {
     testWidgets('every variant uses the 12 radius of the design scale',
         (tester) async {
       for (final variant in AppButtonVariant.values) {
-        await tester.pumpWidget(
-            _host(AppButton(label: 'Aksi', variant: variant, onPressed: () {})));
+        await tester.pumpWidget(_host(
+            AppButton(label: 'Aksi', variant: variant, onPressed: () {})));
         final type = variant == AppButtonVariant.outlined ||
                 variant == AppButtonVariant.neutral
             ? OutlinedButton
@@ -107,8 +107,8 @@ void main() {
 
   group('AppButton layout', () {
     testWidgets('fills the width it is given and is 48 high', (tester) async {
-      await tester.pumpWidget(
-          _host(AppButton(label: 'Simpan', onPressed: () {})));
+      await tester
+          .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
 
       final size = tester.getSize(find.byType(ElevatedButton));
       expect(size.width, 320);
@@ -154,15 +154,16 @@ void main() {
 
     testWidgets('is greyed out and ignores taps without a callback',
         (tester) async {
-      await tester.pumpWidget(
-          _host(const AppButton(label: 'Simpan', onPressed: null)));
+      await tester
+          .pumpWidget(_host(const AppButton(label: 'Simpan', onPressed: null)));
 
       expect(tester.widget<ElevatedButton>(find.byType(ElevatedButton)).enabled,
           isFalse);
       expect(_fill(tester, ElevatedButton), AppColors.border);
     });
 
-    testWidgets('shows a spinner instead of the label while loading and does '
+    testWidgets(
+        'shows a spinner instead of the label while loading and does '
         'not fire twice', (tester) async {
       var taps = 0;
       await tester.pumpWidget(_host(AppButton(
@@ -199,11 +200,10 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('announces itself as a button with its label',
-        (tester) async {
+    testWidgets('announces itself as a button with its label', (tester) async {
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(
-          _host(AppButton(label: 'Simpan', onPressed: () {})));
+      await tester
+          .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
 
       expect(
         tester.getSemantics(find.byType(ElevatedButton)),
