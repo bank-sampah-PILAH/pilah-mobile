@@ -121,6 +121,17 @@ class PlayReleasePipelineTest(unittest.TestCase):
         )
         self.assertLess(checkout_index, script_index)
 
+    def test_play_mutations_are_serialized_across_release_refs(self):
+        jobs = workflow()["jobs"]
+        release_concurrency = jobs["release"]["concurrency"]
+        promotion_concurrency = jobs["promote_production"]["concurrency"]
+
+        expected_group = "play-release-${{ github.repository }}"
+        self.assertEqual(release_concurrency["group"], expected_group)
+        self.assertEqual(promotion_concurrency["group"], expected_group)
+        self.assertEqual(release_concurrency["cancel-in-progress"], "false")
+        self.assertEqual(promotion_concurrency["cancel-in-progress"], "false")
+
     def test_play_version_is_newer_than_rejected_version_code(self):
         pubspec = (ROOT / "pubspec.yaml").read_text()
         self.assertIn("version: 1.0.3+7", pubspec)

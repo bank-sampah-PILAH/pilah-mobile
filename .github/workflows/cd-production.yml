@@ -171,6 +171,9 @@ jobs:
     environment: production
     permissions:
       contents: write
+    concurrency:
+      group: play-release-${{ github.repository }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
@@ -329,6 +332,9 @@ jobs:
     environment: production
     permissions:
       contents: read
+    concurrency:
+      group: play-release-${{ github.repository }}
+      cancel-in-progress: false
     steps:
       - name: Check out the Play promotion script
         uses: actions/checkout@v4
