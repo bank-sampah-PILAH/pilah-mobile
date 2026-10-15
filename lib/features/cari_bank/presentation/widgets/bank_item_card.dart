@@ -69,7 +69,6 @@ class BankItemCard extends StatelessWidget {
                   bank.nama,
                   style: AppTextStyle.title1.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
