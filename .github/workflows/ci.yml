@@ -92,6 +92,7 @@ jobs:
       - name: Collect browser download coverage
         run: >-
           dart run test --platform chrome
+          --dart2js-args=-O0
           --coverage-path=coverage/browser.lcov.info
           test/browser/file_downloader_test.dart
 

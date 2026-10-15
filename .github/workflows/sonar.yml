@@ -68,9 +68,11 @@ jobs:
 
       # Flutter's VM LCOV cannot observe dart:js_interop. The Dart Chrome
       # runner records actual browser execution and maps it back to Dart lines.
+      # Disable optimization here to retain statement-level source mappings.
       - name: Collect browser download coverage
         run: >-
           dart run test --platform chrome
+          --dart2js-args=-O0
           --coverage-path=coverage/browser.lcov.info
           test/browser/file_downloader_test.dart
 
