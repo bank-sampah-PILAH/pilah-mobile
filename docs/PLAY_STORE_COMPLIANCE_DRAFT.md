@@ -14,6 +14,7 @@ server logs, or actual retention settings.
 | Data visible in source | Evidence | Candidate Play Data safety type(s) | Candidate purpose |
 | --- | --- | --- | --- |
 | Google sign-in ID token; Google name, email, and profile photo URL used in the login/registration flow; backend verifies Google identity and stores Google ID and profile fields | `lib/features/authentication/presentation/widgets/login_button.dart:40-62`; `lib/features/authentication/data/remote/auth_remote_data_sources.dart:52-57`; backend `apps/authentication/services.py:358-405` | Personal info: Name, Email address, User IDs | App functionality; Account management |
+| In release mode, a reviewer enters an email and password which the mobile app submits to `/api/v1/auth/reviewer`. The backend compares the email with its configured reviewer email, checks the password against a server-side Django password hash, and creates a session only for a matching active, non-staff, non-superuser Pengelola account linked to the configured active bank. | `lib/features/authentication/presentation/widgets/reviewer_login_panel.dart:83-90,136-168`; `lib/features/authentication/data/remote/auth_remote_data_sources.dart:38-44`; backend `apps/authentication/views.py:69-86`, `apps/authentication/services.py:38-65` | Personal info: Email address is a candidate. The password is authentication credential data; this draft does not assign it a Play Data safety type. Verify the applicable declaration with the operator. | App functionality; Account management candidate |
 | Account/customer name, email, account ID, phone, gender, date of birth, and address | `lib/features/beranda/data/nasabah_repository.dart:20-43,191-212`; backend `apps/authentication/models.py:44-52`, `apps/nasabah/models.py:32-39` | Personal info: Name, Email address, User IDs, Phone number, Address, Other info | App functionality; Account management |
 | Bank Sampah name, address/city, PIC phone, organization details, and bank logo/activity photos | backend `apps/bank_sampah/models.py:22-25,38-41`; `apps/bank_sampah/serializers.py:14-18,64-69`; mobile gallery selection in `lib/features/onboarding/presentation/pages/register_bank_sampah_screen.dart:109-118` and `lib/features/profile/presentation/cubit/profile_cubit.dart:103-114` | Personal info: Name, Address, Phone number; Photos and videos: Photos | App functionality |
 | Waste deposit history: date, waste type, weight, price, subtotal, transaction value, note, and resulting balance; payout records include amount, method, status, and notes | `lib/features/beranda/data/nasabah_repository.dart:91-130`; backend `apps/ledger/models.py:29-44,76-111` | Financial info: Purchase history is a candidate for transaction history; Other financial info may apply to balances/payout values. Confirm mapping with the operator against the current Play definitions. | App functionality |
@@ -90,7 +91,10 @@ the actual app’s fields before submission; do not copy guessed answers:
 
 - Data safety: collected/shared data types, collection required/optional,
   purposes, third-party/service-provider handling, encryption in transit, and
-  data deletion-request mechanism. Review the preview against the app.
+  data deletion-request mechanism. Include the reviewer email/password
+  submission and server-side validation flow in the privacy/data-handling
+  review; confirm any applicable declaration for the credential with the
+  operator rather than assuming a category. Review the preview against the app.
 - Privacy policy: publish an approved policy at a public HTTPS URL and enter
   that exact live URL. No policy page or production URL was verified. The
   existing web deployment could host a static `web/privacy-policy/index.html`
