@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
@@ -200,35 +201,10 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
     return BlocBuilder<NasabahAppealCubit, NasabahAppealState>(
       builder: (context, state) {
         final submitting = state is NasabahAppealSubmitting;
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: submitting ? null : () => _appeal(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: submitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    'Ajukan Banding',
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
+        return AppButton(
+          label: 'Ajukan Banding',
+          isLoading: submitting,
+          onPressed: () => _appeal(context),
         );
       },
     );
@@ -275,7 +251,6 @@ class _AppealMessageDialogState extends State<_AppealMessageDialog> {
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.greenDark),
           child: const Text('Kirim'),
         ),
       ],

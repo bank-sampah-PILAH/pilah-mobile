@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
@@ -82,31 +83,19 @@ class NasabahVerificationHome extends StatelessWidget {
                 else ...[
                   _StatusCard(membership: membership),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => context
-                          .push<bool>(
-                        ApprovalBankSampahDetailPage.route,
-                        extra: membership,
-                      )
-                          .then((_) {
-                        if (context.mounted) {
-                          context
-                              .read<NasabahApprovalCubit>()
-                              .load(silent: true);
-                        }
-                      }),
-                      icon: const Icon(Icons.arrow_forward_rounded, size: 20),
-                      label: const Text('Lihat detail pengajuan'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: NasabahStyle.emerald,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
+                  AppButton(
+                    label: 'Lihat detail pengajuan',
+                    icon: Icons.arrow_forward_rounded,
+                    onPressed: () => context
+                        .push<bool>(
+                      ApprovalBankSampahDetailPage.route,
+                      extra: membership,
+                    )
+                        .then((_) {
+                      if (context.mounted) {
+                        context.read<NasabahApprovalCubit>().load(silent: true);
+                      }
+                    }),
                   ),
                   const SizedBox(height: 32),
                   Text('Perjalanan pengajuan',
