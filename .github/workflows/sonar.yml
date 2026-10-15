@@ -1,0 +1,127 @@
+# SonarCloud analysis. Reports to sonarcloud.io, org `bank-sampah-pilah`,
+# project `bank-sampah-PILAH_pilah-mobile`. Lives separately from ci.yml
+# because ci.yml is the lean merge gate; this workflow pays for a second
+# Flutter setup + test run to produce the lcov report Sonar imports.
+#
+# SonarCloud owns branch handling natively: the scanner auto-detects
+# sonar.branch.* / sonar.pullrequest.* from the Actions environment, so every
+# branch and PR gets its own analysis without per-branch project keys. Branch
+# params must NOT be set manually here — SonarCloud rejects user-supplied
+# ones. No SONAR_HOST_URL: the action defaults to sonarcloud.io unless
+# pointing at self-hosted. Auth is the SONAR_TOKEN repo secret (Execute
+# Analysis scope).
+#
+# v8 bundles Scanner CLI 8.x: embedded Java 21 JRE (no JRE provisioning) and
+# JDK-native HTTP client. The CLI 6.x okhttp client gets 403 from SonarCloud's
+# CDN on api.sonarcloud.io bootstrap calls (TLS-fingerprint WAF rule) —
+# 8.x resolves that by construction.
+name: SonarCloud
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - feature/**
+  pull_request:
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonar:
+    name: SonarCloud analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Matches the repository's `.fvmrc` — same pin as ci.yml.
+      FLUTTER_VERSION: "3.41.3"
+    steps:
+      # fetch-depth: 0 so new-code detection can diff against the target branch.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # .env is gitignored (loaded via flutter_dotenv) but declared as an
+      # asset in pubspec.yaml — tests fail without it. Same trick as ci.yml.
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      # *.freezed.dart / *.g.dart are gitignored — must be generated before
+      # tests run. These are also covered by the sonar exclusions below.
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Run web-specific widget tests
+        run: >-
+          flutter test --platform chrome
+          test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
+
+      - name: Verify the web dashboard role layout
+        run: >-
+          flutter test --platform chrome
+          --plain-name "web dashboard uses the web default for Pengurus"
+          test/features/dashboard/presentation/pages/dashboard_page_test.dart
+
+      # Java 21 for the scanner engine: with skipJreProvisioning the CLI never
+      # calls api.sonarcloud.io/analysis/jres (GitHub runner IPs get a
+      # deterministic 403 from SonarCloud's CDN), it just runs on this JDK.
+      - name: Set up Java 21 (scanner engine)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # The SonarCloud API intermittently answers 403 to runner traffic: same
+      # args/token get accepted from one runner and rejected from another
+      # minutes apart (CDN-side; happens at bootstrap, before the scan
+      # itself). First attempt gets continue-on-error, second attempt runs
+      # only on failure — a fresh connection usually gets through. Keep both
+      # arg blocks identical.
+      # Match existing LCOV coverage:ignore-file annotations for generated DI
+      # and process entrypoints. Platform policy is tested separately; application
+      # code remains included in coverage and the quality gate is unchanged.
+      - name: SonarCloud Scan
+        id: sonar_scan
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=bank-sampah-pilah
+            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
+            -Dsonar.sources=lib
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=lib/services/di.config.dart,lib/main_development.dart,lib/main_production.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.scanner.skipJreProvisioning=true
+
+      - name: SonarCloud Scan (retry)
+        if: steps.sonar_scan.outcome == 'failure'
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=bank-sampah-pilah
+            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
+            -Dsonar.sources=lib
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=lib/services/di.config.dart,lib/main_development.dart,lib/main_production.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.scanner.skipJreProvisioning=true

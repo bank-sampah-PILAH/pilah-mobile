@@ -11,9 +11,18 @@ concurrency:
 
 env:
   # Keep CD on the same pinned Flutter release as the merge gate.
-  FLUTTER_VERSION: "3.38.3"
+  FLUTTER_VERSION: "3.41.3"
 
 jobs:
+  deploy_web_production:
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      flavor: production
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+
   release:
     name: Build production APK artifact
     runs-on: ubuntu-latest

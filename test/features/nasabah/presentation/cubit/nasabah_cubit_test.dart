@@ -1,0 +1,285 @@
+import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/add_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/approve_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+
+class MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
+
+class MockGetActiveNasabahUseCase extends Mock
+    implements GetActiveNasabahUseCase {}
+
+class MockGetNasabahRingkasanUseCase extends Mock
+    implements GetNasabahRingkasanUseCase {}
+
+class MockAddNasabahUseCase extends Mock implements AddNasabahUseCase {}
+
+class MockUpdateNasabahUseCase extends Mock implements UpdateNasabahUseCase {}
+
+class MockActivateNasabahUseCase extends Mock
+    implements ActivateNasabahUseCase {}
+
+class MockDeactivateNasabahUseCase extends Mock
+    implements DeactivateNasabahUseCase {}
+
+class MockApproveNasabahUseCase extends Mock implements ApproveNasabahUseCase {}
+
+class MockRejectNasabahUseCase extends Mock implements RejectNasabahUseCase {}
+
+NasabahEntity _nasabah(String kode,
+        {required String status, bool isActive = true}) =>
+    NasabahEntity(
+      id: kode,
+      idNasabah: kode,
+      name: 'Nasabah $kode',
+      phone: '08123456789',
+      balance: 'Rp 0',
+      isActive: isActive,
+      address: 'Jl. Melati',
+      initials: 'NN',
+      avatarColor: const Color(0xFFEAF5EC),
+      textColor: const Color(0xFF2F6B45),
+      jenisKelamin: 'Laki-laki',
+      tanggalLahir: '01/01/1990',
+      status: status,
+    );
+
+/// Bungkus daftar nasabah menjadi satu halaman utuh (tanpa halaman lanjutan).
+HalamanNasabah _page(
+  List<NasabahEntity> items, {
+  int? totalCount,
+  bool hasMore = false,
+}) =>
+    HalamanNasabah(
+      items: items,
+      totalCount: totalCount ?? items.length,
+      hasMore: hasMore,
+    );
+
+void main() {
+  late MockGetNasabahUseCase getUseCase;
+  late MockGetNasabahRingkasanUseCase ringkasanUseCase;
+  late MockAddNasabahUseCase addUseCase;
+  late MockUpdateNasabahUseCase updateUseCase;
+  late MockActivateNasabahUseCase activateUseCase;
+  late MockDeactivateNasabahUseCase deactivateUseCase;
+  late MockApproveNasabahUseCase approveUseCase;
+  late MockRejectNasabahUseCase rejectUseCase;
+  late NasabahCubit cubit;
+
+  setUpAll(() {
+    registerFallbackValue(NasabahRequest(
+      kode: 'NAS-0001',
+      nama: 'Budi',
+      email: 'budi@example.com',
+      jenisKelamin: 'Laki-laki',
+      tanggalLahir: '01/01/1990',
+      noHp: '08123456789',
+      alamat: 'Jl. Melati',
+    ));
+    registerFallbackValue(UpdateNasabahParams(
+      id: 'x',
+      request: NasabahRequest(
+        kode: 'NAS-0001',
+        nama: 'Budi',
+        email: 'budi@example.com',
+        jenisKelamin: 'Laki-laki',
+        tanggalLahir: '01/01/1990',
+        noHp: '08123456789',
+        alamat: 'Jl. Melati',
+      ),
+    ));
+    registerFallbackValue(DecideNasabahParams(id: 'x'));
+  });
+
+  setUp(() {
+    getUseCase = MockGetNasabahUseCase();
+    ringkasanUseCase = MockGetNasabahRingkasanUseCase();
+    addUseCase = MockAddNasabahUseCase();
+    updateUseCase = MockUpdateNasabahUseCase();
+    activateUseCase = MockActivateNasabahUseCase();
+    deactivateUseCase = MockDeactivateNasabahUseCase();
+    approveUseCase = MockApproveNasabahUseCase();
+    rejectUseCase = MockRejectNasabahUseCase();
+    when(() => getUseCase.execute(any()))
+        .thenAnswer((_) async => Right(_page(const [])));
+    cubit = NasabahCubit(
+      getUseCase,
+      MockGetActiveNasabahUseCase(),
+      ringkasanUseCase,
+      addUseCase,
+      updateUseCase,
+      activateUseCase,
+      deactivateUseCase,
+      approveUseCase,
+      rejectUseCase,
+      MockSinkronProfilNasabahUseCase(),
+    );
+  });
+
+  group('tab filtering', () {
+    // Penyaringan tab dilakukan server (PIL-214): menyaring di aplikasi hanya
+    // akan menyaring halaman yang kebetulan sudah dimuat.
+    test('aktif tab asks the server for the aktif rows', () async {
+      when(() => getUseCase.execute(any())).thenAnswer(
+        (_) async => Right(_page([_nasabah('NAS-0001', status: 'approved')])),
+      );
+
+      await cubit.loadNasabah();
+
+      final params = verify(() => getUseCase.execute(captureAny()))
+          .captured
+          .single as GetNasabahParams;
+      expect(params.status, 'aktif');
+      expect((cubit.state as NasabahLoaded).nasabahList.map((n) => n.idNasabah),
+          ['NAS-0001']);
+    });
+
+    test('menunggu tab asks the server for pending rows', () async {
+      when(() => getUseCase.execute(any())).thenAnswer(
+        (_) async => Right(_page([_nasabah('NAS-0003', status: 'pending')])),
+      );
+
+      await cubit.loadNasabah();
+      await cubit.setActiveTab(null);
+
+      final params = verify(() => getUseCase.execute(captureAny()))
+          .captured
+          .cast<GetNasabahParams>();
+      expect(params.last.status, 'menunggu');
+      final state = cubit.state as NasabahLoaded;
+      expect(state.isMenungguTab, isTrue);
+      expect(state.nasabahList.map((n) => n.idNasabah), ['NAS-0003']);
+    });
+
+    test('tidak aktif tab asks the server for tidak_aktif rows', () async {
+      when(() => getUseCase.execute(any())).thenAnswer(
+        (_) async => Right(
+          _page([_nasabah('NAS-0002', status: 'approved', isActive: false)]),
+        ),
+      );
+
+      await cubit.loadNasabah();
+      await cubit.setActiveTab(false);
+
+      final params = verify(() => getUseCase.execute(captureAny()))
+          .captured
+          .cast<GetNasabahParams>();
+      expect(params.last.status, 'tidak_aktif');
+    });
+  });
+
+  group('activeCount', () {
+    test('reports the server total, not the number of rows loaded', () async {
+      when(() => getUseCase.execute(any())).thenAnswer(
+        (_) async => Right(_page(
+          [_nasabah('NAS-0001', status: 'approved')],
+          totalCount: 37,
+          hasMore: true,
+        )),
+      );
+
+      await cubit.loadNasabah();
+
+      expect(cubit.activeCount, 37);
+    });
+
+    test('refreshes the active total after approving from the pending tab',
+        () async {
+      var activeCountRequests = 0;
+      var pendingCountRequests = 0;
+      when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+        final params = invocation.positionalArguments.first as GetNasabahParams;
+        if (params.status == 'aktif') {
+          activeCountRequests++;
+          return Right(
+              _page(const [], totalCount: activeCountRequests == 1 ? 10 : 11));
+        }
+        pendingCountRequests++;
+        return Right(
+            _page(const [], totalCount: pendingCountRequests == 1 ? 2 : 1));
+      });
+      when(() => approveUseCase.execute(any(that: isA<DecideNasabahParams>())))
+          .thenAnswer((_) async => const Right(null));
+
+      await cubit.loadNasabah();
+      await cubit.setActiveTab(null);
+      await cubit.decideNasabah('NAS-0003', approve: true);
+
+      expect(cubit.activeCount, 11);
+      final state = cubit.state as NasabahLoaded;
+      expect(state.totalCount, 1);
+      final requests = verify(() => getUseCase.execute(captureAny()))
+          .captured
+          .cast<GetNasabahParams>();
+      expect(requests.map((params) => params.status),
+          ['aktif', 'menunggu', 'menunggu', 'aktif']);
+      expect(requests.last.search, isNull);
+    });
+  });
+
+  group('decideNasabah', () {
+    test('approve calls approve use case with catatan and reloads', () async {
+      when(() => getUseCase.execute(any())).thenAnswer((_) async {
+        return Right(_page([
+          _nasabah('NAS-0003', status: 'approved'),
+        ]));
+      });
+      when(() => approveUseCase.execute(any(that: isA<DecideNasabahParams>())))
+          .thenAnswer((_) async => const Right(null));
+
+      final error = await cubit.decideNasabah('NAS-0003',
+          approve: true, catatan: 'Data lengkap');
+
+      expect(error, isNull);
+      final captured = verify(
+              () => approveUseCase.execute(captureAny<DecideNasabahParams>()))
+          .captured
+          .cast<DecideNasabahParams>()
+          .single;
+      expect(captured.id, 'NAS-0003');
+      expect(captured.catatan, 'Data lengkap');
+      verify(() => getUseCase.execute(any())).called(1);
+    });
+
+    test('reject calls reject use case with alasan', () async {
+      when(() => getUseCase.execute(any()))
+          .thenAnswer((_) async => Right(_page(const [])));
+      when(() => rejectUseCase.execute(any(that: isA<DecideNasabahParams>())))
+          .thenAnswer((_) async => const Right(null));
+
+      final error = await cubit.decideNasabah('NAS-0003',
+          approve: false, catatan: 'Tidak valid');
+
+      expect(error, isNull);
+      final captured =
+          verify(() => rejectUseCase.execute(captureAny<DecideNasabahParams>()))
+              .captured
+              .cast<DecideNasabahParams>()
+              .single;
+      expect(captured.catatan, 'Tidak valid');
+    });
+
+    test('returns the failure when the call errors', () async {
+      final failure = NetworkException.handleBadResponse(null);
+      when(() => approveUseCase.execute(any(that: isA<DecideNasabahParams>())))
+          .thenAnswer((_) async => Left(failure));
+
+      final error = await cubit.decideNasabah('NAS-0003', approve: true);
+      expect(error, same(failure));
+    });
+  });
+}

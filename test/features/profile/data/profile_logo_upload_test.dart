@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,24 @@ class _StubEnvironment implements AppEnvironment {
   final String baseUrl;
 
   const _StubEnvironment(this.baseUrl);
+
+  @override
+  bool get supportsDemoLogin => false;
+
+  @override
+  String get demoPengurusEmail => '';
+
+  @override
+  String get demoPengelolaIndukEmail => '';
+
+  @override
+  String get demoCustomerEmail => '';
+
+  @override
+  String get demoNewNasabahEmail => '';
+
+  @override
+  String get demoSuperadminEmail => '';
 }
 
 /// The shape `PUT /bank-sampah/me` answers with, so the mapper has something
@@ -102,6 +121,23 @@ void main() {
 
       expect(sent!.files.map((f) => f.key), ['foto_logo']);
       expect(sent!.files.single.value.filename, 'logo.png');
+    });
+
+    test('uploads browser-selected logo bytes with their filename', () async {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      stubPut(_bankJson());
+
+      await dataSource.updateBankSampah(
+        nama: 'Bank Sampah BTH',
+        alamat: 'Kel. Kukusan',
+        noHpPic: '081234567890',
+        fotoLogoBytes: bytes,
+        fotoLogoFilename: 'browser-logo.png',
+      );
+
+      expect(sent!.files.map((f) => f.key), ['foto_logo']);
+      expect(sent!.files.single.value.filename, 'browser-logo.png');
+      expect(sent!.files.single.value.length, bytes.length);
     });
 
     test('goes through putMultipart, never the JSON put', () async {

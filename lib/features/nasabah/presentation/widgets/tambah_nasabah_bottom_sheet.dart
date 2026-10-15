@@ -8,6 +8,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 
 class TambahNasabahBottomSheet extends StatefulWidget {
   const TambahNasabahBottomSheet({super.key});
@@ -27,6 +28,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
 
   final _namaController = TextEditingController();
   final _idNasabahController = TextEditingController();
+  final _emailController = TextEditingController();
   final _tanggalLahirController = TextEditingController();
   final _whatsappController = TextEditingController();
   final _alamatController = TextEditingController();
@@ -38,11 +40,13 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   // drives a red border on the field; the message itself lives in the toast.
   bool _kodeHasError = false;
   String? _serverPhoneError;
+  String? _serverEmailError;
 
   @override
   void dispose() {
     _namaController.dispose();
     _idNasabahController.dispose();
+    _emailController.dispose();
     _tanggalLahirController.dispose();
     _whatsappController.dispose();
     _alamatController.dispose();
@@ -85,46 +89,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Tambah Nasabah',
-                      style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.close,
-                            color: Colors.grey[600], size: 20),
-                      ),
-                    ),
-                  ],
-                ),
+                const BottomSheetHeader(title: 'Tambah Nasabah'),
                 const SizedBox(height: 12),
 
                 // Subtitle
@@ -176,7 +141,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                                     ? 'Bagian ini wajib diisi.'
                                     : null,
                             decoration: _buildInputDecoration(
-                              hintText: 'Contoh: NAS-0900',
+                              hintText: 'NAS-0900',
                               hasError: _kodeHasError,
                             ),
                           ),
@@ -217,6 +182,38 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 20),
+
+                // Field: EMAIL (Google account email — used to sync the
+                // nasabah record when they log in later, PIL-154)
+                _buildLabel('EMAIL'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  onChanged: (_) {
+                    // Clear the backend duplicate error as soon as the email
+                    // is edited, mirroring the phone field behaviour.
+                    if (_serverEmailError != null) {
+                      setState(() => _serverEmailError = null);
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email wajib diisi.';
+                    }
+                    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    if (!regex.hasMatch(value.trim())) {
+                      return 'Format email tidak valid.';
+                    }
+                    if (_serverEmailError != null) return _serverEmailError;
+                    return null;
+                  },
+                  decoration: _buildInputDecoration(
+                    hintText: 'Contoh: budi@gmail.com',
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -303,9 +300,14 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                 TextFormField(
                   controller: _alamatController,
                   maxLines: 4,
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
+                  validator: (value) {
+                    final alamat = value?.trim() ?? '';
+                    if (alamat.isEmpty) return 'Bagian ini wajib diisi.';
+                    if (alamat.runes.length < 10) {
+                      return 'Alamat minimal 10 karakter.';
+                    }
+                    return null;
+                  },
                   decoration: _buildInputDecoration(
                     hintText: 'Nama jalan, RT/RW, Kelurahan...',
                   ),
@@ -385,6 +387,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     final request = NasabahRequest(
       kode: kode,
       nama: _namaController.text.trim(),
+      email: _emailController.text.trim(),
       jenisKelamin: _jenisKelamin ?? 'Laki-laki',
       tanggalLahir: _tanggalLahirController.text.trim(),
       noHp: '+62${_whatsappController.text.trim()}',
@@ -411,6 +414,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
     // Anything we can't attribute to a field escalates to the global snackbar.
     final kodeError = error.fieldError(['kode']);
     final phoneError = error.fieldError(_phoneErrorKeys);
+    final emailError = error.fieldError(['email']);
 
     if (kodeError != null) {
       setState(() => _kodeHasError = true);
@@ -419,6 +423,13 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
         title: 'ID Nasabah Sudah Digunakan',
         message: kodeError,
       );
+      return;
+    }
+
+    if (emailError != null) {
+      // Full-width field: inline error like the phone field.
+      setState(() => _serverEmailError = emailError);
+      _formKey.currentState?.validate();
       return;
     }
 

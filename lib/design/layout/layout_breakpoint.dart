@@ -1,0 +1,64 @@
+import 'package:flutter/widgets.dart';
+
+/// Kelas lebar layar yang dipakai seluruh layout responsif PILAH.
+///
+/// Satu-satunya sumber kebenaran untuk pertanyaan "layar ini selebar apa".
+/// Jangan memeriksa `MediaQuery...width` dengan angka ajaib di tempat lain;
+/// tambahkan atau pakai blok di sini supaya batasnya tidak bercabang.
+///
+/// Blok mengikuti Material 3 window size class, yang juga menjadi target
+/// Flutter sendiri, sehingga perilakunya sejalan dengan komponen Material
+/// seperti NavigationBar dan NavigationRail.
+enum LayoutBreakpoint {
+  /// Telepon. Navigasi tetap memakai bottom navigation yang sudah ada.
+  compact,
+
+  /// Tablet.
+  medium,
+
+  /// Desktop.
+  expanded;
+
+  /// Batas bawah blok `medium`, dalam logical pixel.
+  ///
+  /// Sama dengan `NasabahStyle.maxWidth` yang sudah ada di design system:
+  /// basis kode memang telah memperlakukan 600 sebagai batas lebar konten.
+  static const double mediumMinWidth = 600;
+
+  /// Batas bawah blok `expanded`, dalam logical pixel.
+  static const double expandedMinWidth = 840;
+
+  /// Lebar maksimum konten pada blok `expanded`, dalam logical pixel.
+  ///
+  /// PRD 6.2.1 menetapkan margin layar mobile sekitar 16 px tetapi tidak
+  /// menyebutkan batas lebar konten desktop, jadi angka ini adalah usulan yang
+  /// masih perlu dikonfirmasi ke PO. Dipilih 1200 agar panjang baris tetap
+  /// terbaca pada monitor lebar, sejalan dengan anjuran Material 3 untuk
+  /// membatasi lebar badan konten pada jendela expanded.
+  static const double contentMaxWidth = 1200;
+
+  /// Mengklasifikasikan [width] logical pixel ke dalam satu blok.
+  ///
+  /// Batas dimiliki oleh blok yang lebih lebar: tepat 600 adalah [medium] dan
+  /// tepat 840 adalah [expanded]. Lebar non-positif diperlakukan sebagai
+  /// [compact] agar pemanggil tidak perlu menjaga kondisi degenerate, yang
+  /// memang muncul pada frame pertama sebelum ukuran diketahui.
+  static LayoutBreakpoint fromWidth(double width) {
+    if (width >= expandedMinWidth) return expanded;
+    if (width >= mediumMinWidth) return medium;
+    return compact;
+  }
+}
+
+/// Jalan baca breakpoint dari dalam widget tree.
+extension LayoutBreakpointContext on BuildContext {
+  /// Kelas lebar untuk jendela yang sedang menampung element ini.
+  ///
+  /// Dibaca lewat `MediaQuery.sizeOf`, bukan lewat `MediaQuery.of`, supaya
+  /// element hanya ikut dibangun ulang ketika *ukuran* berubah dan bukan
+  /// setiap kali ada bagian lain dari MediaQueryData yang berubah. Karena
+  /// dibaca sebagai dependensi, nilainya ikut berubah saat jendela browser
+  /// diubah ukurannya; itulah yang dijaga oleh test resize.
+  LayoutBreakpoint get layoutBreakpoint =>
+      LayoutBreakpoint.fromWidth(MediaQuery.sizeOf(this).width);
+}

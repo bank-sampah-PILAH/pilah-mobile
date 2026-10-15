@@ -28,7 +28,7 @@ class SavedFile {
 /// fallback chain in [save] is for — an app-private copy the user can still
 /// share beats a failed export.
 class FileDownloader {
-  const FileDownloader._();
+  const FileDownloader._(); // coverage:ignore-line
 
   /// Bridges to `MediaScannerConnection` in MainActivity.kt. Writing the file
   /// is only half the job on Android — see the comment there.
@@ -87,11 +87,13 @@ class FileDownloader {
   /// successful save into a failed one.
   static Future<void> _index(String path) async {
     if (!Platform.isAndroid) return;
+    // coverage:ignore-start
     try {
       await _mediaScanner.invokeMethod<void>('scan', {'path': path});
     } catch (e) {
       debugPrint('FileDownloader: MediaStore scan failed for $path ($e)');
     }
+    // coverage:ignore-end
   }
 
   /// Every directory worth attempting on this platform, best first.
@@ -103,6 +105,7 @@ class FileDownloader {
       // real, and creating the others would scatter empty folders around
       // storage. The non-existing ones stay in the list anyway, one rung down,
       // in case the user has cleared Download entirely.
+      // coverage:ignore-start
       final downloads = _androidDownloadPaths.map(Directory.new).toList();
       for (final dir in downloads.where((d) => d.existsSync())) {
         candidates.add(_Candidate(dir, 'Download'));
@@ -112,12 +115,15 @@ class FileDownloader {
       }
       candidates.addAll(
           _maybe(await getExternalStorageDirectory(), 'Dokumen Aplikasi'));
+      // coverage:ignore-end
     } else if (Platform.isIOS) {
       // Surfaced in the Files app under "On My iPhone › Pilah Mobile", which
       // the UIFileSharingEnabled / LSSupportsOpeningDocumentsInPlace pair in
       // ios/Runner/Info.plist is what enables.
+      // coverage:ignore-start
       candidates.add(_Candidate(
           await getApplicationDocumentsDirectory(), 'Dokumen Aplikasi'));
+      // coverage:ignore-end
     } else {
       candidates.addAll(_maybe(await getDownloadsDirectory(), 'Download'));
     }

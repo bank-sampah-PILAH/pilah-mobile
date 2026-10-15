@@ -9,6 +9,9 @@ abstract class OnboardingRemoteDataSource {
   Future<OnboardingResult> registerBankSampah(
       RegisterBankSampahRequest request);
   Future<OnboardingResult> acceptInvite(String token);
+  Future<List<BankSampahDirectoryEntity>> listBankSampahDirectory();
+  Future<OnboardingResult> registerNasabah(RegisterNasabahRequest request);
+  Future<List<NasabahMembershipEntity>> listMyMemberships();
 }
 
 @LazySingleton(as: OnboardingRemoteDataSource)
@@ -77,5 +80,36 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
       // that one is the user's.
       bankSampahNama: (json['nama'] ?? json['bank_sampah_nama'])?.toString(),
     );
+  }
+
+  @override
+  Future<List<BankSampahDirectoryEntity>> listBankSampahDirectory() async {
+    final response = await networkService.get(Endpoints.bankSampahDirectory);
+    final list = response.data as List<dynamic>;
+    return list
+        .map((item) =>
+            BankSampahDirectoryEntity.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<OnboardingResult> registerNasabah(
+      RegisterNasabahRequest request) async {
+    final response = await networkService.post(
+      Endpoints.onboardingNasabah,
+      data: request.toJson(),
+    );
+    final json = response.data as Map<String, dynamic>;
+    return OnboardingResult(nextStep: json['next_step']?.toString());
+  }
+
+  @override
+  Future<List<NasabahMembershipEntity>> listMyMemberships() async {
+    final response = await networkService.get(Endpoints.nasabahMe);
+    final list = response.data as List<dynamic>;
+    return list
+        .map((item) =>
+            NasabahMembershipEntity.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 }

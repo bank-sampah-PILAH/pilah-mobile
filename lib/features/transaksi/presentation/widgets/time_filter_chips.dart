@@ -1,44 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/utils/file_downloader.dart';
+import 'package:pilah_mobile/core/utils/report_file_action.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
+/// Shared period controls for the unified activity feed. XLSX still exports
+/// setoran until PIL-248 extends the existing export endpoint.
 class TimeFilterChips extends StatelessWidget {
   const TimeFilterChips({super.key});
 
   // Chip label → backend `periode` value.
   static const Map<String, String> _chips = {
+    'Hari Ini': 'hari_ini',
+    'Minggu Ini': 'minggu_ini',
     'Bulan Ini': 'bulan_ini',
     'Bulan Lalu': 'bulan_lalu',
+    '1 Bulan': '1_bulan',
+    '3 Bulan': '3_bulan',
+    '6 Bulan': '6_bulan',
+    '12 Bulan': '12_bulan',
+    'Semua Waktu': 'semua',
   };
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TransaksiCubit, TransaksiState>(
-      buildWhen: (previous, current) {
-        if (previous is TransaksiLoaded && current is TransaksiLoaded) {
-          return previous.periode != current.periode ||
-              previous.dariTanggal != current.dariTanggal ||
-              previous.sampaiTanggal != current.sampaiTanggal;
-        }
-        return true;
-      },
+    return BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
+      buildWhen: (previous, current) =>
+          previous.periode != current.periode ||
+          previous.dariTanggal != current.dariTanggal ||
+          previous.sampaiTanggal != current.sampaiTanggal ||
+          previous.tipeFilter != current.tipeFilter ||
+          previous.search != current.search,
       builder: (context, state) {
-        final activePeriode =
-            state is TransaksiLoaded ? state.periode : 'bulan_ini';
+        final activePeriode = state.periode;
+        final canExport = state.canExportSetoran;
         return Row(
           children: [
-            for (final entry in _chips.entries) ...[
-              _buildFilterChip(context, entry.key, entry.value, activePeriode),
-              const SizedBox(width: 6),
-            ],
-            const Spacer(),
+            Expanded(
+                child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (final entry in _chips.entries) ...[
+                  _buildFilterChip(
+                      context, entry.key, entry.value, activePeriode),
+                  const SizedBox(width: 6),
+                ],
+              ]),
+            )),
+            const SizedBox(width: 6),
             // Calendar Button (custom date range)
             InkWell(
               onTap: () {
@@ -48,7 +62,7 @@ class TimeFilterChips extends StatelessWidget {
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
                   builder: (_) => BlocProvider.value(
-                    value: context.read<TransaksiCubit>(),
+                    value: context.read<RiwayatAktivitasCubit>(),
                     child: const FilterTanggalBottomSheet(),
                   ),
                 );
@@ -59,46 +73,54 @@ class TimeFilterChips extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: activePeriode == 'custom'
                       ? AppColors.greenDark
-                      : const Color(0xFFF3F4F6),
+                      : AppColors.fill,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.calendar_today_outlined,
                   color: activePeriode == 'custom'
                       ? Colors.white
-                      : const Color(0xFF6B7280),
+                      : AppColors.grey100,
                   size: 20,
                 ),
               ),
             ),
             const SizedBox(width: 8),
             // Export XLS Button
-            InkWell(
-              onTap: () => _onExport(context),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.download_rounded,
-                        color: Color(0xFF374151), size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      'XLS',
-                      style: AppTextStyle.small.copyWith(
-                        color: const Color(0xFF374151),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+            Tooltip(
+              message: canExport
+                  ? 'Unduh XLS Setoran'
+                  : 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.',
+              child: InkWell(
+                onTap: canExport ? () => _onExport(context) : null,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.download_rounded,
+                          color:
+                              canExport ? AppColors.inkSoft : AppColors.grey100,
+                          size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        'XLS Setoran',
+                        style: AppTextStyle.small.copyWith(
+                          color:
+                              canExport ? AppColors.inkSoft : AppColors.grey100,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -116,7 +138,7 @@ class TimeFilterChips extends StatelessWidget {
   /// Download and putting "Bagikan" on the confirmation covers both, and asks
   /// nothing of the majority who only wanted the file.
   Future<void> _onExport(BuildContext context) async {
-    final cubit = context.read<TransaksiCubit>();
+    final cubit = context.read<RiwayatAktivitasCubit>();
 
     final loading = AppNotification.showLoading(
       context,
@@ -133,37 +155,12 @@ class TimeFilterChips extends StatelessWidget {
       return;
     }
 
-    final SavedFile saved;
-    try {
-      saved = await FileDownloader.save(
-        filename: export!.filename,
-        bytes: export.bytes,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      AppNotification.showError(
-        context,
-        title: 'Gagal Menyimpan',
-        message: 'Gagal menyimpan laporan: $e',
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-    AppNotification.showSuccess(
+    await saveReportFile(
       context,
-      title: 'Berhasil',
-      message: 'Laporan berhasil disimpan ke folder ${saved.folder}',
-      actionLabel: 'Bagikan',
-      // share_plus copies whatever path it is handed into its own cache before
-      // handing out a content:// URI, so the saved file is shareable straight
-      // from Download — no second copy to keep in sync.
-      onAction: () => SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(saved.path)],
-          text: 'Laporan Transaksi PILAH',
-        ),
-      ),
+      filename: export!.filename,
+      bytes: export.bytes,
+      successMessage: (folder) => 'Laporan berhasil disimpan ke folder $folder',
+      shareText: 'Laporan Transaksi PILAH',
     );
   }
 
@@ -173,25 +170,10 @@ class TimeFilterChips extends StatelessWidget {
     String periode,
     String activePeriode,
   ) {
-    final bool isSelected = activePeriode == periode;
-    return GestureDetector(
-      onTap: () {
-        context.read<TransaksiCubit>().setPeriode(periode);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.greenDark : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyle.small.copyWith(
-            color: isSelected ? Colors.white : const Color(0xFF6B7280),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+    return AppChip(
+      label: label,
+      selected: activePeriode == periode,
+      onTap: () => context.read<RiwayatAktivitasCubit>().setPeriode(periode),
     );
   }
 }

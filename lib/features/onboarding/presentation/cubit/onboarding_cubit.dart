@@ -40,8 +40,13 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   bool get hasProfileDraft => _profileDraft != null;
 
   /// Banks step one's input and moves on without touching the network.
+  ///
+  /// Resets [_profileSubmitted]: a freshly banked draft is always unsent,
+  /// even after an earlier one already landed — otherwise a post-failure
+  /// edit would silently skip resending and register stale data.
   void saveProfileDraft(CompleteProfileRequest request) {
     _profileDraft = request;
+    _profileSubmitted = false;
   }
 
   /// Forgets the pending draft. Called once the whole wizard has landed, and on
@@ -152,6 +157,113 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       (error) => (result: null, error: error),
       (result) {
         // Both steps are in. Nothing left to resubmit or prefill.
+        clearProfileDraft();
+        return (result: result, error: null);
+      },
+    );
+  }
+
+  /// Lists the bank sampah a calon nasabah can apply to join (PIL-204's
+  /// picker). Returns the backend list on success; otherwise the
+  /// [NetworkException] so the picker can surface a retry.
+  Future<({List<BankSampahDirectoryEntity>? result, NetworkException? error})>
+      loadBankSampahDirectory() async {
+    final either = await apiCall<List<BankSampahDirectoryEntity>>(
+      func: _dataSource.listBankSampahDirectory(),
+      mapper: (value) => value as List<BankSampahDirectoryEntity>,
+    );
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Lists the calling nasabah's own memberships (`GET /nasabah/me`), used
+  /// to show what's already joined and lock the picker under the current
+  /// one-membership-per-nasabah scope. Returns the backend list on success;
+  /// otherwise the [NetworkException].
+  Future<({List<NasabahMembershipEntity>? result, NetworkException? error})>
+      loadMyMemberships() async {
+    final either = await apiCall<List<NasabahMembershipEntity>>(
+      func: _dataSource.listMyMemberships(),
+      mapper: (value) => value as List<NasabahMembershipEntity>,
+    );
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Submits a calon nasabah's membership application. Returns the backend
+  /// [OnboardingResult] (with the next routing step, `nasabah_dashboard` on
+  /// success) on success; otherwise the [NetworkException] carrying the
+  /// backend's reason (bank sampah unavailable, already a member, ...).
+  Future<({OnboardingResult? result, NetworkException? error})> registerNasabah(
+      RegisterNasabahRequest request) async {
+    emit(const OnboardingSubmitting());
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerNasabah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    emit(const OnboardingInitial());
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Sends the whole nasabah wizard: the banked profile draft (with alamat)
+  /// first, then the bank-sampah membership application, and reports the
+  /// step that failed.
+  ///
+  /// Mirrors [submitRegistration]'s ordering and the same
+  /// [_profileSubmitted] survival trick: see that method's doc for why the
+  /// two calls aren't atomic. With no draft banked this is just
+  /// [registerNasabah] — the user reached the form directly, on an account
+  /// whose profile was already complete.
+  Future<({OnboardingResult? result, NetworkException? error})>
+      submitNasabahRegistration(RegisterNasabahRequest request) async {
+    emit(const OnboardingSubmitting());
+
+    final draft = _profileDraft;
+    if (draft != null && !_profileSubmitted) {
+      final profileEither = await apiCall<OnboardingResult>(
+        func: _dataSource.completeProfile(draft),
+        mapper: (value) => value as OnboardingResult,
+      );
+
+      final NetworkException? profileError =
+          profileEither.fold((error) => error, (_) => null);
+
+      if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
+        emit(const OnboardingInitial());
+        return (result: null, error: profileError);
+      }
+
+      _profileSubmitted = true;
+
+      // A pengurus-entered record matching this account's verified email
+      // auto-links on login (AuthService._sync_nasabah_prefill), so
+      // completing the profile can already finish onboarding on its own.
+      // Calling registerNasabah in that case would fail with "already
+      // registered" since the membership already exists.
+      final profileResult = profileEither.fold((_) => null, (result) => result);
+      if (profileResult?.nextStep == 'nasabah_dashboard') {
+        emit(const OnboardingInitial());
+        clearProfileDraft();
+        return (result: profileResult, error: null);
+      }
+    }
+
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerNasabah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    emit(const OnboardingInitial());
+
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) {
         clearProfileDraft();
         return (result: result, error: null);
       },

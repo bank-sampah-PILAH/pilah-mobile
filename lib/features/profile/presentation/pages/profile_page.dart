@@ -1,11 +1,15 @@
+import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -20,13 +24,25 @@ import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_c
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
-  static const route = '/profile';
+  static const route = AppLocations.profile;
 
   // [ProfileCubit] is app-scoped and provided in [App]; loading is kicked off
   // from _ProfileView's initState so the request carries the authenticated
   // session rather than firing at cold start.
   @override
-  Widget build(BuildContext context) => const _ProfileView();
+  Widget build(BuildContext context) {
+    final state = context.watch<AuthenticationBloc>().state;
+    final role = state is Authenticated ? state.authEntity.role : null;
+    if (role == 'nasabah') return const ProfilNasabahPage();
+    if (role == 'pengelola' || role == 'pengelola_induk') {
+      return const _ProfileView();
+    }
+    return const Scaffold(
+      body: SafeArea(
+        child: Center(child: Text('Silakan masuk untuk melihat profil Anda.')),
+      ),
+    );
+  }
 }
 
 class _ProfileView extends StatefulWidget {
@@ -93,20 +109,16 @@ class _ProfileViewState extends State<_ProfileView>
     switch (role) {
       case 'superadmin':
         return 'Superadmin';
+      case 'pengelola_induk':
+        return 'Pengelola Induk';
       case 'pengelola':
       default:
-        return 'Pengelola';
+        return 'Pengurus';
     }
   }
 
   Color _avatarColorFor(String seed) {
-    const palette = [
-      AppColors.greenDark,
-      Color(0xFF7C3AED),
-      Color(0xFFD4A843),
-      Color(0xFF0F766E),
-      Color(0xFF9A3412),
-    ];
+    const palette = AppColors.avatarFills;
     if (seed.isEmpty) return palette.first;
     return palette[seed.hashCode.abs() % palette.length];
   }
@@ -256,12 +268,19 @@ class _ProfileViewState extends State<_ProfileView>
                             color: Colors.grey[800], size: 20),
                       ),
                     ),
-                    Text(
-                      'Profil & Pengaturan',
-                      style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'Profil & Pengaturan',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyle.headline1.copyWith(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 36),
@@ -352,10 +371,20 @@ class _ProfileViewState extends State<_ProfileView>
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            context
-                                .read<AuthenticationBloc>()
-                                .add(LogoutRequested());
+                          onPressed: () async {
+                            final confirmed = await showAppConfirmDialog(
+                              context,
+                              title: 'Keluar dari akun?',
+                              message: 'Anda perlu masuk kembali untuk '
+                                  'mengakses akun ini.',
+                              confirmLabel: 'Ya, Keluar',
+                              destructive: true,
+                            );
+                            if (confirmed && context.mounted) {
+                              context
+                                  .read<AuthenticationBloc>()
+                                  .add(LogoutRequested());
+                            }
                           },
                           icon: Icon(Icons.logout,
                               color: Colors.red[600], size: 20),
@@ -435,136 +464,183 @@ class _ProfileViewState extends State<_ProfileView>
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name =
         (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
-
-    return AppRefreshIndicator(
-      onRefresh: () => context.read<ProfileCubit>().load(silent: true),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.greenDark,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: AppColors.greenLight,
-                    child: Text(
-                      _initials(name),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: AppTextStyle.title1.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _roleLabel(auth?.role),
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: AppColors.greenDark,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+    final accountCard = Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.greenDark,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: AppColors.greenLight,
+            child: Text(
+              _initials(name),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
               ),
             ),
-            const SizedBox(height: 32),
-
-            // Section Title
-            _sectionTitle('PROFIL BANK SAMPAH'),
-            const SizedBox(height: 16),
-
-            // Form Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: AppTextStyle.title1.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (auth?.email.trim().isNotEmpty ?? false) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    auth!.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
                   ),
                 ],
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _roleLabel(auth?.role),
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    final bankProfile = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('PROFIL BANK SAMPAH'),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              child: Form(
-                key: _bankFormKey,
+            ],
+          ),
+          child: Form(
+            key: _bankFormKey,
+            child: Column(
+              children: [
+                _buildLogoPicker(state),
+                const SizedBox(height: 24),
+                _buildEditableField(
+                  label: 'NAMA BANK SAMPAH',
+                  controller: _namaBankController,
+                  validator: _validateNamaBank,
+                ),
+                const SizedBox(height: 16),
+                _buildEditableField(
+                  label: 'ALAMAT BANK SAMPAH',
+                  controller: _alamatBankController,
+                  maxLines: 2,
+                  validator: _validateAlamatBank,
+                ),
+                const SizedBox(height: 16),
+                _buildEditableField(
+                  label: 'NOMOR HP PENANGGUNG JAWAB',
+                  controller: _hpBankController,
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: Icons.phone,
+                  iconColor: Colors.pink[400],
+                  validator: _validateNomorHpPic,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop =
+            constraints.maxWidth >= LayoutBreakpoint.expandedMinWidth;
+        final whatsappTemplate = _buildWhatsappTemplate(state);
+
+        return AppRefreshIndicator(
+          onRefresh: () => context.read<ProfileCubit>().load(silent: true),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+                isDesktop ? 24 : 16, 16, isDesktop ? 24 : 16, 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: LayoutBreakpoint.contentMaxWidth,
+                ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLogoPicker(state),
-                    const SizedBox(height: 24),
-                    _buildEditableField(
-                      label: 'NAMA BANK SAMPAH',
-                      controller: _namaBankController,
-                      validator: (v) => (v == null || v.trim().length < 3)
-                          ? 'Nama minimal 3 karakter'
-                          : null,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildEditableField(
-                      label: 'ALAMAT BANK SAMPAH',
-                      controller: _alamatBankController,
-                      maxLines: 2,
-                      validator: (v) => (v == null || v.trim().length < 10)
-                          ? 'Alamat wajib diisi (minimal 10 karakter)'
-                          : null,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildEditableField(
-                      label: 'NOMOR HP PENANGGUNG JAWAB',
-                      controller: _hpBankController,
-                      keyboardType: TextInputType.phone,
-                      prefixIcon: Icons.phone,
-                      iconColor: Colors.pink[400],
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Nomor HP wajib diisi'
-                          : null,
-                    ),
+                    accountCard,
+                    const SizedBox(height: 32),
+                    if (isDesktop)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: bankProfile),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 2, child: whatsappTemplate),
+                        ],
+                      )
+                    else ...[
+                      bankProfile,
+                      const SizedBox(height: 32),
+                      whatsappTemplate,
+                    ],
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-            _buildWhatsappTemplate(state),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
+
+  String? _validateNamaBank(String? value) =>
+      value == null || value.trim().length < 3
+          ? 'Nama minimal 3 karakter'
+          : null;
+
+  String? _validateAlamatBank(String? value) =>
+      value == null || value.trim().length < 10
+          ? 'Alamat wajib diisi (minimal 10 karakter)'
+          : null;
+
+  String? _validateNomorHpPic(String? value) =>
+      value == null || value.trim().isEmpty ? 'Nomor HP wajib diisi' : null;
 
   /// The bank sampah logo, and the control for replacing it.
   ///
@@ -627,6 +703,17 @@ class _ProfileViewState extends State<_ProfileView>
   /// Fills the circle with the most current logo available, falling back until
   /// something can be drawn.
   Widget _buildLogoContent(ProfileState state) {
+    final bytes = state.selectedLogoBytes;
+    if (bytes != null) {
+      return Image.memory(
+        bytes,
+        width: _logoDiameter,
+        height: _logoDiameter,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _logoPlaceholder,
+      );
+    }
+
     final file = state.selectedLogoFile;
     if (file != null) {
       return Image.file(
@@ -704,7 +791,7 @@ class _ProfileViewState extends State<_ProfileView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Undang Pengelola Baru',
+                      'Undang Pengurus Baru',
                       style: AppTextStyle.title1.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -713,7 +800,7 @@ class _ProfileViewState extends State<_ProfileView>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Bagikan link agar pengelola lain bisa bergabung ke bank sampah Anda.',
+                      'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
                       style: AppTextStyle.small.copyWith(
                         color: Colors.white.withValues(alpha: 0.8),
                         height: 1.4,
@@ -785,7 +872,7 @@ class _ProfileViewState extends State<_ProfileView>
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Text(
-                  'Belum ada pengelola lain yang tergabung.',
+                  'Belum ada pengurus lain yang tergabung.',
                   textAlign: TextAlign.center,
                   style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
                 ),
@@ -885,7 +972,7 @@ class _ProfileViewState extends State<_ProfileView>
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              member.isPrimary ? 'Pengelola Utama' : 'Pengelola',
+              member.isPrimary ? 'Pengurus Utama' : 'Pengurus',
               style: AppTextStyle.extraSmall.copyWith(
                 color: AppColors.greenDark,
                 fontWeight: FontWeight.bold,

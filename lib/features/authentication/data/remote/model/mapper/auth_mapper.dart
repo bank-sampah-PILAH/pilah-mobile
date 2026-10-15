@@ -15,6 +15,10 @@ class AuthMapper {
       bankSampahNama: response.user.bankSampahNama,
       bankSampahStatus: response.user.bankSampahStatus,
       role: response.user.role,
+      noHp: response.user.noHp,
+      jenisKelamin: response.user.jenisKelamin,
+      tanggalLahir: response.user.tanggalLahir,
+      alamat: response.user.alamat,
     );
   }
 
@@ -36,6 +40,10 @@ class AuthMapper {
       bankSampahNama: json['bank_sampah_nama']?.toString(),
       bankSampahStatus: json['bank_sampah_status']?.toString(),
       role: json['role']?.toString(),
+      noHp: json['no_hp']?.toString() ?? '',
+      jenisKelamin: json['jenis_kelamin']?.toString() ?? '',
+      tanggalLahir: json['tanggal_lahir']?.toString(),
+      alamat: json['alamat']?.toString() ?? '',
     );
   }
 }

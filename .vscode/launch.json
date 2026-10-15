@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "PILAH: Preview Beranda Nasabah",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main_beranda_preview.dart",
+      "deviceId": "chrome"
+    }
+  ]
+}

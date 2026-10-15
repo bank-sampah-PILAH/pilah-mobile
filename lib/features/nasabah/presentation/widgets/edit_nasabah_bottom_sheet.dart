@@ -3,18 +3,26 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+
+/// Pesan 403 yang berarti profilnya milik pemilik akun (PIL-223). Endpoint
+/// ini juga membalas 403 untuk nasabah nonaktif dengan pesan lain, jadi
+/// status code sendirian tidak cukup untuk mengunci form.
+const _pesanEmailTerkunci = 'Email nasabah dengan akun tidak dapat diubah';
 
 class EditNasabahBottomSheet extends StatefulWidget {
-  final Map<String, dynamic> customerData;
+  /// Nasabah yang disunting, memakai entity domain apa adanya.
+  final NasabahEntity nasabah;
 
   const EditNasabahBottomSheet({
     super.key,
-    required this.customerData,
+    required this.nasabah,
   });
 
   @override
@@ -26,33 +34,46 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
 
   late TextEditingController _namaController;
   late TextEditingController _idNasabahController;
+  late TextEditingController _emailController;
   late TextEditingController _tanggalLahirController;
   late TextEditingController _whatsappController;
   late TextEditingController _alamatController;
 
   String? _jenisKelamin;
   bool _isSaving = false;
+
+  /// Email menjadi kunci penautan ke akun begitu keanggotaan tertaut, jadi
+  /// hanya field itu yang tidak boleh disunting pengurus (PIL-288). Field
+  /// dimatikan agar pengurus tidak mengetik data yang pasti ditolak 403.
+  /// Default tidak terkunci: pemanggil lama belum mengirim penandanya.
+  bool get _emailTerkunci => _ditolakServer || widget.nasabah.punyaAkun;
+
+  /// Server menolak perubahan profil walau penanda dari daftar belum
+  /// menyatakannya. Nasabah dapat menautkan akunnya setelah daftar dimuat,
+  /// sehingga penanda itu boleh basi; keputusan server yang menentukan.
+  bool _ditolakServer = false;
   String? _serverKodeError;
+  String? _serverEmailError;
 
   @override
   void initState() {
     super.initState();
-    _namaController =
-        TextEditingController(text: widget.customerData['name'] ?? '');
+    _namaController = TextEditingController(text: widget.nasabah.name);
     _idNasabahController =
-        TextEditingController(text: widget.customerData['idNasabah'] ?? '');
+        TextEditingController(text: widget.nasabah.idNasabah);
+    _emailController = TextEditingController(text: widget.nasabah.email);
 
     // Safely parse jenis kelamin
-    final jk = widget.customerData['jenisKelamin'];
+    final jk = widget.nasabah.jenisKelamin;
     if (jk == 'Laki-laki' || jk == 'Perempuan') {
       _jenisKelamin = jk;
     }
 
     _tanggalLahirController =
-        TextEditingController(text: widget.customerData['tanggalLahir'] ?? '');
+        TextEditingController(text: widget.nasabah.tanggalLahir);
 
     // Strip +62 safely
-    String phone = widget.customerData['phone'] ?? '';
+    String phone = widget.nasabah.phone;
     if (phone.isNotEmpty) {
       if (phone.startsWith('+62')) {
         phone = phone.substring(3);
@@ -64,14 +85,14 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     }
     _whatsappController = TextEditingController(text: phone);
 
-    _alamatController =
-        TextEditingController(text: widget.customerData['address'] ?? '');
+    _alamatController = TextEditingController(text: widget.nasabah.address);
   }
 
   @override
   void dispose() {
     _namaController.dispose();
     _idNasabahController.dispose();
+    _emailController.dispose();
     _tanggalLahirController.dispose();
     _whatsappController.dispose();
     _alamatController.dispose();
@@ -114,46 +135,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Edit Nasabah',
-                      style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.close,
-                            color: Colors.grey[600], size: 20),
-                      ),
-                    ),
-                  ],
-                ),
+                const BottomSheetHeader(title: 'Edit Nasabah'),
                 const SizedBox(height: 12),
 
                 // Subtitle
@@ -164,6 +146,10 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     height: 1.4,
                   ),
                 ),
+                if (_emailTerkunci) ...[
+                  const SizedBox(height: 16),
+                  _buildKeteranganEmailTerkunci(),
+                ],
                 const SizedBox(height: 24),
 
                 // Field 1: NAMA LENGKAP
@@ -175,7 +161,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   decoration:
-                      _buildInputDecoration(hintText: 'Contoh: Budi Santoso'),
+                      appInputDecoration(hintText: 'Contoh: Budi Santoso'),
                 ),
                 const SizedBox(height: 20),
 
@@ -206,7 +192,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                                 final isDuplicate = list.any((e) =>
                                     e.idNasabah.trim().toLowerCase() ==
                                         value.trim().toLowerCase() &&
-                                    e.id != widget.customerData['id']);
+                                    e.id != widget.nasabah.id);
                                 if (isDuplicate) {
                                   return 'ID Nasabah ini sudah digunakan.';
                                 }
@@ -216,7 +202,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                               }
                               return null;
                             },
-                            decoration: _buildInputDecoration(
+                            decoration: appInputDecoration(
                                 hintText: 'Contoh: NAS-0900'),
                           ),
                         ],
@@ -236,7 +222,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                                     ? 'Pilih jenis kelamin.'
                                     : null,
                             hint: const Text('— Pilih —'),
-                            decoration: _buildInputDecoration(),
+                            decoration: appInputDecoration(),
                             icon: const Icon(Icons.arrow_drop_down,
                                 color: Colors.grey),
                             items:
@@ -259,6 +245,36 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 ),
                 const SizedBox(height: 20),
 
+                // Field: EMAIL
+                _buildLabel('EMAIL'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  enabled: !_emailTerkunci,
+                  keyboardType: TextInputType.emailAddress,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  onChanged: (_) {
+                    if (_serverEmailError != null) {
+                      setState(() => _serverEmailError = null);
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email wajib diisi.';
+                    }
+                    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                    if (!regex.hasMatch(value.trim())) {
+                      return 'Format email tidak valid.';
+                    }
+                    if (_serverEmailError != null) return _serverEmailError;
+                    return null;
+                  },
+                  decoration: appInputDecoration(
+                    hintText: 'Contoh: budi@gmail.com',
+                  ),
+                ),
+                const SizedBox(height: 20),
+
                 // Field: TANGGAL LAHIR
                 _buildLabel('TANGGAL LAHIR'),
                 const SizedBox(height: 8),
@@ -269,7 +285,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: 'dd/mm/yyyy',
                   ).copyWith(
                     suffixIcon: Icon(Icons.calendar_today,
@@ -298,7 +314,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                     }
                     return null;
                   },
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: '812-3456-7890',
                   ).copyWith(
                     prefixIcon: Row(
@@ -334,10 +350,11 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 TextFormField(
                   controller: _alamatController,
                   maxLines: 4,
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
-                  decoration: _buildInputDecoration(
+                  validator: (value) =>
+                      (value == null || value.trim().runes.length < 10)
+                          ? 'Alamat minimal 10 karakter.'
+                          : null,
+                  decoration: appInputDecoration(
                     hintText: 'Nama jalan, RT/RW, Kelurahan...',
                   ),
                 ),
@@ -390,7 +407,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
   Future<void> _handleSimpan() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final id = widget.customerData['id']?.toString() ?? '';
+    final id = widget.nasabah.id;
     if (id.isEmpty) return;
 
     setState(() => _isSaving = true);
@@ -398,6 +415,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     final request = NasabahRequest(
       kode: _idNasabahController.text.trim(),
       nama: _namaController.text.trim(),
+      email: _emailController.text.trim(),
       jenisKelamin: _jenisKelamin ?? 'Laki-laki',
       tanggalLahir: _tanggalLahirController.text.trim(),
       noHp: '+62${_whatsappController.text.trim()}',
@@ -418,15 +436,73 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       return;
     }
 
+    // 403 pada endpoint ini punya dua penyebab: nasabah nonaktif (diperiksa
+    // lebih dulu di pilah-be) dan profil milik pemilik akun (PIL-223).
+    // Hanya pesan yang kedua berarti profilnya terkunci; menyamakan keduanya
+    // lewat status code saja mengunci nasabah nonaktif tanpa akun juga.
+    if (error.response?.statusCode == 403 &&
+        error.displayMessage == _pesanEmailTerkunci) {
+      setState(() => _ditolakServer = true);
+    }
+
     final fields = error.fieldErrors();
     if (fields.containsKey('kode')) {
       setState(() => _serverKodeError = fields['kode']);
+      _formKey.currentState?.validate();
+    }
+    if (fields.containsKey('email')) {
+      setState(() => _serverEmailError = fields['email']);
       _formKey.currentState?.validate();
     }
     AppNotification.showError(
       context,
       title: 'Gagal Menyimpan',
       message: error.displayMessage,
+    );
+  }
+
+  /// Menjelaskan mengapa sebagian field tidak dapat disunting.
+  ///
+  /// Penjelasan tampilan saja; penolakannya tetap diputuskan server pada
+  /// setiap permintaan (PIL-223, OWASP A01 Broken Access Control).
+  Widget _buildKeteranganEmailTerkunci() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.greenLight,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.lock_outline, size: 18, color: AppColors.greenDark),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Email dikelola oleh nasabah',
+                  style: AppTextStyle.title1.copyWith(
+                    color: AppColors.greenDark,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nasabah ini sudah punya akun. Emailnya menjadi kunci masuk, jadi hanya itu yang tidak dapat diubah.',
+                  style: AppTextStyle.small.copyWith(
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -438,32 +514,6 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
       ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({String? hintText}) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

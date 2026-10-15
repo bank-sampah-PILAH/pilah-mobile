@@ -1,9 +1,12 @@
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../domain/use_cases/authentication_use_cases.dart';
 import '../../domain/use_cases/login_with_google_usecase.dart';
+import '../../domain/model/auth.dart';
 import 'authentication_events.dart';
 import 'authentication_states.dart';
 import 'events/check_session_events.dart';
@@ -12,19 +15,26 @@ import 'events/login_with_google_events.dart';
 import 'events/logout_events.dart';
 import 'events/post_login_events.dart';
 import 'events/refresh_user_events.dart';
+import 'events/register_google_role_events.dart';
 
 @Injectable()
 class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationStates> {
   final AuthenticationUseCases _useCases;
-  // ignore: unused_field - Will be re-enabled when backend API is ready
   final LoginWithGoogleUseCase _loginWithGoogleUseCase;
+  final bool _isWeb;
 
-  AuthenticationBloc(this._useCases, this._loginWithGoogleUseCase)
-      : super(AuthenticationInitial()) {
+  AuthenticationBloc(
+    this._useCases,
+    this._loginWithGoogleUseCase, {
+    @ignoreParam bool? isWebOverride,
+  })  : _isWeb = isWebOverride ?? kIsWeb,
+        super(AuthenticationInitial()) {
     on<PostLoginEvent>(_onPostLoginEvent);
     on<LoginRefreshEvent>(_onLoginRefreshEvent);
     on<LoginWithGoogleRequested>(_onLoginWithGoogleRequested);
+    on<RegisterGoogleRoleRequested>(_onRegisterGoogleRoleRequested);
+    on<ChangeGoogleAccountRequested>(_onChangeGoogleAccountRequested);
     on<CheckSessionRequested>(_onCheckSessionRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<RefreshUserRequested>(_onRefreshUserRequested);
@@ -67,15 +77,69 @@ class AuthenticationBloc
         emitter(AuthenticationFailure(
             message: failure.message ?? 'Unknown error occurred'));
       },
-      (entity) {
-        if (entity != null) {
-          emitter(Authenticated(authEntity: entity));
+      (outcome) {
+        if (outcome is GoogleSession) {
+          emitter(Authenticated(authEntity: outcome.auth));
+        } else if (outcome is GoogleRegistrationRequired) {
+          emitter(GoogleRegistrationPending(registration: outcome));
         } else {
           emitter(
               AuthenticationFailure(message: 'Invalid response from server'));
         }
       },
     );
+  }
+
+  Future<void> _onRegisterGoogleRoleRequested(
+    RegisterGoogleRoleRequested event,
+    Emitter<AuthenticationStates> emitter,
+  ) async {
+    final current = state;
+    final registration = switch (current) {
+      GoogleRegistrationPending() => current.registration,
+      GoogleRegistrationFailure() => current.registration,
+      _ => null,
+    };
+    if (registration == null) return;
+
+    emitter(GoogleRegistrationSubmitting(
+      registration: registration,
+      role: event.role,
+    ));
+    final result = await _loginWithGoogleUseCase.register(
+      registrationToken: registration.registrationToken,
+      role: event.role,
+    );
+    result.fold(
+      (failure) {
+        final data = failure.response?.data;
+        final code = data is Map ? data['code']?.toString() : null;
+        if (code == 'registration_token_expired' ||
+            code == 'registration_token_invalid') {
+          emitter(GoogleRegistrationExpired(message: failure.displayMessage));
+        } else {
+          emitter(GoogleRegistrationFailure(
+            registration: registration,
+            message: failure.displayMessage,
+          ));
+        }
+      },
+      (entity) => emitter(Authenticated(authEntity: entity)),
+    );
+  }
+
+  /// Also disconnects Google's own session — otherwise the next
+  /// `authenticate()` silently returns the same account and "Ganti akun"
+  /// can never actually switch. Best-effort: still clears app state if
+  /// disconnect fails.
+  Future<void> _onChangeGoogleAccountRequested(
+    ChangeGoogleAccountRequested event,
+    Emitter<AuthenticationStates> emitter,
+  ) async {
+    try {
+      await GoogleSignIn.instance.disconnect();
+    } catch (_) {}
+    emitter(AuthenticationInitial());
   }
 
   /// Restores a persisted session on app start. Emits [Authenticated] when the
@@ -110,6 +174,13 @@ class AuthenticationBloc
     Emitter<AuthenticationStates> emitter,
   ) async {
     emitter(AuthenticationLoading());
+    if (_isWeb) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Still clear the PILAH session if Google's sign-out fails.
+      }
+    }
     await _useCases.logout();
     emitter(Unauthenticated());
   }

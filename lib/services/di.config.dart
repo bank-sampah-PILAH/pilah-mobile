@@ -1,5 +1,5 @@
-// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// dart format width=80
 
 // **************************************************************************
 // InjectableConfigGenerator
@@ -9,6 +9,7 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:image_cropper/image_cropper.dart' as _i183;
 import 'package:image_picker/image_picker.dart' as _i183;
@@ -37,8 +38,24 @@ import '../features/authentication/domain/use_cases/login_with_google_usecase.da
     as _i934;
 import '../features/authentication/presentation/blocs/authentication_bloc.dart'
     as _i960;
+import '../features/bank_sampah_approval/data/datasources/bank_sampah_approval_remote_data_source.dart'
+    as _i335;
+import '../features/bank_sampah_approval/data/repositories/bank_sampah_approval_repository_impl.dart'
+    as _i807;
+import '../features/bank_sampah_approval/domain/repositories/bank_sampah_approval_repository.dart'
+    as _i390;
+import '../features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart'
+    as _i782;
+import '../features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart'
+    as _i753;
+import '../features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart'
+    as _i243;
+import '../features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart'
+    as _i359;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
+import '../features/dashboard/data/datasources/dashboard_reporting_data_source.dart'
+    as _i3;
 import '../features/dashboard/data/repositories/dashboard_repository_impl.dart'
     as _i650;
 import '../features/dashboard/domain/repositories/dashboard_repository.dart'
@@ -48,6 +65,18 @@ import '../features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
 import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
 import '../features/dashboard/presentation/cubit/recent_activity_cubit.dart'
     as _i200;
+import '../features/draft_pencairan/data/draft_pencairan_repository_impl.dart'
+    as _i363;
+import '../features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart'
+    as _i142;
+import '../features/draft_pencairan/domain/repository/draft_pencairan_repository.dart'
+    as _i511;
+import '../features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart'
+    as _i230;
+import '../features/draft_pencairan/presentation/blocs/draft_list_cubit.dart'
+    as _i673;
+import '../features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart'
+    as _i795;
 import '../features/harga/data/datasources/harga_remote_data_source.dart'
     as _i960;
 import '../features/harga/data/datasources/harga_remote_data_source_impl.dart'
@@ -63,6 +92,12 @@ import '../features/harga/domain/use_cases/deactivate_harga_usecase.dart'
 import '../features/harga/domain/use_cases/get_harga_usecase.dart' as _i1009;
 import '../features/harga/domain/use_cases/update_harga_usecase.dart' as _i240;
 import '../features/harga/presentation/cubit/harga_cubit.dart' as _i815;
+import '../features/jadwal/data/datasources/jadwal_remote_data_source.dart'
+    as _i915;
+import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
+    as _i928;
+import '../features/jadwal/domain/repositories/jadwal_repository.dart' as _i73;
+import '../features/jadwal/presentation/cubit/jadwal_cubit.dart' as _i942;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     as _i307;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart'
@@ -74,11 +109,19 @@ import '../features/nasabah/domain/repositories/nasabah_repository.dart'
 import '../features/nasabah/domain/use_cases/activate_nasabah_usecase.dart'
     as _i449;
 import '../features/nasabah/domain/use_cases/add_nasabah_usecase.dart' as _i532;
+import '../features/nasabah/domain/use_cases/approve_nasabah_usecase.dart'
+    as _i66;
 import '../features/nasabah/domain/use_cases/deactivate_nasabah_usecase.dart'
     as _i850;
+import '../features/nasabah/domain/use_cases/get_active_nasabah_usecase.dart'
+    as _i987;
 import '../features/nasabah/domain/use_cases/get_nasabah_ringkasan_usecase.dart'
     as _i296;
 import '../features/nasabah/domain/use_cases/get_nasabah_usecase.dart' as _i789;
+import '../features/nasabah/domain/use_cases/reject_nasabah_usecase.dart'
+    as _i529;
+import '../features/nasabah/domain/use_cases/sinkron_profil_nasabah_usecase.dart'
+    as _i727;
 import '../features/nasabah/domain/use_cases/update_nasabah_usecase.dart'
     as _i524;
 import '../features/nasabah/presentation/cubit/nasabah_cubit.dart' as _i958;
@@ -86,9 +129,43 @@ import '../features/onboarding/data/datasources/onboarding_remote_data_source.da
     as _i247;
 import '../features/onboarding/presentation/cubit/onboarding_cubit.dart'
     as _i244;
+import '../features/pencairan/data/pencairan_repository_impl.dart' as _i913;
+import '../features/pencairan/data/remote/pencairan_remote_data_sources.dart'
+    as _i1037;
+import '../features/pencairan/domain/pencairan_interactor.dart' as _i659;
+import '../features/pencairan/domain/repository/pencairan_repository.dart'
+    as _i449;
+import '../features/pencairan/domain/use_cases/pencairan_use_cases.dart'
+    as _i686;
+import '../features/pencairan/presentation/blocs/edit_pencairan_cubit.dart'
+    as _i41;
+import '../features/pencairan/presentation/blocs/pencairan_cubit.dart' as _i553;
+import '../features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart'
+    as _i700;
+import '../features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart'
+    as _i8;
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
     as _i1053;
 import '../features/profile/presentation/cubit/profile_cubit.dart' as _i300;
+import '../features/riwayat/data/datasources/riwayat_remote_data_source.dart'
+    as _i101;
+import '../features/riwayat/data/repositories/riwayat_repository_impl.dart'
+    as _i316;
+import '../features/riwayat/domain/repositories/riwayat_repository.dart'
+    as _i908;
+import '../features/riwayat/domain/use_cases/riwayat_use_cases.dart' as _i216;
+import '../features/riwayat/presentation/cubit/riwayat_history_cubit.dart'
+    as _i225;
+import '../features/statement/data/remote/statement_remote_data_sources.dart'
+    as _i987;
+import '../features/statement/data/statement_repository_impl.dart' as _i322;
+import '../features/statement/domain/repository/statement_repository.dart'
+    as _i664;
+import '../features/statement/domain/statement_interactor.dart' as _i408;
+import '../features/statement/domain/use_cases/statement_use_cases.dart'
+    as _i742;
+import '../features/statement/presentation/blocs/statement_export_cubit.dart'
+    as _i873;
 import '../features/superadmin/data/datasources/superadmin_remote_data_source.dart'
     as _i309;
 import '../features/superadmin/data/datasources/superadmin_remote_data_source_impl.dart'
@@ -109,19 +186,27 @@ import '../features/transaksi/data/datasources/transaksi_remote_data_source.dart
     as _i881;
 import '../features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart'
     as _i659;
+import '../features/transaksi/data/repositories/aktivitas_repository_impl.dart'
+    as _i694;
 import '../features/transaksi/data/repositories/transaksi_repository_impl.dart'
     as _i1041;
+import '../features/transaksi/domain/repositories/aktivitas_repository.dart'
+    as _i184;
 import '../features/transaksi/domain/repositories/transaksi_repository.dart'
     as _i1031;
 import '../features/transaksi/domain/use_cases/add_transaksi_usecase.dart'
     as _i839;
 import '../features/transaksi/domain/use_cases/export_transaksi_usecase.dart'
     as _i67;
+import '../features/transaksi/domain/use_cases/get_aktivitas_usecase.dart'
+    as _i646;
 import '../features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart'
     as _i218;
 import '../features/transaksi/domain/use_cases/get_transaksi_usecase.dart'
     as _i383;
 import '../features/transaksi/domain/use_cases/resend_wa_usecase.dart' as _i417;
+import '../features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart'
+    as _i454;
 import '../features/transaksi/presentation/cubit/transaksi_cubit.dart' as _i474;
 
 const String _dev = 'dev';
@@ -157,12 +242,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i124.SecureDatabase>(
         () => const _i124.SecureDatabaseImpl());
+    gh.lazySingleton<_i936.NetworkUtils>(
+        () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
     gh.factory<_i119.AppEnvironment>(
       () => _i119.ProdEnvironment(),
       registerFor: {_prod},
     );
-    gh.lazySingleton<_i936.NetworkUtils>(
-        () => _i936.NetworkUtils(gh<_i124.SecureDatabase>()));
     gh.lazySingleton<_i981.AuthLocalDataSources>(
         () => _i981.AuthLocalDataSourcesImpl(
               gh<_i124.SecureDatabase>(),
@@ -172,96 +257,134 @@ extension GetItInjectableX on _i174.GetIt {
           environment: gh<_i119.AppEnvironment>(),
           networkUtils: gh<_i936.NetworkUtils>(),
         ));
+    gh.lazySingleton<_i184.AktivitasRepository>(
+        () => _i694.AktivitasRepositoryImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i142.DraftPencairanRemoteDataSource>(() =>
+        _i142.DraftPencairanRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i646.GetAktivitasUseCase>(
+        () => _i646.GetAktivitasUseCase(gh<_i184.AktivitasRepository>()));
     gh.lazySingleton<_i247.OnboardingRemoteDataSource>(
         () => _i247.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i1037.PencairanRemoteDataSources>(
+        () => _i1037.PencairanRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i309.SuperadminRemoteDataSource>(
         () => _i495.SuperadminRemoteDataSourceImpl(gh<_i941.NetworkService>()));
-    gh.lazySingleton<_i244.OnboardingCubit>(
-        () => _i244.OnboardingCubit(gh<_i247.OnboardingRemoteDataSource>()));
-    gh.lazySingleton<_i377.DashboardRemoteDataSource>(
-        () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i881.TransaksiRemoteDataSource>(
         () => _i659.TransaksiRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i3.DashboardReportingDataSource>(
+        () => _i3.DashboardReportingDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i377.DashboardRemoteDataSource>(
+        () => _i377.DashboardRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i915.JadwalRemoteDataSource>(
+        () => _i915.JadwalRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i335.BankSampahApprovalRemoteDataSource>(() =>
+        _i335.BankSampahApprovalRemoteDataSourceImpl(
+            gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1053.ProfileRemoteDataSource>(
         () => _i1053.ProfileRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i24.AuthRemoteDataSources>(
         () => _i24.AuthRemoteDataSourceImpl(gh<_i941.NetworkService>()));
-    gh.lazySingleton<_i307.NasabahRemoteDataSource>(
-        () => _i990.NasabahRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i73.JadwalRepository>(
+        () => _i928.JadwalRepositoryImpl(gh<_i915.JadwalRemoteDataSource>()));
+    gh.lazySingleton<_i987.StatementRemoteDataSources>(
+        () => _i987.StatementRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i960.HargaRemoteDataSource>(
         () => _i74.HargaRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i307.NasabahRemoteDataSource>(
+        () => _i990.NasabahRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i101.RiwayatRemoteDataSource>(
+        () => _i101.RiwayatRemoteDataSourceImpl(gh<_i941.NetworkService>()));
+    gh.lazySingleton<_i908.RiwayatRepository>(
+        () => _i316.RiwayatRepositoryImpl(gh<_i101.RiwayatRemoteDataSource>()));
+    gh.lazySingleton<_i300.ProfileCubit>(() => _i300.ProfileCubit(
+          gh<_i1053.ProfileRemoteDataSource>(),
+          gh<_i183.ImagePicker>(),
+          gh<_i183.ImageCropper>(),
+        ));
+    gh.lazySingleton<_i390.BankSampahApprovalRepository>(() =>
+        _i807.BankSampahApprovalRepositoryImpl(
+            gh<_i335.BankSampahApprovalRemoteDataSource>()));
+    gh.lazySingleton<_i511.DraftPencairanRepository>(() =>
+        _i363.DraftPencairanRepositoryImpl(
+            gh<_i142.DraftPencairanRemoteDataSource>()));
+    gh.lazySingleton<_i1031.TransaksiRepository>(() =>
+        _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
+    gh.lazySingleton<_i244.OnboardingCubit>(
+        () => _i244.OnboardingCubit(gh<_i247.OnboardingRemoteDataSource>()));
+    gh.lazySingleton<_i127.NasabahRepository>(() =>
+        _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
+    gh.lazySingleton<_i664.StatementRepository>(() =>
+        _i322.StatementRepositoryImpl(gh<_i987.StatementRemoteDataSources>()));
+    gh.factory<_i230.DraftEditorCubit>(
+        () => _i230.DraftEditorCubit(gh<_i511.DraftPencairanRepository>()));
+    gh.factory<_i673.DraftListCubit>(
+        () => _i673.DraftListCubit(gh<_i511.DraftPencairanRepository>()));
+    gh.factory<_i795.PilihNasabahCubit>(
+        () => _i795.PilihNasabahCubit(gh<_i511.DraftPencairanRepository>()));
+    gh.lazySingleton<_i449.PencairanRepository>(() =>
+        _i913.PencairanRepositoryImpl(gh<_i1037.PencairanRemoteDataSources>()));
+    gh.lazySingleton<_i40.HargaRepository>(
+        () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
     gh.lazySingleton<_i260.SuperadminRepository>(() =>
         _i811.SuperadminRepositoryImpl(gh<_i309.SuperadminRemoteDataSource>()));
     gh.lazySingleton<_i888.AuthRepository>(() => _i493.AuthRepositoryImpl(
           gh<_i24.AuthRemoteDataSources>(),
           gh<_i981.AuthLocalDataSources>(),
         ));
-    gh.lazySingleton<_i40.HargaRepository>(
-        () => _i922.HargaRepositoryImpl(gh<_i960.HargaRemoteDataSource>()));
-    gh.lazySingleton<_i127.NasabahRepository>(() =>
-        _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
-    gh.lazySingleton<_i300.ProfileCubit>(() => _i300.ProfileCubit(
-          gh<_i1053.ProfileRemoteDataSource>(),
-          gh<_i183.ImagePicker>(),
-          gh<_i183.ImageCropper>(),
-        ));
+    gh.lazySingleton<_i942.JadwalCubit>(
+        () => _i942.JadwalCubit(gh<_i73.JadwalRepository>()));
+    gh.lazySingleton<_i782.AppealMembershipUseCase>(() =>
+        _i782.AppealMembershipUseCase(
+            gh<_i390.BankSampahApprovalRepository>()));
+    gh.lazySingleton<_i753.GetNasabahMembershipsUseCase>(() =>
+        _i753.GetNasabahMembershipsUseCase(
+            gh<_i390.BankSampahApprovalRepository>()));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
-    gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
-        () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
+    gh.factory<_i359.NasabahApprovalCubit>(() =>
+        _i359.NasabahApprovalCubit(gh<_i753.GetNasabahMembershipsUseCase>()));
+    gh.lazySingleton<_i449.ActivateNasabahUseCase>(
+        () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i532.AddNasabahUseCase>(
+        () => _i532.AddNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i66.ApproveNasabahUseCase>(
+        () => _i66.ApproveNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i850.DeactivateNasabahUseCase>(
+        () => _i850.DeactivateNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i987.GetActiveNasabahUseCase>(
+        () => _i987.GetActiveNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i296.GetNasabahRingkasanUseCase>(
+        () => _i296.GetNasabahRingkasanUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i789.GetNasabahUseCase>(
+        () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i529.RejectNasabahUseCase>(
+        () => _i529.RejectNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i727.SinkronProfilNasabahUseCase>(
+        () => _i727.SinkronProfilNasabahUseCase(gh<_i127.NasabahRepository>()));
+    gh.lazySingleton<_i524.UpdateNasabahUseCase>(
+        () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
     gh.lazySingleton<_i521.AuthenticationUseCases>(
         () => _i56.AuthenticationInteractor(gh<_i888.AuthRepository>()));
-    gh.lazySingleton<_i1031.TransaksiRepository>(() =>
-        _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
+    gh.lazySingleton<_i216.GetRiwayatHistoryUseCase>(
+        () => _i216.GetRiwayatHistoryUseCase(gh<_i908.RiwayatRepository>()));
+    gh.lazySingleton<_i216.GetRiwayatSetoranDetailUseCase>(() =>
+        _i216.GetRiwayatSetoranDetailUseCase(gh<_i908.RiwayatRepository>()));
     gh.lazySingleton<_i934.LoginWithGoogleUseCase>(
         () => _i934.LoginWithGoogleUseCase(gh<_i888.AuthRepository>()));
+    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
+          gh<_i521.AuthenticationUseCases>(),
+          gh<_i934.LoginWithGoogleUseCase>(),
+        ));
+    gh.lazySingleton<_i742.StatementUseCases>(
+        () => _i408.StatementInteractor(gh<_i664.StatementRepository>()));
+    gh.factory<_i873.StatementExportCubit>(
+        () => _i873.StatementExportCubit(gh<_i742.StatementUseCases>()));
     gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
         () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i268.GetBankSampahUseCase>(
         () => _i268.GetBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i868.RejectBankSampahUseCase>(
         () => _i868.RejectBankSampahUseCase(gh<_i260.SuperadminRepository>()));
-    gh.factory<_i960.AuthenticationBloc>(() => _i960.AuthenticationBloc(
-          gh<_i521.AuthenticationUseCases>(),
-          gh<_i934.LoginWithGoogleUseCase>(),
-        ));
-    gh.lazySingleton<_i449.ActivateNasabahUseCase>(
-        () => _i449.ActivateNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i532.AddNasabahUseCase>(
-        () => _i532.AddNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i850.DeactivateNasabahUseCase>(
-        () => _i850.DeactivateNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i296.GetNasabahRingkasanUseCase>(
-        () => _i296.GetNasabahRingkasanUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i789.GetNasabahUseCase>(
-        () => _i789.GetNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i524.UpdateNasabahUseCase>(
-        () => _i524.UpdateNasabahUseCase(gh<_i127.NasabahRepository>()));
-    gh.lazySingleton<_i932.DashboardCubit>(
-        () => _i932.DashboardCubit(gh<_i137.GetDashboardStatsUseCase>()));
-    gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
-          gh<_i268.GetBankSampahUseCase>(),
-          gh<_i958.ApproveBankSampahUseCase>(),
-          gh<_i868.RejectBankSampahUseCase>(),
-        ));
-    gh.lazySingleton<_i520.ActivateHargaUseCase>(
-        () => _i520.ActivateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i948.AddHargaUseCase>(
-        () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i989.DeactivateHargaUseCase>(
-        () => _i989.DeactivateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i1009.GetHargaUseCase>(
-        () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i240.UpdateHargaUseCase>(
-        () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
-    gh.lazySingleton<_i958.NasabahCubit>(() => _i958.NasabahCubit(
-          gh<_i789.GetNasabahUseCase>(),
-          gh<_i296.GetNasabahRingkasanUseCase>(),
-          gh<_i532.AddNasabahUseCase>(),
-          gh<_i524.UpdateNasabahUseCase>(),
-          gh<_i449.ActivateNasabahUseCase>(),
-          gh<_i850.DeactivateNasabahUseCase>(),
-        ));
     gh.lazySingleton<_i839.AddTransaksiUseCase>(
         () => _i839.AddTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i67.ExportTransaksiUseCase>(
@@ -272,13 +395,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i383.GetTransaksiUseCase(gh<_i1031.TransaksiRepository>()));
     gh.lazySingleton<_i417.ResendWaUseCase>(
         () => _i417.ResendWaUseCase(gh<_i1031.TransaksiRepository>()));
-    gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
-          gh<_i1009.GetHargaUseCase>(),
-          gh<_i948.AddHargaUseCase>(),
-          gh<_i240.UpdateHargaUseCase>(),
-          gh<_i989.DeactivateHargaUseCase>(),
-          gh<_i520.ActivateHargaUseCase>(),
-        ));
+    gh.factory<_i243.NasabahAppealCubit>(
+        () => _i243.NasabahAppealCubit(gh<_i782.AppealMembershipUseCase>()));
     gh.lazySingleton<_i474.TransaksiCubit>(() => _i474.TransaksiCubit(
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i218.GetTransaksiDetailUseCase>(),
@@ -286,8 +404,67 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i67.ExportTransaksiUseCase>(),
           gh<_i417.ResendWaUseCase>(),
         ));
-    gh.lazySingleton<_i200.RecentActivityCubit>(
-        () => _i200.RecentActivityCubit(gh<_i383.GetTransaksiUseCase>()));
+    gh.lazySingleton<_i686.PencairanUseCases>(
+        () => _i659.PencairanInteractor(gh<_i449.PencairanRepository>()));
+    gh.lazySingleton<_i520.ActivateHargaUseCase>(
+        () => _i520.ActivateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i948.AddHargaUseCase>(
+        () => _i948.AddHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i989.DeactivateHargaUseCase>(
+        () => _i989.DeactivateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i1009.GetHargaUseCase>(
+        () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i240.UpdateHargaUseCase>(
+        () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i454.RiwayatAktivitasCubit>(
+        () => _i454.RiwayatAktivitasCubit(
+              gh<_i646.GetAktivitasUseCase>(),
+              gh<_i67.ExportTransaksiUseCase>(),
+            ));
+    gh.lazySingleton<_i137.GetDashboardStatsUseCase>(
+        () => _i137.GetDashboardStatsUseCase(gh<_i602.DashboardRepository>()));
+    gh.lazySingleton<_i958.NasabahCubit>(() => _i958.NasabahCubit(
+          gh<_i789.GetNasabahUseCase>(),
+          gh<_i987.GetActiveNasabahUseCase>(),
+          gh<_i296.GetNasabahRingkasanUseCase>(),
+          gh<_i532.AddNasabahUseCase>(),
+          gh<_i524.UpdateNasabahUseCase>(),
+          gh<_i449.ActivateNasabahUseCase>(),
+          gh<_i850.DeactivateNasabahUseCase>(),
+          gh<_i66.ApproveNasabahUseCase>(),
+          gh<_i529.RejectNasabahUseCase>(),
+          gh<_i727.SinkronProfilNasabahUseCase>(),
+        ));
+    gh.factory<_i41.EditPencairanCubit>(
+        () => _i41.EditPencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.factory<_i553.PencairanCubit>(
+        () => _i553.PencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.factory<_i700.RevisiPencairanCubit>(
+        () => _i700.RevisiPencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.factory<_i8.RiwayatPencairanCubit>(
+        () => _i8.RiwayatPencairanCubit(gh<_i686.PencairanUseCases>()));
+    gh.factory<_i225.RiwayatHistoryCubit>(() => _i225.RiwayatHistoryCubit(
+          gh<_i216.GetRiwayatHistoryUseCase>(),
+          gh<_i216.GetRiwayatSetoranDetailUseCase>(),
+        ));
+    gh.lazySingleton<_i200.RecentActivityCubit>(() => _i200.RecentActivityCubit(
+          gh<_i383.GetTransaksiUseCase>(),
+          gh<_i686.PencairanUseCases>(),
+        ));
+    gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
+          gh<_i1009.GetHargaUseCase>(),
+          gh<_i948.AddHargaUseCase>(),
+          gh<_i240.UpdateHargaUseCase>(),
+          gh<_i989.DeactivateHargaUseCase>(),
+          gh<_i520.ActivateHargaUseCase>(),
+        ));
+    gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
+          gh<_i268.GetBankSampahUseCase>(),
+          gh<_i958.ApproveBankSampahUseCase>(),
+          gh<_i868.RejectBankSampahUseCase>(),
+        ));
+    gh.lazySingleton<_i932.DashboardCubit>(
+        () => _i932.DashboardCubit(gh<_i137.GetDashboardStatsUseCase>()));
     return this;
   }
 }
