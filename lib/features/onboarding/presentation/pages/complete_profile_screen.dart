@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -918,46 +919,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 // 4. Action Button
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _onSaveAndContinue,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.greenDark,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  _isInviteMode
-                                      ? 'Simpan & Masuk Dashboard'
-                                      : 'Simpan Profil & Lanjut',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward,
-                                    color: Colors.white, size: 20),
-                              ],
-                            ),
-                    ),
+                  child: AppButton(
+                    label: _isInviteMode
+                        ? 'Simpan & Masuk Dashboard'
+                        : 'Simpan Profil & Lanjut',
+                    trailingIcon: Icons.arrow_forward,
+                    isLoading: _isLoading,
+                    onPressed: _onSaveAndContinue,
                   ),
                 ),
 
