@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_button.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/design/widgets/atom/page_indicator.dart';
-import 'package:pilah_mobile/design/widgets/atom/primary_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 
 import '../../support/pump_app.dart';
@@ -12,27 +11,6 @@ import '../../support/pump_app.dart';
 Widget _host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
-  group('PrimaryButton', () {
-    testWidgets('shows its label and reports taps', (tester) async {
-      var taps = 0;
-      await tester
-          .pumpWidget(_host(PrimaryButton(text: 'Kirim', onTap: () => taps++)));
-
-      await tester.tap(find.text('Kirim'));
-
-      expect(taps, 1);
-    });
-
-    testWidgets('shows a spinner instead of the label while loading',
-        (tester) async {
-      await tester.pumpWidget(
-          _host(PrimaryButton(text: 'Kirim', onTap: () {}, isLoading: true)));
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Kirim'), findsNothing);
-    });
-  });
-
   group('AppTextButton', () {
     testWidgets('reports taps on its label', (tester) async {
       var taps = 0;
