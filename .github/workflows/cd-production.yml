@@ -108,10 +108,15 @@ jobs:
           awk -v p="$pct" 'BEGIN { exit (p+0 >= 25 ? 0 : 1) }' \
             || { echo "::error::coverage ${pct}% is below the 25% gate"; exit 1; }
 
+      - name: Install release workflow test dependencies
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+
       - name: Check release workflow safeguards
         run: python3 -m unittest discover -s scripts/tests -v
 
       - name: SonarCloud scan and quality gate
+        id: sonar_scan
+        continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@v8.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -126,6 +131,37 @@ jobs:
             -Dsonar.scanner.skipJreProvisioning=true
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
+
+      - name: SonarCloud scan and quality gate (retry)
+        id: sonar_retry
+        if: steps.sonar_scan.outcome == 'failure'
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=bank-sampah-pilah
+            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
+            -Dsonar.sources=lib
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=lib/services/di.config.dart,lib/main_development.dart,lib/main_production.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.scanner.skipJreProvisioning=true
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+      - name: Enforce SonarCloud quality gate
+        if: always()
+        env:
+          SONAR_SCAN_OUTCOME: ${{ steps.sonar_scan.outcome }}
+          SONAR_RETRY_OUTCOME: ${{ steps.sonar_retry.outcome }}
+        run: |
+          if [[ "$SONAR_SCAN_OUTCOME" == "success" || "$SONAR_RETRY_OUTCOME" == "success" ]]; then
+            exit 0
+          fi
+          echo "::error::SonarCloud scan and retry both failed; release quality gate is not satisfied."
+          exit 1
 
   release:
     if: github.event_name == 'push'
@@ -308,6 +344,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --pattern app-release.aab \
             --pattern app-release.aab.sha256 \
+            --pattern release-metadata.txt \
             --dir dist
           (cd dist && sha256sum --check app-release.aab.sha256)
 
@@ -336,24 +373,18 @@ jobs:
             exit 1
           fi
 
-      - name: Upload the exact AAB to a test track
-        if: inputs.track != 'production'
-        uses: r0adkll/upload-google-play@v1.1.5
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
-          packageName: com.mobile.pilahapp
-          releaseFiles: dist/app-release.aab
-          tracks: ${{ inputs.track }}
-          status: completed
-          releaseName: ${{ inputs.release_tag }}
+      - name: Install Play promotion API dependency
+        run: python3 -m pip install --disable-pip-version-check google-auth==2.62.0
 
-      - name: Promote the exact reviewed AAB to production
-        if: inputs.track == 'production'
-        uses: r0adkll/upload-google-play@v1.1.5
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON }}
-          packageName: com.mobile.pilahapp
-          releaseFiles: dist/app-release.aab
-          tracks: production
-          status: completed
-          releaseName: ${{ inputs.release_tag }}
+      - name: Update the selected track to the existing bundle
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ inputs.track == 'production' && secrets.PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON || secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: ${{ inputs.track }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: >-
+          python3 scripts/promote_play_release.py
+          --package-name com.mobile.pilahapp
+          --track "$PLAY_TRACK"
+          --release-tag "$RELEASE_TAG"
+          --bundle dist/app-release.aab
+          --metadata dist/release-metadata.txt

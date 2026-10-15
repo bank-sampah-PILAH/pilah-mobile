@@ -9,14 +9,15 @@
 
 ## Required GitHub configuration
 
-Protect the `production` environment with an approval reviewer. Store these values as environment secrets; do not put secret values in the repository, issue tracker, or release notes:
+Protect the `production` environment with an approval reviewer. Store the signing, production app configuration, and Play service account values below as `production` environment secrets; do not put secret values in the repository, issue tracker, or release notes:
 
 - `APP_ENV_FILE`: must include `BASE_URL_PROD` (an HTTPS production API origin) and `GOOGLE_SERVER_CLIENT_ID` (the Web OAuth client ID). The release workflow calls `scripts/prepare_web_env.py`, which validates and writes only those production values plus `ENABLE_DEMO_LOGIN=false` to the bundled `.env` asset.
 - `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, and `ANDROID_KEYSTORE_PASSWORD`: the existing Play upload key and its credentials.
 - `GOOGLE_SERVICES_JSON`: the production Firebase configuration. The workflow checks that it includes `com.mobile.pilahapp`.
 - `PLAY_TEST_SERVICE_ACCOUNT_JSON`: a service account limited to the PILAH app's testing tracks.
 - `PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON`: a separate service account limited to the PILAH app's production release permission.
-- `SONAR_TOKEN`: an analysis token with permission to run the mobile project scan.
+
+Store `SONAR_TOKEN` as a repository Actions secret with permission to run the mobile project scan. The tag verification job intentionally does not use the protected `production` environment, so the repository-scoped secret is available without production-environment approval.
 
 Keep reviewer login credentials in backend production configuration only; store the password as a Django password hash. Do not add reviewer credentials to `APP_ENV_FILE`, Firebase configuration, a Dart define, an asset, or GitHub release metadata.
 
@@ -38,8 +39,8 @@ The current Play rejection says reviewer credentials must not depend on device-b
 
 ## Retry and production promotion
 
-Use the `CD - Production` workflow's manual dispatch with an existing release tag to retry a test-track upload or promote its exact AAB. It downloads the release asset and verifies its SHA-256; it does not rebuild or change its version code. Select `production` only after Google has approved the release and confirm the approval input. The protected `production` environment supplies an additional human approval gate.
+Use the `CD - Production` workflow's manual dispatch with an existing release tag to retry a track assignment or promote its exact AAB. It downloads the AAB, checksum, and build metadata, verifies their identity, and checks Google Play's bundle list for the same version code and SHA-256. It then updates that track to the already uploaded version code and commits the edit; it does not upload a second bundle or rebuild. If the exact version code and digest are not already present in Play, the dispatch fails before changing a track. In that case, create a new patch version and version code for a replacement build. Select `production` only after Google has approved the release and confirm the approval input. The protected `production` environment supplies an additional human approval gate. The API refuses to commit while another app change is in review rather than cancelling and resubmitting that review.
 
-If a Play upload fails after the GitHub Release was created, fix the missing access/configuration and dispatch the same release tag again. Do not create a replacement tag for the same version code. If the app needs a code fix, create a new patch version and version code, then run the checks and upload a new AAB.
+If a track assignment fails after the bundle is registered in Play, fix the access/configuration problem and dispatch the same release tag again. A dispatch cannot recover an upload that never registered the bundle in Play because it deliberately does not upload bundles. Do not create another tag for the same version code. If the app needs a code fix, create a new patch version and version code, then run the checks and upload a new AAB.
 
 To disable reviewer entry during an incident, set the backend `PILAH_ENABLE_DEMO_LOGIN` flag to false; the backend must reject the login even if an older app screen is open. If a production rollout needs to stop, halt it in Play Console and document the decision and recovery owner.

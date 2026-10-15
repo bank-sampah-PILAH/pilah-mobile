@@ -21,10 +21,32 @@ class PlayReleasePipelineTest(unittest.TestCase):
         self.assertIn("workflow_dispatch", release["on"])
 
         verify = release["jobs"]["verify"]
+        self.assertNotIn("environment", verify)
+        steps = verify["steps"]
+        step_names = [step.get("name", "") for step in steps]
+        dependency_index = step_names.index("Install release workflow test dependencies")
+        safeguard_index = step_names.index("Check release workflow safeguards")
+        self.assertLess(dependency_index, safeguard_index)
+        self.assertIn("PyYAML==6.0.3", steps[dependency_index]["run"])
+
         verify_text = "\n".join(step.get("run", "") for step in verify["steps"])
         self.assertIn("flutter analyze --fatal-infos", verify_text)
         self.assertIn("flutter test --coverage", verify_text)
         self.assertIn("sonar.qualitygate.wait=true", str(verify))
+        self.assertIn("${{ secrets.SONAR_TOKEN }}", str(verify))
+
+        sonar_scan = next(step for step in steps if step.get("id") == "sonar_scan")
+        sonar_retry = next(step for step in steps if step.get("id") == "sonar_retry")
+        self.assertEqual(sonar_scan["continue-on-error"], "true")
+        self.assertEqual(sonar_retry["if"], "steps.sonar_scan.outcome == 'failure'")
+        self.assertEqual(sonar_retry["continue-on-error"], "true")
+        self.assertEqual(sonar_retry["with"]["args"], sonar_scan["with"]["args"])
+        self.assertIn("-Dsonar.qualitygate.wait=true", sonar_scan["with"]["args"])
+        self.assertIn("-Dsonar.qualitygate.wait=true", sonar_retry["with"]["args"])
+        final_gate = next(step for step in steps if step.get("name") == "Enforce SonarCloud quality gate")
+        self.assertEqual(final_gate["if"], "always()")
+        self.assertIn("SONAR_RETRY_OUTCOME", final_gate["env"])
+        self.assertIn("exit 1", final_gate["run"])
 
         build = release["jobs"]["release"]
         self.assertEqual(build["needs"], "verify")
@@ -57,17 +79,13 @@ class PlayReleasePipelineTest(unittest.TestCase):
         text = "\n".join(step.get("run", "") for step in steps)
         self.assertIn("gh release download", text)
         self.assertIn("sha256sum --check", text)
+        self.assertIn("--pattern release-metadata.txt", text)
         self.assertNotIn("flutter build", text)
-
-        upload = next(
-            step for step in steps
-            if step.get("uses", "").startswith("r0adkll/upload-google-play@")
-            and step["with"].get("tracks") == "production"
-        )
-        self.assertEqual(upload["with"]["packageName"], "com.mobile.pilahapp")
-        self.assertEqual(upload["with"]["tracks"], "production")
-        self.assertEqual(upload["with"]["releaseFiles"], "dist/app-release.aab")
-        self.assertIn("PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON", upload["with"]["serviceAccountJsonPlainText"])
+        self.assertIn("scripts/promote_play_release.py", text)
+        self.assertNotIn("r0adkll/upload-google-play@", str(steps))
+        self.assertIn("google-auth==2.62.0", str(steps))
+        self.assertIn("PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON", str(steps))
+        self.assertIn("PLAY_TEST_SERVICE_ACCOUNT_JSON", str(steps))
 
     def test_play_version_is_newer_than_rejected_version_code(self):
         pubspec = (ROOT / "pubspec.yaml").read_text()
