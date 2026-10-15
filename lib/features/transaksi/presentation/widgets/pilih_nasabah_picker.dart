@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -32,9 +33,6 @@ class _PilihNasabahPickerState extends State<PilihNasabahPicker> {
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   late Future<List<NasabahEntity>> _nasabahFuture;
-
-  // Emerald Eco System Tokens
-  static const Color emeraldPrimary = Color(0xFF006D44);
 
   @override
   void initState() {
@@ -197,7 +195,7 @@ class _PilihNasabahPickerState extends State<PilihNasabahPicker> {
                               Text(
                                 customer.balance,
                                 style: AppTextStyle.title1.copyWith(
-                                  color: emeraldPrimary,
+                                  color: AppColors.greenDark,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),

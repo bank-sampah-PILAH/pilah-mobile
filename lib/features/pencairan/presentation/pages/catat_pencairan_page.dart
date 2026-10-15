@@ -18,6 +18,8 @@ import '../../domain/model/pencairan.dart';
 import '../../domain/pencairan_validator.dart';
 import '../blocs/pencairan_cubit.dart';
 import '../blocs/pencairan_state.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Pengurus records a payout. Nasabah is picked inside the form — the same
 /// active-nasabah sheet Setoran Baru uses — rather than supplied by the
@@ -50,8 +52,6 @@ class CatatPencairanView extends StatefulWidget {
     this.now = DateTime.now,
     this.initialCustomer,
   });
-
-  static const Color emeraldPrimary = Color(0xFF006D44);
 
   @override
   State<CatatPencairanView> createState() => _CatatPencairanViewState();
@@ -124,7 +124,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Konfirmasi pencairan'),
         content: Text(
-          'Pencairan Rp ${formatRupiahId(nominal)} akan dicatat sebagai '
+          'Pencairan Rp ${CurrencyFormatter.formatNumber(nominal)} akan dicatat sebagai '
           'pembayaran ${_metode.label}.',
         ),
         actions: [
@@ -290,28 +290,11 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                             spacing: 8,
                             children: [
                               for (final metode in MetodePencairan.values)
-                                GestureDetector(
+                                AppChip(
+                                  key: Key('metode-chip-${metode.name}'),
+                                  label: metode.label,
+                                  selected: _metode == metode,
                                   onTap: () => setState(() => _metode = metode),
-                                  child: Container(
-                                    key: Key('metode-chip-${metode.name}'),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _metode == metode
-                                          ? AppColors.greenDark
-                                          : const Color(0xFFF3F4F6),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      metode.label,
-                                      style: AppTextStyle.small.copyWith(
-                                        color: _metode == metode
-                                            ? Colors.white
-                                            : const Color(0xFF6B7280),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
                                 ),
                             ],
                           ),
@@ -395,9 +378,9 @@ class _SaldoCard extends StatelessWidget {
     switch (state.saldoStatus) {
       case SaldoStatus.loaded:
         saldo = Text(
-          'Rp ${formatRupiahId(state.saldo)}',
+          'Rp ${CurrencyFormatter.formatNumber(state.saldo)}',
           style: AppTextStyle.title1.copyWith(
-            color: CatatPencairanView.emeraldPrimary,
+            color: AppColors.greenDark,
             fontWeight: FontWeight.bold,
           ),
         );
@@ -460,15 +443,19 @@ class _RingkasanCard extends StatelessWidget {
         children: [
           _row(
             'Dicairkan',
-            nominal == null ? '-' : 'Rp ${formatRupiahId(nominal)}',
+            nominal == null
+                ? '-'
+                : 'Rp ${CurrencyFormatter.formatNumber(nominal)}',
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+            child: Divider(height: 1, color: AppColors.border),
           ),
           _row(
             'Sisa saldo',
-            nominal == null ? '-' : 'Rp ${formatRupiahId(saldo - nominal)}',
+            nominal == null
+                ? '-'
+                : 'Rp ${CurrencyFormatter.formatNumber(saldo - nominal)}',
             emphasized: true,
           ),
         ],
@@ -491,9 +478,7 @@ class _RingkasanCard extends StatelessWidget {
             value,
             style: (emphasized ? AppTextStyle.headline1 : AppTextStyle.title1)
                 .copyWith(
-              color: emphasized
-                  ? CatatPencairanView.emeraldPrimary
-                  : Colors.black87,
+              color: emphasized ? AppColors.greenDark : Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: emphasized ? 20 : 15,
             ),
@@ -529,7 +514,7 @@ class _PencairanBerhasilSheet extends StatelessWidget {
             ),
             child: const Icon(
               Icons.check_circle,
-              color: CatatPencairanView.emeraldPrimary,
+              color: AppColors.greenDark,
               size: 40,
             ),
           ),
@@ -557,13 +542,14 @@ class _PencairanBerhasilSheet extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _row('Dicairkan', 'Rp ${formatRupiahId(created.nominal)}'),
+                _row('Dicairkan',
+                    'Rp ${CurrencyFormatter.formatNumber(created.nominal)}'),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  child: Divider(height: 1, color: AppColors.border),
                 ),
                 _row('Saldo sesudah',
-                    'Rp ${formatRupiahId(created.saldoSesudah)}',
+                    'Rp ${CurrencyFormatter.formatNumber(created.saldoSesudah)}',
                     isPrimary: true),
               ],
             ),
@@ -586,9 +572,7 @@ class _PencairanBerhasilSheet extends StatelessWidget {
           Text(
             value,
             style: AppTextStyle.title1.copyWith(
-              color: isPrimary
-                  ? CatatPencairanView.emeraldPrimary
-                  : Colors.black87,
+              color: isPrimary ? AppColors.greenDark : Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: isPrimary ? 16 : 14,
             ),

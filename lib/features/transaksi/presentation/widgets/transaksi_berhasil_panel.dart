@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class TransaksiBerhasilPanel extends StatefulWidget {
   final String customerName;
@@ -22,22 +24,7 @@ class TransaksiBerhasilPanel extends StatefulWidget {
 }
 
 class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
-  static const Color emeraldPrimary = Color(0xFF006D44);
   bool _isSending = false;
-
-  String _formatCurrency(int value) {
-    String str = value.toString();
-    String result = '';
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      result = str[i] + result;
-      count++;
-      if (count % 3 == 0 && i != 0) {
-        result = '.$result';
-      }
-    }
-    return 'Rp $result';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +42,8 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
             color: Colors.green[50],
             shape: BoxShape.circle,
           ),
-          child:
-              const Icon(Icons.check_circle, color: emeraldPrimary, size: 40),
+          child: const Icon(Icons.check_circle,
+              color: AppColors.greenDark, size: 40),
         ),
         const SizedBox(height: 24),
 
@@ -91,17 +78,17 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
               _buildSummaryRow('Nasabah', widget.customerName, isBold: false),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                child: Divider(height: 1, color: AppColors.border),
               ),
-              _buildSummaryRow(
-                  'Nilai Setoran', '+${_formatCurrency(widget.totalSetoran)}',
+              _buildSummaryRow('Nilai Setoran',
+                  '+${CurrencyFormatter.formatRupiah(widget.totalSetoran)}',
                   isPrimary: true),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                child: Divider(height: 1, color: AppColors.border),
               ),
-              _buildSummaryRow(
-                  'Saldo Terbaru', _formatCurrency(widget.newBalance),
+              _buildSummaryRow('Saldo Terbaru',
+                  CurrencyFormatter.formatRupiah(widget.newBalance),
                   isPrimary: true),
             ],
           ),
@@ -119,7 +106,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
                   setState(() => _isSending = false);
                 },
           style: ElevatedButton.styleFrom(
-            backgroundColor: emeraldPrimary,
+            backgroundColor: AppColors.greenDark,
             padding: const EdgeInsets.symmetric(vertical: 16),
             minimumSize: const Size(double.infinity, 0),
             shape: RoundedRectangleBorder(
@@ -161,7 +148,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Text(
           value,
           style: AppTextStyle.title1.copyWith(
-            color: isPrimary ? emeraldPrimary : Colors.black87,
+            color: isPrimary ? AppColors.greenDark : Colors.black87,
             fontWeight: isBold || isPrimary ? FontWeight.bold : FontWeight.w600,
             fontSize: isPrimary ? 16 : 14,
           ),

@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_
 import 'package:pilah_mobile/services/di.dart';
 
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Visual preview only. The normal app entrypoint still performs real login.
 void main() {
@@ -55,7 +56,7 @@ void main() {
         title: 'PILAH - Preview Beranda',
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF166534)),
+          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.greenDark),
         ),
         routerConfig: router,
       ),
