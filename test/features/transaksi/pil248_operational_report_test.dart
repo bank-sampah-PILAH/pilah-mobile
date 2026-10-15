@@ -303,6 +303,13 @@ void main() {
         lessThanOrEqualTo(168),
         reason: 'The summary must leave more room for transaction history.');
     expect(tester.takeException(), isNull);
+    await tester.longPress(find.text('Saldo Periode'));
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(
+        find.text(
+            'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.'),
+        findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
   });
 
   for (final (width, scale) in [(320.0, 1.0), (360.0, 2.0), (1440.0, 1.0)]) {

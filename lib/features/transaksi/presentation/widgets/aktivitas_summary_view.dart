@@ -10,6 +10,9 @@ import '../cubit/riwayat_aktivitas_state.dart';
 class AktivitasSummaryView extends StatelessWidget {
   const AktivitasSummaryView({super.key});
 
+  static const _horizontalPadding = 12.0;
+  static const _columnSpacing = 16.0;
+
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
@@ -33,44 +36,53 @@ class AktivitasSummaryView extends StatelessWidget {
           final money = summary.saldo < 0
               ? '-${CurrencyFormatter.formatRupiah(summary.saldo.abs())}'
               : CurrencyFormatter.formatRupiah(summary.saldo);
-          final values = <(String, String)>[
-            ('Total Transaksi', '${summary.jumlahTransaksi}'),
+          final values = <(String, String, String?)>[
+            ('Total Transaksi', '${summary.jumlahTransaksi}', null),
             (
               'Total Berat Sampah',
-              '${summary.totalBerat.toString().replaceFirst(RegExp(r'\.0$'), '').replaceAll('.', ',')} kg'
+              '${summary.totalBerat.toString().replaceFirst(RegExp(r'\.0$'), '').replaceAll('.', ',')} kg',
+              null,
             ),
             (
               'Total Nilai Setoran',
-              CurrencyFormatter.formatRupiah(summary.totalSetoran)
+              CurrencyFormatter.formatRupiah(summary.totalSetoran),
+              null,
             ),
             (
               'Total Pencairan',
-              CurrencyFormatter.formatRupiah(summary.totalPencairan)
+              CurrencyFormatter.formatRupiah(summary.totalPencairan),
+              null,
             ),
-            ('Saldo Periode', money),
+            (
+              'Saldo Periode',
+              money,
+              'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.'
+            ),
           ];
           return LayoutBuilder(builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 720 ? 5 : 2;
-            final inline = columns != 5;
-            final width = inline
-                ? constraints.maxWidth - 24
-                : (constraints.maxWidth - 24 - 64) / columns;
+            final inline = constraints.maxWidth < 720;
+            final columns = inline ? 1 : 5;
+            final width = (constraints.maxWidth -
+                    2 * _horizontalPadding -
+                    (columns - 1) * _columnSpacing) /
+                columns;
             return Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: _horizontalPadding, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.greenLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Wrap(
-                  spacing: 16,
+                  spacing: _columnSpacing,
                   runSpacing: 4,
                   children: values
                       .map((metric) => _SummaryMetric(
                           label: metric.$1,
                           value: metric.$2,
+                          explanation: metric.$3,
                           width: width,
                           inline: inline))
                       .toList(),
@@ -87,12 +99,14 @@ class _SummaryMetric extends StatelessWidget {
       {required this.label,
       required this.value,
       required this.width,
-      required this.inline});
+      required this.inline,
+      this.explanation});
 
   final String label;
   final String value;
   final double width;
   final bool inline;
+  final String? explanation;
 
   @override
   Widget build(BuildContext context) {
@@ -101,15 +115,12 @@ class _SummaryMetric extends StatelessWidget {
       Text(value,
           style: AppTextStyle.headline3.copyWith(fontWeight: FontWeight.bold)),
     ];
+    final content = _layout(texts);
     return SizedBox(
       width: width,
-      child: label == 'Saldo Periode'
-          ? Tooltip(
-              message:
-                  'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.',
-              child: _layout(texts),
-            )
-          : _layout(texts),
+      child: explanation != null
+          ? Tooltip(message: explanation!, child: content)
+          : content,
     );
   }
 
