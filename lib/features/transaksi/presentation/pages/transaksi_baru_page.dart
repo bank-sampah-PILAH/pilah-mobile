@@ -6,6 +6,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -23,8 +24,6 @@ import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
@@ -111,8 +110,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
   /// Tombol simpan. Satu definisi dipakai dua layout: di telepon ia menjadi
   /// bottomNavigationBar, di layar lebar ia duduk di panel samping.
-  Widget _saveButton() => CustomPrimaryButton(
-        title: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
+  Widget _saveButton() => AppButton(
+        label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
         icon: Icons.save_outlined,
         onPressed: _isSaving ? null : _handleSubmit,
       );
@@ -567,11 +566,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                             const SizedBox(height: 16),
 
                             // Add Item Button
-                            CustomOutlinedButton(
-                              title: 'Tambah Item Setoran',
+                            AppButton(
+                              label: 'Tambah Item Setoran',
+                              variant: AppButtonVariant.outlined,
                               icon: Icons.add,
-                              borderColor: Colors.grey[300]!,
-                              textColor: AppColors.greenDark,
                               onPressed: _addItem,
                             ),
                             const SizedBox(height: 24),

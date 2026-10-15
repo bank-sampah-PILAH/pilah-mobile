@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
@@ -83,7 +83,7 @@ void main() {
     return results;
   }
 
-  CustomPrimaryButton submitButton(WidgetTester tester) =>
+  AppButton submitButton(WidgetTester tester) =>
       tester.widget(find.byKey(const Key('submit-edit-pencairan')));
 
   Future<void> tapSubmit(WidgetTester tester) async {
