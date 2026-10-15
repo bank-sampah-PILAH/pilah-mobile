@@ -4,11 +4,13 @@ import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_summary.dart';
@@ -61,7 +63,18 @@ Future<AktivitasPage> _page(Map<String, dynamic> totals,
 }
 
 void main() {
-  setUpAll(() => registerFallbackValue(const TransaksiFilter()));
+  setUpAll(() async {
+    registerFallbackValue(const TransaksiFilter());
+    // Layout budgets must use the shipped font, not the square Ahem test font.
+    for (final (style, asset) in [
+      (AppTextStyle.small, 'assets/fonts/PoppinsRegular.ttf'),
+      (AppTextStyle.headline3, 'assets/fonts/PoppinsMedium.ttf'),
+    ]) {
+      final loader = FontLoader(style.fontFamily!)
+        ..addFont(rootBundle.load(asset));
+      await loader.load();
+    }
+  });
 
   test(
       'positive: parses whole filtered summary, including negative period balance',

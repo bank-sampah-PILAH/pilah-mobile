@@ -34,33 +34,47 @@ class AktivitasSummaryView extends StatelessWidget {
               ? '-${CurrencyFormatter.formatRupiah(summary.saldo.abs())}'
               : CurrencyFormatter.formatRupiah(summary.saldo);
           final values = <(String, String)>[
-            ('Jumlah transaksi', '${summary.jumlahTransaksi}'),
+            ('Total Transaksi', '${summary.jumlahTransaksi}'),
             (
-              'Total berat',
+              'Total Berat Sampah',
               '${summary.totalBerat.toString().replaceFirst(RegExp(r'\.0$'), '').replaceAll('.', ',')} kg'
             ),
             (
-              'Nilai setoran',
+              'Total Nilai Setoran',
               CurrencyFormatter.formatRupiah(summary.totalSetoran)
             ),
             (
-              'Total pencairan',
+              'Total Pencairan',
               CurrencyFormatter.formatRupiah(summary.totalPencairan)
             ),
-            ('Saldo periode', money),
+            ('Saldo Periode', money),
           ];
           return LayoutBuilder(builder: (context, constraints) {
             final columns = constraints.maxWidth >= 720 ? 5 : 2;
-            final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+            final inline = columns != 5;
+            final width = inline
+                ? constraints.maxWidth - 24
+                : (constraints.maxWidth - 24 - 64) / columns;
             return Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: values
-                    .map((metric) => _SummaryMetric(
-                        label: metric.$1, value: metric.$2, width: width))
-                    .toList(),
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.greenLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Wrap(
+                  spacing: 16,
+                  runSpacing: 4,
+                  children: values
+                      .map((metric) => _SummaryMetric(
+                          label: metric.$1,
+                          value: metric.$2,
+                          width: width,
+                          inline: inline))
+                      .toList(),
+                ),
               ),
             );
           });
@@ -70,29 +84,45 @@ class AktivitasSummaryView extends StatelessWidget {
 
 class _SummaryMetric extends StatelessWidget {
   const _SummaryMetric(
-      {required this.label, required this.value, required this.width});
+      {required this.label,
+      required this.value,
+      required this.width,
+      required this.inline});
 
   final String label;
   final String value;
   final double width;
+  final bool inline;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: width,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.greenLight,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
+  Widget build(BuildContext context) {
+    final texts = [
+      Text(label, style: AppTextStyle.small),
+      Text(value,
+          style: AppTextStyle.headline3.copyWith(fontWeight: FontWeight.bold)),
+    ];
+    return SizedBox(
+      width: width,
+      child: label == 'Saldo Periode'
+          ? Tooltip(
+              message:
+                  'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.',
+              child: _layout(texts),
+            )
+          : _layout(texts),
+    );
+  }
+
+  Widget _layout(List<Widget> texts) => inline
+      ? Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 2,
+          children: texts,
+        )
+      : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: AppTextStyle.small),
-            const SizedBox(height: 4),
-            Text(value,
-                style: AppTextStyle.headline3
-                    .copyWith(fontWeight: FontWeight.bold)),
-          ],
-        ),
-      );
+          children: [texts.first, const SizedBox(height: 2), texts.last],
+        );
 }
