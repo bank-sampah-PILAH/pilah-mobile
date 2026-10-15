@@ -22,13 +22,15 @@ Map<String, dynamic> bankSampahPage(
 
 /// A directory row; [latitude]/[longitude] add the PIL-326 coordinates a
 /// map marker needs (PIL-330). Omit both to simulate a bank without
-/// coordinates.
+/// coordinates. [jarakKm] adds the PIL-314 distance string, present only in
+/// coordinate search mode.
 Map<String, dynamic> bankRow(
   String id,
   String nama, {
   String kota = 'Depok',
   double? latitude,
   double? longitude,
+  String? jarakKm,
 }) =>
     {
       'id': id,
@@ -37,6 +39,7 @@ Map<String, dynamic> bankRow(
       'kota': kota,
       if (latitude != null) 'latitude': '$latitude',
       if (longitude != null) 'longitude': '$longitude',
+      if (jarakKm != null) 'jarak_km': jarakKm,
     };
 
 /// A `GET /bank-sampah/{id}` detail body with layanan.

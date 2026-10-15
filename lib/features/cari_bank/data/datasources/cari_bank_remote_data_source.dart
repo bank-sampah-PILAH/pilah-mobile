@@ -12,7 +12,15 @@ typedef CariBankPage = ({
 });
 
 abstract class CariBankRemoteDataSource {
-  Future<CariBankPage> search({String q, String kota, int page});
+  Future<CariBankPage> search({
+    String q,
+    String kota,
+    int page,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    String? sort,
+  });
   Future<BankSampahDetailEntity> detail(String id);
 }
 
@@ -23,14 +31,26 @@ class CariBankRemoteDataSourceImpl implements CariBankRemoteDataSource {
   CariBankRemoteDataSourceImpl(this.networkService);
 
   @override
-  Future<CariBankPage> search(
-      {String q = '', String kota = '', int page = 1}) async {
+  Future<CariBankPage> search({
+    String q = '',
+    String kota = '',
+    int page = 1,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    String? sort,
+  }) async {
     final response = await networkService.get(
       Endpoints.bankSampahDirectory,
       queryParams: {
         'page': '$page',
         if (q.trim().isNotEmpty) 'q': q.trim(),
         if (kota.trim().isNotEmpty) 'kota': kota.trim(),
+        // PIL-314: the trio travels together (backend is all-or-nothing).
+        if (latitude != null) 'latitude': '$latitude',
+        if (longitude != null) 'longitude': '$longitude',
+        if (radiusKm != null) 'radius_km': '$radiusKm',
+        if (sort != null && sort.isNotEmpty) 'sort': sort,
       },
     );
     final envelope = response.data as Map<String, dynamic>;

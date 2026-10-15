@@ -5,10 +5,12 @@ import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
+import 'package:pilah_mobile/core/utils/formatter/jarak_formatter.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_cubit.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/cubit/cari_bank_state.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/cari_bank/presentation/widgets/peta_bank_view.dart';
+import 'package:pilah_mobile/features/map/presentation/pages/map_picker_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -92,6 +94,94 @@ class _CariBankViewState extends State<CariBankView> {
                       setState(() => _mode = selection.first),
                 ),
               ),
+              // Mode lokasi (PIL-314): dua pintu masuk — titik sekarang atau
+              // titik pilihan peta — lalu cip radius hanya saat aktif.
+              if (state is CariBankLoaded && state.dalamRadiusKm == null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const Key('cari_bank_dekat_saya'),
+                          onPressed: () =>
+                              context.read<CariBankCubit>().pilihLokasiSaya(),
+                          icon: const Icon(Icons.near_me_outlined, size: 18),
+                          label: const Text('Di dekat saya'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const Key('cari_bank_pilih_di_peta'),
+                          onPressed: () async {
+                            // Same Navigator pattern as profile's map picker —
+                            // MapPickerPage is not go_router-registered.
+                            final titik = await Navigator.of(context)
+                                .push<({double latitude, double longitude})>(
+                              MaterialPageRoute(
+                                // Thread the test seam (PIL-330) when set so no
+                                // real OSM tile is fetched inside tests; null
+                                // lets MapPickerPage default to the real layer.
+                                builder: (_) => widget.tileLayerBuilder == null
+                                    ? const MapPickerPage()
+                                    : MapPickerPage(
+                                        tileLayerBuilder:
+                                            widget.tileLayerBuilder!,
+                                      ),
+                              ),
+                            );
+                            if (titik != null && context.mounted) {
+                              context
+                                  .read<CariBankCubit>()
+                                  .pilihDariPeta(titik);
+                            }
+                          },
+                          icon: const Icon(Icons.map_outlined, size: 18),
+                          label: const Text('Di peta'),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (state is CariBankLoaded)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: SizedBox(
+                    height: 32,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        for (final km in const [1.0, 5.0, 10.0, 25.0])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: OutlinedButton(
+                              key: Key('cari_bank_radius_${km.toInt()}'),
+                              style: OutlinedButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                backgroundColor: km == state.dalamRadiusKm
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                    : null,
+                              ),
+                              onPressed: () => context
+                                  .read<CariBankCubit>()
+                                  .pilihRadiusKm(km),
+                              child: Text('${km.toInt()} km'),
+                            ),
+                          ),
+                        ActionChip(
+                          key: const Key('cari_bank_hapus_lokasi'),
+                          avatar: const Icon(Icons.close, size: 16),
+                          label: const Text('Hapus lokasi'),
+                          onPressed: () =>
+                              context.read<CariBankCubit>().hapusLokasi(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Expanded(child: _body(context, state)),
             ],
           ),
@@ -242,6 +332,9 @@ class _BankTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          trailing: bank.jarakKm == null
+              ? null
+              : PillTag(text: formatJarakId(double.parse(bank.jarakKm!))),
           onTap: () => context.push(
             BankSampahDetailPage.route,
             extra: bank.id,
@@ -250,4 +343,24 @@ class _BankTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Tag kecil bentuk pil untuk satu label pendek (jarak, mode, dsb.).
+class PillTag extends StatelessWidget {
+  final String text;
+
+  const PillTag({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
+      );
 }

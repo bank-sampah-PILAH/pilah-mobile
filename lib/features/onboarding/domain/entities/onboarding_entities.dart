@@ -72,6 +72,10 @@ class BankSampahDirectoryEntity {
   final ({double latitude, double longitude})? lokasi;
   final String fotoLogo;
 
+  /// Distance from the search origin, as the backend's `jarak_km` string
+  /// (PIL-314); present only in coordinate+radius search mode.
+  final String? jarakKm;
+
   const BankSampahDirectoryEntity({
     required this.id,
     required this.nama,
@@ -79,6 +83,7 @@ class BankSampahDirectoryEntity {
     required this.kota,
     this.lokasi,
     required this.fotoLogo,
+    this.jarakKm,
   });
 
   factory BankSampahDirectoryEntity.fromJson(Map<String, dynamic> json) =>
@@ -89,6 +94,7 @@ class BankSampahDirectoryEntity {
         kota: (json['kota'] as String?) ?? '',
         lokasi: parseLokasi(json['latitude'], json['longitude']),
         fotoLogo: (json['foto_logo'] as String?) ?? '',
+        jarakKm: (json['jarak_km'] as String?),
       );
 }
 
