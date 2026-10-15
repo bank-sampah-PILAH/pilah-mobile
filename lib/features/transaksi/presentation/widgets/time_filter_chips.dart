@@ -102,7 +102,7 @@ class TimeFilterChips extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.download_rounded,
+                      const Icon(Icons.download_rounded,
                           color: AppColors.inkSoft, size: 16),
                       const SizedBox(width: 4),
                       Text(
