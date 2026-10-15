@@ -67,6 +67,22 @@ void main() {
     }
   });
 
+  for (final (filename, mimeType) in [
+    ('laporan.PDF', 'application/pdf'),
+    ('attachment.bin', 'application/octet-stream'),
+    ('README', 'application/octet-stream'),
+  ]) {
+    test('browser download preserves the MIME policy for $filename', () async {
+      await FileDownloader.save(
+          filename: filename, bytes: Uint8List.fromList([0, 255]));
+      expect(downloads.single.$1, filename);
+      final response = await responses.single;
+      expect(response.headers.get('content-type'), mimeType);
+      final buffer = await response.arrayBuffer().toDart;
+      expect(buffer.toDart.asUint8List(), [0, 255]);
+    });
+  }
+
   test('corner: repeated empty exports keep filenames and use separate URLs',
       () async {
     for (var index = 0; index < 2; index++) {
