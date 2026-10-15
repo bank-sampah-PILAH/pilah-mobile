@@ -52,6 +52,9 @@ import '../features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit
     as _i243;
 import '../features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart'
     as _i359;
+import '../features/cari_bank/data/datasources/cari_bank_remote_data_source.dart'
+    as _i144;
+import '../features/cari_bank/presentation/cubit/cari_bank_cubit.dart' as _i206;
 import '../features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     as _i377;
 import '../features/dashboard/data/datasources/dashboard_reporting_data_source.dart'
@@ -265,6 +268,8 @@ extension GetItInjectableX on _i174.GetIt {
         _i142.DraftPencairanRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i646.GetAktivitasUseCase>(
         () => _i646.GetAktivitasUseCase(gh<_i184.AktivitasRepository>()));
+    gh.lazySingleton<_i144.CariBankRemoteDataSource>(
+        () => _i144.CariBankRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i247.OnboardingRemoteDataSource>(
         () => _i247.OnboardingRemoteDataSourceImpl(gh<_i941.NetworkService>()));
     gh.lazySingleton<_i1037.PencairanRemoteDataSources>(
@@ -303,6 +308,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i183.ImagePicker>(),
           gh<_i183.ImageCropper>(),
         ));
+    gh.lazySingleton<_i206.CariBankCubit>(
+        () => _i206.CariBankCubit(gh<_i144.CariBankRemoteDataSource>()));
     gh.lazySingleton<_i390.BankSampahApprovalRepository>(() =>
         _i807.BankSampahApprovalRepositoryImpl(
             gh<_i335.BankSampahApprovalRemoteDataSource>()));

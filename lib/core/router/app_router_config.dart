@@ -19,6 +19,8 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/pages/cari_bank_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -172,6 +174,18 @@ class AppRouterConfig {
             state.extra is DraftEditorArgs ? null : DraftListPage.route,
         builder: (context, state) =>
             DraftEditorPage(args: state.extra! as DraftEditorArgs),
+      ),
+      GoRoute(
+        path: CariBankPage.route,
+        name: CariBankPage.route,
+        builder: (context, state) => const CariBankPage(),
+      ),
+      GoRoute(
+        path: BankSampahDetailPage.route,
+        name: BankSampahDetailPage.route,
+        builder: (context, state) => BankSampahDetailPage(
+          bankSampahId: state.extra! as String,
+        ),
       ),
       GoRoute(
         path: EditPencairanPage.route,

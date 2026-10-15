@@ -11,6 +11,14 @@ import '../../../../support/stub_api.dart';
 
 const _path = '/api/v1/bank-sampah';
 
+// PIL-308 paginated the directory — stubs answer the envelope form.
+Map<String, dynamic> _page(List<dynamic> results) => {
+      'count': results.length,
+      'previous': null,
+      'next': null,
+      'results': results
+    };
+
 Map<String, dynamic> _bank(String id, String nama, {String kota = 'Depok'}) =>
     {'id': id, 'nama': nama, 'alamat': 'Jl. $nama', 'kota': kota};
 
@@ -23,10 +31,11 @@ void main() {
     api = StubApi();
     cubit = buildOnboardingCubit(api);
     picked = null;
-    api.on('GET', _path, json: [
-      _bank('b1', 'Bank Melati'),
-      _bank('b2', 'Bank Mawar', kota: ''),
-    ]);
+    api.on('GET', _path,
+        json: _page([
+          _bank('b1', 'Bank Melati'),
+          _bank('b2', 'Bank Mawar', kota: ''),
+        ]));
   });
 
   tearDown(() => cubit.close());
@@ -97,7 +106,7 @@ void main() {
   });
 
   testWidgets('an empty directory says so', (tester) async {
-    api.on('GET', _path, json: <dynamic>[]);
+    api.on('GET', _path, json: _page(const []));
     await openSheet(tester);
     await tester.pumpAndSettle();
 
@@ -111,7 +120,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Internal Server Error'), findsOneWidget);
 
-    api.on('GET', _path, json: [_bank('b1', 'Bank Melati')]);
+    api.on('GET', _path, json: _page([_bank('b1', 'Bank Melati')]));
     await tester.tap(find.text('Coba Lagi'));
     await tester.pumpAndSettle();
 
