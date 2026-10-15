@@ -3,8 +3,8 @@
 ## Android identity and version
 
 - Keep the application ID `com.mobile.pilahapp`; it is the identity of the existing Play app.
-- `pubspec.yaml` uses `MAJOR.MINOR.PATCH+BUILD`. The current recovery build is `1.0.1+7`, after the rejected Play version code 6. The release tag must be `v1.0.1`.
-- Before every later upload, check the highest version code already in Play Console and increment the `+BUILD` value. Match the tag to the version name. Never reuse a version code or move an existing release tag.
+- `pubspec.yaml` uses `MAJOR.MINOR.PATCH+BUILD`. The next unused GitHub release name is `1.0.3`, so its tag is `v1.0.3`. The planned recovery build code is 7, after the rejected Play version code 6.
+- Before creating the tag or uploading, an authorized operator must check Play Console's highest version code and set `+BUILD` to a greater value. The workflow only enforces the known rejected-code lower bound; it cannot query Play's latest version. Match the tag to the version name. Never reuse a version code or move an existing release tag.
 - Keep the existing upload key and Play App Signing configuration. Do not generate or rotate an upload key as part of a release.
 
 ## Required GitHub configuration
