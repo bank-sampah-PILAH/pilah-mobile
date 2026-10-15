@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/cari_bank/domain/entities/cari_bank_entiti
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/perbandingan_harga/domain/entities/perbandingan_harga_entities.dart';
 import 'package:pilah_mobile/features/perbandingan_harga/presentation/cubit/perbandingan_harga_cubit.dart';
+import 'package:pilah_mobile/features/cari_bank/presentation/widgets/bank_item_card.dart';
 import 'package:pilah_mobile/features/perbandingan_harga/presentation/cubit/perbandingan_harga_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -402,79 +403,16 @@ class _PilihanBank extends StatelessWidget {
 
   const _PilihanBank({required this.bank});
 
-  String get _initials => bank.nama
-      .split(RegExp(r'\s+'))
-      .where((kata) => kata.isNotEmpty)
-      .take(2)
-      .map((kata) => kata[0].toUpperCase())
-      .join();
-
   @override
   Widget build(BuildContext context) => GestureDetector(
         key: Key('perbandingan_picker_bank_${bank.id}'),
         onTap: () => Navigator.pop(context, bank),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.greenLight,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _initials,
-                  style: AppTextStyle.title1.copyWith(
-                    color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      bank.nama,
-                      style: AppTextStyle.title1.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      bank.kota,
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[400],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.greenDark,
-              ),
-            ],
+        child: BankItemCard(
+          bank: bank,
+          subtitle: bank.kota,
+          trailing: const Icon(
+            Icons.chevron_right,
+            color: AppColors.greenDark,
           ),
         ),
       );
