@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
@@ -438,70 +439,18 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
                     children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _onSubmit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.greenDark,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      _isLocked
-                                          ? 'Lanjutkan'
-                                          : 'Ajukan Pendaftaran',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Icon(Icons.arrow_forward,
-                                        color: Colors.white, size: 20),
-                                  ],
-                                ),
-                        ),
+                      AppButton(
+                        label: _isLocked ? 'Lanjutkan' : 'Ajukan Pendaftaran',
+                        trailingIcon: Icons.arrow_forward,
+                        isLoading: _isLoading,
+                        onPressed: _onSubmit,
                       ),
                       if (_isWizardStep) ...[
                         const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: _backToProfile,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              side: BorderSide(color: Colors.grey.shade300),
-                              backgroundColor: Colors.white,
-                            ),
-                            child: Text(
-                              'Kembali',
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
+                        AppButton(
+                          label: 'Kembali',
+                          variant: AppButtonVariant.neutral,
+                          onPressed: _backToProfile,
                         ),
                       ],
                     ],

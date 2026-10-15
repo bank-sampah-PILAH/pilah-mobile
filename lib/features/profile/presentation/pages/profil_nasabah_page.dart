@@ -1,5 +1,6 @@
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -173,16 +174,11 @@ class _LogoutCard extends StatelessWidget {
               ])),
         ]),
         const SizedBox(height: 16),
-        SizedBox(
-            height: 46,
-            child: OutlinedButton(
-                onPressed: onLogout,
-                style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: NasabahStyle.line),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                child: Text('Keluar',
-                    style: NasabahStyle.text(15, weight: FontWeight.w600)))),
+        AppButton(
+          label: 'Keluar',
+          variant: AppButtonVariant.neutral,
+          onPressed: onLogout,
+        ),
       ]));
 }
 
@@ -544,26 +540,17 @@ class _ProfileEditForm extends StatelessWidget {
           const SizedBox(height: 20),
           Row(children: [
             Expanded(
-                child: OutlinedButton(
-                    onPressed: onCancel,
-                    style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: NasabahStyle.line),
-                        foregroundColor: NasabahStyle.ink,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
-                    child: const Text('Batal'))),
+                child: AppButton(
+              label: 'Batal',
+              variant: AppButtonVariant.neutral,
+              onPressed: onCancel,
+            )),
             const SizedBox(width: 12),
             Expanded(
-                child: ElevatedButton(
-                    onPressed: onSave,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: NasabahStyle.emerald,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
-                    child: Text(saving ? 'Menyimpan...' : 'Simpan Perubahan'))),
+                child: AppButton(
+              label: saving ? 'Menyimpan...' : 'Simpan Perubahan',
+              onPressed: onSave,
+            )),
           ]),
         ]),
       );

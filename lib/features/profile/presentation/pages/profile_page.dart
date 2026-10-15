@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -332,79 +333,43 @@ class _ProfileViewState extends State<_ProfileView>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isSavingSettings ? null : _onSaveSettings,
-                          icon: _isSavingSettings
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.save_outlined,
-                                  color: Colors.white, size: 20),
-                          label: Text(
-                            _isSavingSettings
-                                ? 'Menyimpan...'
-                                : 'Simpan Pengaturan',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.greenDark,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
+                      AppButton(
+                        label: _isSavingSettings
+                            ? 'Menyimpan...'
+                            : 'Simpan Pengaturan',
+                        icon: Icons.save_outlined,
+                        leading: _isSavingSettings
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : null,
+                        onPressed: _isSavingSettings ? null : _onSaveSettings,
                       ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final confirmed = await showAppConfirmDialog(
-                              context,
-                              title: 'Keluar dari akun?',
-                              message: 'Anda perlu masuk kembali untuk '
-                                  'mengakses akun ini.',
-                              confirmLabel: 'Ya, Keluar',
-                              destructive: true,
-                            );
-                            if (confirmed && context.mounted) {
-                              context
-                                  .read<AuthenticationBloc>()
-                                  .add(LogoutRequested());
-                            }
-                          },
-                          icon: Icon(Icons.logout,
-                              color: Colors.red[600], size: 20),
-                          label: Text(
-                            'Keluar dari Aplikasi',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.red[600],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            side: BorderSide(color: Colors.red[200]!),
-                            backgroundColor: Colors.white,
-                          ),
-                        ),
+                      AppButton(
+                        label: 'Keluar dari Aplikasi',
+                        variant: AppButtonVariant.destructiveOutlined,
+                        icon: Icons.logout,
+                        onPressed: () async {
+                          final confirmed = await showAppConfirmDialog(
+                            context,
+                            title: 'Keluar dari akun?',
+                            message: 'Anda perlu masuk kembali untuk '
+                                'mengakses akun ini.',
+                            confirmLabel: 'Ya, Keluar',
+                            destructive: true,
+                          );
+                          if (confirmed && context.mounted) {
+                            context
+                                .read<AuthenticationBloc>()
+                                .add(LogoutRequested());
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -802,29 +767,11 @@ class _ProfileViewState extends State<_ProfileView>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _onCopyInvite,
-                        icon: const Icon(Icons.copy,
-                            color: AppColors.greenDark, size: 18),
-                        label: Text(
-                          'Salin Link Undangan',
-                          style: AppTextStyle.small.copyWith(
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.greenDark,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
+                    AppButton(
+                      label: 'Salin Link Undangan',
+                      variant: AppButtonVariant.outlined,
+                      icon: Icons.copy,
+                      onPressed: _onCopyInvite,
                     ),
                   ],
                 ),
