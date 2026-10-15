@@ -5,9 +5,17 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 class BottomSheetHeader extends StatelessWidget {
   final String title;
 
+  /// Apakah pegangan tarik di atas judul ikut ditampilkan.
+  ///
+  /// Default true, karena hampir semua pemakai header ini memang bottom sheet.
+  /// Picker yang tampil sebagai dialog pada jendela lebar mematikannya: dialog
+  /// tidak dapat ditarik, jadi di sana pegangan itu janji palsu.
+  final bool showDragHandle;
+
   const BottomSheetHeader({
     super.key,
     required this.title,
+    this.showDragHandle = true,
   });
 
   @override
@@ -16,17 +24,19 @@ class BottomSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+        if (showDragHandle) ...[
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 24),
+        ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
