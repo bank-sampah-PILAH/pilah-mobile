@@ -123,7 +123,12 @@ class AppButton extends StatelessWidget {
       );
 
   Widget _content() {
-    final text = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+    final text = Text(
+      label,
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
+    );
     final lead = leading ?? (icon == null ? null : Icon(icon, size: 20));
     if (lead == null) return text;
     return Row(
