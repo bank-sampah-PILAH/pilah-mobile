@@ -8,6 +8,11 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/ap
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
@@ -34,15 +39,18 @@ import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/lapor
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 import '../../support/app_shell_support.dart';
+import '../../support/draft_pencairan_support.dart';
 import '../../support/stub_api.dart';
 
 class _MockAppeal extends Mock implements AppealMembershipUseCase {}
 
 void main() {
   late AppShell shell;
+  late StubApi api;
 
   setUp(() async {
-    shell = AppShell(StubApi());
+    api = StubApi();
+    shell = AppShell(api);
     await shell.registerDi();
   });
 
@@ -125,6 +133,50 @@ void main() {
       router.go('/riwayat-perubahan-pencairan', extra: 'p1');
       await tester.pumpAndSettle();
       expect(find.byType(RevisiPencairanPage), findsOneWidget);
+    });
+
+    testWidgets('can open the draft pencairan pages', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/draft-pencairan');
+      expect(find.byType(DraftListPage), findsOneWidget);
+
+      await visit(tester, router, '/draft-pencairan/pilih');
+      expect(find.byType(PilihNasabahPencairanPage), findsOneWidget);
+
+      router.go(
+        '/draft-pencairan/editor',
+        extra: const DraftEditorArgs.baru([
+          Kandidat(id: 'n-1', kode: 'NAS-1', nama: 'Ahmad', saldo: 1000),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Ahmad'), findsOneWidget);
+    });
+
+    testWidgets('can continue a saved draft from its id', (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      router.go(
+        '/draft-pencairan/editor',
+        extra: const DraftEditorArgs.lanjutkan('d-1'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Cair Oktober'), findsOneWidget);
+    });
+
+    testWidgets('opening the draft editor without a draft goes to the list',
+        (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/draft-pencairan/editor');
+
+      expect(find.byType(DraftListPage), findsOneWidget);
+      expect(find.byType(DraftEditorPage), findsNothing);
     });
 
     testWidgets('opens the jadwal page, honouring a date in the link',

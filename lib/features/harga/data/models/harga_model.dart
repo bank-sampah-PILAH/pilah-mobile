@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 
 class HargaModel extends HargaEntity {
@@ -54,7 +55,7 @@ class HargaModel extends HargaEntity {
       kodeSampah: json['kode'] as String? ?? '',
       name: json['nama_sampah'] as String? ?? '',
       price: price,
-      priceFormatted: 'Rp $price',
+      priceFormatted: CurrencyFormatter.formatRupiah(price),
       category: category,
       subtitle: json['deskripsi'] as String? ?? '',
       badgeText: badgeText,

@@ -11,8 +11,8 @@ class AppNotification {
   /// what the user just did; a warning is an aside about something that went a
   /// different way than expected but cost them nothing. The tint reads quieter
   /// than either, and the border supplies the edge the solid fill would.
-  static const Color _warningBackground = Color(0xFFFEF3C7);
-  static const Color _warningForeground = Color(0xFFD97706);
+  static const Color _warningBackground = AppColors.warningLight;
+  static const Color _warningForeground = AppColors.warning;
 
   /// One elevation shared by all three tones, so they read as the same
   /// component wearing different colours.
@@ -154,7 +154,7 @@ class AppNotification {
         style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
       ),
       flushbarPosition: FlushbarPosition.TOP,
-      backgroundColor: const Color(0xFFDC2626), // error red
+      backgroundColor: AppColors.danger, // error red
       margin: const EdgeInsets.all(16),
       borderRadius: BorderRadius.circular(12),
       icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),

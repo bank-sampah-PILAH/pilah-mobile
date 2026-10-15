@@ -27,7 +27,7 @@ class AuthenticationBloc
   AuthenticationBloc(
     this._useCases,
     this._loginWithGoogleUseCase, {
-    bool? isWebOverride,
+    @ignoreParam bool? isWebOverride,
   })  : _isWeb = isWebOverride ?? kIsWeb,
         super(AuthenticationInitial()) {
     on<PostLoginEvent>(_onPostLoginEvent);

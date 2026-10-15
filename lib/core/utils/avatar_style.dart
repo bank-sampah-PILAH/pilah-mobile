@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Up to two initials from [name] (e.g. "Ahmad Ridwan" -> "AR"), for an
 /// avatar with no photo. Falls back to "NN" when [name] has no letters to
@@ -20,10 +21,10 @@ String initialsOf(String name) {
 }
 
 const List<(Color, Color)> _avatarPalette = [
-  (Color(0xFFEAF5EC), Color(0xFF2F6B45)), // green
+  (AppColors.greenLight, AppColors.greenDark), // green
   (Color(0xFFDBEAFE), Color(0xFF1E40AF)), // blue
   (Color(0xFFF3E8FF), Color(0xFF6B21A8)), // purple
-  (Color(0xFFFFF8D6), Color(0xFFD4A017)), // yellow
+  (AppColors.warningLight, AppColors.warning), // yellow
   (Color(0xFFFFEDD5), Color(0xFF9A3412)), // orange
   (Color(0xFFCCFBF1), Color(0xFF0F766E)), // teal
 ];

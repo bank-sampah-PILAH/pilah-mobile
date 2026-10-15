@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,20 +9,6 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_sta
 class TotalKasCard extends StatelessWidget {
   const TotalKasCard({super.key});
 
-  String _formatCurrency(int value) {
-    String str = value.toString();
-    String result = '';
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      result = str[i] + result;
-      count++;
-      if (count % 3 == 0 && i != 0) {
-        result = '.$result';
-      }
-    }
-    return 'Rp $result';
-  }
-
   String _display(DashboardState state) {
     switch (state.status) {
       case DashboardStatus.loading:
@@ -30,7 +17,7 @@ class TotalKasCard extends StatelessWidget {
       case DashboardStatus.error:
         return 'Rp —';
       case DashboardStatus.loaded:
-        return _formatCurrency(state.totalKasBulanIni);
+        return CurrencyFormatter.formatRupiah(state.totalKasBulanIni);
     }
   }
 

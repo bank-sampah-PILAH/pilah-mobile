@@ -31,11 +31,13 @@ class RecentActivitySection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Aktivitas Terbaru',
-              style: AppTextStyle.title1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Aktivitas Terbaru',
+                style: AppTextStyle.title1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             TextButton(
@@ -114,12 +116,9 @@ class RecentActivitySection extends StatelessWidget {
                     subtitleLines: items[i].subtitleLines,
                     amount: items[i].amount,
                     amountColor: items[i].amountColor,
-                    trailingCaptions: [
-                      if (items[i].trailingCaptions.isNotEmpty)
-                        '${_dayLabel(items[i].tanggal)}, ${items[i].trailingCaptions.first}'
-                      else
-                        _dayLabel(items[i].tanggal),
-                    ],
+                    trailingCaptions: items[i].trailingCaptions.isNotEmpty
+                        ? items[i].trailingCaptions
+                        : [_dayLabel(items[i].tanggal)],
                     badge: items[i].badge,
                   ),
                 ],
