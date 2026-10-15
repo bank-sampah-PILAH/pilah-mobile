@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/client/public_config_remote_data_source.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -13,6 +15,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_background_wrapper.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_button.dart';
+import 'package:pilah_mobile/features/authentication/presentation/widgets/reviewer_login_panel.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_footer.dart';
@@ -24,7 +27,18 @@ class LoginPage extends StatelessWidget {
   @visibleForTesting
   final bool? debugShowDemoLogin;
 
-  const LoginPage({super.key, this.debugShowDemoLogin});
+  @visibleForTesting
+  final bool? reviewerLoginReleaseModeOverride;
+
+  @visibleForTesting
+  final Future<bool> Function()? reviewerLoginConfigLoader;
+
+  const LoginPage({
+    super.key,
+    this.debugShowDemoLogin,
+    @visibleForTesting this.reviewerLoginReleaseModeOverride,
+    @visibleForTesting this.reviewerLoginConfigLoader,
+  });
 
   static const route = '/login';
 
@@ -69,6 +83,9 @@ class LoginPage extends StatelessWidget {
     final demoProfiles = demoLoginEnabled && environment != null
         ? DemoLoginProfiles.forEnvironment(environment)
         : DemoLoginProfiles.all;
+    final loadReviewerLoginEnabled = reviewerLoginConfigLoader ??
+        () => PublicConfigRemoteDataSource(di<NetworkService>())
+            .reviewerLoginEnabled();
 
     return LoginBackgroundWrapper(
       child: SafeArea(
@@ -79,12 +96,18 @@ class LoginPage extends StatelessWidget {
                 isLoading: isLoading,
                 showDemoLogin: demoLoginEnabled,
                 demoProfiles: demoProfiles,
+                loadReviewerLoginEnabled: loadReviewerLoginEnabled,
+                reviewerLoginReleaseModeOverride:
+                    reviewerLoginReleaseModeOverride,
               );
             }
             return _buildMobileLoginLayout(
               isLoading: isLoading,
               showDemoLogin: demoLoginEnabled,
               demoProfiles: demoProfiles,
+              loadReviewerLoginEnabled: loadReviewerLoginEnabled,
+              reviewerLoginReleaseModeOverride:
+                  reviewerLoginReleaseModeOverride,
             );
           },
         ),
@@ -96,6 +119,8 @@ class LoginPage extends StatelessWidget {
     required bool isLoading,
     required bool showDemoLogin,
     required List<DemoLoginProfile> demoProfiles,
+    required Future<bool> Function() loadReviewerLoginEnabled,
+    required bool? reviewerLoginReleaseModeOverride,
   }) {
     return SingleChildScrollView(
       child: Padding(
@@ -109,6 +134,11 @@ class LoginPage extends StatelessWidget {
             const WelcomeCard(),
             const SizedBox(height: 32),
             LoginButton(isLoading: isLoading),
+            ReviewerLoginPanel(
+              loadReviewerLoginEnabled: loadReviewerLoginEnabled,
+              isLoading: isLoading,
+              isReleaseModeOverride: reviewerLoginReleaseModeOverride,
+            ),
             if (showDemoLogin) ...[
               const SizedBox(height: 12),
               DemoLoginButton(
@@ -129,11 +159,15 @@ class _DesktopLoginLayout extends StatelessWidget {
   final bool isLoading;
   final bool showDemoLogin;
   final List<DemoLoginProfile> demoProfiles;
+  final Future<bool> Function() loadReviewerLoginEnabled;
+  final bool? reviewerLoginReleaseModeOverride;
 
   const _DesktopLoginLayout({
     required this.isLoading,
     required this.showDemoLogin,
     required this.demoProfiles,
+    required this.loadReviewerLoginEnabled,
+    required this.reviewerLoginReleaseModeOverride,
   });
 
   @override
@@ -197,6 +231,13 @@ class _DesktopLoginLayout extends StatelessWidget {
                             ),
                             const SizedBox(height: 32),
                             Center(child: LoginButton(isLoading: isLoading)),
+                            ReviewerLoginPanel(
+                              loadReviewerLoginEnabled:
+                                  loadReviewerLoginEnabled,
+                              isLoading: isLoading,
+                              isReleaseModeOverride:
+                                  reviewerLoginReleaseModeOverride,
+                            ),
                             if (showDemoLogin) ...[
                               const SizedBox(height: 12),
                               DemoLoginButton(

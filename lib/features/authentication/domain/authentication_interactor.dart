@@ -20,6 +20,14 @@ class AuthenticationInteractor implements AuthenticationUseCases {
   }
 
   @override
+  Future<Either<NetworkException, AuthEntity>> loginWithReviewer(
+    String email,
+    String password,
+  ) {
+    return _repository.loginWithReviewer(email, password);
+  }
+
+  @override
   Future<Either<Exception, void>> saveToken(
       String accessToken, String refreshToken) {
     return _repository.saveToken(

@@ -21,7 +21,7 @@ class AuthRepositoryImpl implements AuthRepository {
     this._localDataSources,
   );
 
-  Future<AuthEntity> _persistGoogleSession(Map<String, dynamic> payload) async {
+  Future<AuthEntity> _persistSession(Map<String, dynamic> payload) async {
     final response = AuthResponse.fromJson(payload);
     final entity = AuthMapper.mapResponseToDomain(response);
     await _localDataSources.saveToken(
@@ -46,6 +46,20 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<NetworkException, AuthEntity>> loginWithReviewer(
+      String email, String password) async {
+    try {
+      final payload =
+          await _remoteDataSources.loginWithReviewer(email, password);
+      return Right(await _persistSession(payload));
+    } on Exception catch (error) {
+      return Left(NetworkException.handleException(error));
+    } catch (error) {
+      return Left(GeneralException(message: error.toString()));
+    }
+  }
+
+  @override
   Future<Either<NetworkException, GoogleAuthOutcome>> loginWithGoogle(
       String idToken) async {
     try {
@@ -61,7 +75,7 @@ class AuthRepositoryImpl implements AuthRepository {
           photoUrl: profile['picture']?.toString() ?? '',
         ));
       }
-      final entity = await _persistGoogleSession(payload);
+      final entity = await _persistSession(payload);
       return Right(GoogleSession(entity));
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
@@ -84,7 +98,7 @@ class AuthRepositoryImpl implements AuthRepository {
         registrationToken,
         role.wireValue,
       );
-      final entity = await _persistGoogleSession(payload);
+      final entity = await _persistSession(payload);
       return Right(entity);
     } on Exception catch (error) {
       return Left(NetworkException.handleException(error));

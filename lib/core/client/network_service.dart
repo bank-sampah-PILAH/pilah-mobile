@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/client/retry_interceptor.dart';
+import 'package:pilah_mobile/core/constants/endpoints.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -227,36 +228,45 @@ class NetworkService {
 }
 
 final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
+  final reviewerLogin = _isReviewerLogin(options);
   if (kDebugMode) {
     Logger().i({
       'api': options.path,
-      'headers': options.headers,
+      'headers': reviewerLogin ? '[REDACTED]' : options.headers,
       'queryParams': options.queryParameters,
     });
   }
   return handler.next(options);
 }, onResponse: (resp, handler) {
+  final reviewerLogin = _isReviewerLogin(resp.requestOptions);
   if (kDebugMode) {
     final isBytes = resp.requestOptions.responseType == ResponseType.bytes;
     Logger().i({
       'api': '''
 ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}''',
-      'headers': resp.requestOptions.headers,
+      'headers': reviewerLogin ? '[REDACTED]' : resp.requestOptions.headers,
       'queryParams': resp.requestOptions.queryParameters,
-      'body': resp.requestOptions.data,
-      'response': isBytes ? 'bytes' : resp.data,
+      if (!reviewerLogin) 'body': resp.requestOptions.data,
+      if (reviewerLogin)
+        'response': '[REDACTED]'
+      else
+        'response': isBytes ? 'bytes' : resp.data,
     });
   }
   return handler.next(resp);
 }, onError: (err, handler) {
+  final reviewerLogin = _isReviewerLogin(err.requestOptions);
   if (kDebugMode) {
     Logger().e({
       'api': '''
 ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOptions.path}''',
-      'headers': err.requestOptions.headers,
+      'headers': reviewerLogin ? '[REDACTED]' : err.requestOptions.headers,
       'queryParams': err.requestOptions.queryParameters,
-      'body': err.requestOptions.data,
-      'response': err.response?.data,
+      if (!reviewerLogin) 'body': err.requestOptions.data,
+      if (reviewerLogin)
+        'response': '[REDACTED]'
+      else
+        'response': err.response?.data,
       'type': err.type,
       // `type` alone can't tell a dropped connection from a parse failure —
       // both arrive as DioExceptionType.unknown. The wrapped error is the only
@@ -267,13 +277,16 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
       // logger, and handing it an arbitrary non-encodable object risks throwing
       // *inside* the error interceptor — which Dio would then re-wrap as
       // another opaque `unknown`, hiding the very cause we're trying to see.
-      'error': err.error?.toString(),
-      'errorType': err.error?.runtimeType.toString(),
-      'message': err.message,
+      if (!reviewerLogin) 'error': err.error?.toString(),
+      if (!reviewerLogin) 'errorType': err.error?.runtimeType.toString(),
+      if (!reviewerLogin) 'message': err.message,
     });
   }
   return handler.next(err);
 });
+
+bool _isReviewerLogin(RequestOptions options) =>
+    options.uri.path.endsWith(Endpoints.loginWithReviewer);
 
 final options = Options(
   receiveTimeout: const Duration(milliseconds: 120000),

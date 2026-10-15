@@ -8,6 +8,11 @@ abstract class AuthRepository {
     String password,
   );
 
+  Future<Either<NetworkException, AuthEntity>> loginWithReviewer(
+    String email,
+    String password,
+  );
+
   Future<Either<NetworkException, GoogleAuthOutcome>> loginWithGoogle(
       String idToken);
 

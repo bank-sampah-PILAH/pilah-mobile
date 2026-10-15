@@ -12,6 +12,7 @@ import 'authentication_states.dart';
 import 'events/check_session_events.dart';
 import 'events/login_refresh_events.dart';
 import 'events/login_with_google_events.dart';
+import 'events/login_with_reviewer_events.dart';
 import 'events/logout_events.dart';
 import 'events/post_login_events.dart';
 import 'events/refresh_user_events.dart';
@@ -32,6 +33,7 @@ class AuthenticationBloc
         super(AuthenticationInitial()) {
     on<PostLoginEvent>(_onPostLoginEvent);
     on<LoginRefreshEvent>(_onLoginRefreshEvent);
+    on<LoginWithReviewerRequested>(_onLoginWithReviewerRequested);
     on<LoginWithGoogleRequested>(_onLoginWithGoogleRequested);
     on<RegisterGoogleRoleRequested>(_onRegisterGoogleRoleRequested);
     on<ChangeGoogleAccountRequested>(_onChangeGoogleAccountRequested);
@@ -62,6 +64,22 @@ class AuthenticationBloc
     if (state is PostLoginErrorState || state is AuthenticationFailure) {
       emitter(AuthenticationInitial());
     }
+  }
+
+  Future<void> _onLoginWithReviewerRequested(
+    LoginWithReviewerRequested event,
+    Emitter<AuthenticationStates> emitter,
+  ) async {
+    emitter(AuthenticationLoading());
+    final result =
+        await _useCases.loginWithReviewer(event.email, event.password);
+    result.fold(
+      (_) => emitter(AuthenticationFailure(
+        message:
+            'Tidak dapat masuk. Periksa email dan kata sandi, lalu coba lagi.',
+      )),
+      (auth) => emitter(Authenticated(authEntity: auth)),
+    );
   }
 
   Future _onLoginWithGoogleRequested(
