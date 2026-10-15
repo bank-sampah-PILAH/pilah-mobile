@@ -376,10 +376,25 @@ jobs:
       - name: Install Play promotion API dependency
         run: python3 -m pip install --disable-pip-version-check google-auth==2.62.0
 
-      - name: Update the selected track to the existing bundle
+      - name: Promote existing bundle to test track
+        if: inputs.track != 'production'
         env:
-          PLAY_SERVICE_ACCOUNT_JSON: ${{ inputs.track == 'production' && secrets.PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON || secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
           PLAY_TRACK: ${{ inputs.track }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: >-
+          python3 scripts/promote_play_release.py
+          --package-name com.mobile.pilahapp
+          --track "$PLAY_TRACK"
+          --release-tag "$RELEASE_TAG"
+          --bundle dist/app-release.aab
+          --metadata dist/release-metadata.txt
+
+      - name: Promote existing bundle to production
+        if: inputs.track == 'production'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: production
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: >-
           python3 scripts/promote_play_release.py

@@ -87,6 +87,28 @@ class PlayReleasePipelineTest(unittest.TestCase):
         self.assertIn("PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON", str(steps))
         self.assertIn("PLAY_TEST_SERVICE_ACCOUNT_JSON", str(steps))
 
+    def test_track_promotion_never_falls_back_to_test_credentials_for_production(self):
+        steps = workflow()["jobs"]["promote_production"]["steps"]
+        test_promotion = next(
+            step for step in steps if step.get("name") == "Promote existing bundle to test track"
+        )
+        production_promotion = next(
+            step for step in steps if step.get("name") == "Promote existing bundle to production"
+        )
+
+        self.assertEqual(test_promotion["if"], "inputs.track != 'production'")
+        self.assertEqual(
+            test_promotion["env"]["PLAY_SERVICE_ACCOUNT_JSON"],
+            "${{ secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}",
+        )
+        self.assertEqual(production_promotion["if"], "inputs.track == 'production'")
+        self.assertEqual(
+            production_promotion["env"]["PLAY_SERVICE_ACCOUNT_JSON"],
+            "${{ secrets.PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON }}",
+        )
+        self.assertNotIn("PLAY_TEST_SERVICE_ACCOUNT_JSON", str(production_promotion))
+        self.assertNotIn("||", str(production_promotion["env"]))
+
     def test_play_version_is_newer_than_rejected_version_code(self):
         pubspec = (ROOT / "pubspec.yaml").read_text()
         self.assertIn("version: 1.0.3+7", pubspec)
