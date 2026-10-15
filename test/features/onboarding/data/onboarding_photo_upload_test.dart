@@ -20,7 +20,6 @@ void main() {
         nama: 'Bank Melati',
         alamat: 'Jl. Melati 1',
         noHpPic: '81234567890',
-        fotoKegiatanPath: 'blob:http://localhost/activity-photo',
         fotoKegiatanBytes: bytes,
         fotoKegiatanFilename: 'kegiatan.png',
       ),

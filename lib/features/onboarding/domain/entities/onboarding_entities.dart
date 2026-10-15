@@ -42,21 +42,17 @@ class RegisterBankSampahRequest {
   final String? kota;
   final String noHpPic;
 
-  /// Absolute path to the selected `foto_kegiatan` image (sent as multipart).
-  final String fotoKegiatanPath;
-
-  /// Picker bytes take precedence over the path, which may be a browser blob URL.
-  final Uint8List? fotoKegiatanBytes;
-  final String? fotoKegiatanFilename;
+  /// Picker output sent as multipart on web and native platforms.
+  final Uint8List fotoKegiatanBytes;
+  final String fotoKegiatanFilename;
 
   const RegisterBankSampahRequest({
     required this.nama,
     required this.alamat,
     this.kota,
     required this.noHpPic,
-    required this.fotoKegiatanPath,
-    this.fotoKegiatanBytes,
-    this.fotoKegiatanFilename,
+    required this.fotoKegiatanBytes,
+    required this.fotoKegiatanFilename,
   });
 }
 

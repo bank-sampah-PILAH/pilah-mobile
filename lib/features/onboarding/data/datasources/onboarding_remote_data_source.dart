@@ -34,21 +34,16 @@ class OnboardingRemoteDataSourceImpl implements OnboardingRemoteDataSource {
   @override
   Future<OnboardingResult> registerBankSampah(
       RegisterBankSampahRequest request) async {
-    final fileName = request.fotoKegiatanFilename ??
-        request.fotoKegiatanPath.split(RegExp(r'[\\/]')).last;
-    final bytes = request.fotoKegiatanBytes;
     final formData = FormData.fromMap({
       'nama': request.nama,
       'alamat': request.alamat,
       if (request.kota != null && request.kota!.trim().isNotEmpty)
         'kota': request.kota!.trim(),
       'no_hp_pic': request.noHpPic,
-      'foto_kegiatan': bytes != null
-          ? MultipartFile.fromBytes(bytes, filename: fileName)
-          : await MultipartFile.fromFile(
-              request.fotoKegiatanPath,
-              filename: fileName,
-            ),
+      'foto_kegiatan': MultipartFile.fromBytes(
+        request.fotoKegiatanBytes,
+        filename: request.fotoKegiatanFilename,
+      ),
     });
 
     final response = await networkService.postMultipart(

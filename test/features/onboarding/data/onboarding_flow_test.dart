@@ -41,7 +41,6 @@ void main() {
         alamat: 'Jl. Melati 1',
         kota: kota,
         noHpPic: '0812',
-        fotoKegiatanPath: '',
         fotoKegiatanBytes: photo,
         fotoKegiatanFilename: 'onboarding_foto.jpg',
       );

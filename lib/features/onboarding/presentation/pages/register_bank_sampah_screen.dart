@@ -59,10 +59,9 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     // separate notification — that is what made the photo feel different.
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // Unreachable once validate() passes; it only narrows the type so the path
-    // below needs no force-unwrap.
     final image = _selectedImage;
-    if (image == null) return;
+    final bytes = _selectedImageBytes;
+    if (image == null || bytes == null) return;
 
     setState(() => _isLoading = true);
 
@@ -70,8 +69,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       nama: _namaController.text.trim(),
       alamat: _alamatController.text.trim(),
       noHpPic: _phoneController.text.trim(),
-      fotoKegiatanPath: image.path,
-      fotoKegiatanBytes: _selectedImageBytes,
+      fotoKegiatanBytes: bytes,
       fotoKegiatanFilename: image.name,
     );
 

@@ -24,7 +24,6 @@ final _registration = RegisterBankSampahRequest(
   nama: 'Bank Sampah BTH',
   alamat: 'Kel. Kukusan',
   noHpPic: '81234567890',
-  fotoKegiatanPath: '',
   fotoKegiatanBytes: Uint8List.fromList([1, 2, 3]),
   fotoKegiatanFilename: 'kegiatan.jpg',
 );
