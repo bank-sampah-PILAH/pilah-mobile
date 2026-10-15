@@ -104,9 +104,12 @@ the actual app’s fields before submission; do not copy guessed answers:
 - App content: complete the current content-rating questionnaire, target
   audience/age declaration, ads declaration, and any other applicable app
   content forms from verified product facts.
-- App access/review: provide accurate reviewer instructions and authorized
-  test access if required. Do not place credentials in this document, source,
-  or public listing.
+- App access/review: the current rejection requires a dedicated login that
+  works without Google device-bound authentication. In Play Console's App
+  access / Sign in details declaration, an authorized operator must enter the
+  active reviewer credentials and clear feature-access steps, then verify them
+  on a clean device. Do not place credentials in this document, source, issue
+  tracker, release notes, or public listing.
 - Confirm the package/app identity and production release track/version in
   Console before uploading or promoting a release.
 

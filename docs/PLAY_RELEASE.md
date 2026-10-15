@@ -26,6 +26,16 @@ Push a `vMAJOR.MINOR.PATCH` tag whose version matches `pubspec.yaml`. The workfl
 
 The workflow fails before building if required production configuration or signing secrets are absent, if the production API URL is not HTTPS, if the Firebase package does not match, or if the tag/version do not match. It refuses to overwrite an existing GitHub Release.
 
+## Reviewer access and policy resubmission
+
+The current Play rejection says reviewer credentials must not depend on device-bound authentication. Before resubmitting:
+
+1. Provision the dedicated active `pengelola` reviewer account on a synthetic bank and enable reviewer login through the documented backend settings. Keep `DJANGO_DEBUG=false` and fake Google tokens disabled.
+2. Install the exact Alpha-delivered build on a clean Android device or profile with no prior Google account/device trust. Verify reviewer login works, Google Sign-In still works for normal users, and disabling the backend flag hides the entry and rejects direct login attempts.
+3. In Play Console's App access / Sign in details declaration, have the authorized operator enter the dedicated reviewer credentials and concise steps for reaching the features under review. Use a non-device-bound password login; do not put the credentials in this repository, Linear, release notes, or screenshots.
+4. Submit the corrected build and access instructions for review. Record the outcome, affected version, and sanitized evidence in the QA and production-access tracking issues.
+5. Before requesting production access, confirm the account's current closed-testing eligibility, then maintain at least 12 active testers opted in continuously for 14 days. If the count drops below 12, the waiting period may restart.
+
 ## Retry and production promotion
 
 Use the `CD - Production` workflow's manual dispatch with an existing release tag to retry a test-track upload or promote its exact AAB. It downloads the release asset and verifies its SHA-256; it does not rebuild or change its version code. Select `production` only after Google has approved the release and confirm the approval input. The protected `production` environment supplies an additional human approval gate.
