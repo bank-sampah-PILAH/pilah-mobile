@@ -70,7 +70,7 @@ void main() {
   });
 
   testWidgets(
-      'download success offers Bagikan with readable bytes and XLSX metadata',
+      'browser download confirms success without offering native sharing',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
         home: Builder(
@@ -85,23 +85,16 @@ void main() {
                       child: const Text('Unduh')),
                 ))));
     await tester.tap(find.text('Unduh'));
-    await pumpUntilFound(tester, find.text('Bagikan'));
-    expect(find.text('Bagikan'), findsOneWidget);
+    await pumpUntilFound(tester, find.text('Berhasil'));
+    expect(find.text('Bagikan'), findsNothing);
     expect(find.text('Gagal Menyimpan'), findsNothing);
     expect(downloads.single.$1, 'laporan.xlsx');
-    await tester.pump(const Duration(seconds: 1));
-    await tester.tap(find.text('Bagikan'));
+    expect(find.textContaining('unduhan browser'), findsOneWidget);
+    expect(_share.calls, isEmpty);
     await pumpToast(tester);
-    expect(_share.calls, hasLength(1));
-    final file = _share.calls.single.files!.single;
-    expect(file.name, 'laporan.xlsx');
-    expect(file.mimeType,
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    // Web XFile reads its Blob through a real FileReader event. Awaiting it
-    // inside the widget test's fake-async zone leaves that event pending.
-    final sharedBytes = await tester
-        .runAsync(() => file.readAsBytes().timeout(const Duration(seconds: 5)));
-    expect(sharedBytes, bytes);
-    await settleToasts(tester);
+    for (var frame = 0; frame < 50; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Berhasil'), findsNothing);
   }, timeout: const Timeout(Duration(seconds: 30)));
 }
