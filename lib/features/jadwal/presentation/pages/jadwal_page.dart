@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
@@ -1137,8 +1137,8 @@ class _JadwalFormState extends State<_JadwalForm> {
                     final isSaving = state is JadwalLoaded && state.isSaving;
                     return SizedBox(
                       width: double.infinity,
-                      child: CustomPrimaryButton(
-                        title: isSaving
+                      child: AppButton(
+                        label: isSaving
                             ? 'Menyimpan...'
                             : widget.initial == null
                                 ? 'Simpan Jadwal'

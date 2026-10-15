@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_button.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/design/widgets/atom/page_indicator.dart';
@@ -13,47 +12,6 @@ import '../../support/pump_app.dart';
 Widget _host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
-  group('CustomOutlinedButton', () {
-    testWidgets('shows its title and icon, and reports taps', (tester) async {
-      var taps = 0;
-      await tester.pumpWidget(_host(CustomOutlinedButton(
-        title: 'Tambah',
-        icon: Icons.add,
-        borderColor: Colors.green,
-        textColor: Colors.green,
-        backgroundColor: Colors.yellow,
-        onPressed: () => taps++,
-      )));
-
-      expect(find.text('Tambah'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
-
-      await tester.tap(find.text('Tambah'));
-      expect(taps, 1);
-    });
-
-    testWidgets('a disabled button is greyed out and does nothing',
-        (tester) async {
-      await tester.pumpWidget(_host(CustomOutlinedButton(
-        title: 'Tambah',
-        icon: Icons.add,
-        onPressed: null,
-      )));
-
-      final text = tester.widget<Text>(find.text('Tambah'));
-      expect(text.style?.color, Colors.grey[500]);
-      expect(tester.widget<OutlinedButton>(find.byType(OutlinedButton)).enabled,
-          isFalse);
-    });
-
-    testWidgets('works without an icon', (tester) async {
-      await tester.pumpWidget(
-          _host(CustomOutlinedButton(title: 'Saja', onPressed: () {})));
-
-      expect(find.byType(Icon), findsNothing);
-    });
-  });
-
   group('PrimaryButton', () {
     testWidgets('shows its label and reports taps', (tester) async {
       var taps = 0;

@@ -184,6 +184,13 @@ void main() {
     );
   });
 
+  testWidgets('has no icon unless one is given', (tester) async {
+    await tester
+        .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
+
+    expect(find.byType(Icon), findsNothing);
+  });
+
   testWidgets('puts a trailing icon after the label', (tester) async {
     await tester.pumpWidget(_host(AppButton(
       label: 'Simpan Profil & Lanjut',
