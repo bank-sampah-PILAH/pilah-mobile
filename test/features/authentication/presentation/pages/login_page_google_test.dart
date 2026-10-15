@@ -57,7 +57,8 @@ void main() {
     WidgetTester tester, {
     bool reviewerLoginReleaseModeOverride = false,
     Future<bool> Function()? reviewerLoginConfigLoader,
-  }) => pumpRouted(
+  }) =>
+      pumpRouted(
         tester,
         LoginPage(
           debugShowDemoLogin: false,

@@ -47,7 +47,7 @@ class PreviewAuthenticationSession
 
   @override
   Future<Either<NetworkException, AuthEntity>> loginWithReviewer(
-      String email, String password) async =>
+          String email, String password) async =>
       const Right(auth);
 
   @override
