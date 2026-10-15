@@ -55,6 +55,62 @@ void main() {
 
       expect(_labelColor(tester, 'Semua'), AppColors.greenDark);
     });
+
+    Material surfaceOf(WidgetTester tester, Type button) => tester.widget(
+          find
+              .descendant(
+                of: find.byType(button),
+                matching: find.byType(Material),
+              )
+              .first,
+        );
+
+    for (final entry in <String, Widget Function()>{
+      'ElevatedButton': () =>
+          ElevatedButton(onPressed: () {}, child: const Text('Simpan')),
+      'FilledButton': () =>
+          FilledButton(onPressed: () {}, child: const Text('Simpan')),
+    }.entries) {
+      testWidgets(
+          'a plain ${entry.key} is a flat green button with a white label',
+          (tester) async {
+        await tester.pumpWidget(_app(entry.value()));
+
+        final surface = surfaceOf(
+          tester,
+          entry.key == 'ElevatedButton' ? ElevatedButton : FilledButton,
+        );
+        expect(surface.color, AppColors.greenDark);
+        expect(surface.elevation, 0);
+        expect(
+          surface.shape,
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        );
+        expect(_labelColor(tester, 'Simpan'), Colors.white);
+      });
+    }
+
+    testWidgets('a plain OutlinedButton has a green border and label',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(OutlinedButton(onPressed: () {}, child: const Text('Tambah'))),
+      );
+
+      final shape =
+          surfaceOf(tester, OutlinedButton).shape as RoundedRectangleBorder;
+      expect(shape.side.color, AppColors.greenDark);
+      expect(shape.borderRadius, BorderRadius.circular(12));
+      expect(_labelColor(tester, 'Tambah'), AppColors.greenDark);
+    });
+
+    testWidgets('a disabled filled button is grey, not a faded green',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(const ElevatedButton(onPressed: null, child: Text('Simpan'))),
+      );
+
+      expect(surfaceOf(tester, ElevatedButton).color, AppColors.border);
+    });
   });
 
   group('dialogs', () {
