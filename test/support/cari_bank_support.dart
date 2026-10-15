@@ -20,8 +20,24 @@ Map<String, dynamic> bankSampahPage(
       'results': results,
     };
 
-Map<String, dynamic> bankRow(String id, String nama, {String kota = 'Depok'}) =>
-    {'id': id, 'nama': nama, 'alamat': 'Jl. $nama', 'kota': kota};
+/// A directory row; [latitude]/[longitude] add the PIL-326 coordinates a
+/// map marker needs (PIL-330). Omit both to simulate a bank without
+/// coordinates.
+Map<String, dynamic> bankRow(
+  String id,
+  String nama, {
+  String kota = 'Depok',
+  double? latitude,
+  double? longitude,
+}) =>
+    {
+      'id': id,
+      'nama': nama,
+      'alamat': 'Jl. $nama',
+      'kota': kota,
+      if (latitude != null) 'latitude': '$latitude',
+      if (longitude != null) 'longitude': '$longitude',
+    };
 
 /// A `GET /bank-sampah/{id}` detail body with layanan.
 Map<String, dynamic> bankDetailJson({List<dynamic> layanan = const []}) => {
