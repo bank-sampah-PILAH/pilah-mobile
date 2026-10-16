@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
@@ -98,27 +99,14 @@ class _EditPencairanViewState extends State<EditPencairanView> {
   }
 
   Future<void> _confirmAndSubmit(int nominal) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Simpan perubahan pencairan?'),
-        content: const Text(
-          'Saldo nasabah dan pencairan sesudahnya akan dihitung ulang. '
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Simpan perubahan pencairan?',
+      message: 'Saldo nasabah dan pencairan sesudahnya akan dihitung ulang. '
           'Versi lama tetap tersimpan di riwayat perubahan.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Simpan',
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     await context.read<EditPencairanCubit>().submit(
           EditPencairanRequest(
             id: widget.pencairan.id,

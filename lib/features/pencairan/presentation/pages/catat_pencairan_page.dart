@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
@@ -127,27 +128,14 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
   }
 
   Future<void> _confirmAndSubmit(int nominal) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Konfirmasi pencairan'),
-        content: Text(
-          'Pencairan Rp ${CurrencyFormatter.formatNumber(nominal)} akan dicatat sebagai '
-          'pembayaran ${_metode.label}.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Catat'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Konfirmasi pencairan',
+      message: 'Pencairan Rp ${CurrencyFormatter.formatNumber(nominal)} akan '
+          'dicatat sebagai pembayaran ${_metode.label}.',
+      confirmLabel: 'Catat',
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     await context.read<PencairanCubit>().submit(
           PencairanRequest(
             nasabahId: _selectedCustomer!.id,
