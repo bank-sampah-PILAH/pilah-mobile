@@ -11,7 +11,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'dart:io';
 import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
@@ -42,7 +41,8 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   final _alamatController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _isLoading = false;
-  File? _selectedImage;
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -59,10 +59,9 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     // separate notification — that is what made the photo feel different.
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // Unreachable once validate() passes; it only narrows the type so the path
-    // below needs no force-unwrap.
     final image = _selectedImage;
-    if (image == null) return;
+    final bytes = _selectedImageBytes;
+    if (image == null || bytes == null) return;
 
     setState(() => _isLoading = true);
 
@@ -70,7 +69,8 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       nama: _namaController.text.trim(),
       alamat: _alamatController.text.trim(),
       noHpPic: _phoneController.text.trim(),
-      fotoKegiatanPath: image.path,
+      fotoKegiatanBytes: bytes,
+      fotoKegiatanFilename: image.name,
     );
 
     // Sends the banked profile first when the user came through step one, and
@@ -106,16 +106,22 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   /// Picks the activity photo and reports it to [field], so the inline error
   /// clears the moment a photo is chosen rather than lingering until the next
   /// submit.
-  Future<void> _pickImage(FormFieldState<File> field) async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 50,
-    );
-    if (image != null) {
+  Future<void> _pickImage(FormFieldState<XFile> field) async {
+    try {
+      final image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+      );
+      if (image == null) return;
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
       setState(() {
-        _selectedImage = File(image.path);
+        _selectedImage = image;
+        _selectedImageBytes = bytes;
       });
-      field.didChange(_selectedImage);
+      field.didChange(image);
+    } catch (_) {
+      if (mounted) _showError('Foto tidak dapat dibaca. Silakan coba lagi.');
     }
   }
 
@@ -598,7 +604,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                             label: 'FOTO KEGIATAN',
                             description:
                                 'Upload foto kegiatan penimbangan sampah yang valid',
-                            child: FormField<File>(
+                            child: FormField<XFile>(
                               initialValue: _selectedImage,
                               // Without this the validator only re-runs on the next
                               // submit, so the box would stay red even after the
@@ -627,8 +633,8 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                                   BorderRadius.circular(12),
                                               child: Stack(
                                                 children: [
-                                                  Image.file(
-                                                    _selectedImage!,
+                                                  Image.memory(
+                                                    _selectedImageBytes!,
                                                     width: double.infinity,
                                                     height: 150,
                                                     fit: BoxFit.cover,
@@ -644,6 +650,8 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                                       onTap: () {
                                                         setState(() {
                                                           _selectedImage = null;
+                                                          _selectedImageBytes =
+                                                              null;
                                                         });
                                                         field.didChange(null);
                                                       },

@@ -663,7 +663,16 @@ class _ProfileViewState extends State<_ProfileView>
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              onTap: () => context.read<ProfileCubit>().pickLogo(),
+              onTap: () async {
+                try {
+                  await context.read<ProfileCubit>().pickLogo();
+                } catch (_) {
+                  if (!mounted) return;
+                  AppNotification.showError(context,
+                      title: 'Gagal',
+                      message: 'Foto tidak dapat dibaca. Silakan coba lagi.');
+                }
+              },
               child: Container(
                 width: _logoDiameter,
                 height: _logoDiameter,
@@ -710,20 +719,6 @@ class _ProfileViewState extends State<_ProfileView>
         width: _logoDiameter,
         height: _logoDiameter,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _logoPlaceholder,
-      );
-    }
-
-    final file = state.selectedLogoFile;
-    if (file != null) {
-      return Image.file(
-        file,
-        width: _logoDiameter,
-        height: _logoDiameter,
-        fit: BoxFit.cover,
-        // The file came from the gallery a moment ago, so this is close to
-        // unreachable — but an unreadable pick should still leave a logo on
-        // screen rather than a broken-image glyph inside the avatar.
         errorBuilder: (_, __, ___) => _logoPlaceholder,
       );
     }

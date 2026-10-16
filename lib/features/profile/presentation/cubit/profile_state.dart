@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
@@ -14,10 +13,7 @@ class ProfileState extends Equatable {
   final String? error;
   final bool isSavingTemplate;
 
-  /// A logo the user has picked but not yet saved on native platforms.
-  final File? selectedLogoFile;
-
-  /// Browser-selected image bytes and filename, held until the profile saves.
+  /// Picker/cropper output, held until the profile saves on any platform.
   final Uint8List? selectedLogoBytes;
   final String? selectedLogoFilename;
 
@@ -28,17 +24,12 @@ class ProfileState extends Equatable {
     this.team = const [],
     this.error,
     this.isSavingTemplate = false,
-    this.selectedLogoFile,
     this.selectedLogoBytes,
     this.selectedLogoFilename,
   });
 
-  /// [clearSelectedLogo] drops the pending pick, which `selectedLogoFile: null`
-  /// cannot express — every field here falls back to the current value, so
-  /// passing null is indistinguishable from not passing it. A save that
-  /// succeeded needs to let go of the file: the uploaded logo is on the entity
-  /// by then, and keeping the local one would leave the avatar showing a
-  /// preview of something already stored.
+  /// Clear the pending bytes only after a successful save; failed saves keep
+  /// the preview and upload payload available for retry.
   ProfileState copyWith({
     ProfileStatus? status,
     BankSampahProfile? bankSampah,
@@ -46,7 +37,6 @@ class ProfileState extends Equatable {
     List<TeamMember>? team,
     String? error,
     bool? isSavingTemplate,
-    File? selectedLogoFile,
     Uint8List? selectedLogoBytes,
     String? selectedLogoFilename,
     bool clearSelectedLogo = false,
@@ -58,9 +48,6 @@ class ProfileState extends Equatable {
       team: team ?? this.team,
       error: error ?? this.error,
       isSavingTemplate: isSavingTemplate ?? this.isSavingTemplate,
-      selectedLogoFile: clearSelectedLogo
-          ? null
-          : (selectedLogoFile ?? this.selectedLogoFile),
       selectedLogoBytes: clearSelectedLogo
           ? null
           : (selectedLogoBytes ?? this.selectedLogoBytes),
@@ -78,10 +65,6 @@ class ProfileState extends Equatable {
         team,
         error,
         isSavingTemplate,
-        // Path, not the File: two File objects for the same path are not equal,
-        // so re-picking the same image would look like a change and rebuild for
-        // nothing.
-        selectedLogoFile?.path,
         selectedLogoBytes,
         selectedLogoFilename,
       ];
