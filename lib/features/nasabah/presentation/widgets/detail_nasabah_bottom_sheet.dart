@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
@@ -76,8 +77,11 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        // Padding sits on the scroll view, not the Container: on wide screens
+        // the scrollbar is drawn at the viewport edge and would otherwise
+        // float over the fields, 24px inside the dialog.
         child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,12 +235,11 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
+                        final rootContext =
+                            Navigator.of(context, rootNavigator: true).context;
                         context.pop();
-                        showModalBottomSheet(
-                          context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
+                        showNasabahSurface<void>(
+                          rootContext,
                           builder: (context) =>
                               EditNasabahBottomSheet(nasabah: nasabah),
                         );

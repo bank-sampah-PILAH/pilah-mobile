@@ -127,8 +127,11 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        // Padding sits on the scroll view, not the Container: on wide screens
+        // the scrollbar is drawn at the viewport edge and would otherwise
+        // float over the fields, 24px inside the dialog.
         child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           child: Form(
             key: _formKey,
             child: Column(
