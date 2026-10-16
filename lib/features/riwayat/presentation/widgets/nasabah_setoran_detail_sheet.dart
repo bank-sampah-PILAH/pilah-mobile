@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -99,10 +100,14 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
   Widget _detailContent(NasabahSetoranDetail detail) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _row('Tanggal', _dateTime(detail.date)),
-          _row('Total setoran', nasabahRupiah(detail.amount)),
-          _row('Saldo setelah', nasabahRupiah(detail.balanceAfter)),
-          if (detail.note.isNotEmpty) _row('Catatan', detail.note),
+          AppDetailRow(label: 'Tanggal', value: _dateTime(detail.date)),
+          AppDetailRow(
+              label: 'Total setoran', value: nasabahRupiah(detail.amount)),
+          AppDetailRow(
+              label: 'Saldo setelah',
+              value: nasabahRupiah(detail.balanceAfter)),
+          if (detail.note.isNotEmpty)
+            AppDetailRow(label: 'Catatan', value: detail.note),
           const SizedBox(height: 16),
           Text(
             'RINCIAN SETORAN',
@@ -126,38 +131,18 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
                       style: NasabahStyle.text(14, weight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
-                    _row(
-                        'Berat', '${WeightFormatter.formatKg(item.weight)} kg'),
-                    _row('Harga/kg', nasabahRupiah(item.price)),
-                    _row('Subtotal', nasabahRupiah(item.subtotal)),
+                    AppDetailRow(
+                        label: 'Berat',
+                        value: '${WeightFormatter.formatKg(item.weight)} kg'),
+                    AppDetailRow(
+                        label: 'Harga/kg', value: nasabahRupiah(item.price)),
+                    AppDetailRow(
+                        label: 'Subtotal', value: nasabahRupiah(item.subtotal)),
                   ],
                 ),
               ),
             ),
         ],
-      );
-
-  Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: NasabahStyle.text(13, color: NasabahStyle.muted),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                value,
-                textAlign: TextAlign.end,
-                style: NasabahStyle.text(13, weight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
       );
 
   String _dateTime(DateTime date) {
