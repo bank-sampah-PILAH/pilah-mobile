@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -78,7 +79,8 @@ class _PilihBankSampahBottomSheetState
         height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Column(
@@ -153,7 +155,7 @@ class _PilihBankSampahBottomSheetState
         final bank = filtered[index];
         return InkWell(
           onTap: () => context.pop(bank),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0),
             child: Row(
@@ -163,7 +165,7 @@ class _PilihBankSampahBottomSheetState
                   height: 48,
                   decoration: BoxDecoration(
                     color: AppColors.greenDark.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   alignment: Alignment.center,
                   child:
