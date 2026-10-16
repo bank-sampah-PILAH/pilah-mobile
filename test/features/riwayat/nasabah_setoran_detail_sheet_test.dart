@@ -44,6 +44,16 @@ void main() {
     expect(find.text('Plastik bersih'), findsOneWidget);
   });
 
+  testWidgets('an error from the API shows the message the server gave',
+      (tester) async {
+    await open(
+      tester,
+      () async => throw const NasabahApiException('Setoran tidak ditemukan'),
+    );
+
+    expect(find.text('Setoran tidak ditemukan'), findsOneWidget);
+  });
+
   testWidgets('a network failure shows its own message', (tester) async {
     await open(
       tester,
