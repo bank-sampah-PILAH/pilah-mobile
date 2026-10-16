@@ -368,6 +368,24 @@ void main() {
       expect(tester.getSize(find.byType(ElevatedButton)).width, 320);
     });
 
+    testWidgets('has a 12 semibold label and a 16 icon, so three fit a row',
+        (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Lihat Bukti',
+        icon: Icons.image_outlined,
+        size: AppButtonSize.compact,
+        onPressed: () {},
+      )));
+
+      final style = tester
+          .renderObject<RenderParagraph>(find.text('Lihat Bukti'))
+          .text
+          .style;
+      expect(style?.fontSize, 12);
+      expect(style?.fontWeight, FontWeight.w600);
+      expect(tester.getSize(find.byIcon(Icons.image_outlined)).width, 16);
+    });
+
     testWidgets('keeps the look of its variant', (tester) async {
       await tester.pumpWidget(
         _host(
