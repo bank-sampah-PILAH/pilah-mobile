@@ -14,6 +14,7 @@ import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class MainPage extends StatelessWidget {
@@ -247,7 +248,9 @@ class _ShellContent extends StatelessWidget {
             bankSampahNama: bankSampahNama,
             onSelected: select,
           ),
-          Expanded(child: ContentBounds(child: body)),
+          Expanded(
+            child: WebContentSurface(child: ContentBounds(child: body)),
+          ),
         ],
       ),
     );

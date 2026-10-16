@@ -38,8 +38,8 @@ void main() {
           tester.widget<DecoratedBox>(find.byKey(RoleNavigationRail.panelKey));
       final decoration = panel.decoration as BoxDecoration;
       expect(decoration.color, Colors.white);
-      expect(decoration.border!.right.color, AppColors.border);
-      expect(decoration.border!.right.width, greaterThan(0));
+      expect((decoration.border! as Border).right.color, AppColors.border);
+      expect((decoration.border! as Border).right.width, greaterThan(0));
     });
 
     testWidgets(

@@ -49,6 +49,10 @@ class RoleNavigationRail extends StatelessWidget {
 
   final bool limitedNasabah;
 
+  /// Kunci panel dan logo, untuk test.
+  static const panelKey = ValueKey('rail-panel');
+  static const logoKey = ValueKey('rail-logo');
+
   /// Label bank sampah, atau label umum bila namanya tidak diketahui.
   @override
   Widget build(BuildContext context) {
@@ -56,34 +60,44 @@ class RoleNavigationRail extends StatelessWidget {
         RoleDestinations.forRole(role, limitedNasabah: limitedNasabah);
     if (destinations.isEmpty) return const SizedBox.shrink();
     final extended = context.layoutBreakpoint == LayoutBreakpoint.expanded;
-    return NavigationRail(
-      extended: extended,
-      leading: _BankSampahContext(
-        label: BankSampahLabel.of(bankSampahNama),
-        initials: BankSampahLabel.initialsOf(bankSampahNama),
+    final labelStyle = extended ? AppTextStyle.headline3 : AppTextStyle.small;
+    return DecoratedBox(
+      key: panelKey,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: AppColors.border)),
+      ),
+      child: NavigationRail(
         extended: extended,
+        leading: _RailHeader(
+          label: BankSampahLabel.of(bankSampahNama),
+          initials: BankSampahLabel.initialsOf(bankSampahNama),
+          extended: extended,
+        ),
+        backgroundColor: Colors.white,
+        indicatorColor: AppColors.greenLight,
+        selectedIndex: currentIndex,
+        onDestinationSelected: onSelected,
+        // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
+        // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
+        labelType: extended
+            ? NavigationRailLabelType.none
+            : NavigationRailLabelType.all,
+        selectedIconTheme: const IconThemeData(color: AppColors.greenDark),
+        unselectedIconTheme: const IconThemeData(color: AppColors.inkSoft),
+        selectedLabelTextStyle: labelStyle.copyWith(
+          color: AppColors.greenDark,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelTextStyle: labelStyle.copyWith(color: AppColors.inkSoft),
+        destinations: [
+          for (final destination in destinations)
+            NavigationRailDestination(
+              icon: Icon(destination.icon),
+              label: Text(destination.label),
+            ),
+        ],
       ),
-      backgroundColor: AppColors.cardOffWhite,
-      selectedIndex: currentIndex,
-      onDestinationSelected: onSelected,
-      // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
-      // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
-      labelType:
-          extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
-      selectedIconTheme: const IconThemeData(color: AppColors.greenDark),
-      unselectedIconTheme: const IconThemeData(color: AppColors.grey100),
-      selectedLabelTextStyle: AppTextStyle.extraSmall.copyWith(
-        color: AppColors.greenDark,
-        fontWeight: FontWeight.w600,
-      ),
-      unselectedLabelTextStyle: AppTextStyle.extraSmall,
-      destinations: [
-        for (final destination in destinations)
-          NavigationRailDestination(
-            icon: Icon(destination.icon),
-            label: Text(destination.label),
-          ),
-      ],
     );
   }
 }
@@ -99,8 +113,8 @@ const double _leadingMaxWidth = 232;
 /// Pada rail yang extended nama ditulis penuh; pada rail collapsed lebarnya
 /// hanya cukup untuk inisial, dan nama penuh dipasang sebagai tooltip supaya
 /// konteksnya tidak hilang sama sekali.
-class _BankSampahContext extends StatelessWidget {
-  const _BankSampahContext({
+class _RailHeader extends StatelessWidget {
+  const _RailHeader({
     required this.label,
     required this.initials,
     required this.extended,
@@ -129,35 +143,73 @@ class _BankSampahContext extends StatelessWidget {
       ),
     );
 
+    final logo = Image.asset(
+      'assets/logo.png',
+      key: RoleNavigationRail.logoKey,
+      width: 32,
+      height: 32,
+      semanticLabel: 'PILAH',
+    );
+
+    final bank = extended
+        // Slot `leading` pada NavigationRail memberi constraint lebar tak
+        // terbatas karena ia shrink-wrap isinya. Flex tidak dapat bekerja di
+        // bawah constraint tak terbatas, jadi lebar dibatasi lebih dulu;
+        // tanpa ini Row dengan Flexible melempar saat layout.
+        ? ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _leadingMaxWidth),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                badge,
+                const SizedBox(width: 12),
+                // Nama panjang menyusut dan dipotong, bukan overflow.
+                Flexible(
+                  child: Text(
+                    label,
+                    style: AppTextStyle.small.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          )
+        : Tooltip(message: label, child: badge);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      child: extended
-          // Slot `leading` pada NavigationRail memberi constraint lebar tak
-          // terbatas karena ia shrink-wrap isinya. Flex tidak dapat bekerja di
-          // bawah constraint tak terbatas, jadi lebar dibatasi lebih dulu;
-          // tanpa ini Row dengan Flexible melempar saat layout.
-          ? ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: _leadingMaxWidth),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  badge,
-                  const SizedBox(width: 12),
-                  // Nama panjang menyusut dan dipotong, bukan overflow.
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: AppTextStyle.small.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : Tooltip(message: label, child: badge),
+      child: Column(
+        crossAxisAlignment:
+            extended ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          if (extended)
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              logo,
+              const SizedBox(width: 8),
+              Text('PILAH',
+                  style: AppTextStyle.title1.copyWith(
+                    color: AppColors.greenDark,
+                    fontWeight: FontWeight.w700,
+                  )),
+            ])
+          else
+            logo,
+          const SizedBox(height: 16),
+          bank,
+          if (extended) ...[
+            const SizedBox(height: 24),
+            Text('MENU',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: AppColors.grey100,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                )),
+          ],
+        ],
+      ),
     );
   }
 }
