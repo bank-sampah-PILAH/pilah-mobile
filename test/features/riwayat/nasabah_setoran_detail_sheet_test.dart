@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/widgets/nasabah_setoran_detail_sheet.dart';
 
@@ -41,6 +42,16 @@ void main() {
     expect(find.text('Detail Setoran'), findsOneWidget);
     expect(find.text('Catatan'), findsOneWidget);
     expect(find.text('Plastik bersih'), findsOneWidget);
+  });
+
+  testWidgets('a network failure shows its own message', (tester) async {
+    await open(
+      tester,
+      () async => throw NetworkException(message: 'Tidak ada koneksi internet'),
+    );
+
+    expect(find.textContaining('Tidak ada koneksi internet'), findsOneWidget);
+    expect(find.text('Rincian setoran gagal dimuat.'), findsNothing);
   });
 
   testWidgets('an unexpected error reads as a plain failure and can be retried',
