@@ -76,13 +76,6 @@ class _DashboardUpcomingScheduleSectionState
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
           ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.greenDark,
-              textStyle:
-                  AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
