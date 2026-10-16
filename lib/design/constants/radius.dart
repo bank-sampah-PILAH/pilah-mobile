@@ -1,8 +1,6 @@
 /// The corner radii of the app. Use these instead of a number in a screen, so
 /// two cards or two inputs never differ by a few pixels.
-class AppRadius {
-  const AppRadius._();
-
+abstract final class AppRadius {
   /// Chips and small tiles.
   static const double sm = 8;
 
