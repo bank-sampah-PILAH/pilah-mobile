@@ -85,9 +85,31 @@ void main() {
       ));
 
       expect(background, AppColors.surface);
-      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
-      expect(scaffold.backgroundColor, isNull,
-          reason: 'the page keeps the theme default so the override applies');
+    });
+
+    testWidgets('lets a page that paints its own background follow it',
+        (tester) async {
+      late Color inside;
+      late Color outside;
+      await tester.pumpWidget(MaterialApp(
+        home: Column(children: [
+          Builder(builder: (context) {
+            outside = WebContentSurface.pageColor(context, phone: Colors.white);
+            return const SizedBox();
+          }),
+          WebContentSurface(
+            child: Builder(builder: (context) {
+              inside =
+                  WebContentSurface.pageColor(context, phone: Colors.white);
+              return const SizedBox();
+            }),
+          ),
+        ]),
+      ));
+
+      expect(inside, AppColors.surface);
+      expect(outside, Colors.white,
+          reason: 'the phone layout keeps the colour it has today');
     });
   });
 }
