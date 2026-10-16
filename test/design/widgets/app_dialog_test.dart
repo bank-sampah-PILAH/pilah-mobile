@@ -308,7 +308,10 @@ void main() {
       addTearDown(tester.view.reset);
       await _show(tester, dialog());
 
-      expect(tester.getSize(find.byType(Dialog)).width, lessThanOrEqualTo(400));
+      final surface = find
+          .descendant(of: find.byType(Dialog), matching: find.byType(Material))
+          .first;
+      expect(tester.getSize(surface).width, lessThanOrEqualTo(400));
     });
 
     testWidgets('has the 16 radius of a dialog, like every other',

@@ -116,53 +116,58 @@ class AppIconDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration:
-                  BoxDecoration(color: tone.tint, shape: BoxShape.circle),
-              child: Icon(icon, color: tone.color, size: 32),
-            ),
-            const SizedBox(height: 20),
-            Text(title,
-                style: AppTextStyle.title1, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            Text.rich(
-              TextSpan(
-                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
-                children: message,
+      // The two answers fill the dialog, so on a desktop window it would
+      // otherwise grow to the whole width.
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration:
+                    BoxDecoration(color: tone.tint, shape: BoxShape.circle),
+                child: Icon(icon, color: tone.color, size: 32),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    label: cancelLabel,
-                    variant: AppButtonVariant.neutral,
-                    onPressed: isLoading ? null : onCancel,
-                  ),
+              const SizedBox(height: 20),
+              Text(title,
+                  style: AppTextStyle.title1, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              Text.rich(
+                TextSpan(
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+                  children: message,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppButton(
-                    label: confirmLabel,
-                    variant: destructive
-                        ? AppButtonVariant.destructive
-                        : AppButtonVariant.primary,
-                    isLoading: isLoading,
-                    onPressed: onConfirm,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      label: cancelLabel,
+                      variant: AppButtonVariant.neutral,
+                      onPressed: isLoading ? null : onCancel,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AppButton(
+                      label: confirmLabel,
+                      variant: destructive
+                          ? AppButtonVariant.destructive
+                          : AppButtonVariant.primary,
+                      isLoading: isLoading,
+                      onPressed: onConfirm,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
