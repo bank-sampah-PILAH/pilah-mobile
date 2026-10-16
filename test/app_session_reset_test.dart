@@ -25,6 +25,8 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dar
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -42,6 +44,9 @@ class _MockNasabahCubit extends MockCubit<NasabahState>
 class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
+
+class _MockPengumumanCubit extends MockCubit<PengumumanState>
+    implements PengumumanCubit {}
 
 class _MockTransaksiCubit extends MockCubit<TransaksiState>
     implements TransaksiCubit {}
@@ -74,6 +79,7 @@ void main() {
   late _MockNasabahCubit nasabah;
   late _MockHargaCubit harga;
   late _MockJadwalCubit jadwal;
+  late _MockPengumumanCubit pengumuman;
   late _MockTransaksiCubit transaksi;
   late _MockDashboardCubit dashboard;
   late _MockRecentActivityCubit recentActivity;
@@ -88,6 +94,7 @@ void main() {
     nasabah = _MockNasabahCubit();
     harga = _MockHargaCubit();
     jadwal = _MockJadwalCubit();
+    pengumuman = _MockPengumumanCubit();
     transaksi = _MockTransaksiCubit();
     dashboard = _MockDashboardCubit();
     recentActivity = _MockRecentActivityCubit();
@@ -104,6 +111,7 @@ void main() {
     when(() => nasabah.state).thenReturn(NasabahInitial());
     when(() => harga.state).thenReturn(HargaInitial());
     when(() => jadwal.state).thenReturn(const JadwalInitial());
+    when(() => pengumuman.state).thenReturn(const PengumumanInitial());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => dashboard.state).thenReturn(const DashboardState());
     when(() => recentActivity.state).thenReturn(RecentActivityInitial());
@@ -119,6 +127,7 @@ void main() {
     di.registerSingleton<NasabahCubit>(nasabah);
     di.registerSingleton<HargaCubit>(harga);
     di.registerSingleton<JadwalCubit>(jadwal);
+    di.registerSingleton<PengumumanCubit>(pengumuman);
     di.registerSingleton<TransaksiCubit>(transaksi);
     di.registerSingleton<DashboardCubit>(dashboard);
     di.registerSingleton<RecentActivityCubit>(recentActivity);
@@ -155,6 +164,7 @@ void main() {
           BlocProvider<NasabahCubit>.value(value: nasabah),
           BlocProvider<HargaCubit>.value(value: harga),
           BlocProvider<JadwalCubit>.value(value: jadwal),
+          BlocProvider<PengumumanCubit>.value(value: pengumuman),
           BlocProvider<TransaksiCubit>.value(value: transaksi),
           BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: recentActivity),

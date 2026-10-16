@@ -27,6 +27,8 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
@@ -162,6 +164,16 @@ class AppRouterConfig {
         path: PilihNasabahPencairanPage.route,
         name: PilihNasabahPencairanPage.route,
         builder: (context, state) => const PilihNasabahPencairanPage(),
+      ),
+      GoRoute(
+        path: PengumumanFormPage.route,
+        name: PengumumanFormPage.route,
+        // Without args (a stale link, or a router restored on its own) there
+        // is nothing to edit, so fall back to the dashboard.
+        redirect: (context, state) =>
+            state.extra is PengumumanFormArgs ? null : AppLocations.dashboard,
+        builder: (context, state) =>
+            PengumumanFormPage(args: state.extra! as PengumumanFormArgs),
       ),
       GoRoute(
         path: DraftEditorPage.route,
@@ -403,7 +415,8 @@ class AppRouterConfig {
       NasabahPage.route,
       HargaPage.route,
       LaporanPage.route,
-      TransaksiBaruPage.route
+      TransaksiBaruPage.route,
+      PengumumanFormPage.route,
     };
     final customerPaths = {
       AppLocations.history,

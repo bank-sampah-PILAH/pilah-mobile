@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
@@ -153,6 +154,29 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(DraftEditorPage), findsOneWidget);
       expect(find.text('Ahmad'), findsOneWidget);
+    });
+
+    testWidgets('the pengumuman form needs its args and otherwise falls back',
+        (tester) async {
+      // The fallback redirect lands on the dashboard, so its own fetches
+      // need quiet stubs.
+      api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
+      api.on('GET', '/api/v1/transaksi', json: {'results': []});
+      api.on('GET', '/api/v1/pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
+      final router = await boot(tester);
+
+      // Without args there is nothing to edit: the route redirects home.
+      await visit(tester, router, '/pengumuman/kelola/ubah');
+      expect(find.byType(PengumumanFormPage), findsNothing);
+
+      router.go(
+        '/pengumuman/kelola/ubah',
+        extra: const PengumumanFormArgs(),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PengumumanFormPage), findsOneWidget);
+      expect(find.text('Buat Pengumuman'), findsOneWidget);
     });
 
     testWidgets('can continue a saved draft from its id', (tester) async {
