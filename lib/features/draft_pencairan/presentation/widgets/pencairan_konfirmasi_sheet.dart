@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// How a question weighs: green for going ahead, red for throwing something
 /// away, amber for a warning.
@@ -76,38 +77,24 @@ Future<bool> showPencairanKonfirmasi(
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: AppButton(
                     key: const Key('konfirmasi-tidak'),
+                    label: jawaban.tidak,
+                    variant: AppButtonVariant.neutral,
                     onPressed: () => Navigator.of(sheetContext).pop(false),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.grey[800],
-                      side: BorderSide(color: Colors.grey.shade300),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md)),
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(jawaban.tidak),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton(
+                  child: AppButton(
                     key: const Key('konfirmasi-ya'),
+                    label: jawaban.ya,
+                    variant: switch (nada) {
+                      KonfirmasiNada.normal => AppButtonVariant.primary,
+                      KonfirmasiNada.bahaya => AppButtonVariant.destructive,
+                      KonfirmasiNada.peringatan => AppButtonVariant.warning,
+                    },
                     onPressed: () => Navigator.of(sheetContext).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: nada.warna,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md)),
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(jawaban.ya),
-                    ),
                   ),
                 ),
               ],
