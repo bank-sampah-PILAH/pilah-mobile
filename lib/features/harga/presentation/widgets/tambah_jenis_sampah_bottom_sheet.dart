@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
@@ -27,32 +28,20 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              BottomSheetHeader(title: JenisSampahForm.titleFor(initialData)),
-              const SizedBox(height: 24),
-              JenisSampahForm(
-                initialData: initialData,
-                hargaCubit: hargaCubit,
-                now: now,
-                onSaved: () => context.pop(),
-              ),
-            ],
+    return AppSheetContainer(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BottomSheetHeader(title: JenisSampahForm.titleFor(initialData)),
+          const SizedBox(height: 24),
+          JenisSampahForm(
+            initialData: initialData,
+            hargaCubit: hargaCubit,
+            now: now,
+            onSaved: () => context.pop(),
           ),
-        ),
+        ],
       ),
     );
   }
