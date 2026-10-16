@@ -34,8 +34,8 @@ Map<String, int> _scan() {
 
 Map<String, int> _baseline() => File(_baselinePath).existsSync()
     ? (jsonDecode(File(_baselinePath).readAsStringSync())
-              as Map<String, dynamic>)
-          .map((k, v) => MapEntry(k, v as int))
+            as Map<String, dynamic>)
+        .map((k, v) => MapEntry(k, v as int))
     : <String, int>{};
 
 void main() {
@@ -70,8 +70,7 @@ void main() {
     expect(
       problems,
       isEmpty,
-      reason:
-          'Use AppRadius.sm, md, lg or xl '
+      reason: 'Use AppRadius.sm, md, lg or xl '
           '(lib/design/constants/radius.dart). If the design needs a new '
           'step, add it there instead of writing a number in a screen.',
     );
@@ -88,8 +87,7 @@ void main() {
     expect(
       stale,
       isEmpty,
-      reason:
-          'Radii were removed: lower the baseline with '
+      reason: 'Radii were removed: lower the baseline with '
           'UPDATE_BASELINE=1 flutter test test/design/hardcoded_radius_test.dart.',
     );
   });
