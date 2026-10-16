@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
@@ -20,7 +21,11 @@ void _stubManagerLoads(_MockJadwalCubit cubit) {
   ).thenAnswer((_) async {});
 }
 
-Future<void> _pumpAt(WidgetTester tester, Size size) async {
+Future<_MockJadwalCubit> _pumpAt(
+  WidgetTester tester,
+  Size size, {
+  DateTime? initialDate,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
@@ -33,10 +38,11 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
   await tester.pumpWidget(
     BlocProvider<JadwalCubit>.value(
       value: cubit,
-      child: const MaterialApp(home: JadwalPage()),
+      child: MaterialApp(home: JadwalPage(initialDate: initialDate)),
     ),
   );
   await tester.pump();
+  return cubit;
 }
 
 /// The form is the same form on both platforms; only its container changes.
@@ -44,7 +50,19 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
 /// window it becomes a panel beside the agenda, so the day being scheduled
 /// into stays visible while it is filled in.
 void main() {
-  setUpAll(() => registerFallbackValue(DateTime(2000)));
+  setUpAll(() {
+    registerFallbackValue(DateTime(2000));
+    registerFallbackValue(
+      JadwalEntity(
+        id: '',
+        bankSampahId: '',
+        jenisKegiatan: 'penimbangan',
+        mulaiPada: DateTime(2000),
+        selesaiPada: DateTime(2000),
+        lokasi: '',
+      ),
+    );
+  });
 
   testWidgets('on a desktop window the form opens as a panel, not a sheet',
       (tester) async {
@@ -76,6 +94,48 @@ void main() {
       find.byKey(const ValueKey('jadwal-form')),
       findsNothing,
       reason: 'a panel is not on a route, so it cannot be dismissed by a pop',
+    );
+  });
+
+  testWidgets('navigating a month clamps to the last day of a shorter month',
+      (tester) async {
+    await _pumpAt(
+      tester,
+      const Size(1440, 900),
+      initialDate: DateTime(2026, 1, 31),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('jadwal-calendar-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('28 Februari'),
+      findsWidgets,
+      reason: 'without the clamp DateTime(2026, 2, 31) rolls over to 3 Maret',
+    );
+  });
+
+  testWidgets('saving from the panel closes it', (tester) async {
+    final cubit = await _pumpAt(tester, const Size(1440, 900));
+    when(() => cubit.saveJadwal(any())).thenAnswer((_) async => null);
+
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Lokasi'),
+      'Balai RW 04',
+    );
+    await tester.tap(find.text('Simpan Jadwal'));
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.saveJadwal(any())).called(1);
+    expect(
+      find.byKey(const ValueKey('jadwal-form')),
+      findsNothing,
+      reason: 'a saved schedule should hand the agenda back its full width',
     );
   });
 
