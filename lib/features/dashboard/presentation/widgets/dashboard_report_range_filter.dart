@@ -295,9 +295,6 @@ class _ReportRangeCalendarState extends State<_ReportRangeCalendar> {
                     ? () => widget.onChanged(
                         DashboardReportRange(start: _start!, end: _end!))
                     : null,
-                style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.greenDark,
-                    textStyle: AppTextStyle.small),
                 child: const Text('Terapkan'),
               ),
             ]),

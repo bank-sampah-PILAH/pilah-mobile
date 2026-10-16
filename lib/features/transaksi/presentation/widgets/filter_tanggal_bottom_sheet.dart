@@ -39,23 +39,6 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
       initialDate: initialDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.greenDark, // header background color
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black87, // body text color
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.greenDark, // button text color
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
