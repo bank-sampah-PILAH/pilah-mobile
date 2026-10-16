@@ -665,18 +665,10 @@ class _ScheduleCard extends StatelessWidget {
         : '${_formatDateTime(startsAt)} – ${_formatDateTime(endsAt)}';
 
     return Card(
-      margin: EdgeInsets.zero,
-      color: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
       child: Column(
         children: [
           InkWell(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(16),
