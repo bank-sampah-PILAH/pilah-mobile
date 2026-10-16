@@ -61,6 +61,34 @@ void main() {
     );
   });
 
+  testWidgets('at exactly the expanded boundary the form opens as a panel',
+      (tester) async {
+    await _pumpAt(tester, const Size(840, 900));
+
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(BottomSheet),
+      findsNothing,
+      reason: '840 is expandedMinWidth, so it is already expanded',
+    );
+  });
+
+  testWidgets('one pixel below expanded the form stays a sheet',
+      (tester) async {
+    await _pumpAt(tester, const Size(839, 900));
+
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(BottomSheet),
+      findsOneWidget,
+      reason: 'a 2/5 panel at medium is about 320px, too narrow for this form',
+    );
+  });
+
   testWidgets('on a phone the form still opens as a bottom sheet',
       (tester) async {
     await _pumpAt(tester, const Size(390, 844));

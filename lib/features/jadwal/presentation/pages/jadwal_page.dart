@@ -5,6 +5,8 @@ import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
@@ -32,6 +34,11 @@ class _JadwalPageState extends State<JadwalPage> {
   bool _isMonthExpanded = false;
   late final ScrollController _scrollController;
   DateTime? _markerMonth;
+
+  /// Apakah panel form sedang terbuka di samping agenda. Hanya dipakai pada
+  /// medium ke atas; pada compact form tetap dibuka sebagai bottom sheet.
+  bool _panelOpen = false;
+  JadwalEntity? _panelInitial;
 
   @override
   void initState() {
@@ -109,6 +116,18 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   void _openForm([JadwalEntity? initial]) {
+    // Hanya expanded, bukan medium. Pada medium panel hanya mendapat dua dari
+    // lima bagian lebar, sekitar 320 piksel, dan form ini berisi dropdown serta
+    // dua pemilih tanggal yang tidak muat di sana. Di bawah expanded bottom
+    // sheet tetap wadah yang lebih baik.
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      setState(() {
+        _panelOpen = true;
+        _panelInitial = initial;
+      });
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -121,6 +140,27 @@ class _JadwalPageState extends State<JadwalPage> {
           initialDate: initial == null ? _selectedDate : null,
         ),
       ),
+    );
+  }
+
+  void _closePanel() {
+    if (!_panelOpen) return;
+    setState(() {
+      _panelOpen = false;
+      _panelInitial = null;
+    });
+  }
+
+  /// Form sebagai panel di samping agenda, atau null bila tidak ada yang
+  /// sedang disunting. [MasterDetailLayout] sendiri yang mengabaikannya pada
+  /// compact, sehingga telepon tetap memakai bottom sheet.
+  Widget? _buildFormPanel() {
+    if (!_panelOpen) return null;
+    return _JadwalForm(
+      key: ValueKey('jadwal-panel-${_panelInitial?.id ?? 'baru'}'),
+      initial: _panelInitial,
+      initialDate: _panelInitial == null ? _selectedDate : null,
+      onClose: _closePanel,
     );
   }
 
@@ -232,7 +272,10 @@ class _JadwalPageState extends State<JadwalPage> {
                 ),
             child: widget.customerMode
                 ? _buildCustomerAgenda(items, loadedState)
-                : _buildPengurusAgenda(items, loadedState),
+                : MasterDetailLayout(
+                    master: _buildPengurusAgenda(items, loadedState),
+                    detail: _buildFormPanel(),
+                  ),
           );
         },
       ),
@@ -786,7 +829,20 @@ class _JadwalForm extends StatefulWidget {
   final JadwalEntity? initial;
   final DateTime? initialDate;
 
-  const _JadwalForm({this.initial, this.initialDate});
+  /// Diisi hanya ketika form tampil sebagai panel. Panel tidak berada di atas
+  /// navigator, jadi ia ditutup lewat callback, bukan dengan `Navigator.pop`.
+  /// Nilainya sekaligus menjadi penanda wadah: null berarti bottom sheet.
+  final VoidCallback? onClose;
+
+  const _JadwalForm({
+    super.key,
+    this.initial,
+    this.initialDate,
+    this.onClose,
+  });
+
+  /// Apakah form sedang tampil sebagai panel, bukan sebagai bottom sheet.
+  bool get isPanel => onClose != null;
 
   @override
   State<_JadwalForm> createState() => _JadwalFormState();
@@ -937,7 +993,12 @@ class _JadwalFormState extends State<_JadwalForm> {
         );
     if (!mounted) return;
     if (failure == null) {
-      Navigator.of(context).pop();
+      final close = widget.onClose;
+      if (close != null) {
+        close();
+      } else {
+        Navigator.of(context).pop();
+      }
     } else {
       AppNotification.showError(
         context,
@@ -967,6 +1028,7 @@ class _JadwalFormState extends State<_JadwalForm> {
               children: [
                 BottomSheetHeader(
                   title: widget.initial == null ? 'Buat Jadwal' : 'Ubah Jadwal',
+                  showDragHandle: !widget.isPanel,
                 ),
                 const SizedBox(height: 24),
                 _buildLabel('JENIS KEGIATAN'),
