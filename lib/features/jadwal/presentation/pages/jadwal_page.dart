@@ -1161,4 +1161,3 @@ String _formatDateTime(DateTime value) {
   return '${twoDigits(value.day)}/${twoDigits(value.month)}/${value.year}, '
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
-
