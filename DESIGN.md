@@ -74,14 +74,16 @@ Use these instead of building another one.
 
 | Need | Use | Notes |
 |---|---|---|
-| Sheet header (title + close) | `BottomSheetHeader` | Do not hand-build the drag handle (about 17 copies exist today). |
-| Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive` and `destructiveOutlined`; 48 high, radius 12, 14 semibold label, optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
+| Sheet header (title + close) | `BottomSheetHeader`, `AppSheetHandle` (`design/widgets`) | `BottomSheetHeader` already draws the drag handle. A sheet that lays out its own header uses `AppSheetHandle`; do not hand-build the bar. |
+| Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive`, `destructiveOutlined`, `warning`, `warningOutlined`, `tonal` (soft green, beside a primary) and `text` (a bare link inside a line of content). `size: AppButtonSize.compact` is 40 high with a 12 label and a 16 icon, for an action inside a card or a row; the regular size is 48 high, radius 12, 14 semibold label. Optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
 | Search | `CustomSearchField` | |
 | Status chip | `CustomStatusBadge` | |
 | Filter / tab pill | `AppChip` (`design/widgets`) | Announced to screen readers as a selected or unselected button, ripple, 48 dp hit area, optional icon and count. Used by the nasabah, harga, aktivitas and pencairan filters; `PencairanChip` wraps it. |
 | Tappable icon, link or field | `AppTapTarget` (`design/widgets`) | Button role, optional `label` for icon-only controls, ripple, 48 dp hit area, optional selected state for options in a group. Use instead of a bare `GestureDetector`. |
 | Tappable white card | `AppTappableCard` (`design/widgets`) | Button role that reads the card's own text, ripple on top of the fill. Used by the nasabah, harga and membership cards. |
-| Confirm dialog | `showAppConfirmDialog` (`core/bases/widgets`) | Answers `true` only on confirm. Used by logout, leaving onboarding and Jadwal cancel/complete. |
+| Confirm dialog | `showAppConfirmDialog` (`core/bases/widgets`) | A plain yes or no; answers `true` only on confirm. Built on `AppDialog`. Used by logout, leaving onboarding, Jadwal, pencairan and superadmin approvals. |
+| Dialog with a form | `AppDialog` (`design/widgets`) | Title, a message or any `content` (a text field, for instance), a quiet cancel and a confirm `AppButton`; `destructive` paints confirm red. |
+| Decision about a person or an item | `AppIconDialog` (`design/widgets`) | An icon in a tinted circle (`AppDialogTone.positive`, `warning`, `danger`), a centred title, a message with spans so a name can be bold, and two equal buttons. `isLoading` locks both while the action runs. Used to activate or deactivate a nasabah or a jenis sampah. `test/design/hardcoded_dialogs_test.dart` fails on a new `AlertDialog(` or `Dialog(` in a screen. |
 | Empty state | `EmptyView` | |
 | Loading list | `SkeletonListItem` | Avoid a bare spinner for lists. |
 | Loading / empty / error / content in one | `PageStateView` (`design/layout`) | New; adopt on new pages. |
