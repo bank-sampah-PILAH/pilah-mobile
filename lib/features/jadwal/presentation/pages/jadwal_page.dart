@@ -1029,6 +1029,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 BottomSheetHeader(
                   title: widget.initial == null ? 'Buat Jadwal' : 'Ubah Jadwal',
                   showDragHandle: !widget.isPanel,
+                  onClose: widget.onClose,
                 ),
                 const SizedBox(height: 24),
                 _buildLabel('JENIS KEGIATAN'),
