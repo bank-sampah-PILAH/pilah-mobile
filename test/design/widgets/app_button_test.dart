@@ -298,6 +298,34 @@ void main() {
     });
   });
 
+  group('AppButton warning', () {
+    testWidgets('filled is amber with a white label', (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Ya, Lanjutkan',
+        variant: AppButtonVariant.warning,
+        onPressed: () {},
+      )));
+
+      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(_fill(tester, ElevatedButton), AppColors.warning);
+      expect(_labelColor(tester, 'Ya, Lanjutkan'), Colors.white);
+    });
+
+    testWidgets('outlined has an amber border and an amber label',
+        (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Samakan dengan data akun',
+        variant: AppButtonVariant.warningOutlined,
+        onPressed: () {},
+      )));
+
+      expect(find.byType(OutlinedButton), findsOneWidget);
+      expect(
+          _labelColor(tester, 'Samakan dengan data akun'), AppColors.warning);
+      expect(_shape(tester, OutlinedButton)?.side.color, AppColors.warning);
+    });
+  });
+
   group('AppButton compact', () {
     testWidgets('is 40 high where the regular button is 48', (tester) async {
       await tester.pumpWidget(
