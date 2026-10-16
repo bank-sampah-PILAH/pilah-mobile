@@ -267,6 +267,7 @@ void main() {
         '/choose-role',
         '/forgot_password',
         '/invite',
+        '/invite/web-token',
       ]) {
         expect(
           sessionRestoreRedirect(sessionChecked: false, path: path),
@@ -330,6 +331,7 @@ void main() {
         '//evil.test',
         '/login',
         '/login?next=/nasabah',
+        '/invite/web-token',
       ]) {
         expect(
           locationAfterRestore(target: '/dashboard', from: from),
@@ -349,7 +351,12 @@ void main() {
     });
 
     test('leaves public paths alone', () {
-      for (final path in ['/splash', '/login', '/choose-role']) {
+      for (final path in [
+        '/splash',
+        '/login',
+        '/choose-role',
+        '/invite/web-token',
+      ]) {
         expect(signedOutRedirect(signedOut: true, path: path), isNull,
             reason: path);
       }
