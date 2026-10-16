@@ -466,6 +466,44 @@ void main() {
     });
   });
 
+  group('AppButton long labels', () {
+    testWidgets(
+        'a label too wide for a half-width button shrinks instead of being cut',
+        (tester) async {
+      await tester.pumpWidget(_host(
+        AppButton(label: 'Ya, Nonaktifkan', onPressed: () {}),
+        width: 110,
+      ));
+
+      final fitted = find.descendant(
+        of: find.byType(ElevatedButton),
+        matching: find.byType(FittedBox),
+      );
+      expect(fitted, findsOneWidget);
+      // 110 wide, less 12 of padding on each side.
+      expect(tester.getSize(fitted).width, lessThanOrEqualTo(86));
+      expect(find.text('Ya, Nonaktifkan'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a label that fits keeps its size', (tester) async {
+      await tester.pumpWidget(_host(
+        AppButton(label: 'Simpan', onPressed: () {}),
+      ));
+
+      final style =
+          tester.renderObject<RenderParagraph>(find.text('Simpan')).text.style;
+      final scale = tester
+          .widget<FittedBox>(find.descendant(
+            of: find.byType(ElevatedButton),
+            matching: find.byType(FittedBox),
+          ))
+          .fit;
+      expect(style?.fontSize, 14);
+      expect(scale, BoxFit.scaleDown);
+    });
+  });
+
   group('AppButton behaviour', () {
     testWidgets('reports taps', (tester) async {
       var taps = 0;
