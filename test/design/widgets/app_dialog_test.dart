@@ -6,6 +6,8 @@ import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 
 Future<void> _show(WidgetTester tester, Widget dialog) async {
+  // A fresh tree, so a second call in a test does not keep the first dialog.
+  await tester.pumpWidget(const SizedBox());
   await tester.pumpWidget(MaterialApp(
     theme: AppTheme.light,
     home: Scaffold(
@@ -21,7 +23,9 @@ Future<void> _show(WidgetTester tester, Widget dialog) async {
     ),
   ));
   await tester.tap(find.text('buka'));
-  await tester.pumpAndSettle();
+  // Not pumpAndSettle: a loading button spins for ever.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
 }
 
 /// The colour a button is painted with, which is what a user sees.
