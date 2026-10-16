@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -150,8 +151,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       decoration: const BoxDecoration(
         color: AppColors.greenDark,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+          bottomLeft: Radius.circular(AppRadius.xl),
+          bottomRight: Radius.circular(AppRadius.xl),
         ),
       ),
       child: Column(
@@ -187,7 +188,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                   decoration: BoxDecoration(
                     border:
                         Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child:
                       const Icon(Icons.logout, color: Colors.white, size: 20),
@@ -324,7 +325,8 @@ class _PendingBankCardState extends State<PendingBankCard> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: Text(title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         content: Text(message, style: const TextStyle(fontSize: 14)),
@@ -448,7 +450,7 @@ class _PendingBankCardState extends State<PendingBankCard> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
                     ),
                   ),
                 ),
@@ -468,7 +470,7 @@ class _PendingBankCardState extends State<PendingBankCard> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
                     ),
                   ),
                 ),
@@ -487,7 +489,7 @@ class _PendingBankCardState extends State<PendingBankCard> {
                       side: const BorderSide(color: Colors.red, width: 1),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
                     ),
                   ),
                 ),
@@ -576,7 +578,7 @@ class _CardShell extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -593,8 +595,8 @@ class _CardShell extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accentColor,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
+                  topLeft: Radius.circular(AppRadius.lg),
+                  bottomLeft: Radius.circular(AppRadius.lg),
                 ),
               ),
             ),
@@ -642,7 +644,8 @@ class _CardHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-              color: badgeBg, borderRadius: BorderRadius.circular(12)),
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(AppRadius.md)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

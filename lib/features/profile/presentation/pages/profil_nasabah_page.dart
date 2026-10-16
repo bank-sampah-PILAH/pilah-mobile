@@ -1,6 +1,7 @@
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -119,7 +120,7 @@ class _IdentityCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
                 color: NasabahStyle.emeraldLight,
-                borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(AppRadius.sm)),
             child: Text('Nasabah',
                 style: NasabahStyle.text(13,
                     weight: FontWeight.w600, color: NasabahStyle.emeraldDark))),

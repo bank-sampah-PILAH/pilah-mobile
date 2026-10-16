@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -179,7 +180,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.dangerLight, // red-50
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.dangerLight), // red-200
       ),
       child: Row(
@@ -433,7 +434,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.04),
@@ -541,11 +542,13 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                   children: [
                                     InkWell(
                                       onTap: () => _pickImage(field),
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.md),
                                       child: _selectedImage != null
                                           ? ClipRRect(
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(
+                                                      AppRadius.md),
                                               child: Stack(
                                                 children: [
                                                   Image.memory(
@@ -561,7 +564,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                                       label: 'Hapus foto',
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                              24),
+                                                              AppRadius.xl),
                                                       onTap: () {
                                                         setState(() {
                                                           _selectedImage = null;
