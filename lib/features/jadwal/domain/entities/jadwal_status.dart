@@ -11,10 +11,23 @@ enum JadwalAction {
 /// kebetulan menggambar tombolnya, supaya hanya ada satu tempat yang perlu
 /// diubah ketika status baru ditambahkan.
 enum JadwalStatus {
-  draf,
-  diterbitkan,
-  dibatalkan,
-  selesai;
+  draf('draft'),
+  diterbitkan('diterbitkan'),
+  dibatalkan('dibatalkan'),
+  selesai('selesai');
+
+  const JadwalStatus(this.wireValue);
+
+  /// Nilai status sebagaimana dikirim API. Hanya `draf` yang ejaannya berbeda.
+  final String wireValue;
+
+  /// Status untuk [value] dari API, atau null bila tidak dikenali.
+  static JadwalStatus? fromWire(String value) {
+    for (final status in values) {
+      if (status.wireValue == value) return status;
+    }
+    return null;
+  }
 
   /// Aksi yang boleh dijalankan dari status ini.
   Set<JadwalAction> get availableActions => switch (this) {
