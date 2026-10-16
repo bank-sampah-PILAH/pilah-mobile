@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
@@ -73,7 +74,9 @@ class _DashboardPageState extends State<DashboardPage> {
     final isPengurusWeb = webPengurusKey != null;
 
     return Scaffold(
-      backgroundColor: isPengurusWeb ? AppColors.cardOffWhite : Colors.white,
+      backgroundColor: isPengurusWeb
+          ? WebContentSurface.pageColor(context, phone: AppColors.cardOffWhite)
+          : Colors.white,
       body: SafeArea(
         child: AppRefreshIndicator(
           onRefresh: _onRefresh,
