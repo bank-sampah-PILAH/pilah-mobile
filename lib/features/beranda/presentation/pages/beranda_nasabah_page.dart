@@ -2,6 +2,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:clock/clock.dart';
@@ -137,21 +138,12 @@ class _HomeSessionState extends State<_HomeSession> {
                         const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
+                          child: AppButton(
+                            label: 'Lihat Status Approval Bank Sampah',
+                            variant: AppButtonVariant.text,
+                            icon: Icons.fact_check_outlined,
                             onPressed: () => context.push(
                               ApprovalBankSampahListPage.route,
-                            ),
-                            icon:
-                                const Icon(Icons.fact_check_outlined, size: 16),
-                            label: Text(
-                              'Lihat Status Approval Bank Sampah',
-                              style: _text(12,
-                                  weight: FontWeight.w600, color: _emerald),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: _emerald,
-                              padding: EdgeInsets.zero,
-                              alignment: Alignment.centerLeft,
                             ),
                           ),
                         ),
@@ -480,22 +472,10 @@ class _BankUnitCard extends StatelessWidget {
             ),
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  alignment: Alignment.centerLeft,
-                ),
+              child: AppButton(
+                label: 'Detail Bank Sampah',
+                variant: AppButtonVariant.text,
                 onPressed: onOpen,
-                child: Text(
-                  'Detail Bank Sampah',
-                  style: _text(
-                    12,
-                    weight: FontWeight.w600,
-                    color: _emerald,
-                  ),
-                ),
               ),
             ),
           ],

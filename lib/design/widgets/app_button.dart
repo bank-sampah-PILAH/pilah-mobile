@@ -21,6 +21,14 @@ enum AppButtonVariant {
   /// such as "Tolak" beside "Setujui": red outline.
   destructiveOutlined,
 
+  /// A step that goes ahead despite a warning, such as confirming something
+  /// that cannot be fully checked: amber, filled.
+  warning,
+
+  /// The lighter form of [warning], for an action that fixes a mismatch: amber
+  /// outline.
+  warningOutlined,
+
   /// A soft green fill with a green label, for an action that sits next to a
   /// primary one without competing with it, such as "Tandai Selesai".
   tonal,
@@ -87,6 +95,7 @@ class AppButton extends StatelessWidget {
           AppColors.greenDark,
         AppButtonVariant.neutral => AppColors.inkSoft,
         AppButtonVariant.destructiveOutlined => AppColors.danger,
+        AppButtonVariant.warningOutlined => AppColors.warning,
         _ => Colors.white,
       };
 
@@ -164,6 +173,27 @@ class AppButton extends StatelessWidget {
             tapTargetSize: tapTarget,
             foregroundColor: AppColors.danger,
             side: const BorderSide(color: AppColors.danger, width: 1.5),
+          ),
+          child: child,
+        ),
+      AppButtonVariant.warning => ElevatedButton(
+          onPressed: onTap,
+          style: ElevatedButton.styleFrom(
+            minimumSize: minimum,
+            padding: padding,
+            tapTargetSize: tapTarget,
+            backgroundColor: AppColors.warning,
+          ),
+          child: child,
+        ),
+      AppButtonVariant.warningOutlined => OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            minimumSize: minimum,
+            padding: padding,
+            tapTargetSize: tapTarget,
+            foregroundColor: AppColors.warning,
+            side: const BorderSide(color: AppColors.warning, width: 1.5),
           ),
           child: child,
         ),

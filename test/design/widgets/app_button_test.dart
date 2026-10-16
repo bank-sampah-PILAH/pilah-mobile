@@ -153,6 +153,7 @@ void main() {
         final type = switch (variant) {
           AppButtonVariant.primary ||
           AppButtonVariant.destructive ||
+          AppButtonVariant.warning ||
           AppButtonVariant.tonal =>
             ElevatedButton,
           _ => OutlinedButton,
