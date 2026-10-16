@@ -196,6 +196,30 @@ void main() {
     });
   });
 
+  group('cards', () {
+    testWidgets(
+        'a stock Card is white and flat with a thin border, no tint or margin',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(const Card(child: SizedBox(width: 100, height: 40))),
+      );
+
+      final card = tester.widget<Card>(find.byType(Card));
+      final theme = Theme.of(tester.element(find.byType(Card))).cardTheme;
+      expect(card.color ?? theme.color, Colors.white);
+      expect(theme.surfaceTintColor, Colors.transparent);
+      expect(theme.elevation, 0);
+      expect(theme.margin, EdgeInsets.zero);
+      expect(
+        theme.shape,
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.border),
+        ),
+      );
+    });
+  });
+
   group('app bar', () {
     testWidgets('a plain AppBar is white with a semibold Poppins title',
         (tester) async {
