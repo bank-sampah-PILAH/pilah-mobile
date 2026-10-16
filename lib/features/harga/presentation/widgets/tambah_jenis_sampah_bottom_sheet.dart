@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -111,186 +111,169 @@ class _TambahJenisSampahBottomSheetState
   Widget build(BuildContext context) {
     final bool isEditMode = widget.initialData != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BottomSheetHeader(
-                  title:
-                      isEditMode ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah',
-                ),
-                const SizedBox(height: 24),
-
-                // Field: ID / KODE SAMPAH
-                _buildLabel('ID / KODE SAMPAH'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _kodeSampahController,
-                  onChanged: (_) {
-                    if (_serverKodeError != null) {
-                      setState(() => _serverKodeError = null);
-                    }
-                  },
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Bagian ini wajib diisi.';
-                    }
-                    final cubit =
-                        widget.hargaCubit ?? context.read<HargaCubit>();
-                    if (cubit.state is HargaLoaded) {
-                      final list = (cubit.state as HargaLoaded).jenisSampahList;
-                      final isDuplicate = list.any((e) =>
-                          e.kodeSampah.trim().toLowerCase() ==
-                              value.trim().toLowerCase() &&
-                          e.id != widget.initialData?.id);
-                      if (isDuplicate) {
-                        return 'Kode sampah ini sudah digunakan.';
-                      }
-                    }
-                    if (_serverKodeError != null) return _serverKodeError;
-                    return null;
-                  },
-                  decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Kode unik untuk identifikasi jenis sampah ini.',
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Field: NAMA JENIS SAMPAH
-                _buildLabel('NAMA JENIS SAMPAH'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _nameController,
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
-                  decoration:
-                      appInputDecoration(hintText: 'Contoh: Plastik PET'),
-                ),
-                const SizedBox(height: 20),
-
-                // Field: KATEGORI
-                _buildLabel('KATEGORI'),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedCategory,
-                  validator: (value) => (value == null || value.isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
-                  hint: const Text('— Pilih Kategori —'),
-                  decoration: appInputDecoration(),
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                  items: _categories.map(_buildDropdownItem).toList(),
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedCategory = newValue;
-                    });
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Field: DESKRIPSI (OPSIONAL)
-                _buildLabel('DESKRIPSI (OPSIONAL)'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _descController,
-                  maxLines: 2,
-                  decoration: appInputDecoration(
-                      hintText: 'Contoh: Botol bening, kemasan plastik'),
-                ),
-                const SizedBox(height: 20),
-
-                // Field: HARGA BELI PER KG (RP)
-                _buildLabel('HARGA BELI PER KG (RP)'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
-                  decoration: appInputDecoration(
-                    hintText: '0',
-                  ).copyWith(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.only(
-                          left: 16, right: 8, top: 14, bottom: 14),
-                      child: Text(
-                        'Rp',
-                        style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    prefixIconConstraints:
-                        const BoxConstraints(minWidth: 0, minHeight: 0),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Harga yang akan dibayarkan ke nasabah.',
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                ),
-                if (isEditMode) ...[
-                  const SizedBox(height: 20),
-                  _buildLabel('BERLAKU MULAI'),
-                  const SizedBox(height: 8),
-                  _buildPilihanBerlaku(),
-                  const SizedBox(height: 16),
-                  _buildRingkasanHarga(widget.initialData!),
-                  const SizedBox(height: 12),
-                  _buildPeringatanTidakSurut(),
-                ],
-                const SizedBox(height: 32),
-
-                // Button
-                AppButton(
-                  label:
-                      isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
-                  isLoading: _isSaving,
-                  onPressed: _handleSimpan,
-                ),
-
-                // Activate / Deactivate (edit mode only)
-                if (isEditMode) ...[
-                  const SizedBox(height: 12),
-                  AppButton(
-                    label: _isActive
-                        ? 'Nonaktifkan Jenis Sampah'
-                        : 'Aktifkan Jenis Sampah',
-                    variant: _isActive
-                        ? AppButtonVariant.destructiveOutlined
-                        : AppButtonVariant.outlined,
-                    icon: _isActive ? Icons.block : Icons.check_circle_outline,
-                    onPressed: _isSaving ? null : _handleToggleStatus,
-                  ),
-                ],
-              ],
+    return AppSheetContainer(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BottomSheetHeader(
+              title: isEditMode ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah',
             ),
-          ),
+            const SizedBox(height: 24),
+
+            // Field: ID / KODE SAMPAH
+            _buildLabel('ID / KODE SAMPAH'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _kodeSampahController,
+              onChanged: (_) {
+                if (_serverKodeError != null) {
+                  setState(() => _serverKodeError = null);
+                }
+              },
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Bagian ini wajib diisi.';
+                }
+                final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+                if (cubit.state is HargaLoaded) {
+                  final list = (cubit.state as HargaLoaded).jenisSampahList;
+                  final isDuplicate = list.any((e) =>
+                      e.kodeSampah.trim().toLowerCase() ==
+                          value.trim().toLowerCase() &&
+                      e.id != widget.initialData?.id);
+                  if (isDuplicate) {
+                    return 'Kode sampah ini sudah digunakan.';
+                  }
+                }
+                if (_serverKodeError != null) return _serverKodeError;
+                return null;
+              },
+              decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Kode unik untuk identifikasi jenis sampah ini.',
+              style: AppTextStyle.small.copyWith(
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Field: NAMA JENIS SAMPAH
+            _buildLabel('NAMA JENIS SAMPAH'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _nameController,
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Bagian ini wajib diisi.'
+                  : null,
+              decoration: appInputDecoration(hintText: 'Contoh: Plastik PET'),
+            ),
+            const SizedBox(height: 20),
+
+            // Field: KATEGORI
+            _buildLabel('KATEGORI'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedCategory,
+              validator: (value) => (value == null || value.isEmpty)
+                  ? 'Bagian ini wajib diisi.'
+                  : null,
+              hint: const Text('— Pilih Kategori —'),
+              decoration: appInputDecoration(),
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+              items: _categories.map(_buildDropdownItem).toList(),
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedCategory = newValue;
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // Field: DESKRIPSI (OPSIONAL)
+            _buildLabel('DESKRIPSI (OPSIONAL)'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _descController,
+              maxLines: 2,
+              decoration: appInputDecoration(
+                  hintText: 'Contoh: Botol bening, kemasan plastik'),
+            ),
+            const SizedBox(height: 20),
+
+            // Field: HARGA BELI PER KG (RP)
+            _buildLabel('HARGA BELI PER KG (RP)'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _priceController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Bagian ini wajib diisi.'
+                  : null,
+              decoration: appInputDecoration(
+                hintText: '0',
+              ).copyWith(
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(
+                      left: 16, right: 8, top: 14, bottom: 14),
+                  child: Text(
+                    'Rp',
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                prefixIconConstraints:
+                    const BoxConstraints(minWidth: 0, minHeight: 0),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Harga yang akan dibayarkan ke nasabah.',
+              style: AppTextStyle.small.copyWith(
+                color: Colors.grey[500],
+              ),
+            ),
+            if (isEditMode) ...[
+              const SizedBox(height: 20),
+              _buildLabel('BERLAKU MULAI'),
+              const SizedBox(height: 8),
+              _buildPilihanBerlaku(),
+              const SizedBox(height: 16),
+              _buildRingkasanHarga(widget.initialData!),
+              const SizedBox(height: 12),
+              _buildPeringatanTidakSurut(),
+            ],
+            const SizedBox(height: 32),
+
+            // Button
+            AppButton(
+              label: isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+              isLoading: _isSaving,
+              onPressed: _handleSimpan,
+            ),
+
+            // Activate / Deactivate (edit mode only)
+            if (isEditMode) ...[
+              const SizedBox(height: 12),
+              AppButton(
+                label: _isActive
+                    ? 'Nonaktifkan Jenis Sampah'
+                    : 'Aktifkan Jenis Sampah',
+                variant: _isActive
+                    ? AppButtonVariant.destructiveOutlined
+                    : AppButtonVariant.outlined,
+                icon: _isActive ? Icons.block : Icons.check_circle_outline,
+                onPressed: _isSaving ? null : _handleToggleStatus,
+              ),
+            ],
+          ],
         ),
       ),
     );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -34,79 +34,65 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
       });
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius:
-                BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: NasabahStyle.line,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Detail Setoran',
-                    style: NasabahStyle.text(20, weight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 16),
-                  FutureBuilder<NasabahSetoranDetail>(
-                    future: _detail,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: NasabahStyle.emerald,
-                            ),
-                          ),
-                        );
-                      }
-                      if (snapshot.hasError) {
-                        final error = snapshot.error;
-                        return Column(
-                          children: [
-                            Text(
-                              error is NasabahApiException
-                                  ? error.message
-                                  : error is NetworkException
-                                      ? error.displayMessage
-                                      : 'Rincian setoran gagal dimuat.',
-                              textAlign: TextAlign.center,
-                              style: NasabahStyle.text(13),
-                            ),
-                            TextButton(
-                              onPressed: _retry,
-                              child: const Text('Coba Lagi'),
-                            ),
-                          ],
-                        );
-                      }
-                      return _detailContent(snapshot.data!);
-                    },
-                  ),
-                ],
+  Widget build(BuildContext context) => AppSheetContainer(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: NasabahStyle.line,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
+            const SizedBox(height: 20),
+            Text(
+              'Detail Setoran',
+              style: NasabahStyle.text(20, weight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<NasabahSetoranDetail>(
+              future: _detail,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: NasabahStyle.emerald,
+                      ),
+                    ),
+                  );
+                }
+                if (snapshot.hasError) {
+                  final error = snapshot.error;
+                  return Column(
+                    children: [
+                      Text(
+                        error is NasabahApiException
+                            ? error.message
+                            : error is NetworkException
+                                ? error.displayMessage
+                                : 'Rincian setoran gagal dimuat.',
+                        textAlign: TextAlign.center,
+                        style: NasabahStyle.text(13),
+                      ),
+                      TextButton(
+                        onPressed: _retry,
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  );
+                }
+                return _detailContent(snapshot.data!);
+              },
+            ),
+          ],
         ),
       );
 
