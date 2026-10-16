@@ -2,6 +2,7 @@
 enum JadwalAction {
   batalkan,
   terbitkan,
+  selesaikan,
 }
 
 /// Status sebuah jadwal, beserta aksi yang sah dari status tersebut.
@@ -21,7 +22,10 @@ enum JadwalStatus {
             JadwalAction.batalkan,
             JadwalAction.terbitkan,
           },
-        JadwalStatus.diterbitkan => const {},
+        JadwalStatus.diterbitkan => const {
+            JadwalAction.batalkan,
+            JadwalAction.selesaikan,
+          },
         JadwalStatus.dibatalkan => const {},
         JadwalStatus.selesai => const {},
       };
