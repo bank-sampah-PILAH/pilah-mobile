@@ -21,4 +21,10 @@ void main() {
       );
     });
   });
+
+  group('JadwalStatus.fromWire', () {
+    test('maps the status the API sends', () {
+      expect(JadwalStatus.fromWire('diterbitkan'), JadwalStatus.diterbitkan);
+    });
+  });
 }
