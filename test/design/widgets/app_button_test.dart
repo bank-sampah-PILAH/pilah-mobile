@@ -6,14 +6,14 @@ import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 Widget _host(Widget child, {double width = 320}) => MaterialApp(
-  theme: AppTheme.light,
-  home: Scaffold(
-    body: Align(
-      alignment: Alignment.topCenter,
-      child: SizedBox(width: width, child: child),
-    ),
-  ),
-);
+      theme: AppTheme.light,
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(width: width, child: child),
+        ),
+      ),
+    );
 
 Color? _labelColor(WidgetTester tester, String text) =>
     tester.renderObject<RenderParagraph>(find.text(text)).text.style?.color;
@@ -27,18 +27,16 @@ Color? _fill(WidgetTester tester, Type button) => tester
     )
     .color;
 
-OutlinedBorder? _shape(WidgetTester tester, Type button) =>
-    tester
-            .widget<Material>(
-              find
-                  .descendant(
-                    of: find.byType(button),
-                    matching: find.byType(Material),
-                  )
-                  .first,
-            )
-            .shape
-        as OutlinedBorder?;
+OutlinedBorder? _shape(WidgetTester tester, Type button) => tester
+    .widget<Material>(
+      find
+          .descendant(
+            of: find.byType(button),
+            matching: find.byType(Material),
+          )
+          .first,
+    )
+    .shape as OutlinedBorder?;
 
 void main() {
   group('AppButton variants', () {
@@ -150,9 +148,13 @@ void main() {
         await tester.pumpWidget(
           _host(AppButton(label: 'Aksi', variant: variant, onPressed: () {})),
         );
+        // A text link has no surface to round.
+        if (variant == AppButtonVariant.text) continue;
         final type = switch (variant) {
           AppButtonVariant.primary ||
-          AppButtonVariant.destructive => ElevatedButton,
+          AppButtonVariant.destructive ||
+          AppButtonVariant.tonal =>
+            ElevatedButton,
           _ => OutlinedButton,
         };
 
@@ -204,7 +206,8 @@ void main() {
     });
   });
 
-  testWidgets('shows a custom leading widget, such as a brand logo, instead '
+  testWidgets(
+      'shows a custom leading widget, such as a brand logo, instead '
       'of an icon', (tester) async {
     await tester.pumpWidget(
       _host(
@@ -250,7 +253,8 @@ void main() {
     );
   });
 
-  testWidgets('a button that fills its width keeps only 12 of side padding, '
+  testWidgets(
+      'a button that fills its width keeps only 12 of side padding, '
       'so two side by side fit a long label', (tester) async {
     EdgeInsetsGeometry? padding(Finder finder) =>
         tester.widget<ElevatedButton>(finder).style?.padding?.resolve({});
@@ -441,7 +445,8 @@ void main() {
       expect(_fill(tester, ElevatedButton), AppColors.border);
     });
 
-    testWidgets('shows a spinner instead of the label while loading and does '
+    testWidgets(
+        'shows a spinner instead of the label while loading and does '
         'not fire twice', (tester) async {
       var taps = 0;
       await tester.pumpWidget(
