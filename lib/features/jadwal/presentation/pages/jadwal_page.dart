@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
@@ -1032,7 +1033,8 @@ class _JadwalFormState extends State<_JadwalForm> {
         key: const ValueKey('jadwal-form'),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SingleChildScrollView(
@@ -1161,7 +1163,7 @@ class _DateTimeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AppTapTarget(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: InputDecorator(
           decoration: decoration.copyWith(
             labelText: label,
