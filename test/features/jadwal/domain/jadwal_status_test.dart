@@ -12,5 +12,13 @@ void main() {
         {JadwalAction.batalkan, JadwalAction.terbitkan},
       );
     });
+
+    test('a published schedule can be cancelled or completed', () {
+      expect(
+        JadwalStatus.diterbitkan.availableActions,
+        {JadwalAction.batalkan, JadwalAction.selesaikan},
+        reason: 'it can no longer be published a second time',
+      );
+    });
   });
 }
