@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 /// How a question weighs: green for going ahead, red for throwing something
@@ -41,7 +42,7 @@ Future<bool> showPencairanKonfirmasi(
     backgroundColor: Colors.white,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
     ),
     builder: (sheetContext) => SafeArea(
       child: Padding(
@@ -83,7 +84,7 @@ Future<bool> showPencairanKonfirmasi(
                       side: BorderSide(color: Colors.grey.shade300),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(AppRadius.md)),
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -101,7 +102,7 @@ Future<bool> showPencairanKonfirmasi(
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(AppRadius.md)),
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,

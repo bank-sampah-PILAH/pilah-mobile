@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
@@ -29,12 +30,12 @@ class PencairanHeader extends StatelessWidget {
           InkWell(
             key: const Key('kembali'),
             onTap: () => Navigator.of(context).maybePop(),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
             ),
@@ -141,7 +142,7 @@ class PencairanCard extends StatelessWidget {
         padding: padding,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: borderColor == null
               ? null
               : Border.all(color: borderColor!, width: 2),
@@ -270,7 +271,8 @@ class PencairanPopupMenu<T> extends StatelessWidget {
       surfaceTintColor: Colors.transparent,
       elevation: 8,
       shadowColor: Colors.black38,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       onSelected: onSelected,
       itemBuilder: (_) => [
         for (final entry in entries)
@@ -370,7 +372,7 @@ class PencairanActionButton extends StatelessWidget {
       ],
     );
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
     );
     return SizedBox(
       height: 52,

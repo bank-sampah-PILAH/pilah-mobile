@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -125,7 +126,8 @@ class _DetailTransaksiBottomSheetState
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: SingleChildScrollView(
@@ -172,7 +174,7 @@ class _DetailTransaksiBottomSheetState
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.surface, // surface-container-low
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Row(
                   children: [
@@ -181,7 +183,7 @@ class _DetailTransaksiBottomSheetState
                       height: 48,
                       decoration: BoxDecoration(
                         color: avatarColor,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -234,7 +236,7 @@ class _DetailTransaksiBottomSheetState
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Column(
                   children: [
@@ -382,7 +384,7 @@ class _DetailTransaksiBottomSheetState
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: mintTint,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Row(
                   children: [
@@ -445,7 +447,7 @@ class _DetailTransaksiBottomSheetState
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: AppColors.greenDark.withValues(alpha: 0.3)),
         ),
         child: Row(
@@ -454,7 +456,7 @@ class _DetailTransaksiBottomSheetState
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: mintTint,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: const Icon(Icons.wechat,
                   color: AppColors.greenDark,
@@ -491,7 +493,7 @@ class _DetailTransaksiBottomSheetState
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: errorColor.withValues(alpha: 0.3)),
         ),
         child: Row(
@@ -500,7 +502,7 @@ class _DetailTransaksiBottomSheetState
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.dangerLight, // very light red
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: const Icon(Icons.wechat, color: errorColor, size: 24),
             ),
@@ -532,7 +534,7 @@ class _DetailTransaksiBottomSheetState
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppColors.greenDark,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const CircularProgressIndicator(
                       color: Colors.white,
@@ -558,7 +560,7 @@ class _DetailTransaksiBottomSheetState
                       minimumSize: const Size(0, 0),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       elevation: 0,
                     ),

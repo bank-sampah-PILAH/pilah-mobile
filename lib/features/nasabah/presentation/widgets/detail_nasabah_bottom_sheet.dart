@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -79,7 +80,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         // Padding sits on the scroll view, not the Container: on wide screens
         // the scrollbar is drawn at the viewport edge and would otherwise
@@ -116,7 +118,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                       color: isActive
                           ? DetailNasabahBottomSheet.mintTint
                           : Colors.red[50],
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -300,7 +302,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: DetailNasabahBottomSheet.mintTint,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,7 +379,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +431,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                         side: BorderSide(color: Colors.orange[400]!),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: const Text('Samakan dengan data akun'),

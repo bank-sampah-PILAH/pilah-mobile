@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
@@ -371,12 +372,12 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                   children: [
                     InkWell(
                       onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Icon(Icons.arrow_back,
                             color: Colors.grey[800], size: 20),
@@ -462,7 +463,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                     padding: const EdgeInsets.all(24),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.lg),
                                       border: Border.all(
                                           color: (_hasSubmitted &&
                                                   setoranItems.isEmpty)
@@ -476,8 +478,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
                                             color: Colors.grey[50],
-                                            borderRadius:
-                                                BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                                AppRadius.lg),
                                           ),
                                           child: Icon(Icons.add,
                                               color: Colors.grey[400],
