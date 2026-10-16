@@ -760,13 +760,11 @@ class _ScheduleCard extends StatelessWidget {
             onPressed: onPublish,
             child: Text(action.label),
           ),
-        JadwalAction.selesaikan => FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.greenLight,
-              foregroundColor: AppColors.greenDark,
-            ),
+        JadwalAction.selesaikan => AppButton(
+            label: action.label,
+            variant: AppButtonVariant.tonal,
+            expand: false,
             onPressed: onComplete,
-            child: Text(action.label),
           ),
       };
 }

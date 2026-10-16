@@ -434,63 +434,32 @@ class _PendingBankCardState extends State<PendingBankCard> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton(
+                    label: 'Lihat Bukti',
+                    variant: AppButtonVariant.tonal,
+                    size: AppButtonSize.compact,
+                    icon: Icons.image_outlined,
                     onPressed: () => showProofImageDialog(context,
                         imageUrl: bank.fotoKegiatan),
-                    icon: const Icon(Icons.image_outlined,
-                        size: 14, color: AppColors.greenDark),
-                    label: const Text('Lihat Bukti',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
-                      foregroundColor: AppColors.greenDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton(
+                    label: 'Setujui',
+                    size: AppButtonSize.compact,
+                    icon: Icons.check,
                     onPressed: () => _runAction(approve: true),
-                    icon:
-                        const Icon(Icons.check, size: 14, color: Colors.white),
-                    label: const Text('Setujui',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: AppButton(
+                    label: 'Tolak',
+                    variant: AppButtonVariant.destructiveOutlined,
+                    size: AppButtonSize.compact,
+                    icon: Icons.close,
                     onPressed: () => _runAction(approve: false),
-                    icon: const Icon(Icons.close, size: 14, color: Colors.red),
-                    label: const Text('Tolak',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red, width: 1),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                    ),
                   ),
                 ),
               ],
