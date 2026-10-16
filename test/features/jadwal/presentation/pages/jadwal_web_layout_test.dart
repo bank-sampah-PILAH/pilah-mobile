@@ -61,6 +61,24 @@ void main() {
     );
   });
 
+  testWidgets('the panel closes itself when its close button is tapped',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('jadwal-form')),
+      findsNothing,
+      reason: 'a panel is not on a route, so it cannot be dismissed by a pop',
+    );
+  });
+
   testWidgets('at exactly the expanded boundary the form opens as a panel',
       (tester) async {
     await _pumpAt(tester, const Size(840, 900));
