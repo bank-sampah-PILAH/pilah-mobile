@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Shows a bank sampah's foto kegiatan so a superadmin can review it.
@@ -21,7 +22,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
       return Dialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
         child: Column(
