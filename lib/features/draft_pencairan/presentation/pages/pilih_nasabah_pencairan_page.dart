@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -196,7 +197,7 @@ class _BulkRow extends StatelessWidget {
             child: InkWell(
               key: const Key('pilih-tampil'),
               onTap: dapat == 0 ? null : cubit.pilihTampil,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Row(
                 children: [
                   IgnorePointer(
@@ -348,7 +349,7 @@ class _KandidatRow extends StatelessWidget {
     return InkWell(
       key: Key('kandidat-${kandidat.id}'),
       onTap: kandidat.kosong ? null : onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       // Dimmed: it is here to be seen, not to be picked.
       child: kandidat.kosong ? Opacity(opacity: 0.5, child: kartu) : kartu,
     );

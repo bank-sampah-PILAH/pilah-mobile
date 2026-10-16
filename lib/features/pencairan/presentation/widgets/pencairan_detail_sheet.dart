@@ -7,6 +7,7 @@ import '../../domain/model/pencairan.dart';
 import '../pages/edit_pencairan_page.dart';
 import '../pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 String _time(DateTime? tanggal) {
   if (tanggal == null) return '-';
@@ -101,7 +102,8 @@ class _DetailPencairanSheet extends StatelessWidget {
       child: Container(
         decoration: const BoxDecoration(
           color: NasabahStyle.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         child: SafeArea(
           top: false,
