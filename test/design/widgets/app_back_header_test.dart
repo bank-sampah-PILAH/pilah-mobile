@@ -57,8 +57,6 @@ void main() {
         hasTapAction: true,
         isEnabled: true,
         hasEnabledState: true,
-        isFocusable: true,
-        hasFocusAction: true,
       ),
     );
     handle.dispose();
