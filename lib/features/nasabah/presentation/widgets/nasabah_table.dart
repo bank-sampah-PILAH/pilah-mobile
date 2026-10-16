@@ -40,7 +40,7 @@ class NasabahTable extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE8E8EE)),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -69,13 +69,12 @@ class _Header extends StatelessWidget {
             children: [
               Text('Daftar Nasabah',
                   style: AppTextStyle.headline1
-                      .copyWith(fontSize: 26, fontWeight: FontWeight.bold)),
+                      .copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 2),
               BlocBuilder<NasabahCubit, NasabahState>(
                 builder: (context, state) => Text(
                   '${cubit.activeCount} nasabah aktif',
-                  style: AppTextStyle.small
-                      .copyWith(color: AppColors.grey100, fontSize: 13),
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
               ),
             ],
@@ -93,8 +92,7 @@ class _Header extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            textStyle: AppTextStyle.small
-                .copyWith(fontWeight: FontWeight.w600, fontSize: 14),
+            textStyle: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -164,7 +162,7 @@ class _TableBody extends StatelessWidget {
         return Column(
           children: [
             const _HeaderRow(),
-            const Divider(height: 1, color: Color(0xFFE8E8EE)),
+            const Divider(height: 1, color: AppColors.border),
             SizedBox(
               height: 2,
               child: state.isReloading
@@ -189,7 +187,7 @@ class _TableBody extends StatelessWidget {
                 child: ListView.separated(
                   itemCount: state.nasabahList.length + 1,
                   separatorBuilder: (_, __) =>
-                      const Divider(height: 1, color: Color(0xFFF0F0F4)),
+                      const Divider(height: 1, color: AppColors.border),
                   itemBuilder: (context, index) {
                     if (index == state.nasabahList.length) {
                       return _Footer(state: state);
@@ -324,8 +322,8 @@ class _RowState extends State<_Row> {
   @override
   Widget build(BuildContext context) {
     final muted = !n.isActive && !_pending;
-    final base = AppTextStyle.small.copyWith(
-        fontSize: 13, color: muted ? Colors.grey[600] : Colors.black87);
+    final base = AppTextStyle.small
+        .copyWith(color: muted ? AppColors.grey100 : AppColors.black);
     return MouseRegion(
       cursor: _pending ? MouseCursor.defer : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
@@ -358,14 +356,12 @@ class _RowState extends State<_Row> {
                       Text(n.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: base.copyWith(
-                              fontWeight: FontWeight.w600, fontSize: 14)),
+                          style: base.copyWith(fontWeight: FontWeight.w600)),
                       if (n.email.isNotEmpty)
                         Text(n.email,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: base.copyWith(
-                                fontSize: 12, color: Colors.grey[500])),
+                            style: base.copyWith(color: AppColors.grey100)),
                     ],
                   ),
                 ),
@@ -387,7 +383,7 @@ class _RowState extends State<_Row> {
                         style: base.copyWith(
                             fontWeight: FontWeight.w600,
                             color: muted
-                                ? Colors.grey[500]
+                                ? AppColors.grey100
                                 : AppColors.greenDark)))),
             Expanded(
               flex: _columns[4],
@@ -396,8 +392,8 @@ class _RowState extends State<_Row> {
                 child: _pending
                     ? const CustomStatusBadge(
                         statusText: 'Menunggu',
-                        backgroundColor: Color(0xFFFEF3C7),
-                        textColor: Color(0xFF92400E))
+                        backgroundColor: AppColors.warningLight,
+                        textColor: AppColors.warning)
                     : CustomStatusBadge(isActive: n.isActive),
               ),
             ),
@@ -413,10 +409,10 @@ class _RowState extends State<_Row> {
                           OutlinedButton(
                               onPressed: () => _decide(true),
                               style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFFBA1A1A),
+                                  foregroundColor: AppColors.danger,
                                   visualDensity: VisualDensity.compact,
                                   side: const BorderSide(
-                                      color: Color(0xFFBA1A1A))),
+                                      color: AppColors.danger)),
                               child: const Text('Tolak')),
                           const SizedBox(width: 8),
                           FilledButton(
@@ -479,8 +475,7 @@ class _Skeleton extends StatelessWidget {
         width: w,
         height: 12,
         decoration: BoxDecoration(
-            color: const Color(0xFFEDEDF2),
-            borderRadius: BorderRadius.circular(6)));
+            color: AppColors.fill, borderRadius: BorderRadius.circular(6)));
     return Column(children: [
       const _HeaderRow(),
       const Divider(height: 1),

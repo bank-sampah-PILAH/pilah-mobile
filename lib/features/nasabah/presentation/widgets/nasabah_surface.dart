@@ -23,12 +23,10 @@ Future<T?> showNasabahSurface<T>(
   return showDialog<T>(
     context: context,
     useRootNavigator: true,
+    // Dialog styling (white, 16 radius, no tint) comes from AppTheme.
     builder: (dialogContext) => Dialog(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
       clipBehavior: Clip.antiAlias,
       insetPadding: const EdgeInsets.all(24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: builder(dialogContext),
