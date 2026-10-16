@@ -302,6 +302,15 @@ void main() {
       expect([confirmed, cancelled], [0, 0]);
     });
 
+    testWidgets('stays at most 400 wide on a desktop window', (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _show(tester, dialog());
+
+      expect(tester.getSize(find.byType(Dialog)).width, lessThanOrEqualTo(400));
+    });
+
     testWidgets('has the 16 radius of a dialog, like every other',
         (tester) async {
       await _show(tester, dialog());
