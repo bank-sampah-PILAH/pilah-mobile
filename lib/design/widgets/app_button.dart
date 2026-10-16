@@ -119,6 +119,9 @@ class AppButton extends StatelessWidget {
     final tapTarget = compact
         ? MaterialTapTargetSize.shrinkWrap
         : MaterialTapTargetSize.padded;
+    final textStyle = compact
+        ? AppTextStyle.small.copyWith(fontWeight: FontWeight.w600)
+        : null;
     final padding = EdgeInsets.symmetric(
       horizontal: expand ? 12 : (compact ? 16 : 24),
       vertical: compact ? 8 : 12,
@@ -131,6 +134,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
           ),
           child: child,
         ),
@@ -140,6 +144,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
             backgroundColor: AppColors.danger,
           ),
           child: child,
@@ -150,6 +155,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
           ),
           child: child,
         ),
@@ -159,6 +165,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
             backgroundColor: Colors.white,
             foregroundColor: AppColors.inkSoft,
             side: const BorderSide(color: AppColors.border, width: 1.5),
@@ -171,6 +178,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
             foregroundColor: AppColors.danger,
             side: const BorderSide(color: AppColors.danger, width: 1.5),
           ),
@@ -182,6 +190,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
             backgroundColor: AppColors.warning,
           ),
           child: child,
@@ -192,6 +201,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
             foregroundColor: AppColors.warning,
             side: const BorderSide(color: AppColors.warning, width: 1.5),
           ),
@@ -203,6 +213,7 @@ class AppButton extends StatelessWidget {
             minimumSize: minimum,
             padding: padding,
             tapTargetSize: tapTarget,
+            textStyle: textStyle,
             backgroundColor: AppColors.greenLight,
             foregroundColor: AppColors.greenDark,
           ),
@@ -241,7 +252,10 @@ class AppButton extends StatelessWidget {
       softWrap: false,
       overflow: TextOverflow.ellipsis,
     );
-    final lead = leading ?? (icon == null ? null : Icon(icon, size: 20));
+    final lead = leading ??
+        (icon == null
+            ? null
+            : Icon(icon, size: size == AppButtonSize.compact ? 16 : 20));
     if (lead == null && trailingIcon == null) return text;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -251,7 +265,7 @@ class AppButton extends StatelessWidget {
         Flexible(child: text),
         if (trailingIcon != null) ...[
           const SizedBox(width: 8),
-          Icon(trailingIcon, size: 20),
+          Icon(trailingIcon, size: size == AppButtonSize.compact ? 16 : 20),
         ],
       ],
     );
