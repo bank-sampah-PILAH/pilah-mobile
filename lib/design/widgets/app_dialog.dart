@@ -116,6 +116,9 @@ class AppIconDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      // 16 from the edge rather than the stock 40: on a 360 dp phone the two
+      // answers then have room for "Ya, Nonaktifkan" at full size.
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       // The two answers fill the dialog, so on a desktop window it would
       // otherwise grow to the whole width.
       child: ConstrainedBox(
