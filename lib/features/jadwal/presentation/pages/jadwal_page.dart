@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
@@ -123,10 +124,10 @@ class _JadwalPageState extends State<JadwalPage> {
     );
   }
 
-  Future<void> _changeStatus(JadwalEntity item, String action) async {
+  Future<void> _changeStatus(JadwalEntity item, JadwalAction action) async {
     final failure = await context.read<JadwalCubit>().changeStatus(
           item.id,
-          action,
+          action.wireValue,
         );
     if (!mounted || failure == null) return;
     AppNotification.showError(
@@ -146,7 +147,7 @@ class _JadwalPageState extends State<JadwalPage> {
       destructive: true,
     );
     if (!mounted || !confirmed) return;
-    await _changeStatus(item, 'batalkan');
+    await _changeStatus(item, JadwalAction.batalkan);
   }
 
   Future<void> _confirmCompletion(JadwalEntity item) async {
@@ -159,7 +160,7 @@ class _JadwalPageState extends State<JadwalPage> {
       destructive: false,
     );
     if (!mounted || !confirmed) return;
-    await _changeStatus(item, 'selesaikan');
+    await _changeStatus(item, JadwalAction.selesaikan);
   }
 
   @override
@@ -383,7 +384,7 @@ class _JadwalPageState extends State<JadwalPage> {
                     : () => _confirmCancellation(item),
                 onPublish: isLifecycleActionDisabled
                     ? null
-                    : () => _changeStatus(item, 'terbitkan'),
+                    : () => _changeStatus(item, JadwalAction.terbitkan),
                 onComplete: isLifecycleActionDisabled
                     ? null
                     : () => _confirmCompletion(item),
@@ -661,52 +662,14 @@ class _ScheduleCard extends StatelessWidget {
               ),
             ),
           ),
-          if (!readOnly && item.status == 'draft')
+          if (!readOnly && _availableActions.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: OverflowBar(
                 alignment: MainAxisAlignment.end,
                 spacing: 8,
                 children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onPublish,
-                    child: const Text('Terbitkan'),
-                  ),
-                ],
-              ),
-            ),
-          if (!readOnly && item.status == 'diterbitkan')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: OverflowBar(
-                alignment: MainAxisAlignment.end,
-                spacing: 8,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton.tonal(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onComplete,
-                    child: const Text('Tandai Selesai'),
-                  ),
+                  for (final action in _availableActions) _actionButton(action),
                 ],
               ),
             ),
@@ -714,6 +677,38 @@ class _ScheduleCard extends StatelessWidget {
       ),
     );
   }
+
+  /// Aksi yang sah dari status jadwal ini.
+  ///
+  /// Status yang tidak dikenali build ini tidak memberi aksi apa pun, bukan
+  /// aksi penuh: pengurus melihat kartunya tetapi tidak dapat mengubahnya.
+  Set<JadwalAction> get _availableActions =>
+      JadwalStatus.fromWire(item.status)?.availableActions ?? const {};
+
+  Widget _actionButton(JadwalAction action) => switch (action) {
+        JadwalAction.batalkan => TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.greenDark,
+            ),
+            onPressed: onCancel,
+            child: Text(action.label),
+          ),
+        JadwalAction.terbitkan => FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.greenDark,
+            ),
+            onPressed: onPublish,
+            child: Text(action.label),
+          ),
+        JadwalAction.selesaikan => FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.greenLight,
+              foregroundColor: AppColors.greenDark,
+            ),
+            onPressed: onComplete,
+            child: Text(action.label),
+          ),
+      };
 }
 
 class _ScheduleInfoLine extends StatelessWidget {
@@ -749,19 +744,13 @@ class _ScheduleStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = switch (status) {
-      'draft' => AppColors.warningLight,
-      'diterbitkan' => AppColors.greenLight,
-      'dibatalkan' => AppColors.dangerLight,
-      'selesai' => AppColors.fill,
-      _ => AppColors.cardOffWhite,
-    };
-    final foreground = switch (status) {
-      'draft' => AppColors.warning,
-      'diterbitkan' => AppColors.greenDark,
-      'dibatalkan' => AppColors.danger,
-      'selesai' => AppColors.inkSoft,
-      _ => Colors.grey.shade700,
+    final resolved = JadwalStatus.fromWire(status);
+    final (background, foreground) = switch (resolved) {
+      JadwalStatus.draf => (AppColors.warningLight, AppColors.warning),
+      JadwalStatus.diterbitkan => (AppColors.greenLight, AppColors.greenDark),
+      JadwalStatus.dibatalkan => (AppColors.dangerLight, AppColors.danger),
+      JadwalStatus.selesai => (AppColors.fill, AppColors.inkSoft),
+      null => (AppColors.cardOffWhite, Colors.grey.shade700),
     };
 
     return Container(
@@ -771,7 +760,7 @@ class _ScheduleStatus extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _statusLabel(status),
+        resolved?.label ?? status,
         style: TextStyle(
           color: foreground,
           fontSize: 12,
@@ -1110,10 +1099,3 @@ String _formatDateTime(DateTime value) {
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
 
-String _statusLabel(String status) => switch (status) {
-      'draft' => 'Draf',
-      'diterbitkan' => 'Diterbitkan',
-      'dibatalkan' => 'Dibatalkan',
-      'selesai' => 'Selesai',
-      _ => status,
-    };
