@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -322,31 +323,13 @@ class _PendingBankCardState extends State<PendingBankCard> {
     required String confirmLabel,
     required bool destructive,
   }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: Text(title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Text(message, style: const TextStyle(fontSize: 14)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          AppButton(
-            label: confirmLabel,
-            variant: destructive
-                ? AppButtonVariant.destructive
-                : AppButtonVariant.primary,
-            expand: false,
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-        ],
-      ),
+    return showAppConfirmDialog(
+      context,
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      destructive: destructive,
     );
-    return result ?? false;
   }
 
   Future<void> _runAction({required bool approve}) async {

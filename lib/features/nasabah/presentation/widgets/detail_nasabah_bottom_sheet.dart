@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -426,27 +427,14 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
 
   Future<void> _samakan() async {
     final nama = widget.nasabah.name;
-    final konfirmasi = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Samakan dengan data akun?'),
-        content: Text(
-          'Catatan $nama di bank sampah ini akan diganti dengan data yang '
+    final konfirmasi = await showAppConfirmDialog(
+      context,
+      title: 'Samakan dengan data akun?',
+      message: 'Catatan $nama di bank sampah ini akan diganti dengan data yang '
           'nasabah isikan pada akunnya. Anda tetap dapat menyuntingnya lagi.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Samakan'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Samakan',
     );
-    if (konfirmasi != true || !mounted) return;
+    if (!konfirmasi || !mounted) return;
 
     // The root overlay outlives this sheet, so it hosts the notification.
     final overlayContext = Navigator.of(context, rootNavigator: true).context;

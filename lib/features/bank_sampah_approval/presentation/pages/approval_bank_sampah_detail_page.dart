@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
@@ -232,29 +233,17 @@ class _AppealMessageDialogState extends State<_AppealMessageDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg)),
-      title: const Text(
-        'Ajukan Banding',
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
+    return AppDialog(
+      title: 'Ajukan Banding',
       content: TextField(
         controller: _controller,
         maxLines: 3,
         decoration: appInputDecoration(
             hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)'),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          child: const Text('Kirim'),
-        ),
-      ],
+      confirmLabel: 'Kirim',
+      onConfirm: () => Navigator.of(context).pop(_controller.text.trim()),
+      onCancel: () => Navigator.of(context).pop(),
     );
   }
 }
