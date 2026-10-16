@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -516,44 +517,14 @@ class _DetailTransaksiBottomSheetState
                 ],
               ),
             ),
-            isLoadingWa
-                ? Container(
-                    width: 32,
-                    height: 32,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.greenDark,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: const CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : ElevatedButton.icon(
-                    onPressed: _retryWaNotification,
-                    icon: const Icon(Icons.refresh,
-                        size: 14, color: Colors.white),
-                    label: const Text(
-                      'Coba Lagi',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      minimumSize: const Size(0, 0),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
+            AppButton(
+              label: 'Coba Lagi',
+              icon: Icons.refresh,
+              size: AppButtonSize.compact,
+              expand: false,
+              isLoading: isLoadingWa,
+              onPressed: _retryWaNotification,
+            ),
           ],
         ),
       );

@@ -407,19 +407,12 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                   const SizedBox(height: 4),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
+                    child: AppButton(
+                      label: 'Samakan dengan data akun',
+                      variant: AppButtonVariant.warningOutlined,
                       onPressed: widget.nasabahCubit == null || _isSyncing
                           ? null
                           : _samakan,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange[800],
-                        side: BorderSide(color: Colors.orange[400]!),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      child: const Text('Samakan dengan data akun'),
                     ),
                   ),
                 ],
