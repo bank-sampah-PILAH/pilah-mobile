@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
@@ -72,7 +73,7 @@ class _DashboardUpcomingScheduleSectionState
             elevation: 0,
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
           ),
           textButtonTheme: TextButtonThemeData(
@@ -169,7 +170,7 @@ class _DashboardUpcomingScheduleSectionState
                 final date = _scheduleDateParam(start);
                 return Card(
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     onTap: () => context.go(
                       Uri(
                         path: JadwalPage.route,
