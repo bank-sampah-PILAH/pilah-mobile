@@ -246,11 +246,11 @@ class AppButton extends StatelessWidget {
       );
 
   Widget _content() {
-    final text = Text(
-      label,
-      maxLines: 1,
-      softWrap: false,
-      overflow: TextOverflow.ellipsis,
+    // A label that is too wide for its button, such as "Ya, Nonaktifkan" in a
+    // half-width button on a 360 dp phone, shrinks to fit rather than being cut.
+    final text = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(label, maxLines: 1, softWrap: false),
     );
     final lead = leading ??
         (icon == null
