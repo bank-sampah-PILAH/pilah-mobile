@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
@@ -80,19 +81,9 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle: a dialog cannot be dragged, so it has none there.
+          // A dialog cannot be dragged, so it has no handle there.
           if (!DialogSurface.of(context)) ...[
-            Center(
-              child: Container(
-                key: DetailNasabahBottomSheet.dragHandleKey,
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+            const AppSheetHandle(key: DetailNasabahBottomSheet.dragHandleKey),
             const SizedBox(height: 24),
           ],
 

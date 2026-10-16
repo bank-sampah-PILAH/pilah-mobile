@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final String title;
@@ -38,17 +39,7 @@ class BottomSheetHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showDragHandle ?? !DialogSurface.of(context)) ...[
-          Center(
-            child: Container(
-              key: dragHandleKey,
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const AppSheetHandle(key: dragHandleKey),
           const SizedBox(height: 24),
         ],
         Row(

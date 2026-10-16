@@ -9,6 +9,7 @@ import '../pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 String _time(DateTime? tanggal) {
   if (tanggal == null) return '-';
@@ -104,16 +105,7 @@ class _DetailPencairanSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: NasabahStyle.line,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const AppSheetHandle(),
           const SizedBox(height: 20),
           Row(
             children: [
