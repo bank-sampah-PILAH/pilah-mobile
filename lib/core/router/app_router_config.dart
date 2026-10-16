@@ -55,8 +55,8 @@ class AppRouterConfig {
     //
     // It runs before any route-level redirect for every incoming URI —
     // including the very first one when a deep link cold-starts the app — so
-    // an `/invite?token=…` token is captured before anything can route the user
-    // elsewhere.
+    // A native `/invite?token=…` or browser `/invite/:token` token is captured
+    // before anything can route the user elsewhere.
     //
     // Capturing and prioritising deliberately happen in the same pass. go_router
     // 17 runs this top-level redirect *at most once per navigation*, before
@@ -87,11 +87,14 @@ class AppRouterConfig {
       );
       if (signedOut != null) return signedOut;
 
+      String? inviteToken;
       if (path == '/invite') {
-        final token = state.uri.queryParameters['token'];
-        if (token != null) {
-          di<InviteTokenStore>().save(token);
-        }
+        inviteToken = state.uri.queryParameters['token'];
+      } else if (path.startsWith('/invite/')) {
+        inviteToken = state.pathParameters['token'];
+      }
+      if (inviteToken != null) {
+        di<InviteTokenStore>().save(inviteToken);
       }
 
       final store = di<InviteTokenStore>();
@@ -131,13 +134,14 @@ class AppRouterConfig {
         name: RoleSelectionPage.route,
         builder: (context, state) => const RoleSelectionPage(),
       ),
-      // Landing point for invite deep links, reached only when there is no
-      // session yet: an already-signed-in user is sent to the redemption screen
-      // by the global redirect above and never gets here. It renders nothing and
-      // captures nothing — the token is already banked by the time this runs —
-      // and only hands off to the session-restore flow, which routes a signed-out
-      // user to login. The stored token then steers them onward from there.
+      // Native query links and browser hash-path links both land here only when
+      // there is no session: signed-in users are sent to redemption above.
+      // The token is already banked; these routes hand off to session restore.
       GoRoute(path: '/invite', redirect: (context, state) => SplashPage.route),
+      GoRoute(
+        path: '/invite/:token',
+        redirect: (context, state) => SplashPage.route,
+      ),
       GoRoute(
         path: ForgotPasswordPage.route,
         name: ForgotPasswordPage.route,
