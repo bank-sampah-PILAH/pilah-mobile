@@ -13,6 +13,7 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -96,14 +97,6 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
 
   /// Matches the "PILIH NASABAH" section label already on this screen, so
   /// every section header in the form reads the same way.
-  Widget _buildLabel(String text) => Text(
-        text,
-        style: AppTextStyle.extraSmall.copyWith(
-          color: Colors.grey[500],
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
-        ),
-      );
 
   void _onCustomerSelected(NasabahEntity customer) {
     setState(() => _selectedCustomer = customer);
@@ -183,7 +176,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
   /// Nominal, metode, tanggal and keterangan: the same fields in either
   /// layout.
   List<Widget> _buildIsian(PencairanState state, String? localError) => [
-        _buildLabel('NOMINAL'),
+        const AppFieldLabel('NOMINAL'),
         const SizedBox(height: 8),
         TextField(
           key: const Key('nominal-field'),
@@ -205,7 +198,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildLabel('METODE'),
+        const AppFieldLabel('METODE'),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -220,7 +213,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildLabel('TANGGAL'),
+        const AppFieldLabel('TANGGAL'),
         const SizedBox(height: 8),
         InkWell(
           key: const Key('tanggal-field'),
@@ -236,7 +229,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildLabel('KETERANGAN (OPSIONAL)'),
+        const AppFieldLabel('KETERANGAN (OPSIONAL)'),
         const SizedBox(height: 8),
         TextField(
           key: const Key('keterangan-field'),
@@ -312,14 +305,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'PILIH NASABAH',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
+              const AppFieldLabel('PILIH NASABAH'),
               const SizedBox(height: 16),
               PilihNasabahSection(
                 selectedCustomer: customer,

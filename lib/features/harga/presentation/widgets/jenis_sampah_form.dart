@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -204,7 +205,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   // terlalu rumit untuk dibaca sekaligus.
 
   List<Widget> _buildKodeField() => [
-        _buildLabel('ID / KODE SAMPAH'),
+        const AppFieldLabel('ID / KODE SAMPAH'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _kodeSampahController,
@@ -226,7 +227,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildNamaField() => [
-        _buildLabel('NAMA JENIS SAMPAH'),
+        const AppFieldLabel('NAMA JENIS SAMPAH'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _nameController,
@@ -238,7 +239,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildKategoriField() => [
-        _buildLabel('KATEGORI'),
+        const AppFieldLabel('KATEGORI'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: _selectedCategory,
@@ -257,7 +258,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildDeskripsiField() => [
-        _buildLabel('DESKRIPSI (OPSIONAL)'),
+        const AppFieldLabel('DESKRIPSI (OPSIONAL)'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _descController,
@@ -269,7 +270,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildHargaField() => [
-        _buildLabel('HARGA BELI PER KG (RP)'),
+        const AppFieldLabel('HARGA BELI PER KG (RP)'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _priceController,
@@ -312,7 +313,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   /// ditunjukkan bersama peringatan bahwa perubahan tidak berlaku surut.
   List<Widget> _buildPengaturanHarga() => [
         const SizedBox(height: 20),
-        _buildLabel('BERLAKU MULAI'),
+        const AppFieldLabel('BERLAKU MULAI'),
         const SizedBox(height: 8),
         _buildPilihanBerlaku(),
         const SizedBox(height: 16),
@@ -632,17 +633,6 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: AppTextStyle.extraSmall.copyWith(
-        color: Colors.grey[500],
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.5,
       ),
     );
   }

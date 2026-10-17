@@ -11,6 +11,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
@@ -917,15 +918,6 @@ class _JadwalFormState extends State<_JadwalForm> {
     super.dispose();
   }
 
-  Widget _buildLabel(String text) => Text(
-        text,
-        style: AppTextStyle.extraSmall.copyWith(
-          color: Colors.grey[500],
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-      );
-
   Future<void> _pickDateTime({required bool start}) async {
     final current = start ? _startsAt : _endsAt;
     final currentDate = DateUtils.dateOnly(current);
@@ -1040,7 +1032,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onClose: widget.onClose,
                 ),
                 const SizedBox(height: 24),
-                _buildLabel('JENIS KEGIATAN'),
+                const AppFieldLabel('JENIS KEGIATAN'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _activity,
@@ -1058,7 +1050,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onChanged: (value) => setState(() => _activity = value!),
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('LOKASI'),
+                const AppFieldLabel('LOKASI'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _locationController,
@@ -1068,7 +1060,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                       : null,
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('KETERANGAN'),
+                const AppFieldLabel('KETERANGAN'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
@@ -1092,7 +1084,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onTap: () => _pickDateTime(start: false),
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('CAKUPAN PENERIMA'),
+                const AppFieldLabel('CAKUPAN PENERIMA'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _audience,

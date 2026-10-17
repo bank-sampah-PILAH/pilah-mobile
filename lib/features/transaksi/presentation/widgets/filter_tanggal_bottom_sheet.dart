@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -106,14 +107,7 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
           const SizedBox(height: 32),
 
           // DARI TANGGAL Field
-          Text(
-            'DARI TANGGAL',
-            style: AppTextStyle.extraSmall.copyWith(
-              color: Colors.grey[500],
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
+          const AppFieldLabel('DARI TANGGAL'),
           const SizedBox(height: 8),
           InkWell(
             onTap: () => _selectDate(context, true),
@@ -144,14 +138,7 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
           const SizedBox(height: 24),
 
           // SAMPAI TANGGAL Field
-          Text(
-            'SAMPAI TANGGAL',
-            style: AppTextStyle.extraSmall.copyWith(
-              color: Colors.grey[500],
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
+          const AppFieldLabel('SAMPAI TANGGAL'),
           const SizedBox(height: 8),
           InkWell(
             onTap: () => _selectDate(context, false),
