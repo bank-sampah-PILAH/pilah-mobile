@@ -4,21 +4,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
-import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 
 class RegisterBankSampahScreen extends StatefulWidget {
   /// True when the user is re-applying after a previous registration was
@@ -129,47 +128,6 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     }
   }
 
-  Widget _buildFormField({
-    required String label,
-    required Widget child,
-    String? description,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            text: label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-            children: const [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-        if (description != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            description,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
-        child,
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
   /// The notice shown at the top of the form when re-applying after a rejection.
   /// The backend does not surface a rejection reason to the pengelola, so the
   /// copy is the fixed guidance text.
@@ -240,7 +198,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
       _backToProfile();
       return;
     }
-    _confirmExit();
+    confirmExitOnboarding(context);
   }
 
   /// Returns to step one, preferring a pop so the profile screen underneath is
@@ -259,25 +217,6 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     }
   }
 
-  /// Shows the "leave registration" confirmation. On confirm, runs the standard
-  /// logout (clears the session and emits [Unauthenticated]); the [BlocListener]
-  /// in [build] handles the redirect to login. Cancelling or dismissing leaves
-  /// the form and its input untouched.
-  Future<void> _confirmExit() async {
-    final shouldLogout = await showAppConfirmDialog(
-      context,
-      title: 'Keluar dari Pendaftaran?',
-      message:
-          'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
-          'tersimpan dan Anda akan dialihkan ke halaman login.',
-      confirmLabel: 'Ya, Keluar',
-      destructive: true,
-    );
-    if (shouldLogout && mounted) {
-      context.read<AuthenticationBloc>().add(LogoutRequested());
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthenticationBloc, AuthenticationStates>(
@@ -292,372 +231,178 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
             child: Column(
               children: [
                 // 1. Header Section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(
-                      top: 70, left: 24, right: 24, bottom: 40),
-                  decoration: const BoxDecoration(
-                    color: AppColors.greenDark,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Daftarkan Bank Sampah',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Lengkapi data institusi bank sampah Anda.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _confirmExit,
-                        icon: const Icon(Icons.logout, color: Colors.white),
-                        tooltip: 'Keluar',
-                      ),
-                    ],
-                  ),
+                OnboardingHeader(
+                  title: 'Daftarkan Bank Sampah',
+                  subtitle: 'Lengkapi data institusi bank sampah Anda.',
+                  onExit: () => confirmExitOnboarding(context),
                 ),
 
                 // Rejection notice — shown in place of the onboarding stepper when
                 // the user is re-applying after a rejected registration.
-                if (widget.isRejectedReapplication) _buildRejectionBanner(),
-
-                // 2. Stepper Section — first-time onboarding only.
-                if (!widget.isRejectedReapplication)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Step 1
-                        Column(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: const BoxDecoration(
-                                color: AppColors.greenDark,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.check,
-                                    color: Colors.white, size: 20),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Profil Diri',
-                              style: TextStyle(
-                                color: AppColors.greenDark,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Connector Line
-                        Container(
-                          width: 100,
-                          height: 2,
-                          margin: const EdgeInsets.only(bottom: 24),
-                          color: AppColors.greenDark,
-                        ),
-
-                        // Step 2
-                        Column(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: const BoxDecoration(
-                                color: AppColors.greenDark,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '2',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Data Bank Sampah',
-                              style: TextStyle(
-                                color: AppColors.greenDark,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                if (widget.isRejectedReapplication)
+                  _buildRejectionBanner()
+                else
+                  const OnboardingStepper(
+                    currentStep: 2,
+                    secondStepLabel: 'Data Bank Sampah',
                   ),
 
                 const SizedBox(height: 24),
-
-                // 3. Form Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 15,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                OnboardingFormCard(
+                  formKey: _formKey,
+                  children: [
+                    OnboardingNameField(
+                      controller: _namaController,
+                      label: 'NAMA BANK SAMPAH',
+                      hintText: 'Contoh: Bank Sampah Mekar Jaya',
                     ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Field 1: Nama Bank Sampah
-                          _buildFormField(
-                            label: 'NAMA BANK SAMPAH',
-                            child: TextFormField(
-                              controller: _namaController,
-                              decoration: appInputDecoration(
-                                  hintText: 'Contoh: Bank Sampah Mekar Jaya'),
-                              validator: (value) {
-                                if (value == null || value.trim().length < 3) {
-                                  return 'Nama minimal 3 karakter';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
 
-                          // Field 2: Alamat Lengkap
-                          _buildFormField(
-                            label: 'ALAMAT LENGKAP',
-                            child: TextFormField(
-                              controller: _alamatController,
-                              maxLines: 5,
-                              minLines: 3,
-                              decoration: appInputDecoration(
-                                  hintText:
-                                      'Jl. Nama Jalan, RT/RW, Kelurahan,\nKecamatan, Kota'),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Alamat wajib diisi';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
+                    OnboardingAddressField(controller: _alamatController),
 
-                          // Field 3: Nomor Telepon
-                          _buildFormField(
-                            label: 'NOMOR TELEPON PENANGGUNG JAWAB',
-                            child: TextFormField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              decoration: appInputDecoration(
-                                  hintText: '812-3456-7890',
-                                  prefixIcon: const PhonePrefix()),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Nomor Telepon wajib diisi';
-                                }
-                                final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
-                                if (!regex.hasMatch(value)) {
-                                  return 'Format nomor tidak valid.';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
+                    OnboardingPhoneField(
+                      controller: _phoneController,
+                      label: 'NOMOR TELEPON PENANGGUNG JAWAB',
+                      requiredMessage: 'Nomor Telepon wajib diisi',
+                    ),
 
-                          // Field 4: Foto Kegiatan
-                          //
-                          // A FormField rather than a bare picker so the photo is
-                          // validated by _formKey.currentState.validate() alongside
-                          // the text fields. Submitting an empty form therefore
-                          // turns this box red and prints its own inline error, the
-                          // same as every other required field, instead of the
-                          // photo alone failing via a separate notification.
-                          _buildFormField(
-                            label: 'FOTO KEGIATAN',
-                            description:
-                                'Upload foto kegiatan penimbangan sampah yang valid',
-                            child: FormField<XFile>(
-                              initialValue: _selectedImage,
-                              // Without this the validator only re-runs on the next
-                              // submit, so the box would stay red even after the
-                              // user picked a photo. onUserInteraction keeps it
-                              // quiet until they touch the field, then clears the
-                              // error the moment they fix it.
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
-                              validator: (file) => file == null
-                                  ? 'Foto kegiatan wajib diunggah'
-                                  : null,
-                              builder: (field) {
-                                // The same colour Material gives a TextFormField's
-                                // error, so the two read as one form.
-                                final errorColor =
-                                    Theme.of(field.context).colorScheme.error;
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    InkWell(
-                                      onTap: () => _pickImage(field),
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.md),
-                                      child: _selectedImage != null
-                                          ? ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      AppRadius.md),
-                                              child: Stack(
-                                                children: [
-                                                  Image.memory(
-                                                    _selectedImageBytes!,
-                                                    width: double.infinity,
-                                                    height: 150,
-                                                    fit: BoxFit.cover,
+                    // Field 4: Foto Kegiatan
+                    //
+                    // A FormField rather than a bare picker so the photo is
+                    // validated by _formKey.currentState.validate() alongside
+                    // the text fields. Submitting an empty form therefore
+                    // turns this box red and prints its own inline error, the
+                    // same as every other required field, instead of the
+                    // photo alone failing via a separate notification.
+                    OnboardingFormField(
+                      label: 'FOTO KEGIATAN',
+                      description:
+                          'Upload foto kegiatan penimbangan sampah yang valid',
+                      child: FormField<XFile>(
+                        initialValue: _selectedImage,
+                        // Without this the validator only re-runs on the next
+                        // submit, so the box would stay red even after the
+                        // user picked a photo. onUserInteraction keeps it
+                        // quiet until they touch the field, then clears the
+                        // error the moment they fix it.
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        validator: (file) => file == null
+                            ? 'Foto kegiatan wajib diunggah'
+                            : null,
+                        builder: (field) {
+                          // The same colour Material gives a TextFormField's
+                          // error, so the two read as one form.
+                          final errorColor =
+                              Theme.of(field.context).colorScheme.error;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              InkWell(
+                                onTap: () => _pickImage(field),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                                child: _selectedImage != null
+                                    ? ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.md),
+                                        child: Stack(
+                                          children: [
+                                            Image.memory(
+                                              _selectedImageBytes!,
+                                              width: double.infinity,
+                                              height: 150,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            Positioned(
+                                              top: 0,
+                                              right: 0,
+                                              child: AppTapTarget(
+                                                label: 'Hapus foto',
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        AppRadius.xl),
+                                                onTap: () {
+                                                  setState(() {
+                                                    _selectedImage = null;
+                                                    _selectedImageBytes = null;
+                                                  });
+                                                  field.didChange(null);
+                                                },
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                    color: Colors.black54,
+                                                    shape: BoxShape.circle,
                                                   ),
-                                                  Positioned(
-                                                    top: 0,
-                                                    right: 0,
-                                                    child: AppTapTarget(
-                                                      label: 'Hapus foto',
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              AppRadius.xl),
-                                                      onTap: () {
-                                                        setState(() {
-                                                          _selectedImage = null;
-                                                          _selectedImageBytes =
-                                                              null;
-                                                        });
-                                                        field.didChange(null);
-                                                      },
-                                                      child: Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(4),
-                                                        decoration:
-                                                            const BoxDecoration(
-                                                          color: Colors.black54,
-                                                          shape:
-                                                              BoxShape.circle,
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.close,
-                                                          color: Colors.white,
-                                                          size: 16,
-                                                        ),
-                                                      ),
-                                                    ),
+                                                  child: const Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 16,
                                                   ),
-                                                ],
-                                              ),
-                                            )
-                                          : CustomPaint(
-                                              painter: _DashedRectPainter(
-                                                  color: field.hasError
-                                                      ? errorColor
-                                                      : Colors.grey.shade400,
-                                                  strokeWidth: 1.5,
-                                                  gap: 5.0,
-                                                  radius: 12.0),
-                                              child: Container(
-                                                width: double.infinity,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 32),
-                                                child: Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Icon(Icons.image_outlined,
-                                                        color:
-                                                            AppColors.greenDark,
-                                                        size: 32),
-                                                    const SizedBox(height: 12),
-                                                    const Text(
-                                                      'Pilih foto',
-                                                      style: TextStyle(
-                                                        color: Colors.black87,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        fontSize: 14,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      'JPG / PNG · Maks. 5 MB',
-                                                      style: TextStyle(
-                                                        color: Colors
-                                                            .grey.shade500,
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                  ],
                                                 ),
                                               ),
                                             ),
-                                    ),
-                                    if (field.hasError) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        field.errorText!,
-                                        style: TextStyle(
-                                          color: errorColor,
-                                          fontSize: 12,
+                                          ],
+                                        ),
+                                      )
+                                    : CustomPaint(
+                                        painter: _DashedRectPainter(
+                                            color: field.hasError
+                                                ? errorColor
+                                                : Colors.grey.shade400,
+                                            strokeWidth: 1.5,
+                                            gap: 5.0,
+                                            radius: 12.0),
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 32),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.image_outlined,
+                                                  color: AppColors.greenDark,
+                                                  size: 32),
+                                              const SizedBox(height: 12),
+                                              const Text(
+                                                'Pilih foto',
+                                                style: TextStyle(
+                                                  color: Colors.black87,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'JPG / PNG · Maks. 5 MB',
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade500,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ],
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                              ),
+                              if (field.hasError) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  field.errorText!,
+                                  style: TextStyle(
+                                    color: errorColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
                       ),
                     ),
-                  ),
+                  ],
                 ),
 
                 const SizedBox(height: 24),

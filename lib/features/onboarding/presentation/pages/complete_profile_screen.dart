@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -16,10 +13,11 @@ import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptan
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acceptance_notice.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final bool isInviteMode;
@@ -421,56 +419,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// exit confirmation.
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
-    _confirmExit();
-  }
-
-  /// Shows the "leave onboarding" confirmation. On confirm, runs the standard
-  /// logout (clears the session and emits [Unauthenticated]); the [BlocListener]
-  /// in [build] handles the redirect to login. Cancelling or dismissing leaves
-  /// the form and its input untouched.
-  Future<void> _confirmExit() async {
-    final shouldLogout = await showAppConfirmDialog(
-      context,
-      title: 'Batal Lengkapi Profil?',
-      message:
-          'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
-          'tersimpan dan Anda akan dialihkan ke halaman login.',
-      confirmLabel: 'Ya, Keluar',
-      destructive: true,
-    );
-    if (shouldLogout && mounted) {
-      context.read<AuthenticationBloc>().add(LogoutRequested());
-    }
-  }
-
-  Widget _buildFormField({
-    required String label,
-    required Widget child,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            text: label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-            children: const [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        child,
-        const SizedBox(height: 20),
-      ],
-    );
+    confirmExitOnboarding(context, title: 'Batal Lengkapi Profil?');
   }
 
   @override
@@ -487,306 +436,117 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             child: Column(
               children: [
                 // 1. Header Section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(
-                      top: 70, left: 24, right: 24, bottom: 40),
-                  decoration: const BoxDecoration(
-                    color: AppColors.greenDark,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Lengkapi Profil Anda',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Data ini digunakan untuk verifikasi akun Anda.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _confirmExit,
-                        icon: const Icon(Icons.logout, color: Colors.white),
-                        tooltip: 'Keluar',
-                      ),
-                    ],
-                  ),
+                OnboardingHeader(
+                  title: 'Lengkapi Profil Anda',
+                  subtitle: 'Data ini digunakan untuk verifikasi akun Anda.',
+                  onExit: () => confirmExitOnboarding(context,
+                      title: 'Batal Lengkapi Profil?'),
                 ),
 
-                // 2. Stepper Section (shown only when profile completion leads
-                // to the bank sampah registration form, pengelola or nasabah)
+                // The stepper shows only when profile completion leads to the
+                // bank sampah registration form, pengelola or nasabah.
                 if (!_isInviteMode &&
-                    (_startsNewRegistration || _startsNasabahRegistration)) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Step 1
-                        Column(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: const BoxDecoration(
-                                color: AppColors.greenDark,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '1',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Profil Diri',
-                              style: TextStyle(
-                                color: AppColors.greenDark,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Connector Line
-                        Container(
-                          width: 100,
-                          height: 2,
-                          margin: const EdgeInsets.only(bottom: 24),
-                          color: Colors.grey.shade300,
-                        ),
-
-                        // Step 2
-                        Column(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '2',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _isNasabah
-                                  ? 'Pilih Bank Sampah'
-                                  : 'Data Bank Sampah',
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    (_startsNewRegistration || _startsNasabahRegistration))
+                  OnboardingStepper(
+                    currentStep: 1,
+                    secondStepLabel:
+                        _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
                   ),
-                ],
 
                 const SizedBox(height: 24),
-
-                // 3. Form Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 15,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                OnboardingFormCard(
+                  formKey: _formKey,
+                  children: [
+                    OnboardingNameField(
+                      controller: _nameController,
+                      label: 'NAMA LENGKAP',
+                      hintText: 'Contoh: Siti Rahayu',
                     ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Field 1: Nama Lengkap
-                          _buildFormField(
-                            label: 'NAMA LENGKAP',
-                            child: TextFormField(
-                              controller: _nameController,
-                              decoration: appInputDecoration(
-                                  hintText: 'Contoh: Siti Rahayu'),
-                              validator: (value) {
-                                if (value == null || value.trim().length < 3) {
-                                  return 'Nama minimal 3 karakter';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
 
-                          // Field 2: Jenis Kelamin
-                          _buildFormField(
-                            label: 'JENIS KELAMIN',
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _gender,
-                              hint: Text(
-                                'Pilih jenis kelamin',
-                                style: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                              icon: const Icon(Icons.keyboard_arrow_down,
-                                  color: Colors.grey),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Laki-laki',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.male,
-                                          size: 20, color: AppColors.inkSoft),
-                                      SizedBox(width: 8),
-                                      Text('Laki-laki'),
-                                    ],
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Perempuan',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.female,
-                                          size: 20, color: AppColors.inkSoft),
-                                      SizedBox(width: 8),
-                                      Text('Perempuan'),
-                                    ],
-                                  ),
-                                ),
+                    // Field 2: Jenis Kelamin
+                    OnboardingFormField(
+                      label: 'JENIS KELAMIN',
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _gender,
+                        hint: Text(
+                          'Pilih jenis kelamin',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                        icon: const Icon(Icons.keyboard_arrow_down,
+                            color: Colors.grey),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Laki-laki',
+                            child: Row(
+                              children: [
+                                Icon(Icons.male,
+                                    size: 20, color: AppColors.inkSoft),
+                                SizedBox(width: 8),
+                                Text('Laki-laki'),
                               ],
-                              onChanged: (val) {
-                                setState(() {
-                                  _gender = val;
-                                });
-                              },
-                              decoration: appInputDecoration(),
-                              validator: (value) {
-                                if (value == null) {
-                                  return 'Jenis kelamin wajib dipilih';
-                                }
-                                return null;
-                              },
                             ),
                           ),
-
-                          // Field 3: Tanggal Lahir
-                          _buildFormField(
-                            label: 'TANGGAL LAHIR',
-                            child: TextFormField(
-                              controller: _dobController,
-                              readOnly: true,
-                              onTap: _selectDate,
-                              decoration: appInputDecoration(
-                                  hintText: 'dd/mm/yyyy',
-                                  suffixIcon: const Icon(
-                                      Icons.calendar_today_outlined,
-                                      color: Colors.black87)),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Tanggal lahir wajib diisi';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-
-                          // Field 4: Nomor HP
-                          _buildFormField(
-                            label: 'NOMOR HP / WHATSAPP',
-                            child: TextFormField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              decoration: appInputDecoration(
-                                  hintText: '812-3456-7890',
-                                  prefixIcon: const PhonePrefix()),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
+                          DropdownMenuItem(
+                            value: 'Perempuan',
+                            child: Row(
+                              children: [
+                                Icon(Icons.female,
+                                    size: 20, color: AppColors.inkSoft),
+                                SizedBox(width: 8),
+                                Text('Perempuan'),
                               ],
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Nomor HP wajib diisi';
-                                }
-                                final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
-                                if (!regex.hasMatch(value)) {
-                                  return 'Format nomor tidak valid.';
-                                }
-                                return null;
-                              },
                             ),
                           ),
-
-                          // Field 5: Alamat — nasabah accounts only.
-                          if (_isNasabah)
-                            _buildFormField(
-                              label: 'ALAMAT LENGKAP',
-                              child: TextFormField(
-                                controller: _alamatController,
-                                maxLines: 5,
-                                minLines: 3,
-                                decoration: appInputDecoration(
-                                    hintText:
-                                        'Jl. Nama Jalan, RT/RW, Kelurahan,\nKecamatan, Kota'),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Alamat wajib diisi';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
                         ],
+                        onChanged: (val) {
+                          setState(() {
+                            _gender = val;
+                          });
+                        },
+                        decoration: appInputDecoration(),
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Jenis kelamin wajib dipilih';
+                          }
+                          return null;
+                        },
                       ),
                     ),
-                  ),
+
+                    // Field 3: Tanggal Lahir
+                    OnboardingFormField(
+                      label: 'TANGGAL LAHIR',
+                      child: TextFormField(
+                        controller: _dobController,
+                        readOnly: true,
+                        onTap: _selectDate,
+                        decoration: appInputDecoration(
+                            hintText: 'dd/mm/yyyy',
+                            suffixIcon: const Icon(
+                                Icons.calendar_today_outlined,
+                                color: Colors.black87)),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Tanggal lahir wajib diisi';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+
+                    OnboardingPhoneField(
+                      controller: _phoneController,
+                      label: 'NOMOR HP / WHATSAPP',
+                      requiredMessage: 'Nomor HP wajib diisi',
+                    ),
+
+                    // Alamat: nasabah accounts only.
+                    if (_isNasabah)
+                      OnboardingAddressField(controller: _alamatController),
+                  ],
                 ),
 
                 const SizedBox(height: 24),
