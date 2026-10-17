@@ -12,10 +12,12 @@ import '../../support/pump_app.dart';
 /// colour, and the labels use the strong secondary text colour.
 void main() {
   var profileTaps = 0;
+  var homeTaps = 0;
 
   Future<void> mountRail(WidgetTester tester,
       {Size? window, String? profileName = 'Sari Dewi'}) async {
     profileTaps = 0;
+    homeTaps = 0;
     await pumpRouted(
       tester,
       Scaffold(
@@ -27,6 +29,7 @@ void main() {
             profileName: profileName,
             profileEmail: 'sari@example.test',
             onProfile: () => profileTaps++,
+            onHome: () => homeTaps++,
             onSelected: (_) {},
           ),
           const Expanded(child: SizedBox.shrink()),
@@ -105,6 +108,22 @@ void main() {
           .first);
       expect(fill.color, Colors.white);
       expect(tester.getSize(find.byKey(RoleNavigationRail.logoKey)).width, 44);
+    });
+
+    testWidgets('opens the home page when the logo or name is tapped',
+        (tester) async {
+      await mountRail(tester);
+
+      await tester.tap(find.byKey(RoleNavigationRail.logoKey));
+      await tester.tap(find.text('PILAH'));
+      expect(homeTaps, 2);
+    });
+
+    testWidgets('keeps the logo tappable on the narrow rail', (tester) async {
+      await mountRail(tester, window: const Size(700, 900));
+
+      await tester.tap(find.byKey(RoleNavigationRail.logoKey));
+      expect(homeTaps, 1);
     });
 
     testWidgets('keeps only the logo on the narrow rail', (tester) async {
