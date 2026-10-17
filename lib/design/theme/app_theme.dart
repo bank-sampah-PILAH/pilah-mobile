@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// The app's [ThemeData], so a stock Material widget looks like the rest of
 /// the app without every screen restyling it.
@@ -51,6 +52,7 @@ abstract final class AppTheme {
           shape: shape,
           textStyle: label,
           padding: padding,
+          minimumSize: const Size(64, AppButton.height),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -63,6 +65,7 @@ abstract final class AppTheme {
           shape: shape,
           textStyle: label,
           padding: padding,
+          minimumSize: const Size(64, AppButton.height),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -73,6 +76,7 @@ abstract final class AppTheme {
           shape: shape,
           textStyle: label,
           padding: padding,
+          minimumSize: const Size(64, AppButton.height),
         ),
       ),
       dialogTheme: DialogThemeData(
