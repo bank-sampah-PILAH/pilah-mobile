@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -185,24 +186,41 @@ void main() {
       (tester) async {
     await open(tester);
     InkWell exportControl() => tester.widget<InkWell>(find
-        .ancestor(of: find.text('XLS Setoran'), matching: find.byType(InkWell))
+        .ancestor(of: find.text('XLSX Laporan'), matching: find.byType(InkWell))
         .first);
     expect(exportControl().onTap, isNotNull);
     cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNull);
+    expect(exportControl().onTap, isNotNull);
     cubit.setTipeFilter(AktivitasTipeFilter.semua);
     await tester.pumpAndSettle();
     expect(exportControl().onTap, isNotNull);
     cubit.search('Budi');
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNull);
+    expect(exportControl().onTap, isNotNull);
     cubit.search('');
     await tester.pumpAndSettle();
     expect(exportControl().onTap, isNotNull);
   });
 
   group('export', () {
+    testWidgets('shows preparation while pending then reports an export error',
+        (tester) async {
+      final pending = Completer<Either<NetworkException, TransaksiExport>>();
+      when(() => export.execute(any())).thenAnswer((_) => pending.future);
+      await openPlain(tester);
+      await tester.tap(find.text('XLSX Laporan'));
+      await pumpToast(tester);
+      expect(find.text('Menyiapkan laporan XLSX...'), findsOneWidget);
+      expect(find.text('Bagikan'), findsNothing);
+      pending
+          .complete(Left(NetworkException(message: 'Akses laporan ditolak')));
+      await pumpUntilFound(tester, find.text('Akses laporan ditolak'));
+      expect(find.text('Menyiapkan laporan XLSX...'), findsNothing);
+      expect(find.text('Akses laporan ditolak'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
     // A real request takes a moment; the "preparing" toast must be on screen
     // before it is dismissed.
     void slowExport(Either<NetworkException, TransaksiExport> result) {
@@ -219,7 +237,7 @@ void main() {
           bytes: Uint8List.fromList([1, 2]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(
           tester, find.textContaining('disimpan ke folder Download'));
 
@@ -239,7 +257,7 @@ void main() {
       slowExport(Left(NetworkException(message: 'Tidak ada data')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(tester, find.text('Tidak ada data'));
 
       expect(find.text('Tidak ada data'), findsOneWidget);
@@ -253,7 +271,7 @@ void main() {
           TransaksiExport(bytes: Uint8List.fromList([1]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(tester, find.text('Gagal Menyimpan'));
 
       expect(find.text('Gagal Menyimpan'), findsOneWidget);

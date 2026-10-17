@@ -33,6 +33,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
             ? AktivitasStatus.loaded
             : AktivitasStatus.loading,
         hasNext: false,
+        clearSummary: true,
         loadingMore: false));
     final result = await _getAktivitas.execute(_filter(1));
     if (isClosed || generation != _generation) return;
@@ -40,12 +41,14 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
       (failure) => emit(state.copyWith(
           status: AktivitasStatus.failure,
           items: [],
+          clearSummary: true,
           errorMessage: failure.displayMessage)),
       (page) {
         _page = 1;
         emit(state.copyWith(
             status: AktivitasStatus.loaded,
             items: page.items,
+            summary: page.summary,
             hasNext: page.hasNext));
       },
     );
@@ -113,14 +116,8 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
     load();
   }
 
-  /// XLSX expansion to include payouts is owned by PIL-248.
+  /// Export the same period, type and search as the displayed report.
   Future<({TransaksiExport? export, String? error})> exportTransaksi() async {
-    if (!state.canExportSetoran) {
-      return (
-        export: null,
-        error: 'Hapus filter tipe dan pencarian untuk mengunduh XLS Setoran.'
-      );
-    }
     final result = await _export.execute(_filter(1));
     return result.fold(
         (failure) => (export: null, error: failure.displayMessage),
