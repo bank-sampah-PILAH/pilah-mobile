@@ -160,12 +160,16 @@ import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_c
     show SuperadminCubit;
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source.dart'
     show TransaksiRemoteDataSource;
+import 'package:pilah_mobile/features/transaksi/domain/repositories/aktivitas_repository.dart'
+    show AktivitasRepository;
 import 'package:pilah_mobile/features/transaksi/domain/repositories/transaksi_repository.dart'
     show TransaksiRepository;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart'
     show AddTransaksiUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart'
     show ExportTransaksiUseCase;
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart'
+    show GetAktivitasUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart'
     show GetTransaksiDetailUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart'
@@ -208,6 +212,8 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('PencairanRemoteDataSources', null, () => di<PencairanRemoteDataSources>()),
   ('SuperadminRemoteDataSource', null, () => di<SuperadminRemoteDataSource>()),
   ('TransaksiRemoteDataSource', null, () => di<TransaksiRemoteDataSource>()),
+  ('AktivitasRepository', null, () => di<AktivitasRepository>()),
+  ('GetAktivitasUseCase', null, () => di<GetAktivitasUseCase>()),
   (
     'DashboardReportingDataSource',
     null,
