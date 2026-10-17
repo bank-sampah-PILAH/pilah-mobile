@@ -223,7 +223,10 @@ class _Baris extends StatelessWidget {
             style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
           ),
         ),
+        // Tight, so the FittedBox spans its half and puts the amount at the
+        // right edge; a loose one would start it halfway across.
         Flexible(
+          fit: FlexFit.tight,
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
