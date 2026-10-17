@@ -77,8 +77,8 @@ class AppShell {
     onboarding = buildOnboardingCubit(api);
     jadwal = JadwalCubit(
         JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network)));
-    pengumuman = PengumumanCubit(PengumumanRepositoryImpl(
-        PengumumanRemoteDataSourceImpl(api.network)));
+    pengumuman = PengumumanCubit(
+        PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network)));
     pencairanCubit = PencairanCubit(pencairan);
     superadmin = buildSuperadminCubit(api);
     states = StreamController<AuthenticationStates>.broadcast();
