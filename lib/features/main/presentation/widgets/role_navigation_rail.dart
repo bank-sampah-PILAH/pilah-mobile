@@ -79,8 +79,10 @@ class RoleNavigationRail extends StatelessWidget {
     final name = profileName?.trim() ?? '';
     return DecoratedBox(
       key: panelKey,
+      // Di atas isi rail: lebar minimumnya 256, jadi isinya melewati tepi yang
+      // dibatasi border dan menimpanya bila border digambar di belakang.
+      position: DecorationPosition.foreground,
       decoration: const BoxDecoration(
-        color: Colors.white,
         border: Border(right: BorderSide(color: AppColors.grey200)),
       ),
       child: NavigationRail(
