@@ -10,5 +10,6 @@
   "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": 1,
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": 3,
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": 1,
-  "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": 1
+  "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": 1,
+  "lib/features/transaksi/presentation/widgets/time_filter_chips.dart": 1
 }
