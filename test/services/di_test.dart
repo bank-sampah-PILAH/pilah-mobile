@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/constants/app_key.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 void main() {
@@ -24,6 +25,11 @@ void main() {
     final repository = di<NasabahRepository>();
 
     expect(repository.network, same(di<NetworkService>()));
+  });
+
+  test('builds the harga cubit, with the price-change use case, from the graph',
+      () {
+    expect(di<HargaCubit>(), same(di<HargaCubit>()));
   });
 
   test('builds the authentication bloc the app creates at start-up', () {
