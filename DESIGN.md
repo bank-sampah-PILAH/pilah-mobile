@@ -65,6 +65,7 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 
 - Dialogs: white, 16 radius, no Material tint.
 - Bottom sheets: white, 24 top radius, no tint.
+- Pages: a `Scaffold` with no background of its own is white (`AppTheme.scaffoldBackgroundColor`); the Material default was a green-tinted off-white that made a screen unlike the rest.
 - App bars: white, no scroll tint, 18/w600 Poppins title.
 - Web shell (browser, wide): the navigation rail is a white panel with a 1 px `AppColors.border` on its right edge; pages sit on `AppColors.surface` and their cards stay white. A page that paints its own `Scaffold` background must not hard-code white: call `WebContentSurface.pageColor(context, phone: …)`, which gives `surface` inside the web shell and the phone colour everywhere else. Rail labels are 12 (`AppTextStyle.small`) in both the expanded and the narrow rail, in `AppColors.inkSoft`; the selected item uses `greenDark` on a `greenLight` indicator.
 - Cards: white, flat, 16 radius, a 1 dp `AppColors.border` outline, no tint and no margin (put the margin where the card sits). A stock `Card(...)` needs no `color`, `shape` or `elevation`.
@@ -76,6 +77,10 @@ Use these instead of building another one.
 | Need | Use | Notes |
 |---|---|---|
 | Sheet header (title + close) | `BottomSheetHeader`, `AppSheetHandle` (`design/widgets`) | `BottomSheetHeader` already draws the drag handle. A sheet that lays out its own header uses `AppSheetHandle`; do not hand-build the bar. |
+| Panel of a bottom sheet | `AppSheetContainer` (`design/widgets`) | White, 24 rounded top, rises above the keyboard, clears the system bar and scrolls. Put the sheet's own `Column` (or a `Form`) inside. |
+| Label and value line of a detail | `AppDetailRow` (`design/widgets`) | `Metode  Tunai`: muted 13 label left, 13 medium value right; a long value wraps. Used by the pencairan and setoran sheets and the revisi page. |
+| Header of a full Pengurus page | `AppBackHeader` (`design/widgets`) | Grey back button ("Kembali", 48 dp), a 20 bold title and optional `actions`. Without `onBack` it uses `maybePop`, so a `PopScope` is asked. Do not build a stock `AppBar`: `test/design/hardcoded_app_bars_test.dart` fails on a new one. |
+| Caption above a form field | `AppFieldLabel` (`design/widgets`) | `NAMA LENGKAP`: small bold capitals in `AppColors.grey100`, hint inside the field. Do not use a floating `labelText`. |
 | Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive`, `destructiveOutlined`, `warning`, `warningOutlined`, `tonal` (soft green, beside a primary) and `text` (a bare link inside a line of content). `size: AppButtonSize.compact` is 40 high with a 12 label and a 16 icon, for an action inside a card or a row; the regular size is 48 high, radius 12, 14 semibold label. Optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
 | Search | `CustomSearchField` | |
 | Status chip | `CustomStatusBadge` | |
@@ -93,7 +98,7 @@ Use these instead of building another one.
 | Form field look | `appInputDecoration`, `appInputStyle` (`design/constants/form_style.dart`) | White, 12 rounded, green focus, `AppColors.danger` on error. Takes `hintText`, `errorText`, `prefixText`, `prefixIcon`, `suffixIcon`, `hasError` and `focusColor` (seven at most, which SonarCloud allows); add a `labelText` or `helperText` with `copyWith` on the result; use `PhonePrefix` for the "+62" of a phone field. Text-field borders are intentionally not in the theme, so build the decoration through these functions: `test/design/hardcoded_input_decoration_test.dart` fails on a new raw `InputDecoration(`. |
 | Search field, value inside a card | `appSearchDecoration`, `appBorderlessInputDecoration` (same file) | Soft fill with no outline and a search icon; no border at all. `CustomSearchField` and `NasabahSearchBar` use the first. |
 | Labelled text field with a password toggle | `AppTextField` (`design/widgets/atom`) | Built on `appInputDecoration`. |
-| Nasabah cards and app bar | `NasabahCard`, `NasabahPageAppBar` | |
+| Nasabah cards and app bar | `NasabahCard`, `NasabahPageAppBar` | `NasabahPageAppBar(showBack: true)` for a Nasabah page reached from another one (approval, bank detail, PDF preview). |
 | Nasabah data screens | `NasabahResource` | One load/error/retry/reload shape. |
 
 ## 4. Patterns worth repeating
