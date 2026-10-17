@@ -53,7 +53,7 @@ void main() {
         const Scaffold(
           bottomNavigationBar: ContentBounds(
             heightFactor: 1,
-            child: SizedBox(key: probe, height: 72),
+            child: SizedBox(key: probe, width: double.infinity, height: 72),
           ),
         ),
         size: const Size(1440, 900),
