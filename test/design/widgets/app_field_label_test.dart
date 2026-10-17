@@ -29,7 +29,7 @@ void main() {
     expect(style?.letterSpacing, 0.5);
   });
 
-  testWidgets('is announced as a header of its field group', (tester) async {
+  testWidgets('is read by a screen reader as its text', (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: AppFieldLabel('EMAIL'))),
