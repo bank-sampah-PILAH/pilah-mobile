@@ -234,6 +234,23 @@ void main() {
       expect(find.text('Cair Oktober'), findsOneWidget);
     });
 
+    testWidgets(
+        'a link whose id is not a draft id goes to the list and asks nothing',
+        (tester) async {
+      final router = await boot(tester);
+
+      for (final id in ['..%2Fnasabah', 'd-1%2Fkonfirmasi', '%20']) {
+        await visit(tester, router, '/draft-pencairan/editor?id=$id');
+
+        expect(find.byType(DraftEditorPage), findsNothing, reason: id);
+        expect(find.byType(DraftListPage), findsOneWidget, reason: id);
+      }
+      expect(
+          api.requests.where((r) => r.path.contains('/draft-pencairan/')),
+          isEmpty,
+          reason: 'no request built from the link');
+    });
+
     testWidgets('opening the draft editor without a draft goes to the list',
         (tester) async {
       final router = await boot(tester);
