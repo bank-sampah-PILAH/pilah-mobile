@@ -49,7 +49,12 @@ void main() {
     answer();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {Size? size}) async {
+    if (size != null) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
     final router = GoRouter(
       navigatorKey: rootNavigatorKey,
       routes: [
@@ -313,8 +318,10 @@ void main() {
     });
 
     group('the saldo minimal sheet', () {
-      Future<void> open(WidgetTester tester) async {
-        await pump(tester);
+      // A phone unless a test says otherwise: the container follows the width.
+      Future<void> open(WidgetTester tester,
+          {Size size = const Size(390, 844)}) async {
+        await pump(tester, size: size);
         await tester.ensureVisible(find.byKey(const Key('pf-saldo')));
         await tester.tap(find.byKey(const Key('pf-saldo')));
         await tester.pumpAndSettle();
@@ -330,6 +337,21 @@ void main() {
         expect(sheet.backgroundColor, Colors.white);
         expect(sheet.shape, isA<RoundedRectangleBorder>());
         expect(find.text('Saldo minimal'), findsWidgets);
+      });
+
+      testWidgets('in a browser window is a centred dialog that still applies',
+          (tester) async {
+        await open(tester, size: const Size(1440, 900));
+
+        expect(find.byType(BottomSheet), findsNothing);
+        expect(find.byType(Dialog), findsOneWidget);
+
+        await tester.tap(find.text('Rp 250 rb'));
+        await tester.tap(find.byKey(const Key('terapkan-saldo-min')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dialog), findsNothing);
+        expect(chip(tester, 'pf-saldo').label, 'Saldo ≥ Rp 250.000');
       });
 
       testWidgets('offers amounts to pick with one tap', (tester) async {
