@@ -70,6 +70,22 @@ void main() {
       expect(find.byKey(RoleNavigationRail.logoKey), findsOneWidget);
     });
 
+    testWidgets('separates the brand from the bank sampah with a line',
+        (tester) async {
+      await mountRail(tester);
+
+      final line = tester
+          .widget<Divider>(find.byKey(RoleNavigationRail.headerDividerKey));
+      expect(line.color, AppColors.border);
+      final brand =
+          tester.getBottomLeft(find.byKey(RoleNavigationRail.logoKey));
+      final bank = tester.getTopLeft(find.text('Bank Sampah Melati'));
+      final dividerY =
+          tester.getCenter(find.byKey(RoleNavigationRail.headerDividerKey)).dy;
+      expect(dividerY, greaterThan(brand.dy));
+      expect(dividerY, lessThan(bank.dy));
+    });
+
     testWidgets('keeps only the logo on the narrow rail', (tester) async {
       await mountRail(tester, window: const Size(700, 900));
 
