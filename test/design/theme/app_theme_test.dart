@@ -125,6 +125,35 @@ void main() {
       });
     }
 
+    for (final (name, type, build) in <(String, Type, Widget Function())>[
+      (
+        'ElevatedButton',
+        ElevatedButton,
+        () => ElevatedButton(onPressed: () {}, child: const Text('Simpan')),
+      ),
+      (
+        'FilledButton',
+        FilledButton,
+        () => FilledButton(onPressed: () {}, child: const Text('Simpan')),
+      ),
+      (
+        'OutlinedButton',
+        OutlinedButton,
+        () => OutlinedButton(onPressed: () {}, child: const Text('Simpan')),
+      ),
+    ]) {
+      testWidgets('a plain $name is 48 high, like an AppButton',
+          (tester) async {
+        await tester.pumpWidget(_app(build()));
+
+        // The painted surface, not the 48 dp tap target around it.
+        final surface = find
+            .descendant(of: find.byType(type), matching: find.byType(Material))
+            .first;
+        expect(tester.getSize(surface).height, 48);
+      });
+    }
+
     testWidgets('a disabled filled button is grey, not a faded green',
         (tester) async {
       await tester.pumpWidget(
