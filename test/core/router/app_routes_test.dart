@@ -238,6 +238,10 @@ void main() {
         'a link whose id is not a draft id goes to the list and asks nothing',
         (tester) async {
       final router = await boot(tester);
+      // The router is shared, so booting can replay the previous test's page;
+      // let it settle on the list before counting.
+      await visit(tester, router, DraftListPage.route);
+      final sebelum = api.requests.length;
 
       for (final id in ['..%2Fnasabah', 'd-1%2Fkonfirmasi', '%20']) {
         await visit(tester, router, '/draft-pencairan/editor?id=$id');
@@ -245,8 +249,14 @@ void main() {
         expect(find.byType(DraftEditorPage), findsNothing, reason: id);
         expect(find.byType(DraftListPage), findsOneWidget, reason: id);
       }
+      // The list loads itself; nothing beyond it is built from the link.
+      const daftar = {'/api/v1/draft-pencairan', '/api/v1/draft-pencairan/'};
       expect(
-          api.requests.where((r) => r.path.contains('/draft-pencairan/')),
+          api.requests
+              .skip(sebelum)
+              .map((r) => r.path)
+              .where((path) => path.contains('draft-pencairan'))
+              .where((path) => !daftar.contains(path)),
           isEmpty,
           reason: 'no request built from the link');
     });
