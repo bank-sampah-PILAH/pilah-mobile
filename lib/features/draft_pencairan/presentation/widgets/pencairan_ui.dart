@@ -9,57 +9,6 @@ import 'package:pilah_mobile/design/widgets/app_chip.dart';
 /// one flow: a grey rounded back button, bold title, spaced section labels,
 /// white 12px inputs, pill chips and soft cards.
 
-/// Title row with the app's grey rounded back button. Going back uses
-/// `maybePop`, so a screen guarding unsaved edits with a `PopScope` is asked.
-class PencairanHeader extends StatelessWidget {
-  final String title;
-  final List<Widget> actions;
-
-  const PencairanHeader({
-    super.key,
-    required this.title,
-    this.actions = const [],
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          InkWell(
-            key: const Key('kembali'),
-            onTap: () => Navigator.of(context).maybePop(),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          ...actions,
-        ],
-      ),
-    );
-  }
-}
-
 /// Heading above a group of fields (`RINGKASAN`). [SectionLabel.field] is the
 /// quieter label of a single field inside a card (`NOMINAL`).
 class SectionLabel extends StatelessWidget {

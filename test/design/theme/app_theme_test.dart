@@ -196,6 +196,19 @@ void main() {
     });
   });
 
+  group('scaffold', () {
+    testWidgets('a page with no background of its own is white, not tinted',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(body: SizedBox.expand()),
+      ));
+
+      final context = tester.element(find.byType(Scaffold));
+      expect(Theme.of(context).scaffoldBackgroundColor, Colors.white);
+    });
+  });
+
   group('cards', () {
     testWidgets(
         'a stock Card is white and flat with a thin border, no tint or margin',

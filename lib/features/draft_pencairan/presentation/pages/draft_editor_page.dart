@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -188,7 +189,8 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       body: SafeArea(
         child: Column(
           children: [
-            PencairanHeader(
+            AppBackHeader(
+              backKey: const Key('kembali'),
               title: state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
               actions: [
                 ExportMenuButton(

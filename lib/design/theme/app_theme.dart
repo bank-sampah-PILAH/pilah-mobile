@@ -27,6 +27,9 @@ abstract final class AppTheme {
     );
     const padding = EdgeInsets.symmetric(horizontal: 24, vertical: 12);
     return base.copyWith(
+      // The Material default is a green-tinted off-white from the seed colour,
+      // which made a screen that sets no background look unlike the rest.
+      scaffoldBackgroundColor: Colors.white,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,

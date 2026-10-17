@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
@@ -78,11 +79,9 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          foregroundColor: Colors.black87,
-          title: Text(membership.bankSampahNama, style: AppTextStyle.appBar),
+        appBar: NasabahPageAppBar(
+          title: membership.bankSampahNama,
+          showBack: true,
         ),
         body: SafeArea(
           child: SingleChildScrollView(

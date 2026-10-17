@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -206,14 +207,7 @@ class _DetailTransaksiBottomSheetState
           const SizedBox(height: 24),
 
           // Rincian Setoran Section
-          Text(
-            'RINCIAN SETORAN',
-            style: AppTextStyle.extraSmall.copyWith(
-              color: Colors.grey[500],
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
+          const AppFieldLabel('RINCIAN SETORAN'),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
@@ -402,14 +396,7 @@ class _DetailTransaksiBottomSheetState
           // (the leading SizedBox is the spacing below the Saldo box).
           /*
               const SizedBox(height: 24),
-              Text(
-                'STATUS NOTIFIKASI WA',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
+              const AppFieldLabel('STATUS NOTIFIKASI WA'),
               const SizedBox(height: 12),
               _buildWaStatusBox(currentWaStatus, name),
               */
