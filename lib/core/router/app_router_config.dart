@@ -30,6 +30,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.da
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
@@ -167,6 +168,11 @@ class AppRouterConfig {
         path: PilihNasabahPencairanPage.route,
         name: PilihNasabahPencairanPage.route,
         builder: (context, state) => const PilihNasabahPencairanPage(),
+      ),
+      GoRoute(
+        path: PengumumanKelolaPage.route,
+        name: PengumumanKelolaPage.route,
+        builder: (context, state) => const PengumumanKelolaPage(),
       ),
       GoRoute(
         path: PengumumanPage.route,
@@ -437,6 +443,7 @@ class AppRouterConfig {
       LaporanPage.route,
       TransaksiBaruPage.route,
       PengumumanFormPage.route,
+      PengumumanKelolaPage.route,
     };
     final customerPaths = {
       AppLocations.history,

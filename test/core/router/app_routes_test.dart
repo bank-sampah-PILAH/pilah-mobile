@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_enti
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
@@ -102,6 +103,7 @@ void main() {
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
         '/catat-pencairan': CatatPencairanPage,
+        '/pengumuman/kelola': PengumumanKelolaPage,
         '/pengelola-induk-dashboard': RoleHandoffPage,
         '/register-bank-sampah-induk': RoleHandoffPage,
       };
