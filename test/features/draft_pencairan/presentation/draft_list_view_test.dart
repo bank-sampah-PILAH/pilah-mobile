@@ -268,19 +268,15 @@ void main() {
         size: const Size(1440, 900));
     await tester.pumpAndSettle();
 
-    final cari = find.byKey(const Key('cari-draft'));
-    expect(tester.getSize(cari).width,
+    final kartu = find
+        .ancestor(
+            of: find.text('Cair Oktober'), matching: find.byType(PencairanCard))
+        .first;
+    expect(tester.getSize(kartu).width,
         lessThanOrEqualTo(LayoutBreakpoint.contentMaxWidth));
-    expect(tester.getCenter(cari).dx, closeTo(720, 1),
+    expect(tester.getCenter(kartu).dx, closeTo(720, 1),
         reason: 'centred in the window');
-    expect(
-        tester
-            .getSize(find
-                .ancestor(
-                    of: find.text('Cair Oktober'),
-                    matching: find.byType(PencairanCard))
-                .first)
-            .width,
+    expect(tester.getSize(find.byKey(const Key('cari-draft'))).width,
         lessThanOrEqualTo(LayoutBreakpoint.contentMaxWidth));
   });
 

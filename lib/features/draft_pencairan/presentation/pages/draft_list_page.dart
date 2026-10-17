@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -70,30 +71,33 @@ class DraftListView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: BlocBuilder<DraftListCubit, DraftListState>(
-          builder: (context, state) => Column(
-            children: [
-              PencairanHeader(
-                title: 'Pencairan',
-                actions: [
-                  PencairanPopupMenu<String>(
-                    key: const Key('menu-lainnya'),
-                    onSelected: (_) => context.push(CatatPencairanPage.route),
-                    entries: const [
-                      PencairanMenuEntry(
-                        key: Key('aksi-catat'),
-                        value: 'catat',
-                        label: 'Catat pencairan satu nasabah',
-                        icon: Icons.edit_note,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const _SearchBar(),
-              _FilterChips(state: state),
-              Expanded(child: _Body(state: state, onOpen: _open)),
-            ],
+        // A desktop window keeps the list to the same column as the laporan.
+        child: ContentBounds(
+          child: BlocBuilder<DraftListCubit, DraftListState>(
+            builder: (context, state) => Column(
+              children: [
+                PencairanHeader(
+                  title: 'Pencairan',
+                  actions: [
+                    PencairanPopupMenu<String>(
+                      key: const Key('menu-lainnya'),
+                      onSelected: (_) => context.push(CatatPencairanPage.route),
+                      entries: const [
+                        PencairanMenuEntry(
+                          key: Key('aksi-catat'),
+                          value: 'catat',
+                          label: 'Catat pencairan satu nasabah',
+                          icon: Icons.edit_note,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const _SearchBar(),
+                _FilterChips(state: state),
+                Expanded(child: _Body(state: state, onOpen: _open)),
+              ],
+            ),
           ),
         ),
       ),
