@@ -74,6 +74,12 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   bool _isSaving = false;
   String? _serverKodeError;
 
+  /// Dinaikkan tiap kali panel berganti baris. Simpan yang sedang
+  /// berjalan mencatat nilainya lebih dulu, sehingga hasil yang datang
+  /// terlambat tahu bahwa form di depan mata bukan lagi form yang
+  /// memulainya.
+  int _generasiBaris = 0;
+
   /// Tengah malam waktu setempat saat harga baru mulai berlaku, atau `null`
   /// bila harga baru berlaku sekarang.
   DateTime? _berlakuMulai;
@@ -118,8 +124,10 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       _berlakuMulai = null;
       // Tombol milik baris yang baru, jadi ia tidak boleh ikut terkunci oleh
       // simpanan baris sebelumnya. Simpanan itu tetap berjalan dan tetap
-      // melaporkan hasilnya; yang dilepas hanya kuncinya.
+      // melaporkan hasilnya lewat notifikasi; yang dilepas kuncinya, dan
+      // generasinya naik supaya hasil tadi tidak lagi menyentuh form ini.
       _isSaving = false;
+      _generasiBaris++;
     }
   }
 
@@ -407,6 +415,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
     final id = widget.initialData!.id;
     final wasActive = _isActive;
+    final generasi = _generasiBaris;
 
     // Confirm before touching the API. A cancel or a barrier dismiss returns
     // false, and nothing has changed at this point, so there is no optimistic
@@ -423,10 +432,14 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
         ? await cubit.deactivateHarga(id)
         : await cubit.activateHarga(id);
     if (!mounted) return;
-    setState(() => _isSaving = false);
+
+    // Seperti `_handleSimpan`: hasil yang datang setelah panel berganti
+    // baris tidak boleh menutup panel baris yang sekarang tampil.
+    final barisMasihSama = generasi == _generasiBaris;
+    if (barisMasihSama) setState(() => _isSaving = false);
 
     if (error == null) {
-      widget.onSaved();
+      if (barisMasihSama) widget.onSaved();
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
@@ -485,6 +498,10 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     final hargaBerubah = isEditMode && priceVal != widget.initialData!.price;
     final berlakuMulai = _berlakuMulai;
 
+    // Panel hidup lebih lama daripada satu pilihan, jadi baris dapat
+    // berganti selagi permintaan ini berjalan.
+    final generasi = _generasiBaris;
+
     setState(() => _isSaving = true);
     var error = isEditMode
         ? await cubit.updateHarga(harga)
@@ -500,10 +517,16 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       hanyaHargaGagal = error != null;
     }
     if (!mounted) return;
-    setState(() => _isSaving = false);
+
+    // Hasil ini milik baris yang memulainya. Bila panel sudah pindah
+    // baris, hanya kabarnya yang masih berlaku: `onSaved` akan menutup
+    // panel yang kini menampilkan baris lain beserta isian yang belum
+    // disimpan, dan error kode akan menempel pada field bukan miliknya.
+    final barisMasihSama = generasi == _generasiBaris;
+    if (barisMasihSama) setState(() => _isSaving = false);
 
     if (error == null) {
-      widget.onSaved();
+      if (barisMasihSama) widget.onSaved();
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
@@ -530,7 +553,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     }
 
     final fields = error.fieldErrors();
-    if (fields.containsKey('kode')) {
+    if (barisMasihSama && fields.containsKey('kode')) {
       setState(() => _serverKodeError = fields['kode']);
       _formKey.currentState?.validate();
     }

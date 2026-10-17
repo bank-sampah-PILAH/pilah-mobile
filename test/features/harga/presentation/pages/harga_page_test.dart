@@ -285,6 +285,95 @@ void main() {
     );
   });
 
+  // A panel outlives the selection it was opened for, so a request sent for
+  // one row can come back while another row is on screen. Raised by Scallss'
+  // review of this PR: the result used to close the panel it found, taking
+  // the next row's unsaved edits with it.
+  testWidgets('a save that lands after the row changed leaves the panel alone',
+      (tester) async {
+    api.on('PUT', '/api/v1/jenis-sampah/1', json: {});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    // Slow enough that the row can be switched while the PUT is still out.
+    api.latency = const Duration(milliseconds: 300);
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pump();
+
+    // Single frames, not pumpAndSettle: settling would run the clock past the
+    // success toast's three seconds, and the toast is part of what is asserted.
+    await tester.tap(find.text('Kardus'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
+    await tester.pump();
+
+    // Botol PET's answer arrives here, with Kardus on screen.
+    await pumpToast(tester);
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsOneWidget,
+      reason: "Botol PET's save must not close the panel showing Kardus",
+    );
+    expect(
+      find.widgetWithText(TextFormField, 'Kardus Tebal'),
+      findsOneWidget,
+      reason: 'the edit in progress on Kardus must survive',
+    );
+    expect(api.requests.where((r) => r.method == 'PUT'), isNotEmpty,
+        reason: 'the save this test is about has to have been sent');
+    expect(find.text('Jenis sampah berhasil diperbarui.'), findsOneWidget,
+        reason: 'the save did succeed, so it is still reported');
+    await settleToasts(tester);
+  });
+
+  testWidgets('a status change that lands after the row changed is contained',
+      (tester) async {
+    api.on('PATCH', '/api/v1/jenis-sampah/1/status', json: {});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Nonaktifkan Jenis Sampah'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nonaktifkan Jenis Sampah'));
+    await tester.pumpAndSettle();
+    // Far longer than the dialog's own exit, so the ordering under test is not
+    // left to how long a settle happens to run for.
+    api.latency = const Duration(seconds: 5);
+    await tester.tap(find.text('Ya, Nonaktifkan'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('Kardus'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
+    await tester.pump();
+
+    // Botol PET's answer arrives here, with Kardus on screen. A panel that
+    // closed and was reopened would look the same, so the assertion is the
+    // unsaved text rather than the panel's presence alone.
+    await tester.pump(const Duration(seconds: 5));
+    await pumpToast(tester);
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsOneWidget,
+      reason: 'the same rule applies to the status toggle',
+    );
+    expect(
+      find.widgetWithText(TextFormField, 'Kardus Tebal'),
+      findsOneWidget,
+      reason: "Botol PET's status change must not discard Kardus' edit",
+    );
+    expect(api.requests.where((r) => r.method == 'PATCH'), isNotEmpty,
+        reason: 'the status change this test is about has to have been sent');
+    await settleToasts(tester);
+  });
+
   testWidgets('no panel is rendered until something is selected',
       (tester) async {
     await openPage(tester, size: _expanded);
