@@ -41,7 +41,7 @@ const _approved = NasabahMembershipEntity(
 /// sideways is wider than 840 and lost its bottom bar; a browser window
 /// narrowed below 600 grew one.
 void main() {
-  Future<void> mountShell(
+  Future<GoRouter> mountShell(
     WidgetTester tester, {
     required String role,
     required Size window,
@@ -112,6 +112,7 @@ void main() {
       child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
+    return router;
   }
 
   group('the app always keeps its navigation at the bottom', () {
@@ -224,6 +225,70 @@ void main() {
   ///
   /// The guard itself is older than this PR (`04994da`, PIL-228); what this PR
   /// changed is that there is now left-hand navigation to lose.
+  group('tapping the rail profile', () {
+    /// How many times the back button has to be pressed to leave the pages
+    /// that were pushed. Consumes the stack.
+    Future<int> backPresses(WidgetTester tester, GoRouter router) async {
+      var presses = 0;
+      while (router.canPop() && presses < 10) {
+        router.pop();
+        await tester.pumpAndSettle();
+        presses++;
+      }
+      return presses;
+    }
+
+    testWidgets('opens the profile from another page', (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/profile');
+    });
+
+    testWidgets('does not stack another profile page when already there',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+        await tester.pumpAndSettle();
+      }
+
+      expect(await backPresses(tester, router), 1,
+          reason: 'one back press must leave the profile, however many '
+              'times it was tapped');
+    });
+  });
+
+  testWidgets('the rail logo returns to the home branch', (tester) async {
+    final router = await mountShell(tester,
+        role: 'pengelola',
+        window: const Size(1280, 900),
+        isWeb: true,
+        initialLocation: '/customers');
+    expect(
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
+        1);
+
+    await tester.tap(find.byKey(RoleNavigationRail.logoKey));
+    await tester.pumpAndSettle();
+
+    expect(
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
+        0);
+    expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+        '/home');
+  });
+
   group('a route outside the destinations keeps its navigation on web', () {
     testWidgets('the staff profile keeps the rail on a desktop window',
         (tester) async {

@@ -74,6 +74,8 @@ class ActivityItem extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyle.small.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
@@ -92,36 +94,39 @@ class ActivityItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                amount,
-                style: AppTextStyle.small.copyWith(
-                  color: accentColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              for (final caption in trailingCaptions) ...[
-                const SizedBox(height: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  caption,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-              if (badge != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  badge!,
-                  style: AppTextStyle.extraSmall.copyWith(
+                  amount,
+                  textAlign: TextAlign.end,
+                  style: AppTextStyle.small.copyWith(
                     color: accentColor,
-                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                for (final caption in trailingCaptions) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    caption,
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+                if (badge != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    badge!,
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: accentColor,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),

@@ -42,24 +42,15 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Invite links: https://<host>/invite?token=… opens the app so the
-                 token can be captured without the user copying anything.
+            <!-- Invite links: https://<host>/invite/<token> opens the app; the
+                 older /invite?token=… links still work for installed apps.
                  Scheme/host/path entries combine across the <data> tags below.
 
-                 The host is the production Cloud Run API, derived from
-                 BASE_URL_PROD. It has to match whatever the backend actually
-                 puts in invite_url — that is PILAH_PUBLIC_APP_URL when it is
-                 set, otherwise the incoming request host, which on Cloud Run is
-                 this one. If PILAH_PUBLIC_APP_URL is ever pointed at a separate
-                 web domain, add that host here too or the links stop resolving.
+                 Production and staging backend hosts each have a verified
+                 filter below. They must match the backend host used in invite_url.
 
-                 Both http and https are declared. Cloud Run only serves https,
-                 but Django currently emits http:// invite links: it sits behind
-                 Cloud Run's TLS terminator and config/settings.py sets no
-                 SECURE_PROXY_SSL_HEADER, so request.build_absolute_uri() does
-                 not know the original request was secure. Registering http keeps
-                 those already-issued links working; the real fix belongs in the
-                 backend.
+                 Both schemes remain declared for previously issued HTTP links.
+                 New invite URLs use the configured HTTPS backend host.
 
                  autoVerify is on, but this filter does NOT open the app until
                  https://<host>/.well-known/assetlinks.json is served with this
@@ -78,6 +69,14 @@
                 <data android:scheme="http"/>
                 <data android:scheme="https"/>
                 <data android:host="pilah-be-hi6b7cbwta-et.a.run.app"/>
+                <data android:pathPrefix="/invite"/>
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="pilah-be-staging.fly.dev"/>
                 <data android:pathPrefix="/invite"/>
             </intent-filter>
         </activity>
