@@ -741,6 +741,29 @@ void main() {
       expect(cubit.state.status, DraftStatus.dikonfirmasi);
     });
 
+    testWidgets(
+        'on a desktop window paying from the side panel asks in a dialog',
+        (tester) async {
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) async => Right(_saved()));
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+
+      await tester.tap(find.text('Ya, sudah dibayar'));
+      await tester.pumpAndSettle();
+
+      verifyInOrder([
+        () => repository.createDraft(any()),
+        () => repository.confirmDraft('d-1'),
+      ]);
+      expect(cubit.state.status, DraftStatus.dikonfirmasi);
+    });
+
     testWidgets('declining the dialog saves and pays nothing', (tester) async {
       await pumpNew(tester);
 
