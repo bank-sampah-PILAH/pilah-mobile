@@ -1,23 +1,17 @@
 import 'package:flutter/widgets.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/utils/file_downloads.dart';
+import 'package:pilah_mobile/core/utils/file_downloader.dart';
+import 'package:pilah_mobile/core/utils/report_share_file.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 
 /// Saves [file] to the downloads folder and says where it went, with a way to
 /// share it from there. Shared by the Excel export and the PDF preview.
-///
-/// A file the browser downloaded has no saved path to share, so the toast
-/// offers no Bagikan there.
-Future<void> simpanBerkasDraft(
-  BuildContext context,
-  DraftExport file, {
-  @visibleForTesting SimpanBerkas simpan = FileDownloader.save,
-}) async {
+Future<void> simpanBerkasDraft(BuildContext context, DraftExport file) async {
   final SavedFile saved;
   try {
-    saved = await simpan(
+    saved = await FileDownloader.save(
       filename: file.filename,
       bytes: file.bytes,
     );
@@ -35,13 +29,15 @@ Future<void> simpanBerkasDraft(
     context,
     title: 'Berhasil',
     message: 'Berkas disimpan ke folder ${saved.folder}',
-    actionLabel: saved.inBrowser ? null : 'Bagikan',
-    onAction: saved.inBrowser
-        ? null
-        : () => SharePlus.instance.share(
-              ShareParams(
-                  files: [XFile(saved.path)], text: 'Draft Pencairan PILAH'),
-            ),
+    actionLabel: 'Bagikan',
+    onAction: () => SharePlus.instance.share(
+      ShareParams(files: [
+        createReportShareFile(
+            saved: saved, filename: file.filename, bytes: file.bytes)
+      ], fileNameOverrides: [
+        file.filename
+      ], text: 'Draft Pencairan PILAH'),
+    ),
   );
 }
 

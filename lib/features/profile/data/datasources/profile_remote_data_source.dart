@@ -12,15 +12,13 @@ abstract class ProfileRemoteDataSource {
 
   /// Updates the editable bank sampah fields, optionally replacing the logo.
   ///
-  /// [fotoLogoPath] is the absolute path of a freshly picked image. Omitting it
-  /// leaves the stored logo alone — the endpoint patches partially, so a key
-  /// that is not sent is not touched. Sending an empty one would clear it.
+  /// Omitting [fotoLogoBytes] leaves the stored logo alone: the endpoint
+  /// patches partially, so a key that is not sent is not touched.
   Future<BankSampahProfile> updateBankSampah({
     required String nama,
     required String alamat,
     String? kota,
     required String noHpPic,
-    String? fotoLogoPath,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
   });
@@ -55,7 +53,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     required String alamat,
     String? kota,
     required String noHpPic,
-    String? fotoLogoPath,
     Uint8List? fotoLogoBytes,
     String? fotoLogoFilename,
   }) async {
@@ -68,11 +65,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         'foto_logo': MultipartFile.fromBytes(
           fotoLogoBytes,
           filename: fotoLogoFilename ?? 'logo.jpg',
-        )
-      else if (fotoLogoPath != null && fotoLogoPath.isNotEmpty)
-        'foto_logo': await MultipartFile.fromFile(
-          fotoLogoPath,
-          filename: fotoLogoPath.split(RegExp(r'[\\/]')).last,
         ),
     });
 

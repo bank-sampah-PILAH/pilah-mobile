@@ -79,6 +79,7 @@ void main() {
     if (withPhoto) {
       await tester.ensureVisible(find.text('Pilih foto'));
       await tester.tap(find.text('Pilih foto'));
+      await pumpReal(tester);
       await tester.pumpAndSettle();
     }
   }
@@ -119,6 +120,9 @@ void main() {
 
     await fillForm(tester);
     expect(calls.single.arguments['imageQuality'], 50);
+    final preview = tester.widget<Image>(find.byType(Image));
+    expect(preview.image, isA<MemoryImage>());
+    expect((preview.image as MemoryImage).bytes, tinyPng);
     await tester.ensureVisible(find.text('Ajukan Pendaftaran'));
     await tester.tap(find.text('Ajukan Pendaftaran'));
     await pumpReal(tester);
@@ -145,7 +149,7 @@ void main() {
     expect(find.text('route:/dashboard'), findsOneWidget);
   });
 
-  testWidgets('a server rejection shows the message and keeps the form',
+  testWidgets('a server rejection keeps the photo and allows retry',
       (tester) async {
     mockImagePicker(writeTinyPng('bank_d.png').path);
     api.on('POST', '/api/v1/onboarding/bank-sampah',
@@ -160,7 +164,46 @@ void main() {
 
     expect(find.text('Foto terlalu besar'), findsOneWidget);
     expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+    expect(
+        (tester.widget<Image>(find.byType(Image)).image as MemoryImage).bytes,
+        tinyPng);
     await settleToasts(tester);
+
+    api.on('POST', '/api/v1/onboarding/bank-sampah',
+        json: {'next_step': 'pending_approval'});
+    await tester.tap(find.text('Ajukan Pendaftaran'));
+    await pumpReal(tester);
+    await tester.pumpAndSettle();
+
+    expect(api.requests, hasLength(2));
+    expect(find.text('route:/pending-approval'), findsOneWidget);
+  });
+
+  testWidgets('an unreadable photo shows an error and can be replaced',
+      (tester) async {
+    final missing = writeTinyPng('unreadable_bank_photo.png')..deleteSync();
+    mockImagePicker(missing.path);
+    await open(tester);
+
+    await fillForm(tester, withPhoto: false);
+    await tester.ensureVisible(find.text('Pilih foto'));
+    await tester.tap(find.text('Pilih foto'));
+    await pumpReal(tester);
+    await pumpToast(tester);
+
+    expect(find.text('Foto tidak dapat dibaca. Silakan coba lagi.'),
+        findsOneWidget);
+    expect(find.text('Pilih foto'), findsOneWidget);
+    expect(api.requests, isEmpty);
+    await settleToasts(tester);
+
+    mockImagePicker(writeTinyPng('replacement_bank_photo.png').path);
+    await fillForm(tester);
+
+    expect(find.text('Pilih foto'), findsNothing);
+    expect(
+        (tester.widget<Image>(find.byType(Image)).image as MemoryImage).bytes,
+        tinyPng);
   });
 
   testWidgets('the banked profile is sent first when coming from step one',
@@ -197,6 +240,12 @@ void main() {
     expect(find.text('Pilih foto'), findsNothing);
 
     await tester.ensureVisible(find.byIcon(Icons.close));
+    final handle = tester.ensureSemantics();
+    expect(
+      tester.getSemantics(find.byIcon(Icons.close)),
+      isSemantics(label: 'Hapus foto', isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
 

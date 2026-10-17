@@ -3,7 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'file_downloads.dart';
+import 'file_downloader.dart';
+import 'report_share_file.dart';
 import '../bases/widgets/app_notification.dart';
 
 /// The save-then-share confirmation shared by every report export
@@ -25,11 +26,10 @@ Future<void> saveAndOfferShare(
   required List<int> bytes,
   required String Function(SavedFile saved) successMessage,
   required String shareText,
-  @visibleForTesting SimpanBerkas simpan = FileDownloader.save,
 }) async {
   final SavedFile saved;
   try {
-    saved = await simpan(
+    saved = await FileDownloader.save(
       filename: filename,
       bytes: Uint8List.fromList(bytes),
     );
@@ -47,15 +47,18 @@ Future<void> saveAndOfferShare(
     context,
     title: 'Berhasil',
     message: successMessage(saved),
-    // A browser download leaves no path the page can share.
-    actionLabel: saved.inBrowser ? null : 'Bagikan',
-    onAction: saved.inBrowser
-        ? null
-        : () => SharePlus.instance.share(
-              ShareParams(
-                files: [XFile(saved.path)],
-                text: shareText,
-              ),
-            ),
+    actionLabel: 'Bagikan',
+    onAction: () => SharePlus.instance.share(
+      ShareParams(
+        files: [
+          createReportShareFile(
+              saved: saved,
+              filename: filename,
+              bytes: Uint8List.fromList(bytes))
+        ],
+        fileNameOverrides: [filename],
+        text: shareText,
+      ),
+    ),
   );
 }

@@ -14,7 +14,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_useca
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
@@ -93,7 +93,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: BlocProvider<NasabahCubit>.value(
         value: cubit,
-        child: const Scaffold(body: PilihNasabahBottomSheet()),
+        child: const Scaffold(body: PilihNasabahPicker()),
       ),
     ));
     await tester.pumpAndSettle();
@@ -129,7 +129,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: BlocProvider<NasabahCubit>.value(
         value: cubit,
-        child: const Scaffold(body: PilihNasabahBottomSheet()),
+        child: const Scaffold(body: PilihNasabahPicker()),
       ),
     ));
     await tester.pumpAndSettle();

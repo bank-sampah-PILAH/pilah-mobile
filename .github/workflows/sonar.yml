@@ -63,13 +63,31 @@ jobs:
       - name: Generate code (build_runner)
         run: dart run build_runner build --delete-conflicting-outputs
 
+      # injectable_generator writes `// coverage:ignore-file` into
+      # di.config.dart, which drops the DI graph from lcov while SonarCloud
+      # still counts its lines as uncovered. test/services/di_graph_test.dart
+      # resolves every registration, so measure it like any other file.
+      - name: Measure coverage of the generated DI graph
+        run: sed -i '/^\/\/ coverage:ignore-file$/d' lib/services/di.config.dart
+
       - name: Run tests with coverage
         run: flutter test --coverage
+
+      # Flutter's VM LCOV cannot observe dart:js_interop. The Dart Chrome
+      # runner records actual browser execution and maps it back to Dart lines.
+      # Disable optimization here to retain statement-level source mappings.
+      - name: Collect browser download coverage
+        run: >-
+          dart run test --platform chrome
+          --dart2js-args=-O0
+          --coverage-path=coverage/browser.lcov.info
+          test/browser/file_downloader_test.dart
 
       - name: Run web-specific widget tests
         run: >-
           flutter test --platform chrome
           test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
+          test/report_download_browser_test.dart
 
       - name: Verify the web dashboard role layout
         run: >-
@@ -92,9 +110,9 @@ jobs:
       # itself). First attempt gets continue-on-error, second attempt runs
       # only on failure — a fresh connection usually gets through. Keep both
       # arg blocks identical.
-      # Flutter's VM lcov run cannot instrument conditional web code or root
-      # lib/main_*.dart entrypoints. Chrome tests run separately; keep these
-      # files analyzed but out of the VM line-coverage metric.
+      # Match existing LCOV coverage:ignore-file annotations for generated DI
+      # and process entrypoints. Platform policy is tested separately; application
+      # code remains included in coverage and the quality gate is unchanged.
       - name: SonarCloud Scan
         id: sonar_scan
         continue-on-error: true
@@ -106,9 +124,9 @@ jobs:
             -Dsonar.organization=bank-sampah-pilah
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
-            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
-            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart,**/di.config.dart
-            -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart,**/file_downloader_web.dart
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info,coverage/browser.lcov.info
+            -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
             -Dsonar.scanner.skipJreProvisioning=true
 
       - name: SonarCloud Scan (retry)
@@ -121,7 +139,7 @@ jobs:
             -Dsonar.organization=bank-sampah-pilah
             -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
             -Dsonar.sources=lib
-            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
-            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart,**/di.config.dart
-            -Dsonar.coverage.exclusions=lib/main_*.dart,**/google_sign_in_web_button.dart,**/file_downloader_web.dart
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info,coverage/browser.lcov.info
+            -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
             -Dsonar.scanner.skipJreProvisioning=true

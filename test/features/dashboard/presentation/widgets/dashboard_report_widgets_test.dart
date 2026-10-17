@@ -187,6 +187,21 @@ void main() {
     expect(find.text('1 setoran'), findsOneWidget);
   });
 
+  testWidgets('category weight uses a decimal comma, not a dot',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 1.5, depositCount: 2),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1,5 kg'), findsOneWidget);
+  });
+
   testWidgets('shared report section applies one selected date range to both',
       (tester) async {
     final source = _ReportingDataSource()

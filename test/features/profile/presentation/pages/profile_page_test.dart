@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.d
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 import '../../../../support/auth_support.dart';
+import '../../../../support/image_picker_channel.dart';
 import '../../../../support/profile_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
@@ -218,7 +219,7 @@ void main() {
 
   testWidgets('picking a logo shows the cropped image', (tester) async {
     final file = File('${Directory.systemTemp.path}/profile_page_logo.jpg')
-      ..writeAsBytesSync(List.filled(8, 0));
+      ..writeAsBytesSync(tinyPng);
     addTearDown(() => file.deleteSync());
     when(() => picker.pickImage(source: any(named: 'source')))
         .thenAnswer((_) async => XFile(file.path));
@@ -234,13 +235,15 @@ void main() {
     await openPage(tester);
 
     await tester.tap(find.byIcon(Icons.home_outlined));
+    await pumpReal(tester);
     await tester.pumpAndSettle();
 
-    expect(cubit.state.selectedLogoFile?.path, file.path);
+    expect(cubit.state.selectedLogoBytes, tinyPng);
+    expect(cubit.state.selectedLogoFilename, 'profile_page_logo.jpg');
     expect(find.byType(Image), findsWidgets);
   });
 
-  testWidgets('an unreadable picked logo falls back to the placeholder',
+  testWidgets('an unreadable picked logo reports a recoverable error',
       (tester) async {
     when(() => picker.pickImage(source: any(named: 'source')))
         .thenAnswer((_) async => XFile('/no/such/logo.jpg'));
@@ -256,13 +259,37 @@ void main() {
     await openPage(tester);
 
     await tester.tap(find.byIcon(Icons.home_outlined));
-    await tester.pumpAndSettle();
-    await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 300)));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await pumpReal(tester);
+    await pumpToast(tester);
 
+    expect(find.text('Foto tidak dapat dibaca. Silakan coba lagi.'),
+        findsOneWidget);
     expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+    expect(cubit.state.selectedLogoBytes, isNull);
+    await settleToasts(tester);
+  });
+
+  testWidgets('a picker failure keeps the previously selected logo',
+      (tester) async {
+    await openPage(tester);
+    final bytes = Uint8List.fromList(tinyPng);
+    cubit.emit(cubit.state.copyWith(
+        selectedLogoBytes: bytes, selectedLogoFilename: 'previous.png'));
+    await tester.pumpAndSettle();
+    when(() => picker.pickImage(source: any(named: 'source')))
+        .thenThrow(StateError('picker unavailable'));
+
+    await tester.tap(find.byType(ClipOval));
+    await pumpToast(tester);
+
+    expect(find.text('Foto tidak dapat dibaca. Silakan coba lagi.'),
+        findsOneWidget);
+    expect(cubit.state.selectedLogoBytes, bytes);
+    expect(cubit.state.selectedLogoFilename, 'previous.png');
+    final preview =
+        tester.widget<ClipOval>(find.byType(ClipOval)).child as Image;
+    expect((preview.image as MemoryImage).bytes, bytes);
+    await settleToasts(tester);
   });
 
   testWidgets('previews a browser-selected logo from its bytes',
@@ -346,8 +373,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Siti'), findsOneWidget);
     expect(find.text('Anda'), findsOneWidget);
-    expect(find.text('Pengelola Utama'), findsOneWidget);
-    expect(find.text('Pengelola'), findsWidgets);
+    expect(find.text('Pengurus Utama'), findsOneWidget);
+    expect(find.text('Pengurus'), findsWidgets);
     expect(find.text('Simpan Pengaturan'), findsNothing);
 
     await tester.tap(find.text('Salin Link Undangan'));
@@ -383,7 +410,7 @@ void main() {
 
     expect(find.text('Salin Link Undangan'), findsNothing);
     expect(
-        find.text('Belum ada pengelola lain yang tergabung.'), findsOneWidget);
+        find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });
 
   testWidgets('a member without a name shows their email', (tester) async {
@@ -400,13 +427,39 @@ void main() {
     expect(find.text('anon@x.test'), findsOneWidget);
   });
 
-  testWidgets('logging out is requested from the settings tab', (tester) async {
+  testWidgets('a bank sampah operator is labelled Pengurus, not Pengelola',
+      (tester) async {
+    await openPage(tester);
+
+    expect(find.text('Pengurus'), findsOneWidget);
+    expect(find.text('Pengelola'), findsNothing);
+  });
+
+  testWidgets('logging out asks first, then signs out on confirm',
+      (tester) async {
     await openPage(tester);
 
     await tester.tap(find.text('Keluar dari Aplikasi'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keluar dari akun?'), findsOneWidget);
+    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+
+    await tester.tap(find.text('Ya, Keluar'));
+    await tester.pumpAndSettle();
 
     verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+  });
+
+  testWidgets('cancelling the logout keeps the session', (tester) async {
+    await openPage(tester);
+
+    await tester.tap(find.text('Keluar dari Aplikasi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {
