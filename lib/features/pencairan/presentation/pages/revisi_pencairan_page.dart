@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
@@ -174,9 +174,5 @@ class _VersiCard extends StatelessWidget {
   }
 }
 
-String _waktu(DateTime? waktu) {
-  if (waktu == null) return '-';
-  final h = waktu.hour.toString().padLeft(2, '0');
-  final m = waktu.minute.toString().padLeft(2, '0');
-  return '${formatTanggalId(waktu)}, $h:$m';
-}
+String _waktu(DateTime? waktu) =>
+    waktu == null ? '-' : formatTanggalJamId(waktu);
