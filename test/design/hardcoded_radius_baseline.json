@@ -13,6 +13,7 @@
   "lib/features/jadwal/presentation/widgets/jadwal_calendar.dart": 1,
   "lib/features/nasabah/presentation/pages/nasabah_page.dart": 1,
   "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": 2,
+  "lib/features/nasabah/presentation/widgets/nasabah_table.dart": 1,
   "lib/features/onboarding/presentation/pages/splash_page.dart": 1,
   "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": 1,
   "lib/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart": 1,

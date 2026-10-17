@@ -117,7 +117,7 @@
   },
   "lib/features/onboarding/presentation/pages/complete_profile_screen.dart": {
     "color": 0,
-    "fontSize": 7
+    "fontSize": 6
   },
   "lib/features/onboarding/presentation/pages/pending_approval_screen.dart": {
     "color": 0,
@@ -125,7 +125,7 @@
   },
   "lib/features/onboarding/presentation/pages/register_bank_sampah_screen.dart": {
     "color": 0,
-    "fontSize": 13
+    "fontSize": 12
   },
   "lib/features/onboarding/presentation/pages/register_nasabah_screen.dart": {
     "color": 0,
@@ -145,7 +145,7 @@
   },
   "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": {
     "color": 0,
-    "fontSize": 2
+    "fontSize": 1
   },
   "lib/features/profile/presentation/pages/profile_page.dart": {
     "color": 0,
@@ -159,13 +159,9 @@
     "color": 0,
     "fontSize": 11
   },
-  "lib/features/transaksi/presentation/pages/laporan/laporan_page.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
   "lib/features/transaksi/presentation/pages/transaksi_baru_page.dart": {
     "color": 0,
-    "fontSize": 2
+    "fontSize": 1
   },
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": {
     "color": 0,
@@ -184,10 +180,6 @@
     "fontSize": 3
   },
   "lib/features/transaksi/presentation/widgets/pilih_nasabah_section.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
-  "lib/features/transaksi/presentation/widgets/time_filter_chips.dart": {
     "color": 0,
     "fontSize": 1
   },
