@@ -198,7 +198,7 @@ void main() {
 
     testWidgets('asks for the next page near the bottom', (tester) async {
       api.on('GET', _path, json: nasabahPage(many, count: 60, hasNext: true));
-      await open(tester, size: const Size(1280, 600));
+      await open(tester, size: const Size(1280, 800));
 
       await tester.drag(find.byType(ListView), const Offset(0, -6000));
       await tester.pumpAndSettle();
@@ -209,7 +209,7 @@ void main() {
     testWidgets('does not ask when the last page is already loaded',
         (tester) async {
       api.on('GET', _path, json: nasabahPage(many));
-      await open(tester, size: const Size(1280, 600));
+      await open(tester, size: const Size(1280, 800));
 
       await tester.drag(find.byType(ListView), const Offset(0, -6000));
       await tester.pumpAndSettle();

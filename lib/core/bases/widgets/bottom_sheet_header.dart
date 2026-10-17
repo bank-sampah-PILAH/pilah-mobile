@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final String title;
 
   /// Apakah pegangan tarik di atas judul ikut ditampilkan.
   ///
-  /// Default true, karena hampir semua pemakai header ini memang bottom sheet.
-  /// Picker yang tampil sebagai dialog pada jendela lebar mematikannya: dialog
-  /// tidak dapat ditarik, jadi di sana pegangan itu janji palsu.
-  final bool showDragHandle;
+  /// Null berarti otomatis: tampil pada bottom sheet, tersembunyi di dalam
+  /// [DialogSurface] karena dialog tidak dapat ditarik dan pegangan di sana
+  /// janji palsu. Picker yang memutuskannya sendiri memberi nilai eksplisit.
+  final bool? showDragHandle;
+
+  static const dragHandleKey = ValueKey('bottom-sheet-drag-handle');
 
   /// Cara menutup, bila bukan dengan menutup route.
   ///
@@ -23,7 +26,7 @@ class BottomSheetHeader extends StatelessWidget {
   const BottomSheetHeader({
     super.key,
     required this.title,
-    this.showDragHandle = true,
+    this.showDragHandle,
     this.onClose,
   });
 
@@ -33,9 +36,10 @@ class BottomSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showDragHandle) ...[
+        if (showDragHandle ?? !DialogSurface.of(context)) ...[
           Center(
             child: Container(
+              key: dragHandleKey,
               width: 40,
               height: 4,
               decoration: BoxDecoration(

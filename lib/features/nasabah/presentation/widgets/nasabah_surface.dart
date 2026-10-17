@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 
 /// Menampilkan form atau detail nasabah di atas halaman.
@@ -29,22 +30,8 @@ Future<T?> showNasabahSurface<T>(
       insetPadding: const EdgeInsets.all(24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
-        child: _DialogScope(child: builder(dialogContext)),
+        child: DialogSurface(child: builder(dialogContext)),
       ),
     ),
   );
-}
-
-/// Menandai isi yang sedang tampil di dalam dialog, bukan bottom sheet.
-///
-/// Dialog tidak dapat ditarik, jadi isi yang punya pegangan tarik
-/// menyembunyikannya di sini.
-bool isNasabahDialog(BuildContext context) =>
-    context.getInheritedWidgetOfExactType<_DialogScope>() != null;
-
-class _DialogScope extends InheritedWidget {
-  const _DialogScope({required super.child});
-
-  @override
-  bool updateShouldNotify(_DialogScope oldWidget) => false;
 }

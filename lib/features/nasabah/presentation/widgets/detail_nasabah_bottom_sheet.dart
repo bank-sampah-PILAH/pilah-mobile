@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -89,7 +90,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Drag handle: a dialog cannot be dragged, so it has none there.
-              if (!isNasabahDialog(context)) ...[
+              if (!DialogSurface.of(context)) ...[
                 Center(
                   child: Container(
                     key: DetailNasabahBottomSheet.dragHandleKey,
