@@ -101,4 +101,54 @@ void main() {
     expect(cubit.state.status, NasabahPengumumanStatus.failure);
     expect(cubit.state.error, isNotEmpty);
   });
+
+  test('a failed next page keeps the rows and clears the spinner', () async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 2,
+      'next': 'http://api.test/api/v1/nasabah/me/pengumuman?page=2',
+      'results': [_row('1')],
+    });
+    await cubit.load();
+
+    api.fail('GET', '/api/v1/nasabah/me/pengumuman');
+    await cubit.loadNextPage();
+
+    final state = cubit.state;
+    expect(state.items, hasLength(1));
+    expect(state.isLoadingMore, isFalse);
+    expect(state.error, 'Data gagal dimuat. Periksa koneksi dan coba lagi.');
+  });
+
+  test('tandaiDibaca touches only the matched row of many', () async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 2,
+      'next': null,
+      'results': [_row('1'), _row('2')],
+    });
+    await cubit.load();
+
+    api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca',
+        json: {'id': '1', 'dibaca': true, 'dibaca_pada': null});
+    await cubit.tandaiDibaca('1');
+
+    final items = cubit.state.items;
+    expect(items[0].dibaca, isTrue);
+    expect(items[1].dibaca, isFalse);
+  });
+
+  test('a failed tandaiDibaca leaves the list untouched', () async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1')],
+    });
+    await cubit.load();
+
+    api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca',
+        status: 500, json: {});
+
+    await cubit.tandaiDibaca('1');
+
+    expect(cubit.state.items.single.dibaca, isFalse);
+  });
 }

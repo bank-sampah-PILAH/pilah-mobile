@@ -39,13 +39,15 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  Future<void> openPage(WidgetTester tester) async {
+  Future<void> openPage(WidgetTester tester,
+      {List<String> extraRoutes = const []}) async {
     await pumpRouted(
       tester,
       BlocProvider<PengumumanCubit>.value(
         value: cubit,
         child: const PengumumanKelolaPage(),
       ),
+      extraRoutes: extraRoutes,
       size: const Size(800, 2000),
     );
     await tester.pumpAndSettle();
@@ -161,5 +163,219 @@ void main() {
 
     final call = api.requests.lastWhere((call) => call.method == 'PATCH');
     expect(call.json['terbit_pada'], isNull);
+  });
+
+  testWidgets('a failed schedule cancellation reports the failure',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [
+        _row('1', judul: 'Menunggu jadwal', status: 'terjadwal'),
+      ],
+    });
+    api.on('PATCH', '/api/v1/pengumuman/1',
+        status: 400, json: {'error': 'tidak diizinkan'});
+    await openPage(tester);
+
+    await tester.tap(find.text('Batalkan Jadwal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Batalkan').last);
+    await drainToast(tester);
+
+    // The failed PATCH leaves the row on the list.
+    expect(find.byKey(const ValueKey('pengumuman-kelola-1')), findsOneWidget);
+  });
+
+  testWidgets('a declined schedule cancellation stays inert', (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [
+        _row('1', judul: 'Menunggu jadwal', status: 'terjadwal'),
+      ],
+    });
+    await openPage(tester);
+
+    await tester.tap(find.text('Batalkan Jadwal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Batal').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      api.requests.where((call) => call.method == 'PATCH'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('a failed withdrawal keeps the row', (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1', judul: 'Sedang berjalan', status: 'terbit')],
+    });
+    api.on('POST', '/api/v1/pengumuman/1/tarik',
+        status: 400, json: {'error': 'tidak diizinkan'});
+    await openPage(tester);
+
+    await tester.tap(find.text('Tarik'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Tarik').last);
+    await drainToast(tester);
+
+    // The failed transition leaves the row on the list, unchanged.
+    expect(find.byKey(const ValueKey('pengumuman-kelola-1')), findsOneWidget);
+  });
+
+  testWidgets('Hapus on a draft posts delete and reports success',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1', judul: 'Masih konsep', status: 'draft')],
+    });
+    api.on('DELETE', '/api/v1/pengumuman/1', json: null);
+    await openPage(tester);
+    // The silent reload after the delete sees an empty bank.
+    api.on('GET', '/api/v1/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
+
+    await tester.tap(find.text('Hapus'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Hapus').last);
+    await drainToast(tester);
+
+    expect(
+      api.requests.any((call) => call.method == 'DELETE'),
+      isTrue,
+    );
+    expect(find.text('Belum ada pengumuman'), findsOneWidget,
+        reason: 'the silent reload has emptied the list');
+  });
+
+  testWidgets('Ubah on a draft opens the form route carrying the row',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1', judul: 'Masih konsep', status: 'draft')],
+    });
+    await openPage(tester, extraRoutes: const ['/pengumuman/kelola/ubah']);
+
+    await tester.tap(find.text('Ubah'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:/pengumuman/kelola/ubah'), findsOneWidget);
+  });
+
+  testWidgets('Ubah on a scheduled row opens the form as well', (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [
+        _row('1', judul: 'Menunggu jadwal', status: 'terjadwal'),
+      ],
+    });
+    await openPage(tester, extraRoutes: const ['/pengumuman/kelola/ubah']);
+
+    await tester.tap(find.text('Ubah'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:/pengumuman/kelola/ubah'), findsOneWidget);
+  });
+
+  testWidgets('a failed next page shows the loading-more caption',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 31,
+      'next': 'http://api.test/api/v1/pengumuman?page=2',
+      'results': [
+        for (var i = 1; i <= 30; i++)
+          _row('$i', judul: 'Baris $i', status: 'draft'),
+      ],
+    });
+    await openPage(tester);
+
+    api.fail('GET', '/api/v1/pengumuman');
+    for (var i = 0;
+        i < 80 && api.requests.every((call) => call.query['page'] != '2');
+        i++) {
+      await tester.drag(find.byType(ListView).last, const Offset(0, -200));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 40));
+    }
+    await tester.pumpAndSettle();
+
+    expect(api.last.query['page'], '2');
+    expect(find.text('Connection Timeout'), findsOneWidget);
+  });
+
+  testWidgets('the FAB opens a blank form', (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': <Map<String, dynamic>>[],
+    });
+    await openPage(tester, extraRoutes: const ['/pengumuman/kelola/ubah']);
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:/pengumuman/kelola/ubah'), findsOneWidget);
+  });
+
+  testWidgets('an unfiltered empty list shows the creation zero state',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
+    await openPage(tester);
+
+    expect(find.text('Belum ada pengumuman'), findsOneWidget);
+    expect(find.text('Buat pengumuman untuk nasabah bank sampah Anda.'),
+        findsOneWidget);
+  });
+
+  testWidgets('a list that fills past the viewport pages at its end',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 31,
+      'next': 'http://api.test/api/v1/pengumuman?page=2',
+      'results': [
+        for (var i = 1; i <= 30; i++)
+          _row('$i', judul: 'Baris $i', status: 'draft'),
+      ],
+    });
+    await openPage(tester);
+    expect(
+      api.requests.where((call) => call.query['page'] == '2'),
+      isEmpty,
+      reason: 'the rows still leave scroll behind: no next-page fetch yet',
+    );
+
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 31,
+      'next': null,
+      'results': [_row('31', judul: 'Baris 31', status: 'draft')],
+    });
+    // Drag toward the bottom in small steps until the near-end listener
+    // fetches page 2, then let the appended row land.
+    for (var i = 0;
+        i < 80 && api.requests.every((call) => call.query['page'] != '2');
+        i++) {
+      await tester.drag(find.byType(ListView).last, const Offset(0, -200));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 40));
+    }
+    await tester.pumpAndSettle();
+
+    expect(
+      api.requests.any((call) => call.query['page'] == '2'),
+      isTrue,
+    );
+    // One more drag reveals the row appended just below the fold.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -300));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('pengumuman-kelola-31')), findsOneWidget);
   });
 }
