@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_button.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/design/widgets/atom/page_indicator.dart';
@@ -176,6 +177,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('route:/'), findsOneWidget);
+    });
+
+    testWidgets(
+        'looks like the rest of the app: header, green icon, white page',
+        (tester) async {
+      await pumpRouted(
+        tester,
+        // ignore: prefer_const_constructors
+        ForgotPasswordPage(),
+        pushed: true,
+      );
+
+      expect(find.byType(AppBackHeader), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.lock_reset)).color,
+        AppColors.greenDark,
+      );
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+        Colors.white,
+      );
     });
   });
 }
