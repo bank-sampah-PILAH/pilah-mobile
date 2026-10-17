@@ -10,8 +10,13 @@ void main() {
     WidgetTester tester, {
     KonfirmasiNada nada = KonfirmasiNada.normal,
     Widget? isi,
+    // A phone unless a test says otherwise: the container follows the width.
+    Size size = const Size(390, 844),
   }) async {
     answer = null;
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(
       home: Builder(
         builder: (context) => Scaffold(
@@ -44,6 +49,21 @@ void main() {
     expect(sheet.backgroundColor, Colors.white);
     expect((sheet.shape! as RoundedRectangleBorder).borderRadius,
         const BorderRadius.vertical(top: Radius.circular(24)));
+  });
+
+  testWidgets('in a browser window it is a centred dialog that still answers',
+      (tester) async {
+    await open(tester, size: const Size(1440, 900));
+
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.text('Konfirmasi pembayaran'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('konfirmasi-ya')));
+    await tester.pumpAndSettle();
+
+    expect(answer, isTrue);
+    expect(find.byType(Dialog), findsNothing);
   });
 
   testWidgets('says what is asked: an icon, a title and a line of explanation',
