@@ -28,6 +28,7 @@ class RoleNavigationRail extends StatelessWidget {
     this.profileEmail,
     this.onProfile,
     this.onHome,
+    this.profileSelected = false,
     this.limitedNasabah = false,
   });
 
@@ -62,6 +63,10 @@ class RoleNavigationRail extends StatelessWidget {
 
   /// Dipanggil saat logo atau nama PILAH diketuk; membuka beranda.
   final VoidCallback? onHome;
+
+  /// Halaman profil sedang terbuka. Kartu profil ditandai dan tidak lagi
+  /// bereaksi, supaya ketukan berulang tidak menumpuk halaman yang sama.
+  final bool profileSelected;
 
   final bool limitedNasabah;
 
@@ -130,7 +135,8 @@ class RoleNavigationRail extends StatelessWidget {
                         name: name,
                         email: profileEmail?.trim() ?? '',
                         extended: extended,
-                        onTap: onProfile,
+                        onTap: profileSelected ? null : onProfile,
+                        selected: profileSelected,
                       ),
                     ),
                   ),
@@ -298,8 +304,10 @@ class _ProfileFooter extends StatelessWidget {
     required this.email,
     required this.extended,
     required this.onTap,
+    required this.selected,
   });
 
+  final bool selected;
   final String name;
   final String email;
   final bool extended;
@@ -330,6 +338,7 @@ class _ProfileFooter extends StatelessWidget {
         child: DecoratedBox(
           key: RoleNavigationRail.profileCardKey,
           decoration: BoxDecoration(
+            color: selected ? AppColors.greenLight : null,
             border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(12),
           ),
