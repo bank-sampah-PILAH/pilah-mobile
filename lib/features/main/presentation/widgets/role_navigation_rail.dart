@@ -85,54 +85,57 @@ class RoleNavigationRail extends StatelessWidget {
       decoration: const BoxDecoration(
         border: Border(right: BorderSide(color: AppColors.grey200)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: NavigationRail(
-          extended: extended,
-          leading: _RailHeader(
-            label: BankSampahLabel.of(bankSampahNama),
-            initials: BankSampahLabel.initialsOf(bankSampahNama),
+      child: ColoredBox(
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: NavigationRail(
             extended: extended,
-          ),
-          backgroundColor: Colors.white,
-          indicatorColor: AppColors.greenLight,
-          selectedIndex: currentIndex,
-          onDestinationSelected: onSelected,
-          // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
-          // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
-          labelType: extended
-              ? NavigationRailLabelType.none
-              : NavigationRailLabelType.all,
-          selectedIconTheme: const IconThemeData(color: AppColors.greenDark),
-          unselectedIconTheme: const IconThemeData(color: AppColors.inkSoft),
-          selectedLabelTextStyle: labelStyle.copyWith(
-            color: AppColors.greenDark,
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelTextStyle: labelStyle.copyWith(
-            color: AppColors.inkSoft,
-            fontWeight: FontWeight.w500,
-          ),
-          trailing: name.isEmpty
-              ? null
-              : Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: _ProfileFooter(
-                      name: name,
-                      email: profileEmail?.trim() ?? '',
-                      extended: extended,
-                      onTap: onProfile,
+            leading: _RailHeader(
+              label: BankSampahLabel.of(bankSampahNama),
+              initials: BankSampahLabel.initialsOf(bankSampahNama),
+              extended: extended,
+            ),
+            backgroundColor: Colors.white,
+            indicatorColor: AppColors.greenLight,
+            selectedIndex: currentIndex,
+            onDestinationSelected: onSelected,
+            // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
+            // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
+            labelType: extended
+                ? NavigationRailLabelType.none
+                : NavigationRailLabelType.all,
+            selectedIconTheme: const IconThemeData(color: AppColors.greenDark),
+            unselectedIconTheme: const IconThemeData(color: AppColors.inkSoft),
+            selectedLabelTextStyle: labelStyle.copyWith(
+              color: AppColors.greenDark,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelTextStyle: labelStyle.copyWith(
+              color: AppColors.inkSoft,
+              fontWeight: FontWeight.w500,
+            ),
+            trailing: name.isEmpty
+                ? null
+                : Expanded(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: _ProfileFooter(
+                        name: name,
+                        email: profileEmail?.trim() ?? '',
+                        extended: extended,
+                        onTap: onProfile,
+                      ),
                     ),
                   ),
+            destinations: [
+              for (final destination in destinations)
+                NavigationRailDestination(
+                  icon: Icon(destination.icon),
+                  label: Text(destination.label),
                 ),
-          destinations: [
-            for (final destination in destinations)
-              NavigationRailDestination(
-                icon: Icon(destination.icon),
-                label: Text(destination.label),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
