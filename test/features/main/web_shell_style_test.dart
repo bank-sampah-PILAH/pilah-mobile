@@ -15,7 +15,9 @@ void main() {
   var homeTaps = 0;
 
   Future<void> mountRail(WidgetTester tester,
-      {Size? window, String? profileName = 'Sari Dewi'}) async {
+      {Size? window,
+      String? profileName = 'Sari Dewi',
+      bool profileSelected = false}) async {
     profileTaps = 0;
     homeTaps = 0;
     await pumpRouted(
@@ -30,6 +32,7 @@ void main() {
             profileEmail: 'sari@example.test',
             onProfile: () => profileTaps++,
             onHome: () => homeTaps++,
+            profileSelected: profileSelected,
             onSelected: (_) {},
           ),
           const Expanded(child: SizedBox.shrink()),
@@ -178,6 +181,17 @@ void main() {
       final decoration = card.decoration as BoxDecoration;
       expect((decoration.border! as Border).top.color, AppColors.border);
       expect(decoration.borderRadius, BorderRadius.circular(12));
+    });
+
+    testWidgets('is tinted and inert while the profile page is open',
+        (tester) async {
+      await mountRail(tester, profileSelected: true);
+
+      final card = tester
+          .widget<DecoratedBox>(find.byKey(RoleNavigationRail.profileCardKey));
+      expect((card.decoration as BoxDecoration).color, AppColors.greenLight);
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      expect(profileTaps, 0);
     });
 
     testWidgets('opens the profile when tapped', (tester) async {

@@ -41,7 +41,7 @@ const _approved = NasabahMembershipEntity(
 /// sideways is wider than 840 and lost its bottom bar; a browser window
 /// narrowed below 600 grew one.
 void main() {
-  Future<void> mountShell(
+  Future<GoRouter> mountShell(
     WidgetTester tester, {
     required String role,
     required Size window,
@@ -112,6 +112,7 @@ void main() {
       child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
+    return router;
   }
 
   group('the app always keeps its navigation at the bottom', () {
@@ -224,6 +225,54 @@ void main() {
   ///
   /// The guard itself is older than this PR (`04994da`, PIL-228); what this PR
   /// changed is that there is now left-hand navigation to lose.
+  group('tapping the rail profile', () {
+    int stackDepth(GoRouter router) =>
+        router.routerDelegate.currentConfiguration.matches.length;
+
+    testWidgets('opens the profile from another page', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('body:/profile'), findsOneWidget);
+    });
+
+    testWidgets('does not stack another profile page when already there',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      await tester.pumpAndSettle();
+      final depth = stackDepth(router);
+
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byKey(RoleNavigationRail.profileKey),
+            warnIfMissed: false);
+        await tester.pumpAndSettle();
+      }
+
+      expect(stackDepth(router), depth);
+    });
+
+    testWidgets('does nothing when the session starts on the profile',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1280, 900),
+          isWeb: true,
+          initialLocation: '/profile');
+      final depth = stackDepth(router);
+
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey),
+          warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(stackDepth(router), depth);
+    });
+  });
+
   group('a route outside the destinations keeps its navigation on web', () {
     testWidgets('the staff profile keeps the rail on a desktop window',
         (tester) async {
