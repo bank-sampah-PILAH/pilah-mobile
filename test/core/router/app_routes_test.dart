@@ -28,7 +28,9 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
@@ -60,12 +62,13 @@ void main() {
 
   tearDown(() => shell.unregisterDi());
 
-  Future<GoRouter> boot(WidgetTester tester) async {
+  Future<GoRouter> boot(WidgetTester tester, {String? initialLocation}) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final router = AppRouterConfig.getRouter();
+    if (initialLocation != null) router.go(initialLocation);
     await tester
         .pumpWidget(shell.wrap(MaterialApp.router(routerConfig: router)));
     await tester.pump();
@@ -137,6 +140,56 @@ void main() {
       router.go('/riwayat-perubahan-pencairan', extra: 'p1');
       await tester.pumpAndSettle();
       expect(find.byType(RevisiPencairanPage), findsOneWidget);
+    });
+
+    testWidgets(
+        'the pencairan edit and revision pages without their pencairan '
+        '(a refreshed web tab) fall back to the laporan', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/edit-pencairan');
+      expect(find.byType(EditPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
+
+      await visit(tester, router, '/riwayat-perubahan-pencairan');
+      expect(find.byType(RevisiPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
+    });
+
+    testWidgets('can open the price history of a jenis sampah', (tester) async {
+      final router = await boot(tester);
+
+      router.go(
+        '/riwayat-harga',
+        extra: HargaEntity(
+          id: 'j-1',
+          kodeSampah: 'PLS-001',
+          name: 'Botol PET',
+          price: 3500,
+          priceFormatted: 'Rp 3500',
+          category: 'plastik',
+          subtitle: '',
+          badgeText: 'Anorganik',
+          icon: Icons.recycling,
+          iconColor: Colors.green,
+          isActive: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RiwayatHargaPage), findsOneWidget);
+      expect(find.text('Botol PET'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the price history without a jenis (a refreshed web tab) '
+        'falls back to the harga list', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/riwayat-harga');
+
+      expect(find.byType(RiwayatHargaPage), findsNothing);
+      expect(find.byType(HargaPage), findsOneWidget);
     });
 
     testWidgets('can open the draft pencairan pages', (tester) async {
@@ -243,11 +296,11 @@ void main() {
     });
 
     testWidgets(
-        'a pending invite link banks its token and goes through the gate',
+        'a browser hash-path invite banks its token and goes through the gate',
         (tester) async {
       final router = await boot(tester);
 
-      await visit(tester, router, '/invite?token=tok-9');
+      await visit(tester, router, '/invite/web-token-9');
 
       expect(shell.invites.token, isNull,
           reason: 'the gate spends the token on its first attempt');
@@ -421,6 +474,26 @@ void main() {
       await visit(tester, router, '/invite?token=abc');
 
       expect(shell.invites.token, 'abc');
+    });
+
+    testWidgets('a browser hash-path invite token with no session is banked',
+        (tester) async {
+      shell.signedInAs(Unauthenticated());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/invite/web-token-abc');
+
+      expect(shell.invites.token, 'web-token-abc');
+    });
+
+    testWidgets('a cold-start browser hash-path invite banks its token',
+        (tester) async {
+      shell.signedInAs(AuthenticationInitial());
+
+      await boot(tester, initialLocation: '/invite/cold-start-token');
+      await tester.pumpAndSettle();
+
+      expect(shell.invites.token, 'cold-start-token');
     });
   });
 

@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -44,7 +49,8 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     final hargaCubit = context.read<HargaCubit>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       floatingActionButton: FloatingActionButton(
         heroTag: 'harga_page_fab',
         onPressed: () {
@@ -213,6 +219,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     final subtitle = item.subtitle;
     final badgeText = item.badgeText;
     final price = item.priceFormatted;
+    final terjadwal = item.hargaTerjadwal;
 
     return AppTappableCard(
       onTap: () {
@@ -265,6 +272,36 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                   statusText: badgeText,
                   backgroundColor: Colors.blue[50],
                   textColor: Colors.blue[600],
+                ),
+                if (terjadwal != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '${CurrencyFormatter.formatRupiah(terjadwal.harga)} mulai '
+                    '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: AppColors.avatarYellowText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                // Its own tap target: tapping elsewhere on the card still
+                // opens the edit sheet.
+                TextButton(
+                  onPressed: () =>
+                      context.push(RiwayatHargaPage.route, extra: item),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: AppColors.greenDark,
+                  ),
+                  child: Text(
+                    'Riwayat harga',
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -64,6 +64,7 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 - Dialogs: white, 16 radius, no Material tint.
 - Bottom sheets: white, 24 top radius, no tint.
 - App bars: white, no scroll tint, 18/w600 Poppins title.
+- Web shell (browser, wide): the navigation rail is a white panel with a 1 px `AppColors.border` on its right edge; pages sit on `AppColors.surface` and their cards stay white. A page that paints its own `Scaffold` background must not hard-code white: call `WebContentSurface.pageColor(context, phone: …)`, which gives `surface` inside the web shell and the phone colour everywhere else. Rail labels are 12 (`AppTextStyle.small`) in both the expanded and the narrow rail, in `AppColors.inkSoft`; the selected item uses `greenDark` on a `greenLight` indicator.
 
 ## 3. Components
 

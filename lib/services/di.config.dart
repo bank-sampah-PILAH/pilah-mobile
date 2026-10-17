@@ -90,8 +90,13 @@ import '../features/harga/domain/use_cases/add_harga_usecase.dart' as _i948;
 import '../features/harga/domain/use_cases/deactivate_harga_usecase.dart'
     as _i989;
 import '../features/harga/domain/use_cases/get_harga_usecase.dart' as _i1009;
+import '../features/harga/domain/use_cases/get_riwayat_harga_usecase.dart'
+    as _i3311;
+import '../features/harga/domain/use_cases/ubah_harga_usecase.dart' as _i3040;
 import '../features/harga/domain/use_cases/update_harga_usecase.dart' as _i240;
 import '../features/harga/presentation/cubit/harga_cubit.dart' as _i815;
+import '../features/harga/presentation/cubit/riwayat_harga_cubit.dart'
+    as _i3312;
 import '../features/jadwal/data/datasources/jadwal_remote_data_source.dart'
     as _i915;
 import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
@@ -435,6 +440,12 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i240.UpdateHargaUseCase>(
         () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i3040.UbahHargaUseCase>(
+        () => _i3040.UbahHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i3311.GetRiwayatHargaUseCase>(
+        () => _i3311.GetRiwayatHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.factory<_i3312.RiwayatHargaCubit>(
+        () => _i3312.RiwayatHargaCubit(gh<_i3311.GetRiwayatHargaUseCase>()));
     gh.lazySingleton<_i454.RiwayatAktivitasCubit>(
         () => _i454.RiwayatAktivitasCubit(
               gh<_i646.GetAktivitasUseCase>(),
@@ -476,6 +487,7 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i240.UpdateHargaUseCase>(),
           gh<_i989.DeactivateHargaUseCase>(),
           gh<_i520.ActivateHargaUseCase>(),
+          gh<_i3040.UbahHargaUseCase>(),
         ));
     gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
           gh<_i268.GetBankSampahUseCase>(),

@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 
@@ -48,11 +49,8 @@ class NasabahListItem extends StatelessWidget {
       _showDecisionDialog(context);
       return;
     }
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    showNasabahSurface<void>(
+      context,
       builder: (context) => DetailNasabahBottomSheet(
         nasabah: nasabah,
         nasabahCubit: nasabahCubit,

@@ -28,6 +28,13 @@ void main() {
               requestOptions: RequestOptions(path: '/api/v1/aktivitas'),
               data: {
                 'next': '/api/v1/aktivitas?page=3',
+                'summary': {
+                  'jumlah_transaksi': 0,
+                  'total_berat': '0.00',
+                  'total_setoran': 0,
+                  'total_pencairan': 0,
+                  'saldo': 0
+                },
                 'results': [
                   {
                     'tipe': 'setoran',
@@ -82,7 +89,17 @@ void main() {
           'page_size': 20,
         })).thenAnswer((_) async => Response(
           requestOptions: RequestOptions(path: '/api/v1/aktivitas'),
-          data: {'results': [], 'next': null},
+          data: {
+            'results': [],
+            'next': null,
+            'summary': {
+              'jumlah_transaksi': 0,
+              'total_berat': '0.00',
+              'total_setoran': 0,
+              'total_pencairan': 0,
+              'saldo': 0
+            },
+          },
         ));
     final result = await AktivitasRepositoryImpl(network)
         .history(const TransaksiFilter.semua());

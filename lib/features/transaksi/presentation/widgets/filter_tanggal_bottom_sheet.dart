@@ -24,8 +24,9 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    startDate = DateTime(now.year, now.month, 1);
-    endDate = DateTime(now.year, now.month + 1, 0); // Last day of current month
+    final state = context.read<RiwayatAktivitasCubit>().state;
+    startDate = state.dariTanggal ?? DateTime(now.year, now.month, 1);
+    endDate = state.sampaiTanggal ?? DateTime(now.year, now.month + 1, 0);
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {

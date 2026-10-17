@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'file_downloader.dart';
+import 'report_share_file.dart';
 import '../bases/widgets/app_notification.dart';
 
 /// The save-then-share confirmation shared by every report export
@@ -49,7 +50,13 @@ Future<void> saveAndOfferShare(
     actionLabel: 'Bagikan',
     onAction: () => SharePlus.instance.share(
       ShareParams(
-        files: [XFile(saved.path)],
+        files: [
+          createReportShareFile(
+              saved: saved,
+              filename: filename,
+              bytes: Uint8List.fromList(bytes))
+        ],
+        fileNameOverrides: [filename],
         text: shareText,
       ),
     ),

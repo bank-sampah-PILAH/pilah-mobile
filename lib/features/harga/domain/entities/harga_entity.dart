@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_terjadwal.dart';
 
 class HargaEntity {
   final String id;
@@ -13,6 +14,12 @@ class HargaEntity {
   final Color iconColor;
   final bool isActive;
 
+  /// Sejak kapan [price] berlaku (UTC). `null` untuk data yang dibuat di klien.
+  final DateTime? berlakuMulai;
+
+  /// Perubahan harga berikutnya yang sudah dijadwalkan, bila ada.
+  final HargaTerjadwal? hargaTerjadwal;
+
   HargaEntity({
     required this.id,
     required this.kodeSampah,
@@ -25,5 +32,7 @@ class HargaEntity {
     required this.icon,
     required this.iconColor,
     required this.isActive,
+    this.berlakuMulai,
+    this.hargaTerjadwal,
   });
 }
