@@ -161,47 +161,55 @@ class _TableBody extends StatelessWidget {
         }
         if (state is! NasabahLoaded) return const SizedBox.shrink();
         if (state.nasabahList.isEmpty) return _Empty(state: state);
-        return Column(
-          children: [
-            const _HeaderRow(),
-            const Divider(height: 1, color: AppColors.border),
-            SizedBox(
-              height: 2,
-              child: state.isReloading
-                  ? const LinearProgressIndicator(
-                      minHeight: 2,
-                      color: AppColors.greenDark,
-                      backgroundColor: AppColors.greenLight)
-                  : null,
-            ),
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  // Cubit sendiri yang menolak permintaan ganda dan permintaan
-                  // setelah halaman terakhir, jadi di sini cukup memberi tahu.
-                  if (state.hasMore &&
-                      !state.isLoadingMore &&
-                      _hampirUjung(notification)) {
-                    context.read<NasabahCubit>().loadMoreNasabah();
-                  }
-                  return false;
-                },
-                child: ListView.separated(
-                  itemCount: state.nasabahList.length + 1,
-                  separatorBuilder: (_, __) =>
-                      const Divider(height: 1, color: AppColors.border),
-                  itemBuilder: (context, index) {
-                    if (index == state.nasabahList.length) {
-                      return _Footer(state: state);
-                    }
-                    return _Row(nasabah: state.nasabahList[index]);
-                  },
-                ),
-              ),
-            ),
-          ],
-        );
+        return _Loaded(state: state);
       },
+    );
+  }
+}
+
+/// Tabel dengan isi: kepala kolom, penanda muat ulang, dan daftar baris.
+class _Loaded extends StatelessWidget {
+  const _Loaded({required this.state});
+  final NasabahLoaded state;
+
+  /// Cubit sendiri yang menolak permintaan ganda dan permintaan setelah
+  /// halaman terakhir, jadi di sini cukup memberi tahu.
+  bool _onScroll(BuildContext context, ScrollNotification notification) {
+    if (state.hasMore && !state.isLoadingMore && _hampirUjung(notification)) {
+      context.read<NasabahCubit>().loadMoreNasabah();
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const _HeaderRow(),
+        const Divider(height: 1, color: AppColors.border),
+        SizedBox(
+          height: 2,
+          child: state.isReloading
+              ? const LinearProgressIndicator(
+                  minHeight: 2,
+                  color: AppColors.greenDark,
+                  backgroundColor: AppColors.greenLight)
+              : null,
+        ),
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) => _onScroll(context, notification),
+            child: ListView.separated(
+              itemCount: state.nasabahList.length + 1,
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, color: AppColors.border),
+              itemBuilder: (context, index) => index == state.nasabahList.length
+                  ? _Footer(state: state)
+                  : _Row(nasabah: state.nasabahList[index]),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
