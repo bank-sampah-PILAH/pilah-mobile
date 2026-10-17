@@ -5,11 +5,13 @@ import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/pencairan.dart';
@@ -142,108 +144,145 @@ class _EditPencairanViewState extends State<EditPencairanView> {
             _alasanController.text.trim().isNotEmpty;
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Edit Pencairan')),
+          backgroundColor: Colors.white,
           body: SafeArea(
             // A desktop window keeps the form to a readable column.
             child: ContentBounds(
               maxWidth: LayoutBreakpoint.formMaxWidth,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(widget.pencairan.nasabahNama,
-                        style: AppTextStyle.title1),
-                    const SizedBox(height: 24),
-                    if (_terkunci) ...[
-                      Text(
-                        'Pencairan ini memakai potongan, jadi hanya metode dan '
-                        'keterangan yang bisa diubah.',
-                        style: AppTextStyle.small,
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    TextField(
-                      key: const Key('nominal-field'),
-                      controller: _nominalController,
-                      enabled: !_terkunci,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (_) => setState(() {}),
-                      decoration: appInputDecoration(
-                        prefixText: 'Rp ',
-                        errorText: nominalError ?? state.fieldErrors['nominal'],
-                      ).copyWith(labelText: 'Nominal'),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Metode', style: AppTextStyle.small),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        for (final metode in MetodePencairan.values)
-                          AppChip(
-                            key: Key('metode-chip-${metode.name}'),
-                            label: metode.label,
-                            selected: _metode == metode,
-                            onTap: () => setState(() => _metode = metode),
+              child: Column(
+                children: [
+                  const AppBackHeader(title: 'Edit Pencairan'),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.pencairan.nasabahNama,
+                              style: AppTextStyle.title1),
+                          const SizedBox(height: 16),
+                          if (_terkunci) ...[
+                            Text(
+                              'Pencairan ini memakai potongan, jadi hanya metode '
+                              'dan keterangan yang bisa diubah.',
+                              style: AppTextStyle.small,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          const AppFieldLabel('NOMINAL'),
+                          const SizedBox(height: 8),
+                          TextField(
+                            key: const Key('nominal-field'),
+                            controller: _nominalController,
+                            enabled: !_terkunci,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                            style: AppTextStyle.small
+                                .copyWith(color: Colors.black87),
+                            onChanged: (_) => setState(() {}),
+                            decoration: appInputDecoration(
+                              hintText: 'Contoh: 50000',
+                              prefixText: 'Rp ',
+                              errorText:
+                                  nominalError ?? state.fieldErrors['nominal'],
+                            ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    InkWell(
-                      key: const Key('tanggal-field'),
-                      onTap: _pickTanggal,
-                      child: InputDecorator(
-                        decoration: appInputDecoration(
-                          suffixIcon: const Icon(Icons.calendar_month),
-                          errorText: state.fieldErrors['tanggal'],
-                        ).copyWith(labelText: 'Tanggal'),
-                        child: Text(formatTanggalId(_tanggal)),
+                          const SizedBox(height: 16),
+                          const AppFieldLabel('METODE'),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              for (final metode in MetodePencairan.values)
+                                AppChip(
+                                  key: Key('metode-chip-${metode.name}'),
+                                  label: metode.label,
+                                  selected: _metode == metode,
+                                  onTap: () => setState(() => _metode = metode),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const AppFieldLabel('TANGGAL'),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            key: const Key('tanggal-field'),
+                            onTap: _pickTanggal,
+                            child: InputDecorator(
+                              decoration: appInputDecoration(
+                                suffixIcon: const Icon(Icons.calendar_month,
+                                    color: Colors.grey),
+                                errorText: state.fieldErrors['tanggal'],
+                              ),
+                              child: Text(
+                                formatTanggalId(_tanggal),
+                                style: AppTextStyle.small
+                                    .copyWith(color: Colors.black87),
+                              ),
+                            ),
+                          ),
+                          if (!_terkunci) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tanggal hanya bisa dimundurkan sampai '
+                              '${formatTanggalId(_tanggalMinimum)}',
+                              style: AppTextStyle.small,
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          const AppFieldLabel('KETERANGAN (OPSIONAL)'),
+                          const SizedBox(height: 8),
+                          TextField(
+                            key: const Key('keterangan-field'),
+                            controller: _keteranganController,
+                            maxLength: 255,
+                            maxLines: 2,
+                            style: AppTextStyle.small
+                                .copyWith(color: Colors.black87),
+                            decoration: appInputDecoration(
+                              hintText: 'Keterangan (opsional)',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const AppFieldLabel('ALASAN PERUBAHAN'),
+                          const SizedBox(height: 8),
+                          TextField(
+                            key: const Key('alasan-field'),
+                            controller: _alasanController,
+                            maxLength: 255,
+                            maxLines: 2,
+                            style: AppTextStyle.small
+                                .copyWith(color: Colors.black87),
+                            onChanged: (_) => setState(() {}),
+                            decoration: appInputDecoration(
+                              hintText: 'Mengapa pencairan ini diubah?',
+                              errorText: state.fieldErrors['alasan'],
+                            ).copyWith(
+                              helperText:
+                                  'Wajib diisi, tercatat di riwayat perubahan',
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    if (!_terkunci)
-                      Text(
-                        'Tanggal hanya bisa dimundurkan sampai '
-                        '${formatTanggalId(_tanggalMinimum)}',
-                        style: AppTextStyle.small,
-                      ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      key: const Key('keterangan-field'),
-                      controller: _keteranganController,
-                      maxLength: 255,
-                      maxLines: 2,
-                      decoration: appInputDecoration()
-                          .copyWith(labelText: 'Keterangan (opsional)'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      key: const Key('alasan-field'),
-                      controller: _alasanController,
-                      maxLength: 255,
-                      maxLines: 2,
-                      onChanged: (_) => setState(() {}),
-                      decoration: appInputDecoration(
-                        errorText: state.fieldErrors['alasan'],
-                      ).copyWith(
-                        labelText: 'Alasan perubahan',
-                        helperText:
-                            'Wajib diisi, tercatat di riwayat perubahan',
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    AppButton(
-                      key: const Key('submit-edit-pencairan'),
-                      label: state.status == EditStatus.submitting
-                          ? 'Menyimpan...'
-                          : 'Simpan Perubahan',
-                      onPressed:
-                          canSubmit ? () => _confirmAndSubmit(nominal!) : null,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: AppButton(
+                key: const Key('submit-edit-pencairan'),
+                label: state.status == EditStatus.submitting
+                    ? 'Menyimpan...'
+                    : 'Simpan Perubahan',
+                onPressed: canSubmit ? () => _confirmAndSubmit(nominal!) : null,
               ),
             ),
           ),
