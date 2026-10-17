@@ -2,6 +2,7 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 class AppNotification {
@@ -81,7 +82,7 @@ class AppNotification {
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.greenDark,
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const Icon(Icons.check_circle, color: Colors.white, size: 28),
       mainButton: hasAction
           ? TextButton(
@@ -125,7 +126,7 @@ class AppNotification {
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.greenDark,
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const SizedBox(
         width: 28,
         height: 28,
@@ -156,7 +157,7 @@ class AppNotification {
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.danger, // error red
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),
       duration: const Duration(seconds: 4),
       boxShadows: _shadow,
@@ -190,7 +191,7 @@ class AppNotification {
       borderColor: _warningForeground,
       borderWidth: 1,
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const Icon(Icons.warning_amber_rounded,
           color: _warningForeground, size: 28),
       duration: const Duration(seconds: 4),

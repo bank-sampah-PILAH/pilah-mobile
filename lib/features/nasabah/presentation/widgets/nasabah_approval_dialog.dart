@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Approve/reject confirmation for a pending nasabah membership (PIL-188).
@@ -32,7 +33,8 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       title: Text(
         widget.isApproving ? 'Setujui Nasabah?' : 'Tolak Pengajuan?',
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),

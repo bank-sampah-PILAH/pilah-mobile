@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -42,11 +43,11 @@ class NasabahTable extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   child: const _TableBody(),
                 ),
               ),
@@ -93,8 +94,8 @@ class _Header extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.greenDark,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md)),
             textStyle: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
@@ -356,7 +357,7 @@ class _RowState extends State<_Row> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                       color: n.avatarColor,
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(AppRadius.md)),
                   child: Text(n.initials,
                       style: AppTextStyle.small.copyWith(
                           color: n.textColor, fontWeight: FontWeight.bold)),

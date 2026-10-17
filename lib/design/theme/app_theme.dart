@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
@@ -16,8 +17,8 @@ abstract final class AppTheme {
         seedColor: AppColors.greenDark,
       ).copyWith(primary: AppColors.greenDark),
     );
-    final shape =
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
+    final shape = RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md));
     // 14 rather than the 16 of headline3: two half-width buttons, such as
     // "Batal" and "Simpan Perubahan", must fit a phone.
     final label = AppTextStyle.headline3.copyWith(
@@ -36,7 +37,8 @@ abstract final class AppTheme {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
       ),
       // A plain Material button looks like an `AppButton`: green, flat, rounded
@@ -82,7 +84,8 @@ abstract final class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
       ),
     );
   }

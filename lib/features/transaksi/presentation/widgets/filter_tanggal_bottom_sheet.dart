@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
@@ -81,180 +83,167 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppSheetContainer(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Header Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Pilih Rentang Waktu',
-                    style: AppTextStyle.headline1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => context.pop(),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close,
-                          color: Colors.black87, size: 20),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // DARI TANGGAL Field
               Text(
-                'DARI TANGGAL',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
+                'Pilih Rentang Waktu',
+                style: AppTextStyle.headline1.copyWith(
+                  color: Colors.black87,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+                  fontSize: 20,
                 ),
               ),
-              const SizedBox(height: 8),
               InkWell(
-                onTap: () => _selectDate(context, true),
-                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.grey[100],
+                    shape: BoxShape.circle,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDate(startDate),
-                        style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Icon(Icons.calendar_today_outlined,
-                          color: Colors.grey[600], size: 20),
-                    ],
-                  ),
+                  child:
+                      const Icon(Icons.close, color: Colors.black87, size: 20),
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // SAMPAI TANGGAL Field
-              Text(
-                'SAMPAI TANGGAL',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () => _selectDate(context, false),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDate(endDate),
-                        style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Icon(Icons.calendar_today_outlined,
-                          color: Colors.grey[600], size: 20),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Info Box
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: mintTint,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline,
-                        color: AppColors.greenDark, size: 18),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Filter akan diterapkan ke daftar transaksi.',
-                        style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Primary Button
-              AppButton(
-                label: 'Terapkan Filter',
-                onPressed: () {
-                  context
-                      .read<RiwayatAktivitasCubit>()
-                      .applyCustomRange(startDate, endDate);
-                  context.pop();
-                },
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 32),
+
+          // DARI TANGGAL Field
+          Text(
+            'DARI TANGGAL',
+            style: AppTextStyle.extraSmall.copyWith(
+              color: Colors.grey[500],
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () => _selectDate(context, true),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDate(startDate),
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Icon(Icons.calendar_today_outlined,
+                      color: Colors.grey[600], size: 20),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // SAMPAI TANGGAL Field
+          Text(
+            'SAMPAI TANGGAL',
+            style: AppTextStyle.extraSmall.copyWith(
+              color: Colors.grey[500],
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () => _selectDate(context, false),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDate(endDate),
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Icon(Icons.calendar_today_outlined,
+                      color: Colors.grey[600], size: 20),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Info Box
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: mintTint,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline,
+                    color: AppColors.greenDark, size: 18),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Filter akan diterapkan ke daftar transaksi.',
+                    style: AppTextStyle.small.copyWith(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Primary Button
+          AppButton(
+            label: 'Terapkan Filter',
+            onPressed: () {
+              context
+                  .read<RiwayatAktivitasCubit>()
+                  .applyCustomRange(startDate, endDate);
+              context.pop();
+            },
+          ),
+        ],
       ),
     );
   }

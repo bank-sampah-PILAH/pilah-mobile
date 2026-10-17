@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
@@ -139,7 +140,7 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: AppColors.greenDark.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 alignment: Alignment.center,
                 child: const Icon(Icons.recycling, color: AppColors.greenDark),
@@ -232,7 +233,8 @@ class _AppealMessageDialogState extends State<_AppealMessageDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       title: const Text(
         'Ajukan Banding',
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
