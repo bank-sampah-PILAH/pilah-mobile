@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
@@ -121,5 +123,46 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Versi 2'), findsOneWidget);
+  });
+
+  group('looks like the rest of the app', () {
+    testWidgets('has a white page headed by the back button, not an app bar',
+        (tester) async {
+      when(() => useCases.getRevisi('p-1'))
+          .thenAnswer((_) async => Right(_riwayat));
+      await pumpView(tester);
+
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.widgetWithText(AppBackHeader, 'Riwayat Perubahan'),
+          findsOneWidget);
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+        Colors.white,
+      );
+    });
+
+    testWidgets('keeps the header when the history cannot be loaded',
+        (tester) async {
+      when(() => useCases.getRevisi('p-1')).thenAnswer(
+        (_) async => Left(NotFoundException(message: 'Tidak ditemukan')),
+      );
+      await pumpView(tester);
+
+      expect(find.widgetWithText(AppBackHeader, 'Riwayat Perubahan'),
+          findsOneWidget);
+    });
+
+    testWidgets('shows each version as label and value rows, like the detail',
+        (tester) async {
+      when(() => useCases.getRevisi('p-1'))
+          .thenAnswer((_) async => Right(_riwayat));
+      await pumpView(tester);
+
+      expect(find.widgetWithText(AppDetailRow, 'Metode'), findsNWidgets(3));
+      expect(
+          find.widgetWithText(AppDetailRow, 'Saldo sesudah'), findsNWidgets(3));
+      expect(find.widgetWithText(AppDetailRow, 'Alasan perubahan'),
+          findsNWidgets(2));
+    });
   });
 }
