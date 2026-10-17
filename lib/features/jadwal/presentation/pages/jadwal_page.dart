@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -233,7 +234,8 @@ class _JadwalPageState extends State<JadwalPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       appBar: widget.customerMode
           ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
           : AppBar(

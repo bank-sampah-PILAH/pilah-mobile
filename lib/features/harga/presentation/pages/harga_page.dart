@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
@@ -48,7 +49,8 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     final hargaCubit = context.read<HargaCubit>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       floatingActionButton: FloatingActionButton(
         heroTag: 'harga_page_fab',
         onPressed: () {

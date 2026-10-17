@@ -8,7 +8,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({super.key});
+  const DashboardHeader({super.key, this.showProfile = true});
+
+  /// Avatar yang membuka profil. Dimatikan ketika profil sudah ada di sidebar.
+  final bool showProfile;
 
   String _initials(String name) {
     final parts =
@@ -60,26 +63,28 @@ class DashboardHeader extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            AppTapTarget(
-              label: 'Buka profil',
-              borderRadius: BorderRadius.circular(24),
-              onTap: () {
-                context.push('/profile');
-              },
-              child: CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.greenDark,
-                child: Text(
-                  _initials(name),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+            if (showProfile) ...[
+              const SizedBox(width: 12),
+              AppTapTarget(
+                label: 'Buka profil',
+                borderRadius: BorderRadius.circular(24),
+                onTap: () {
+                  context.push('/profile');
+                },
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.greenDark,
+                  child: Text(
+                    _initials(name),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         );
       },
