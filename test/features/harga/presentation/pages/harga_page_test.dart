@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
@@ -157,18 +156,31 @@ void main() {
     expect(find.text('Tidak Ada Jenis Nonaktif'), findsOneWidget);
   });
 
-  testWidgets('a failed load shows the message and can be retried by pulling',
+  testWidgets('a failed load names the failure and offers a retry button',
       (tester) async {
     api.on('GET', '/api/v1/jenis-sampah',
         status: 400, json: {'error': 'Server sibuk'});
     await openPage(tester);
-    expect(find.text('Gagal Memuat Data'), findsOneWidget);
     expect(find.text('Server sibuk'), findsOneWidget);
 
     api.on('GET', '/api/v1/jenis-sampah', json: {
       'results': [_row('1', 'Botol PET')],
     });
-    await tester.fling(find.byType(EmptyView), const Offset(0, 400), 1000);
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('a failed load can also be retried by pulling down',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah',
+        status: 400, json: {'error': 'Server sibuk'});
+    await openPage(tester);
+
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [_row('1', 'Botol PET')],
+    });
+    await tester.fling(find.text('Server sibuk'), const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
     expect(find.text('Botol PET'), findsOneWidget);
   });
