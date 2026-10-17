@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
@@ -120,7 +121,10 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      // Mengikuti warna permukaan shell web (6d094ba8); di telepon tetap
+      // putih karena di sana halaman ini bukan isi sebuah shell.
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       // Disembunyikan selama panel terbuka: FAB melayang di sudut kanan bawah
       // jendela, yaitu tepat di atas tombol "Simpan Perubahan" milik panel,
       // sehingga tombol simpan tertutup sebagian. Panel hanya ada pada

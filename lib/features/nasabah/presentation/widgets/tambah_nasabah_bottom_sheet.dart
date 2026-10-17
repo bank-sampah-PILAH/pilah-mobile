@@ -81,8 +81,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           child: Form(
             key: _formKey,
             child: Column(

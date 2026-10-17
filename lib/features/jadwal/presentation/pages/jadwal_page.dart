@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -36,7 +37,7 @@ class _JadwalPageState extends State<JadwalPage> {
   DateTime? _markerMonth;
 
   /// Apakah panel form sedang terbuka di samping agenda. Hanya dipakai pada
-  /// medium ke atas; pada compact form tetap dibuka sebagai bottom sheet.
+  /// expanded; di bawah itu form dibuka sebagai bottom sheet, lihat [_openForm].
   bool _panelOpen = false;
   JadwalEntity? _panelInitial;
 
@@ -47,6 +48,33 @@ class _JadwalPageState extends State<JadwalPage> {
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
     context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
     _loadCalendarDatesFor(_selectedDate);
+  }
+
+  /// Menutup panel ketika jendela berhenti menjadi expanded.
+  ///
+  /// [_openForm] memilih wadah sekali, saat dibuka, tetapi lebar jendela dapat
+  /// berubah setelah itu — dan tanpa ini panel yang sudah terbuka justru
+  /// berakhir di lebar yang [_openForm] sengaja hindari. Pada medium
+  /// [MasterDetailLayout] tetap merender detail, jadi form berada di panel 2/5
+  /// yang sekitar 320 piksel. Pada compact ia melepas detail sama sekali, jadi
+  /// form dibuang sementara [_panelOpen] tetap true: halaman kehilangan
+  /// formnya dan tidak punya apa pun untuk ditutup.
+  ///
+  /// Dengan ini syarat "panel hanya ada pada expanded" berlaku terus, bukan
+  /// hanya pada saat dibuka. Mengecilkan jendela mengembalikan lebar penuh ke
+  /// agenda, dan menekan tombol tambah lagi memberi bottom sheet, wadah yang
+  /// memang benar untuk lebar itu.
+  ///
+  /// `MediaQuery` dibaca sebagai dependensi, sehingga method ini ikut
+  /// terpanggil setiap kali ukuran jendela berubah. Field diubah langsung
+  /// tanpa `setState` karena build selalu menyusul.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_panelOpen && context.layoutBreakpoint != LayoutBreakpoint.expanded) {
+      _panelOpen = false;
+      _panelInitial = null;
+    }
   }
 
   @override
@@ -206,7 +234,8 @@ class _JadwalPageState extends State<JadwalPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       appBar: widget.customerMode
           ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
           : AppBar(
