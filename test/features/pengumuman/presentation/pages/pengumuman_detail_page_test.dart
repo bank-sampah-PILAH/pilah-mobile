@@ -17,11 +17,15 @@ void main() {
       judul: 'Kerja bakti',
       isi: 'Isi lengkap pengumuman.',
       terbitPada: DateTime(2026, 10, 15, 3),
+      bankSampahNama: 'Bank Sampah Melati',
+      bankSampahKota: 'Depok',
     )));
 
     expect(find.text('Kerja bakti'), findsOneWidget);
     expect(find.text('Isi lengkap pengumuman.'), findsOneWidget);
     expect(find.text(nasabahDate(DateTime(2026, 10, 15, 3))), findsOneWidget);
+    // Bank identity line joins the known fields with a dot separator.
+    expect(find.text('Bank Sampah Melati · Depok'), findsOneWidget);
   });
 
   testWidgets('a row without terbit_pada omits the date line', (tester) async {

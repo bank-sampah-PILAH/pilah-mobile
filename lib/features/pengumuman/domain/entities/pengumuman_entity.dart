@@ -15,6 +15,12 @@ class PengumumanEntity extends Equatable {
   final bool dibaca;
   final DateTime? dibacaPada;
 
+  /// Bank sampah identity (nasabah-facing serializers only — the pengurus
+  /// side already sits inside its own bank).
+  final String bankSampahNama;
+  final String bankSampahKota;
+  final String bankSampahAlamat;
+
   const PengumumanEntity({
     required this.id,
     required this.bankSampahId,
@@ -26,6 +32,9 @@ class PengumumanEntity extends Equatable {
     this.status = 'draft',
     this.dibaca = false,
     this.dibacaPada,
+    this.bankSampahNama = '',
+    this.bankSampahKota = '',
+    this.bankSampahAlamat = '',
   });
 
   /// Effective status reported by the backend: draft, terjadwal, terbit,
@@ -48,5 +57,8 @@ class PengumumanEntity extends Equatable {
         status,
         dibaca,
         dibacaPada,
+        bankSampahNama,
+        bankSampahKota,
+        bankSampahAlamat,
       ];
 }

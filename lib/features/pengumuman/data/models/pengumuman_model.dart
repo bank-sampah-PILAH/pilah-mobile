@@ -12,6 +12,9 @@ class PengumumanModel extends PengumumanEntity {
     super.status,
     super.dibaca,
     super.dibacaPada,
+    super.bankSampahNama,
+    super.bankSampahKota,
+    super.bankSampahAlamat,
   });
 
   factory PengumumanModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +29,9 @@ class PengumumanModel extends PengumumanEntity {
       status: json['status']?.toString() ?? 'draft',
       dibaca: json['dibaca'] as bool? ?? false,
       dibacaPada: _parseDate(json['dibaca_pada']),
+      bankSampahNama: json['bank_sampah_nama']?.toString() ?? '',
+      bankSampahKota: json['bank_sampah_kota']?.toString() ?? '',
+      bankSampahAlamat: json['bank_sampah_alamat']?.toString() ?? '',
     );
   }
 
@@ -41,6 +47,9 @@ class PengumumanModel extends PengumumanEntity {
       status: entity.status,
       dibaca: entity.dibaca,
       dibacaPada: entity.dibacaPada,
+      bankSampahNama: entity.bankSampahNama,
+      bankSampahKota: entity.bankSampahKota,
+      bankSampahAlamat: entity.bankSampahAlamat,
     );
   }
 

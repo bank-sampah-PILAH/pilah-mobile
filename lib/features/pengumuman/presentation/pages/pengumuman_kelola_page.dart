@@ -8,6 +8,7 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
@@ -175,54 +176,108 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    // Same page shape as the Riwayat Aktivitas (Laporan) screen: white page,
+    // fixed header + filter block, scrollable feed under it (no AppBar, the
+    // header row carries the back button like aktivitas'.
+    return BlocListener<PengumumanCubit, PengumumanState>(
+      listener: (context, state) {
+        if (state is PengumumanError) {
+          AppNotification.showError(context,
+              title: 'Gagal', message: state.message);
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: Text('Kelola Pengumuman',
-            style: AppTextStyle.title1.copyWith(color: Colors.black)),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _bukaForm(),
-        backgroundColor: AppColors.greenDark,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Buat',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-      ),
-      body: BlocBuilder<PengumumanCubit, PengumumanState>(
-        builder: (context, state) {
-          switch (state) {
-            case PengumumanInitial _:
-            case PengumumanLoading _:
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: const [
-                  SkeletonListItem(),
-                  SizedBox(height: 12),
-                  SkeletonListItem(),
-                  SizedBox(height: 12),
-                  SkeletonListItem(),
-                ],
-              );
-            case PengumumanError _:
-              return Center(
-                child: SingleChildScrollView(child: Text(state.message)),
-              );
-            case PengumumanLoaded loaded:
-              return Column(
-                children: [
-                  _FilterChips(
-                    selected: loaded.statusFilter,
-                    onSelect: (value) => _cubit.loadPengumuman(
-                        status: value.isEmpty ? null : value),
-                  ),
-                  Expanded(child: _daftar(loaded)),
-                ],
-              );
-          }
-        },
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _bukaForm,
+          backgroundColor: AppColors.greenDark,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text('Buat',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        ),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => context.pop(),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.arrow_back,
+                            color: Colors.grey[800], size: 20),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Kelola Pengumuman',
+                        style: AppTextStyle.appBar.copyWith(
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _FilterChips(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: BlocBuilder<PengumumanCubit, PengumumanState>(
+                  builder: (context, state) {
+                    switch (state) {
+                      case PengumumanInitial _:
+                      case PengumumanLoading _:
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                          itemCount: 5,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) =>
+                              const SkeletonListItem(),
+                        );
+                      case PengumumanError state:
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: EmptyView(
+                                title: 'Gagal Memuat Data',
+                                subtitle: state.message,
+                                icon: Icons.error_outline,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => _cubit.loadPengumuman(),
+                              child: const Text('Coba Lagi'),
+                            ),
+                          ],
+                        );
+                      case PengumumanLoaded loaded:
+                        return _daftar(loaded);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -239,6 +294,8 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
         subtitle: filtered
             ? 'Coba filter status lain.'
             : 'Buat pengumuman untuk nasabah bank sampah Anda.',
+        icon:
+            filtered ? Icons.filter_alt_off_outlined : Icons.campaign_outlined,
       );
     }
     return Column(
@@ -443,36 +500,29 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _FilterChips extends StatelessWidget {
-  const _FilterChips({required this.selected, required this.onSelect});
-
-  final String selected;
-  final ValueChanged<String> onSelect;
+  const _FilterChips();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        children: [
-          for (final entry in _filterOptions.entries)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(entry.key),
-                selected: selected == entry.value,
-                showCheckmark: false,
-                selectedColor: AppColors.greenDark,
-                labelStyle: TextStyle(
-                  color:
-                      selected == entry.value ? Colors.white : AppColors.black,
-                ),
-                onSelected: (_) => onSelect(entry.value),
-              ),
-            ),
+    final selected = context.select<PengumumanCubit, String>((cubit) =>
+        cubit.state is PengumumanLoaded
+            ? (cubit.state as PengumumanLoaded).statusFilter
+            : '');
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final entry in _filterOptions.entries) ...[
+          AppChip(
+            label: entry.key,
+            selected: selected == entry.value,
+            onTap: () => context
+                .read<PengumumanCubit>()
+                .loadPengumuman(status: entry.value),
+// '' is the no-filter bucket; null keeps the current filter.
+          ),
         ],
-      ),
+      ],
     );
   }
 }

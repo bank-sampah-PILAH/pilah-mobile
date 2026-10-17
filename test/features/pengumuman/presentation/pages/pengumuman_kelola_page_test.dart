@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart';
@@ -70,7 +71,7 @@ void main() {
     expect(find.byKey(const ValueKey('pengumuman-kelola-2')), findsOneWidget);
     // The row badge and the filter chip both say "Draft".
     expect(find.text('Draft'), findsNWidgets(2));
-    expect(find.widgetWithText(ChoiceChip, 'Semua'), findsOneWidget);
+    expect(find.widgetWithText(AppChip, 'Semua'), findsOneWidget);
     // Draft rows can be edited; terbit rows can be withdrawn.
     expect(find.text('Ubah'), findsOneWidget);
     expect(find.text('Hapus'), findsOneWidget);
@@ -90,7 +91,7 @@ void main() {
       'next': null,
       'results': <Map<String, dynamic>>[],
     });
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Kedaluwarsa'));
+    await tester.tap(find.widgetWithText(AppChip, 'Kedaluwarsa'));
     await tester.pumpAndSettle();
 
     expect(api.last.query['status'], 'kedaluwarsa');

@@ -295,6 +295,7 @@ class _HomeSessionState extends State<_HomeSession> {
                                     _PengumumanSection(
                                   beranda: beranda,
                                   membershipId: home.membershipId,
+                                  bankName: home.bank.name,
                                   // Reading inside the detail flips the rows;
                                   // coming back refreshes the dots.
                                   onKembali: () => _reloadPengumuman?.call(),
@@ -559,11 +560,13 @@ class _PengumumanSection extends StatelessWidget {
   const _PengumumanSection({
     required this.beranda,
     required this.membershipId,
+    required this.bankName,
     required this.onKembali,
   });
 
   final PengumumanBeranda beranda;
   final String membershipId;
+  final String bankName;
   final VoidCallback onKembali;
 
   Future<void> _bukaRow(
@@ -581,6 +584,7 @@ class _PengumumanSection extends StatelessWidget {
         terbitPada: item.terbitPada,
         status: 'terbit',
         dibaca: item.dibaca,
+        bankSampahNama: bankName,
       ),
     );
     onKembali();

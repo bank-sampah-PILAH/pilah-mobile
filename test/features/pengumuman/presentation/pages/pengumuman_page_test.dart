@@ -105,14 +105,14 @@ void main() {
     await openPage(tester);
 
     expect(find.text('Belum ada pengumuman'), findsNothing);
-    expect(find.text('Coba lagi'), findsOneWidget);
+    expect(find.text('Coba Lagi'), findsOneWidget);
 
     api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
       'count': 1,
       'next': null,
       'results': [_row('1')],
     });
-    await tester.tap(find.text('Coba lagi'));
+    await tester.tap(find.text('Coba Lagi'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('pengumuman-1')), findsOneWidget);
