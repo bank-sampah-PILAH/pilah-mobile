@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
@@ -181,7 +182,7 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                               FilteringTextInputFormatter.digitsOnly
                             ],
                             style: AppTextStyle.small
-                                .copyWith(color: Colors.black87),
+                                .copyWith(color: AppColors.black),
                             onChanged: (_) => setState(() {}),
                             decoration: appInputDecoration(
                               hintText: 'Contoh: 50000',
@@ -219,7 +220,7 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                             maxLength: 255,
                             maxLines: 2,
                             style: AppTextStyle.small
-                                .copyWith(color: Colors.black87),
+                                .copyWith(color: AppColors.black),
                             decoration: appInputDecoration(
                               hintText: 'Keterangan (opsional)',
                             ),
@@ -233,7 +234,7 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                             maxLength: 255,
                             maxLines: 2,
                             style: AppTextStyle.small
-                                .copyWith(color: Colors.black87),
+                                .copyWith(color: AppColors.black),
                             onChanged: (_) => setState(() {}),
                             decoration: appInputDecoration(
                               hintText: 'Mengapa pencairan ini diubah?',
