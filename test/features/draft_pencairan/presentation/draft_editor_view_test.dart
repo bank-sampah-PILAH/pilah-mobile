@@ -93,11 +93,14 @@ void main() {
 
   setUp(() => repository = _MockRepository());
 
-  Future<void> pumpNew(WidgetTester tester) async {
+  Future<void> pumpNew(
+    WidgetTester tester, {
+    Size size = const Size(420, 2600),
+  }) async {
     cubit = DraftEditorCubit(repository)
       ..startNew(const [_ahmad, _budi, _citra]);
     _current = cubit;
-    await _pump(tester);
+    await _pump(tester, size: size);
   }
 
   Future<void> pumpSaved(
@@ -1318,6 +1321,32 @@ void main() {
       expect(sudut.topLeft, const Radius.circular(20));
       expect(sudut.bottomLeft, Radius.zero);
       expect(dekor.boxShadow, isNotEmpty);
+    });
+
+    testWidgets(
+        'on a desktop window it is a side panel, open, holding the buttons',
+        (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      final samping = find.byKey(const Key('draft-editor-panel'));
+      expect(samping, findsOneWidget);
+      for (final key in [
+        'total-dibayar',
+        'total-nominal',
+        'total-potongan',
+        'simpan',
+        'konfirmasi',
+      ]) {
+        expect(find.descendant(of: samping, matching: find.byKey(Key(key))),
+            findsOneWidget,
+            reason: key);
+      }
+      // Nothing to open or swipe: there is room for every total.
+      expect(find.byKey(const Key('ringkasan-toggle')), findsNothing);
+      // Beside the nasabah list, not under it.
+      final kartu = find.byType(EditorItemCard).first;
+      expect(tester.getTopLeft(samping).dx,
+          greaterThanOrEqualTo(tester.getTopRight(kartu).dx));
     });
 
     testWidgets('tapping it opens the details, tapping again closes them',
