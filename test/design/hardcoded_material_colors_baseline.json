@@ -49,7 +49,6 @@
   "lib/features/profile/presentation/pages/profil_nasabah_page.dart": 1,
   "lib/features/profile/presentation/pages/profile_page.dart": 23,
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": 16,
-  "lib/features/transaksi/presentation/pages/laporan/laporan_page.dart": 1,
   "lib/features/transaksi/presentation/pages/transaksi_baru_page.dart": 8,
   "lib/features/transaksi/presentation/widgets/aktivitas_list_view.dart": 1,
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": 20,
