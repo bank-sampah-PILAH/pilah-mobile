@@ -3,6 +3,8 @@
 How the app should look and how to build UI so it stays consistent across developers.
 Read this before adding or changing a screen. Each rule is marked **in code** (enforced by the theme or a shared piece today) or **proposed** (agreed direction, not yet in code).
 
+The visual counterpart of this guide is the Figma design kit, see [section 8](#8-figma-design-kit).
+
 ## 1. Principles
 
 1. **Use the theme before styling.** A stock Material widget (`AlertDialog`, `AppBar`, `TextButton`, bottom sheet, plain `Text`) already looks right through `AppTheme`. Do not restyle it per screen; only override what is genuinely different.
@@ -127,8 +129,102 @@ Known gaps against this baseline, not yet audited screen by screen: light grey h
 - [ ] Colors and text from tokens, no new literals. `test/design/hardcoded_styles_test.dart` fails on any new raw `Color(0x…)` or `fontSize:` outside `lib/design/`; after removing some, lower its baseline with `UPDATE_BASELINE=1 flutter test test/design/hardcoded_styles_test.dart`.
 - [ ] Stock widgets left alone, so the theme applies.
 - [ ] Sheets use `BottomSheetHeader`.
+- [ ] The screen or overlay has a counterpart in the Figma kit, built from its components. If you introduce a new pattern, add it to Figma and to the mapping table in section 8.
 - [ ] Loading, empty and error states handled.
 - [ ] Amounts and weights go through the formatters.
 - [ ] Feedback through `AppNotification`.
 - [ ] Checked at a narrow phone width and, for web roles, a wide one.
 - [ ] Long names truncate with an ellipsis and do not collide with amounts.
+
+## 8. Figma design kit
+
+The design kit is the visual twin of this guide: the same tokens, the same components, and a mirror of the screens and overlays that exist in the app for **Pengurus** and **Nasabah**.
+
+- **File:** [PILAH 2.0](https://www.figma.com/design/VF8jKsBUS0K8jIG8ZEaIad), in the **PILAH 2.0** Figma team. The link only opens for team members; ask a team admin for access.
+- **Source of truth:** the code. Figma copies values from Flutter (`colors.dart`, `text_style.dart`, `app_theme.dart` and the shared widgets), not the other way round. When Figma and the code disagree, the code wins and Figma gets fixed. A few values in Figma deliberately follow the code where the code is off the scale (see 8.5).
+
+### 8.1 What is on each page
+
+| Page | Contents | Use it for |
+|---|---|---|
+| **Components** | Variables (colors, radius, spacing), text styles `AppText/*`, and every component listed in 8.3 | Building any new screen or overlay |
+| **Mobile Screens** | Pengurus (dashboard, nasabah, harga, aktivitas, jadwal, profil, pencairan), Superadmin, auth, and the **Nasabah (mobile)** section (beranda, tabungan, jadwal, profil, approval, onboarding) | Reference for layout and hierarchy |
+| **Mobile Overlays** | Bottom sheets, dialogs, date and time pickers, popup menus, drawer, toast, and a few extra pages, each on top of its base screen with the 54% scrim. Grouped by role and type | Reference for anything that opens over a screen |
+| **Dashboard Web** | The Pengurus dashboard at desktop width | Web layout reference |
+| **Existing UI** | Raw screenshots of the running app (mobile, web, overlays) | **Archive only.** Compare against it, never build from it |
+
+Frames are 390 wide. The real app is shown at 486 in the screenshots, so text looks about 25% larger in Figma at the same proportions. This is expected.
+
+### 8.2 Tokens
+
+Figma variable and style names mirror the Flutter tokens:
+
+| Figma | Flutter |
+|---|---|
+| `brand/greenDark`, `brand/greenLight` | `AppColors.greenDark`, `AppColors.greenLight` |
+| `text/black`, `text/grey100`, `text/inkSoft` | `AppColors.black`, `grey100`, `inkSoft` |
+| `surface/surface`, `surface/cardOffWhite`, `surface/fill` | `AppColors.surface`, `cardOffWhite`, `fill` |
+| `border/border`, `border/grey200` | `AppColors.border`, `grey200` |
+| `danger/danger`, `danger/dangerLight` | `AppColors.danger`, `dangerLight` |
+| `warning/warning`, `warning/warningLight` | `AppColors.warning`, `warningLight` |
+| `radius/sm…xl` (8, 12, 16, 24), `spacing/xs…2xl` (4, 8, 12, 16, 24, 32) | the scales in section 2 |
+| `AppText/Headline 1`, `Title 1`, `Headline 3`, `Body Small`, `Extra Small` | `AppTextStyle.headline1`, `title1`, `headline3`, `small`, `extraSmall` |
+
+Apply a variable or style instead of typing a color or size. A literal in Figma is the same mistake as a `Color(0xFF…)` in Dart.
+
+### 8.3 Component to widget map
+
+Find the component in Figma, then use the Flutter widget on the right. **No shared widget** means the Flutter side still builds it inline; do not invent a second copy, reuse the existing pattern or extract a shared widget first.
+
+| Figma component | Flutter | Notes |
+|---|---|---|
+| `Button` (Primary, Outlined, Destructive) | `CustomPrimaryButton`, `CustomOutlinedButton` | 48 high, radius 16 |
+| `Chip` | `AppChip` | |
+| `Card` | `AppTappableCard`, `NasabahCard` | |
+| `Sheet Header` | `BottomSheetHeader` | Grabber, 20 bold title, 36 close button |
+| `Status Badge` | `CustomStatusBadge` | Aktif, Nonaktif, Menunggu |
+| `App Bar`, `Page Header`, `Section Header` | `NasabahPageAppBar`, theme app bar | |
+| `Text Field`, `Field/Select`, `Field/Date`, `Field/Area`, `Field/Phone`, `Field/Money` | `appInputDecoration`, `appInputStyle` | Label above the field, uppercase |
+| `Search Field` | `CustomSearchField` | |
+| `FAB` | `FloatingActionButton` (theme) | 56, radius 16 |
+| `Stat Card`, `Total Kas Card`, `KPI Card` | `StatCard`, `TotalKasCard` | |
+| `Nasabah List Item`, `List Row`, `Activity Item` | `NasabahListItem`, `ActivityItem` | |
+| `Bottom Nav`, `Bottom Nav (Nasabah)`, `Nav Item` | `RoleNavigationBar`, `RoleNavigationRail`, `RoleNavigationDrawer` | Bar on phones, rail and drawer on web |
+| `Dialog/Confirm` (Destructive true or false) | `showAppConfirmDialog` | |
+| `Dialog/Icon Confirm` (Warning, Success) | `HargaConfirmationDialog`; the Nasabah deactivate dialog is built inline | Candidate for one shared widget |
+| `Toast` (Success, Error, Warning) | `AppNotification.showSuccess`, `showError`, `showWarning` | Appears at the top |
+| `Menu Item` | `PopupMenuButton` items | |
+| `Checkbox` | `Checkbox` (theme) | |
+| `Notice`, `Detail Row`, `Option Card` | **no shared widget** | Used in detail sheets, edit forms and the Transaksi Baru chooser |
+| Date picker, time picker (frames in *Mobile Overlays*) | Material `showDatePicker`, `showTimePicker` | Not components; the time picker is an approximation |
+| `Icon/*` | Material icons of the same name | Redrawn as vectors; swap by instance, do not paste an image |
+
+### 8.4 How to use it
+
+**Designing or changing a screen** (when you ship UI work, the `ship` skill runs this design-first loop for you)
+1. Start from the components on the *Components* page. Do not detach instances to tweak them; if a variant is missing, add it to the component.
+2. Bind colors, radii and text to variables and styles (8.2).
+3. Put overlays on top of their base screen with the same scrim as the app (54% black), as in *Mobile Overlays*.
+4. Add the new screen or overlay to *Mobile Screens* or *Mobile Overlays* in the same change that ships it in Flutter.
+
+**Building a screen in Flutter**
+1. Find the screen or overlay that is closest in Figma and read which components it uses (8.3).
+2. Use the widgets in the right-hand column. If a row says no shared widget, follow the nearest existing implementation and mention it in the PR.
+3. Check the result against the frame: hierarchy, spacing and which component is used matter more than exact pixels.
+
+**Changing a token or a shared component**
+1. Change the code first (`colors.dart`, `text_style.dart`, `app_theme.dart` or the widget).
+2. In the same PR, update the matching variable, style or component in Figma and mention it in the PR description.
+3. Update the tables in this section when a component is added, renamed or gets a shared widget.
+
+**Do not**
+- Build from *Existing UI*; it is a dated capture of the app, not a design.
+- Copy hex values out of Figma into Dart. Use the token.
+- Edit the file from a view-only seat and expect it to save; ask a team admin for an edit seat.
+
+### 8.5 Known gaps
+
+- Some values follow the code where the code is off the scale: the total-kas card uses radius and padding 20, list avatars are 50, and several texts use 14, 15 and 16. Figma leaves those unbound until the code is moved onto the scale (see section 2).
+- Pages that are not rebuilt from components yet: the PDF preview, and the web desktop screens other than the dashboard. They exist only as screenshots in *Existing UI*.
+- The Superadmin and Pengurus Induk screens are only partly mirrored. The proof-image dialog and the approval message dialog are not.
+- Nasabah has no web version; its frames are phone-only.
