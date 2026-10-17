@@ -182,10 +182,9 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       onChanged: (_) => setState(() {}),
                       decoration: appInputDecoration(
-                        labelText: 'Nominal',
                         prefixText: 'Rp ',
                         errorText: nominalError ?? state.fieldErrors['nominal'],
-                      ),
+                      ).copyWith(labelText: 'Nominal'),
                     ),
                     const SizedBox(height: 16),
                     Text('Metode', style: AppTextStyle.small),
@@ -207,10 +206,9 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       onTap: _pickTanggal,
                       child: InputDecorator(
                         decoration: appInputDecoration(
-                          labelText: 'Tanggal',
                           suffixIcon: const Icon(Icons.calendar_month),
                           errorText: state.fieldErrors['tanggal'],
-                        ),
+                        ).copyWith(labelText: 'Tanggal'),
                         child: Text(formatTanggalId(_tanggal)),
                       ),
                     ),
@@ -227,8 +225,8 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       controller: _keteranganController,
                       maxLength: 255,
                       maxLines: 2,
-                      decoration:
-                          appInputDecoration(labelText: 'Keterangan (opsional)'),
+                      decoration: appInputDecoration()
+                          .copyWith(labelText: 'Keterangan (opsional)'),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -238,10 +236,11 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       maxLines: 2,
                       onChanged: (_) => setState(() {}),
                       decoration: appInputDecoration(
+                        errorText: state.fieldErrors['alasan'],
+                      ).copyWith(
                         labelText: 'Alasan perubahan',
                         helperText:
                             'Wajib diisi, tercatat di riwayat perubahan',
-                        errorText: state.fieldErrors['alasan'],
                       ),
                     ),
                     const SizedBox(height: 24),

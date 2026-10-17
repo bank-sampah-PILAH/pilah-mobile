@@ -5,15 +5,14 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 /// The look of a text field in the app's forms: white fill, 12px rounded
 /// outline, green when focused and red on error.
 ///
-/// The text of the field ([hintText], [labelText], [helperText], [errorText])
-/// and what sits around it ([prefixText], [prefixIcon], [suffixIcon]) are the
-/// only things that differ from form to form. [hasError] paints the border red
+/// The text of the field ([hintText], [errorText]) and what sits around it
+/// ([prefixText], [prefixIcon], [suffixIcon]) are the only things that differ
+/// from form to form. A label or helper line is rare: add it with
+/// `copyWith(labelText: ...)` on the result. [hasError] paints the border red
 /// without any message, for a field whose message is shown elsewhere, and
 /// [focusColor] changes the focused border, for example red when rejecting.
 InputDecoration appInputDecoration({
   String? hintText,
-  String? labelText,
-  String? helperText,
   String? errorText,
   String? prefixText,
   Widget? prefixIcon,
@@ -30,8 +29,6 @@ InputDecoration appInputDecoration({
   return InputDecoration(
     hintText: hintText,
     hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
-    labelText: labelText,
-    helperText: helperText,
     errorText: errorText,
     prefixText: prefixText,
     prefixIcon: prefixIcon,
