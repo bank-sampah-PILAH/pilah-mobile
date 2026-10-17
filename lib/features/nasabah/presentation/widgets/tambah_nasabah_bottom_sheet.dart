@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/design/constants/form_style.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
-import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_fields.dart';
 
 class TambahNasabahBottomSheet extends StatefulWidget {
   const TambahNasabahBottomSheet({super.key});
@@ -75,236 +70,77 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const BottomSheetHeader(title: 'Tambah Nasabah'),
-                const SizedBox(height: 12),
-
-                // Subtitle
-                Text(
-                  'Pastikan nomor WhatsApp aktif untuk menerima notifikasi transaksi.',
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[500],
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Field 1: NAMA LENGKAP
-                _buildLabel('NAMA LENGKAP'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _namaController,
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
-                  decoration:
-                      appInputDecoration(hintText: 'Contoh: Budi Santoso'),
-                ),
-                const SizedBox(height: 20),
-
-                // Row for ID NASABAH and JENIS KELAMIN
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLabel('ID NASABAH'),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _idNasabahController,
-                            onChanged: (_) {
-                              // Clear the red border as soon as the ID is edited.
-                              if (_kodeHasError) {
-                                setState(() => _kodeHasError = false);
-                              }
-                            },
-                            // Only the required check stays inline (short, standard
-                            // across the form). The uniqueness check moved to submit
-                            // (_handleSimpan) so its longer message shows in full via
-                            // AppNotification instead of truncating in this narrow field.
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                    ? 'Bagian ini wajib diisi.'
-                                    : null,
-                            decoration: appInputDecoration(
-                              hintText: 'NAS-0900',
-                              hasError: _kodeHasError,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLabel('JENIS KELAMIN'),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            initialValue: _jenisKelamin,
-                            validator: (value) =>
-                                (value == null || value.isEmpty)
-                                    ? 'Pilih jenis kelamin.'
-                                    : null,
-                            hint: const Text('— Pilih —'),
-                            decoration: appInputDecoration(),
-                            icon: const Icon(Icons.arrow_drop_down,
-                                color: Colors.grey),
-                            items:
-                                ['Laki-laki', 'Perempuan'].map((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                _jenisKelamin = newValue;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Field: EMAIL (Google account email — used to sync the
-                // nasabah record when they log in later, PIL-154)
-                _buildLabel('EMAIL'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  onChanged: (_) {
-                    // Clear the backend duplicate error as soon as the email
-                    // is edited, mirroring the phone field behaviour.
-                    if (_serverEmailError != null) {
-                      setState(() => _serverEmailError = null);
-                    }
-                  },
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Email wajib diisi.';
-                    }
-                    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                    if (!regex.hasMatch(value.trim())) {
-                      return 'Format email tidak valid.';
-                    }
-                    if (_serverEmailError != null) return _serverEmailError;
-                    return null;
-                  },
-                  decoration: appInputDecoration(
-                    hintText: 'Contoh: budi@gmail.com',
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Field: TANGGAL LAHIR
-                _buildLabel('TANGGAL LAHIR'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _tanggalLahirController,
-                  readOnly: true,
-                  onTap: _selectDate,
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Bagian ini wajib diisi.'
-                      : null,
-                  decoration: appInputDecoration(
-                    hintText: 'dd/mm/yyyy',
-                  ).copyWith(
-                    suffixIcon: Icon(Icons.calendar_today,
-                        color: Colors.grey[600], size: 20),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Field: NOMOR WHATSAPP
-                _buildLabel('NOMOR WHATSAPP'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _whatsappController,
-                  keyboardType: TextInputType.phone,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  onChanged: (_) {
-                    // Clear the backend duplicate error as soon as the number is
-                    // edited, so the inline red text disappears while typing.
-                    if (_serverPhoneError != null) {
-                      setState(() => _serverPhoneError = null);
-                    }
-                  },
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Nomor WhatsApp wajib diisi.';
-                    }
-                    final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
-                    if (!regex.hasMatch(value)) {
-                      return 'Format nomor tidak valid. Mulai dengan angka 8';
-                    }
-                    if (_serverPhoneError != null) return _serverPhoneError;
-                    return null;
-                  },
-                  decoration: appInputDecoration(
-                      hintText: '812-3456-7890',
-                      prefixIcon: const PhonePrefix()),
-                ),
-                const SizedBox(height: 20),
-
-                // Field: ALAMAT LENGKAP
-                _buildLabel('ALAMAT LENGKAP'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _alamatController,
-                  maxLines: 4,
-                  validator: (value) {
-                    final alamat = value?.trim() ?? '';
-                    if (alamat.isEmpty) return 'Bagian ini wajib diisi.';
-                    if (alamat.runes.length < 10) {
-                      return 'Alamat minimal 10 karakter.';
-                    }
-                    return null;
-                  },
-                  decoration: appInputDecoration(
-                    hintText: 'Nama jalan, RT/RW, Kelurahan...',
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Button
-                AppButton(
-                  label: 'Simpan Nasabah',
-                  isLoading: _isSaving,
-                  onPressed: _handleSimpan,
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
+    return NasabahFormSheet(
+      title: 'Tambah Nasabah',
+      formKey: _formKey,
+      fields: [
+        NasabahNameField(controller: _namaController),
+        NasabahFieldPair(
+          left: NasabahIdField(
+            controller: _idNasabahController,
+            hintText: 'NAS-0900',
+            hasError: _kodeHasError,
+            // Clear the red border as soon as the ID is edited.
+            onChanged: () {
+              if (_kodeHasError) setState(() => _kodeHasError = false);
+            },
+            // Only the required check stays inline (short, standard across the
+            // form). The uniqueness check moved to submit (_handleSimpan) so
+            // its longer message shows in full via AppNotification instead of
+            // truncating in this narrow field.
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Bagian ini wajib diisi.'
+                : null,
+          ),
+          right: NasabahGenderField(
+            value: _jenisKelamin,
+            onChanged: (jenis) => setState(() => _jenisKelamin = jenis),
           ),
         ),
+        // The Google account email, used to sync the nasabah record when they
+        // log in later (PIL-154).
+        NasabahEmailField(
+          controller: _emailController,
+          serverError: () => _serverEmailError,
+          // Clear the backend duplicate error as soon as the email is edited,
+          // mirroring the phone field.
+          onChanged: () {
+            if (_serverEmailError != null) {
+              setState(() => _serverEmailError = null);
+            }
+          },
+        ),
+        NasabahBirthDateField(
+          controller: _tanggalLahirController,
+          onTap: _selectDate,
+        ),
+        NasabahPhoneField(
+          controller: _whatsappController,
+          serverError: () => _serverPhoneError,
+          // Clear the backend duplicate error as soon as the number is edited,
+          // so the inline red text disappears while typing.
+          onChanged: () {
+            if (_serverPhoneError != null) {
+              setState(() => _serverPhoneError = null);
+            }
+          },
+        ),
+        NasabahAddressField(
+          controller: _alamatController,
+          validator: (value) {
+            final alamat = value?.trim() ?? '';
+            if (alamat.isEmpty) return 'Bagian ini wajib diisi.';
+            if (alamat.runes.length < 10) {
+              return 'Alamat minimal 10 karakter.';
+            }
+            return null;
+          },
+        ),
+      ],
+      button: AppButton(
+        label: 'Simpan Nasabah',
+        isLoading: _isSaving,
+        onPressed: _handleSimpan,
       ),
     );
   }
@@ -394,17 +230,6 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
       context,
       title: 'Gagal Menyimpan',
       message: error.displayMessage,
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: AppTextStyle.extraSmall.copyWith(
-        color: Colors.grey[500],
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.5,
-      ),
     );
   }
 }

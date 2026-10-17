@@ -9,9 +9,7 @@ Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
 
 Color? _circleColor(WidgetTester tester, Finder inside) {
   final decorated = tester.widget<Container>(
-    find
-        .ancestor(of: inside, matching: find.byType(Container))
-        .first,
+    find.ancestor(of: inside, matching: find.byType(Container)).first,
   );
   return (decorated.decoration! as BoxDecoration).color;
 }
@@ -103,8 +101,8 @@ void main() {
         tester.getTopLeft(find.byKey(const Key('field'))).dy,
         greaterThan(
           tester
-              .getBottomLeft(find.textContaining('NAMA LENGKAP',
-                  findRichText: true))
+              .getBottomLeft(
+                  find.textContaining('NAMA LENGKAP', findRichText: true))
               .dy,
         ),
       );
