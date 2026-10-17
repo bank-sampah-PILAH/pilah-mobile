@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
@@ -112,7 +113,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   decoration:
-                      _buildInputDecoration(hintText: 'Contoh: Budi Santoso'),
+                      appInputDecoration(hintText: 'Contoh: Budi Santoso'),
                 ),
                 const SizedBox(height: 20),
 
@@ -141,7 +142,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                                 (value == null || value.trim().isEmpty)
                                     ? 'Bagian ini wajib diisi.'
                                     : null,
-                            decoration: _buildInputDecoration(
+                            decoration: appInputDecoration(
                               hintText: 'NAS-0900',
                               hasError: _kodeHasError,
                             ),
@@ -163,7 +164,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                                     ? 'Pilih jenis kelamin.'
                                     : null,
                             hint: const Text('— Pilih —'),
-                            decoration: _buildInputDecoration(),
+                            decoration: appInputDecoration(),
                             icon: const Icon(Icons.arrow_drop_down,
                                 color: Colors.grey),
                             items:
@@ -212,7 +213,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                     if (_serverEmailError != null) return _serverEmailError;
                     return null;
                   },
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: 'Contoh: budi@gmail.com',
                   ),
                 ),
@@ -228,7 +229,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: 'dd/mm/yyyy',
                   ).copyWith(
                     suffixIcon: Icon(Icons.calendar_today,
@@ -265,33 +266,9 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                     if (_serverPhoneError != null) return _serverPhoneError;
                     return null;
                   },
-                  decoration: _buildInputDecoration(
-                    hintText: '812-3456-7890',
-                  ).copyWith(
-                    prefixIcon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            '+62',
-                            style: AppTextStyle.small.copyWith(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          height: 24,
-                          width: 1,
-                          color: Colors.grey[300],
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                    ),
-                    prefixIconConstraints:
-                        const BoxConstraints(minWidth: 0, minHeight: 0),
-                  ),
+                  decoration: appInputDecoration(
+                      hintText: '812-3456-7890',
+                      prefixIcon: const PhonePrefix()),
                 ),
                 const SizedBox(height: 20),
 
@@ -309,7 +286,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                     }
                     return null;
                   },
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: 'Nama jalan, RT/RW, Kelurahan...',
                   ),
                 ),
@@ -426,39 +403,6 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
       ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration(
-      {String? hintText, bool hasError = false}) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      // [hasError] paints the border red without any inline text — used to flag
-      // the compact ID field when its message is shown in an AppNotification.
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: hasError ? Colors.red : Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: hasError ? Colors.red : AppColors.greenDark,
-          width: 1.5,
-        ),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

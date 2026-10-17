@@ -85,7 +85,9 @@ Use these instead of building another one.
 | Loading / empty / error / content in one | `PageStateView` (`design/layout`) | New; adopt on new pages. |
 | Pull to refresh | `AppRefreshIndicator` | |
 | Feedback after an action | `AppNotification.showSuccess` / `showError` / `showWarning` | Do not use `SnackBar`. |
-| Form field look | `appInputDecoration`, `appInputStyle` (`design/constants/form_style.dart`) | Text-field borders are intentionally not in the theme, see 5.2. |
+| Form field look | `appInputDecoration`, `appInputStyle` (`design/constants/form_style.dart`) | White, 12 rounded, green focus, `AppColors.danger` on error. Takes `hintText`, `errorText`, `prefixText`, `prefixIcon`, `suffixIcon`, `hasError` and `focusColor` (seven at most, which SonarCloud allows); add a `labelText` or `helperText` with `copyWith` on the result; use `PhonePrefix` for the "+62" of a phone field. Text-field borders are intentionally not in the theme, so build the decoration through these functions: `test/design/hardcoded_input_decoration_test.dart` fails on a new raw `InputDecoration(`. |
+| Search field, value inside a card | `appSearchDecoration`, `appBorderlessInputDecoration` (same file) | Soft fill with no outline and a search icon; no border at all. `CustomSearchField` and `NasabahSearchBar` use the first. |
+| Labelled text field with a password toggle | `AppTextField` (`design/widgets/atom`) | Built on `appInputDecoration`. |
 | Nasabah cards and app bar | `NasabahCard`, `NasabahPageAppBar` | |
 | Nasabah data screens | `NasabahResource` | One load/error/retry/reload shape. |
 

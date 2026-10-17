@@ -3,34 +3,71 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 /// The look of a text field in the app's forms: white fill, 12px rounded
-/// outline, green when focused and red on error. [hintText] is the only thing
-/// that differs from form to form.
-InputDecoration appInputDecoration({String? hintText}) => InputDecoration(
+/// outline, green when focused and red on error.
+///
+/// The text of the field ([hintText], [errorText]) and what sits around it
+/// ([prefixText], [prefixIcon], [suffixIcon]) are the only things that differ
+/// from form to form. A label or helper line is rare: add it with
+/// `copyWith(labelText: ...)` on the result. [hasError] paints the border red
+/// without any message, for a field whose message is shown elsewhere, and
+/// [focusColor] changes the focused border, for example red when rejecting.
+InputDecoration appInputDecoration({
+  String? hintText,
+  String? errorText,
+  String? prefixText,
+  Widget? prefixIcon,
+  Widget? suffixIcon,
+  bool hasError = false,
+  Color? focusColor,
+}) {
+  OutlineInputBorder border(Color color, [double width = 1]) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: color, width: width),
+      );
+
+  return InputDecoration(
+    hintText: hintText,
+    hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+    errorText: errorText,
+    prefixText: prefixText,
+    prefixIcon: prefixIcon,
+    suffixIcon: suffixIcon,
+    filled: true,
+    fillColor: Colors.white,
+    enabledBorder: border(hasError ? AppColors.danger : Colors.grey[300]!),
+    disabledBorder: border(Colors.grey[200]!),
+    focusedBorder: border(
+      hasError ? AppColors.danger : focusColor ?? AppColors.greenDark,
+      1.5,
+    ),
+    errorBorder: border(AppColors.danger),
+    focusedErrorBorder: border(AppColors.danger, 1.5),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  );
+}
+
+/// The look of a search field: a soft fill with no outline and a search icon.
+InputDecoration appSearchDecoration({String? hintText}) => InputDecoration(
       hintText: hintText,
       hintStyle: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+      prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
       filled: true,
-      fillColor: Colors.white,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[200]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
+      fillColor: Colors.grey[50],
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+    );
+
+/// A field with no border, for a value that sits inside a card, such as the
+/// weight of a setoran item.
+InputDecoration appBorderlessInputDecoration({String? hintText}) =>
+    InputDecoration(
+      hintText: hintText,
+      border: InputBorder.none,
+      contentPadding: const EdgeInsets.only(bottom: 12),
     );
 
 /// Text style of what is typed into an [appInputDecoration] field.

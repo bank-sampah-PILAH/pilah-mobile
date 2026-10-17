@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
@@ -70,6 +71,12 @@ void main() {
     await tester.tap(find.text('Simpan Nasabah'));
     await pumpToast(tester);
   }
+
+  testWidgets('the phone field carries the shared +62 prefix', (tester) async {
+    await open(tester);
+
+    expect(find.byType(PhonePrefix), findsOneWidget);
+  });
 
   testWidgets('a valid form creates the nasabah and confirms', (tester) async {
     api.on('POST', _path, status: 201, json: nasabahRow('9'));

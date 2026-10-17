@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 
 class NasabahSearchBar extends StatelessWidget {
   final ValueChanged<String>? onChanged;
@@ -9,18 +10,7 @@ class NasabahSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       onChanged: onChanged,
-      decoration: InputDecoration(
-        hintText: 'Cari nama atau nomor...',
-        hintStyle: TextStyle(color: Colors.grey[400]),
-        prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-        filled: true,
-        fillColor: Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-      ),
+      decoration: appSearchDecoration(hintText: 'Cari nama atau nomor...'),
     );
   }
 }
