@@ -222,6 +222,18 @@ void main() {
       expect(find.text('Cair Oktober'), findsOneWidget);
     });
 
+    testWidgets(
+        'a saved draft reopens from its link alone (a refreshed web tab)',
+        (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/draft-pencairan/editor?id=d-1');
+
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Cair Oktober'), findsOneWidget);
+    });
+
     testWidgets('opening the draft editor without a draft goes to the list',
         (tester) async {
       final router = await boot(tester);
