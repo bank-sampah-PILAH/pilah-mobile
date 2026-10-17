@@ -125,11 +125,12 @@ on web because no current web flow uses Firebase; add FlutterFire web options
 before introducing a Firebase-backed web feature. Mobile viewport emulation
 verifies responsive web UI only, not native mobile behavior. Web support is limited to Super Admin,
 Pengurus, and Pengurus Induk; do not claim Nasabah web support. For user-visible
-web UI changes, save proof screenshots locally under
-`artifacts/pr-<PR_NUMBER>/` for affected roles and viewports. Before the PR
-number exists, keep captures outside the repository and move them after PR
-creation. Skip screenshots for non-UI changes, do not commit artifacts, and
-state in the PR description when screenshots do not apply. For documentation-only changes, run the
+web UI changes, capture proof screenshots for affected roles and viewports.
+Before the PR number exists, keep captures outside the repository. Skip
+screenshots for non-UI changes, do not commit artifacts, and state in the PR
+description when screenshots do not apply. After the PR exists, upload the
+screenshots to the PR description as described in
+[Upload screenshots](#upload-screenshots). For documentation-only changes, run the
 repository's documentation checks and `git diff --check`; skip Flutter
 analyze/tests, builds, browser checks, and screenshots.
 
@@ -173,6 +174,34 @@ git push --set-upstream origin <kind>/<name>
   - GitHub: `gh pr edit "<pr-url>" --add-assignee "@me"`.
   - GitLab: `self_username="$(glab api user | jq -r '.username')"` followed by `glab mr update --assignee "$self_username"` from the new worktree.
 - Do not assign reviewers, enable auto-merge, delete the source branch, or mark draft unless explicitly requested.
+
+### Upload screenshots
+
+Use the `gh image` extension (setup and safety notes in `docs/GH_IMAGE.md`) so
+images are hosted as GitHub `user-attachments` and render in the PR. The
+repository is public: only demo data may appear in screenshots.
+
+Run it with an empty `HOME` and the `gh` token in the environment, so the
+upload goes through the token route and the browser-cookie fallback has no
+cookie store to read. Never set `GH_SESSION_TOKEN`.
+
+```bash
+EMPTY="$(mktemp -d)"
+env -u GH_SESSION_TOKEN HOME="$EMPTY" XDG_CONFIG_HOME="$EMPTY/c" \
+  XDG_DATA_HOME="$EMPTY/d" XDG_CACHE_HOME="$EMPTY/k" GH_TOKEN="$(gh auth token)" \
+  ~/.local/share/gh/extensions/gh-image/gh-image \\
+  --repo <owner>/<repo> ./shot-1.png ./shot-2.png
+```
+
+- Call the installed binary directly, as above: going through `gh image` would
+  look for the `gh` config under the empty `HOME`.
+- Stop and report if stderr says it is using a browser session.
+- Each file prints one markdown image line. Put them in the PR description
+  with `gh pr edit <pr> --repo <owner>/<repo> --body-file <file>`; outside a git
+  directory `gh pr view` also needs `--repo`.
+- If `gh image` is unavailable, push the files to an orphan branch named
+  `pr-<PR_NUMBER>-screenshots` under `artifacts/pr-<PR_NUMBER>/` and link them
+  with `raw.githubusercontent.com`. Never delete that branch.
 
 ## 7. Final response
 
