@@ -2,10 +2,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/activate_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/add_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/deactivate_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.dart';
+import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 
@@ -16,8 +18,10 @@ class HargaCubit extends Cubit<HargaState> {
   final UpdateHargaUseCase updateHargaUseCase;
   final DeactivateHargaUseCase deactivateHargaUseCase;
   final ActivateHargaUseCase activateHargaUseCase;
+  final UbahHargaUseCase ubahHargaUseCase;
 
   List<HargaEntity> _allHarga = [];
+  int _permintaanTerakhir = 0;
   bool _isActiveTab = true;
   String _searchQuery = '';
 
@@ -27,6 +31,7 @@ class HargaCubit extends Cubit<HargaState> {
     this.updateHargaUseCase,
     this.deactivateHargaUseCase,
     this.activateHargaUseCase,
+    this.ubahHargaUseCase,
   ) : super(HargaInitial());
 
   bool get isActiveTab => _isActiveTab;
@@ -46,8 +51,11 @@ class HargaCubit extends Cubit<HargaState> {
   /// keep: from [HargaInitial] or [HargaError] there is nothing on screen, so a
   /// real loading state is emitted regardless.
   Future<void> loadHarga({bool silent = false}) async {
+    final permintaan = ++_permintaanTerakhir;
     if (!silent || state is! HargaLoaded) emit(HargaLoading());
     final result = await getHargaUseCase.execute();
+    // Reload yang lebih baru sudah berjalan: jawaban ini sudah usang.
+    if (permintaan != _permintaanTerakhir) return;
     result.fold(
       (failure) => emit(HargaError(failure.displayMessage)),
       (data) {
@@ -83,6 +91,19 @@ class HargaCubit extends Cubit<HargaState> {
   /// Updates a jenis sampah. Returns `null` on success, otherwise the exception.
   Future<NetworkException?> updateHarga(HargaEntity harga) async {
     final result = await updateHargaUseCase.execute(harga);
+    return result.fold(
+      (failure) => failure,
+      (_) {
+        loadHarga();
+        return null;
+      },
+    );
+  }
+
+  /// Mengganti harga, sekarang atau terjadwal. Returns `null` on success
+  /// (list reloaded), otherwise the exception so the form can show it.
+  Future<NetworkException?> ubahHarga(UbahHarga perubahan) async {
+    final result = await ubahHargaUseCase.execute(perubahan);
     return result.fold(
       (failure) => failure,
       (_) {

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class FilterTanggalBottomSheet extends StatefulWidget {
   const FilterTanggalBottomSheet({super.key});
@@ -13,9 +14,8 @@ class FilterTanggalBottomSheet extends StatefulWidget {
 }
 
 class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
-  // Emerald Eco System Tokens
-  static const Color emeraldPrimary = Color(0xFF006D44);
-  static const Color mintTint = Color(0xFFF0FDF4);
+  // Local tokens (candidates for AppColors)
+  static const Color mintTint = AppColors.greenLight;
 
   late DateTime startDate;
   late DateTime endDate;
@@ -24,8 +24,9 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    startDate = DateTime(now.year, now.month, 1);
-    endDate = DateTime(now.year, now.month + 1, 0); // Last day of current month
+    final state = context.read<RiwayatAktivitasCubit>().state;
+    startDate = state.dariTanggal ?? DateTime(now.year, now.month, 1);
+    endDate = state.sampaiTanggal ?? DateTime(now.year, now.month + 1, 0);
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -39,13 +40,13 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: emeraldPrimary, // header background color
+              primary: AppColors.greenDark, // header background color
               onPrimary: Colors.white, // header text color
               onSurface: Colors.black87, // body text color
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: emeraldPrimary, // button text color
+                foregroundColor: AppColors.greenDark, // button text color
               ),
             ),
           ),
@@ -224,13 +225,13 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline,
-                        color: emeraldPrimary, size: 18),
+                        color: AppColors.greenDark, size: 18),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Filter akan diterapkan ke daftar transaksi.',
                         style: AppTextStyle.small.copyWith(
-                          color: emeraldPrimary,
+                          color: AppColors.greenDark,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -246,12 +247,12 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                 child: ElevatedButton(
                   onPressed: () {
                     context
-                        .read<TransaksiCubit>()
+                        .read<RiwayatAktivitasCubit>()
                         .applyCustomRange(startDate, endDate);
                     context.pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: emeraldPrimary,
+                    backgroundColor: AppColors.greenDark,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                     shape: RoundedRectangleBorder(

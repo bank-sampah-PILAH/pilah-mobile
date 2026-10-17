@@ -19,6 +19,30 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
+Local development can enable the clearly labeled `Masuk dengan akun demo`
+button with these `.env` values:
+
+```env
+ENABLE_DEMO_LOGIN=true
+DEMO_PENGURUS_EMAIL=pengurus.demo@example.com
+DEMO_PENGELOLA_INDUK_EMAIL=induk.demo@example.com
+DEMO_CUSTOMER_EMAIL=nasabah.demo@example.com
+DEMO_NEW_NASABAH_EMAIL=nasabah.baru.demo@example.com
+DEMO_SUPERADMIN_EMAIL=superadmin.demo@example.com
+```
+
+`DEMO_NEW_NASABAH_EMAIL` is deliberately unseeded, unlike the others — use it
+to try the nasabah self-registration flow from a blank account without
+editing the seed script.
+
+The button submits the backend's local-only `dev:`, `dev-pengelola-induk:`,
+`dev-nasabah:`, and `dev-superadmin:` test tokens for the seeded roles. Keep
+these five email values in sync with the corresponding pilah-be seed variables
+before running E2E. It is hidden whenever the
+app is built in release mode, and the staging/production entry point keeps
+only the real Google Sign-In button. Never enable fake tokens or the demo
+button for production-facing builds.
+
 Example how to run production app
 
 ```
@@ -27,6 +51,12 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter build apk -t lib/main_production.dart
 ```
+
+### 🌐 Dashboard hosting
+
+See [dashboard deployment guide](docs/DASHBOARD_DEPLOYMENT.md) for Fly staging,
+Cloud Run production, CI gates, exact backend/Google origins, and the shared
+Web OAuth client ID. Web supports Super Admin, Pengurus and Pengurus Induk only.
 
 ### ⚙️ Supported Flavor
 
@@ -136,3 +166,7 @@ branch rules:(feature|hotfix|coldfix|service|integration|ui)//\*
 ### How to contribute
 
 To help work on this project, please refer to [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Nasabah API integration
+
+See [PIL-225 / PIL-226 integration guide](docs/NASABAH_API_INTEGRATION.md) for backend refactor commits, module usage, API setup, validation, and known limitations.

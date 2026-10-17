@@ -13,7 +13,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/c
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 
 class SplashPage extends StatefulWidget {
-  const SplashPage({super.key});
+  const SplashPage({super.key, this.from});
+
+  /// The page a web refresh interrupted, restored once the session is back.
+  final String? from;
 
   static const route = '/splash';
 
@@ -49,9 +52,13 @@ class _SplashPageState extends State<SplashPage> {
 
     if (state is Authenticated) {
       _navigated = true;
-      context.go(locationForAuthStep(
-        state.authEntity.nextStep,
-        hasPendingInvite: di<InviteTokenStore>().hasToken,
+      context.go(locationAfterRestore(
+        target: locationForAuthStep(
+          state.authEntity.nextStep,
+          hasPendingInvite: di<InviteTokenStore>().hasToken,
+          role: state.authEntity.role,
+        ),
+        from: widget.from,
       ));
     } else if (state is Unauthenticated || state is AuthenticationFailure) {
       _navigated = true;

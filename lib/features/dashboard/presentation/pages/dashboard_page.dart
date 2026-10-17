@@ -1,20 +1,36 @@
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_statistics_section.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_upcoming_schedule_section.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_web_kpi_section.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_card.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({super.key, this.isWeb});
 
-  static const route = '/dashboard';
+  // `kIsWeb` is compile-time constant, so VM tests need this branch override.
+  @visibleForTesting
+  final bool? isWeb;
+
+  static const route = AppLocations.dashboard;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -45,8 +61,23 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final webPengurusKey = (widget.isWeb ?? kIsWeb)
+        ? context.select<AuthenticationBloc, String?>((bloc) {
+            final state = bloc.state;
+            if (state is! Authenticated ||
+                state.authEntity.role != 'pengelola') {
+              return null;
+            }
+            return '${state.authEntity.id ?? state.authEntity.email}:'
+                '${state.authEntity.bankSampahNama ?? ''}';
+          })
+        : null;
+    final isPengurusWeb = webPengurusKey != null;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isPengurusWeb
+          ? WebContentSurface.pageColor(context, phone: AppColors.cardOffWhite)
+          : Colors.white,
       body: SafeArea(
         child: AppRefreshIndicator(
           onRefresh: _onRefresh,
@@ -56,19 +87,32 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const DashboardHeader(),
+                // Di web lebar profil ada di kaki sidebar, jadi avatar di sini
+                // hanya menggandakannya.
+                DashboardHeader(
+                  showProfile: !(isPengurusWeb &&
+                      context.layoutBreakpoint != LayoutBreakpoint.compact),
+                ),
                 const SizedBox(height: 24),
-                const TotalKasCard(),
+                if (isPengurusWeb)
+                  const DashboardWebKpiSection()
+                else ...[
+                  const TotalKasCard(),
+                  const SizedBox(height: 24),
+                  const DashboardStatisticsSection(),
+                ],
                 const SizedBox(height: 24),
-
-                // Statistics Row
-                const DashboardStatisticsSection(),
-                const SizedBox(height: 24),
-
                 const DashboardActionButtons(),
                 const SizedBox(height: 32),
-
-                const RecentActivitySection(),
+                if (isPengurusWeb) ...[
+                  DashboardReportsSection(
+                    key: ValueKey('reports-$webPengurusKey'),
+                    dataSource: di<DashboardReportingDataSource>(),
+                  ),
+                  const SizedBox(height: 24),
+                  _webDetails(webPengurusKey),
+                ] else
+                  const RecentActivitySection(),
               ],
             ),
           ),
@@ -76,4 +120,41 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+
+  Widget _webDetails(String webPengurusKey) => LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth >= 900
+              ? (constraints.maxWidth - 24) / 2
+              : constraints.maxWidth;
+          return Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              for (final section in [
+                DashboardUpcomingScheduleSection(
+                  key: ValueKey('schedule-$webPengurusKey'),
+                  repository: di<JadwalRepository>(),
+                ),
+                const RecentActivitySection(),
+              ])
+                SizedBox(
+                  width: width,
+                  child: Card(
+                    color: Colors.white,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    margin: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                          color: AppColors.grey200.withValues(alpha: 0.3)),
+                    ),
+                    child: Padding(
+                        padding: const EdgeInsets.all(20), child: section),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
 }

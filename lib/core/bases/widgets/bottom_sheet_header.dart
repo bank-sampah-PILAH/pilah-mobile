@@ -1,13 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final String title;
 
+  /// Apakah pegangan tarik di atas judul ikut ditampilkan.
+  ///
+  /// Null berarti otomatis: tampil pada bottom sheet, tersembunyi di dalam
+  /// [DialogSurface] karena dialog tidak dapat ditarik dan pegangan di sana
+  /// janji palsu. Picker yang memutuskannya sendiri memberi nilai eksplisit.
+  final bool? showDragHandle;
+
+  static const dragHandleKey = ValueKey('bottom-sheet-drag-handle');
+
+  /// Cara menutup, bila bukan dengan menutup route.
+  ///
+  /// Default null berarti `context.pop()`, yang benar untuk bottom sheet dan
+  /// dialog karena keduanya memang sebuah route. Panel berada inline di dalam
+  /// body halaman, jadi ia harus memberikan caranya sendiri; tanpa ini tombol
+  /// silangnya akan menutup halaman, bukan panelnya.
+  final VoidCallback? onClose;
+
   const BottomSheetHeader({
     super.key,
     required this.title,
+    this.showDragHandle,
+    this.onClose,
   });
 
   @override
@@ -16,17 +36,20 @@ class BottomSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+        if (showDragHandle ?? !DialogSurface.of(context)) ...[
+          Center(
+            child: Container(
+              key: dragHandleKey,
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 24),
+        ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -39,7 +62,7 @@ class BottomSheetHeader extends StatelessWidget {
               ),
             ),
             InkWell(
-              onTap: () => context.pop(),
+              onTap: onClose ?? () => context.pop(),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.all(8),

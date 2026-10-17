@@ -5,9 +5,13 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({super.key});
+  const DashboardHeader({super.key, this.showProfile = true});
+
+  /// Avatar yang membuka profil. Dimatikan ketika profil sudah ada di sidebar.
+  final bool showProfile;
 
   String _initials(String name) {
     final parts =
@@ -22,7 +26,7 @@ class DashboardHeader extends StatelessWidget {
       builder: (context, state) {
         final auth = state is Authenticated ? state.authEntity : null;
         final name =
-            (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengelola';
+            (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengurus';
         final bankName = (auth?.bankSampahNama?.trim().isNotEmpty ?? false)
             ? auth!.bankSampahNama!
             : 'Bank Sampah';
@@ -40,44 +44,47 @@ class DashboardHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Selamat datang, $name ',
-                          style: AppTextStyle.title1.copyWith(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Text('👋', style: TextStyle(fontSize: 18)),
-                    ],
+                  // Wraps to a second line instead of cutting a long name off.
+                  Text.rich(
+                    TextSpan(
+                      text: 'Selamat datang, $name ',
+                      children: const [
+                        TextSpan(text: '👋', style: TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                    style: AppTextStyle.title1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                context.push('/profile');
-              },
-              child: CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.greenDark,
-                child: Text(
-                  _initials(name),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+            if (showProfile) ...[
+              const SizedBox(width: 12),
+              AppTapTarget(
+                label: 'Buka profil',
+                borderRadius: BorderRadius.circular(24),
+                onTap: () {
+                  context.push('/profile');
+                },
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.greenDark,
+                  child: Text(
+                    _initials(name),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         );
       },

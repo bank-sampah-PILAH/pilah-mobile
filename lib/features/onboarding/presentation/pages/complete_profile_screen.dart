@@ -15,6 +15,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acc
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final bool isInviteMode;
@@ -43,9 +44,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _nameController = TextEditingController();
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _alamatController = TextEditingController();
   String? _gender;
   DateTime? _selectedDob;
   bool _isLoading = false;
+
+  /// Only nasabah accounts have a use for a personal address here —
+  /// pengelola/pengelola induk give their organization's address on a
+  /// separate step.
+  bool get _isNasabah {
+    final authState = context.read<AuthenticationBloc>().state;
+    return authState is Authenticated && authState.authEntity.role == 'nasabah';
+  }
 
   @override
   void initState() {
@@ -80,10 +90,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// populated before the first build or the fields flash empty.
   void _restoreDraft() {
     final draft = context.read<OnboardingCubit>().profileDraft;
-    if (draft == null) return;
+    if (draft == null) {
+      _prefillFromSavedProfile();
+      return;
+    }
 
     _nameController.text = draft.nama;
     _phoneController.text = draft.noHp;
+    _alamatController.text = draft.alamat;
     _gender = draft.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
 
     // Stored as the ISO string the API wants; the picker and the field need a
@@ -95,8 +109,54 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
   }
 
+  /// Prefills the form from the account's own saved profile when there is no
+  /// wizard draft to restore instead (a draft always wins — it represents
+  /// more recent input than whatever the backend last saved).
+  ///
+  /// Covers both the plain Google-name fallback the backend has always
+  /// applied and a nasabah synced from a pengurus-entered record (PIL-154):
+  /// without this, neither is visible here, since this screen otherwise only
+  /// ever restores from the in-memory wizard draft and starts blank
+  /// regardless of what the account already has saved.
+  void _prefillFromSavedProfile() {
+    final authState = context.read<AuthenticationBloc>().state;
+    if (authState is! Authenticated) return;
+    final auth = authState.authEntity;
+
+    if (auth.name.isNotEmpty) _nameController.text = auth.name;
+    if (auth.noHp.isNotEmpty) {
+      _phoneController.text = _localPhoneDigits(auth.noHp);
+    }
+    if (_isNasabah && auth.alamat.isNotEmpty) {
+      _alamatController.text = auth.alamat;
+    }
+    if (auth.jenisKelamin.isNotEmpty) {
+      _gender = auth.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+    }
+
+    final tanggalLahir = auth.tanggalLahir;
+    if (tanggalLahir != null) {
+      final parsed = DateTime.tryParse(tanggalLahir);
+      if (parsed != null) {
+        _selectedDob = parsed;
+        _dobController.text = _displayDate(parsed);
+      }
+    }
+  }
+
   String _displayDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+
+  /// Strips a country-code or leading-zero prefix from a saved phone number
+  /// so it fits the field's own digits-only, `8...`-starting format.
+  ///
+  /// The backend normalizes and stores `no_hp` as `+62{national}`
+  /// (`normalize_indonesian_phone`), but this field pairs a fixed `+62`
+  /// prefix widget with a validator expecting just the national digits —
+  /// prefilling the raw saved value doubles the prefix and the field can
+  /// never pass its own validation until the user deletes and retypes it.
+  String _localPhoneDigits(String noHp) =>
+      noHp.replaceFirst(RegExp(r'^\+?62'), '').replaceFirst(RegExp(r'^0'), '');
 
   @override
   void dispose() {
@@ -104,6 +164,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     _nameController.dispose();
     _dobController.dispose();
     _phoneController.dispose();
+    _alamatController.dispose();
     super.dispose();
   }
 
@@ -147,7 +208,26 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   bool get _startsNewRegistration {
     final authState = context.read<AuthenticationBloc>().state;
     if (authState is! Authenticated) return false;
-    return authState.authEntity.bankSampahStatus == null;
+    return authState.authEntity.role == 'pengelola' &&
+        authState.authEntity.bankSampahStatus == null;
+  }
+
+  /// Whether finishing this form banks the draft and pushes the nasabah
+  /// bank-sampah picker next, rather than submitting straight away.
+  ///
+  /// Unlike [_startsNewRegistration], reaching this screen does NOT mean the
+  /// account has no membership yet: a pengurus-entered Nasabah record
+  /// matching this account's verified email auto-links on login
+  /// (`AuthService._sync_nasabah_prefill`) while the profile is still
+  /// incomplete, so `next_step` after submitting can already be
+  /// `nasabah_dashboard`. That case is handled downstream in
+  /// `OnboardingCubit.submitNasabahRegistration`, which skips the
+  /// registration call entirely when the profile step alone finishes
+  /// onboarding — this getter only decides whether to defer to that wizard
+  /// step at all.
+  bool get _startsNasabahRegistration {
+    final authState = context.read<AuthenticationBloc>().state;
+    return authState is Authenticated && authState.authEntity.role == 'nasabah';
   }
 
   String _isoDate(DateTime date) =>
@@ -165,6 +245,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
       tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
       noHp: _phoneController.text.trim(),
+      alamat: _isNasabah ? _alamatController.text.trim() : '',
     );
 
     final cubit = context.read<OnboardingCubit>();
@@ -184,6 +265,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (!isInvite && _startsNewRegistration) {
       cubit.saveProfileDraft(request);
       context.push('/register-bank-sampah');
+      return;
+    }
+
+    // Same deferral, for the nasabah wizard: the bank-sampah picker submits
+    // this draft alongside the membership application, so the user can still
+    // come back and edit their profile (including the alamat just entered)
+    // right up until that final submit.
+    if (!isInvite && _startsNasabahRegistration) {
+      cubit.saveProfileDraft(request);
+      context.push('/register-nasabah');
       return;
     }
 
@@ -298,6 +389,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       case 'superadmin_dashboard':
         context.go('/superadmin-dashboard');
         break;
+      case 'register_nasabah':
+        context.go('/register-nasabah');
+        break;
+      case 'nasabah_dashboard':
+        context.go('/nasabah-dashboard');
+        break;
+      case 'register_bank_sampah_induk':
+        context.go('/register-bank-sampah-induk');
+        break;
+      case 'pengelola_induk_dashboard':
+        context.go('/pengelola-induk-dashboard');
+        break;
       default:
         // Fallback preserves prior behaviour: invited managers join an existing
         // bank sampah (dashboard), new managers continue to registration.
@@ -322,37 +425,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// in [build] handles the redirect to login. Cancelling or dismissing leaves
   /// the form and its input untouched.
   Future<void> _confirmExit() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Batal Lengkapi Profil?',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: const Text(
+    final shouldLogout = await showAppConfirmDialog(
+      context,
+      title: 'Batal Lengkapi Profil?',
+      message:
           'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
           'tersimpan dan Anda akan dialihkan ke halaman login.',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: const Text('Ya, Keluar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
     );
-    if (shouldLogout == true && mounted) {
+    if (shouldLogout && mounted) {
       context.read<AuthenticationBloc>().add(LogoutRequested());
     }
   }
@@ -396,7 +478,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
         child: Scaffold(
-          backgroundColor: const Color(0xFFF9FAFB), // Light gray background
+          backgroundColor: AppColors.surface, // Light gray background
           body: SingleChildScrollView(
             child: Column(
               children: [
@@ -443,8 +525,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                 ),
 
-                // 2. Stepper Section (hidden in invite mode)
-                if (!_isInviteMode) ...[
+                // 2. Stepper Section (shown only when profile completion leads
+                // to the bank sampah registration form, pengelola or nasabah)
+                if (!_isInviteMode &&
+                    (_startsNewRegistration || _startsNasabahRegistration)) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     decoration: BoxDecoration(
@@ -522,7 +606,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Data Bank Sampah',
+                              _isNasabah
+                                  ? 'Pilih Bank Sampah'
+                                  : 'Data Bank Sampah',
                               style: TextStyle(
                                 color: Colors.grey.shade400,
                                 fontSize: 12,
@@ -617,7 +703,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   child: Row(
                                     children: [
                                       Icon(Icons.male,
-                                          size: 20, color: Color(0xFF2563EB)),
+                                          size: 20, color: AppColors.inkSoft),
                                       SizedBox(width: 8),
                                       Text('Laki-laki'),
                                     ],
@@ -628,7 +714,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   child: Row(
                                     children: [
                                       Icon(Icons.female,
-                                          size: 20, color: Color(0xFFDB2777)),
+                                          size: 20, color: AppColors.inkSoft),
                                       SizedBox(width: 8),
                                       Text('Perempuan'),
                                     ],
@@ -779,6 +865,48 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               },
                             ),
                           ),
+
+                          // Field 5: Alamat — nasabah accounts only.
+                          if (_isNasabah)
+                            _buildFormField(
+                              label: 'ALAMAT LENGKAP',
+                              child: TextFormField(
+                                controller: _alamatController,
+                                maxLines: 5,
+                                minLines: 3,
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'Jl. Nama Jalan, RT/RW, Kelurahan,\nKecamatan, Kota',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.greenDark, width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 16),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Alamat wajib diisi';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
                         ],
                       ),
                     ),

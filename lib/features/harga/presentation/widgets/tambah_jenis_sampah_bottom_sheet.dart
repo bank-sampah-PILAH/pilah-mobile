@@ -2,22 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_jenis.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class TambahJenisSampahBottomSheet extends StatefulWidget {
   final HargaEntity? initialData;
   final HargaCubit? hargaCubit;
 
-  const TambahJenisSampahBottomSheet(
-      {super.key, this.initialData, this.hargaCubit});
+  /// Sumber waktu "sekarang", dapat diganti di test.
+  final DateTime Function() now;
+
+  const TambahJenisSampahBottomSheet({
+    super.key,
+    this.initialData,
+    this.hargaCubit,
+    this.now = DateTime.now,
+  });
 
   @override
   State<TambahJenisSampahBottomSheet> createState() =>
@@ -36,6 +48,13 @@ class _TambahJenisSampahBottomSheetState
   String? _selectedCategory;
   bool _isSaving = false;
   String? _serverKodeError;
+
+  /// Tengah malam waktu setempat saat harga baru mulai berlaku, atau `null`
+  /// bila harga baru berlaku sekarang.
+  DateTime? _berlakuMulai;
+
+  /// Batas jadwal harga dari backend (`BATAS_JADWAL_HARGA_HARI`).
+  static const int _batasJadwalHari = 365;
 
   /// Dropdown options as (API value, display label, icon). The value is what the
   /// backend `JenisSampah.Kategori` choices accept and is stored in
@@ -142,8 +161,7 @@ class _TambahJenisSampahBottomSheetState
                     if (_serverKodeError != null) return _serverKodeError;
                     return null;
                   },
-                  decoration:
-                      _buildInputDecoration(hintText: 'Contoh: PLS-001'),
+                  decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -163,7 +181,7 @@ class _TambahJenisSampahBottomSheetState
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   decoration:
-                      _buildInputDecoration(hintText: 'Contoh: Plastik PET'),
+                      appInputDecoration(hintText: 'Contoh: Plastik PET'),
                 ),
                 const SizedBox(height: 20),
 
@@ -176,7 +194,7 @@ class _TambahJenisSampahBottomSheetState
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   hint: const Text('— Pilih Kategori —'),
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
                   items: _categories.map(_buildDropdownItem).toList(),
                   onChanged: (newValue) {
@@ -193,7 +211,7 @@ class _TambahJenisSampahBottomSheetState
                 TextFormField(
                   controller: _descController,
                   maxLines: 2,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                       hintText: 'Contoh: Botol bening, kemasan plastik'),
                 ),
                 const SizedBox(height: 20),
@@ -208,7 +226,7 @@ class _TambahJenisSampahBottomSheetState
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: '0',
                   ).copyWith(
                     prefixIcon: Padding(
@@ -233,6 +251,16 @@ class _TambahJenisSampahBottomSheetState
                     color: Colors.grey[500],
                   ),
                 ),
+                if (isEditMode) ...[
+                  const SizedBox(height: 20),
+                  _buildLabel('BERLAKU MULAI'),
+                  const SizedBox(height: 8),
+                  _buildPilihanBerlaku(),
+                  const SizedBox(height: 16),
+                  _buildRingkasanHarga(widget.initialData!),
+                  const SizedBox(height: 12),
+                  _buildPeringatanTidakSurut(),
+                ],
                 const SizedBox(height: 32),
 
                 // Button
@@ -385,8 +413,7 @@ class _TambahJenisSampahBottomSheetState
     final isEditMode = widget.initialData != null;
 
     final int priceVal = int.tryParse(_priceController.text) ?? 0;
-    final String formattedPrice =
-        'Rp ${_priceController.text.replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), ".")}';
+    final String formattedPrice = CurrencyFormatter.formatRupiah(priceVal);
 
     final harga = HargaEntity(
       id: widget.initialData?.id ?? '',
@@ -402,10 +429,23 @@ class _TambahJenisSampahBottomSheetState
       isActive: widget.initialData?.isActive ?? true,
     );
 
+    final hargaBerubah = isEditMode && priceVal != widget.initialData!.price;
+    final berlakuMulai = _berlakuMulai;
+
     setState(() => _isSaving = true);
-    final error = isEditMode
+    var error = isEditMode
         ? await cubit.updateHarga(harga)
         : await cubit.addHarga(harga);
+    // Harga tidak ikut PUT: setiap perubahan harga dicatat sebagai versi baru.
+    var hanyaHargaGagal = false;
+    if (error == null && hargaBerubah) {
+      error = await cubit.ubahHarga(UbahHarga(
+        id: harga.id,
+        harga: priceVal,
+        berlakuMulai: berlakuMulai,
+      ));
+      hanyaHargaGagal = error != null;
+    }
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -414,9 +454,24 @@ class _TambahJenisSampahBottomSheetState
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
-        message: isEditMode
-            ? 'Jenis sampah berhasil diperbarui.'
-            : 'Jenis sampah baru berhasil ditambahkan.',
+        message: pesanSimpanJenis(
+          isEditMode: isEditMode,
+          hargaBerubah: hargaBerubah,
+          berlakuMulai: berlakuMulai,
+        ),
+      );
+      return;
+    }
+
+    if (hanyaHargaGagal) {
+      // PUT sudah menyimpan isian lain; mengulang Simpan aman karena PUT yang
+      // sama tidak mengubah apa-apa, lalu harga dikirim lagi.
+      AppNotification.showError(
+        context,
+        title: 'Harga Belum Tersimpan',
+        message: 'Perubahan lain sudah tersimpan, tetapi harga baru gagal '
+            'disimpan: ${error.displayMessage}. Tekan Simpan lagi untuk '
+            'mencoba harganya.',
       );
       return;
     }
@@ -433,6 +488,124 @@ class _TambahJenisSampahBottomSheetState
     );
   }
 
+  Widget _buildPilihanBerlaku() {
+    final berlakuMulai = _berlakuMulai;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Sekarang'),
+              selected: berlakuMulai == null,
+              onSelected: (_) => setState(() => _berlakuMulai = null),
+            ),
+            ChoiceChip(
+              label: const Text('Tanggal lain'),
+              selected: berlakuMulai != null,
+              onSelected: (_) => _pilihTanggalBerlaku(),
+            ),
+          ],
+        ),
+        if (berlakuMulai != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Mulai ${formatTanggalId(berlakuMulai)}, pukul 00.00',
+            style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Harga terjadwal dimulai tengah malam waktu setempat pada tanggal yang
+  /// dipilih, paling cepat besok (harga hari ini memakai "Sekarang").
+  Future<void> _pilihTanggalBerlaku() async {
+    final besok = DateUtils.dateOnly(widget.now()).add(const Duration(days: 1));
+    final dipilih = await showDatePicker(
+      context: context,
+      initialDate: _berlakuMulai ?? besok,
+      firstDate: besok,
+      lastDate: besok.add(const Duration(days: _batasJadwalHari - 1)),
+    );
+    if (dipilih == null || !mounted) return;
+    setState(() => _berlakuMulai = DateUtils.dateOnly(dipilih));
+  }
+
+  /// Nilai yang dihitung sistem, bukan input, sehingga berlatar abu (SDS 5.1).
+  Widget _buildRingkasanHarga(HargaEntity jenis) {
+    final berlakuMulai = jenis.berlakuMulai;
+    final terjadwal = jenis.hargaTerjadwal;
+    final keterangan = AppTextStyle.small.copyWith(color: Colors.grey[600]);
+    final nilai = AppTextStyle.headline3.copyWith(
+      color: Colors.black87,
+      fontWeight: FontWeight.w600,
+    );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Harga saat ini', style: keterangan),
+          const SizedBox(height: 2),
+          Text(
+            berlakuMulai == null
+                ? '${CurrencyFormatter.formatRupiah(jenis.price)}/kg'
+                : '${CurrencyFormatter.formatRupiah(jenis.price)}/kg sejak '
+                    '${formatTanggalId(berlakuMulai.toLocal())}',
+            style: nilai,
+          ),
+          if (terjadwal != null) ...[
+            const SizedBox(height: 8),
+            Text('Harga terjadwal', style: keterangan),
+            const SizedBox(height: 2),
+            Text(
+              '${CurrencyFormatter.formatRupiah(terjadwal.harga)}/kg mulai '
+              '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+              style: nilai,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Peringatan BR-03 pada P-03; kuning menandakan peringatan (SDS 5.1).
+  Widget _buildPeringatanTidakSurut() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.avatarYellow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: AppColors.avatarYellowText,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Perubahan harga tidak berlaku surut. Setoran yang sudah '
+              'tercatat tetap memakai harga lama.',
+              style: AppTextStyle.small.copyWith(color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLabel(String text) {
     return Text(
       text,
@@ -441,32 +614,6 @@ class _TambahJenisSampahBottomSheetState
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
       ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({String? hintText}) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

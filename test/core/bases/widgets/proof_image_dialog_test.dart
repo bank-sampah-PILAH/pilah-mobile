@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 
+import '../../../support/fake_image_download.dart';
+
 /// Pumps a host with a button that opens the dialog for [imageUrl].
 ///
 /// Tears the tree down first so repeated calls within one test start from a
@@ -71,6 +73,70 @@ void main() {
           reason: 'the picsum dummy must not come back for input: $input',
         );
       }
+    });
+  });
+
+  group('closing', () {
+    testWidgets('the close icon dismisses the dialog', (tester) async {
+      await _openDialog(tester, imageUrl: null);
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.text('Tidak ada foto kegiatan'), findsNothing);
+    });
+
+    testWidgets('the Close button dismisses the dialog', (tester) async {
+      // Tall enough that the button is inside the screen, so the tap cannot
+      // land on the dismissible barrier instead.
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await _openDialog(tester, imageUrl: null);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tidak ada foto kegiatan'), findsNothing);
+    });
+  });
+
+  group('photo that has to be fetched', () {
+    testWidgets(
+        'a photo that cannot be fetched is reported as a network '
+        'problem, not as a missing photo', (tester) async {
+      // flutter_test answers every real HTTP request with a 400.
+      await _openDialog(tester, imageUrl: 'https://example.test/bukti.jpg');
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+
+      expect(find.text('Gagal memuat gambar'), findsOneWidget);
+      expect(find.text('Tidak ada foto kegiatan'), findsNothing);
+      tester.takeException();
+    });
+
+    testWidgets('shows progress while the photo downloads, then the photo',
+        (tester) async {
+      final body = FakeImageDownload.install();
+      // Reset inside the body: the framework checks painting debug variables
+      // before group tear-downs run.
+
+      await _openDialog(tester, imageUrl: 'https://example.test/bukti.jpg');
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      body.sendFirstHalf();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      body.finish();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Gagal memuat gambar'), findsNothing);
+      FakeImageDownload.uninstall();
     });
   });
 }

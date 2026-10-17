@@ -1,6 +1,15 @@
+import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
@@ -9,22 +18,36 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_approval_screen.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
 
 class AppRouterConfig {
   static final GoRouter _router = GoRouter(
@@ -34,8 +57,8 @@ class AppRouterConfig {
     //
     // It runs before any route-level redirect for every incoming URI —
     // including the very first one when a deep link cold-starts the app — so
-    // an `/invite?token=…` token is captured before anything can route the user
-    // elsewhere.
+    // A native `/invite?token=…` or browser `/invite/:token` token is captured
+    // before anything can route the user elsewhere.
     //
     // Capturing and prioritising deliberately happen in the same pass. go_router
     // 17 runs this top-level redirect *at most once per navigation*, before
@@ -52,15 +75,32 @@ class AppRouterConfig {
     redirect: (context, state) {
       final path = state.uri.path;
 
+      final restore = sessionRestoreRedirect(
+        sessionChecked:
+            context.read<AuthenticationBloc>().state is! AuthenticationInitial,
+        path: path,
+        query: state.uri.query,
+      );
+      if (restore != null) return restore;
+
+      final signedOut = signedOutRedirect(
+        signedOut: context.read<AuthenticationBloc>().state is Unauthenticated,
+        path: path,
+      );
+      if (signedOut != null) return signedOut;
+
+      String? inviteToken;
       if (path == '/invite') {
-        final token = state.uri.queryParameters['token'];
-        if (token != null) {
-          di<InviteTokenStore>().save(token);
-        }
+        inviteToken = state.uri.queryParameters['token'];
+      } else if (path.startsWith('/invite/')) {
+        inviteToken = state.pathParameters['token'];
+      }
+      if (inviteToken != null) {
+        di<InviteTokenStore>().save(inviteToken);
       }
 
       final store = di<InviteTokenStore>();
-      if (!store.hasToken) return null;
+      if (!store.hasToken) return _roleRedirect(context, path);
 
       // No session yet (signed out, or a cold start still restoring one): the
       // token keeps until there is an account to redeem it with, and `/invite`
@@ -69,35 +109,39 @@ class AppRouterConfig {
       final authState = context.read<AuthenticationBloc>().state;
       if (authState is! Authenticated) return null;
 
-      // `null` means this account can't redeem an invite at all (superadmin) —
-      // in which case the token is dropped here rather than left to follow the
-      // next account onto this device. See [resolvePendingInvite].
+      // `null` means this account can't redeem an invite at all — in which
+      // case the token is dropped here rather than left to follow the next
+      // account onto this device. See [resolvePendingInvite].
       final target = resolvePendingInvite(
         step: authState.authEntity.nextStep,
         role: authState.authEntity.role,
       );
-      if (target == null || target == path) return null;
+      if (target == null || target == path) return _roleRedirect(context, path);
       return target;
     },
     routes: <RouteBase>[
       GoRoute(
         path: SplashPage.route,
         name: SplashPage.route,
-        builder: (context, state) => const SplashPage(),
+        builder: (context, state) =>
+            SplashPage(from: state.uri.queryParameters['from']),
       ),
       GoRoute(
         path: LoginPage.route,
         name: LoginPage.route,
         builder: (context, state) => const LoginPage(),
       ),
-      // Landing point for invite deep links, reached only when there is no
-      // session yet: an already-signed-in user is sent to the redemption screen
-      // by the global redirect above and never gets here. It renders nothing and
-      // captures nothing — the token is already banked by the time this runs —
-      // and only hands off to the session-restore flow, which routes a signed-out
-      // user to login. The stored token then steers them onward from there.
       GoRoute(
-        path: '/invite',
+        path: RoleSelectionPage.route,
+        name: RoleSelectionPage.route,
+        builder: (context, state) => const RoleSelectionPage(),
+      ),
+      // Native query links and browser hash-path links both land here only when
+      // there is no session: signed-in users are sent to redemption above.
+      // The token is already banked; these routes hand off to session restore.
+      GoRoute(path: '/invite', redirect: (context, state) => SplashPage.route),
+      GoRoute(
+        path: '/invite/:token',
         redirect: (context, state) => SplashPage.route,
       ),
       GoRoute(
@@ -106,14 +150,63 @@ class AppRouterConfig {
         builder: (context, state) => const ForgotPasswordPage(),
       ),
       GoRoute(
-        path: ProfilePage.route,
-        name: ProfilePage.route,
-        builder: (context, state) => const ProfilePage(),
-      ),
-      GoRoute(
         path: TransaksiBaruPage.route,
         name: TransaksiBaruPage.route,
         builder: (context, state) => const TransaksiBaruPage(),
+      ),
+      GoRoute(
+        path: CatatPencairanPage.route,
+        name: CatatPencairanPage.route,
+        builder: (context, state) => const CatatPencairanPage(),
+      ),
+      GoRoute(
+        path: DraftListPage.route,
+        name: DraftListPage.route,
+        builder: (context, state) => const DraftListPage(),
+      ),
+      GoRoute(
+        path: PilihNasabahPencairanPage.route,
+        name: PilihNasabahPencairanPage.route,
+        builder: (context, state) => const PilihNasabahPencairanPage(),
+      ),
+      GoRoute(
+        path: DraftEditorPage.route,
+        name: DraftEditorPage.route,
+        // The editor needs to know which draft; without it (a stale link, or a
+        // router restored on its own) there is nothing to show.
+        redirect: (context, state) =>
+            state.extra is DraftEditorArgs ? null : DraftListPage.route,
+        builder: (context, state) =>
+            DraftEditorPage(args: state.extra! as DraftEditorArgs),
+      ),
+      // Both pages take their pencairan as extra, which a refreshed web tab
+      // or a pasted link doesn't carry; those go back to the laporan, where
+      // the pencairan is picked from the activity list.
+      GoRoute(
+        path: EditPencairanPage.route,
+        name: EditPencairanPage.route,
+        redirect: (context, state) =>
+            state.extra is Pencairan ? null : LaporanPage.route,
+        builder: (context, state) =>
+            EditPencairanPage(pencairan: state.extra! as Pencairan),
+      ),
+      GoRoute(
+        path: RevisiPencairanPage.route,
+        name: RevisiPencairanPage.route,
+        redirect: (context, state) =>
+            state.extra is String ? null : LaporanPage.route,
+        builder: (context, state) =>
+            RevisiPencairanPage(pencairanId: state.extra! as String),
+      ),
+      GoRoute(
+        path: RiwayatHargaPage.route,
+        name: RiwayatHargaPage.route,
+        // The jenis travels as extra, which a refreshed web tab or a pasted
+        // link doesn't carry; send those back to the list to pick one.
+        redirect: (context, state) =>
+            state.extra is HargaEntity ? null : HargaPage.route,
+        builder: (context, state) =>
+            RiwayatHargaPage(jenis: state.extra! as HargaEntity),
       ),
       GoRoute(
         path: InviteGatePage.route,
@@ -164,6 +257,51 @@ class AppRouterConfig {
         name: SuperAdminDashboardScreen.route,
         builder: (context, state) => const SuperAdminDashboardScreen(),
       ),
+      GoRoute(
+        path: RegisterNasabahScreen.route,
+        name: RegisterNasabahScreen.route,
+        redirect: (_, __) => isRoleSupportedOnPlatform(
+          'nasabah',
+          isWeb: kIsWeb,
+        )
+            ? null
+            : LoginPage.route,
+        builder: (context, state) => const RegisterNasabahScreen(),
+      ),
+      GoRoute(
+        path: RoleHandoffPage.nasabahDashboardRoute,
+        redirect: (_, __) => '/dashboard',
+      ),
+      GoRoute(
+        path: ApprovalBankSampahListPage.route,
+        name: ApprovalBankSampahListPage.route,
+        builder: (context, state) => const ApprovalBankSampahListPage(),
+      ),
+      GoRoute(
+        path: ApprovalBankSampahDetailPage.route,
+        name: ApprovalBankSampahDetailPage.route,
+        builder: (context, state) => ApprovalBankSampahDetailPage(
+          membership: state.extra as NasabahMembershipEntity,
+        ),
+      ),
+      GoRoute(
+        path: RoleHandoffPage.registerIndukRoute,
+        builder: (context, state) => const RoleHandoffPage(
+          title: 'Profil Pengelola Induk Tersimpan',
+          message:
+              'Pendaftaran Bank Sampah Induk akan dilanjutkan pada langkah berikutnya. Progres Anda tetap tersimpan.',
+          registrationInProgress: true,
+        ),
+      ),
+      GoRoute(
+        path: RoleHandoffPage.indukDashboardRoute,
+        builder: (context, state) => const RoleHandoffPage(
+          title: 'Akun Pengelola Induk Siap',
+          message:
+              'Beranda Bank Sampah Induk sedang disiapkan. Data organisasi Anda sudah tersimpan.',
+          registrationInProgress: false,
+        ),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainPage(navigationShell: navigationShell);
@@ -174,7 +312,21 @@ class AppRouterConfig {
               GoRoute(
                 path: DashboardPage.route,
                 name: DashboardPage.route,
-                builder: (context, state) => const DashboardPage(),
+                builder: (context, state) =>
+                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
+                  builder: (context, authState) {
+                    if (authState is! Authenticated) {
+                      return const Scaffold(
+                          body: Center(
+                        child: Text('Silakan masuk untuk melihat Beranda.'),
+                      ));
+                    }
+                    if (authState.authEntity.role == 'nasabah') {
+                      return const BerandaNasabahPage();
+                    }
+                    return const DashboardPage();
+                  },
+                ),
               ),
             ],
           ),
@@ -205,10 +357,102 @@ class AppRouterConfig {
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: JadwalPage.route,
+                name: JadwalPage.route,
+                builder: (context, state) =>
+                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
+                  builder: (context, authState) {
+                    if (authState is! Authenticated) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final auth = authState.authEntity;
+                    return JadwalPage(
+                      key: ValueKey(auth.id ?? auth.email),
+                      customerMode: auth.role != 'pengelola',
+                      initialDate: DateTime.tryParse(
+                          state.uri.queryParameters['date'] ?? ''),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: AppLocations.history,
+                builder: (_, state) => NasabahHistoryScreen(
+                      membershipId: state.uri.queryParameters['keanggotaan_id'],
+                      initialPencairan:
+                          state.uri.queryParameters['filter'] == 'pencairan',
+                    )),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: AppLocations.customerBank,
+                // coverage:ignore-start
+                // Not built by any navigation destination: MainPage shows
+                // "Kembali ke Beranda" for this branch instead of the page.
+                builder: (_, __) => const NasabahBankPage()),
+            // coverage:ignore-end
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+                path: ProfilePage.route,
+                name: ProfilePage.route,
+                builder: (_, __) => const ProfilePage()),
+          ]),
         ],
       ),
     ],
   );
 
   static GoRouter getRouter() => _router;
+
+  static String? _roleRedirect(BuildContext context, String path) {
+    final state = context.read<AuthenticationBloc>().state;
+    if (state is! Authenticated) return null;
+    final role = state.authEntity.role;
+    final webRedirect = webRoleRedirect(
+      isWeb: kIsWeb,
+      path: path,
+      loginPath: LoginPage.route,
+      role: role,
+    );
+    if (webRedirect != null) return webRedirect;
+    final staffPaths = {
+      NasabahPage.route,
+      HargaPage.route,
+      LaporanPage.route,
+      TransaksiBaruPage.route
+    };
+    final customerPaths = {
+      AppLocations.history,
+      AppLocations.customerBank,
+      ApprovalBankSampahListPage.route,
+      ApprovalBankSampahDetailPage.route,
+    };
+    final protected = staffPaths.contains(path) ||
+        customerPaths.contains(path) ||
+        path == AppLocations.dashboard ||
+        path == AppLocations.profile;
+    if (role == 'superadmin' && protected) {
+      return SuperAdminDashboardScreen.route;
+    }
+    if (role == 'nasabah' && staffPaths.contains(path)) {
+      return AppLocations.dashboard;
+    }
+    if ((role == 'pengelola' || role == 'pengelola_induk') &&
+        customerPaths.contains(path)) {
+      return AppLocations.dashboard;
+    }
+    if (!{'nasabah', 'pengelola', 'pengelola_induk', 'superadmin'}
+            .contains(role) &&
+        protected) {
+      return LoginPage.route;
+    }
+    return null;
+  }
 }

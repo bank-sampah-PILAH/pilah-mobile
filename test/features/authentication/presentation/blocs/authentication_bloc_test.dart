@@ -1,15 +1,25 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
+    as google_sign_in;
 import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/check_session_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_refresh_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
 
@@ -18,6 +28,10 @@ class MockAuthenticationUseCases extends Mock
 
 class MockLoginWithGoogleUseCase extends Mock
     implements LoginWithGoogleUseCase {}
+
+class _MockGoogleSignInPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements google_sign_in.GoogleSignInPlatform {}
 
 void main() {
   late AuthenticationBloc bloc;
@@ -47,6 +61,78 @@ void main() {
 
     test('initial state should be AuthenticationInitial', () {
       expect(bloc.state, isA<AuthenticationInitial>());
+    });
+
+    test('signs out of Google before completing web logout', () async {
+      final originalGoogleSignInPlatform =
+          google_sign_in.GoogleSignInPlatform.instance;
+      final googleSignInPlatform = _MockGoogleSignInPlatform();
+      google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
+      final googleSignOut = Completer<void>();
+      final calls = <String>[];
+      when(() => googleSignInPlatform
+          .signOut(const google_sign_in.SignOutParams())).thenAnswer((_) {
+        calls.add('Google sign-out');
+        return googleSignOut.future;
+      });
+      when(() => mockUseCases.logout()).thenAnswer((_) async {
+        calls.add('PILAH logout');
+        return const Right(null);
+      });
+
+      final webBloc = AuthenticationBloc(
+        mockUseCases,
+        mockLoginWithGoogle,
+        isWebOverride: true,
+      );
+      addTearDown(() async {
+        if (!googleSignOut.isCompleted) googleSignOut.complete();
+        google_sign_in.GoogleSignInPlatform.instance =
+            originalGoogleSignInPlatform;
+        await webBloc.close();
+      });
+      final loading = webBloc.stream.first;
+      final unauthenticated =
+          webBloc.stream.firstWhere((state) => state is Unauthenticated);
+
+      webBloc.add(LogoutRequested());
+      expect(await loading, isA<AuthenticationLoading>());
+      expect(calls, ['Google sign-out']);
+
+      googleSignOut.complete();
+      expect(await unauthenticated, isA<Unauthenticated>());
+      expect(calls, ['Google sign-out', 'PILAH logout']);
+    });
+
+    test('continues web logout if Google sign-out fails', () async {
+      final originalGoogleSignInPlatform =
+          google_sign_in.GoogleSignInPlatform.instance;
+      final googleSignInPlatform = _MockGoogleSignInPlatform();
+      google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
+      when(() => googleSignInPlatform
+              .signOut(const google_sign_in.SignOutParams()))
+          .thenAnswer((_) async => throw StateError('GIS unavailable'));
+      when(() => mockUseCases.logout())
+          .thenAnswer((_) async => const Right(null));
+
+      final webBloc = AuthenticationBloc(
+        mockUseCases,
+        mockLoginWithGoogle,
+        isWebOverride: true,
+      );
+      addTearDown(() async {
+        google_sign_in.GoogleSignInPlatform.instance =
+            originalGoogleSignInPlatform;
+        await webBloc.close();
+      });
+      final states = expectLater(
+        webBloc.stream,
+        emitsInOrder([isA<AuthenticationLoading>(), isA<Unauthenticated>()]),
+      );
+
+      webBloc.add(LogoutRequested());
+      await states;
+      verify(() => mockUseCases.logout()).called(1);
     });
 
     blocTest<AuthenticationBloc, dynamic>(
@@ -122,7 +208,7 @@ void main() {
         'emits [Loading, Authenticated] when Google login is successful',
         build: () {
           when(() => mockLoginWithGoogle.execute(tIdToken))
-              .thenAnswer((_) async => Right(tAuthEntity));
+              .thenAnswer((_) async => Right(GoogleSession(tAuthEntity)));
           return bloc;
         },
         act: (bloc) => bloc.add(LoginWithGoogleRequested(
@@ -135,6 +221,119 @@ void main() {
           isA<AuthenticationLoading>(),
           isA<Authenticated>(),
         ],
+      );
+
+      final registration = GoogleRegistrationRequired(
+        registrationToken: 'signed-token',
+        expiresIn: 600,
+        name: tName,
+        email: tEmail,
+        photoUrl: tPhotoUrl,
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'emits role selection for an unknown Google account',
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken))
+              .thenAnswer((_) async => Right(registration));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(
+          name: tName,
+          email: tEmail,
+          photoUrl: tPhotoUrl,
+          idToken: tIdToken,
+        )),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<GoogleRegistrationPending>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'submits the selected role and authenticates the new account',
+        build: () {
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: GoogleRegistrationRole.nasabah,
+              )).thenAnswer((_) async => Right(tAuthEntity));
+          return bloc;
+        },
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
+          isA<Authenticated>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'keeps registration in memory when role submission fails',
+        build: () {
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: GoogleRegistrationRole.pengelola,
+              )).thenAnswer(
+            (_) async => Left(GeneralException(message: 'Network failed')),
+          );
+          return bloc;
+        },
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.pengelola,
+          ),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
+          isA<GoogleRegistrationFailure>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'clears registration when the signed token is expired',
+        build: () {
+          final response = Response<dynamic>(
+            requestOptions: RequestOptions(path: '/auth/google/register'),
+            data: {
+              'code': 'registration_token_expired',
+              'error': 'Sesi pendaftaran kedaluwarsa',
+            },
+            statusCode: 400,
+          );
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: GoogleRegistrationRole.nasabah,
+              )).thenAnswer(
+            (_) async => Left(BadRequestException(
+              response: response,
+              message: 'Sesi pendaftaran kedaluwarsa',
+            )),
+          );
+          return bloc;
+        },
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
+          isA<GoogleRegistrationExpired>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'change account clears the pending registration',
+        build: () => bloc,
+        seed: () => GoogleRegistrationPending(registration: registration),
+        act: (bloc) => bloc.add(const ChangeGoogleAccountRequested()),
+        expect: () => [isA<AuthenticationInitial>()],
       );
 
       blocTest<AuthenticationBloc, dynamic>(
@@ -154,6 +353,105 @@ void main() {
         expect: () => [
           isA<AuthenticationLoading>(),
           isA<AuthenticationFailure>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'fails when the server answers with no usable Google outcome',
+        build: () {
+          when(() => mockLoginWithGoogle.execute(tIdToken))
+              .thenAnswer((_) async => const Right(null));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LoginWithGoogleRequested(
+          name: tName,
+          email: tEmail,
+          photoUrl: tPhotoUrl,
+          idToken: tIdToken,
+        )),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<AuthenticationFailure>().having(
+              (f) => f.message, 'message', 'Invalid response from server'),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'lets the user retry the role after a failed submission',
+        build: () {
+          when(() => mockLoginWithGoogle.register(
+                registrationToken: 'signed-token',
+                role: GoogleRegistrationRole.nasabah,
+              )).thenAnswer((_) async => Right(tAuthEntity));
+          return bloc;
+        },
+        seed: () => GoogleRegistrationFailure(
+            registration: registration, message: 'Network failed'),
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
+        ),
+        expect: () => [
+          isA<GoogleRegistrationSubmitting>(),
+          isA<Authenticated>(),
+        ],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'ignores a role submission when no registration is pending',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const RegisterGoogleRoleRequested(
+            role: GoogleRegistrationRole.nasabah,
+          ),
+        ),
+        expect: () => <dynamic>[],
+      );
+    });
+
+    group('session', () {
+      blocTest<AuthenticationBloc, dynamic>(
+        'drops a stale session when the user can no longer be fetched',
+        build: () {
+          when(() => mockUseCases.hasSession()).thenAnswer((_) async => true);
+          when(() => mockUseCases.getMe()).thenAnswer(
+              (_) async => Left(GeneralException(message: 'expired')));
+          when(() => mockUseCases.logout())
+              .thenAnswer((_) async => const Right(null));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(CheckSessionRequested()),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<Unauthenticated>(),
+        ],
+        verify: (_) => verify(() => mockUseCases.logout()).called(1),
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'refreshing the user keeps the current state when the fetch fails',
+        build: () {
+          when(() => mockUseCases.getMe()).thenAnswer(
+              (_) async => Left(GeneralException(message: 'offline')));
+          return bloc;
+        },
+        seed: () => Authenticated(authEntity: tAuth),
+        act: (bloc) => bloc.add(RefreshUserRequested()),
+        expect: () => <dynamic>[],
+      );
+
+      blocTest<AuthenticationBloc, dynamic>(
+        'logging out ends in Unauthenticated',
+        build: () {
+          when(() => mockUseCases.logout())
+              .thenAnswer((_) async => const Right(null));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(LogoutRequested()),
+        expect: () => [
+          isA<AuthenticationLoading>(),
+          isA<Unauthenticated>(),
         ],
       );
     });
