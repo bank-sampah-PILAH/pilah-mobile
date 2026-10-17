@@ -9,12 +9,12 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart';
-import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 
 /// The nasabah half of PIL-204: a calon nasabah, having already completed
 /// their profile (including address) on the shared complete_profile step,
@@ -139,7 +139,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
       _backToProfile();
       return;
     }
-    _confirmExit();
+    confirmExitOnboarding(context);
   }
 
   /// Returns to step one, preferring a pop so the profile screen underneath is
@@ -151,56 +151,6 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
     } else {
       context.go('/complete-profile');
     }
-  }
-
-  Future<void> _confirmExit() async {
-    final shouldLogout = await showAppConfirmDialog(
-      context,
-      title: 'Keluar dari Pendaftaran?',
-      message:
-          'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
-          'tersimpan dan Anda akan dialihkan ke halaman login.',
-      confirmLabel: 'Ya, Keluar',
-      destructive: true,
-    );
-    if (shouldLogout && mounted) {
-      context.read<AuthenticationBloc>().add(LogoutRequested());
-    }
-  }
-
-  Widget _buildFormField({
-    required String label,
-    required Widget child,
-    String? description,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            text: label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-            children: const [
-              TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
-            ],
-          ),
-        ),
-        if (description != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            description,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-          ),
-        ],
-        const SizedBox(height: 8),
-        child,
-        const SizedBox(height: 20),
-      ],
-    );
   }
 
   @override
@@ -216,225 +166,88 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
           body: SingleChildScrollView(
             child: Column(
               children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(
-                      top: 70, left: 24, right: 24, bottom: 40),
-                  decoration: const BoxDecoration(color: AppColors.greenDark),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Daftar Sebagai Nasabah',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Pilih bank sampah untuk mengajukan '
-                              'keanggotaan.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
+                OnboardingHeader(
+                  title: 'Daftar Sebagai Nasabah',
+                  subtitle: 'Pilih bank sampah untuk mengajukan keanggotaan.',
+                  onExit: () => confirmExitOnboarding(context),
+                ),
+                const OnboardingStepper(
+                  currentStep: 2,
+                  secondStepLabel: 'Pilih Bank Sampah',
+                ),
+                const SizedBox(height: 24),
+                OnboardingFormCard(
+                  formKey: _formKey,
+                  children: [
+                    if (_isLocked) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.warningLight,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Text(
+                          'Saat ini Anda hanya dapat terdaftar di 1 '
+                          'bank sampah.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.brown[700],
+                          ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: _confirmExit,
-                        icon: const Icon(Icons.logout, color: Colors.white),
-                        tooltip: 'Keluar',
-                      ),
+                      const SizedBox(height: 16),
                     ],
-                  ),
-                ),
-
-                // Onboarding stepper: step one (Profil Diri) already landed
-                // on the shared complete_profile screen, so it renders done
-                // here — this is step two.
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                    OnboardingFormField(
+                      label: 'BANK SAMPAH',
+                      description: 'Bank sampah yang akan menjadi tempat Anda '
+                          'menabung sampah',
+                      child: PilihBankSampahSection(
+                        selectedBank: _selectedBank,
+                        onBankSelected: _onBankSelected,
+                        hasError: _showBankError,
+                        errorText: 'Bank sampah wajib dipilih',
+                        enabled: !_isLocked,
+                        excludedBankIds: _memberships
+                            .map((membership) => membership.bankSampahId)
+                            .toSet(),
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Column(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              color: AppColors.greenDark,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.check,
-                                  color: Colors.white, size: 20),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Profil Diri',
-                            style: TextStyle(
-                              color: AppColors.greenDark,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                    ),
+                    if (_memberships.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        'BANK SAMPAH YANG SUDAH TERGABUNG',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
-                      Container(
-                        width: 100,
-                        height: 2,
-                        margin: const EdgeInsets.only(bottom: 24),
-                        color: AppColors.greenDark,
-                      ),
-                      Column(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              color: AppColors.greenDark,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Text(
-                                '2',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                      const SizedBox(height: 8),
+                      for (final membership in _memberships)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  membership.bankSampahNama,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Pilih Bank Sampah',
-                            style: TextStyle(
-                              color: AppColors.greenDark,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 15,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_isLocked) ...[
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.warningLight,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.md),
-                              ),
-                              child: Text(
-                                'Saat ini Anda hanya dapat terdaftar di 1 '
-                                'bank sampah.',
+                              Text(
+                                _membershipStatusLabel(membership),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.brown[700],
+                                  color: Colors.grey.shade600,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          _buildFormField(
-                            label: 'BANK SAMPAH',
-                            description:
-                                'Bank sampah yang akan menjadi tempat Anda '
-                                'menabung sampah',
-                            child: PilihBankSampahSection(
-                              selectedBank: _selectedBank,
-                              onBankSelected: _onBankSelected,
-                              hasError: _showBankError,
-                              errorText: 'Bank sampah wajib dipilih',
-                              enabled: !_isLocked,
-                              excludedBankIds: _memberships
-                                  .map((membership) => membership.bankSampahId)
-                                  .toSet(),
-                            ),
+                            ],
                           ),
-                          if (_memberships.isNotEmpty) ...[
-                            const SizedBox(height: 20),
-                            Text(
-                              'BANK SAMPAH YANG SUDAH TERGABUNG',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            for (final membership in _memberships)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        membership.bankSampahNama,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      _membershipStatusLabel(membership),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Padding(
