@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -14,6 +15,7 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_je
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class TambahJenisSampahBottomSheet extends StatefulWidget {
   final HargaEntity? initialData;
@@ -159,8 +161,7 @@ class _TambahJenisSampahBottomSheetState
                     if (_serverKodeError != null) return _serverKodeError;
                     return null;
                   },
-                  decoration:
-                      _buildInputDecoration(hintText: 'Contoh: PLS-001'),
+                  decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -180,7 +181,7 @@ class _TambahJenisSampahBottomSheetState
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   decoration:
-                      _buildInputDecoration(hintText: 'Contoh: Plastik PET'),
+                      appInputDecoration(hintText: 'Contoh: Plastik PET'),
                 ),
                 const SizedBox(height: 20),
 
@@ -193,7 +194,7 @@ class _TambahJenisSampahBottomSheetState
                       ? 'Bagian ini wajib diisi.'
                       : null,
                   hint: const Text('— Pilih Kategori —'),
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
                   items: _categories.map(_buildDropdownItem).toList(),
                   onChanged: (newValue) {
@@ -210,7 +211,7 @@ class _TambahJenisSampahBottomSheetState
                 TextFormField(
                   controller: _descController,
                   maxLines: 2,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                       hintText: 'Contoh: Botol bening, kemasan plastik'),
                 ),
                 const SizedBox(height: 20),
@@ -225,7 +226,7 @@ class _TambahJenisSampahBottomSheetState
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Bagian ini wajib diisi.'
                       : null,
-                  decoration: _buildInputDecoration(
+                  decoration: appInputDecoration(
                     hintText: '0',
                   ).copyWith(
                     prefixIcon: Padding(
@@ -412,8 +413,7 @@ class _TambahJenisSampahBottomSheetState
     final isEditMode = widget.initialData != null;
 
     final int priceVal = int.tryParse(_priceController.text) ?? 0;
-    final String formattedPrice =
-        'Rp ${_priceController.text.replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), ".")}';
+    final String formattedPrice = CurrencyFormatter.formatRupiah(priceVal);
 
     final harga = HargaEntity(
       id: widget.initialData?.id ?? '',
@@ -557,8 +557,8 @@ class _TambahJenisSampahBottomSheetState
           const SizedBox(height: 2),
           Text(
             berlakuMulai == null
-                ? 'Rp ${formatRupiahId(jenis.price)}/kg'
-                : 'Rp ${formatRupiahId(jenis.price)}/kg sejak '
+                ? '${CurrencyFormatter.formatRupiah(jenis.price)}/kg'
+                : '${CurrencyFormatter.formatRupiah(jenis.price)}/kg sejak '
                     '${formatTanggalId(berlakuMulai.toLocal())}',
             style: nilai,
           ),
@@ -567,7 +567,7 @@ class _TambahJenisSampahBottomSheetState
             Text('Harga terjadwal', style: keterangan),
             const SizedBox(height: 2),
             Text(
-              'Rp ${formatRupiahId(terjadwal.harga)}/kg mulai '
+              '${CurrencyFormatter.formatRupiah(terjadwal.harga)}/kg mulai '
               '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
               style: nilai,
             ),
@@ -615,32 +615,6 @@ class _TambahJenisSampahBottomSheetState
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
       ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({String? hintText}) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey[400]),
-      filled: true,
-      fillColor: Colors.white,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 }

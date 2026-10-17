@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,18 +24,15 @@ const _draft = CompleteProfileRequest(
 void main() {
   late StubApi api;
   late OnboardingCubit cubit;
-  late File photo;
+  final photo = Uint8List.fromList([1, 2, 3]);
 
   setUp(() {
     api = StubApi();
     cubit = buildOnboardingCubit(api);
-    photo = File('${Directory.systemTemp.path}/onboarding_foto.jpg')
-      ..writeAsBytesSync([1, 2, 3]);
   });
 
   tearDown(() async {
     await cubit.close();
-    if (photo.existsSync()) photo.deleteSync();
   });
 
   RegisterBankSampahRequest bankRequest({String? kota = ' Depok '}) =>
@@ -44,7 +41,8 @@ void main() {
         alamat: 'Jl. Melati 1',
         kota: kota,
         noHpPic: '0812',
-        fotoKegiatanPath: photo.path,
+        fotoKegiatanBytes: photo,
+        fotoKegiatanFilename: 'onboarding_foto.jpg',
       );
 
   test('complete profile puts the JSON and returns the next step', () async {

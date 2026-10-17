@@ -80,7 +80,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Detail Pencairan'), findsOneWidget);
-    expect(find.text('Rp 150.000'), findsOneWidget);
+    expect(find.text('Rp 150.000'), findsNWidgets(2),
+        reason: 'nominal, and dibayar since nothing was taken off');
+    expect(find.text('Potongan'), findsOneWidget);
     expect(find.text('Transfer'), findsOneWidget);
     expect(find.textContaining('27 September 2026'), findsOneWidget);
     expect(find.text('Keterangan terbaru'), findsOneWidget);

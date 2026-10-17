@@ -111,7 +111,7 @@ void main() {
       expect(find.text('Coba Lagi'), findsNothing);
     });
 
-    testWidgets('renders every activity the cubit hands it, day label and all',
+    testWidgets('renders every activity with its full date and time',
         (tester) async {
       final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
@@ -130,8 +130,10 @@ void main() {
         reason: 'a transaction from months ago is still recent activity when '
             'nothing newer exists — the section is not scoped to a period',
       );
-      expect(find.text('Hari ini'), findsOneWidget);
-      expect(find.text('12 hari lalu'), findsNWidgets(2));
+      expect(find.text('22/09/2026'), findsOneWidget);
+      expect(find.text('10/09/2026'), findsNWidgets(2));
+      expect(find.text('09:00'), findsNWidgets(2));
+      expect(find.text('08:00'), findsOneWidget);
     });
 
     testWidgets('renders a pencairan row alongside setoran', (tester) async {
@@ -175,5 +177,23 @@ void main() {
 
       expect(find.text('Laporan'), findsOneWidget);
     });
+  });
+  testWidgets('legacy activity without captions uses its day label',
+      (tester) async {
+    final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      ActivitasEntity(
+          tipe: ActivitasTipe.setoran,
+          tanggal: _today,
+          avatarText: 'AB',
+          avatarColor: Colors.green,
+          avatarTextColor: Colors.white,
+          title: 'Legacy',
+          subtitleLines: const [],
+          amount: '+Rp 1.000',
+          searchTerm: 'Legacy')
+    ]));
+    addTearDown(cubit.close);
+    await tester.pumpWidget(_host(cubit));
+    expect(find.text('Hari ini'), findsOneWidget);
   });
 }

@@ -4,13 +4,17 @@ import 'dart:typed_data';
 /// `periode` values: `hari_ini`, `minggu_ini`, `bulan_ini`, `bulan_lalu`,
 /// `custom` (with `dari_tanggal` / `sampai_tanggal`), plus [periodeSemua] for
 /// no date filter at all.
+///
+/// The constructor pins `bulan_ini` for the legacy transaction list/export.
+/// The unified `/aktivitas` API defaults an omitted period to `semua`; feed
+/// callers must pass their selected period explicitly.
 class TransaksiFilter {
   /// `periode` value meaning "every transaction, no date filter".
   ///
   /// It has to be sent explicitly: the backend's
   /// `TransactionFilterService.apply_period` defaults a *missing* `periode` to
-  /// `hari_ini`, and only leaves the queryset untouched for a value it doesn't
-  /// recognise. Omitting the param would quietly scope the request to today.
+  /// `hari_ini`. Send `semua` for all-time data; unknown values are rejected.
+  /// Omitting the param would quietly scope the legacy request to today.
   static const periodeSemua = 'semua';
 
   final String periode;
@@ -21,17 +25,26 @@ class TransaksiFilter {
   /// Null leaves it to the caller's default — only the dashboard's short
   /// preview list narrows it.
   final int? pageSize;
+  final int page;
+  final String? tipe;
+  final String? search;
 
   const TransaksiFilter({
     this.periode = 'bulan_ini',
     this.dariTanggal,
     this.sampaiTanggal,
     this.pageSize,
+    this.page = 1,
+    this.tipe,
+    this.search,
   });
 
   /// Every transaction ever, newest first — no date filter of any kind.
   const TransaksiFilter.semua({this.pageSize})
       : periode = periodeSemua,
+        page = 1,
+        tipe = null,
+        search = null,
         dariTanggal = null,
         sampaiTanggal = null;
 
@@ -39,6 +52,10 @@ class TransaksiFilter {
 
   Map<String, dynamic> toQueryParams() {
     final params = <String, dynamic>{'periode': periode};
+    if (tipe != null) params['tipe'] = tipe;
+    if (search != null && search!.trim().isNotEmpty) {
+      params['search'] = search!.trim();
+    }
     if (isCustom) {
       if (dariTanggal != null) {
         params['dari_tanggal'] = _iso(dariTanggal!);
