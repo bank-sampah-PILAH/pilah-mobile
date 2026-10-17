@@ -43,6 +43,9 @@ const _publicPaths = {
   '/invite',
 };
 
+bool _isPublicPath(String path) =>
+    _publicPaths.contains(path) || path.startsWith('/invite/');
+
 /// Sends a cold start that landed straight on a protected path to the splash.
 ///
 /// On web the browser URL decides the first route, so refreshing on
@@ -55,7 +58,7 @@ String? sessionRestoreRedirect({
   required String path,
   String query = '',
 }) {
-  if (sessionChecked || _publicPaths.contains(path)) return null;
+  if (sessionChecked || _isPublicPath(path)) return null;
   final location = query.isEmpty ? path : '$path?$query';
   return '/splash?from=${Uri.encodeComponent(location)}';
 }
@@ -65,7 +68,7 @@ String? sessionRestoreRedirect({
 /// Logging out already navigates to login, but the browser's Back button can
 /// return to `/dashboard` afterwards, where the shell has no role to render.
 String? signedOutRedirect({required bool signedOut, required String path}) =>
-    signedOut && !_publicPaths.contains(path) ? '/login' : null;
+    signedOut && !_isPublicPath(path) ? '/login' : null;
 
 /// The home each fully onboarded role lands on. A [target] outside this set is
 /// an onboarding step, which always outranks the page being restored.
@@ -82,7 +85,7 @@ String locationAfterRestore({required String target, String? from}) {
   final safe = from != null &&
       from.startsWith('/') &&
       !from.startsWith('//') &&
-      !_publicPaths.contains(Uri.tryParse(from)?.path);
+      !_isPublicPath(Uri.tryParse(from)?.path ?? '');
   return safe && _homeLocations.contains(target) ? from : target;
 }
 

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -93,20 +91,20 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// untouched.
   ///
   /// Mobile uses a square cropper and compresses the result to a 1024px JPEG.
-  /// Web deliberately skips cropping and retains the browser-selected bytes:
-  /// the cropper has no web implementation, and adding a separate browser
-  /// editor is outside this profile change. The preview uses the same centered
-  /// circular crop that will display the saved logo.
+  /// Web keeps the browser-selected bytes without opening the native cropper.
+  /// The preview uses the same centered circular crop as the saved logo.
   ///
   /// Backing out of the native picker or cropper returns null and is not an
   /// error. The state stays as it was, including any logo picked earlier.
   Future<void> pickLogo() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image == null) return;
+    if (image == null || isClosed) return;
 
     if (_isWeb) {
+      final bytes = await image.readAsBytes();
+      if (isClosed) return;
       emit(state.copyWith(
-        selectedLogoBytes: await image.readAsBytes(),
+        selectedLogoBytes: bytes,
         selectedLogoFilename: image.name,
       ));
       return;
@@ -148,9 +146,14 @@ class ProfileCubit extends Cubit<ProfileState> {
         ),
       ],
     );
-    if (cropped == null) return;
+    if (cropped == null || isClosed) return;
+    final bytes = await cropped.readAsBytes();
+    if (isClosed) return;
 
-    emit(state.copyWith(selectedLogoFile: File(cropped.path)));
+    emit(state.copyWith(
+      selectedLogoBytes: bytes,
+      selectedLogoFilename: XFile(cropped.path).name,
+    ));
   }
 
   /// Persists the editable bank sampah fields via `PUT /bank-sampah/me`.
@@ -172,7 +175,6 @@ class ProfileCubit extends Cubit<ProfileState> {
         alamat: alamat,
         kota: state.bankSampah?.kota,
         noHpPic: noHpPic,
-        fotoLogoPath: state.selectedLogoFile?.path,
         fotoLogoBytes: state.selectedLogoBytes,
         fotoLogoFilename: state.selectedLogoFilename,
       );
@@ -186,9 +188,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Clears cached data and returns to the initial state (used on logout, since
   /// this cubit is an app-scoped singleton that outlives a session).
   ///
-  /// [ProfileState.selectedLogoFile] is the reason this matters beyond stale
-  /// data: it is a path into the previous user's gallery, and left behind it
-  /// would be uploaded as the next bank sampah's logo on their first save.
+  /// Pending logo bytes must not be uploaded by the next signed-in user.
   void reset() => emit(const ProfileState());
 
   /// Generates a team invite link. Returns the URL on success, otherwise the

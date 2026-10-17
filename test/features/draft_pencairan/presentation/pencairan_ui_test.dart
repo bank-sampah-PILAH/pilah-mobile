@@ -282,9 +282,9 @@ void main() {
     testWidgets('is solid green with white text when selected', (tester) async {
       await pumpChip(tester, selected: true);
 
-      final box = tester.widget<Container>(find.descendant(
-          of: find.byKey(const Key('chip')), matching: find.byType(Container)));
-      expect((box.decoration! as BoxDecoration).color, AppColors.greenDark);
+      final pill = tester.widget<Material>(find.descendant(
+          of: find.byKey(const Key('chip')), matching: find.byType(Material)));
+      expect(pill.color, AppColors.greenDark);
       expect(
           tester.widget<Text>(find.text('Tunai')).style!.color, Colors.white);
     });
@@ -304,9 +304,9 @@ void main() {
         ),
       );
 
-      final box = tester.widget<Container>(find.descendant(
-          of: find.byKey(const Key('chip')), matching: find.byType(Container)));
-      expect((box.decoration! as BoxDecoration).color, const Color(0xFFF3F4F6));
+      final pill = tester.widget<Material>(find.descendant(
+          of: find.byKey(const Key('chip')), matching: find.byType(Material)));
+      expect(pill.color, AppColors.fill);
       await tester.tap(find.byKey(const Key('chip')));
       expect(taps, 1);
     });

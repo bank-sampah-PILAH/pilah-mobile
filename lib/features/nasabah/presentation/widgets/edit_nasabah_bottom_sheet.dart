@@ -9,6 +9,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 
 /// Pesan 403 yang berarti profilnya milik pemilik akun (PIL-223). Endpoint
 /// ini juga membalas 403 untuk nasabah nonaktif dengan pesan lain, jadi
@@ -134,46 +135,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Edit Nasabah',
-                      style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.close,
-                            color: Colors.grey[600], size: 20),
-                      ),
-                    ),
-                  ],
-                ),
+                const BottomSheetHeader(title: 'Edit Nasabah'),
                 const SizedBox(height: 12),
 
                 // Subtitle
@@ -508,13 +470,13 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: AppColors.greenLight,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lock_outline, size: 18, color: Color(0xFF006D44)),
+          const Icon(Icons.lock_outline, size: 18, color: AppColors.greenDark),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -523,7 +485,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
                 Text(
                   'Email dikelola oleh nasabah',
                   style: AppTextStyle.title1.copyWith(
-                    color: const Color(0xFF006D44),
+                    color: AppColors.greenDark,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),

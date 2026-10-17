@@ -66,3 +66,4 @@
 - Use the local `.agents/skills/lgtm` skill with the global `lgtm` workflow for
   merge and cleanup.
 - Make changes, commits, pushes, and PRs from the designated sibling worktree.
+- Read `DESIGN.md` before adding or changing any Flutter UI.

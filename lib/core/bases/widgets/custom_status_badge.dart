@@ -24,12 +24,12 @@ class CustomStatusBadge extends StatelessWidget {
 
     if (isActive != null) {
       if (isActive!) {
-        bg = const Color(0xFFDCFCE7); // green-100
-        text = const Color(0xFF166534); // green-800
+        bg = AppColors.greenLight; // green-100
+        text = AppColors.greenDark; // green-800
         label = 'Aktif';
       } else {
-        bg = const Color(0xFFFEE2E2); // red-100
-        text = const Color(0xFF991B1B); // red-800
+        bg = AppColors.dangerLight; // red-100
+        text = AppColors.danger; // red-800
         label = 'Nonaktif';
       }
     } else {

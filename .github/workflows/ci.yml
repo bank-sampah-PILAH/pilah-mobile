@@ -96,10 +96,18 @@ jobs:
       - name: Run tests with coverage
         run: flutter test --coverage
 
+      - name: Collect browser download coverage
+        run: >-
+          dart run test --platform chrome
+          --dart2js-args=-O0
+          --coverage-path=coverage/browser.lcov.info
+          test/browser/file_downloader_test.dart
+
       - name: Run web-specific widget tests
         run: >-
           flutter test --platform chrome
           test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
+          test/report_download_browser_test.dart
 
       - name: Verify the web dashboard role layout
         run: >-

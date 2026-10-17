@@ -31,6 +31,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # C
   clock: ^1.1.2
@@ -76,8 +78,10 @@ dependencies:
   url_launcher: ^6.3.2
   pdfrx: ^2.4.4
   printing: ^5.14.3
+  web: ^1.1.1
 
 dev_dependencies:
+  test: ^1.29.0
   flutter_test:
     sdk: flutter
   google_sign_in_platform_interface: ^3.1.0
@@ -111,6 +115,21 @@ flutter:
     - family: PlusJakartaSans
       fonts:
         - asset: assets/fonts/PlusJakartaSans.ttf
+    # Bundled so FontWeight resolves to the real face. google_fonts only
+    # exposes a regular-weight family to widgets that inherit the theme font,
+    # which made bold plain text render light. License: OFL (Poppins-OFL.txt).
+    # The file names deliberately omit the hyphen: google_fonts matches assets
+    # by "Poppins-Regular" suffix and would start loading these for AppTextStyle
+    # instead of fetching at runtime, changing text metrics in tests.
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/PoppinsRegular.ttf
+        - asset: assets/fonts/PoppinsMedium.ttf
+          weight: 500
+        - asset: assets/fonts/PoppinsSemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PoppinsBold.ttf
+          weight: 700
 
   assets:
     - .env

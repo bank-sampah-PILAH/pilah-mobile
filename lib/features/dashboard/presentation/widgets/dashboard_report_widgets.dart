@@ -5,6 +5,7 @@ import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_repor
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_range_filter.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_operational_chart.dart';
+import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 
 export 'dashboard_report_range_filter.dart';
 
@@ -242,7 +243,8 @@ class _WasteCategoriesWidgetState extends State<WasteCategoriesWidget> {
                             style: AppTextStyle.small.copyWith(
                               color: AppColors.grey100,
                             )),
-                        trailing: Text('${_number(item.totalWeightKg)} kg',
+                        trailing: Text(
+                            '${WeightFormatter.formatKg(item.totalWeightKg)} kg',
                             style: AppTextStyle.small.copyWith(
                               fontWeight: FontWeight.w600,
                               color: AppColors.greenDark,
@@ -357,5 +359,3 @@ class _ReportMessage extends StatelessWidget {
         ),
       );
 }
-
-String _number(double value) => value.toStringAsFixed(value % 1 == 0 ? 0 : 1);
