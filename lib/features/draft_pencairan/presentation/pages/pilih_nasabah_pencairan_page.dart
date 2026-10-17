@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -83,7 +84,8 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
         child: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
           builder: (context, state) => Column(
             children: [
-              const PencairanHeader(title: 'Pilih Nasabah'),
+              const AppBackHeader(
+                  backKey: Key('kembali'), title: 'Pilih Nasabah'),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Row(

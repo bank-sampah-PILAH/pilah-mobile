@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:printing/printing.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import '../widgets/draft_file_actions.dart';
-import '../widgets/pencairan_ui.dart';
 
 /// The generated PDF, shown before anything is saved, so the pengurus can see
 /// what it looks like and then download or share it.
@@ -43,7 +43,8 @@ class DraftPdfPreviewPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const PencairanHeader(title: 'Pratinjau PDF'),
+            const AppBackHeader(
+                backKey: Key('kembali'), title: 'Pratinjau PDF'),
             Expanded(child: view(context, file.bytes)),
           ],
         ),
