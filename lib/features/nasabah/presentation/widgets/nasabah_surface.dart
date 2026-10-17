@@ -29,8 +29,22 @@ Future<T?> showNasabahSurface<T>(
       insetPadding: const EdgeInsets.all(24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
-        child: builder(dialogContext),
+        child: _DialogScope(child: builder(dialogContext)),
       ),
     ),
   );
+}
+
+/// Menandai isi yang sedang tampil di dalam dialog, bukan bottom sheet.
+///
+/// Dialog tidak dapat ditarik, jadi isi yang punya pegangan tarik
+/// menyembunyikannya di sini.
+bool isNasabahDialog(BuildContext context) =>
+    context.getInheritedWidgetOfExactType<_DialogScope>() != null;
+
+class _DialogScope extends InheritedWidget {
+  const _DialogScope({required super.child});
+
+  @override
+  bool updateShouldNotify(_DialogScope oldWidget) => false;
 }

@@ -11,6 +11,8 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confi
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class DetailNasabahBottomSheet extends StatefulWidget {
+  static const dragHandleKey = ValueKey('detail-drag-handle');
+
   /// Nasabah yang ditampilkan, memakai entity domain apa adanya.
   final NasabahEntity nasabah;
 
@@ -86,18 +88,21 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
+              // Drag handle: a dialog cannot be dragged, so it has none there.
+              if (!isNasabahDialog(context)) ...[
+                Center(
+                  child: Container(
+                    key: DetailNasabahBottomSheet.dragHandleKey,
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+              ],
 
               // Header Section
               Row(

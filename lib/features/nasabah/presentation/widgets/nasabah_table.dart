@@ -21,6 +21,8 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasaba
 /// Memakai [NasabahCubit] yang sama dengan layar telepon, jadi pencarian,
 /// penyaring, paginasi, dan seluruh aturan ubah data tidak digandakan.
 class NasabahTable extends StatelessWidget {
+  static const headerKey = ValueKey('nasabah-table-header');
+
   const NasabahTable({super.key});
 
   @override
@@ -265,7 +267,8 @@ class _HeaderRow extends StatelessWidget {
             flex: _columns[i],
             child: Text(text, style: _headStyle, textAlign: align));
     return Container(
-      color: AppColors.cardOffWhite,
+      key: NasabahTable.headerKey,
+      color: AppColors.fill,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       child: Row(children: [
         cell(0, 'NASABAH'),
@@ -422,8 +425,12 @@ class _RowState extends State<_Row> {
                                   backgroundColor: AppColors.greenDark),
                               child: const Text('Setujui')),
                         ]))
-                    : TextButton(
+                    : OutlinedButton(
                         onPressed: _open,
+                        style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.greenDark,
+                            side: const BorderSide(color: AppColors.border)),
                         child: const Text('Lihat detail'),
                       ),
               ),
