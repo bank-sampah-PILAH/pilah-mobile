@@ -79,10 +79,10 @@ void main() {
         .thenAnswer((_) async => Right(_riwayat));
     await pumpView(tester);
 
-    expect(find.text('Versi sekarang'), findsOneWidget);
+    expect(find.text('VERSI SEKARANG'), findsOneWidget);
     expect(find.text('Rp 150.000'), findsOneWidget);
-    expect(find.text('Versi 2'), findsOneWidget);
-    expect(find.text('Versi 1'), findsOneWidget);
+    expect(find.text('VERSI 2'), findsOneWidget);
+    expect(find.text('VERSI 1'), findsOneWidget);
     expect(find.text('Salah ketik nominal'), findsOneWidget);
     expect(find.text('Salah pilih metode'), findsOneWidget);
     expect(find.text('Diubah oleh Ibu Sari · 22 September 2026, 11:05'),
@@ -122,7 +122,7 @@ void main() {
     await tester.tap(find.text('Coba lagi'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Versi 2'), findsOneWidget);
+    expect(find.text('VERSI 2'), findsOneWidget);
   });
 
   group('looks like the rest of the app', () {
