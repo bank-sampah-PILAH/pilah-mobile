@@ -88,6 +88,12 @@ import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_reposito
     show JadwalRepository;
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart'
     show JadwalCubit;
+import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart'
+    show PengumumanRemoteDataSource;
+import 'package:pilah_mobile/features/pengumuman/domain/repositories/pengumuman_repository.dart'
+    show PengumumanRepository;
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart'
+    show PengumumanCubit;
 import 'package:pilah_mobile/features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     show NasabahRemoteDataSource;
 import 'package:pilah_mobile/features/nasabah/domain/repositories/nasabah_repository.dart'
@@ -227,6 +233,7 @@ final diRegistrations = <(String, String?, Object Function())>[
   ),
   ('DashboardRemoteDataSource', null, () => di<DashboardRemoteDataSource>()),
   ('JadwalRemoteDataSource', null, () => di<JadwalRemoteDataSource>()),
+  ('PengumumanRemoteDataSource', null, () => di<PengumumanRemoteDataSource>()),
   (
     'BankSampahApprovalRemoteDataSource',
     null,
@@ -235,6 +242,7 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('ProfileRemoteDataSource', null, () => di<ProfileRemoteDataSource>()),
   ('AuthRemoteDataSources', null, () => di<AuthRemoteDataSources>()),
   ('JadwalRepository', null, () => di<JadwalRepository>()),
+  ('PengumumanRepository', null, () => di<PengumumanRepository>()),
   ('StatementRemoteDataSources', null, () => di<StatementRemoteDataSources>()),
   ('HargaRemoteDataSource', null, () => di<HargaRemoteDataSource>()),
   ('NasabahRemoteDataSource', null, () => di<NasabahRemoteDataSource>()),
@@ -249,6 +257,7 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('DraftPencairanRepository', null, () => di<DraftPencairanRepository>()),
   ('TransaksiRepository', null, () => di<TransaksiRepository>()),
   ('OnboardingCubit', null, () => di<OnboardingCubit>()),
+  ('PengumumanCubit', null, () => di<PengumumanCubit>()),
   ('NasabahRepository', null, () => di<NasabahRepository>()),
   ('StatementRepository', null, () => di<StatementRepository>()),
   ('DraftEditorCubit', null, () => di<DraftEditorCubit>()),
