@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/bases/widgets/back_header_row.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
@@ -248,33 +248,9 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
                     // Header — same back-tile + title row as Transaksi Baru.
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          InkWell(
-                            onTap: () => context.pop(),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(Icons.arrow_back,
-                                  color: Colors.grey[800], size: 20),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              _isEditing
-                                  ? 'Ubah Pengumuman'
-                                  : 'Buat Pengumuman',
-                              style: AppTextStyle.appBar.copyWith(
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: BackHeaderRow(
+                        title:
+                            _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman',
                       ),
                     ),
                     Expanded(

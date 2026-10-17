@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/core/bases/widgets/back_header_row.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -202,32 +203,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Row(
-                  children: [
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.arrow_back,
-                            color: Colors.grey[800], size: 20),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        'Kelola Pengumuman',
-                        style: AppTextStyle.appBar.copyWith(
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: const BackHeaderRow(title: 'Kelola Pengumuman'),
               ),
               const SizedBox(height: 16),
               const Padding(
@@ -384,79 +360,34 @@ class _KelolaRow extends StatelessWidget {
           Row(
             children: [
               if (pengumuman.isDraft) ...[
-                OutlinedButton(
-                  onPressed: () => onUbah(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.greenDark),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Ubah',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600)),
+                _ActionPill(
+                  label: 'Ubah',
+                  color: AppColors.greenDark,
+                  onTap: () => onUbah(pengumuman),
                 ),
                 const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () => onHapus(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Hapus',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600)),
+                _ActionPill(
+                  label: 'Hapus',
+                  color: AppColors.danger,
+                  onTap: () => onHapus(pengumuman),
                 ),
               ] else if (pengumuman.isTerjadwal) ...[
-                OutlinedButton(
-                  onPressed: () => onUbah(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.greenDark),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Ubah',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600)),
+                _ActionPill(
+                  label: 'Ubah',
+                  color: AppColors.greenDark,
+                  onTap: () => onUbah(pengumuman),
                 ),
                 const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () => onBatalkanJadwal(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Batalkan Jadwal',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600)),
+                _ActionPill(
+                  label: 'Batalkan Jadwal',
+                  color: AppColors.danger,
+                  onTap: () => onBatalkanJadwal(pengumuman),
                 ),
               ] else if (pengumuman.isTerbit) ...[
-                OutlinedButton(
-                  onPressed: () => onTarik(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Tarik',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600)),
+                _ActionPill(
+                  label: 'Tarik',
+                  color: AppColors.danger,
+                  onTap: () => onTarik(pengumuman),
                 ),
               ],
               // kedaluwarsa and ditarik are read-only.
@@ -465,6 +396,29 @@ class _KelolaRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ActionPill extends StatelessWidget {
+  const _ActionPill({required this.label, required this.color, this.onTap});
+
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        side: BorderSide(color: color),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Text(label,
+          style: AppTextStyle.small
+              .copyWith(color: color, fontWeight: FontWeight.w600)),
     );
   }
 }
