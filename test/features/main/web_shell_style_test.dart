@@ -97,6 +97,13 @@ void main() {
       await mountRail(tester);
 
       expect(tester.getTopLeft(find.byType(NavigationRail)).dx, 12);
+      // The padding must be white too, not the colour of whatever is behind.
+      final fill = tester.widget<ColoredBox>(find
+          .descendant(
+              of: find.byKey(RoleNavigationRail.panelKey),
+              matching: find.byType(ColoredBox))
+          .first);
+      expect(fill.color, Colors.white);
       expect(tester.getSize(find.byKey(RoleNavigationRail.logoKey)).width, 44);
     });
 
