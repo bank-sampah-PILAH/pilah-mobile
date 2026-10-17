@@ -55,6 +55,113 @@ void main() {
 
       expect(_labelColor(tester, 'Semua'), AppColors.greenDark);
     });
+
+    Material surfaceOf(WidgetTester tester, Type button) => tester.widget(
+          find
+              .descendant(
+                of: find.byType(button),
+                matching: find.byType(Material),
+              )
+              .first,
+        );
+
+    for (final entry in <String, Widget Function()>{
+      'ElevatedButton': () =>
+          ElevatedButton(onPressed: () {}, child: const Text('Simpan')),
+      'FilledButton': () =>
+          FilledButton(onPressed: () {}, child: const Text('Simpan')),
+    }.entries) {
+      testWidgets(
+          'a plain ${entry.key} is a flat green button with a white label',
+          (tester) async {
+        await tester.pumpWidget(_app(entry.value()));
+
+        final surface = surfaceOf(
+          tester,
+          entry.key == 'ElevatedButton' ? ElevatedButton : FilledButton,
+        );
+        expect(surface.color, AppColors.greenDark);
+        expect(surface.elevation, 0);
+        expect(
+          surface.shape,
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        );
+        expect(_labelColor(tester, 'Simpan'), Colors.white);
+      });
+    }
+
+    testWidgets('a plain OutlinedButton has a green border and label',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(OutlinedButton(onPressed: () {}, child: const Text('Tambah'))),
+      );
+
+      final shape =
+          surfaceOf(tester, OutlinedButton).shape as RoundedRectangleBorder;
+      expect(shape.side.color, AppColors.greenDark);
+      expect(shape.borderRadius, BorderRadius.circular(12));
+      expect(_labelColor(tester, 'Tambah'), AppColors.greenDark);
+    });
+
+    for (final entry in <String, Widget Function()>{
+      'ElevatedButton': () =>
+          ElevatedButton(onPressed: () {}, child: const Text('Simpan')),
+      'FilledButton': () =>
+          FilledButton(onPressed: () {}, child: const Text('Simpan')),
+      'OutlinedButton': () =>
+          OutlinedButton(onPressed: () {}, child: const Text('Simpan')),
+    }.entries) {
+      testWidgets(
+          'a plain ${entry.key} label is 14 semibold, small enough for two '
+          'buttons side by side', (tester) async {
+        await tester.pumpWidget(_app(entry.value()));
+
+        final style = tester
+            .renderObject<RenderParagraph>(find.text('Simpan'))
+            .text
+            .style;
+        expect(style?.fontSize, 14);
+        expect(style?.fontWeight, FontWeight.w600);
+      });
+    }
+
+    for (final (name, type, build) in <(String, Type, Widget Function())>[
+      (
+        'ElevatedButton',
+        ElevatedButton,
+        () => ElevatedButton(onPressed: () {}, child: const Text('Simpan')),
+      ),
+      (
+        'FilledButton',
+        FilledButton,
+        () => FilledButton(onPressed: () {}, child: const Text('Simpan')),
+      ),
+      (
+        'OutlinedButton',
+        OutlinedButton,
+        () => OutlinedButton(onPressed: () {}, child: const Text('Simpan')),
+      ),
+    ]) {
+      testWidgets('a plain $name is 48 high, like an AppButton',
+          (tester) async {
+        await tester.pumpWidget(_app(build()));
+
+        // The painted surface, not the 48 dp tap target around it.
+        final surface = find
+            .descendant(of: find.byType(type), matching: find.byType(Material))
+            .first;
+        expect(tester.getSize(surface).height, 48);
+      });
+    }
+
+    testWidgets('a disabled filled button is grey, not a faded green',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(const ElevatedButton(onPressed: null, child: Text('Simpan'))),
+      );
+
+      expect(surfaceOf(tester, ElevatedButton).color, AppColors.border);
+    });
   });
 
   group('dialogs', () {

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -304,9 +304,9 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                 saldo: state.saldo,
                 nominal: localError == null ? nominal : null,
               );
-        final submitButton = CustomPrimaryButton(
+        final submitButton = AppButton(
           key: const Key('submit-pencairan'),
-          title: state.submitStatus == SubmitStatus.submitting
+          label: state.submitStatus == SubmitStatus.submitting
               ? 'Menyimpan...'
               : 'Catat Pencairan',
           onPressed: canSubmit
@@ -646,8 +646,8 @@ class _PencairanBerhasilSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          CustomPrimaryButton(
-            title: 'Selesai',
+          AppButton(
+            label: 'Selesai',
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],

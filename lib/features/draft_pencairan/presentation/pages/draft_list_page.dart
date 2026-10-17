@@ -339,8 +339,6 @@ class _TidakAdaHasil extends StatelessWidget {
                     ),
                     TextButton(
                       key: const Key('hapus-pencarian'),
-                      style: TextButton.styleFrom(
-                          foregroundColor: AppColors.greenDark),
                       onPressed: onClear,
                       child: const Text('Hapus pencarian'),
                     ),

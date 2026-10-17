@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
@@ -239,7 +240,10 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: AppButton(
+                      label: 'Edit Data',
+                      variant: AppButtonVariant.outlined,
+                      icon: Icons.edit,
                       onPressed: () {
                         final rootContext =
                             Navigator.of(context, rootNavigator: true).context;
@@ -250,25 +254,16 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                               EditNasabahBottomSheet(nasabah: nasabah),
                         );
                       },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text('Edit Data'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.greenDark,
-                        side: const BorderSide(color: AppColors.greenDark),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        textStyle: AppTextStyle.title1.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
+                    child: AppButton(
+                      label: isActive ? 'Nonaktifkan' : 'Aktifkan',
+                      variant: isActive
+                          ? AppButtonVariant.destructive
+                          : AppButtonVariant.primary,
+                      icon: isActive ? Icons.block : Icons.check_circle_outline,
                       onPressed: () {
                         if (widget.nasabahCubit == null) return;
 
@@ -283,26 +278,6 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                           ),
                         );
                       },
-                      icon: Icon(
-                          isActive ? Icons.block : Icons.check_circle_outline,
-                          size: 18,
-                          color: Colors.white),
-                      label: Text(isActive ? 'Nonaktifkan' : 'Aktifkan'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isActive
-                            ? DetailNasabahBottomSheet.errorColor
-                            : AppColors.greenDark,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                        textStyle: AppTextStyle.title1.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
                     ),
                   ),
                 ],

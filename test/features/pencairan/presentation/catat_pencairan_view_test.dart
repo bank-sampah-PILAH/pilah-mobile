@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -146,7 +146,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  CustomPrimaryButton submitButton(WidgetTester tester) =>
+  AppButton submitButton(WidgetTester tester) =>
       tester.widget(find.byKey(const Key('submit-pencairan')));
 
   /// The form scrolls on a phone; bring the button on screen before tapping.
@@ -636,8 +636,7 @@ void main() {
       expect(find.byKey(const Key('submit-pencairan')), findsOneWidget);
       expect(
         tester
-            .widget<CustomPrimaryButton>(
-                find.byKey(const Key('submit-pencairan')))
+            .widget<AppButton>(find.byKey(const Key('submit-pencairan')))
             .onPressed,
         isNotNull,
       );

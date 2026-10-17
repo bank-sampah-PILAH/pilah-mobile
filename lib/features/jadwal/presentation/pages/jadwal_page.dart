@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
@@ -513,7 +513,6 @@ class _RetryableMessage extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
               onPressed: onPressed,
               icon: const Icon(Icons.refresh),
               label: Text(buttonLabel),
@@ -566,7 +565,6 @@ class _CustomerEmptyScheduleDay extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Muat Ulang'),
@@ -624,17 +622,12 @@ class _EmptyScheduleDay extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
               onPressed: onCreate,
               icon: const Icon(Icons.add),
               label: const Text('Buat Jadwal'),
             ),
           ),
           TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
             onPressed: onRefresh,
             icon: const Icon(Icons.refresh, size: 18),
             label: const Text('Muat Ulang'),
@@ -759,16 +752,10 @@ class _ScheduleCard extends StatelessWidget {
 
   Widget _actionButton(JadwalAction action) => switch (action) {
         JadwalAction.batalkan => TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.greenDark,
-            ),
             onPressed: onCancel,
             child: Text(action.label),
           ),
         JadwalAction.terbitkan => FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-            ),
             onPressed: onPublish,
             child: Text(action.label),
           ),
@@ -1137,8 +1124,8 @@ class _JadwalFormState extends State<_JadwalForm> {
                     final isSaving = state is JadwalLoaded && state.isSaving;
                     return SizedBox(
                       width: double.infinity,
-                      child: CustomPrimaryButton(
-                        title: isSaving
+                      child: AppButton(
+                        label: isSaving
                             ? 'Menyimpan...'
                             : widget.initial == null
                                 ? 'Simpan Jadwal'

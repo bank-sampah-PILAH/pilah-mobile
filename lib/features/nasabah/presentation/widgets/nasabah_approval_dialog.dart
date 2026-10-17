@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Approve/reject confirmation for a pending nasabah membership (PIL-188).
 /// Pops with the trimmed catatan (alasan) the pengurus typed, or `null` when
@@ -71,16 +72,14 @@ class _NasabahApprovalDialogState extends State<NasabahApprovalDialog> {
           onPressed: () => Navigator.of(context).pop(null),
           child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
         ),
-        ElevatedButton(
+        AppButton(
+          label: widget.isApproving ? 'Setujui' : 'Tolak',
+          variant: widget.isApproving
+              ? AppButtonVariant.primary
+              : AppButtonVariant.destructive,
+          expand: false,
           onPressed: () =>
               Navigator.of(context).pop(_catatanController.text.trim()),
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                widget.isApproving ? AppColors.greenDark : Colors.red,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          child: Text(widget.isApproving ? 'Setujui' : 'Tolak'),
         ),
       ],
     );

@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -249,9 +249,9 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    CustomPrimaryButton(
+                    AppButton(
                       key: const Key('submit-edit-pencairan'),
-                      title: state.status == EditStatus.submitting
+                      label: state.status == EditStatus.submitting
                           ? 'Menyimpan...'
                           : 'Simpan Perubahan',
                       onPressed:

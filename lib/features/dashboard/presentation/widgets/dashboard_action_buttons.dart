@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
@@ -15,29 +16,18 @@ class DashboardActionButtons extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: ElevatedButton.icon(
+          child: AppButton(
+            label: 'Transaksi Baru',
+            icon: Icons.add,
             onPressed: () => _openTransaksiChooser(context),
-            icon: const Icon(Icons.add, color: Colors.white, size: 20),
-            label: Text(
-              'Transaksi Baru',
-              style: AppTextStyle.small.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: OutlinedButton.icon(
+          child: AppButton(
+            label: 'Tambah Nasabah',
+            variant: AppButtonVariant.neutral,
+            icon: Icons.person_add_outlined,
             onPressed: () {
               // 1. Trigger the route change to the Nasabah tab
               context.go('/nasabah');
@@ -55,26 +45,6 @@ class DashboardActionButtons extends StatelessWidget {
                 }
               });
             },
-            icon: const Icon(Icons.person_add_outlined,
-                color: AppColors.greenDark, size: 20),
-            label: Text(
-              'Tambah Nasabah',
-              style: AppTextStyle.small.copyWith(
-                color: AppColors.black,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              side: BorderSide(color: Colors.grey.shade300),
-              backgroundColor: Colors.white,
-            ),
           ),
         ),
       ],

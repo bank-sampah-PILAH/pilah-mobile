@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
@@ -391,9 +391,9 @@ class _Footer extends StatelessWidget {
               ),
               SizedBox(
                 width: 140,
-                child: CustomPrimaryButton(
+                child: AppButton(
                   key: const Key('lanjut'),
-                  title: 'Lanjut',
+                  label: 'Lanjut',
                   onPressed: terpilih.isEmpty || state.kelebihan
                       ? null
                       : () => context.pop(terpilih),

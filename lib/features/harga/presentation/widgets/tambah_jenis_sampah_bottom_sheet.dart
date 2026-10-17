@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -264,80 +265,25 @@ class _TambahJenisSampahBottomSheetState
                 const SizedBox(height: 32),
 
                 // Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _handleSimpan,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      disabledBackgroundColor:
-                          AppColors.greenDark.withValues(alpha: 0.6),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            isEditMode
-                                ? 'Simpan Perubahan'
-                                : 'Simpan Jenis Sampah',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                  ),
+                AppButton(
+                  label:
+                      isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+                  isLoading: _isSaving,
+                  onPressed: _handleSimpan,
                 ),
 
                 // Activate / Deactivate (edit mode only)
                 if (isEditMode) ...[
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _isSaving ? null : _handleToggleStatus,
-                      icon: Icon(
-                        _isActive ? Icons.block : Icons.check_circle_outline,
-                        size: 20,
-                        color:
-                            _isActive ? Colors.red[600] : AppColors.greenDark,
-                      ),
-                      label: Text(
-                        _isActive
-                            ? 'Nonaktifkan Jenis Sampah'
-                            : 'Aktifkan Jenis Sampah',
-                        style: AppTextStyle.title1.copyWith(
-                          color:
-                              _isActive ? Colors.red[600] : AppColors.greenDark,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        side: BorderSide(
-                          color: _isActive
-                              ? Colors.red[200]!
-                              : AppColors.greenLight,
-                        ),
-                        backgroundColor: Colors.white,
-                      ),
-                    ),
+                  AppButton(
+                    label: _isActive
+                        ? 'Nonaktifkan Jenis Sampah'
+                        : 'Aktifkan Jenis Sampah',
+                    variant: _isActive
+                        ? AppButtonVariant.destructiveOutlined
+                        : AppButtonVariant.outlined,
+                    icon: _isActive ? Icons.block : Icons.check_circle_outline,
+                    onPressed: _isSaving ? null : _handleToggleStatus,
                   ),
                 ],
               ],

@@ -7,14 +7,6 @@
     "color": 0,
     "fontSize": 1
   },
-  "lib/core/bases/widgets/custom_outlined_button.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
-  "lib/core/bases/widgets/custom_primary_button.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
   "lib/core/bases/widgets/proof_image_dialog.dart": {
     "color": 0,
     "fontSize": 2
@@ -91,10 +83,6 @@
     "color": 0,
     "fontSize": 1
   },
-  "lib/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart": {
-    "color": 0,
-    "fontSize": 2
-  },
   "lib/features/jadwal/presentation/pages/jadwal_page.dart": {
     "color": 0,
     "fontSize": 12
@@ -109,11 +97,11 @@
   },
   "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": {
     "color": 0,
-    "fontSize": 8
+    "fontSize": 6
   },
   "lib/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart": {
     "color": 0,
-    "fontSize": 2
+    "fontSize": 1
   },
   "lib/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart": {
     "color": 0,
@@ -121,31 +109,27 @@
   },
   "lib/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart": {
     "color": 0,
-    "fontSize": 3
+    "fontSize": 1
   },
   "lib/features/nasabah/presentation/widgets/nasabah_list_item.dart": {
     "color": 0,
     "fontSize": 2
   },
-  "lib/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
   "lib/features/onboarding/presentation/pages/complete_profile_screen.dart": {
     "color": 0,
-    "fontSize": 8
+    "fontSize": 7
   },
   "lib/features/onboarding/presentation/pages/pending_approval_screen.dart": {
     "color": 0,
-    "fontSize": 8
+    "fontSize": 7
   },
   "lib/features/onboarding/presentation/pages/register_bank_sampah_screen.dart": {
     "color": 0,
-    "fontSize": 15
+    "fontSize": 13
   },
   "lib/features/onboarding/presentation/pages/register_nasabah_screen.dart": {
     "color": 0,
-    "fontSize": 12
+    "fontSize": 10
   },
   "lib/features/onboarding/presentation/pages/role_handoff_page.dart": {
     "color": 0,
@@ -165,7 +149,7 @@
   },
   "lib/features/profile/presentation/pages/profile_page.dart": {
     "color": 0,
-    "fontSize": 10
+    "fontSize": 8
   },
   "lib/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart": {
     "color": 0,
@@ -189,7 +173,7 @@
   },
   "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": {
     "color": 0,
-    "fontSize": 4
+    "fontSize": 3
   },
   "lib/features/transaksi/presentation/widgets/item_setoran_card.dart": {
     "color": 0,
@@ -213,6 +197,6 @@
   },
   "lib/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart": {
     "color": 0,
-    "fontSize": 2
+    "fontSize": 1
   }
 }

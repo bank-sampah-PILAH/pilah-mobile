@@ -55,7 +55,7 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 
 | | Scale | Status |
 |---|---|---|
-| Radius | 8 (chips, small tiles), 12 (inputs, buttons), 16 (cards, dialogs), 24 (sheets, hero cards) | dialogs 16 and sheets 24 in code via `AppTheme`; the rest proposed. 12 and 16 already account for about 70% of usages. |
+| Radius | 8 (chips, small tiles), 12 (inputs, buttons), 16 (cards, dialogs), 24 (sheets, hero cards) | buttons 12, dialogs 16 and sheets 24 in code via `AppTheme`; the rest proposed. 12 and 16 already account for about 70% of usages. |
 | Spacing | 4, 8, 12, 16, 24, 32 | proposed; no token yet |
 | Content width | 600 max on nasabah pages (`NasabahStyle.maxWidth`, `ContentBounds`) | in code |
 
@@ -73,7 +73,7 @@ Use these instead of building another one.
 | Need | Use | Notes |
 |---|---|---|
 | Sheet header (title + close) | `BottomSheetHeader` | Do not hand-build the drag handle (about 17 copies exist today). |
-| Primary / secondary button | `CustomPrimaryButton`, `CustomOutlinedButton`, `design/widgets/atom/primary_button.dart` | Plain `FilledButton`/`TextButton` pick up the theme color. |
+| Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive` and `destructiveOutlined`; 48 high, radius 12, 14 semibold label, optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
 | Search | `CustomSearchField` | |
 | Status chip | `CustomStatusBadge` | |
 | Filter / tab pill | `AppChip` (`design/widgets`) | Announced to screen readers as a selected or unselected button, ripple, 48 dp hit area, optional icon and count. Used by the nasabah, harga, aktivitas and pencairan filters; `PencairanChip` wraps it. |
