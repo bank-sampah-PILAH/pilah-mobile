@@ -26,18 +26,16 @@ void main() {
       );
     });
 
-    test('passes the label, helper, error, prefix and suffix through', () {
+    test('passes the hint, error, prefix and suffix through', () {
       const suffix = Icon(Icons.calendar_month);
       final decoration = appInputDecoration(
-        labelText: 'Nominal',
-        helperText: 'Wajib diisi',
+        hintText: 'Contoh: 50000',
         errorText: 'Terlalu besar',
         prefixText: 'Rp ',
         suffixIcon: suffix,
       );
 
-      expect(decoration.labelText, 'Nominal');
-      expect(decoration.helperText, 'Wajib diisi');
+      expect(decoration.hintText, 'Contoh: 50000');
       expect(decoration.errorText, 'Terlalu besar');
       expect(decoration.prefixText, 'Rp ');
       expect(decoration.suffixIcon, suffix);
