@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 
-/// Holds the invite token captured from an `/invite?token=…` deep link until the
-/// user has signed in and reached the join screen.
+/// Holds the token from a native `/invite?token=…` or browser
+/// `/#/invite/<token>` link until the user signs in and reaches the join screen.
 ///
 /// Deliberately in-memory only. The token grants membership of a bank sampah,
 /// and the link that carries it can always be tapped again, so losing it on

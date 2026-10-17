@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -132,6 +133,20 @@ void main() {
     expect(find.text('Pilih Rentang Waktu'), findsNothing);
   });
 
+  testWidgets('reopening the calendar preserves the selected custom range',
+      (tester) async {
+    cubit.applyCustomRange(DateTime(2025, 2, 3), DateTime(2025, 4, 15));
+    await open(tester);
+    await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('03/02/2025'), findsOneWidget);
+    expect(find.text('15/04/2025'), findsOneWidget);
+    await tester.tap(find.text('Terapkan Filter'));
+    await tester.pumpAndSettle();
+    expect(cubit.state.dariTanggal, DateTime(2025, 2, 3));
+    expect(cubit.state.sampaiTanggal, DateTime(2025, 4, 15));
+  });
+
   group('picking dates', () {
     String format(DateTime d) =>
         '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
@@ -184,25 +199,43 @@ void main() {
   testWidgets('export control reacts to type and search filters',
       (tester) async {
     await open(tester);
-    InkWell exportControl() => tester.widget<InkWell>(find
-        .ancestor(of: find.text('XLS Setoran'), matching: find.byType(InkWell))
+    FilledButton exportControl() => tester.widget<FilledButton>(find
+        .ancestor(
+            of: find.text('XLSX Laporan'), matching: find.byType(FilledButton))
         .first);
-    expect(exportControl().onTap, isNotNull);
+    expect(exportControl().onPressed, isNotNull);
     cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNull);
+    expect(exportControl().onPressed, isNotNull);
     cubit.setTipeFilter(AktivitasTipeFilter.semua);
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNotNull);
+    expect(exportControl().onPressed, isNotNull);
     cubit.search('Budi');
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNull);
+    expect(exportControl().onPressed, isNotNull);
     cubit.search('');
     await tester.pumpAndSettle();
-    expect(exportControl().onTap, isNotNull);
+    expect(exportControl().onPressed, isNotNull);
   });
 
   group('export', () {
+    testWidgets('shows preparation while pending then reports an export error',
+        (tester) async {
+      final pending = Completer<Either<NetworkException, TransaksiExport>>();
+      when(() => export.execute(any())).thenAnswer((_) => pending.future);
+      await openPlain(tester);
+      await tester.tap(find.text('XLSX Laporan'));
+      await pumpToast(tester);
+      expect(find.text('Menyiapkan laporan XLSX...'), findsOneWidget);
+      expect(find.text('Bagikan'), findsNothing);
+      pending
+          .complete(Left(NetworkException(message: 'Akses laporan ditolak')));
+      await pumpUntilFound(tester, find.text('Akses laporan ditolak'));
+      expect(find.text('Menyiapkan laporan XLSX...'), findsNothing);
+      expect(find.text('Akses laporan ditolak'), findsOneWidget);
+      await settleToasts(tester);
+    });
+
     // A real request takes a moment; the "preparing" toast must be on screen
     // before it is dismissed.
     void slowExport(Either<NetworkException, TransaksiExport> result) {
@@ -219,7 +252,7 @@ void main() {
           bytes: Uint8List.fromList([1, 2]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(
           tester, find.textContaining('disimpan ke folder Download'));
 
@@ -239,7 +272,7 @@ void main() {
       slowExport(Left(NetworkException(message: 'Tidak ada data')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(tester, find.text('Tidak ada data'));
 
       expect(find.text('Tidak ada data'), findsOneWidget);
@@ -253,7 +286,7 @@ void main() {
           TransaksiExport(bytes: Uint8List.fromList([1]), filename: 'r.xlsx')));
       await openPlain(tester);
 
-      await tester.tap(find.text('XLS Setoran'));
+      await tester.tap(find.text('XLSX Laporan'));
       await pumpUntilFound(tester, find.text('Gagal Menyimpan'));
 
       expect(find.text('Gagal Menyimpan'), findsOneWidget);

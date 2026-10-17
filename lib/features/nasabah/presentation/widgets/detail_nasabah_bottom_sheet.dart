@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
 class DetailNasabahBottomSheet extends StatefulWidget {
+  static const dragHandleKey = ValueKey('detail-drag-handle');
+
   /// Nasabah yang ditampilkan, memakai entity domain apa adanya.
   final NasabahEntity nasabah;
 
@@ -76,24 +80,30 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        // Padding sits on the scroll view, not the Container: on wide screens
+        // the scrollbar is drawn at the viewport edge and would otherwise
+        // float over the fields, 24px inside the dialog.
         child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
+              // Drag handle: a dialog cannot be dragged, so it has none there.
+              if (!DialogSurface.of(context)) ...[
+                Center(
+                  child: Container(
+                    key: DetailNasabahBottomSheet.dragHandleKey,
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+              ],
 
               // Header Section
               Row(
@@ -231,12 +241,11 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
+                        final rootContext =
+                            Navigator.of(context, rootNavigator: true).context;
                         context.pop();
-                        showModalBottomSheet(
-                          context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
+                        showNasabahSurface<void>(
+                          rootContext,
                           builder: (context) =>
                               EditNasabahBottomSheet(nasabah: nasabah),
                         );
