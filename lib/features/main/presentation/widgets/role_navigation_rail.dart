@@ -68,6 +68,7 @@ class RoleNavigationRail extends StatelessWidget {
   /// Kunci panel dan logo, untuk test.
   static const panelKey = ValueKey('rail-panel');
   static const logoKey = ValueKey('rail-logo');
+  static const brandKey = ValueKey('rail-brand');
   static const headerDividerKey = ValueKey('rail-header-divider');
   static const profileKey = ValueKey('rail-profile');
   static const profileCardKey = ValueKey('rail-profile-card');
@@ -226,6 +227,10 @@ class _RailHeader extends StatelessWidget {
           )
         : Tooltip(message: label, child: badge);
 
+    // Brand dan pembatas selebar header, supaya area hover logo sepanjang
+    // sidebar. Pada rail sempit hanya selebar logo.
+    final headerWidth = extended ? _leadingMaxWidth : 48.0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       child: Column(
@@ -236,28 +241,32 @@ class _RailHeader extends StatelessWidget {
             button: true,
             label: 'Ke beranda',
             excludeSemantics: true,
-            child: InkWell(
-              onTap: onHome,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: extended
-                    ? Row(mainAxisSize: MainAxisSize.min, children: [
-                        logo,
-                        const SizedBox(width: 8),
-                        Text('PILAH',
-                            style: AppTextStyle.headline1.copyWith(
-                              color: AppColors.black,
-                              fontWeight: FontWeight.w700,
-                            )),
-                      ])
-                    : logo,
+            child: SizedBox(
+              width: headerWidth,
+              child: InkWell(
+                key: RoleNavigationRail.brandKey,
+                onTap: onHome,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: extended
+                      ? Row(mainAxisSize: MainAxisSize.min, children: [
+                          logo,
+                          const SizedBox(width: 8),
+                          Text('PILAH',
+                              style: AppTextStyle.headline1.copyWith(
+                                color: AppColors.black,
+                                fontWeight: FontWeight.w700,
+                              )),
+                        ])
+                      : logo,
+                ),
               ),
             ),
           ),
           // Lebar dibatasi: slot leading memberi constraint tak terbatas.
           SizedBox(
-            width: extended ? _leadingMaxWidth : 40,
+            width: headerWidth,
             child: const Divider(
               key: RoleNavigationRail.headerDividerKey,
               height: 33,
