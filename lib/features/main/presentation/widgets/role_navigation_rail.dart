@@ -81,7 +81,7 @@ class RoleNavigationRail extends StatelessWidget {
       key: panelKey,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(right: BorderSide(color: AppColors.border)),
+        border: Border(right: BorderSide(color: AppColors.grey200)),
       ),
       child: NavigationRail(
         extended: extended,
