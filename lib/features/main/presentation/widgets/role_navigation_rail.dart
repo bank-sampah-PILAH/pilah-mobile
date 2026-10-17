@@ -65,6 +65,7 @@ class RoleNavigationRail extends StatelessWidget {
   static const panelKey = ValueKey('rail-panel');
   static const logoKey = ValueKey('rail-logo');
   static const profileKey = ValueKey('rail-profile');
+  static const profileCardKey = ValueKey('rail-profile-card');
 
   /// Label bank sampah, atau label umum bila namanya tidak diketahui.
   @override
@@ -280,45 +281,55 @@ class _ProfileFooter extends StatelessWidget {
         button: true,
         label: 'Buka profil, $name',
         excludeSemantics: true,
-        child: InkWell(
-          key: RoleNavigationRail.profileKey,
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: extended
-              ? ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: _leadingMaxWidth),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Row(children: [
-                      avatar,
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyle.small.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.black)),
-                            if (email.isNotEmpty)
-                              Text(email,
+        // Garis tepi saja, tanpa isi: ripple InkWell digambar di Material di
+        // bawahnya, dan isi yang menutupinya akan menyembunyikan ripple itu.
+        child: DecoratedBox(
+          key: RoleNavigationRail.profileCardKey,
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            key: RoleNavigationRail.profileKey,
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: extended
+                ? ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxWidth: _leadingMaxWidth),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Row(children: [
+                        avatar,
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyle.extraSmall
-                                      .copyWith(color: AppColors.grey100)),
-                          ],
+                                  style: AppTextStyle.small.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.black)),
+                              if (email.isNotEmpty)
+                                Text(email,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyle.extraSmall
+                                        .copyWith(color: AppColors.grey100)),
+                            ],
+                          ),
                         ),
-                      ),
-                    ]),
+                      ]),
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Tooltip(message: name, child: avatar),
                   ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Tooltip(message: name, child: avatar),
-                ),
+          ),
         ),
       ),
     );
