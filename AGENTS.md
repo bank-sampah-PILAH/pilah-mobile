@@ -47,10 +47,16 @@
   Firebase initialization because no web-supported flow uses Firebase; add
   FlutterFire web options before introducing a Firebase-backed web flow.
 - For user-visible Flutter web UI changes, capture Playwright screenshots for
-  affected supported roles and viewports under `artifacts/pr-<PR_NUMBER>/`.
-  Before the PR number exists, save captures outside the repository and move
-  them after PR creation. Skip screenshots for non-UI changes, do not commit
-  artifacts, and say in the PR description when UI screenshots do not apply.
+  affected supported roles and viewports. Before the PR number exists, keep
+  captures outside the repository; afterwards they may sit under
+  `artifacts/pr-<PR_NUMBER>/`. Never commit them. Skip screenshots for non-UI
+  changes, and say in the PR description when UI screenshots do not apply.
+- Put PR screenshots in the PR description with `gh image`, which uploads to
+  GitHub `user-attachments`; follow the "Upload screenshots" step of the
+  `ship` skill. The
+  repository is public, so screenshots must show demo data only. If `gh image`
+  cannot be used, fall back to an orphan branch `pr-<PR_NUMBER>-screenshots`
+  and never delete that branch, since doing so breaks the images in the PR.
 - Do not commit `.env`, Firebase credentials, build output, or generated local
   runtime files.
 
