@@ -27,8 +27,10 @@ import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_reposi
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../support/approved_membership.dart';
+import '../../support/stub_api.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -93,6 +95,14 @@ void main() {
     );
     states = StreamController<AuthenticationStates>.broadcast();
     di.registerSingleton<NasabahRepository>(repository);
+    // The beranda page resolves the pengumuman section from the service
+    // locator, so the stub API behind it needs the same registration.
+    final pengumumanApi = StubApi();
+    pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
+        json: {'items': [], 'unread_count': 0});
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(pengumumanApi.network));
+    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     // The history screen now loads setoran rows through RiwayatHistoryCubit;
     // back it with the same preview-backed repository so the rows render.
     riwayatSource = _RiwayatRemoteSource(

@@ -17,8 +17,11 @@ import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+
+import '../../../support/stub_api.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -49,10 +52,31 @@ class _HomeRepository extends PreviewNasabahRepository {
 void main() {
   late _Auth auth;
   late _JadwalRepository jadwal;
+  late StubApi api;
 
   setUp(() {
     auth = _Auth();
     jadwal = _JadwalRepository();
+    api = StubApi();
+    api.on('GET', '/api/v1/nasabah/me/pengumuman/beranda', json: {
+      'items': [
+        {
+          'id': 'p2',
+          'judul': 'Pengumuman baru',
+          'isi': 'Isi pengumuman.',
+          'terbit_pada': '2026-10-16T03:00:00Z',
+          'dibaca': false,
+        },
+        {
+          'id': 'p1',
+          'judul': 'Pengumuman lama',
+          'isi': 'Isi oke.',
+          'terbit_pada': '2026-10-01T03:00:00Z',
+          'dibaca': true,
+        },
+      ],
+      'unread_count': 1,
+    });
     when(() => jadwal.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => const Right(
           JadwalPageResult(items: [], totalCount: 0, hasMore: false)),
@@ -73,6 +97,8 @@ void main() {
       ),
     );
     di.registerSingleton<JadwalRepository>(jadwal);
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(api.network));
   });
 
   tearDown(() async {
@@ -80,11 +106,16 @@ void main() {
       await di.unregister<NasabahRepository>();
     }
     await di.unregister<JadwalRepository>();
+    await di.unregister<NasabahPengumumanRepository>();
     await auth.close();
   });
 
   Future<void> pumpHome(
-      WidgetTester tester, NasabahRepository repository) async {
+    WidgetTester tester,
+    NasabahRepository repository, {
+    Map<String, Widget Function(BuildContext, GoRouterState)> extraRoutes =
+        const {},
+  }) async {
     di.registerSingleton<NasabahRepository>(repository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
       GoRoute(path: '/beranda', builder: (_, __) => const BerandaNasabahPage()),
@@ -98,6 +129,8 @@ void main() {
             body:
                 Text('riwayat ${state.uri.queryParameters['keanggotaan_id']}')),
       ),
+      for (final entry in extraRoutes.entries)
+        GoRoute(path: entry.key, builder: entry.value),
     ]);
     addTearDown(router.dispose);
     await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
@@ -194,6 +227,57 @@ void main() {
     await pumpHome(tester, _HomeRepository(null, const []));
 
     expect(find.text('offline'), findsOneWidget);
+  });
+
+  group('pengumuman section', () {
+    testWidgets(
+        'lists the beranda rows with a dot only on the unread one, scoped to '
+        'the membership', (tester) async {
+      await pumpHome(tester, _HomeRepository(null, const []));
+
+      expect(find.text('Pengumuman baru'), findsOneWidget);
+      expect(find.byKey(const ValueKey('beranda-pengumuman-baru')),
+          findsOneWidget);
+      expect(
+        api.last.query['keanggotaan_id'],
+        'membership-1',
+      );
+    });
+
+    testWidgets('tapping a row opens the detail and refreshes on return',
+        (tester) async {
+      final repository = _HomeRepository(null, const []);
+      await pumpHome(tester, repository, extraRoutes: {
+        '/pengumuman/detail': (_, __) =>
+            const Scaffold(body: Text('detail pengumuman')),
+      });
+
+      await tester.ensureVisible(find.text('Pengumuman lama'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pengumuman lama'));
+      await tester.pumpAndSettle();
+      expect(find.text('detail pengumuman'), findsOneWidget);
+
+      final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
+      router.pop();
+      await tester.pumpAndSettle();
+
+      // Coming back re-fetches the section so a read dots gone.
+      expect(
+        api.requests
+            .where((call) => call.path.endsWith('/pengumuman/beranda'))
+            .length,
+        greaterThanOrEqualTo(2),
+      );
+    });
+
+    testWidgets('an empty section shows the standalone card', (tester) async {
+      api.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
+          json: {'items': [], 'unread_count': 0});
+      await pumpHome(tester, _HomeRepository(null, const []));
+
+      expect(find.text('Belum ada pengumuman.'), findsOneWidget);
+    });
   });
 
   testWidgets('every activity type keeps its title in the shared list',

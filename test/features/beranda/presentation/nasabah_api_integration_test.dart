@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../support/stub_api.dart';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
@@ -23,6 +24,7 @@ import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_c
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -93,6 +95,14 @@ void main() {
       (_) async => const Right<NetworkException, List<Pencairan>>([]),
     );
     di.registerSingleton<NasabahRepository>(repository);
+    // The beranda page resolves the pengumuman section from the service
+    // locator, so the stub API behind it needs the same registration.
+    final pengumumanApi = StubApi();
+    pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
+        json: {'items': [], 'unread_count': 0});
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(pengumumanApi.network));
+    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
     di.registerFactory<RiwayatPencairanCubit>(
       () => RiwayatPencairanCubit(payoutUseCases),
