@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
@@ -23,6 +24,10 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 void main() {
   if (!di.isRegistered<NasabahRepository>()) {
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+  }
+  if (!di.isRegistered<NasabahPengumumanRepository>()) {
+    di.registerSingleton<NasabahPengumumanRepository>(
+        const _PreviewPengumumanRepository());
   }
   // The history screen's setoran tab resolves the cubit from GetIt; preview
   // runs offline without configureDependencies, so wire offline stubs.
@@ -80,4 +85,17 @@ class _PreviewRiwayatRepository implements RiwayatRepository {
     String transactionId,
   ) async =>
       Left(NetworkException(message: 'Pratinjau tidak memiliki data detail.'));
+}
+
+/// Offline pengumuman stub: an empty beranda section, matching the same
+/// preview contract.
+class _PreviewPengumumanRepository implements NasabahPengumumanRepository {
+  const _PreviewPengumumanRepository();
+
+  @override
+  Future<PengumumanBeranda> getBeranda({String? membershipId}) async =>
+      const PengumumanBeranda(items: [], unreadCount: 0);
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

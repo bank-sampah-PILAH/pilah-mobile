@@ -42,7 +42,8 @@ void main() {
   });
 
   test('sends keanggotaan_id when a membership is set', () async {
-    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {'count': 0, 'next': null, 'results': []});
+    api.on('GET', '/api/v1/nasabah/me/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
 
     await cubit.load(membershipId: 'm-1');
 
@@ -85,7 +86,8 @@ void main() {
     await cubit.tandaiDibaca('1');
 
     expect(
-      api.requests.any((call) => call.path == '/api/v1/nasabah/me/pengumuman/1/baca'),
+      api.requests
+          .any((call) => call.path == '/api/v1/nasabah/me/pengumuman/1/baca'),
       isTrue,
     );
     expect(cubit.state.items.single.dibaca, isTrue);

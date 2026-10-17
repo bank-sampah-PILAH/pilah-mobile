@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
+import '../../../../support/beranda_pengumuman_support.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../../support/approved_membership.dart';
 
@@ -67,6 +69,8 @@ void main() {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(repository ??
         PreviewNasabahRepository(name: apiName ?? name, email: email));
+    registerNasabahPengumumanRepository();
+    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     whenListen(auth, states ?? const Stream<AuthenticationStates>.empty(),
         initialState: Authenticated(
             authEntity: AuthEntity(

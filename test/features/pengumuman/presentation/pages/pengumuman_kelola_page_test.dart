@@ -10,7 +10,8 @@ import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
 Map<String, dynamic> _row(String id,
-    {required String judul, required String status}) => {
+        {required String judul, required String status}) =>
+    {
       'id': id,
       'judul': judul,
       'isi': 'Isi $id.',
@@ -26,7 +27,6 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   }
-
 
   late StubApi api;
   late PengumumanCubit cubit;
@@ -136,8 +136,8 @@ void main() {
     );
     // The list reloads after the transition.
     expect(
-      api.requests.where((call) =>
-          call.method == 'GET' && call.path == '/api/v1/pengumuman'),
+      api.requests.where(
+          (call) => call.method == 'GET' && call.path == '/api/v1/pengumuman'),
       hasLength(2),
     );
   });

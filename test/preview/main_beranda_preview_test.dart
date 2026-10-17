@@ -10,7 +10,9 @@ import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/main_beranda_preview.dart' as preview;
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import '../support/stub_api.dart';
 
 void main() {
   tearDown(() async {
@@ -39,9 +41,23 @@ void main() {
   testWidgets('keeps an already registered repository', (tester) async {
     di.registerSingleton<NasabahRepository>(
         PreviewNasabahRepository(bankName: 'Bank Terdaftar'));
+    // The beranda page resolves the pengumuman section from the service
+    // locator, so the stub API behind it needs the same registration. A
+    // previous preview.main() may have already left a registration behind.
+    if (di.isRegistered<NasabahPengumumanRepository>()) {
+      await di.unregister<NasabahPengumumanRepository>();
+    }
+    final pengumumanApi = StubApi();
+    pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
+        json: {'items': [], 'unread_count': 0});
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(pengumumanApi.network));
+    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     preview.main();
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
+    // Drain the beranda's pengumuman request so no timer outlives the test.
+    await tester.pumpAndSettle();
     expect(find.textContaining('Bank Terdaftar'), findsWidgets);
   });
 

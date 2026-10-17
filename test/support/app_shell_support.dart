@@ -110,6 +110,8 @@ class AppShell {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<AppEnvironment>(StubEnvironment());
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(api.network));
     di.registerFactory<SuperadminCubit>(() => superadmin);
     di.registerFactory<PencairanCubit>(() => pencairanCubit);
     final useCases = buildPencairanUseCases(api);
@@ -131,6 +133,7 @@ class AppShell {
     await di.unregister<InviteTokenStore>();
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
+    await di.unregister<NasabahPengumumanRepository>();
     await di.unregister<SuperadminCubit>();
     await di.unregister<PencairanCubit>();
     await di.unregister<EditPencairanCubit>();
