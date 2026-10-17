@@ -103,6 +103,25 @@ void main() {
     expect(find.text('Rp 40.000'), findsOneWidget);
   });
 
+  testWidgets(
+      'the status badge sits under the title and the close button '
+      'closes the sheet', (tester) async {
+    api.on('GET', _path, json: _row());
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selesai'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Selesai')).dy,
+      greaterThan(tester.getBottomLeft(find.text('Detail Transaksi')).dy),
+    );
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail Transaksi'), findsNothing);
+  });
+
   testWidgets('a spinner shows while the breakdown loads and nothing is known',
       (tester) async {
     api.on('GET', _path, json: _row());
