@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 import '../../../../support/harga_support.dart';
@@ -25,15 +26,21 @@ Map<String, dynamic> _row(String id, String nama,
       'is_active': active,
     };
 
+/// Blok `medium`: form tetap sebuah bottom sheet, seperti di telepon.
+const _medium = Size(800, 1600);
+
+/// Blok `expanded`: form muncul sebagai panel di samping daftar.
+const _expanded = Size(1440, 900);
+
 void main() {
   late StubApi api;
   late HargaCubit cubit;
 
-  Future<void> openPage(WidgetTester tester) async {
+  Future<void> openPage(WidgetTester tester, {Size size = _medium}) async {
     await pumpRouted(
       tester,
       BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
-      size: const Size(800, 1600),
+      size: size,
     );
     await tester.pumpAndSettle();
   }
@@ -195,5 +202,149 @@ void main() {
 
     expect(find.text('Edit Jenis Sampah'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
+  });
+
+  // On a desktop window the same form becomes a panel beside the list, so the
+  // list stays readable while a price is edited. Only expanded gets it: at
+  // medium the panel would be about 320px, too narrow for this form, which is
+  // the same rule the jadwal page follows.
+  testWidgets('on a desktop window the add button opens a panel, not a sheet',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+    expect(
+      find.byType(TambahJenisSampahBottomSheet),
+      findsNothing,
+      reason: 'a panel must not also be hosted in a sheet',
+    );
+    expect(
+      find.text('Botol PET'),
+      findsOneWidget,
+      reason: 'the list stays visible beside the form; that is the point',
+    );
+  });
+
+  testWidgets('on a desktop window tapping a card fills the panel',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
+    expect(find.text('Edit Jenis Sampah'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('the panel close button clears the form', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsNothing,
+      reason: 'a panel is not on a route, so it cannot be dismissed by a pop',
+    );
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('selecting another row refills the open panel', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
+
+    await tester.tap(find.text('Kardus'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Kardus'), findsOneWidget);
+    expect(
+      find.widgetWithText(TextFormField, 'Botol PET'),
+      findsNothing,
+      reason: 'the previous row must not be left in any field',
+    );
+  });
+
+  testWidgets('no panel is rendered until something is selected',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    expect(find.byType(JenisSampahForm), findsNothing);
+  });
+
+  testWidgets('the add button hides while the panel is open', (tester) async {
+    await openPage(tester, size: _expanded);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(FloatingActionButton),
+      findsNothing,
+      reason: 'the FAB sits exactly over the panel\'s save button',
+    );
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+  });
+
+  testWidgets('on a phone the add button is always there', (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(FloatingActionButton),
+      findsOneWidget,
+      reason: 'compact opens a sheet, so there is no panel to overlap',
+    );
+  });
+
+  // The container is chosen when the form opens, but the window can be resized
+  // afterwards. Raised by TrayMachi's review of the same pattern on PR #113.
+  testWidgets('shrinking below expanded closes the open panel', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+
+    tester.view.physicalSize = _medium;
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsNothing,
+      reason: 'a 2/5 panel at medium is the width the open path refuses',
+    );
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('widening back does not resurrect a closed panel',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = _medium;
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = _expanded;
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsNothing,
+      reason: 'a blank form reappearing on resize reads as a bug',
+    );
   });
 }
