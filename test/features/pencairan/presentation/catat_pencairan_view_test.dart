@@ -448,9 +448,11 @@ void main() {
     await pumpView(tester);
 
     final label = tester.widget<Text>(find.text('METODE'));
+    final other = tester.widget<Text>(find.text('PILIH NASABAH'));
     expect(label.style?.fontWeight, FontWeight.bold);
-    expect(label.style?.letterSpacing, 1.0);
     expect(label.style?.fontSize, 10);
+    expect(label.style?.letterSpacing, other.style?.letterSpacing);
+    expect(label.style?.color, other.style?.color);
   });
 
   testWidgets('styles the metode chips like the app\'s other selector pills',
