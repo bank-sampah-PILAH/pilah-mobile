@@ -185,7 +185,8 @@ void main() {
   // The container is chosen when the form opens, but the window can be resized
   // afterwards. These cover the shrink, which used to leave the panel in widths
   // the open path deliberately avoids.
-  testWidgets('shrinking to medium closes the open panel rather than '
+  testWidgets(
+      'shrinking to medium closes the open panel rather than '
       'narrowing it', (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
     await tester.tap(find.byTooltip('Buat Jadwal'));
@@ -218,7 +219,8 @@ void main() {
     );
   });
 
-  testWidgets('after shrinking, the add button gives a sheet and no stale panel',
+  testWidgets(
+      'after shrinking, the add button gives a sheet and no stale panel',
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
     await tester.tap(find.byTooltip('Buat Jadwal'));
