@@ -538,10 +538,9 @@ class _TambahJenisSampahBottomSheetState
     final berlakuMulai = jenis.berlakuMulai;
     final terjadwal = jenis.hargaTerjadwal;
     final keterangan = AppTextStyle.small.copyWith(color: Colors.grey[600]);
-    final nilai = AppTextStyle.title1.copyWith(
+    final nilai = AppTextStyle.headline3.copyWith(
       color: Colors.black87,
       fontWeight: FontWeight.w600,
-      fontSize: 14,
     );
     return Container(
       width: double.infinity,
