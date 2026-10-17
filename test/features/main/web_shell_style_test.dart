@@ -93,6 +93,13 @@ void main() {
       expect(dividerY, lessThan(bank.dy));
     });
 
+    testWidgets('has room at the sides and a larger logo', (tester) async {
+      await mountRail(tester);
+
+      expect(tester.getTopLeft(find.byType(NavigationRail)).dx, 12);
+      expect(tester.getSize(find.byKey(RoleNavigationRail.logoKey)).width, 44);
+    });
+
     testWidgets('keeps only the logo on the narrow rail', (tester) async {
       await mountRail(tester, window: const Size(700, 900));
 
