@@ -1374,6 +1374,19 @@ void main() {
           lessThan(tester.getBottomLeft(form).dy));
     });
 
+    testWidgets('its amounts line up at the right edge, under Total dibayar',
+        (tester) async {
+      await pumpNew(tester);
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      final kanan = tester.getTopRight(panel()).dx - 20;
+      for (final key in ['total-nominal', 'total-potongan']) {
+        expect(tester.getTopRight(find.byKey(Key(key))).dx, closeTo(kanan, 1),
+            reason: key);
+      }
+    });
+
     testWidgets('tapping it opens the details, tapping again closes them',
         (tester) async {
       await pumpNew(tester);
