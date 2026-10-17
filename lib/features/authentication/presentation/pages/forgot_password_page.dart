@@ -1,4 +1,5 @@
 ﻿import 'package:pilah_mobile/core/utils/formatter/phone_formatter.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,19 +36,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(8, 0, 24, 24),
           children: [
+            const AppBackHeader(title: 'Atur Ulang Kata Sandi'),
             const Icon(
               Icons.lock_reset,
-              color: AppColors.primary,
+              color: AppColors.greenDark,
               size: 100,
             ),
             Text(
               'Lupa kata sandi?',
               style: AppTextStyle.headline1.copyWith(
-                color: AppColors.secondary,
+                color: AppColors.black,
               ),
               textAlign: TextAlign.center,
             ),
@@ -57,7 +60,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             Text(
               'Kami akan mengirimkan OTP untuk mengganti kata sandimu',
               style: AppTextStyle.regularSemiBold.copyWith(
-                color: Colors.black54,
+                color: AppColors.grey100,
               ),
               textAlign: TextAlign.center,
             ),
