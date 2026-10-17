@@ -1,6 +1,10 @@
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -23,6 +27,69 @@ import 'package:pilah_mobile/core/router/pending_invite.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'core/router/app_router_config.dart';
 
+String browserTitleForPath(String path) {
+  final words = path
+      .split('/')
+      .where((segment) => segment.isNotEmpty)
+      .join(' ')
+      .replaceAll(RegExp(r'[-_]'), ' ')
+      .split(RegExp(r'\s+'));
+  final pageName = words
+      .where((word) => word.isNotEmpty)
+      .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
+      .join(' ');
+  return 'PILAH | ${pageName.isEmpty ? 'Beranda' : pageName}';
+}
+
+class _BrowserTitleUpdater extends StatefulWidget {
+  const _BrowserTitleUpdater({
+    required this.router,
+    required this.enabled,
+    required this.child,
+  });
+
+  final GoRouter router;
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_BrowserTitleUpdater> createState() => _BrowserTitleUpdaterState();
+}
+
+class _BrowserTitleUpdaterState extends State<_BrowserTitleUpdater> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.enabled) {
+      widget.router.routeInformationProvider.addListener(_scheduleUpdate);
+      _scheduleUpdate();
+    }
+  }
+
+  void _scheduleUpdate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.enabled) return;
+      SystemChrome.setApplicationSwitcherDescription(
+        ApplicationSwitcherDescription(
+          label: browserTitleForPath(
+            widget.router.routeInformationProvider.value.uri.path,
+          ),
+          primaryColor: AppColors.primary.toARGB32(),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.router.routeInformationProvider.removeListener(_scheduleUpdate);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 class App extends StatelessWidget {
   // The constructor line is only credited when the first coverage report merged
   // for this file happens to be from the test that builds `const App()` (the
@@ -38,6 +105,8 @@ class App extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final isWeb = isWebOverride ?? kIsWeb;
+    final router = AppRouterConfig.getRouter();
     return MultiBlocProvider(
       providers: [
         // Cubits load their data from each page's initState (post-login), so
@@ -106,15 +175,18 @@ class App extends StatelessWidget {
             );
           },
           child: _PendingInviteResumeWatcher(
-            child: MaterialApp.router(
-              title: 'Flutter Pilah Mobile',
-              theme: ThemeData(
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: AppColors.primary,
-                ),
-                useMaterial3: true,
+            child: _BrowserTitleUpdater(
+              router: router,
+              enabled: isWeb,
+              child: MaterialApp.router(
+                title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+                theme: AppTheme.light,
+                // Material widgets (date pickers, dialog buttons) in Indonesian.
+                locale: const Locale('id'),
+                supportedLocales: const [Locale('id')],
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                routerConfig: router,
               ),
-              routerConfig: AppRouterConfig.getRouter(),
             ),
           ),
         ),

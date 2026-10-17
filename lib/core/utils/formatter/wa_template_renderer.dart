@@ -14,6 +14,7 @@
 library;
 
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// A single deposit line used to build the item lists.
 class WaTemplateItem {
@@ -45,25 +46,6 @@ const List<String> kWaTemplateVariables = [
   '{daftar_item}',
   '{daftar_item_harga}',
 ];
-
-/// Formats a rupiah amount with `.` as the thousands separator, matching the
-/// backend (`Rp 1.500`). The `Rp` prefix itself lives in the template text.
-String formatRupiahId(int value) {
-  final digits = value.abs().toString();
-  final buf = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i != 0 && (digits.length - i) % 3 == 0) buf.write('.');
-    buf.write(digits[i]);
-  }
-  return '${value < 0 ? '-' : ''}$buf';
-}
-
-/// Formats an amount held in sen: `3.333,99`, or `3.500` when it has none.
-String formatRupiahSenId(int sen) {
-  final sisa = sen.abs() % 100;
-  final rupiah = formatRupiahId(sen ~/ 100);
-  return sisa == 0 ? rupiah : '$rupiah,${sisa.toString().padLeft(2, '0')}';
-}
 
 /// Formats a date the way the message reads it: `24 Juli 2026`.
 String formatTanggalId(DateTime date) {
@@ -97,7 +79,7 @@ String buildDaftarItemHarga(List<WaTemplateItem> items) {
   return items
       .map(
         (i) => '- ${i.namaSampah} ${WeightFormatter.formatKg(i.berat)} kg '
-            'x Rp ${formatRupiahId(i.hargaPerKg)} = Rp ${formatRupiahId(i.subtotal)}',
+            'x Rp ${CurrencyFormatter.formatNumber(i.hargaPerKg)} = Rp ${CurrencyFormatter.formatNumber(i.subtotal)}',
       )
       .join('\n');
 }
@@ -120,8 +102,10 @@ String renderWaTemplate(
   required DateTime tanggal,
 }) {
   return template
-      .replaceAll(RegExp(r'(?:Rp\s*)?\{Total\}'), 'Rp ${formatRupiahId(total)}')
-      .replaceAll(RegExp(r'(?:Rp\s*)?\{Saldo\}'), 'Rp ${formatRupiahId(saldo)}')
+      .replaceAll(RegExp(r'(?:Rp\s*)?\{Total\}'),
+          'Rp ${CurrencyFormatter.formatNumber(total)}')
+      .replaceAll(RegExp(r'(?:Rp\s*)?\{Saldo\}'),
+          'Rp ${CurrencyFormatter.formatNumber(saldo)}')
       .replaceAll('{Nama}', nama)
       .replaceAll('{Tanggal}', formatTanggalId(tanggal))
       .replaceAll('{daftar_item_harga}', buildDaftarItemHarga(items))

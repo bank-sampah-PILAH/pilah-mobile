@@ -14,6 +14,9 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activi
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
@@ -29,8 +32,10 @@ import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.d
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
+import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -40,6 +45,7 @@ import 'package:pilah_mobile/services/di.dart';
 import 'approved_membership.dart';
 import 'auth_support.dart';
 import 'dashboard_support.dart';
+import 'draft_pencairan_support.dart';
 import 'harga_support.dart';
 import 'nasabah_support.dart';
 import 'onboarding_support.dart';
@@ -62,7 +68,8 @@ class AppShell {
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network));
     recent = RecentActivityCubit(GetTransaksiUseCase(repo), pencairan);
     riwayat = RiwayatAktivitasCubit(
-        GetTransaksiUseCase(repo), pencairan, ExportTransaksiUseCase(repo));
+        GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)),
+        ExportTransaksiUseCase(repo));
     nasabah = buildNasabahCubit(api);
     onboarding = buildOnboardingCubit(api);
     jadwal = JadwalCubit(
@@ -107,6 +114,12 @@ class AppShell {
     di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
         GetRiwayatHargaUseCase(
             HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
+    final draftRepository = buildDraftPencairanRepository(api);
+    di.registerFactory<DraftListCubit>(() => DraftListCubit(draftRepository));
+    di.registerFactory<PilihNasabahCubit>(
+        () => PilihNasabahCubit(draftRepository));
+    di.registerFactory<DraftEditorCubit>(
+        () => DraftEditorCubit(draftRepository));
     _approval = registerApprovedMembership();
   }
 
@@ -120,6 +133,9 @@ class AppShell {
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();
     await di.unregister<RiwayatHargaCubit>();
+    await di.unregister<DraftListCubit>();
+    await di.unregister<PilihNasabahCubit>();
+    await di.unregister<DraftEditorCubit>();
     final approval = _approval;
     if (approval != null) await unregisterApprovedMembership(approval);
     // Not awaited: with listeners attached a broadcast controller's close()

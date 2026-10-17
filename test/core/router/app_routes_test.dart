@@ -8,6 +8,11 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/ap
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
@@ -36,26 +41,30 @@ import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/lapor
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 import '../../support/app_shell_support.dart';
+import '../../support/draft_pencairan_support.dart';
 import '../../support/stub_api.dart';
 
 class _MockAppeal extends Mock implements AppealMembershipUseCase {}
 
 void main() {
   late AppShell shell;
+  late StubApi api;
 
   setUp(() async {
-    shell = AppShell(StubApi());
+    api = StubApi();
+    shell = AppShell(api);
     await shell.registerDi();
   });
 
   tearDown(() => shell.unregisterDi());
 
-  Future<GoRouter> boot(WidgetTester tester) async {
+  Future<GoRouter> boot(WidgetTester tester, {String? initialLocation}) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final router = AppRouterConfig.getRouter();
+    if (initialLocation != null) router.go(initialLocation);
     await tester
         .pumpWidget(shell.wrap(MaterialApp.router(routerConfig: router)));
     await tester.pump();
@@ -165,6 +174,50 @@ void main() {
       expect(find.byType(HargaPage), findsOneWidget);
     });
 
+    testWidgets('can open the draft pencairan pages', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/draft-pencairan');
+      expect(find.byType(DraftListPage), findsOneWidget);
+
+      await visit(tester, router, '/draft-pencairan/pilih');
+      expect(find.byType(PilihNasabahPencairanPage), findsOneWidget);
+
+      router.go(
+        '/draft-pencairan/editor',
+        extra: const DraftEditorArgs.baru([
+          Kandidat(id: 'n-1', kode: 'NAS-1', nama: 'Ahmad', saldo: 1000),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Ahmad'), findsOneWidget);
+    });
+
+    testWidgets('can continue a saved draft from its id', (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      router.go(
+        '/draft-pencairan/editor',
+        extra: const DraftEditorArgs.lanjutkan('d-1'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Cair Oktober'), findsOneWidget);
+    });
+
+    testWidgets('opening the draft editor without a draft goes to the list',
+        (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/draft-pencairan/editor');
+
+      expect(find.byType(DraftListPage), findsOneWidget);
+      expect(find.byType(DraftEditorPage), findsNothing);
+    });
+
     testWidgets('opens the jadwal page, honouring a date in the link',
         (tester) async {
       final router = await boot(tester);
@@ -202,11 +255,11 @@ void main() {
     });
 
     testWidgets(
-        'a pending invite link banks its token and goes through the gate',
+        'a browser hash-path invite banks its token and goes through the gate',
         (tester) async {
       final router = await boot(tester);
 
-      await visit(tester, router, '/invite?token=tok-9');
+      await visit(tester, router, '/invite/web-token-9');
 
       expect(shell.invites.token, isNull,
           reason: 'the gate spends the token on its first attempt');
@@ -348,6 +401,26 @@ void main() {
       await visit(tester, router, '/invite?token=abc');
 
       expect(shell.invites.token, 'abc');
+    });
+
+    testWidgets('a browser hash-path invite token with no session is banked',
+        (tester) async {
+      shell.signedInAs(Unauthenticated());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/invite/web-token-abc');
+
+      expect(shell.invites.token, 'web-token-abc');
+    });
+
+    testWidgets('a cold-start browser hash-path invite banks its token',
+        (tester) async {
+      shell.signedInAs(AuthenticationInitial());
+
+      await boot(tester, initialLocation: '/invite/cold-start-token');
+      await tester.pumpAndSettle();
+
+      expect(shell.invites.token, 'cold-start-token');
     });
   });
 

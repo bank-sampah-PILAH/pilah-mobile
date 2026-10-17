@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
@@ -140,7 +140,7 @@ class _VersiHargaCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Rp ${formatRupiahSenId(versi.hargaSen)} / ${versi.satuan}',
+                  '${CurrencyFormatter.formatRupiahSen(versi.hargaSen)} / ${versi.satuan}',
                   style: AppTextStyle.title1.copyWith(
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,

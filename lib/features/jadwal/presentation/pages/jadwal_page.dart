@@ -1,15 +1,22 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
 class JadwalPage extends StatefulWidget {
   static const route = '/jadwal';
@@ -27,6 +34,11 @@ class _JadwalPageState extends State<JadwalPage> {
   bool _isMonthExpanded = false;
   late final ScrollController _scrollController;
   DateTime? _markerMonth;
+
+  /// Apakah panel form sedang terbuka di samping agenda. Hanya dipakai pada
+  /// medium ke atas; pada compact form tetap dibuka sebagai bottom sheet.
+  bool _panelOpen = false;
+  JadwalEntity? _panelInitial;
 
   @override
   void initState() {
@@ -104,6 +116,18 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   void _openForm([JadwalEntity? initial]) {
+    // Hanya expanded, bukan medium. Pada medium panel hanya mendapat dua dari
+    // lima bagian lebar, sekitar 320 piksel, dan form ini berisi dropdown serta
+    // dua pemilih tanggal yang tidak muat di sana. Di bawah expanded bottom
+    // sheet tetap wadah yang lebih baik.
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      setState(() {
+        _panelOpen = true;
+        _panelInitial = initial;
+      });
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -119,63 +143,64 @@ class _JadwalPageState extends State<JadwalPage> {
     );
   }
 
-  Future<void> _changeStatus(JadwalEntity item, String action) async {
+  void _closePanel() {
+    if (!_panelOpen) return;
+    setState(() {
+      _panelOpen = false;
+      _panelInitial = null;
+    });
+  }
+
+  /// Form sebagai panel di samping agenda, atau null bila tidak ada yang
+  /// sedang disunting. [MasterDetailLayout] sendiri yang mengabaikannya pada
+  /// compact, sehingga telepon tetap memakai bottom sheet.
+  Widget? _buildFormPanel() {
+    if (!_panelOpen) return null;
+    return _JadwalForm(
+      key: ValueKey('jadwal-panel-${_panelInitial?.id ?? 'baru'}'),
+      initial: _panelInitial,
+      initialDate: _panelInitial == null ? _selectedDate : null,
+      onClose: _closePanel,
+    );
+  }
+
+  Future<void> _changeStatus(JadwalEntity item, JadwalAction action) async {
     final failure = await context.read<JadwalCubit>().changeStatus(
           item.id,
-          action,
+          action.wireValue,
         );
     if (!mounted || failure == null) return;
-    ScaffoldMessenger.of(
+    AppNotification.showError(
       context,
-    ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+      title: 'Gagal',
+      message: failure.displayMessage,
+    );
   }
 
   Future<void> _confirmCancellation(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Batalkan jadwal?'),
-        content: const Text('Jadwal yang dibatalkan tidak dapat dipulihkan.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, batalkan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Batalkan jadwal?',
+      message: 'Jadwal yang dibatalkan tidak dapat dipulihkan.',
+      confirmLabel: 'Ya, batalkan',
+      cancelLabel: 'Kembali',
+      destructive: true,
     );
-    if (!mounted || confirmed != true) return;
-    await _changeStatus(item, 'batalkan');
+    if (!mounted || !confirmed) return;
+    await _changeStatus(item, JadwalAction.batalkan);
   }
 
   Future<void> _confirmCompletion(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tandai jadwal selesai?'),
-        content: const Text('Jadwal yang diselesaikan tidak dapat diubah.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, selesaikan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Tandai jadwal selesai?',
+      message: 'Jadwal yang diselesaikan tidak dapat diubah.',
+      confirmLabel: 'Ya, selesaikan',
+      cancelLabel: 'Kembali',
+      destructive: false,
     );
-    if (!mounted || confirmed != true) return;
-    await _changeStatus(item, 'selesaikan');
+    if (!mounted || !confirmed) return;
+    await _changeStatus(item, JadwalAction.selesaikan);
   }
 
   @override
@@ -247,7 +272,10 @@ class _JadwalPageState extends State<JadwalPage> {
                 ),
             child: widget.customerMode
                 ? _buildCustomerAgenda(items, loadedState)
-                : _buildPengurusAgenda(items, loadedState),
+                : MasterDetailLayout(
+                    master: _buildPengurusAgenda(items, loadedState),
+                    detail: _buildFormPanel(),
+                  ),
           );
         },
       ),
@@ -399,7 +427,7 @@ class _JadwalPageState extends State<JadwalPage> {
                     : () => _confirmCancellation(item),
                 onPublish: isLifecycleActionDisabled
                     ? null
-                    : () => _changeStatus(item, 'terbitkan'),
+                    : () => _changeStatus(item, JadwalAction.terbitkan),
                 onComplete: isLifecycleActionDisabled
                     ? null
                     : () => _confirmCompletion(item),
@@ -677,52 +705,14 @@ class _ScheduleCard extends StatelessWidget {
               ),
             ),
           ),
-          if (!readOnly && item.status == 'draft')
+          if (!readOnly && _availableActions.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: OverflowBar(
                 alignment: MainAxisAlignment.end,
                 spacing: 8,
                 children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onPublish,
-                    child: const Text('Terbitkan'),
-                  ),
-                ],
-              ),
-            ),
-          if (!readOnly && item.status == 'diterbitkan')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: OverflowBar(
-                alignment: MainAxisAlignment.end,
-                spacing: 8,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton.tonal(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onComplete,
-                    child: const Text('Tandai Selesai'),
-                  ),
+                  for (final action in _availableActions) _actionButton(action),
                 ],
               ),
             ),
@@ -730,6 +720,38 @@ class _ScheduleCard extends StatelessWidget {
       ),
     );
   }
+
+  /// Aksi yang sah dari status jadwal ini.
+  ///
+  /// Status yang tidak dikenali build ini tidak memberi aksi apa pun, bukan
+  /// aksi penuh: pengurus melihat kartunya tetapi tidak dapat mengubahnya.
+  Set<JadwalAction> get _availableActions =>
+      JadwalStatus.fromWire(item.status)?.availableActions ?? const {};
+
+  Widget _actionButton(JadwalAction action) => switch (action) {
+        JadwalAction.batalkan => TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.greenDark,
+            ),
+            onPressed: onCancel,
+            child: Text(action.label),
+          ),
+        JadwalAction.terbitkan => FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.greenDark,
+            ),
+            onPressed: onPublish,
+            child: Text(action.label),
+          ),
+        JadwalAction.selesaikan => FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.greenLight,
+              foregroundColor: AppColors.greenDark,
+            ),
+            onPressed: onComplete,
+            child: Text(action.label),
+          ),
+      };
 }
 
 class _ScheduleInfoLine extends StatelessWidget {
@@ -765,19 +787,13 @@ class _ScheduleStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = switch (status) {
-      'draft' => const Color(0xFFFFF4DE),
-      'diterbitkan' => AppColors.greenLight,
-      'dibatalkan' => const Color(0xFFFDECEC),
-      'selesai' => const Color(0xFFF0F2F0),
-      _ => AppColors.cardOffWhite,
-    };
-    final foreground = switch (status) {
-      'draft' => const Color(0xFF8A5A00),
-      'diterbitkan' => AppColors.greenDark,
-      'dibatalkan' => const Color(0xFF9B3D3D),
-      'selesai' => const Color(0xFF59665C),
-      _ => Colors.grey.shade700,
+    final resolved = JadwalStatus.fromWire(status);
+    final (background, foreground) = switch (resolved) {
+      JadwalStatus.draf => (AppColors.warningLight, AppColors.warning),
+      JadwalStatus.diterbitkan => (AppColors.greenLight, AppColors.greenDark),
+      JadwalStatus.dibatalkan => (AppColors.dangerLight, AppColors.danger),
+      JadwalStatus.selesai => (AppColors.fill, AppColors.inkSoft),
+      null => (AppColors.cardOffWhite, Colors.grey.shade700),
     };
 
     return Container(
@@ -787,7 +803,7 @@ class _ScheduleStatus extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _statusLabel(status),
+        resolved?.label ?? status,
         style: TextStyle(
           color: foreground,
           fontSize: 12,
@@ -813,7 +829,20 @@ class _JadwalForm extends StatefulWidget {
   final JadwalEntity? initial;
   final DateTime? initialDate;
 
-  const _JadwalForm({this.initial, this.initialDate});
+  /// Diisi hanya ketika form tampil sebagai panel. Panel tidak berada di atas
+  /// navigator, jadi ia ditutup lewat callback, bukan dengan `Navigator.pop`.
+  /// Nilainya sekaligus menjadi penanda wadah: null berarti bottom sheet.
+  final VoidCallback? onClose;
+
+  const _JadwalForm({
+    super.key,
+    this.initial,
+    this.initialDate,
+    this.onClose,
+  });
+
+  /// Apakah form sedang tampil sebagai panel, bukan sebagai bottom sheet.
+  bool get isPanel => onClose != null;
 
   @override
   State<_JadwalForm> createState() => _JadwalFormState();
@@ -890,31 +919,6 @@ class _JadwalFormState extends State<_JadwalForm> {
         ),
       );
 
-  InputDecoration _buildInputDecoration({String? hintText}) => InputDecoration(
-        hintText: hintText,
-        hintStyle: TextStyle(color: Colors.grey[400]),
-        filled: true,
-        fillColor: Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.greenDark, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      );
-
   Future<void> _pickDateTime({required bool start}) async {
     final current = start ? _startsAt : _endsAt;
     final currentDate = DateUtils.dateOnly(current);
@@ -956,16 +960,18 @@ class _JadwalFormState extends State<_JadwalForm> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (widget.initial == null && _startsAt.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Waktu mulai harus di masa depan')),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu mulai harus di masa depan',
       );
       return;
     }
     if (!_endsAt.isAfter(_startsAt)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Waktu selesai harus setelah waktu mulai'),
-        ),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu selesai harus setelah waktu mulai',
       );
       return;
     }
@@ -987,11 +993,18 @@ class _JadwalFormState extends State<_JadwalForm> {
         );
     if (!mounted) return;
     if (failure == null) {
-      Navigator.of(context).pop();
+      final close = widget.onClose;
+      if (close != null) {
+        close();
+      } else {
+        Navigator.of(context).pop();
+      }
     } else {
-      ScaffoldMessenger.of(
+      AppNotification.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+        title: 'Gagal',
+        message: failure.displayMessage,
+      );
     }
   }
 
@@ -1015,13 +1028,15 @@ class _JadwalFormState extends State<_JadwalForm> {
               children: [
                 BottomSheetHeader(
                   title: widget.initial == null ? 'Buat Jadwal' : 'Ubah Jadwal',
+                  showDragHandle: !widget.isPanel,
+                  onClose: widget.onClose,
                 ),
                 const SizedBox(height: 24),
                 _buildLabel('JENIS KEGIATAN'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _activity,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   items: const [
                     DropdownMenuItem(
                       value: 'penimbangan',
@@ -1039,7 +1054,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _locationController,
-                  decoration: _buildInputDecoration(hintText: 'Lokasi'),
+                  decoration: appInputDecoration(hintText: 'Lokasi'),
                   validator: (value) => value == null || value.trim().isEmpty
                       ? 'Lokasi wajib diisi'
                       : null,
@@ -1049,7 +1064,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: _buildInputDecoration(hintText: 'Keterangan'),
+                  decoration: appInputDecoration(hintText: 'Keterangan'),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 20),
@@ -1057,7 +1072,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   key: const ValueKey('jadwal-mulai'),
                   label: 'Mulai',
                   value: _startsAt,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   onTap: () => _pickDateTime(start: true),
                 ),
                 const SizedBox(height: 12),
@@ -1065,7 +1080,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   key: const ValueKey('jadwal-selesai'),
                   label: 'Selesai',
                   value: _endsAt,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   onTap: () => _pickDateTime(start: false),
                 ),
                 const SizedBox(height: 20),
@@ -1073,7 +1088,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _audience,
-                  decoration: _buildInputDecoration(),
+                  decoration: appInputDecoration(),
                   items: [
                     const DropdownMenuItem(
                       value: 'semua_nasabah',
@@ -1128,9 +1143,9 @@ class _DateTimeTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => AppTapTarget(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: InputDecorator(
           decoration: decoration.copyWith(
             labelText: label,
@@ -1146,11 +1161,3 @@ String _formatDateTime(DateTime value) {
   return '${twoDigits(value.day)}/${twoDigits(value.month)}/${value.year}, '
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
-
-String _statusLabel(String status) => switch (status) {
-      'draft' => 'Draf',
-      'diterbitkan' => 'Diterbitkan',
-      'dibatalkan' => 'Dibatalkan',
-      'selesai' => 'Selesai',
-      _ => status,
-    };

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -14,6 +15,8 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 
 class HargaPage extends StatelessWidget {
   const HargaPage({super.key});
@@ -34,8 +37,6 @@ class _HargaPageBody extends StatefulWidget {
 }
 
 class _HargaPageBodyState extends State<_HargaPageBody> {
-  static const Color emeraldPrimary = Color(0xFF006D44);
-
   @override
   void initState() {
     super.initState();
@@ -105,50 +106,18 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                       state is HargaLoaded ? state.isActiveTab : true;
                   return Row(
                     children: [
-                      GestureDetector(
+                      AppChip(
+                        label: 'Aktif',
+                        selected: isActiveTab,
                         onTap: () =>
                             context.read<HargaCubit>().setActiveTab(true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            color:
-                                isActiveTab ? emeraldPrimary : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Aktif',
-                            style: AppTextStyle.small.copyWith(
-                              color:
-                                  isActiveTab ? Colors.white : Colors.grey[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
                       ),
                       const SizedBox(width: 8),
-                      GestureDetector(
+                      AppChip(
+                        label: 'Tidak Aktif',
+                        selected: !isActiveTab,
                         onTap: () =>
                             context.read<HargaCubit>().setActiveTab(false),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: !isActiveTab
-                                ? emeraldPrimary
-                                : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Tidak Aktif',
-                            style: AppTextStyle.small.copyWith(
-                              color: !isActiveTab
-                                  ? Colors.white
-                                  : Colors.grey[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
                       ),
                     ],
                   );
@@ -250,7 +219,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     final price = item.priceFormatted;
     final terjadwal = item.hargaTerjadwal;
 
-    return GestureDetector(
+    return AppTappableCard(
       onTap: () {
         showModalBottomSheet(
           context: context,
@@ -263,132 +232,118 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: Row(
+        children: [
+          // Leading icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Leading icon
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
+            child: Icon(icon, color: Colors.grey[600]),
+          ),
+          const SizedBox(width: 16),
+          // Middle content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyle.title1.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: Colors.grey[500],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                CustomStatusBadge(
+                  statusText: badgeText,
+                  backgroundColor: Colors.blue[50],
+                  textColor: Colors.blue[600],
+                ),
+                if (terjadwal != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '${CurrencyFormatter.formatRupiah(terjadwal.harga)} mulai '
+                    '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: AppColors.avatarYellowText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                // Its own tap target: tapping elsewhere on the card still
+                // opens the edit sheet.
+                TextButton(
+                  onPressed: () =>
+                      context.push(RiwayatHargaPage.route, extra: item),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: AppColors.greenDark,
+                  ),
+                  child: Text(
+                    'Riwayat harga',
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Trailing content
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'HARGA BELI',
+                style: AppTextStyle.extraSmall.copyWith(
+                  color: Colors.grey[400],
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
               ),
-              child: Icon(icon, color: Colors.grey[600]),
-            ),
-            const SizedBox(width: 16),
-            // Middle content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    title,
+                    price,
                     style: AppTextStyle.title1.copyWith(
                       color: Colors.black87,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 15,
                     ),
                   ),
-                  const SizedBox(height: 4),
                   Text(
-                    subtitle,
+                    ' / kg',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  CustomStatusBadge(
-                    statusText: badgeText,
-                    backgroundColor: Colors.blue[50],
-                    textColor: Colors.blue[600],
-                  ),
-                  if (terjadwal != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'Rp ${formatRupiahId(terjadwal.harga)} mulai '
-                      '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: AppColors.avatarYellowText,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  // Its own tap target: tapping elsewhere on the card still
-                  // opens the edit sheet.
-                  TextButton(
-                    onPressed: () =>
-                        context.push(RiwayatHargaPage.route, extra: item),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      foregroundColor: emeraldPrimary,
-                    ),
-                    child: Text(
-                      'Riwayat harga',
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: emeraldPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      color: Colors.grey[400],
                     ),
                   ),
                 ],
               ),
-            ),
-            // Trailing content
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'HARGA BELI',
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[400],
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      price,
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      ' / kg',
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Icon(Icons.chevron_right, color: Colors.grey[400]),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Icon(Icons.chevron_right, color: Colors.grey[400]),
+        ],
       ),
     );
   }

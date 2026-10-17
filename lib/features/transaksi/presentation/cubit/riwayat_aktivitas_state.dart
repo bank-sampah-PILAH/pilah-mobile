@@ -1,12 +1,11 @@
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/aktivitas_entity.dart';
+import '../../domain/entities/aktivitas_summary.dart';
 
 enum AktivitasStatus { initial, loading, loaded, failure }
 
-/// Which rows the unified Riwayat Aktivitas screen shows (PIL-282). Export
-/// and the custom date-range filter stay Setoran-only regardless of this
-/// filter — pencairan has no backend support for a custom range.
+/// Type filtering is applied before pagination in the ledger endpoint.
 enum AktivitasTipeFilter { semua, setoran, pencairan }
 
 class RiwayatAktivitasState extends Equatable {
@@ -18,6 +17,9 @@ class RiwayatAktivitasState extends Equatable {
   final AktivitasTipeFilter tipeFilter;
   final String search;
   final String? errorMessage;
+  final bool hasNext;
+  final bool loadingMore;
+  final AktivitasSummary? summary;
 
   const RiwayatAktivitasState({
     this.status = AktivitasStatus.initial,
@@ -28,6 +30,9 @@ class RiwayatAktivitasState extends Equatable {
     this.tipeFilter = AktivitasTipeFilter.semua,
     this.search = '',
     this.errorMessage,
+    this.hasNext = false,
+    this.loadingMore = false,
+    this.summary,
   });
 
   bool get isCustomPeriode => periode == 'custom';
@@ -41,6 +46,10 @@ class RiwayatAktivitasState extends Equatable {
     AktivitasTipeFilter? tipeFilter,
     String? search,
     String? errorMessage,
+    bool? hasNext,
+    bool? loadingMore,
+    AktivitasSummary? summary,
+    bool clearSummary = false,
   }) {
     return RiwayatAktivitasState(
       status: status ?? this.status,
@@ -51,6 +60,9 @@ class RiwayatAktivitasState extends Equatable {
       tipeFilter: tipeFilter ?? this.tipeFilter,
       search: search ?? this.search,
       errorMessage: errorMessage,
+      hasNext: hasNext ?? this.hasNext,
+      loadingMore: loadingMore ?? this.loadingMore,
+      summary: clearSummary ? null : summary ?? this.summary,
     );
   }
 
@@ -64,5 +76,8 @@ class RiwayatAktivitasState extends Equatable {
         tipeFilter,
         search,
         errorMessage,
+        hasNext,
+        loadingMore,
+        summary,
       ];
 }

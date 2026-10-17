@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class DetailTransaksiBottomSheet extends StatefulWidget {
   final Map<String, dynamic> transactionData;
@@ -21,10 +22,9 @@ class DetailTransaksiBottomSheet extends StatefulWidget {
 
 class _DetailTransaksiBottomSheetState
     extends State<DetailTransaksiBottomSheet> {
-  // Emerald Eco System Tokens
-  static const Color emeraldPrimary = Color(0xFF006D44);
-  static const Color mintTint = Color(0xFFF0FDF4); // or #ecfdf5 as requested
-  static const Color errorColor = Color(0xFFDC2626); // red for failed WA
+  // Local tokens (candidates for AppColors)
+  static const Color mintTint = AppColors.greenLight; // or #ecfdf5 as requested
+  static const Color errorColor = AppColors.danger; // red for failed WA
 
   String currentWaStatus = '';
   bool isLoadingWa = false;
@@ -161,7 +161,7 @@ class _DetailTransaksiBottomSheetState
                   CustomStatusBadge(
                     statusText: 'Selesai',
                     backgroundColor: mintTint,
-                    textColor: emeraldPrimary,
+                    textColor: AppColors.greenDark,
                   ),
                 ],
               ),
@@ -171,7 +171,7 @@ class _DetailTransaksiBottomSheetState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB), // surface-container-low
+                  color: AppColors.surface, // surface-container-low
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -233,7 +233,7 @@ class _DetailTransaksiBottomSheetState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -285,7 +285,7 @@ class _DetailTransaksiBottomSheetState
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                    const Divider(height: 1, color: AppColors.border),
                     const SizedBox(height: 12),
 
                     // Loading indicator while fetching the item breakdown
@@ -350,7 +350,7 @@ class _DetailTransaksiBottomSheetState
                         )),
 
                     // Total Row
-                    const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                    const Divider(height: 1, color: AppColors.border),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -365,7 +365,7 @@ class _DetailTransaksiBottomSheetState
                         Text(
                           amount,
                           style: AppTextStyle.title1.copyWith(
-                            color: emeraldPrimary,
+                            color: AppColors.greenDark,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -399,7 +399,7 @@ class _DetailTransaksiBottomSheetState
                         Text(
                           balance,
                           style: AppTextStyle.headline1.copyWith(
-                            color: emeraldPrimary,
+                            color: AppColors.greenDark,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -446,7 +446,7 @@ class _DetailTransaksiBottomSheetState
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: emeraldPrimary.withValues(alpha: 0.3)),
+          border: Border.all(color: AppColors.greenDark.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -457,7 +457,8 @@ class _DetailTransaksiBottomSheetState
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.wechat,
-                  color: emeraldPrimary, size: 24), // Placeholder for WA icon
+                  color: AppColors.greenDark,
+                  size: 24), // Placeholder for WA icon
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -467,7 +468,7 @@ class _DetailTransaksiBottomSheetState
                   Text(
                     'Terkirim Sukses',
                     style: AppTextStyle.small.copyWith(
-                      color: emeraldPrimary,
+                      color: AppColors.greenDark,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -480,7 +481,7 @@ class _DetailTransaksiBottomSheetState
                 ],
               ),
             ),
-            const Icon(Icons.check, color: emeraldPrimary, size: 20),
+            const Icon(Icons.check, color: AppColors.greenDark, size: 20),
           ],
         ),
       );
@@ -498,7 +499,7 @@ class _DetailTransaksiBottomSheetState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2), // very light red
+                color: AppColors.dangerLight, // very light red
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.wechat, color: errorColor, size: 24),
@@ -530,7 +531,7 @@ class _DetailTransaksiBottomSheetState
                     height: 32,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: emeraldPrimary,
+                      color: AppColors.greenDark,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const CircularProgressIndicator(
@@ -551,7 +552,7 @@ class _DetailTransaksiBottomSheetState
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: emeraldPrimary,
+                      backgroundColor: AppColors.greenDark,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       minimumSize: const Size(0, 0),

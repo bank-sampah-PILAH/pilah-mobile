@@ -4,18 +4,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
-import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
-import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 
-class _MockGetTransaksiUseCase extends Mock implements GetTransaksiUseCase {}
-
-class _MockPencairanUseCases extends Mock implements PencairanUseCases {}
+class _MockGetAktivitasUseCase extends Mock implements GetAktivitasUseCase {}
 
 class _MockExportTransaksiUseCase extends Mock
     implements ExportTransaksiUseCase {}
@@ -49,35 +46,43 @@ Pencairan _pencairan(String name, DateTime tanggal) => Pencairan(
 void main() {
   setUpAll(() {
     registerFallbackValue(const TransaksiFilter());
-    registerFallbackValue(const RiwayatPencairanFilter());
   });
 
-  late _MockGetTransaksiUseCase getTransaksi;
-  late _MockPencairanUseCases pencairanUseCases;
+  late _MockGetAktivitasUseCase getTransaksi;
 
   setUp(() {
-    getTransaksi = _MockGetTransaksiUseCase();
-    pencairanUseCases = _MockPencairanUseCases();
-    when(() => getTransaksi.execute(any())).thenAnswer(
-      (_) async => Right([
-        TransaksiGroupEntity(
-          header: 'HARI INI',
-          transactions: [_setoran('Budi Santoso', DateTime(2026, 9, 22, 8))],
-        ),
-      ]),
-    );
-    when(() => pencairanUseCases.getRiwayat(any())).thenAnswer(
-      (_) async => Right([_pencairan('Ani Wijaya', DateTime(2026, 9, 22, 10))]),
-    );
+    getTransaksi = _MockGetAktivitasUseCase();
+    when(() => getTransaksi.execute(any())).thenAnswer((invocation) async {
+      final filter = invocation.positionalArguments.first as TransaksiFilter;
+      final items = [
+        ActivitasEntity.fromPencairan(
+            _pencairan('Ani Wijaya', DateTime(2026, 9, 22, 10))),
+        ActivitasEntity.fromTransaksi(
+            _setoran('Budi Santoso', DateTime(2026, 9, 22, 8))),
+      ]
+          .where((item) =>
+              (filter.tipe == null ||
+                  filter.tipe == 'semua' ||
+                  item.tipe.name == filter.tipe) &&
+              item.title
+                  .toLowerCase()
+                  .contains((filter.search ?? '').toLowerCase()))
+          .toList();
+      return Right(AktivitasPage(items, false));
+    });
   });
 
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(WidgetTester tester, {double textScale = 1}) async {
     await tester.pumpWidget(
       MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: BlocProvider(
           create: (_) => RiwayatAktivitasCubit(
             getTransaksi,
-            pencairanUseCases,
             _MockExportTransaksiUseCase(),
           ),
           child: const LaporanPage(),
@@ -86,6 +91,49 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('desktop exposes all periods and puts search beside the title',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+
+    final title = tester.getRect(find.text('Riwayat Aktivitas'));
+    final search = tester.getRect(find.byType(TextField));
+    expect(search.left, greaterThan(title.right));
+    expect(search.top, lessThan(title.bottom));
+    expect(search.width, lessThanOrEqualTo(360));
+    expect(tester.getSize(find.byType(LaporanPage)).width, 1440);
+    for (final label in ['Hari Ini', 'Minggu Ini', '12 Bulan', 'Semua Waktu']) {
+      expect(find.text(label).hitTestable(), findsOneWidget);
+    }
+    await tester.tap(find.text('12 Bulan'));
+    await tester.pumpAndSettle();
+    final filter = verify(() => getTransaksi.execute(captureAny()))
+        .captured
+        .last as TransaksiFilter;
+    expect(filter.periode, '12_bulan');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('resizing keeps the visible search consistent with the report',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+    await tester.enterText(find.byType(TextField), 'Ani');
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Ani');
+    expect(find.text('Ani Wijaya'), findsOneWidget);
+    expect(find.text('Budi Santoso'), findsNothing);
+  });
 
   testWidgets('shows both setoran and pencairan in one feed', (tester) async {
     await pumpPage(tester);
@@ -96,6 +144,9 @@ void main() {
     expect(find.text('Semua'), findsOneWidget);
     expect(find.text('Setoran'), findsOneWidget);
     expect(find.text('Pencairan'), findsOneWidget);
+    expect(find.text('22/09/2026'), findsNWidgets(2));
+    expect(find.text('08:00'), findsOneWidget);
+    expect(find.text('10:00'), findsOneWidget);
   });
 
   testWidgets('the Pencairan filter hides setoran rows', (tester) async {
@@ -116,6 +167,31 @@ void main() {
 
     expect(find.text('Ani Wijaya'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsNothing);
+  });
+  testWidgets('day and week filters are visible without overflow at 360px',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+    expect(find.text('Hari Ini'), findsOneWidget);
+    expect(find.text('Minggu Ini'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'short screen with large text can scroll filters to reach activity',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester, textScale: 2);
+    await tester.drag(find.byType(NestedScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(find.text('Budi Santoso').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('pulling down reloads the feed without clearing it',

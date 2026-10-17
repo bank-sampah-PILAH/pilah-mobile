@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import '../../domain/model/pencairan.dart';
 import '../pages/edit_pencairan_page.dart';
 import '../pages/revisi_pencairan_page.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 String _time(DateTime? tanggal) {
   if (tanggal == null) return '-';
@@ -134,7 +135,12 @@ class _DetailPencairanSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _row('Nasabah', item.nasabahNama),
-                _row('Nominal', 'Rp ${formatRupiahId(item.nominal)}'),
+                _row('Nominal',
+                    'Rp ${CurrencyFormatter.formatNumber(item.nominal)}'),
+                _row('Potongan',
+                    'Rp ${CurrencyFormatter.formatNumber(item.potongan)}'),
+                _row('Dibayar',
+                    'Rp ${CurrencyFormatter.formatNumber(item.dibayar)}'),
                 _row('Metode', item.metode.label),
                 _row(
                   'Tanggal',
@@ -147,10 +153,10 @@ class _DetailPencairanSheet extends StatelessWidget {
                   'Keterangan',
                   item.keterangan.isEmpty ? '-' : item.keterangan,
                 ),
-                _row(
-                    'Saldo sebelum', 'Rp ${formatRupiahId(item.saldoSebelum)}'),
-                _row(
-                    'Saldo sesudah', 'Rp ${formatRupiahId(item.saldoSesudah)}'),
+                _row('Saldo sebelum',
+                    'Rp ${CurrencyFormatter.formatNumber(item.saldoSebelum)}'),
+                _row('Saldo sesudah',
+                    'Rp ${CurrencyFormatter.formatNumber(item.saldoSesudah)}'),
                 _row(
                   'Dicatat oleh',
                   item.dicatatOlehNama.isEmpty ? '-' : item.dicatatOlehNama,

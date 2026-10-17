@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
@@ -77,7 +78,38 @@ void main() {
     expect(find.text('Botol PET'), findsOneWidget);
     expect(find.text('Kardus'), findsOneWidget);
     expect(find.text('Kaleng'), findsNothing);
-    expect(find.text('Rp 2500'), findsNWidgets(2));
+    expect(find.text('Rp 2.500'), findsNWidgets(2));
+  });
+
+  testWidgets('the Aktif and Tidak Aktif chips announce which one is selected',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await openPage(tester);
+    Finder chip(String label) => find.ancestor(
+          of: find.text(label),
+          matching: find.byType(AppChip),
+        );
+
+    expect(
+      tester.getSemantics(chip('Aktif')),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: true),
+    );
+    expect(
+      tester.getSemantics(chip('Tidak Aktif')),
+      isSemantics(hasSelectedState: true, isSelected: false),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('a price card is announced as a button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await openPage(tester);
+
+    expect(
+      tester.getSemantics(find.text('Botol PET')),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
   });
 
   testWidgets('the Tidak Aktif chip switches to deactivated items',

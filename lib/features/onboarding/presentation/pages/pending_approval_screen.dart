@@ -100,7 +100,7 @@ class PendingApprovalScreen extends StatelessWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF9FAFB),
+        backgroundColor: AppColors.surface,
         body: SingleChildScrollView(
           child: Column(
             children: [

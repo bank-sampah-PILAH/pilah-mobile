@@ -21,6 +21,7 @@ class HargaCubit extends Cubit<HargaState> {
   final UbahHargaUseCase ubahHargaUseCase;
 
   List<HargaEntity> _allHarga = [];
+  int _permintaanTerakhir = 0;
   bool _isActiveTab = true;
   String _searchQuery = '';
 
@@ -50,8 +51,11 @@ class HargaCubit extends Cubit<HargaState> {
   /// keep: from [HargaInitial] or [HargaError] there is nothing on screen, so a
   /// real loading state is emitted regardless.
   Future<void> loadHarga({bool silent = false}) async {
+    final permintaan = ++_permintaanTerakhir;
     if (!silent || state is! HargaLoaded) emit(HargaLoading());
     final result = await getHargaUseCase.execute();
+    // Reload yang lebih baru sudah berjalan: jawaban ini sudah usang.
+    if (permintaan != _permintaanTerakhir) return;
     result.fold(
       (failure) => emit(HargaError(failure.displayMessage)),
       (data) {

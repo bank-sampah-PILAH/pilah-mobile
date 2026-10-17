@@ -25,6 +25,11 @@
   provision it if missing.
 - Run `flutter pub get` and the documented code generation command when
   generated sources are needed.
+- Commit `lib/services/di.config.dart` exactly as `build_runner` writes it; CI
+  and the CD workflows regenerate it, so a hand-edited copy hides what ships.
+  Add every new injectable registration to
+  `test/services/di_registrations.dart`. `di_graph_test` resolves each one in
+  dev and prod, and fails when the list and the generated file disagree.
 
 ## Validation
 
@@ -61,3 +66,4 @@
 - Use the local `.agents/skills/lgtm` skill with the global `lgtm` workflow for
   merge and cleanup.
 - Make changes, commits, pushes, and PRs from the designated sibling worktree.
+- Read `DESIGN.md` before adding or changing any Flutter UI.
