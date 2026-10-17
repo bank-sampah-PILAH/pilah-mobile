@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
@@ -259,6 +260,28 @@ void main() {
 
     expect(find.text('Tidak dikenal'), findsOneWidget);
     expect(find.byKey(const Key('batalkan-d-1')), findsNothing);
+  });
+
+  testWidgets('on a desktop window the list keeps to a centred column',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)],
+        size: const Size(1440, 900));
+    await tester.pumpAndSettle();
+
+    final cari = find.byKey(const Key('cari-draft'));
+    expect(tester.getSize(cari).width,
+        lessThanOrEqualTo(LayoutBreakpoint.contentMaxWidth));
+    expect(tester.getCenter(cari).dx, closeTo(720, 1),
+        reason: 'centred in the window');
+    expect(
+        tester
+            .getSize(find
+                .ancestor(
+                    of: find.text('Cair Oktober'),
+                    matching: find.byType(PencairanCard))
+                .first)
+            .width,
+        lessThanOrEqualTo(LayoutBreakpoint.contentMaxWidth));
   });
 
   testWidgets('the trash icon asks first, then cancels and reloads',
