@@ -81,6 +81,19 @@ abstract final class AppTheme {
           minimumSize: const Size(64, AppButton.height),
         ),
       ),
+      // White and flat with a thin border, like every card of the dashboard and
+      // Jadwal. Margin is up to the screen: the stock 4 pushes a card off the
+      // grid.
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          side: const BorderSide(color: AppColors.border),
+        ),
+      ),
       dialogTheme: DialogThemeData(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,

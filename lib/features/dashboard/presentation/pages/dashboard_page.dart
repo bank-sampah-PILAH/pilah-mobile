@@ -6,7 +6,6 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
@@ -141,15 +140,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 SizedBox(
                   width: width,
                   child: Card(
-                    color: Colors.white,
-                    surfaceTintColor: Colors.transparent,
-                    elevation: 0,
-                    margin: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      side: BorderSide(
-                          color: AppColors.grey200.withValues(alpha: 0.3)),
-                    ),
                     child: Padding(
                         padding: const EdgeInsets.all(20), child: section),
                   ),

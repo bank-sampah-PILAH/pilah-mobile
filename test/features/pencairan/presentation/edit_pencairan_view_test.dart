@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
@@ -117,6 +118,22 @@ void main() {
       find.text('Tanggal hanya bisa dimundurkan sampai 14 September 2026'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('offers the metode as the same chips as the catat form',
+      (tester) async {
+    await pumpView(tester);
+
+    AppChip chip(MetodePencairan metode) =>
+        tester.widget(find.byKey(Key('metode-chip-${metode.name}')));
+    expect(chip(MetodePencairan.tunai).selected, isTrue);
+    expect(chip(MetodePencairan.transfer).selected, isFalse);
+
+    await tester.tap(find.byKey(const Key('metode-chip-transfer')));
+    await tester.pump();
+
+    expect(chip(MetodePencairan.tunai).selected, isFalse);
+    expect(chip(MetodePencairan.transfer).selected, isTrue);
   });
 
   testWidgets('keeps submit disabled until an alasan and valid nominal',

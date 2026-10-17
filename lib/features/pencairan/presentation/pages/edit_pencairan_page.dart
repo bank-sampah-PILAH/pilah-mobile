@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/pencairan.dart';
@@ -181,10 +182,11 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                       spacing: 8,
                       children: [
                         for (final metode in MetodePencairan.values)
-                          ChoiceChip(
-                            label: Text(metode.label),
+                          AppChip(
+                            key: Key('metode-chip-${metode.name}'),
+                            label: metode.label,
                             selected: _metode == metode,
-                            onSelected: (_) => setState(() => _metode = metode),
+                            onTap: () => setState(() => _metode = metode),
                           ),
                       ],
                     ),

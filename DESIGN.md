@@ -67,6 +67,7 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 - Bottom sheets: white, 24 top radius, no tint.
 - App bars: white, no scroll tint, 18/w600 Poppins title.
 - Web shell (browser, wide): the navigation rail is a white panel with a 1 px `AppColors.border` on its right edge; pages sit on `AppColors.surface` and their cards stay white. A page that paints its own `Scaffold` background must not hard-code white: call `WebContentSurface.pageColor(context, phone: …)`, which gives `surface` inside the web shell and the phone colour everywhere else. Rail labels are 12 (`AppTextStyle.small`) in both the expanded and the narrow rail, in `AppColors.inkSoft`; the selected item uses `greenDark` on a `greenLight` indicator.
+- Cards: white, flat, 16 radius, a 1 dp `AppColors.border` outline, no tint and no margin (put the margin where the card sits). A stock `Card(...)` needs no `color`, `shape` or `elevation`.
 
 ## 3. Components
 
@@ -78,7 +79,7 @@ Use these instead of building another one.
 | Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive`, `destructiveOutlined`, `warning`, `warningOutlined`, `tonal` (soft green, beside a primary) and `text` (a bare link inside a line of content). `size: AppButtonSize.compact` is 40 high with a 12 label and a 16 icon, for an action inside a card or a row; the regular size is 48 high, radius 12, 14 semibold label. Optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
 | Search | `CustomSearchField` | |
 | Status chip | `CustomStatusBadge` | |
-| Filter / tab pill | `AppChip` (`design/widgets`) | Announced to screen readers as a selected or unselected button, ripple, 48 dp hit area, optional icon and count. Used by the nasabah, harga, aktivitas and pencairan filters; `PencairanChip` wraps it. |
+| Filter / tab pill | `AppChip` (`design/widgets`) | Announced to screen readers as a selected or unselected button, ripple, 48 dp hit area, optional icon and count. Used by the nasabah, harga, aktivitas and pencairan filters and the metode of both pencairan forms; `PencairanChip` wraps it. `test/design/single_chip_test.dart` fails on a stock `ChoiceChip(` or `FilterChip(`. |
 | Tappable icon, link or field | `AppTapTarget` (`design/widgets`) | Button role, optional `label` for icon-only controls, ripple, 48 dp hit area, optional selected state for options in a group. Use instead of a bare `GestureDetector`. |
 | Tappable white card | `AppTappableCard` (`design/widgets`) | Button role that reads the card's own text, ripple on top of the fill. Used by the nasabah, harga and membership cards. |
 | Confirm dialog | `showAppConfirmDialog` (`core/bases/widgets`) | A plain yes or no; answers `true` only on confirm. Built on `AppDialog`. Used by logout, leaving onboarding, Jadwal, pencairan and superadmin approvals. |
