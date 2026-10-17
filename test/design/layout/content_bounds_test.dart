@@ -47,6 +47,24 @@ void main() {
           reason: 'equal gutters either side');
     });
 
+    testWidgets('a bar can hug its own height once capped', (tester) async {
+      await pumpRouted(
+        tester,
+        const Scaffold(
+          bottomNavigationBar: ContentBounds(
+            heightFactor: 1,
+            child: SizedBox(key: probe, height: 72),
+          ),
+        ),
+        size: const Size(1440, 900),
+      );
+      final bar = find.byType(ContentBounds);
+      expect(tester.getSize(bar).height, 72,
+          reason: 'a footer, not the whole window');
+      expect(tester.getSize(find.byKey(probe)).width,
+          LayoutBreakpoint.contentMaxWidth);
+    });
+
     testWidgets('a form can ask for a narrower column', (tester) async {
       await pumpRouted(
         tester,
