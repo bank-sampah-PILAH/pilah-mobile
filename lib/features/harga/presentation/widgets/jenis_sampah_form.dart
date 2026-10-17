@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter/services.dart';
@@ -525,15 +526,15 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
         Wrap(
           spacing: 8,
           children: [
-            ChoiceChip(
-              label: const Text('Sekarang'),
+            AppChip(
+              label: 'Sekarang',
               selected: berlakuMulai == null,
-              onSelected: (_) => setState(() => _berlakuMulai = null),
+              onTap: () => setState(() => _berlakuMulai = null),
             ),
-            ChoiceChip(
-              label: const Text('Tanggal lain'),
+            AppChip(
+              label: 'Tanggal lain',
               selected: berlakuMulai != null,
-              onSelected: (_) => _pilihTanggalBerlaku(),
+              onTap: _pilihTanggalBerlaku,
             ),
           ],
         ),
