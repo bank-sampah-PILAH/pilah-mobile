@@ -1,0 +1,650 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_jenis.dart';
+
+/// Isi form jenis sampah, tanpa wadah.
+///
+/// Dipakai dua tempat dengan wadah berbeda: bottom sheet pada telepon
+/// (`TambahJenisSampahBottomSheet`) dan panel di samping daftar pada jendela
+/// expanded (`HargaPage`). Yang dipisahkan ke luar adalah *chrome* wadah —
+/// judul, pegangan tarik, tombol tutup, sudut, latar, dan penghindaran papan
+/// tik — mengikuti pembagian yang sudah dipakai `showAdaptivePicker`: isi hanya
+/// tahu cara memvalidasi dan menyimpan, wadah tahu cara menampilkan dirinya dan
+/// apa arti "tutup".
+///
+/// Itu sebabnya form ini tidak pernah memanggil `context.pop()` sendiri. Pop
+/// hanya benar untuk sheet; panel berada inline di dalam body halaman dan
+/// ditutup dengan melepas pilihan. Keduanya diberitahu lewat [onSaved].
+class JenisSampahForm extends StatefulWidget {
+  const JenisSampahForm({
+    super.key,
+    required this.onSaved,
+    this.initialData,
+    this.hargaCubit,
+    this.now = DateTime.now,
+  });
+
+  /// Jenis sampah yang sedang diubah, atau null untuk menambah yang baru.
+  final HargaEntity? initialData;
+
+  /// Cubit yang dipakai. Bila null dibaca dari context, sehingga panel yang
+  /// sudah berada di dalam provider tidak perlu meneruskannya.
+  final HargaCubit? hargaCubit;
+
+  /// Sumber waktu "sekarang", dapat diganti di test.
+  final DateTime Function() now;
+
+  /// Dipanggil setelah simpan, aktifkan, atau nonaktifkan berhasil. Wadah
+  /// memutuskan artinya: sheet mem-pop dirinya, panel melepas pilihan.
+  final VoidCallback onSaved;
+
+  /// Judul untuk wadah yang menampilkan [initial].
+  ///
+  /// Judul adalah bagian dari chrome, tetapi kalimatnya bergantung pada mode,
+  /// jadi kalimatnya tinggal di sini supaya kedua wadah tidak menuliskannya
+  /// sendiri dan berisiko berbeda.
+  static String titleFor(HargaEntity? initial) =>
+      initial == null ? 'Tambah Jenis Sampah' : 'Edit Jenis Sampah';
+
+  @override
+  State<JenisSampahForm> createState() => _JenisSampahFormState();
+}
+
+class _JenisSampahFormState extends State<JenisSampahForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController _kodeSampahController;
+  late TextEditingController _nameController;
+  late TextEditingController _descController;
+  late TextEditingController _priceController;
+
+  String? _selectedCategory;
+  bool _isSaving = false;
+  String? _serverKodeError;
+
+  /// Tengah malam waktu setempat saat harga baru mulai berlaku, atau `null`
+  /// bila harga baru berlaku sekarang.
+  DateTime? _berlakuMulai;
+
+  /// Batas jadwal harga dari backend (`BATAS_JADWAL_HARGA_HARI`).
+  static const int _batasJadwalHari = 365;
+
+  /// Dropdown options as (API value, display label, icon). The value is what the
+  /// backend `JenisSampah.Kategori` choices accept and is stored in
+  /// [_selectedCategory]; the label is display-only. They differ for "Lainnya",
+  /// which maps to the backend's catch-all `dll` — there is no `lainnya` choice.
+  static const List<({String value, String label, IconData icon})> _categories =
+      [
+    (value: 'kertas', label: 'Kertas', icon: Icons.description),
+    (value: 'plastik', label: 'Plastik', icon: Icons.recycling),
+    (value: 'logam', label: 'Logam', icon: Icons.settings),
+    (value: 'kaca', label: 'Kaca', icon: Icons.wine_bar),
+    (value: 'dll', label: 'Lainnya', icon: Icons.category_outlined),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initControllers();
+  }
+
+  /// Panel hidup lebih lama daripada satu pilihan: memilih baris lain membangun
+  /// ulang widget yang sama dengan [JenisSampahForm.initialData] berbeda, dan
+  /// tanpa ini field akan tetap memuat isi baris sebelumnya. Sheet tidak pernah
+  /// mengalaminya karena selalu dibuat baru.
+  @override
+  void didUpdateWidget(JenisSampahForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialData?.id != widget.initialData?.id) {
+      _disposeControllers();
+      _initControllers();
+      _serverKodeError = null;
+      _berlakuMulai = null;
+      // Tombol milik baris yang baru, jadi ia tidak boleh ikut terkunci oleh
+      // simpanan baris sebelumnya. Simpanan itu tetap berjalan dan tetap
+      // melaporkan hasilnya; yang dilepas hanya kuncinya.
+      _isSaving = false;
+    }
+  }
+
+  void _initControllers() {
+    _kodeSampahController =
+        TextEditingController(text: widget.initialData?.kodeSampah ?? '');
+    _nameController =
+        TextEditingController(text: widget.initialData?.name ?? '');
+    _descController =
+        TextEditingController(text: widget.initialData?.subtitle ?? '');
+
+    // The dropdown holds the backend value verbatim, so edit mode preselects by
+    // matching the stored category directly. An unknown category (e.g. organik,
+    // which has no dropdown entry) leaves the field empty rather than
+    // silently rewriting it to a category the user never chose.
+    final cat = widget.initialData?.category.toLowerCase();
+    _selectedCategory =
+        cat != null && _categories.any((c) => c.value == cat) ? cat : null;
+
+    _priceController = TextEditingController(
+      text: widget.initialData?.price.toString() ?? '',
+    );
+  }
+
+  void _disposeControllers() {
+    _kodeSampahController.dispose();
+    _nameController.dispose();
+    _descController.dispose();
+    _priceController.dispose();
+  }
+
+  @override
+  void dispose() {
+    _disposeControllers();
+    super.dispose();
+  }
+
+  bool get _isEditMode => widget.initialData != null;
+
+  bool get _isActive => widget.initialData?.isActive ?? true;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditMode = _isEditMode;
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Field: ID / KODE SAMPAH
+          _buildLabel('ID / KODE SAMPAH'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _kodeSampahController,
+            textInputAction: TextInputAction.next,
+            onChanged: (_) {
+              if (_serverKodeError != null) {
+                setState(() => _serverKodeError = null);
+              }
+            },
+            validator: _validateKode,
+            decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Kode unik untuk identifikasi jenis sampah ini.',
+            style: AppTextStyle.small.copyWith(
+              color: Colors.grey[500],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Field: NAMA JENIS SAMPAH
+          _buildLabel('NAMA JENIS SAMPAH'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _nameController,
+            textInputAction: TextInputAction.next,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Bagian ini wajib diisi.'
+                : null,
+            decoration: appInputDecoration(hintText: 'Contoh: Plastik PET'),
+          ),
+          const SizedBox(height: 20),
+
+          // Field: KATEGORI
+          _buildLabel('KATEGORI'),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedCategory,
+            validator: (value) => (value == null || value.isEmpty)
+                ? 'Bagian ini wajib diisi.'
+                : null,
+            hint: const Text('— Pilih Kategori —'),
+            decoration: appInputDecoration(),
+            icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+            items: _categories.map(_buildDropdownItem).toList(),
+            onChanged: (newValue) {
+              setState(() {
+                _selectedCategory = newValue;
+              });
+            },
+          ),
+          const SizedBox(height: 20),
+
+          // Field: DESKRIPSI (OPSIONAL)
+          _buildLabel('DESKRIPSI (OPSIONAL)'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _descController,
+            maxLines: 2,
+            decoration: appInputDecoration(
+                hintText: 'Contoh: Botol bening, kemasan plastik'),
+          ),
+          const SizedBox(height: 20),
+
+          // Field: HARGA BELI PER KG (RP)
+          _buildLabel('HARGA BELI PER KG (RP)'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _priceController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            // Baris terakhir yang diisi dari papan tik, jadi Enter di sini
+            // menyimpan alih-alih sekadar memindahkan fokus. Itu yang membuat
+            // form ini dapat diselesaikan tanpa menyentuh tetikus.
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) {
+              if (!_isSaving) _handleSimpan();
+            },
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Bagian ini wajib diisi.'
+                : null,
+            decoration: appInputDecoration(
+              hintText: '0',
+            ).copyWith(
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(
+                    left: 16, right: 8, top: 14, bottom: 14),
+                child: Text(
+                  'Rp',
+                  style: AppTextStyle.title1.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              prefixIconConstraints:
+                  const BoxConstraints(minWidth: 0, minHeight: 0),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Harga yang akan dibayarkan ke nasabah.',
+            style: AppTextStyle.small.copyWith(
+              color: Colors.grey[500],
+            ),
+          ),
+          if (isEditMode) ...[
+            const SizedBox(height: 20),
+            _buildLabel('BERLAKU MULAI'),
+            const SizedBox(height: 8),
+            _buildPilihanBerlaku(),
+            const SizedBox(height: 16),
+            _buildRingkasanHarga(widget.initialData!),
+            const SizedBox(height: 12),
+            _buildPeringatanTidakSurut(),
+          ],
+          const SizedBox(height: 32),
+
+          // Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSaving ? null : _handleSimpan,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.greenDark,
+                disabledBackgroundColor:
+                    AppColors.greenDark.withValues(alpha: 0.6),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+                      // headline3 sudah berukuran 16, jadi tidak ada fontSize
+                      // yang perlu ditulis ulang di luar `lib/design/`.
+                      style: AppTextStyle.headline3.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+          ),
+
+          // Activate / Deactivate (edit mode only)
+          if (isEditMode) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isSaving ? null : _handleToggleStatus,
+                icon: Icon(
+                  _isActive ? Icons.block : Icons.check_circle_outline,
+                  size: 20,
+                  color: _isActive ? Colors.red[600] : AppColors.greenDark,
+                ),
+                label: Text(
+                  _isActive
+                      ? 'Nonaktifkan Jenis Sampah'
+                      : 'Aktifkan Jenis Sampah',
+                  style: AppTextStyle.headline3.copyWith(
+                    color: _isActive ? Colors.red[600] : AppColors.greenDark,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  side: BorderSide(
+                    color: _isActive ? Colors.red[200]! : AppColors.greenLight,
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String? _validateKode(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Bagian ini wajib diisi.';
+    }
+    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+    if (cubit.state is HargaLoaded) {
+      final list = (cubit.state as HargaLoaded).jenisSampahList;
+      final isDuplicate = list.any((e) =>
+          e.kodeSampah.trim().toLowerCase() == value.trim().toLowerCase() &&
+          e.id != widget.initialData?.id);
+      if (isDuplicate) {
+        return 'Kode sampah ini sudah digunakan.';
+      }
+    }
+    if (_serverKodeError != null) return _serverKodeError;
+    return null;
+  }
+
+  Future<void> _handleToggleStatus() async {
+    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+    final id = widget.initialData!.id;
+    final wasActive = _isActive;
+
+    // Confirm before touching the API. A cancel or a barrier dismiss returns
+    // false, and nothing has changed at this point, so there is no optimistic
+    // UI state to roll back.
+    final confirmed = await HargaConfirmationDialog.show(
+      context,
+      isActivating: !wasActive,
+      wasteName: widget.initialData!.name,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isSaving = true);
+    final error = wasActive
+        ? await cubit.deactivateHarga(id)
+        : await cubit.activateHarga(id);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (error == null) {
+      widget.onSaved();
+      AppNotification.showSuccess(
+        context,
+        title: 'Berhasil',
+        message: wasActive
+            ? 'Jenis sampah berhasil dinonaktifkan.'
+            : 'Jenis sampah berhasil diaktifkan.',
+      );
+      return;
+    }
+
+    AppNotification.showError(
+      context,
+      title: 'Gagal',
+      message: error.displayMessage,
+    );
+  }
+
+  DropdownMenuItem<String> _buildDropdownItem(
+    ({String value, String label, IconData icon}) category,
+  ) {
+    return DropdownMenuItem<String>(
+      value: category.value,
+      child: Row(
+        children: [
+          Icon(category.icon, size: 20, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Text(category.label),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleSimpan() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+    final isEditMode = _isEditMode;
+
+    final int priceVal = int.tryParse(_priceController.text) ?? 0;
+    final String formattedPrice = CurrencyFormatter.formatRupiah(priceVal);
+
+    final harga = HargaEntity(
+      id: widget.initialData?.id ?? '',
+      kodeSampah: _kodeSampahController.text.trim(),
+      name: _nameController.text.trim(),
+      price: priceVal,
+      priceFormatted: formattedPrice,
+      category: _selectedCategory ?? 'dll',
+      subtitle: _descController.text.trim(),
+      badgeText: widget.initialData?.badgeText ?? 'Anorganik',
+      icon: widget.initialData?.icon ?? Icons.recycling,
+      iconColor: widget.initialData?.iconColor ?? AppColors.greenDark,
+      isActive: widget.initialData?.isActive ?? true,
+    );
+
+    final hargaBerubah = isEditMode && priceVal != widget.initialData!.price;
+    final berlakuMulai = _berlakuMulai;
+
+    setState(() => _isSaving = true);
+    var error = isEditMode
+        ? await cubit.updateHarga(harga)
+        : await cubit.addHarga(harga);
+    // Harga tidak ikut PUT: setiap perubahan harga dicatat sebagai versi baru.
+    var hanyaHargaGagal = false;
+    if (error == null && hargaBerubah) {
+      error = await cubit.ubahHarga(UbahHarga(
+        id: harga.id,
+        harga: priceVal,
+        berlakuMulai: berlakuMulai,
+      ));
+      hanyaHargaGagal = error != null;
+    }
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (error == null) {
+      widget.onSaved();
+      AppNotification.showSuccess(
+        context,
+        title: 'Berhasil',
+        message: pesanSimpanJenis(
+          isEditMode: isEditMode,
+          hargaBerubah: hargaBerubah,
+          berlakuMulai: berlakuMulai,
+        ),
+      );
+      return;
+    }
+
+    if (hanyaHargaGagal) {
+      // PUT sudah menyimpan isian lain; mengulang Simpan aman karena PUT yang
+      // sama tidak mengubah apa-apa, lalu harga dikirim lagi.
+      AppNotification.showError(
+        context,
+        title: 'Harga Belum Tersimpan',
+        message: 'Perubahan lain sudah tersimpan, tetapi harga baru gagal '
+            'disimpan: ${error.displayMessage}. Tekan Simpan lagi untuk '
+            'mencoba harganya.',
+      );
+      return;
+    }
+
+    final fields = error.fieldErrors();
+    if (fields.containsKey('kode')) {
+      setState(() => _serverKodeError = fields['kode']);
+      _formKey.currentState?.validate();
+    }
+    AppNotification.showError(
+      context,
+      title: 'Gagal Menyimpan',
+      message: error.displayMessage,
+    );
+  }
+
+  Widget _buildPilihanBerlaku() {
+    final berlakuMulai = _berlakuMulai;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Sekarang'),
+              selected: berlakuMulai == null,
+              onSelected: (_) => setState(() => _berlakuMulai = null),
+            ),
+            ChoiceChip(
+              label: const Text('Tanggal lain'),
+              selected: berlakuMulai != null,
+              onSelected: (_) => _pilihTanggalBerlaku(),
+            ),
+          ],
+        ),
+        if (berlakuMulai != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Mulai ${formatTanggalId(berlakuMulai)}, pukul 00.00',
+            style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Harga terjadwal dimulai tengah malam waktu setempat pada tanggal yang
+  /// dipilih, paling cepat besok (harga hari ini memakai "Sekarang").
+  Future<void> _pilihTanggalBerlaku() async {
+    final besok = DateUtils.dateOnly(widget.now()).add(const Duration(days: 1));
+    final dipilih = await showDatePicker(
+      context: context,
+      initialDate: _berlakuMulai ?? besok,
+      firstDate: besok,
+      lastDate: besok.add(const Duration(days: _batasJadwalHari - 1)),
+    );
+    if (dipilih == null || !mounted) return;
+    setState(() => _berlakuMulai = DateUtils.dateOnly(dipilih));
+  }
+
+  /// Nilai yang dihitung sistem, bukan input, sehingga berlatar abu (SDS 5.1).
+  Widget _buildRingkasanHarga(HargaEntity jenis) {
+    final berlakuMulai = jenis.berlakuMulai;
+    final terjadwal = jenis.hargaTerjadwal;
+    final keterangan = AppTextStyle.small.copyWith(color: Colors.grey[600]);
+    final nilai = AppTextStyle.headline3.copyWith(
+      color: Colors.black87,
+      fontWeight: FontWeight.w600,
+    );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Harga saat ini', style: keterangan),
+          const SizedBox(height: 2),
+          Text(
+            berlakuMulai == null
+                ? '${CurrencyFormatter.formatRupiah(jenis.price)}/kg'
+                : '${CurrencyFormatter.formatRupiah(jenis.price)}/kg sejak '
+                    '${formatTanggalId(berlakuMulai.toLocal())}',
+            style: nilai,
+          ),
+          if (terjadwal != null) ...[
+            const SizedBox(height: 8),
+            Text('Harga terjadwal', style: keterangan),
+            const SizedBox(height: 2),
+            Text(
+              '${CurrencyFormatter.formatRupiah(terjadwal.harga)}/kg mulai '
+              '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+              style: nilai,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Peringatan BR-03 pada P-03; kuning menandakan peringatan (SDS 5.1).
+  Widget _buildPeringatanTidakSurut() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.avatarYellow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: AppColors.avatarYellowText,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Perubahan harga tidak berlaku surut. Setoran yang sudah '
+              'tercatat tetap memakai harga lama.',
+              style: AppTextStyle.small.copyWith(color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: AppTextStyle.extraSmall.copyWith(
+        color: Colors.grey[500],
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
