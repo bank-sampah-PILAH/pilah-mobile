@@ -1343,10 +1343,12 @@ void main() {
       }
       // Nothing to open or swipe: there is room for every total.
       expect(find.byKey(const Key('ringkasan-toggle')), findsNothing);
-      // Beside the nasabah list, not under it.
-      final kartu = find.byType(EditorItemCard).first;
+      // Beside the form, not under it.
+      final form = find.byType(TextField).first;
       expect(tester.getTopLeft(samping).dx,
-          greaterThanOrEqualTo(tester.getTopRight(kartu).dx));
+          greaterThanOrEqualTo(tester.getTopRight(form).dx));
+      expect(tester.getTopLeft(samping).dy,
+          lessThan(tester.getBottomLeft(form).dy));
     });
 
     testWidgets('tapping it opens the details, tapping again closes them',
