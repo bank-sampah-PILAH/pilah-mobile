@@ -1,0 +1,142 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
+
+import '../../../../support/auth_support.dart';
+import '../../../../support/pump_app.dart';
+import '../../../../support/stub_api.dart';
+
+Map<String, dynamic> _row(String id, {bool dibaca = false}) => {
+      'id': id,
+      'judul': 'Pengumuman $id',
+      'isi': 'Isi $id',
+      'terbit_pada': '2026-10-15T03:00:00Z',
+      'dibaca': dibaca,
+      'dibaca_pada': dibaca ? '2026-10-15T05:00:00Z' : null,
+    };
+
+void main() {
+  late StubApi api;
+  late NasabahPengumumanCubit cubit;
+
+  setUp(() {
+    api = StubApi();
+    cubit = NasabahPengumumanCubit(NasabahPengumumanRepository(api.network));
+  });
+
+  tearDown(() => cubit.close());
+
+  Future<void> openPage(WidgetTester tester) async {
+    await pumpRouted(
+      tester,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthenticationBloc>.value(
+            value: authBlocIn(
+                Authenticated(authEntity: testAuth(role: 'nasabah'))),
+          ),
+          BlocProvider<NasabahPengumumanCubit>.value(value: cubit),
+        ],
+        child: PengumumanPage(membershipId: 'm-1'),
+      ),
+      extraRoutes: ['/pengumuman/detail'],
+      pushed: true,
+      size: const Size(800, 2000),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('lists announcements with a dot only on unread rows',
+      (tester) async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 2,
+      'next': null,
+      'results': [_row('1'), _row('2', dibaca: true)],
+    });
+
+    await openPage(tester);
+
+    expect(find.byKey(const ValueKey('pengumuman-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pengumuman-2')), findsOneWidget);
+    // Only the unread row carries the dot.
+    expect(
+        find.byKey(const ValueKey('pengumuman-belum-dibaca')), findsOneWidget);
+    // The membership scope reached the backend.
+    expect(api.last.query['keanggotaan_id'], 'm-1');
+  });
+
+  testWidgets('tapping a row marks it read and opens the detail',
+      (tester) async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1')],
+    });
+    api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca', json: {
+      'id': '1',
+      'dibaca': true,
+      'dibaca_pada': '2026-10-15T06:00:00Z',
+    });
+
+    await openPage(tester);
+    await tester.tap(find.text('Pengumuman 1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:/pengumuman/detail'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pengumuman-belum-dibaca')), findsNothing);
+  });
+
+  testWidgets('an empty list shows the zero state', (tester) async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
+
+    await openPage(tester);
+
+    expect(find.text('Belum ada pengumuman'), findsOneWidget);
+  });
+
+  testWidgets('a failed load offers to retry', (tester) async {
+    api.fail('GET', '/api/v1/nasabah/me/pengumuman');
+    await openPage(tester);
+
+    expect(find.text('Belum ada pengumuman'), findsNothing);
+    expect(find.text('Coba lagi'), findsOneWidget);
+
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1')],
+    });
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('pengumuman-1')), findsOneWidget);
+  });
+
+  testWidgets('a non-nasabah sees the sign-in guard, not the list',
+      (tester) async {
+    await pumpRouted(
+      tester,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthenticationBloc>.value(
+            value: authBlocIn(Unauthenticated()),
+          ),
+          BlocProvider<NasabahPengumumanCubit>.value(value: cubit),
+        ],
+        child: const PengumumanPage(),
+      ),
+      pushed: true,
+      size: const Size(800, 2000),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
+    expect(find.text('Coba lagi'), findsNothing);
+  });
+}

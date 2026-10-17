@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
@@ -120,6 +122,12 @@ class App extends StatelessWidget {
         ),
         BlocProvider<JadwalCubit>(
           create: (context) => di<JadwalCubit>(),
+        ),
+        BlocProvider<PengumumanCubit>(
+          create: (context) => di<PengumumanCubit>(),
+        ),
+        BlocProvider<NasabahPengumumanCubit>(
+          create: (context) => di<NasabahPengumumanCubit>(),
         ),
         BlocProvider<TransaksiCubit>(
           create: (context) => di<TransaksiCubit>(),
@@ -272,6 +280,8 @@ void resetSessionScopedState(BuildContext context) {
   context.read<NasabahCubit>().reset();
   context.read<HargaCubit>().reset();
   context.read<JadwalCubit>().reset();
+  context.read<PengumumanCubit>().reset();
+  context.read<NasabahPengumumanCubit>().reset();
   context.read<TransaksiCubit>().reset();
   context.read<DashboardCubit>().reset();
   context.read<RecentActivityCubit>().reset();
