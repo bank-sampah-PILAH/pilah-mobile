@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
@@ -266,32 +267,8 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
                     return null;
                   },
                   decoration: appInputDecoration(
-                    hintText: '812-3456-7890',
-                  ).copyWith(
-                    prefixIcon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            '+62',
-                            style: AppTextStyle.small.copyWith(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          height: 24,
-                          width: 1,
-                          color: Colors.grey[300],
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                    ),
-                    prefixIconConstraints:
-                        const BoxConstraints(minWidth: 0, minHeight: 0),
-                  ),
+                      hintText: '812-3456-7890',
+                      prefixIcon: const PhonePrefix()),
                 ),
                 const SizedBox(height: 20),
 
