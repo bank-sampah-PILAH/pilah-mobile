@@ -9,6 +9,7 @@ import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -74,7 +75,8 @@ class DraftListView extends StatelessWidget {
         child: BlocBuilder<DraftListCubit, DraftListState>(
           builder: (context, state) => Column(
             children: [
-              PencairanHeader(
+              AppBackHeader(
+                backKey: const Key('kembali'),
                 title: 'Pencairan',
                 actions: [
                   PencairanPopupMenu<String>(
