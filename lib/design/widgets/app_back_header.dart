@@ -5,15 +5,28 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 /// The header of a full page that has no app bar: a grey back button and the
-/// page title beside it, such as "Catat Pencairan".
+/// page title beside it, such as "Catat Pencairan", with optional [actions] at
+/// the right end.
 ///
 /// The back button is announced as "Kembali" and has the 48 dp hit area that
-/// Android asks for.
+/// Android asks for. Without an [onBack] it goes back with `maybePop`, so a
+/// screen that guards unsaved edits with a `PopScope` is asked first. A title
+/// too long for the line ends in an ellipsis.
 class AppBackHeader extends StatelessWidget {
-  const AppBackHeader({super.key, required this.title, required this.onBack});
+  const AppBackHeader({
+    super.key,
+    required this.title,
+    this.onBack,
+    this.actions = const [],
+    this.backKey,
+  });
 
   final String title;
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
+  final List<Widget> actions;
+
+  /// Key of the back button, for a test to find it.
+  final Key? backKey;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +35,8 @@ class AppBackHeader extends StatelessWidget {
       child: Row(
         children: [
           AppTapTarget(
-            onTap: onBack,
+            key: backKey,
+            onTap: onBack ?? () => Navigator.of(context).maybePop(),
             label: 'Kembali',
             borderRadius: BorderRadius.circular(AppRadius.md),
             child: Container(
@@ -39,14 +53,19 @@ class AppBackHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            title,
-            style: AppTextStyle.headline1.copyWith(
-              color: AppColors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyle.headline1.copyWith(
+                color: AppColors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
             ),
           ),
+          ...actions,
         ],
       ),
     );
