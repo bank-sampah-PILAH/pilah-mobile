@@ -119,6 +119,17 @@ void main() {
       expect(homeTaps, 2);
     });
 
+    testWidgets('lets the brand hover area span the sidebar like the divider',
+        (tester) async {
+      await mountRail(tester);
+
+      final brand = tester.getRect(find.byKey(RoleNavigationRail.brandKey));
+      final divider =
+          tester.getRect(find.byKey(RoleNavigationRail.headerDividerKey));
+      expect(brand.left, divider.left);
+      expect(brand.right, divider.right);
+    });
+
     testWidgets('keeps the logo tappable on the narrow rail', (tester) async {
       await mountRail(tester, window: const Size(700, 900));
 
