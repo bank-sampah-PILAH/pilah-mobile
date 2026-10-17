@@ -51,8 +51,9 @@ void main() {
 
   Future<GoRouter> pump(
     WidgetTester tester,
-    List<DraftRingkasan> drafts,
-  ) async {
+    List<DraftRingkasan> drafts, {
+    Size? size,
+  }) async {
     when(() => repository.getDrafts()).thenAnswer((_) async => Right(drafts));
     return pumpRouted(
       tester,
@@ -65,6 +66,7 @@ void main() {
         DraftListPage.routeEditor,
         '/catat-pencairan',
       ],
+      size: size,
     );
   }
 
@@ -261,7 +263,8 @@ void main() {
 
   testWidgets('the trash icon asks first, then cancels and reloads',
       (tester) async {
-    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)],
+        size: const Size(390, 844));
     await tester.pumpAndSettle();
     when(() => repository.cancelDraft('d-1'))
         .thenAnswer((_) async => Right(_batal()));

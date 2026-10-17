@@ -40,14 +40,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('is a white, rounded bottom sheet, not a plain dialog',
+  testWidgets('on a phone it is a white, rounded bottom sheet, not a dialog',
       (tester) async {
     await open(tester);
 
-    expect(find.byType(AlertDialog), findsNothing);
-    final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
-    expect(sheet.backgroundColor, Colors.white);
-    expect((sheet.shape! as RoundedRectangleBorder).borderRadius,
+    expect(find.byType(Dialog), findsNothing);
+    final box = tester.widget<Container>(find
+        .descendant(
+            of: find.byType(BottomSheet), matching: find.byType(Container))
+        .first);
+    final decoration = box.decoration! as BoxDecoration;
+    expect(decoration.color, Colors.white);
+    expect(decoration.borderRadius,
         const BorderRadius.vertical(top: Radius.circular(24)));
   });
 
