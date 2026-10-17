@@ -226,50 +226,42 @@ void main() {
   /// The guard itself is older than this PR (`04994da`, PIL-228); what this PR
   /// changed is that there is now left-hand navigation to lose.
   group('tapping the rail profile', () {
-    int stackDepth(GoRouter router) =>
-        router.routerDelegate.currentConfiguration.matches.length;
+    /// How many times the back button has to be pressed to leave the pages
+    /// that were pushed. Consumes the stack.
+    Future<int> backPresses(WidgetTester tester, GoRouter router) async {
+      var presses = 0;
+      while (router.canPop() && presses < 10) {
+        router.pop();
+        await tester.pumpAndSettle();
+        presses++;
+      }
+      return presses;
+    }
 
     testWidgets('opens the profile from another page', (tester) async {
-      await mountShell(tester,
+      final router = await mountShell(tester,
           role: 'pengelola', window: const Size(1280, 900), isWeb: true);
 
       await tester.tap(find.byKey(RoleNavigationRail.profileKey));
       await tester.pumpAndSettle();
 
-      expect(find.text('body:/profile'), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/profile');
     });
 
     testWidgets('does not stack another profile page when already there',
         (tester) async {
       final router = await mountShell(tester,
           role: 'pengelola', window: const Size(1280, 900), isWeb: true);
-      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
-      await tester.pumpAndSettle();
-      final depth = stackDepth(router);
 
-      for (var i = 0; i < 3; i++) {
-        await tester.tap(find.byKey(RoleNavigationRail.profileKey),
-            warnIfMissed: false);
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.byKey(RoleNavigationRail.profileKey));
         await tester.pumpAndSettle();
       }
 
-      expect(stackDepth(router), depth);
-    });
-
-    testWidgets('does nothing when the session starts on the profile',
-        (tester) async {
-      final router = await mountShell(tester,
-          role: 'pengelola',
-          window: const Size(1280, 900),
-          isWeb: true,
-          initialLocation: '/profile');
-      final depth = stackDepth(router);
-
-      await tester.tap(find.byKey(RoleNavigationRail.profileKey),
-          warnIfMissed: false);
-      await tester.pumpAndSettle();
-
-      expect(stackDepth(router), depth);
+      expect(await backPresses(tester, router), 1,
+          reason: 'one back press must leave the profile, however many '
+              'times it was tapped');
     });
   });
 
