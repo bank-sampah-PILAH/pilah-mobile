@@ -252,10 +252,10 @@ class AppButton extends StatelessWidget {
       fit: BoxFit.scaleDown,
       child: Text(label, maxLines: 1, softWrap: false),
     );
-    final lead = leading ??
-        (icon == null
-            ? null
-            : Icon(icon, size: size == AppButtonSize.compact ? 16 : 20));
+    final iconSize = size == AppButtonSize.compact ? 16.0 : 20.0;
+    final iconData = icon;
+    final lead =
+        leading ?? (iconData == null ? null : Icon(iconData, size: iconSize));
     if (lead == null && trailingIcon == null) return text;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -265,7 +265,7 @@ class AppButton extends StatelessWidget {
         Flexible(child: text),
         if (trailingIcon != null) ...[
           const SizedBox(width: 8),
-          Icon(trailingIcon, size: size == AppButtonSize.compact ? 16 : 20),
+          Icon(trailingIcon, size: iconSize),
         ],
       ],
     );
