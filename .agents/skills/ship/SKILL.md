@@ -177,9 +177,15 @@ git push --set-upstream origin <kind>/<name>
 
 ### Upload screenshots
 
-Use the `gh image` extension (setup and safety notes in `docs/GH_IMAGE.md`) so
+Use the `gh image` extension (`gh extension install drogers0/gh-image`) so
 images are hosted as GitHub `user-attachments` and render in the PR. The
 repository is public: only demo data may appear in screenshots.
+
+Check `gh-image --version` after installing or upgrading. On Linux the install
+picked the `hbd-linux-amd64` release asset (version ends in `-hbd`) instead of
+the default `linux-amd64`. Replace it with the default asset and verify it with
+`gh attestation verify <file> --repo drogers0/gh-image` (must exit 0) before
+copying it over `~/.local/share/gh/extensions/gh-image/gh-image`.
 
 Run it with an empty `HOME` and the `gh` token in the environment, so the
 upload goes through the token route and the browser-cookie fallback has no

@@ -47,7 +47,8 @@
   `artifacts/pr-<PR_NUMBER>/`. Never commit them. Skip screenshots for non-UI
   changes, and say in the PR description when UI screenshots do not apply.
 - Put PR screenshots in the PR description with `gh image`, which uploads to
-  GitHub `user-attachments`; follow the steps in `docs/GH_IMAGE.md`. The
+  GitHub `user-attachments`; follow the "Upload screenshots" step of the
+  `ship` skill. The
   repository is public, so screenshots must show demo data only. If `gh image`
   cannot be used, fall back to an orphan branch `pr-<PR_NUMBER>-screenshots`
   and never delete that branch, since doing so breaks the images in the PR.
