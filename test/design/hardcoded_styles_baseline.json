@@ -69,7 +69,7 @@
   },
   "lib/features/draft_pencairan/presentation/widgets/pencairan_ui.dart": {
     "color": 0,
-    "fontSize": 3
+    "fontSize": 2
   },
   "lib/features/harga/presentation/pages/harga_page.dart": {
     "color": 0,
@@ -133,11 +133,7 @@
   },
   "lib/features/profile/presentation/pages/profile_page.dart": {
     "color": 0,
-    "fontSize": 8
-  },
-  "lib/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart": {
-    "color": 0,
-    "fontSize": 1
+    "fontSize": 7
   },
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": {
     "color": 0,

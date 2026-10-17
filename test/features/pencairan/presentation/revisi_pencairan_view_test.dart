@@ -99,13 +99,13 @@ void main() {
         .thenAnswer((_) async => Right(_riwayat));
     await pumpView(tester);
 
-    final card = find.ancestor(
-      of: find.text('Versi sekarang'),
-      matching: find.byType(Card),
+    final list = find.ancestor(
+      of: find.text('VERSI SEKARANG'),
+      matching: find.byType(ListView),
     );
-    expect(tester.getSize(card).width,
+    expect(tester.getSize(list).width,
         lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
-    expect(tester.getCenter(card).dx, closeTo(720, 1),
+    expect(tester.getCenter(list).dx, closeTo(720, 1),
         reason: 'centred in the window');
   });
 
