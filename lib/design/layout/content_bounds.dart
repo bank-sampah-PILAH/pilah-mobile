@@ -12,9 +12,17 @@ import 'layout_breakpoint.dart';
 /// Pembatasan tidak pernah memperkecil konten: bila jendela lebih sempit dari
 /// batas, lebar yang tersedia dipakai seutuhnya.
 class ContentBounds extends StatelessWidget {
-  const ContentBounds({super.key, required this.child});
+  const ContentBounds({
+    super.key,
+    required this.child,
+    this.maxWidth = LayoutBreakpoint.contentMaxWidth,
+  });
 
   final Widget child;
+
+  /// Batas lebar pada expanded. Bawaannya [LayoutBreakpoint.contentMaxWidth];
+  /// formulir memakai [LayoutBreakpoint.formMaxWidth].
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +30,7 @@ class ContentBounds extends StatelessWidget {
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints:
-            const BoxConstraints(maxWidth: LayoutBreakpoint.contentMaxWidth),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         child: child,
       ),
     );

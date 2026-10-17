@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
@@ -85,6 +86,25 @@ void main() {
     expect(find.text('Diubah oleh Ibu Sari · 22 September 2026, 11:05'),
         findsOneWidget);
     expect(find.text('Rp 200.000'), findsNWidgets(2));
+  });
+
+  testWidgets('keeps the versions to a readable column on a desktop window',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(() => useCases.getRevisi('p-1'))
+        .thenAnswer((_) async => Right(_riwayat));
+    await pumpView(tester);
+
+    final card = find.ancestor(
+      of: find.text('Versi sekarang'),
+      matching: find.byType(Card),
+    );
+    expect(tester.getSize(card).width,
+        lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
+    expect(tester.getCenter(card).dx, closeTo(720, 1),
+        reason: 'centred in the window');
   });
 
   testWidgets('offers a retry when the history cannot be loaded',

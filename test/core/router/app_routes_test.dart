@@ -138,6 +138,20 @@ void main() {
       expect(find.byType(RevisiPencairanPage), findsOneWidget);
     });
 
+    testWidgets(
+        'the pencairan edit and revision pages without their pencairan '
+        '(a refreshed web tab) fall back to the laporan', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/edit-pencairan');
+      expect(find.byType(EditPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
+
+      await visit(tester, router, '/riwayat-perubahan-pencairan');
+      expect(find.byType(RevisiPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
+    });
+
     testWidgets('can open the price history of a jenis sampah', (tester) async {
       final router = await boot(tester);
 
