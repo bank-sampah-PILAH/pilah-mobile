@@ -23,13 +23,7 @@ class NasabahPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) => AppBar(
         automaticallyImplyLeading: false,
-        leading: showBack
-            ? IconButton(
-                tooltip: 'Kembali',
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).maybePop(),
-              )
-            : null,
+        leading: showBack ? const BackButton() : null,
         backgroundColor: NasabahStyle.background,
         foregroundColor: NasabahStyle.ink,
         surfaceTintColor: Colors.transparent,

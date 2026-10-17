@@ -24,7 +24,7 @@ void main() {
     await open(tester, const NasabahPageAppBar(title: 'Tabungan Saya'));
 
     expect(find.text('Tabungan Saya'), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_back), findsNothing);
+    expect(find.byType(BackButton), findsNothing);
   });
 
   testWidgets('shows a back button that goes back when asked to',
@@ -34,10 +34,9 @@ void main() {
       const NasabahPageAppBar(title: 'Detail Bank Sampah', showBack: true),
     );
 
-    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.byType(BackButton), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
     expect(find.text('Detail Bank Sampah'), findsNothing);
