@@ -74,8 +74,12 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.d
     show GetHargaUseCase;
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart'
     show UpdateHargaUseCase;
+import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart'
+    show GetRiwayatHargaUseCase;
 import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.dart'
     show UbahHargaUseCase;
+import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart'
+    show RiwayatHargaCubit;
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
     show HargaCubit;
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart'
@@ -305,6 +309,8 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('GetHargaUseCase', null, () => di<GetHargaUseCase>()),
   ('UpdateHargaUseCase', null, () => di<UpdateHargaUseCase>()),
   ('UbahHargaUseCase', null, () => di<UbahHargaUseCase>()),
+  ('GetRiwayatHargaUseCase', null, () => di<GetRiwayatHargaUseCase>()),
+  ('RiwayatHargaCubit', null, () => di<RiwayatHargaCubit>()),
   ('GetDashboardStatsUseCase', null, () => di<GetDashboardStatsUseCase>()),
   ('NasabahCubit', null, () => di<NasabahCubit>()),
   ('EditPencairanCubit', null, () => di<EditPencairanCubit>()),

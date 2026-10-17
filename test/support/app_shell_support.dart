@@ -11,10 +11,14 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
+import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
+import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository_impl.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
@@ -107,6 +111,9 @@ class AppShell {
         () => RevisiPencairanCubit(useCases));
     di.registerFactory<RiwayatPencairanCubit>(
         () => RiwayatPencairanCubit(useCases));
+    di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
+        GetRiwayatHargaUseCase(
+            HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
     final draftRepository = buildDraftPencairanRepository(api);
     di.registerFactory<DraftListCubit>(() => DraftListCubit(draftRepository));
     di.registerFactory<PilihNasabahCubit>(
@@ -125,6 +132,7 @@ class AppShell {
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<RiwayatHargaCubit>();
     await di.unregister<DraftListCubit>();
     await di.unregister<PilihNasabahCubit>();
     await di.unregister<DraftEditorCubit>();

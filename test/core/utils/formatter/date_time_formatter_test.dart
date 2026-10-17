@@ -19,4 +19,9 @@ void main() {
       expect(DateTime.parse(iso).isAtSameMomentAs(tengahMalam), isTrue);
     });
   });
+
+  test('formatTanggalJamId writes the date and a zero-padded time', () {
+    expect(formatTanggalJamId(DateTime(2026, 10, 1, 9, 5)),
+        '1 Oktober 2026, 09:05');
+  });
 }

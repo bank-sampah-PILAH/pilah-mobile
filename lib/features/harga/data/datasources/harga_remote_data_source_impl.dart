@@ -3,7 +3,9 @@ import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/features/harga/data/models/harga_model.dart';
+import 'package:pilah_mobile/features/harga/data/models/versi_harga_model.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/versi_harga.dart';
 
 @LazySingleton(as: HargaRemoteDataSource)
 class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
@@ -59,5 +61,22 @@ class HargaRemoteDataSourceImpl implements HargaRemoteDataSource {
           'berlaku_mulai': isoDenganOffset(berlakuMulai),
       },
     );
+  }
+
+  @override
+  Future<List<VersiHarga>> getRiwayatHarga(String id) async {
+    // Halaman 100 baris; riwayat yang lebih panjang dibaca sampai `next`
+    // habis, agar versi lama tidak hilang dari riwayat.
+    final riwayat = <VersiHarga>[];
+    for (var halaman = 1;; halaman++) {
+      final response = await networkService.get(
+        '/api/v1/jenis-sampah/$id/harga',
+        queryParams: {'page_size': 100, if (halaman > 1) 'page': halaman},
+      );
+      final Map<String, dynamic> data = response.data;
+      riwayat.addAll((data['results'] as List<dynamic>)
+          .map((json) => versiHargaFromJson(json as Map<String, dynamic>)));
+      if (data['next'] == null) return riwayat;
+    }
   }
 }

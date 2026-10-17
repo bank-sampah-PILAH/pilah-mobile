@@ -20,7 +20,9 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_p
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
@@ -188,6 +190,16 @@ class AppRouterConfig {
         name: RevisiPencairanPage.route,
         builder: (context, state) =>
             RevisiPencairanPage(pencairanId: state.extra! as String),
+      ),
+      GoRoute(
+        path: RiwayatHargaPage.route,
+        name: RiwayatHargaPage.route,
+        // The jenis travels as extra, which a refreshed web tab or a pasted
+        // link doesn't carry; send those back to the list to pick one.
+        redirect: (context, state) =>
+            state.extra is HargaEntity ? null : HargaPage.route,
+        builder: (context, state) =>
+            RiwayatHargaPage(jenis: state.extra! as HargaEntity),
       ),
       GoRoute(
         path: InviteGatePage.route,
