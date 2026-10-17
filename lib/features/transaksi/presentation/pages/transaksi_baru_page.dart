@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -383,14 +384,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Section 1: PILIH NASABAH
-                            Text(
-                              'PILIH NASABAH',
-                              style: AppTextStyle.extraSmall.copyWith(
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
+                            const AppFieldLabel('PILIH NASABAH'),
                             const SizedBox(height: 16),
                             PilihNasabahSection(
                               selectedCustomer: selectedCustomer,
@@ -409,14 +403,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'DAFTAR SETORAN',
-                                  style: AppTextStyle.extraSmall.copyWith(
-                                    color: Colors.grey[500],
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.0,
-                                  ),
-                                ),
+                                const AppFieldLabel('DAFTAR SETORAN'),
                                 Text(
                                   '${setoranItems.length} item',
                                   style: AppTextStyle.small.copyWith(

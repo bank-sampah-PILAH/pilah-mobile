@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -126,7 +127,7 @@ class _TambahJenisSampahBottomSheetState
             const SizedBox(height: 24),
 
             // Field: ID / KODE SAMPAH
-            _buildLabel('ID / KODE SAMPAH'),
+            const AppFieldLabel('ID / KODE SAMPAH'),
             const SizedBox(height: 8),
             TextFormField(
               controller: _kodeSampahController,
@@ -165,7 +166,7 @@ class _TambahJenisSampahBottomSheetState
             const SizedBox(height: 20),
 
             // Field: NAMA JENIS SAMPAH
-            _buildLabel('NAMA JENIS SAMPAH'),
+            const AppFieldLabel('NAMA JENIS SAMPAH'),
             const SizedBox(height: 8),
             TextFormField(
               controller: _nameController,
@@ -177,7 +178,7 @@ class _TambahJenisSampahBottomSheetState
             const SizedBox(height: 20),
 
             // Field: KATEGORI
-            _buildLabel('KATEGORI'),
+            const AppFieldLabel('KATEGORI'),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _selectedCategory,
@@ -197,7 +198,7 @@ class _TambahJenisSampahBottomSheetState
             const SizedBox(height: 20),
 
             // Field: DESKRIPSI (OPSIONAL)
-            _buildLabel('DESKRIPSI (OPSIONAL)'),
+            const AppFieldLabel('DESKRIPSI (OPSIONAL)'),
             const SizedBox(height: 8),
             TextFormField(
               controller: _descController,
@@ -208,7 +209,7 @@ class _TambahJenisSampahBottomSheetState
             const SizedBox(height: 20),
 
             // Field: HARGA BELI PER KG (RP)
-            _buildLabel('HARGA BELI PER KG (RP)'),
+            const AppFieldLabel('HARGA BELI PER KG (RP)'),
             const SizedBox(height: 8),
             TextFormField(
               controller: _priceController,
@@ -244,7 +245,7 @@ class _TambahJenisSampahBottomSheetState
             ),
             if (isEditMode) ...[
               const SizedBox(height: 20),
-              _buildLabel('BERLAKU MULAI'),
+              const AppFieldLabel('BERLAKU MULAI'),
               const SizedBox(height: 8),
               _buildPilihanBerlaku(),
               const SizedBox(height: 16),
@@ -535,17 +536,6 @@ class _TambahJenisSampahBottomSheetState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: AppTextStyle.extraSmall.copyWith(
-        color: Colors.grey[500],
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.5,
       ),
     );
   }
