@@ -78,8 +78,10 @@ dependencies:
   url_launcher: ^6.3.2
   pdfrx: ^2.4.4
   printing: ^5.14.3
+  web: ^1.1.1
 
 dev_dependencies:
+  test: ^1.29.0
   flutter_test:
     sdk: flutter
   google_sign_in_platform_interface: ^3.1.0

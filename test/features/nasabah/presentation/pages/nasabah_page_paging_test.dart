@@ -82,6 +82,13 @@ void main() {
 
   tearDown(() => cubit.close());
 
+  // Below the medium breakpoint, so the page keeps its phone list.
+  void usePhone(WidgetTester tester) {
+    tester.view.physicalSize = const Size(590, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+  }
+
   Widget host() => MaterialApp(
         home: BlocProvider<NasabahCubit>.value(
           value: cubit,
@@ -96,6 +103,7 @@ void main() {
       return Right(_halaman(params.page));
     });
 
+    usePhone(tester);
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
@@ -124,6 +132,7 @@ void main() {
       return Future.value(Right(_halaman(1)));
     });
 
+    usePhone(tester);
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
     expect(find.text('Nasabah 1'), findsOneWidget);
@@ -164,6 +173,7 @@ void main() {
           : inactiveResponse.future;
     });
 
+    usePhone(tester);
     await tester.pumpWidget(host());
     await tester.tap(find.text('Tidak Aktif'));
     await tester.pump();

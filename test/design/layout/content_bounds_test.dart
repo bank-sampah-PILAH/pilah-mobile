@@ -47,6 +47,21 @@ void main() {
           reason: 'equal gutters either side');
     });
 
+    testWidgets('a form can ask for a narrower column', (tester) async {
+      await pumpRouted(
+        tester,
+        const ContentBounds(
+          maxWidth: LayoutBreakpoint.formMaxWidth,
+          child: SizedBox.expand(key: probe),
+        ),
+        size: const Size(1440, 900),
+      );
+      expect(tester.getSize(find.byKey(probe)).width,
+          LayoutBreakpoint.formMaxWidth);
+      expect(tester.getTopLeft(find.byKey(probe)).dx,
+          (1440 - LayoutBreakpoint.formMaxWidth) / 2);
+    });
+
     testWidgets('does not pad a window narrower than the cap', (tester) async {
       // 1000 is expanded (>= 840) but still below the 1200 cap, so capping
       // must not invent a gutter that shrinks the content.

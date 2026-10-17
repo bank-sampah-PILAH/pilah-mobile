@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -91,6 +92,20 @@ void main() {
     await tester.tap(submit);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('keeps the form to a readable column on a desktop window',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpView(tester);
+
+    final field = find.byKey(const Key('nominal-field'));
+    expect(tester.getSize(field).width,
+        lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
+    expect(tester.getCenter(field).dx, closeTo(720, 1),
+        reason: 'centred in the window');
+  });
 
   testWidgets('starts from the recorded values and states the tanggal limit',
       (tester) async {
