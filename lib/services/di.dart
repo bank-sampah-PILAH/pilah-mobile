@@ -1,5 +1,6 @@
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 
@@ -16,4 +17,6 @@ void configureDependencies({required String environment}) {
   di.init(environment: environment);
   di.registerLazySingleton<NasabahRepository>(
       () => NasabahRepository(di<NetworkService>()));
+  di.registerLazySingleton<NasabahPengumumanRepository>(
+      () => NasabahPengumumanRepository(di<NetworkService>()));
 }
