@@ -11,7 +11,11 @@ import '../../support/pump_app.dart';
 /// The rail is now a white panel with a border, the page sits on the grey page
 /// colour, and the labels use the strong secondary text colour.
 void main() {
-  Future<void> mountRail(WidgetTester tester, {Size? window}) async {
+  var profileTaps = 0;
+
+  Future<void> mountRail(WidgetTester tester,
+      {Size? window, String? profileName = 'Sari Dewi'}) async {
+    profileTaps = 0;
     await pumpRouted(
       tester,
       Scaffold(
@@ -20,6 +24,9 @@ void main() {
             role: 'pengelola',
             currentIndex: 0,
             bankSampahNama: 'Bank Sampah Melati',
+            profileName: profileName,
+            profileEmail: 'sari@example.test',
+            onProfile: () => profileTaps++,
             onSelected: (_) {},
           ),
           const Expanded(child: SizedBox.shrink()),
@@ -69,6 +76,54 @@ void main() {
       expect(find.byKey(RoleNavigationRail.logoKey), findsOneWidget);
       expect(find.text('PILAH'), findsNothing);
       expect(find.text('MENU'), findsNothing);
+    });
+  });
+
+  group('RoleNavigationRail labels', () {
+    testWidgets('are small and light enough to match the design',
+        (tester) async {
+      await mountRail(tester);
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.unselectedLabelTextStyle!.fontSize, 12);
+      expect(rail.unselectedLabelTextStyle!.fontWeight, FontWeight.w500);
+      expect(rail.selectedLabelTextStyle!.fontSize, 12);
+      expect(rail.selectedLabelTextStyle!.fontWeight, FontWeight.w600);
+    });
+  });
+
+  group('RoleNavigationRail profile', () {
+    testWidgets('sits at the bottom with the name and email', (tester) async {
+      await mountRail(tester);
+
+      expect(find.text('Sari Dewi'), findsOneWidget);
+      expect(find.text('sari@example.test'), findsOneWidget);
+      expect(find.text('SD'), findsOneWidget);
+      expect(tester.getBottomLeft(find.byKey(RoleNavigationRail.profileKey)).dy,
+          greaterThan(800));
+    });
+
+    testWidgets('opens the profile when tapped', (tester) async {
+      await mountRail(tester);
+
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      expect(profileTaps, 1);
+    });
+
+    testWidgets('shrinks to the avatar on the narrow rail', (tester) async {
+      await mountRail(tester, window: const Size(700, 900));
+
+      expect(find.text('SD'), findsOneWidget);
+      expect(find.text('Sari Dewi'), findsNothing);
+      expect(find.text('sari@example.test'), findsNothing);
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      expect(profileTaps, 1);
+    });
+
+    testWidgets('is left out when the session has no name', (tester) async {
+      await mountRail(tester, profileName: null);
+
+      expect(find.byKey(RoleNavigationRail.profileKey), findsNothing);
     });
   });
 
