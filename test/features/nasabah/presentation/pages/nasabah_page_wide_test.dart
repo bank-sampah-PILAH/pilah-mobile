@@ -69,11 +69,28 @@ void main() {
     expect(find.text('Belum Ada Nasabah'), findsOneWidget);
   });
 
-  testWidgets('a failed load shows the error', (tester) async {
+  testWidgets('a failed load shows the error with a retry', (tester) async {
     api.on('GET', _path, status: 500, json: {});
     await open(tester);
 
-    expect(find.text('Gagal Memuat Data'), findsOneWidget);
+    expect(find.byType(NasabahTable), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Coba lagi'), findsOneWidget);
+    expect(find.text('Budi Santoso'), findsNothing);
+  });
+
+  testWidgets('retrying after a failed load fetches the list again',
+      (tester) async {
+    api.on('GET', _path, status: 500, json: {});
+    await open(tester);
+    final before = api.requests.length;
+
+    listAs([nasabahRow('1')]);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Coba lagi'));
+    await tester.pumpAndSettle();
+
+    expect(api.requests.length, greaterThan(before));
+    expect(find.text('Budi Santoso'), findsOneWidget);
+    expect(find.text('Coba lagi'), findsNothing);
   });
 
   testWidgets('searching asks the server', (tester) async {
