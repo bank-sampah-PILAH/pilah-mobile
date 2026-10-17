@@ -5,10 +5,13 @@ import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
@@ -31,6 +34,11 @@ class _JadwalPageState extends State<JadwalPage> {
   bool _isMonthExpanded = false;
   late final ScrollController _scrollController;
   DateTime? _markerMonth;
+
+  /// Apakah panel form sedang terbuka di samping agenda. Hanya dipakai pada
+  /// medium ke atas; pada compact form tetap dibuka sebagai bottom sheet.
+  bool _panelOpen = false;
+  JadwalEntity? _panelInitial;
 
   @override
   void initState() {
@@ -108,6 +116,18 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   void _openForm([JadwalEntity? initial]) {
+    // Hanya expanded, bukan medium. Pada medium panel hanya mendapat dua dari
+    // lima bagian lebar, sekitar 320 piksel, dan form ini berisi dropdown serta
+    // dua pemilih tanggal yang tidak muat di sana. Di bawah expanded bottom
+    // sheet tetap wadah yang lebih baik.
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      setState(() {
+        _panelOpen = true;
+        _panelInitial = initial;
+      });
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -123,10 +143,31 @@ class _JadwalPageState extends State<JadwalPage> {
     );
   }
 
-  Future<void> _changeStatus(JadwalEntity item, String action) async {
+  void _closePanel() {
+    if (!_panelOpen) return;
+    setState(() {
+      _panelOpen = false;
+      _panelInitial = null;
+    });
+  }
+
+  /// Form sebagai panel di samping agenda, atau null bila tidak ada yang
+  /// sedang disunting. [MasterDetailLayout] sendiri yang mengabaikannya pada
+  /// compact, sehingga telepon tetap memakai bottom sheet.
+  Widget? _buildFormPanel() {
+    if (!_panelOpen) return null;
+    return _JadwalForm(
+      key: ValueKey('jadwal-panel-${_panelInitial?.id ?? 'baru'}'),
+      initial: _panelInitial,
+      initialDate: _panelInitial == null ? _selectedDate : null,
+      onClose: _closePanel,
+    );
+  }
+
+  Future<void> _changeStatus(JadwalEntity item, JadwalAction action) async {
     final failure = await context.read<JadwalCubit>().changeStatus(
           item.id,
-          action,
+          action.wireValue,
         );
     if (!mounted || failure == null) return;
     AppNotification.showError(
@@ -146,7 +187,7 @@ class _JadwalPageState extends State<JadwalPage> {
       destructive: true,
     );
     if (!mounted || !confirmed) return;
-    await _changeStatus(item, 'batalkan');
+    await _changeStatus(item, JadwalAction.batalkan);
   }
 
   Future<void> _confirmCompletion(JadwalEntity item) async {
@@ -159,7 +200,7 @@ class _JadwalPageState extends State<JadwalPage> {
       destructive: false,
     );
     if (!mounted || !confirmed) return;
-    await _changeStatus(item, 'selesaikan');
+    await _changeStatus(item, JadwalAction.selesaikan);
   }
 
   @override
@@ -231,7 +272,10 @@ class _JadwalPageState extends State<JadwalPage> {
                 ),
             child: widget.customerMode
                 ? _buildCustomerAgenda(items, loadedState)
-                : _buildPengurusAgenda(items, loadedState),
+                : MasterDetailLayout(
+                    master: _buildPengurusAgenda(items, loadedState),
+                    detail: _buildFormPanel(),
+                  ),
           );
         },
       ),
@@ -383,7 +427,7 @@ class _JadwalPageState extends State<JadwalPage> {
                     : () => _confirmCancellation(item),
                 onPublish: isLifecycleActionDisabled
                     ? null
-                    : () => _changeStatus(item, 'terbitkan'),
+                    : () => _changeStatus(item, JadwalAction.terbitkan),
                 onComplete: isLifecycleActionDisabled
                     ? null
                     : () => _confirmCompletion(item),
@@ -661,52 +705,14 @@ class _ScheduleCard extends StatelessWidget {
               ),
             ),
           ),
-          if (!readOnly && item.status == 'draft')
+          if (!readOnly && _availableActions.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: OverflowBar(
                 alignment: MainAxisAlignment.end,
                 spacing: 8,
                 children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onPublish,
-                    child: const Text('Terbitkan'),
-                  ),
-                ],
-              ),
-            ),
-          if (!readOnly && item.status == 'diterbitkan')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: OverflowBar(
-                alignment: MainAxisAlignment.end,
-                spacing: 8,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton.tonal(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onComplete,
-                    child: const Text('Tandai Selesai'),
-                  ),
+                  for (final action in _availableActions) _actionButton(action),
                 ],
               ),
             ),
@@ -714,6 +720,38 @@ class _ScheduleCard extends StatelessWidget {
       ),
     );
   }
+
+  /// Aksi yang sah dari status jadwal ini.
+  ///
+  /// Status yang tidak dikenali build ini tidak memberi aksi apa pun, bukan
+  /// aksi penuh: pengurus melihat kartunya tetapi tidak dapat mengubahnya.
+  Set<JadwalAction> get _availableActions =>
+      JadwalStatus.fromWire(item.status)?.availableActions ?? const {};
+
+  Widget _actionButton(JadwalAction action) => switch (action) {
+        JadwalAction.batalkan => TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.greenDark,
+            ),
+            onPressed: onCancel,
+            child: Text(action.label),
+          ),
+        JadwalAction.terbitkan => FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.greenDark,
+            ),
+            onPressed: onPublish,
+            child: Text(action.label),
+          ),
+        JadwalAction.selesaikan => FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.greenLight,
+              foregroundColor: AppColors.greenDark,
+            ),
+            onPressed: onComplete,
+            child: Text(action.label),
+          ),
+      };
 }
 
 class _ScheduleInfoLine extends StatelessWidget {
@@ -749,19 +787,13 @@ class _ScheduleStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = switch (status) {
-      'draft' => AppColors.warningLight,
-      'diterbitkan' => AppColors.greenLight,
-      'dibatalkan' => AppColors.dangerLight,
-      'selesai' => AppColors.fill,
-      _ => AppColors.cardOffWhite,
-    };
-    final foreground = switch (status) {
-      'draft' => AppColors.warning,
-      'diterbitkan' => AppColors.greenDark,
-      'dibatalkan' => AppColors.danger,
-      'selesai' => AppColors.inkSoft,
-      _ => Colors.grey.shade700,
+    final resolved = JadwalStatus.fromWire(status);
+    final (background, foreground) = switch (resolved) {
+      JadwalStatus.draf => (AppColors.warningLight, AppColors.warning),
+      JadwalStatus.diterbitkan => (AppColors.greenLight, AppColors.greenDark),
+      JadwalStatus.dibatalkan => (AppColors.dangerLight, AppColors.danger),
+      JadwalStatus.selesai => (AppColors.fill, AppColors.inkSoft),
+      null => (AppColors.cardOffWhite, Colors.grey.shade700),
     };
 
     return Container(
@@ -771,7 +803,7 @@ class _ScheduleStatus extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _statusLabel(status),
+        resolved?.label ?? status,
         style: TextStyle(
           color: foreground,
           fontSize: 12,
@@ -797,7 +829,20 @@ class _JadwalForm extends StatefulWidget {
   final JadwalEntity? initial;
   final DateTime? initialDate;
 
-  const _JadwalForm({this.initial, this.initialDate});
+  /// Diisi hanya ketika form tampil sebagai panel. Panel tidak berada di atas
+  /// navigator, jadi ia ditutup lewat callback, bukan dengan `Navigator.pop`.
+  /// Nilainya sekaligus menjadi penanda wadah: null berarti bottom sheet.
+  final VoidCallback? onClose;
+
+  const _JadwalForm({
+    super.key,
+    this.initial,
+    this.initialDate,
+    this.onClose,
+  });
+
+  /// Apakah form sedang tampil sebagai panel, bukan sebagai bottom sheet.
+  bool get isPanel => onClose != null;
 
   @override
   State<_JadwalForm> createState() => _JadwalFormState();
@@ -948,7 +993,12 @@ class _JadwalFormState extends State<_JadwalForm> {
         );
     if (!mounted) return;
     if (failure == null) {
-      Navigator.of(context).pop();
+      final close = widget.onClose;
+      if (close != null) {
+        close();
+      } else {
+        Navigator.of(context).pop();
+      }
     } else {
       AppNotification.showError(
         context,
@@ -978,6 +1028,8 @@ class _JadwalFormState extends State<_JadwalForm> {
               children: [
                 BottomSheetHeader(
                   title: widget.initial == null ? 'Buat Jadwal' : 'Ubah Jadwal',
+                  showDragHandle: !widget.isPanel,
+                  onClose: widget.onClose,
                 ),
                 const SizedBox(height: 24),
                 _buildLabel('JENIS KEGIATAN'),
@@ -1109,11 +1161,3 @@ String _formatDateTime(DateTime value) {
   return '${twoDigits(value.day)}/${twoDigits(value.month)}/${value.year}, '
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
-
-String _statusLabel(String status) => switch (status) {
-      'draft' => 'Draf',
-      'diterbitkan' => 'Diterbitkan',
-      'dibatalkan' => 'Dibatalkan',
-      'selesai' => 'Selesai',
-      _ => status,
-    };

@@ -56,12 +56,13 @@ void main() {
 
   tearDown(() => shell.unregisterDi());
 
-  Future<GoRouter> boot(WidgetTester tester) async {
+  Future<GoRouter> boot(WidgetTester tester, {String? initialLocation}) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final router = AppRouterConfig.getRouter();
+    if (initialLocation != null) router.go(initialLocation);
     await tester
         .pumpWidget(shell.wrap(MaterialApp.router(routerConfig: router)));
     await tester.pump();
@@ -216,11 +217,11 @@ void main() {
     });
 
     testWidgets(
-        'a pending invite link banks its token and goes through the gate',
+        'a browser hash-path invite banks its token and goes through the gate',
         (tester) async {
       final router = await boot(tester);
 
-      await visit(tester, router, '/invite?token=tok-9');
+      await visit(tester, router, '/invite/web-token-9');
 
       expect(shell.invites.token, isNull,
           reason: 'the gate spends the token on its first attempt');
@@ -362,6 +363,26 @@ void main() {
       await visit(tester, router, '/invite?token=abc');
 
       expect(shell.invites.token, 'abc');
+    });
+
+    testWidgets('a browser hash-path invite token with no session is banked',
+        (tester) async {
+      shell.signedInAs(Unauthenticated());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/invite/web-token-abc');
+
+      expect(shell.invites.token, 'web-token-abc');
+    });
+
+    testWidgets('a cold-start browser hash-path invite banks its token',
+        (tester) async {
+      shell.signedInAs(AuthenticationInitial());
+
+      await boot(tester, initialLocation: '/invite/cold-start-token');
+      await tester.pumpAndSettle();
+
+      expect(shell.invites.token, 'cold-start-token');
     });
   });
 

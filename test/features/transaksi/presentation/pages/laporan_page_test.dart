@@ -72,9 +72,14 @@ void main() {
     });
   });
 
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(WidgetTester tester, {double textScale = 1}) async {
     await tester.pumpWidget(
       MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: BlocProvider(
           create: (_) => RiwayatAktivitasCubit(
             getTransaksi,
@@ -86,6 +91,49 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('desktop exposes all periods and puts search beside the title',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+
+    final title = tester.getRect(find.text('Riwayat Aktivitas'));
+    final search = tester.getRect(find.byType(TextField));
+    expect(search.left, greaterThan(title.right));
+    expect(search.top, lessThan(title.bottom));
+    expect(search.width, lessThanOrEqualTo(360));
+    expect(tester.getSize(find.byType(LaporanPage)).width, 1440);
+    for (final label in ['Hari Ini', 'Minggu Ini', '12 Bulan', 'Semua Waktu']) {
+      expect(find.text(label).hitTestable(), findsOneWidget);
+    }
+    await tester.tap(find.text('12 Bulan'));
+    await tester.pumpAndSettle();
+    final filter = verify(() => getTransaksi.execute(captureAny()))
+        .captured
+        .last as TransaksiFilter;
+    expect(filter.periode, '12_bulan');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('resizing keeps the visible search consistent with the report',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+    await tester.enterText(find.byType(TextField), 'Ani');
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Ani');
+    expect(find.text('Ani Wijaya'), findsOneWidget);
+    expect(find.text('Budi Santoso'), findsNothing);
+  });
 
   testWidgets('shows both setoran and pencairan in one feed', (tester) async {
     await pumpPage(tester);
@@ -129,6 +177,20 @@ void main() {
     await pumpPage(tester);
     expect(find.text('Hari Ini'), findsOneWidget);
     expect(find.text('Minggu Ini'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'short screen with large text can scroll filters to reach activity',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester, textScale: 2);
+    await tester.drag(find.byType(NestedScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(find.text('Budi Santoso').hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

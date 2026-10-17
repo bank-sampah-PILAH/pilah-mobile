@@ -12,10 +12,19 @@ class BottomSheetHeader extends StatelessWidget {
   /// tidak dapat ditarik, jadi di sana pegangan itu janji palsu.
   final bool showDragHandle;
 
+  /// Cara menutup, bila bukan dengan menutup route.
+  ///
+  /// Default null berarti `context.pop()`, yang benar untuk bottom sheet dan
+  /// dialog karena keduanya memang sebuah route. Panel berada inline di dalam
+  /// body halaman, jadi ia harus memberikan caranya sendiri; tanpa ini tombol
+  /// silangnya akan menutup halaman, bukan panelnya.
+  final VoidCallback? onClose;
+
   const BottomSheetHeader({
     super.key,
     required this.title,
     this.showDragHandle = true,
+    this.onClose,
   });
 
   @override
@@ -49,7 +58,7 @@ class BottomSheetHeader extends StatelessWidget {
               ),
             ),
             InkWell(
-              onTap: () => context.pop(),
+              onTap: onClose ?? () => context.pop(),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.all(8),
