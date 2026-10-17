@@ -49,14 +49,22 @@ class BottomSheetHeader extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+            // Judul mengambil ruang yang tersisa setelah tombol tutup, bukan
+            // lebar alaminya. Tanpa ini judul sepanjang "Tambah Jenis Sampah"
+            // melimpah ke kanan pada lebar telepon — 372 px ruang isi sheet
+            // tidak cukup untuk judul 20 px tebal berdampingan dengan tombol
+            // tutup 36 px, dan yang melimpah terpotong tanpa dapat dibaca.
+            Expanded(
+              child: Text(
+                title,
+                style: AppTextStyle.headline1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
               ),
             ),
+            const SizedBox(width: 12),
             InkWell(
               onTap: onClose ?? () => context.pop(),
               borderRadius: BorderRadius.circular(12),
