@@ -61,10 +61,6 @@ class DraftEditorPage extends StatelessWidget {
 }
 
 class DraftEditorView extends StatefulWidget {
-  /// Width of the totals panel on a desktop window; the same as Catat
-  /// Pencairan's and Setoran Baru's.
-  static const double lebarPanel = 340;
-
   const DraftEditorView({super.key});
 
   @override
@@ -213,7 +209,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                     children: [
                       Expanded(child: _Form(state: state, nama: _nama)),
                       SizedBox(
-                        width: DraftEditorView.lebarPanel,
+                        width: LayoutBreakpoint.sidePanelWidth,
                         child: SingleChildScrollView(
                           key: const Key('draft-editor-panel'),
                           padding: const EdgeInsets.all(16),
