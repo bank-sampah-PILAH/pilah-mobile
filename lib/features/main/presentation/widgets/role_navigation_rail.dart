@@ -27,6 +27,7 @@ class RoleNavigationRail extends StatelessWidget {
     this.profileName,
     this.profileEmail,
     this.onProfile,
+    this.onHome,
     this.limitedNasabah = false,
   });
 
@@ -58,6 +59,9 @@ class RoleNavigationRail extends StatelessWidget {
 
   /// Dipanggil saat kaki profil diketuk. Pemanggil yang memutuskan tujuannya.
   final VoidCallback? onProfile;
+
+  /// Dipanggil saat logo atau nama PILAH diketuk; membuka beranda.
+  final VoidCallback? onHome;
 
   final bool limitedNasabah;
 
@@ -95,6 +99,7 @@ class RoleNavigationRail extends StatelessWidget {
               label: BankSampahLabel.of(bankSampahNama),
               initials: BankSampahLabel.initialsOf(bankSampahNama),
               extended: extended,
+              onHome: onHome,
             ),
             backgroundColor: Colors.white,
             indicatorColor: AppColors.greenLight,
@@ -158,8 +163,10 @@ class _RailHeader extends StatelessWidget {
     required this.label,
     required this.initials,
     required this.extended,
+    this.onHome,
   });
 
+  final VoidCallback? onHome;
   final String label;
   final String initials;
   final bool extended;
@@ -225,18 +232,29 @@ class _RailHeader extends StatelessWidget {
         crossAxisAlignment:
             extended ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
-          if (extended)
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              logo,
-              const SizedBox(width: 8),
-              Text('PILAH',
-                  style: AppTextStyle.headline1.copyWith(
-                    color: AppColors.black,
-                    fontWeight: FontWeight.w700,
-                  )),
-            ])
-          else
-            logo,
+          Semantics(
+            button: true,
+            label: 'Ke beranda',
+            excludeSemantics: true,
+            child: InkWell(
+              onTap: onHome,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: extended
+                    ? Row(mainAxisSize: MainAxisSize.min, children: [
+                        logo,
+                        const SizedBox(width: 8),
+                        Text('PILAH',
+                            style: AppTextStyle.headline1.copyWith(
+                              color: AppColors.black,
+                              fontWeight: FontWeight.w700,
+                            )),
+                      ])
+                    : logo,
+              ),
+            ),
+          ),
           // Lebar dibatasi: slot leading memberi constraint tak terbatas.
           SizedBox(
             width: extended ? _leadingMaxWidth : 40,

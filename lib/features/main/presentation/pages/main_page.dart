@@ -256,6 +256,7 @@ class _ShellContent extends StatelessWidget {
             profileName: profileName,
             profileEmail: profileEmail,
             onProfile: () => context.push(AppLocations.profile),
+            onHome: () => navigationShell.goBranch(0, initialLocation: true),
             onSelected: select,
           ),
           Expanded(
