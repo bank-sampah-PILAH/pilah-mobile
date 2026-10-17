@@ -21,8 +21,8 @@
   "lib/features/profile/presentation/widgets/wa_variable_chips.dart": 2,
   "lib/features/riwayat/presentation/pages/nasabah_history_screen.dart": 1,
   "lib/features/riwayat/presentation/widgets/nasabah_setoran_detail_sheet.dart": 1,
+  "lib/features/transaksi/presentation/widgets/aktivitas_summary_view.dart": 1,
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": 1,
   "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": 2,
-  "lib/features/transaksi/presentation/widgets/time_filter_chips.dart": 4,
   "lib/features/transaksi/presentation/widgets/transaction_summary_section.dart": 1
 }
