@@ -12,6 +12,9 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
@@ -338,6 +341,38 @@ void main() {
 
       expect(tester.widget<JadwalPage>(find.byType(JadwalPage)).customerMode,
           isTrue);
+    });
+
+    testWidgets(
+        'opens the pengumuman list and reaches the detail from its extra',
+        (tester) async {
+      api.on('GET', '/api/v1/nasabah/me/pengumuman',
+          json: {'count': 0, 'next': null, 'results': []});
+      final router = await boot(tester);
+
+      await visit(tester, router, '/pengumuman?keanggotaan_id=m1');
+      expect(find.byType(PengumumanPage), findsOneWidget);
+      expect(
+          tester
+              .widget<PengumumanPage>(find.byType(PengumumanPage))
+              .membershipId,
+          'm1');
+
+      router.go('/pengumuman/detail');
+      await tester.pumpAndSettle();
+      // Without its entity there is nothing to show: falls back to the list.
+      expect(find.byType(PengumumanDetailPage), findsNothing);
+      expect(find.byType(PengumumanPage), findsOneWidget);
+
+      router.go('/pengumuman/detail',
+          extra: PengumumanEntity(
+            id: 'p1',
+            bankSampahId: 'b1',
+            judul: 'Jemputan',
+            isi: 'Isi',
+          ));
+      await tester.pumpAndSettle();
+      expect(find.byType(PengumumanDetailPage), findsOneWidget);
     });
 
     testWidgets('/nasabah-dashboard is an alias of the home', (tester) async {

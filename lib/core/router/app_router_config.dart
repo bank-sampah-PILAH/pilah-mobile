@@ -27,7 +27,10 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
+import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
@@ -164,6 +167,23 @@ class AppRouterConfig {
         path: PilihNasabahPencairanPage.route,
         name: PilihNasabahPencairanPage.route,
         builder: (context, state) => const PilihNasabahPencairanPage(),
+      ),
+      GoRoute(
+        path: PengumumanPage.route,
+        name: PengumumanPage.route,
+        builder: (context, state) => PengumumanPage(
+          membershipId: state.uri.queryParameters['keanggotaan_id'],
+        ),
+      ),
+      GoRoute(
+        path: PengumumanDetailPage.route,
+        name: PengumumanDetailPage.route,
+        // Without the row (a stale link) there is nothing to show.
+        redirect: (context, state) =>
+            state.extra is PengumumanEntity ? null : PengumumanPage.route,
+        builder: (context, state) => PengumumanDetailPage(
+          pengumuman: state.extra! as PengumumanEntity,
+        ),
       ),
       GoRoute(
         path: PengumumanFormPage.route,
@@ -423,6 +443,8 @@ class AppRouterConfig {
       AppLocations.customerBank,
       ApprovalBankSampahListPage.route,
       ApprovalBankSampahDetailPage.route,
+      PengumumanPage.route,
+      PengumumanDetailPage.route,
     };
     final protected = staffPaths.contains(path) ||
         customerPaths.contains(path) ||

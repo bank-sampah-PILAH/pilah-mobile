@@ -10,6 +10,11 @@ class PengumumanEntity extends Equatable {
   final DateTime? ditarikPada;
   final String status;
 
+  /// Nasabah read receipt (PIL-244). Unused on the pengurus side, where the
+  /// backend never sends it.
+  final bool dibaca;
+  final DateTime? dibacaPada;
+
   const PengumumanEntity({
     required this.id,
     required this.bankSampahId,
@@ -19,6 +24,8 @@ class PengumumanEntity extends Equatable {
     this.masaBerlakuHingga,
     this.ditarikPada,
     this.status = 'draft',
+    this.dibaca = false,
+    this.dibacaPada,
   });
 
   /// Effective status reported by the backend: draft, terjadwal, terbit,
@@ -28,7 +35,6 @@ class PengumumanEntity extends Equatable {
   bool get isTerbit => status == 'terbit';
   bool get isKedaluwarsa => status == 'kedaluwarsa';
   bool get isDitarik => status == 'ditarik';
-  bool get isBaru => status == 'terbit' && ditarikPada == null;
 
   @override
   List<Object?> get props => [
@@ -40,5 +46,7 @@ class PengumumanEntity extends Equatable {
         masaBerlakuHingga,
         ditarikPada,
         status,
+        dibaca,
+        dibacaPada,
       ];
 }

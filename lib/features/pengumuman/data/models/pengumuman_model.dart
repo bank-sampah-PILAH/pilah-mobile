@@ -10,6 +10,8 @@ class PengumumanModel extends PengumumanEntity {
     super.masaBerlakuHingga,
     super.ditarikPada,
     super.status,
+    super.dibaca,
+    super.dibacaPada,
   });
 
   factory PengumumanModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,8 @@ class PengumumanModel extends PengumumanEntity {
       masaBerlakuHingga: _parseDate(json['masa_berlaku_hingga']),
       ditarikPada: _parseDate(json['ditarik_pada']),
       status: json['status']?.toString() ?? 'draft',
+      dibaca: json['dibaca'] as bool? ?? false,
+      dibacaPada: _parseDate(json['dibaca_pada']),
     );
   }
 
@@ -35,6 +39,8 @@ class PengumumanModel extends PengumumanEntity {
       masaBerlakuHingga: entity.masaBerlakuHingga,
       ditarikPada: entity.ditarikPada,
       status: entity.status,
+      dibaca: entity.dibaca,
+      dibacaPada: entity.dibacaPada,
     );
   }
 
