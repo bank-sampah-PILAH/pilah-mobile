@@ -10,8 +10,8 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_form_fields.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/pencairan.dart';
@@ -191,38 +191,16 @@ class _EditPencairanViewState extends State<EditPencairanView> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          const AppFieldLabel('METODE'),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              for (final metode in MetodePencairan.values)
-                                AppChip(
-                                  key: Key('metode-chip-${metode.name}'),
-                                  label: metode.label,
-                                  selected: _metode == metode,
-                                  onTap: () => setState(() => _metode = metode),
-                                ),
-                            ],
+                          MetodePencairanSelector(
+                            selected: _metode,
+                            onChanged: (metode) =>
+                                setState(() => _metode = metode),
                           ),
                           const SizedBox(height: 16),
-                          const AppFieldLabel('TANGGAL'),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            key: const Key('tanggal-field'),
+                          TanggalPencairanField(
+                            tanggal: _tanggal,
                             onTap: _pickTanggal,
-                            child: InputDecorator(
-                              decoration: appInputDecoration(
-                                suffixIcon: const Icon(Icons.calendar_month,
-                                    color: Colors.grey),
-                                errorText: state.fieldErrors['tanggal'],
-                              ),
-                              child: Text(
-                                formatTanggalId(_tanggal),
-                                style: AppTextStyle.small
-                                    .copyWith(color: Colors.black87),
-                              ),
-                            ),
+                            errorText: state.fieldErrors['tanggal'],
                           ),
                           if (!_terkunci) ...[
                             const SizedBox(height: 4),

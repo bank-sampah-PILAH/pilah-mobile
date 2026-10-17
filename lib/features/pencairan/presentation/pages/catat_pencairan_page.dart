@@ -7,7 +7,6 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -16,6 +15,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_form_fields.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -24,7 +24,6 @@ import '../../domain/model/pencairan.dart';
 import '../../domain/pencairan_validator.dart';
 import '../blocs/pencairan_cubit.dart';
 import '../blocs/pencairan_state.dart';
-import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Pengurus records a payout. Nasabah is picked inside the form — the same
@@ -198,35 +197,14 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           ),
         ),
         const SizedBox(height: 16),
-        const AppFieldLabel('METODE'),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final metode in MetodePencairan.values)
-              AppChip(
-                key: Key('metode-chip-${metode.name}'),
-                label: metode.label,
-                selected: _metode == metode,
-                onTap: () => setState(() => _metode = metode),
-              ),
-          ],
+        MetodePencairanSelector(
+          selected: _metode,
+          onChanged: (metode) => setState(() => _metode = metode),
         ),
         const SizedBox(height: 16),
-        const AppFieldLabel('TANGGAL'),
-        const SizedBox(height: 8),
-        InkWell(
-          key: const Key('tanggal-field'),
+        TanggalPencairanField(
+          tanggal: _tanggal,
           onTap: _pickTanggal,
-          child: InputDecorator(
-            decoration: appInputDecoration().copyWith(
-              suffixIcon: const Icon(Icons.calendar_month, color: Colors.grey),
-            ),
-            child: Text(
-              formatTanggalId(_tanggal),
-              style: AppTextStyle.small.copyWith(color: Colors.black87),
-            ),
-          ),
         ),
         const SizedBox(height: 16),
         const AppFieldLabel('KETERANGAN (OPSIONAL)'),
