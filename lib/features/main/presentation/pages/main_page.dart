@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -236,6 +237,12 @@ class _ShellContent extends StatelessWidget {
       );
     }
 
+    final account = context.watch<AuthenticationBloc>().state;
+    final profileName =
+        account is Authenticated ? account.authEntity.name : null;
+    final profileEmail =
+        account is Authenticated ? account.authEntity.email : null;
+
     // Rail menggantikan bottom bar, tidak menemaninya: menampilkan keduanya
     // berarti menawarkan menu yang sama dua kali.
     return Scaffold(
@@ -246,6 +253,9 @@ class _ShellContent extends StatelessWidget {
             limitedNasabah: limitedNasabah,
             currentIndex: railSelected,
             bankSampahNama: bankSampahNama,
+            profileName: profileName,
+            profileEmail: profileEmail,
+            onProfile: () => context.push(AppLocations.profile),
             onSelected: select,
           ),
           Expanded(

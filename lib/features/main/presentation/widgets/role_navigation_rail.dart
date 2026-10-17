@@ -1,5 +1,6 @@
 import 'bank_sampah_label.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
@@ -23,6 +24,9 @@ class RoleNavigationRail extends StatelessWidget {
     required this.currentIndex,
     required this.onSelected,
     this.bankSampahNama,
+    this.profileName,
+    this.profileEmail,
+    this.onProfile,
     this.limitedNasabah = false,
   });
 
@@ -47,11 +51,20 @@ class RoleNavigationRail extends StatelessWidget {
   /// branch dilakukan pemanggil, sama seperti pada bottom bar.
   final ValueChanged<int> onSelected;
 
+  /// Akun yang sedang masuk, ditampilkan di kaki rail. Null atau hanya spasi
+  /// berarti tidak ada kaki profil.
+  final String? profileName;
+  final String? profileEmail;
+
+  /// Dipanggil saat kaki profil diketuk. Pemanggil yang memutuskan tujuannya.
+  final VoidCallback? onProfile;
+
   final bool limitedNasabah;
 
   /// Kunci panel dan logo, untuk test.
   static const panelKey = ValueKey('rail-panel');
   static const logoKey = ValueKey('rail-logo');
+  static const profileKey = ValueKey('rail-profile');
 
   /// Label bank sampah, atau label umum bila namanya tidak diketahui.
   @override
@@ -60,7 +73,8 @@ class RoleNavigationRail extends StatelessWidget {
         RoleDestinations.forRole(role, limitedNasabah: limitedNasabah);
     if (destinations.isEmpty) return const SizedBox.shrink();
     final extended = context.layoutBreakpoint == LayoutBreakpoint.expanded;
-    final labelStyle = extended ? AppTextStyle.headline3 : AppTextStyle.small;
+    final labelStyle = AppTextStyle.small;
+    final name = profileName?.trim() ?? '';
     return DecoratedBox(
       key: panelKey,
       decoration: const BoxDecoration(
@@ -89,7 +103,23 @@ class RoleNavigationRail extends StatelessWidget {
           color: AppColors.greenDark,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelTextStyle: labelStyle.copyWith(color: AppColors.inkSoft),
+        unselectedLabelTextStyle: labelStyle.copyWith(
+          color: AppColors.inkSoft,
+          fontWeight: FontWeight.w500,
+        ),
+        trailing: name.isEmpty
+            ? null
+            : Expanded(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: _ProfileFooter(
+                    name: name,
+                    email: profileEmail?.trim() ?? '',
+                    extended: extended,
+                    onTap: onProfile,
+                  ),
+                ),
+              ),
         destinations: [
           for (final destination in destinations)
             NavigationRailDestination(
@@ -190,8 +220,8 @@ class _RailHeader extends StatelessWidget {
               logo,
               const SizedBox(width: 8),
               Text('PILAH',
-                  style: AppTextStyle.title1.copyWith(
-                    color: AppColors.greenDark,
+                  style: AppTextStyle.headline1.copyWith(
+                    color: AppColors.black,
                     fontWeight: FontWeight.w700,
                   )),
             ])
@@ -209,6 +239,87 @@ class _RailHeader extends StatelessWidget {
                 )),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Akun yang sedang masuk, menempel di dasar rail.
+///
+/// Pada rail yang sempit hanya avatar, dengan nama sebagai tooltip.
+class _ProfileFooter extends StatelessWidget {
+  const _ProfileFooter({
+    required this.name,
+    required this.email,
+    required this.extended,
+    required this.onTap,
+  });
+
+  final String name;
+  final String email;
+  final bool extended;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = CircleAvatar(
+      radius: 18,
+      backgroundColor: AppColors.greenDark,
+      child: Text(
+        initialsOf(name),
+        style: AppTextStyle.extraSmall.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Semantics(
+        button: true,
+        label: 'Buka profil, $name',
+        excludeSemantics: true,
+        child: InkWell(
+          key: RoleNavigationRail.profileKey,
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: extended
+              ? ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: _leadingMaxWidth),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(children: [
+                      avatar,
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyle.small.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.black)),
+                            if (email.isNotEmpty)
+                              Text(email,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle.extraSmall
+                                      .copyWith(color: AppColors.grey100)),
+                          ],
+                        ),
+                      ),
+                    ]),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Tooltip(message: name, child: avatar),
+                ),
+        ),
       ),
     );
   }
