@@ -154,6 +154,19 @@ jobs:
       contents: read
       id-token: write
 
+  # Read-only exposure scan of the just-deployed staging web dashboard. Runs only when
+  # verify and deploy_web_staging succeeded (skipped otherwise). It does not undo the
+  # deploy; a finding outside KNOWN_NOISE makes this job, and so the commit's CI run, red.
+  nuclei_post_deploy:
+    name: Exposure scan (Nuclei, staging web)
+    needs: deploy_web_staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    uses: ./.github/workflows/nuclei-scan.yml
+    with:
+      environment: staging
+    permissions:
+      contents: read
+
   debug_apk:
     if: github.event_name == 'workflow_dispatch'
     name: Build debug APK artifact
