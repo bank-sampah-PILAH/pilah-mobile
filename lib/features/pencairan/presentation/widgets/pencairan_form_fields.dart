@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
@@ -68,12 +69,13 @@ class TanggalPencairanField extends StatelessWidget {
           onTap: onTap,
           child: InputDecorator(
             decoration: appInputDecoration(
-              suffixIcon: const Icon(Icons.calendar_month, color: Colors.grey),
+              suffixIcon:
+                  const Icon(Icons.calendar_month, color: AppColors.grey100),
               errorText: errorText,
             ),
             child: Text(
               formatTanggalId(tanggal),
-              style: AppTextStyle.small.copyWith(color: Colors.black87),
+              style: AppTextStyle.small.copyWith(color: AppColors.black),
             ),
           ),
         ),
