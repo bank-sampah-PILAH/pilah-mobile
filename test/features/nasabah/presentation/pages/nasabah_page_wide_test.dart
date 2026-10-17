@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -127,6 +128,16 @@ void main() {
     expect(find.byKey(DetailNasabahBottomSheet.dragHandleKey), findsOneWidget);
   });
 
+  testWidgets('a phone keeps the drag handle on the add form', (tester) async {
+    listAs([]);
+    await open(tester, size: const Size(590, 2000));
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(BottomSheetHeader.dragHandleKey), findsOneWidget);
+  });
+
   testWidgets('the table header sits on the fill colour', (tester) async {
     listAs([nasabahRow('1')]);
     await open(tester);
@@ -150,11 +161,8 @@ void main() {
       await tester.tap(find.text('Tambah Nasabah'));
       await tester.pumpAndSettle();
 
-      expect(
-          tester
-              .widget<BottomSheetHeader>(find.byType(BottomSheetHeader))
-              .showDragHandle,
-          isFalse);
+      expect(find.byType(BottomSheetHeader), findsOneWidget);
+      expect(find.byKey(BottomSheetHeader.dragHandleKey), findsNothing);
     });
 
     testWidgets('on the detail', (tester) async {
@@ -178,12 +186,56 @@ void main() {
       await tester.tap(find.text('Edit Data'));
       await tester.pumpAndSettle();
 
-      expect(
-          tester
-              .widget<BottomSheetHeader>(find.byType(BottomSheetHeader))
-              .showDragHandle,
-          isFalse);
+      expect(find.byType(BottomSheetHeader), findsOneWidget);
+      expect(find.byKey(BottomSheetHeader.dragHandleKey), findsNothing);
     });
+  });
+
+  group('infinite scroll', () {
+    final many = [
+      for (var i = 1; i <= 30; i++) nasabahRow('$i', nama: 'Nasabah $i')
+    ];
+
+    testWidgets('asks for the next page near the bottom', (tester) async {
+      api.on('GET', _path, json: nasabahPage(many, count: 60, hasNext: true));
+      await open(tester, size: const Size(1280, 600));
+
+      await tester.drag(find.byType(ListView), const Offset(0, -6000));
+      await tester.pumpAndSettle();
+
+      expect(api.requests.any((r) => r.query['page'] == '2'), isTrue);
+    });
+
+    testWidgets('does not ask when the last page is already loaded',
+        (tester) async {
+      api.on('GET', _path, json: nasabahPage(many));
+      await open(tester, size: const Size(1280, 600));
+
+      await tester.drag(find.byType(ListView), const Offset(0, -6000));
+      await tester.pumpAndSettle();
+
+      expect(api.requests.any((r) => r.query['page'] == '2'), isFalse);
+    });
+  });
+
+  testWidgets('a row is tinted while the mouse is over it', (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester);
+    final tint = AppColors.greenLight.withValues(alpha: 0.45);
+    final tinted =
+        find.byWidgetPredicate((w) => w is Container && w.color == tint);
+    expect(tinted, findsNothing);
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await mouse.moveTo(tester.getCenter(find.text('Budi Santoso')));
+    await tester.pump();
+    expect(tinted, findsOneWidget);
+
+    await mouse.moveTo(const Offset(5, 5));
+    await tester.pump();
+    expect(tinted, findsNothing);
   });
 
   group('pending submissions', () {
@@ -211,6 +263,21 @@ void main() {
       await pumpToast(tester);
 
       expect(api.requests.any((r) => r.path == '$_path/p1/approve'), isTrue);
+      await settleToasts(tester);
+    });
+
+    testWidgets('a failed decision from the row shows the error',
+        (tester) async {
+      api.on('POST', '$_path/p1/reject',
+          status: 409, json: {'error': 'Sudah diputuskan'});
+      await openPending(tester);
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Tolak'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Tolak'));
+      await pumpToast(tester);
+
+      expect(find.text('Sudah diputuskan'), findsOneWidget);
       await settleToasts(tester);
     });
 
