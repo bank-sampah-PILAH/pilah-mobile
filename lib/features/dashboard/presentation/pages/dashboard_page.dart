@@ -2,6 +2,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surf
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -86,7 +87,12 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const DashboardHeader(),
+                // Di web lebar profil ada di kaki sidebar, jadi avatar di sini
+                // hanya menggandakannya.
+                DashboardHeader(
+                  showProfile: !(isPengurusWeb &&
+                      context.layoutBreakpoint != LayoutBreakpoint.compact),
+                ),
                 const SizedBox(height: 24),
                 if (isPengurusWeb)
                   const DashboardWebKpiSection()

@@ -64,6 +64,7 @@ class RoleNavigationRail extends StatelessWidget {
   /// Kunci panel dan logo, untuk test.
   static const panelKey = ValueKey('rail-panel');
   static const logoKey = ValueKey('rail-logo');
+  static const headerDividerKey = ValueKey('rail-header-divider');
   static const profileKey = ValueKey('rail-profile');
   static const profileCardKey = ValueKey('rail-profile-card');
 
@@ -228,7 +229,15 @@ class _RailHeader extends StatelessWidget {
             ])
           else
             logo,
-          const SizedBox(height: 16),
+          // Lebar dibatasi: slot leading memberi constraint tak terbatas.
+          SizedBox(
+            width: extended ? _leadingMaxWidth : 40,
+            child: const Divider(
+              key: RoleNavigationRail.headerDividerKey,
+              height: 33,
+              color: AppColors.border,
+            ),
+          ),
           bank,
           if (extended) ...[
             const SizedBox(height: 24),
