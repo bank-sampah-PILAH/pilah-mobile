@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
@@ -79,19 +81,9 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle: a dialog cannot be dragged, so it has none there.
+          // A dialog cannot be dragged, so it has no handle there.
           if (!DialogSurface.of(context)) ...[
-            Center(
-              child: Container(
-                key: DetailNasabahBottomSheet.dragHandleKey,
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+            const AppSheetHandle(key: DetailNasabahBottomSheet.dragHandleKey),
             const SizedBox(height: 24),
           ],
 
@@ -407,19 +399,12 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                   const SizedBox(height: 4),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
+                    child: AppButton(
+                      label: 'Samakan dengan data akun',
+                      variant: AppButtonVariant.warningOutlined,
                       onPressed: widget.nasabahCubit == null || _isSyncing
                           ? null
                           : _samakan,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange[800],
-                        side: BorderSide(color: Colors.orange[400]!),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      child: const Text('Samakan dengan data akun'),
                     ),
                   ),
                 ],
@@ -433,27 +418,14 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
 
   Future<void> _samakan() async {
     final nama = widget.nasabah.name;
-    final konfirmasi = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Samakan dengan data akun?'),
-        content: Text(
-          'Catatan $nama di bank sampah ini akan diganti dengan data yang '
+    final konfirmasi = await showAppConfirmDialog(
+      context,
+      title: 'Samakan dengan data akun?',
+      message: 'Catatan $nama di bank sampah ini akan diganti dengan data yang '
           'nasabah isikan pada akunnya. Anda tetap dapat menyuntingnya lagi.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Samakan'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Samakan',
     );
-    if (konfirmasi != true || !mounted) return;
+    if (!konfirmasi || !mounted) return;
 
     // The root overlay outlives this sheet, so it hosts the notification.
     final overlayContext = Navigator.of(context, rootNavigator: true).context;

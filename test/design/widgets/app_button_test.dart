@@ -30,94 +30,131 @@ Color? _fill(WidgetTester tester, Type button) => tester
 OutlinedBorder? _shape(WidgetTester tester, Type button) => tester
     .widget<Material>(
       find
-          .descendant(of: find.byType(button), matching: find.byType(Material))
+          .descendant(
+            of: find.byType(button),
+            matching: find.byType(Material),
+          )
           .first,
     )
     .shape as OutlinedBorder?;
 
 void main() {
   group('AppButton variants', () {
-    testWidgets('primary is a green filled button with a white label',
-        (tester) async {
-      await tester
-          .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
+    testWidgets('primary is a green filled button with a white label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(AppButton(label: 'Simpan', onPressed: () {})),
+      );
 
       expect(find.byType(ElevatedButton), findsOneWidget);
       expect(_fill(tester, ElevatedButton), AppColors.greenDark);
       expect(_labelColor(tester, 'Simpan'), Colors.white);
     });
 
-    testWidgets('destructive is a red filled button with a white label',
-        (tester) async {
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Ya, Keluar',
-        variant: AppButtonVariant.destructive,
-        onPressed: () {},
-      )));
+    testWidgets('destructive is a red filled button with a white label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Ya, Keluar',
+            variant: AppButtonVariant.destructive,
+            onPressed: () {},
+          ),
+        ),
+      );
 
       expect(find.byType(ElevatedButton), findsOneWidget);
       expect(_fill(tester, ElevatedButton), AppColors.danger);
       expect(_labelColor(tester, 'Ya, Keluar'), Colors.white);
     });
 
-    testWidgets('outlined has a green border and a green label',
-        (tester) async {
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Tambah Nasabah',
-        variant: AppButtonVariant.outlined,
-        onPressed: () {},
-      )));
+    testWidgets('outlined has a green border and a green label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Tambah Nasabah',
+            variant: AppButtonVariant.outlined,
+            onPressed: () {},
+          ),
+        ),
+      );
 
       expect(find.byType(OutlinedButton), findsOneWidget);
       expect(_labelColor(tester, 'Tambah Nasabah'), AppColors.greenDark);
       expect(_shape(tester, OutlinedButton)?.side.color, AppColors.greenDark);
     });
 
-    testWidgets('neutral is an outlined button in the grey of a cancel action',
-        (tester) async {
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Kembali',
-        variant: AppButtonVariant.neutral,
-        onPressed: () {},
-      )));
+    testWidgets(
+      'neutral is an outlined button in the grey of a cancel action',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            AppButton(
+              label: 'Kembali',
+              variant: AppButtonVariant.neutral,
+              onPressed: () {},
+            ),
+          ),
+        );
 
-      expect(find.byType(OutlinedButton), findsOneWidget);
-      expect(_labelColor(tester, 'Kembali'), AppColors.inkSoft);
-      expect(_shape(tester, OutlinedButton)?.side.color, AppColors.border);
-    });
+        expect(find.byType(OutlinedButton), findsOneWidget);
+        expect(_labelColor(tester, 'Kembali'), AppColors.inkSoft);
+        expect(_shape(tester, OutlinedButton)?.side.color, AppColors.border);
+      },
+    );
 
-    testWidgets('destructive outlined has a red border and a red label',
-        (tester) async {
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Tolak',
-        variant: AppButtonVariant.destructiveOutlined,
-        onPressed: () {},
-      )));
+    testWidgets('destructive outlined has a red border and a red label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Tolak',
+            variant: AppButtonVariant.destructiveOutlined,
+            onPressed: () {},
+          ),
+        ),
+      );
 
       expect(find.byType(OutlinedButton), findsOneWidget);
       expect(_labelColor(tester, 'Tolak'), AppColors.danger);
       expect(_shape(tester, OutlinedButton)?.side.color, AppColors.danger);
     });
 
-    testWidgets('neutral keeps a white fill so it reads on a tinted page',
-        (tester) async {
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Kembali',
-        variant: AppButtonVariant.neutral,
-        onPressed: () {},
-      )));
+    testWidgets('neutral keeps a white fill so it reads on a tinted page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Kembali',
+            variant: AppButtonVariant.neutral,
+            onPressed: () {},
+          ),
+        ),
+      );
 
       expect(_fill(tester, OutlinedButton), Colors.white);
     });
 
-    testWidgets('every variant uses the 12 radius of the design scale',
-        (tester) async {
+    testWidgets('every variant uses the 12 radius of the design scale', (
+      tester,
+    ) async {
       for (final variant in AppButtonVariant.values) {
-        await tester.pumpWidget(_host(
-            AppButton(label: 'Aksi', variant: variant, onPressed: () {})));
+        await tester.pumpWidget(
+          _host(AppButton(label: 'Aksi', variant: variant, onPressed: () {})),
+        );
+        // A text link has no surface to round.
+        if (variant == AppButtonVariant.text) continue;
         final type = switch (variant) {
           AppButtonVariant.primary ||
-          AppButtonVariant.destructive =>
+          AppButtonVariant.destructive ||
+          AppButtonVariant.warning ||
+          AppButtonVariant.tonal =>
             ElevatedButton,
           _ => OutlinedButton,
         };
@@ -133,8 +170,9 @@ void main() {
 
   group('AppButton layout', () {
     testWidgets('fills the width it is given and is 48 high', (tester) async {
-      await tester
-          .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
+      await tester.pumpWidget(
+        _host(AppButton(label: 'Simpan', onPressed: () {})),
+      );
 
       final size = tester.getSize(find.byType(ElevatedButton));
       expect(size.width, 320);
@@ -142,22 +180,24 @@ void main() {
     });
 
     testWidgets('hugs its label when expand is false', (tester) async {
-      await tester.pumpWidget(_host(
-        Center(
-          child: AppButton(label: 'Simpan', expand: false, onPressed: () {}),
+      await tester.pumpWidget(
+        _host(
+          Center(
+            child: AppButton(label: 'Simpan', expand: false, onPressed: () {}),
+          ),
         ),
-      ));
+      );
 
       expect(tester.getSize(find.byType(ElevatedButton)).width, lessThan(320));
       expect(tester.getSize(find.byType(ElevatedButton)).height, 48);
     });
 
     testWidgets('puts the icon before the label', (tester) async {
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Transaksi Baru',
-        icon: Icons.add,
-        onPressed: () {},
-      )));
+      await tester.pumpWidget(
+        _host(
+          AppButton(label: 'Transaksi Baru', icon: Icons.add, onPressed: () {}),
+        ),
+      );
 
       expect(find.byIcon(Icons.add), findsOneWidget);
       expect(
@@ -170,12 +210,16 @@ void main() {
   testWidgets(
       'shows a custom leading widget, such as a brand logo, instead '
       'of an icon', (tester) async {
-    await tester.pumpWidget(_host(AppButton(
-      label: 'Masuk dengan Google',
-      variant: AppButtonVariant.neutral,
-      leading: const SizedBox(key: Key('logo'), width: 24, height: 24),
-      onPressed: () {},
-    )));
+    await tester.pumpWidget(
+      _host(
+        AppButton(
+          label: 'Masuk dengan Google',
+          variant: AppButtonVariant.neutral,
+          leading: const SizedBox(key: Key('logo'), width: 24, height: 24),
+          onPressed: () {},
+        ),
+      ),
+    );
 
     expect(find.byKey(const Key('logo')), findsOneWidget);
     expect(
@@ -185,18 +229,23 @@ void main() {
   });
 
   testWidgets('has no icon unless one is given', (tester) async {
-    await tester
-        .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
+    await tester.pumpWidget(
+      _host(AppButton(label: 'Simpan', onPressed: () {})),
+    );
 
     expect(find.byType(Icon), findsNothing);
   });
 
   testWidgets('puts a trailing icon after the label', (tester) async {
-    await tester.pumpWidget(_host(AppButton(
-      label: 'Simpan Profil & Lanjut',
-      trailingIcon: Icons.arrow_forward,
-      onPressed: () {},
-    )));
+    await tester.pumpWidget(
+      _host(
+        AppButton(
+          label: 'Simpan Profil & Lanjut',
+          trailingIcon: Icons.arrow_forward,
+          onPressed: () {},
+        ),
+      ),
+    );
 
     expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
     expect(
@@ -211,39 +260,273 @@ void main() {
     EdgeInsetsGeometry? padding(Finder finder) =>
         tester.widget<ElevatedButton>(finder).style?.padding?.resolve({});
 
-    await tester.pumpWidget(_host(
-      Column(
-        children: [
-          AppButton(label: 'Ya, Nonaktifkan', onPressed: () {}),
-          AppButton(label: 'Simpan', expand: false, onPressed: () {}),
-        ],
+    await tester.pumpWidget(
+      _host(
+        Column(
+          children: [
+            AppButton(label: 'Ya, Nonaktifkan', onPressed: () {}),
+            AppButton(label: 'Simpan', expand: false, onPressed: () {}),
+          ],
+        ),
       ),
-    ));
+    );
 
-    expect(padding(find.widgetWithText(ElevatedButton, 'Ya, Nonaktifkan')),
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 12));
-    expect(padding(find.widgetWithText(ElevatedButton, 'Simpan')),
-        const EdgeInsets.symmetric(horizontal: 24, vertical: 12));
+    expect(
+      padding(find.widgetWithText(ElevatedButton, 'Ya, Nonaktifkan')),
+      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    );
+    expect(
+      padding(find.widgetWithText(ElevatedButton, 'Simpan')),
+      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    );
+  });
+
+  group('AppButton tonal', () {
+    testWidgets('is a soft green button with a green label', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Tandai Selesai',
+            variant: AppButtonVariant.tonal,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(_fill(tester, ElevatedButton), AppColors.greenLight);
+      expect(_labelColor(tester, 'Tandai Selesai'), AppColors.greenDark);
+    });
+  });
+
+  group('AppButton warning', () {
+    testWidgets('filled is amber with a white label', (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Ya, Lanjutkan',
+        variant: AppButtonVariant.warning,
+        onPressed: () {},
+      )));
+
+      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(_fill(tester, ElevatedButton), AppColors.warning);
+      expect(_labelColor(tester, 'Ya, Lanjutkan'), Colors.white);
+    });
+
+    testWidgets('outlined has an amber border and an amber label',
+        (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Samakan dengan data akun',
+        variant: AppButtonVariant.warningOutlined,
+        onPressed: () {},
+      )));
+
+      expect(find.byType(OutlinedButton), findsOneWidget);
+      expect(
+          _labelColor(tester, 'Samakan dengan data akun'), AppColors.warning);
+      expect(_shape(tester, OutlinedButton)?.side.color, AppColors.warning);
+    });
+  });
+
+  group('AppButton compact', () {
+    testWidgets('is 40 high where the regular button is 48', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          Column(
+            children: [
+              AppButton(label: 'Terapkan', onPressed: () {}),
+              AppButton(
+                label: 'Setujui',
+                size: AppButtonSize.compact,
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSize(find.widgetWithText(ElevatedButton, 'Terapkan')).height,
+        48,
+      );
+      expect(
+        tester.getSize(find.widgetWithText(ElevatedButton, 'Setujui')).height,
+        40,
+      );
+    });
+
+    testWidgets('still fills the width it is given', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Setujui',
+            size: AppButtonSize.compact,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byType(ElevatedButton)).width, 320);
+    });
+
+    testWidgets('has a 12 semibold label and a 16 icon, so three fit a row',
+        (tester) async {
+      await tester.pumpWidget(_host(AppButton(
+        label: 'Lihat Bukti',
+        icon: Icons.image_outlined,
+        size: AppButtonSize.compact,
+        onPressed: () {},
+      )));
+
+      final style = tester
+          .renderObject<RenderParagraph>(find.text('Lihat Bukti'))
+          .text
+          .style;
+      expect(style?.fontSize, 12);
+      expect(style?.fontWeight, FontWeight.w600);
+      expect(tester.getSize(find.byIcon(Icons.image_outlined)).width, 16);
+    });
+
+    testWidgets('keeps the look of its variant', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Tolak',
+            variant: AppButtonVariant.destructiveOutlined,
+            size: AppButtonSize.compact,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      expect(_labelColor(tester, 'Tolak'), AppColors.danger);
+      expect(_shape(tester, OutlinedButton)?.side.color, AppColors.danger);
+    });
+  });
+
+  group('AppButton text', () {
+    testWidgets('is a bare green link with no padding around its label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton(
+              label: 'Detail Bank Sampah',
+              variant: AppButtonVariant.text,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(TextButton), findsOneWidget);
+      expect(_labelColor(tester, 'Detail Bank Sampah'), AppColors.greenDark);
+      final button = tester.getRect(find.byType(TextButton));
+      final label = tester.getRect(find.text('Detail Bank Sampah'));
+      expect(button.left, label.left);
+      expect(button.width, label.width);
+    });
+
+    testWidgets('never fills the row, even though expand defaults to true', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton(
+              label: 'Detail',
+              variant: AppButtonVariant.text,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byType(TextButton)).width, lessThan(320));
+    });
+
+    testWidgets('puts the icon before the label', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          AppButton(
+            label: 'Lihat Status',
+            variant: AppButtonVariant.text,
+            icon: Icons.fact_check_outlined,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      expect(
+        tester.getCenter(find.byIcon(Icons.fact_check_outlined)).dx,
+        lessThan(tester.getCenter(find.text('Lihat Status')).dx),
+      );
+    });
+  });
+
+  group('AppButton long labels', () {
+    testWidgets(
+        'a label too wide for a half-width button shrinks instead of being cut',
+        (tester) async {
+      await tester.pumpWidget(_host(
+        AppButton(label: 'Ya, Nonaktifkan', onPressed: () {}),
+        width: 110,
+      ));
+
+      final fitted = find.descendant(
+        of: find.byType(ElevatedButton),
+        matching: find.byType(FittedBox),
+      );
+      expect(fitted, findsOneWidget);
+      // 110 wide, less 12 of padding on each side.
+      expect(tester.getSize(fitted).width, lessThanOrEqualTo(86));
+      expect(find.text('Ya, Nonaktifkan'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a label that fits keeps its size', (tester) async {
+      await tester.pumpWidget(_host(
+        AppButton(label: 'Simpan', onPressed: () {}),
+      ));
+
+      final style =
+          tester.renderObject<RenderParagraph>(find.text('Simpan')).text.style;
+      final scale = tester
+          .widget<FittedBox>(find.descendant(
+            of: find.byType(ElevatedButton),
+            matching: find.byType(FittedBox),
+          ))
+          .fit;
+      expect(style?.fontSize, 14);
+      expect(scale, BoxFit.scaleDown);
+    });
   });
 
   group('AppButton behaviour', () {
     testWidgets('reports taps', (tester) async {
       var taps = 0;
       await tester.pumpWidget(
-          _host(AppButton(label: 'Simpan', onPressed: () => taps++)));
+        _host(AppButton(label: 'Simpan', onPressed: () => taps++)),
+      );
 
       await tester.tap(find.text('Simpan'));
 
       expect(taps, 1);
     });
 
-    testWidgets('is greyed out and ignores taps without a callback',
-        (tester) async {
-      await tester
-          .pumpWidget(_host(const AppButton(label: 'Simpan', onPressed: null)));
+    testWidgets('is greyed out and ignores taps without a callback', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(const AppButton(label: 'Simpan', onPressed: null)),
+      );
 
-      expect(tester.widget<ElevatedButton>(find.byType(ElevatedButton)).enabled,
-          isFalse);
+      expect(
+        tester.widget<ElevatedButton>(find.byType(ElevatedButton)).enabled,
+        isFalse,
+      );
       expect(_fill(tester, ElevatedButton), AppColors.border);
     });
 
@@ -251,11 +534,11 @@ void main() {
         'shows a spinner instead of the label while loading and does '
         'not fire twice', (tester) async {
       var taps = 0;
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Simpan',
-        isLoading: true,
-        onPressed: () => taps++,
-      )));
+      await tester.pumpWidget(
+        _host(
+          AppButton(label: 'Simpan', isLoading: true, onPressed: () => taps++),
+        ),
+      );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Simpan'), findsNothing);
@@ -263,14 +546,13 @@ void main() {
       expect(taps, 0);
     });
 
-    testWidgets('keeps its label for screen readers while loading',
-        (tester) async {
+    testWidgets('keeps its label for screen readers while loading', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(_host(AppButton(
-        label: 'Simpan',
-        isLoading: true,
-        onPressed: () {},
-      )));
+      await tester.pumpWidget(
+        _host(AppButton(label: 'Simpan', isLoading: true, onPressed: () {})),
+      );
 
       expect(
         tester.getSemantics(find.byType(ElevatedButton)),
@@ -287,8 +569,9 @@ void main() {
 
     testWidgets('announces itself as a button with its label', (tester) async {
       final handle = tester.ensureSemantics();
-      await tester
-          .pumpWidget(_host(AppButton(label: 'Simpan', onPressed: () {})));
+      await tester.pumpWidget(
+        _host(AppButton(label: 'Simpan', onPressed: () {})),
+      );
 
       expect(
         tester.getSemantics(find.byType(ElevatedButton)),

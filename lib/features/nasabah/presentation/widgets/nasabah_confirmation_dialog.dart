@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
@@ -65,105 +63,32 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isActivating ? Colors.green[50] : Colors.orange[50];
-    final iconColor =
-        widget.isActivating ? Colors.green[600] : Colors.orange[400];
-    final iconData =
-        widget.isActivating ? Icons.check_box : Icons.warning_amber_rounded;
-
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-      ),
-      backgroundColor: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Icon
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: bgColor,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(iconData, color: iconColor, size: 32),
-            ),
-            const SizedBox(height: 20),
-
-            // Title
-            Text(
-              widget.isActivating
-                  ? 'Aktifkan Nasabah?'
-                  : 'Nonaktifkan Nasabah?',
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-
-            // Description
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: AppTextStyle.small.copyWith(
-                  color: Colors.grey[600],
-                  height: 1.5,
-                ),
-                children: [
-                  TextSpan(
-                    text: widget.isActivating
-                        ? 'Yakin ingin mengaktifkan kembali nasabah '
-                        : 'Yakin ingin menonaktifkan nasabah ',
-                  ),
-                  TextSpan(
-                    text: widget.customerName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  TextSpan(
-                    text: widget.isActivating
-                        ? '? Nasabah dapat bertransaksi kembali.'
-                        : '? Nasabah tidak dapat bertransaksi.',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    label: 'Batal',
-                    variant: AppButtonVariant.neutral,
-                    onPressed: _isProcessing ? null : () => context.pop(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppButton(
-                    label: widget.isActivating
-                        ? 'Ya, Aktifkan'
-                        : 'Ya, Nonaktifkan',
-                    variant: widget.isActivating
-                        ? AppButtonVariant.primary
-                        : AppButtonVariant.destructive,
-                    isLoading: _isProcessing,
-                    onPressed: _confirm,
-                  ),
-                ),
-              ],
-            ),
-          ],
+    final activating = widget.isActivating;
+    return AppIconDialog(
+      icon: activating ? Icons.check_box : Icons.warning_amber_rounded,
+      tone: activating ? AppDialogTone.positive : AppDialogTone.warning,
+      title: activating ? 'Aktifkan Nasabah?' : 'Nonaktifkan Nasabah?',
+      message: [
+        TextSpan(
+          text: activating
+              ? 'Yakin ingin mengaktifkan kembali nasabah '
+              : 'Yakin ingin menonaktifkan nasabah ',
         ),
-      ),
+        TextSpan(
+          text: widget.customerName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        TextSpan(
+          text: activating
+              ? '? Nasabah dapat bertransaksi kembali.'
+              : '? Nasabah tidak dapat bertransaksi.',
+        ),
+      ],
+      confirmLabel: activating ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
+      destructive: !activating,
+      isLoading: _isProcessing,
+      onConfirm: _confirm,
+      onCancel: () => context.pop(),
     );
   }
 }
