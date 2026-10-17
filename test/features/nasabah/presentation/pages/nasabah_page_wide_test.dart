@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
@@ -122,6 +124,66 @@ void main() {
 
     expect(find.byType(DetailNasabahBottomSheet), findsOneWidget);
     expect(find.byType(Dialog), findsNothing);
+    expect(find.byKey(DetailNasabahBottomSheet.dragHandleKey), findsOneWidget);
+  });
+
+  testWidgets('the table header sits on the fill colour', (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester);
+
+    final header = tester.widget<Container>(find.byKey(NasabahTable.headerKey));
+    expect(header.color, AppColors.fill);
+  });
+
+  testWidgets('the detail action is an outlined button', (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester);
+
+    expect(find.widgetWithText(OutlinedButton, 'Lihat detail'), findsOneWidget);
+  });
+
+  group('a dialog has no drag handle', () {
+    testWidgets('on the add form', (tester) async {
+      listAs([]);
+      await open(tester);
+
+      await tester.tap(find.text('Tambah Nasabah'));
+      await tester.pumpAndSettle();
+
+      expect(
+          tester
+              .widget<BottomSheetHeader>(find.byType(BottomSheetHeader))
+              .showDragHandle,
+          isFalse);
+    });
+
+    testWidgets('on the detail', (tester) async {
+      listAs([nasabahRow('1')]);
+      api.on('GET', '$_path/1', json: <String, dynamic>{});
+      await open(tester);
+
+      await tester.tap(find.text('Budi Santoso'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(DetailNasabahBottomSheet.dragHandleKey), findsNothing);
+    });
+
+    testWidgets('on the edit form', (tester) async {
+      listAs([nasabahRow('1')]);
+      api.on('GET', '$_path/1', json: <String, dynamic>{});
+      await open(tester);
+      await tester.tap(find.text('Budi Santoso'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Edit Data'));
+      await tester.pumpAndSettle();
+
+      expect(
+          tester
+              .widget<BottomSheetHeader>(find.byType(BottomSheetHeader))
+              .showDragHandle,
+          isFalse);
+    });
   });
 
   group('pending submissions', () {
