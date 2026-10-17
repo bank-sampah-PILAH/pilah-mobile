@@ -265,6 +265,30 @@ void main() {
     });
   });
 
+  testWidgets('the rail logo returns to the home branch', (tester) async {
+    final router = await mountShell(tester,
+        role: 'pengelola',
+        window: const Size(1280, 900),
+        isWeb: true,
+        initialLocation: '/customers');
+    expect(
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
+        1);
+
+    await tester.tap(find.byKey(RoleNavigationRail.logoKey));
+    await tester.pumpAndSettle();
+
+    expect(
+        tester
+            .widget<NavigationRail>(find.byType(NavigationRail))
+            .selectedIndex,
+        0);
+    expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+        '/home');
+  });
+
   group('a route outside the destinations keeps its navigation on web', () {
     testWidgets('the staff profile keeps the rail on a desktop window',
         (tester) async {
