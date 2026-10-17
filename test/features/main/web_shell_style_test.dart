@@ -103,6 +103,16 @@ void main() {
           greaterThan(800));
     });
 
+    testWidgets('is outlined so it stands out from the menu', (tester) async {
+      await mountRail(tester);
+
+      final card = tester
+          .widget<DecoratedBox>(find.byKey(RoleNavigationRail.profileCardKey));
+      final decoration = card.decoration as BoxDecoration;
+      expect((decoration.border! as Border).top.color, AppColors.border);
+      expect(decoration.borderRadius, BorderRadius.circular(12));
+    });
+
     testWidgets('opens the profile when tapped', (tester) async {
       await mountRail(tester);
 
