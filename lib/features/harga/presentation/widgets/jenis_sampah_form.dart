@@ -81,6 +81,10 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   /// Batas jadwal harga dari backend (`BATAS_JADWAL_HARGA_HARI`).
   static const int _batasJadwalHari = 365;
 
+  /// Pesan untuk field wajib yang dibiarkan kosong. Dipakai empat field,
+  /// jadi kalimatnya hidup di satu tempat agar tidak bercabang.
+  static const String _wajibDiisi = 'Bagian ini wajib diisi.';
+
   /// Dropdown options as (API value, display label, icon). The value is what the
   /// backend `JenisSampah.Kategori` choices accept and is stored in
   /// [_selectedCategory]; the label is display-only. They differ for "Lainnya",
@@ -159,213 +163,227 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditMode = _isEditMode;
-
     return Form(
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Field: ID / KODE SAMPAH
-          _buildLabel('ID / KODE SAMPAH'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _kodeSampahController,
-            textInputAction: TextInputAction.next,
-            onChanged: (_) {
-              if (_serverKodeError != null) {
-                setState(() => _serverKodeError = null);
-              }
-            },
-            validator: _validateKode,
-            decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Kode unik untuk identifikasi jenis sampah ini.',
-            style: AppTextStyle.small.copyWith(
-              color: Colors.grey[500],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Field: NAMA JENIS SAMPAH
-          _buildLabel('NAMA JENIS SAMPAH'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _nameController,
-            textInputAction: TextInputAction.next,
-            validator: (value) => (value == null || value.trim().isEmpty)
-                ? 'Bagian ini wajib diisi.'
-                : null,
-            decoration: appInputDecoration(hintText: 'Contoh: Plastik PET'),
-          ),
-          const SizedBox(height: 20),
-
-          // Field: KATEGORI
-          _buildLabel('KATEGORI'),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedCategory,
-            validator: (value) => (value == null || value.isEmpty)
-                ? 'Bagian ini wajib diisi.'
-                : null,
-            hint: const Text('— Pilih Kategori —'),
-            decoration: appInputDecoration(),
-            icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-            items: _categories.map(_buildDropdownItem).toList(),
-            onChanged: (newValue) {
-              setState(() {
-                _selectedCategory = newValue;
-              });
-            },
-          ),
-          const SizedBox(height: 20),
-
-          // Field: DESKRIPSI (OPSIONAL)
-          _buildLabel('DESKRIPSI (OPSIONAL)'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _descController,
-            maxLines: 2,
-            decoration: appInputDecoration(
-                hintText: 'Contoh: Botol bening, kemasan plastik'),
-          ),
-          const SizedBox(height: 20),
-
-          // Field: HARGA BELI PER KG (RP)
-          _buildLabel('HARGA BELI PER KG (RP)'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _priceController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            // Baris terakhir yang diisi dari papan tik, jadi Enter di sini
-            // menyimpan alih-alih sekadar memindahkan fokus. Itu yang membuat
-            // form ini dapat diselesaikan tanpa menyentuh tetikus.
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) {
-              if (!_isSaving) _handleSimpan();
-            },
-            validator: (value) => (value == null || value.trim().isEmpty)
-                ? 'Bagian ini wajib diisi.'
-                : null,
-            decoration: appInputDecoration(
-              hintText: '0',
-            ).copyWith(
-              prefixIcon: Padding(
-                padding: const EdgeInsets.only(
-                    left: 16, right: 8, top: 14, bottom: 14),
-                child: Text(
-                  'Rp',
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              prefixIconConstraints:
-                  const BoxConstraints(minWidth: 0, minHeight: 0),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Harga yang akan dibayarkan ke nasabah.',
-            style: AppTextStyle.small.copyWith(
-              color: Colors.grey[500],
-            ),
-          ),
-          if (isEditMode) ...[
-            const SizedBox(height: 20),
-            _buildLabel('BERLAKU MULAI'),
-            const SizedBox(height: 8),
-            _buildPilihanBerlaku(),
-            const SizedBox(height: 16),
-            _buildRingkasanHarga(widget.initialData!),
-            const SizedBox(height: 12),
-            _buildPeringatanTidakSurut(),
-          ],
+          ..._buildKodeField(),
+          ..._buildNamaField(),
+          ..._buildKategoriField(),
+          ..._buildDeskripsiField(),
+          ..._buildHargaField(),
+          if (_isEditMode) ..._buildPengaturanHarga(),
           const SizedBox(height: 32),
+          _buildSimpanButton(),
+          if (_isEditMode) _buildToggleStatusButton(),
+        ],
+      ),
+    );
+  }
 
-          // Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSaving ? null : _handleSimpan,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                disabledBackgroundColor:
-                    AppColors.greenDark.withValues(alpha: 0.6),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+  /// Pesan untuk isian wajib yang masih kosong.
+  String? _validateWajib(String? value) =>
+      (value == null || value.trim().isEmpty) ? _wajibDiisi : null;
+
+  // Tiap isian berdiri sebagai satu kelompok — label, input, dan
+  // keterangannya — sehingga `build` tinggal menyebut urutannya. Sebelumnya
+  // semuanya satu daftar panjang dan percabangannya membuat satu method itu
+  // terlalu rumit untuk dibaca sekaligus.
+
+  List<Widget> _buildKodeField() => [
+        _buildLabel('ID / KODE SAMPAH'),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _kodeSampahController,
+          textInputAction: TextInputAction.next,
+          onChanged: (_) {
+            if (_serverKodeError != null) {
+              setState(() => _serverKodeError = null);
+            }
+          },
+          validator: _validateKode,
+          decoration: appInputDecoration(hintText: 'Contoh: PLS-001'),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Kode unik untuk identifikasi jenis sampah ini.',
+          style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+        ),
+        const SizedBox(height: 20),
+      ];
+
+  List<Widget> _buildNamaField() => [
+        _buildLabel('NAMA JENIS SAMPAH'),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _nameController,
+          textInputAction: TextInputAction.next,
+          validator: _validateWajib,
+          decoration: appInputDecoration(hintText: 'Contoh: Plastik PET'),
+        ),
+        const SizedBox(height: 20),
+      ];
+
+  List<Widget> _buildKategoriField() => [
+        _buildLabel('KATEGORI'),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedCategory,
+          validator: _validateWajib,
+          hint: const Text('— Pilih Kategori —'),
+          decoration: appInputDecoration(),
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+          items: _categories.map(_buildDropdownItem).toList(),
+          onChanged: (newValue) {
+            setState(() {
+              _selectedCategory = newValue;
+            });
+          },
+        ),
+        const SizedBox(height: 20),
+      ];
+
+  List<Widget> _buildDeskripsiField() => [
+        _buildLabel('DESKRIPSI (OPSIONAL)'),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _descController,
+          maxLines: 2,
+          decoration: appInputDecoration(
+              hintText: 'Contoh: Botol bening, kemasan plastik'),
+        ),
+        const SizedBox(height: 20),
+      ];
+
+  List<Widget> _buildHargaField() => [
+        _buildLabel('HARGA BELI PER KG (RP)'),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _priceController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          // Baris terakhir yang diisi dari papan tik, jadi Enter di sini
+          // menyimpan alih-alih sekadar memindahkan fokus. Itu yang membuat
+          // form ini dapat diselesaikan tanpa menyentuh tetikus.
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) {
+            if (!_isSaving) _handleSimpan();
+          },
+          validator: _validateWajib,
+          decoration: appInputDecoration(
+            hintText: '0',
+          ).copyWith(
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(
+                  left: 16, right: 8, top: 14, bottom: 14),
+              child: Text(
+                'Rp',
+                style: AppTextStyle.title1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
                 ),
-                elevation: 0,
               ),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(
-                      isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
-                      // headline3 sudah berukuran 16, jadi tidak ada fontSize
-                      // yang perlu ditulis ulang di luar `lib/design/`.
-                      style: AppTextStyle.headline3.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+            ),
+            prefixIconConstraints:
+                const BoxConstraints(minWidth: 0, minHeight: 0),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Harga yang akan dibayarkan ke nasabah.',
+          style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+        ),
+      ];
+
+  /// Hanya pada mode ubah: harga baru dapat dijadwalkan, dan nilainya perlu
+  /// ditunjukkan bersama peringatan bahwa perubahan tidak berlaku surut.
+  List<Widget> _buildPengaturanHarga() => [
+        const SizedBox(height: 20),
+        _buildLabel('BERLAKU MULAI'),
+        const SizedBox(height: 8),
+        _buildPilihanBerlaku(),
+        const SizedBox(height: 16),
+        _buildRingkasanHarga(widget.initialData!),
+        const SizedBox(height: 12),
+        _buildPeringatanTidakSurut(),
+      ];
+
+  Widget _buildSimpanButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isSaving ? null : _handleSimpan,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.greenDark,
+          disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+        ),
+        child: _isSaving
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                _isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+                // headline3 sudah berukuran 16, jadi tidak ada fontSize yang
+                // perlu ditulis ulang di luar `lib/design/`.
+                style: AppTextStyle.headline3.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildToggleStatusButton() {
+    final warna = _isActive ? Colors.red[600] : AppColors.greenDark;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: _isSaving ? null : _handleToggleStatus,
+          icon: Icon(
+            _isActive ? Icons.block : Icons.check_circle_outline,
+            size: 20,
+            color: warna,
+          ),
+          label: Text(
+            _isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
+            style: AppTextStyle.headline3.copyWith(
+              color: warna,
+              fontWeight: FontWeight.bold,
             ),
           ),
-
-          // Activate / Deactivate (edit mode only)
-          if (isEditMode) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _isSaving ? null : _handleToggleStatus,
-                icon: Icon(
-                  _isActive ? Icons.block : Icons.check_circle_outline,
-                  size: 20,
-                  color: _isActive ? Colors.red[600] : AppColors.greenDark,
-                ),
-                label: Text(
-                  _isActive
-                      ? 'Nonaktifkan Jenis Sampah'
-                      : 'Aktifkan Jenis Sampah',
-                  style: AppTextStyle.headline3.copyWith(
-                    color: _isActive ? Colors.red[600] : AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  side: BorderSide(
-                    color: _isActive ? Colors.red[200]! : AppColors.greenLight,
-                  ),
-                  backgroundColor: Colors.white,
-                ),
-              ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-          ],
-        ],
+            side: BorderSide(
+              color: _isActive ? Colors.red[200]! : AppColors.greenLight,
+            ),
+            backgroundColor: Colors.white,
+          ),
+        ),
       ),
     );
   }
 
   String? _validateKode(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Bagian ini wajib diisi.';
+      return _wajibDiisi;
     }
     final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
     if (cubit.state is HargaLoaded) {

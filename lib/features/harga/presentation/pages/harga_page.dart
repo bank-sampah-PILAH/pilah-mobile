@@ -229,25 +229,18 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     final isSearching = loaded?.searchQuery.isNotEmpty ?? false;
     final isActiveTab = loaded?.isActiveTab ?? true;
 
+    final empty = _emptyState(
+      isSearching: isSearching,
+      isActiveTab: isActiveTab,
+    );
+
     return PageStateView(
       state: pageState,
       onRetry: () => context.read<HargaCubit>().loadHarga(),
       errorMessage: state is HargaError ? state.message : null,
-      emptyTitle: isSearching
-          ? 'Jenis Sampah Tidak Ditemukan'
-          : isActiveTab
-              ? 'Belum Ada Jenis Sampah'
-              : 'Tidak Ada Jenis Nonaktif',
-      emptySubtitle: isSearching
-          ? 'Coba kata kunci yang berbeda'
-          : isActiveTab
-              ? 'Tekan tombol + untuk menambah jenis sampah.'
-              : 'Semua jenis sampah masih aktif.',
-      emptyIcon: isSearching
-          ? Icons.search_off
-          : isActiveTab
-              ? Icons.category_outlined
-              : Icons.check_circle_outline,
+      emptyTitle: empty.title,
+      emptySubtitle: empty.subtitle,
+      emptyIcon: empty.icon,
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 80),
@@ -262,6 +255,36 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
           );
         },
       ),
+    );
+  }
+
+  /// Judul, penjelasan, dan ikon untuk daftar yang kosong.
+  ///
+  /// Satu cabang per keadaan, bukan tiga ternary bersarang yang berjalan
+  /// sejajar: ketiga nilai itu harus menggambarkan keadaan yang sama, dan
+  /// memisahkannya membuat salah satu mudah tertinggal saat yang lain diubah.
+  ({String title, String subtitle, IconData icon}) _emptyState({
+    required bool isSearching,
+    required bool isActiveTab,
+  }) {
+    if (isSearching) {
+      return (
+        title: 'Jenis Sampah Tidak Ditemukan',
+        subtitle: 'Coba kata kunci yang berbeda',
+        icon: Icons.search_off,
+      );
+    }
+    if (isActiveTab) {
+      return (
+        title: 'Belum Ada Jenis Sampah',
+        subtitle: 'Tekan tombol + untuk menambah jenis sampah.',
+        icon: Icons.category_outlined,
+      );
+    }
+    return (
+      title: 'Tidak Ada Jenis Nonaktif',
+      subtitle: 'Semua jenis sampah masih aktif.',
+      icon: Icons.check_circle_outline,
     );
   }
 
