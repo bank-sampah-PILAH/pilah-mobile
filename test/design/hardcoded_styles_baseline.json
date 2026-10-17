@@ -37,7 +37,7 @@
   },
   "lib/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart": {
     "color": 0,
-    "fontSize": 4
+    "fontSize": 3
   },
   "lib/features/bank_sampah_approval/presentation/widgets/membership_list_item.dart": {
     "color": 0,
@@ -59,10 +59,6 @@
     "color": 0,
     "fontSize": 2
   },
-  "lib/features/draft_pencairan/presentation/pages/draft_editor_page.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
   "lib/features/draft_pencairan/presentation/widgets/editor_item_card.dart": {
     "color": 0,
     "fontSize": 1
@@ -78,10 +74,6 @@
   "lib/features/harga/presentation/pages/harga_page.dart": {
     "color": 0,
     "fontSize": 4
-  },
-  "lib/features/harga/presentation/widgets/harga_confirmation_dialog.dart": {
-    "color": 0,
-    "fontSize": 1
   },
   "lib/features/jadwal/presentation/pages/jadwal_page.dart": {
     "color": 0,
@@ -100,14 +92,6 @@
     "fontSize": 6
   },
   "lib/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
-  "lib/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart": {
-    "color": 0,
-    "fontSize": 2
-  },
-  "lib/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart": {
     "color": 0,
     "fontSize": 1
   },
@@ -157,7 +141,7 @@
   },
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": {
     "color": 0,
-    "fontSize": 11
+    "fontSize": 6
   },
   "lib/features/transaksi/presentation/pages/transaksi_baru_page.dart": {
     "color": 0,
@@ -165,7 +149,7 @@
   },
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": {
     "color": 0,
-    "fontSize": 5
+    "fontSize": 4
   },
   "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": {
     "color": 0,

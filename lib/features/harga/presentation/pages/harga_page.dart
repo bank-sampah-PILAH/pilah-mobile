@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -287,22 +288,13 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                 ],
                 // Its own tap target: tapping elsewhere on the card still
                 // opens the edit sheet.
-                TextButton(
+                AppButton(
+                  label: 'Riwayat harga',
+                  variant: AppButtonVariant.text,
+                  size: AppButtonSize.compact,
+                  expand: false,
                   onPressed: () =>
                       context.push(RiwayatHargaPage.route, extra: item),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: AppColors.greenDark,
-                  ),
-                  child: Text(
-                    'Riwayat harga',
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
               ],
             ),
