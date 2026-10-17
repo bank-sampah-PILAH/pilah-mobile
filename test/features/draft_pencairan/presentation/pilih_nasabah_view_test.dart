@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -315,6 +316,22 @@ void main() {
       expect(chip(tester, 'pf-saldo').label, 'Saldo \u2265 Rp 200.000');
       expect(find.byKey(const Key('kandidat-n-2')), findsNothing);
       expect(find.byKey(const Key('kandidat-n-3')), findsOneWidget);
+    });
+
+    testWidgets(
+        'on a desktop window the list and its Lanjut share a centred column',
+        (tester) async {
+      await pump(tester, size: const Size(1440, 900));
+
+      final baris = find.byKey(const Key('kandidat-n-1'));
+      expect(tester.getSize(baris).width,
+          lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
+      expect(tester.getCenter(baris).dx, closeTo(720, 1),
+          reason: 'centred in the window');
+      // The button that takes the pick stays in that column, not at the far
+      // edge of the window.
+      expect(tester.getTopRight(find.byKey(const Key('lanjut'))).dx,
+          lessThanOrEqualTo(720 + LayoutBreakpoint.formMaxWidth / 2));
     });
 
     group('the saldo minimal sheet', () {
