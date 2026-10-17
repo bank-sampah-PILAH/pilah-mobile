@@ -9,6 +9,8 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/draft_pencairan.dart';
@@ -79,38 +81,43 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
-          builder: (context, state) => Column(
-            children: [
-              const PencairanHeader(title: 'Pilih Nasabah'),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomSearchField(
-                        key: const Key('cari-kandidat'),
-                        hintText: 'Cari nama, kode, atau nomor HP',
-                        onChanged: _onSearch,
+        // A list of names and saldo is read row by row, so a desktop window
+        // keeps it to a form's column, and the footer below matches it.
+        child: ContentBounds(
+          maxWidth: LayoutBreakpoint.formMaxWidth,
+          child: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
+            builder: (context, state) => Column(
+              children: [
+                const PencairanHeader(title: 'Pilih Nasabah'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomSearchField(
+                          key: const Key('cari-kandidat'),
+                          hintText: 'Cari nama, kode, atau nomor HP',
+                          onChanged: _onSearch,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    PencairanSortButton<KandidatSortField>(
-                      buttonKey: const Key('urutkan-kandidat'),
-                      itemKeyPrefix: 'urut-kandidat-',
-                      fields: KandidatSortField.values,
-                      labelOf: (field) => field.label,
-                      current: state.urutan.field,
-                      ascending: state.urutan.ascending,
-                      onSort: cubit.setSortField,
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      PencairanSortButton<KandidatSortField>(
+                        buttonKey: const Key('urutkan-kandidat'),
+                        itemKeyPrefix: 'urut-kandidat-',
+                        fields: KandidatSortField.values,
+                        labelOf: (field) => field.label,
+                        current: state.urutan.field,
+                        ascending: state.urutan.ascending,
+                        onSort: cubit.setSortField,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              _Filters(state: state, onSaldoMin: _askSaldoMin),
-              _BulkRow(state: state),
-              Expanded(child: _List(state: state)),
-            ],
+                _Filters(state: state, onSaldoMin: _askSaldoMin),
+                _BulkRow(state: state),
+                Expanded(child: _List(state: state)),
+              ],
+            ),
           ),
         ),
       ),
@@ -369,37 +376,41 @@ class _Footer extends StatelessWidget {
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('${state.jumlahTerpilih} dipilih',
-                        style: AppTextStyle.headline3),
-                    Text('Total saldo ${rupiah(state.saldoTerpilih)}',
-                        style: AppTextStyle.small),
-                    if (state.kelebihan)
-                      Text('Maksimal 1.000 nasabah per draft',
-                          style: AppTextStyle.small
-                              .copyWith(color: Colors.red[700])),
-                  ],
+        child: ContentBounds(
+          maxWidth: LayoutBreakpoint.formMaxWidth,
+          heightFactor: 1,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${state.jumlahTerpilih} dipilih',
+                          style: AppTextStyle.headline3),
+                      Text('Total saldo ${rupiah(state.saldoTerpilih)}',
+                          style: AppTextStyle.small),
+                      if (state.kelebihan)
+                        Text('Maksimal 1.000 nasabah per draft',
+                            style: AppTextStyle.small
+                                .copyWith(color: Colors.red[700])),
+                    ],
+                  ),
                 ),
-              ),
-              SizedBox(
-                width: 140,
-                child: CustomPrimaryButton(
-                  key: const Key('lanjut'),
-                  title: 'Lanjut',
-                  onPressed: terpilih.isEmpty || state.kelebihan
-                      ? null
-                      : () => context.pop(terpilih),
+                SizedBox(
+                  width: 140,
+                  child: CustomPrimaryButton(
+                    key: const Key('lanjut'),
+                    title: 'Lanjut',
+                    onPressed: terpilih.isEmpty || state.kelebihan
+                        ? null
+                        : () => context.pop(terpilih),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

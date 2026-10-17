@@ -9,11 +9,20 @@ import 'draft_format.dart';
 /// while the nasabah list scrolls and is edited. Closed it shows only what is
 /// paid out; tapped, or swiped up, it also shows the pencairan and potongan.
 /// [aksi] is the row of buttons beneath, or null for a draft that is final.
+///
+/// [samping] lays it out for the panel beside the list on a desktop window:
+/// every total shown, nothing to open or swipe, no sheet edge.
 class EditorSummaryPanel extends StatefulWidget {
   final DraftEditorState state;
   final Widget? aksi;
+  final bool samping;
 
-  const EditorSummaryPanel({super.key, required this.state, this.aksi});
+  const EditorSummaryPanel({
+    super.key,
+    required this.state,
+    this.aksi,
+    this.samping = false,
+  });
 
   @override
   State<EditorSummaryPanel> createState() => _EditorSummaryPanelState();
@@ -27,6 +36,37 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    if (widget.samping) {
+      return Column(
+        key: const Key('ringkasan-panel'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Total dibayar',
+            style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              rupiah(state.totalDibayar),
+              key: const Key('total-dibayar'),
+              style: AppTextStyle.headline1.copyWith(
+                color: AppColors.greenDark,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _Rincian(state: state),
+          if (widget.aksi != null) ...[
+            const SizedBox(height: 16),
+            widget.aksi!,
+          ],
+        ],
+      );
+    }
     return Container(
       key: const Key('ringkasan-panel'),
       decoration: BoxDecoration(
@@ -117,28 +157,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
               child: _terbuka
                   ? Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                      child: Column(
-                        children: [
-                          const Divider(height: 1, color: AppColors.border),
-                          const SizedBox(height: 12),
-                          _Baris(
-                            label: 'Total pencairan',
-                            nilai: rupiah(state.totalNominal),
-                            nilaiKey: const Key('total-nominal'),
-                          ),
-                          const SizedBox(height: 8),
-                          _Baris(
-                            label: 'Total potongan',
-                            nilai: state.totalPotongan > 0
-                                ? '− ${rupiah(state.totalPotongan)}'
-                                : rupiah(state.totalPotongan),
-                            nilaiKey: const Key('total-potongan'),
-                            warna: state.totalPotongan > 0
-                                ? AppColors.statOrange
-                                : null,
-                          ),
-                        ],
-                      ),
+                      child: _Rincian(state: state),
                     )
                   : const SizedBox(width: double.infinity),
             ),
@@ -146,6 +165,37 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Total pencairan and total potongan, under a divider.
+class _Rincian extends StatelessWidget {
+  final DraftEditorState state;
+
+  const _Rincian({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Divider(height: 1, color: AppColors.border),
+        const SizedBox(height: 12),
+        _Baris(
+          label: 'Total pencairan',
+          nilai: rupiah(state.totalNominal),
+          nilaiKey: const Key('total-nominal'),
+        ),
+        const SizedBox(height: 8),
+        _Baris(
+          label: 'Total potongan',
+          nilai: state.totalPotongan > 0
+              ? '− ${rupiah(state.totalPotongan)}'
+              : rupiah(state.totalPotongan),
+          nilaiKey: const Key('total-potongan'),
+          warna: state.totalPotongan > 0 ? AppColors.statOrange : null,
+        ),
+      ],
     );
   }
 }
@@ -173,7 +223,10 @@ class _Baris extends StatelessWidget {
             style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
           ),
         ),
+        // Tight, so the FittedBox spans its half and puts the amount at the
+        // right edge; a loose one would start it halfway across.
         Flexible(
+          fit: FlexFit.tight,
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,

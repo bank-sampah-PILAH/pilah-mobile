@@ -624,7 +624,7 @@ class _SummaryPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 340,
+      width: LayoutBreakpoint.sidePanelWidth,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(0, 8, 16, 24),
         child: Column(

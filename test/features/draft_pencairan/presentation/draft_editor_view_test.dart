@@ -93,11 +93,14 @@ void main() {
 
   setUp(() => repository = _MockRepository());
 
-  Future<void> pumpNew(WidgetTester tester) async {
+  Future<void> pumpNew(
+    WidgetTester tester, {
+    Size size = const Size(420, 2600),
+  }) async {
     cubit = DraftEditorCubit(repository)
       ..startNew(const [_ahmad, _budi, _citra]);
     _current = cubit;
-    await _pump(tester);
+    await _pump(tester, size: size);
   }
 
   Future<void> pumpSaved(
@@ -738,6 +741,29 @@ void main() {
       expect(cubit.state.status, DraftStatus.dikonfirmasi);
     });
 
+    testWidgets(
+        'on a desktop window paying from the side panel asks in a dialog',
+        (tester) async {
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) async => Right(_saved()));
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+
+      await tester.tap(find.text('Ya, sudah dibayar'));
+      await tester.pumpAndSettle();
+
+      verifyInOrder([
+        () => repository.createDraft(any()),
+        () => repository.confirmDraft('d-1'),
+      ]);
+      expect(cubit.state.status, DraftStatus.dikonfirmasi);
+    });
+
     testWidgets('declining the dialog saves and pays nothing', (tester) async {
       await pumpNew(tester);
 
@@ -1318,6 +1344,47 @@ void main() {
       expect(sudut.topLeft, const Radius.circular(20));
       expect(sudut.bottomLeft, Radius.zero);
       expect(dekor.boxShadow, isNotEmpty);
+    });
+
+    testWidgets(
+        'on a desktop window it is a side panel, open, holding the buttons',
+        (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      final samping = find.byKey(const Key('draft-editor-panel'));
+      expect(samping, findsOneWidget);
+      for (final key in [
+        'total-dibayar',
+        'total-nominal',
+        'total-potongan',
+        'simpan',
+        'konfirmasi',
+      ]) {
+        expect(find.descendant(of: samping, matching: find.byKey(Key(key))),
+            findsOneWidget,
+            reason: key);
+      }
+      // Nothing to open or swipe: there is room for every total.
+      expect(find.byKey(const Key('ringkasan-toggle')), findsNothing);
+      // Beside the form, not under it.
+      final form = find.byType(TextField).first;
+      expect(tester.getTopLeft(samping).dx,
+          greaterThanOrEqualTo(tester.getTopRight(form).dx));
+      expect(tester.getTopLeft(samping).dy,
+          lessThan(tester.getBottomLeft(form).dy));
+    });
+
+    testWidgets('its amounts line up at the right edge, under Total dibayar',
+        (tester) async {
+      await pumpNew(tester);
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      final kanan = tester.getTopRight(panel()).dx - 20;
+      for (final key in ['total-nominal', 'total-potongan']) {
+        expect(tester.getTopRight(find.byKey(Key(key))).dx, closeTo(kanan, 1),
+            reason: key);
+      }
     });
 
     testWidgets('tapping it opens the details, tapping again closes them',

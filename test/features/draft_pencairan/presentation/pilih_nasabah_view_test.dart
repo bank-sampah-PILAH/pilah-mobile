@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
@@ -49,7 +50,12 @@ void main() {
     answer();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {Size? size}) async {
+    if (size != null) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
     final router = GoRouter(
       navigatorKey: rootNavigatorKey,
       routes: [
@@ -312,24 +318,61 @@ void main() {
       expect(find.byKey(const Key('kandidat-n-3')), findsOneWidget);
     });
 
+    testWidgets(
+        'on a desktop window the list and its Lanjut share a centred column',
+        (tester) async {
+      await pump(tester, size: const Size(1440, 900));
+
+      final baris = find.byKey(const Key('kandidat-n-1'));
+      expect(tester.getSize(baris).width,
+          lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
+      expect(tester.getCenter(baris).dx, closeTo(720, 1),
+          reason: 'centred in the window');
+      // The button that takes the pick stays in that column, not at the far
+      // edge of the window.
+      expect(tester.getTopRight(find.byKey(const Key('lanjut'))).dx,
+          lessThanOrEqualTo(720 + LayoutBreakpoint.formMaxWidth / 2));
+    });
+
     group('the saldo minimal sheet', () {
-      Future<void> open(WidgetTester tester) async {
-        await pump(tester);
+      // A phone unless a test says otherwise: the container follows the width.
+      Future<void> open(WidgetTester tester,
+          {Size size = const Size(390, 844)}) async {
+        await pump(tester, size: size);
         await tester.ensureVisible(find.byKey(const Key('pf-saldo')));
         await tester.tap(find.byKey(const Key('pf-saldo')));
         await tester.pumpAndSettle();
       }
 
-      testWidgets('is a white rounded sheet, not a plain dialog',
+      testWidgets('on a phone is a white rounded sheet, not a dialog',
           (tester) async {
         await open(tester);
 
-        expect(find.byType(AlertDialog), findsNothing);
-        expect(find.byType(BottomSheet), findsOneWidget);
-        final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
-        expect(sheet.backgroundColor, Colors.white);
-        expect(sheet.shape, isA<RoundedRectangleBorder>());
+        expect(find.byType(Dialog), findsNothing);
+        final box = tester.widget<Container>(find
+            .descendant(
+                of: find.byType(BottomSheet), matching: find.byType(Container))
+            .first);
+        final decoration = box.decoration! as BoxDecoration;
+        expect(decoration.color, Colors.white);
+        expect(decoration.borderRadius,
+            const BorderRadius.vertical(top: Radius.circular(24)));
         expect(find.text('Saldo minimal'), findsWidgets);
+      });
+
+      testWidgets('in a browser window is a centred dialog that still applies',
+          (tester) async {
+        await open(tester, size: const Size(1440, 900));
+
+        expect(find.byType(BottomSheet), findsNothing);
+        expect(find.byType(Dialog), findsOneWidget);
+
+        await tester.tap(find.text('Rp 250 rb'));
+        await tester.tap(find.byKey(const Key('terapkan-saldo-min')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dialog), findsNothing);
+        expect(chip(tester, 'pf-saldo').label, 'Saldo ≥ Rp 250.000');
       });
 
       testWidgets('offers amounts to pick with one tap', (tester) async {
