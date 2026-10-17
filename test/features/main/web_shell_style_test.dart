@@ -44,7 +44,14 @@ void main() {
       final panel =
           tester.widget<DecoratedBox>(find.byKey(RoleNavigationRail.panelKey));
       final decoration = panel.decoration as BoxDecoration;
-      expect(decoration.color, Colors.white);
+      expect(
+          tester
+              .widget<NavigationRail>(find.byType(NavigationRail))
+              .backgroundColor,
+          Colors.white);
+      // The rail is at least 256 wide, so its own white fill spills over an
+      // edge drawn behind it. The border has to be painted on top.
+      expect(panel.position, DecorationPosition.foreground);
       expect((decoration.border! as Border).right.color, AppColors.grey200);
       expect((decoration.border! as Border).right.width, greaterThan(0));
     });
