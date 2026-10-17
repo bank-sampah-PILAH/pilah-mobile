@@ -39,51 +39,51 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(8, 0, 24, 24),
           children: [
             const AppBackHeader(title: 'Atur Ulang Kata Sandi'),
-            const Icon(
-              Icons.lock_reset,
-              color: AppColors.greenDark,
-              size: 100,
-            ),
-            Text(
-              'Lupa kata sandi?',
-              style: AppTextStyle.headline1.copyWith(
-                color: AppColors.black,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.lock_reset,
+                    color: AppColors.greenDark,
+                    size: 100,
+                  ),
+                  Text(
+                    'Lupa kata sandi?',
+                    style: AppTextStyle.headline1.copyWith(
+                      color: AppColors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Kami akan mengirimkan OTP untuk mengganti kata sandimu',
+                    style: AppTextStyle.regularSemiBold.copyWith(
+                      color: AppColors.grey100,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  AppTextField(
+                    controller: _phoneController,
+                    label: 'Nomor Telepon',
+                    hint: 'Masukkan nomor telepon...',
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      PhoneFormatter(),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  AppButton(
+                    label: 'Kirim',
+                    onPressed: () {
+                      context.pop();
+                    },
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            Text(
-              'Kami akan mengirimkan OTP untuk mengganti kata sandimu',
-              style: AppTextStyle.regularSemiBold.copyWith(
-                color: AppColors.grey100,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(
-              height: 24,
-            ),
-            AppTextField(
-              controller: _phoneController,
-              label: 'Nomor Telepon',
-              hint: 'Masukkan nomor telepon...',
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                PhoneFormatter(),
-              ],
-            ),
-            const SizedBox(
-              height: 24,
-            ),
-            AppButton(
-              label: 'Kirim',
-              onPressed: () {
-                context.pop();
-              },
             ),
           ],
         ),
