@@ -202,6 +202,42 @@ void main() {
     );
   });
 
+  testWidgets('shrinking to compact closes the open panel', (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('jadwal-form')),
+      findsNothing,
+      reason: 'MasterDetailLayout drops the detail at compact anyway; the page '
+          'must not keep believing a panel is open',
+    );
+  });
+
+  testWidgets('after shrinking, the add button gives a sheet and no stale panel',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
+    expect(
+      find.byType(BottomSheet),
+      findsOneWidget,
+      reason: 'the reopened form belongs in the container for the new width',
+    );
+  });
+
   testWidgets('widening past expanded does not resurrect a closed panel',
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
