@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
@@ -153,10 +154,11 @@ class _TableBody extends StatelessWidget {
           return const _Skeleton();
         }
         if (state is NasabahError) {
-          return EmptyView(
-            title: 'Gagal Memuat Data',
-            subtitle: state.message,
-            icon: Icons.error_outline,
+          return PageStateView(
+            state: PageState.error,
+            errorMessage: state.message,
+            onRetry: context.read<NasabahCubit>().loadNasabah,
+            child: const SizedBox.shrink(),
           );
         }
         if (state is! NasabahLoaded) return const SizedBox.shrink();
