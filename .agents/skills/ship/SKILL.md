@@ -189,7 +189,7 @@ cookie store to read. Never set `GH_SESSION_TOKEN`.
 EMPTY="$(mktemp -d)"
 env -u GH_SESSION_TOKEN HOME="$EMPTY" XDG_CONFIG_HOME="$EMPTY/c" \
   XDG_DATA_HOME="$EMPTY/d" XDG_CACHE_HOME="$EMPTY/k" GH_TOKEN="$(gh auth token)" \
-  ~/.local/share/gh/extensions/gh-image/gh-image \\
+  ~/.local/share/gh/extensions/gh-image/gh-image \
   --repo <owner>/<repo> ./shot-1.png ./shot-2.png
 ```
 
