@@ -311,6 +311,10 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   Widget _buildSimpanButton() {
+    // Diangkat keluar dari ternary `_isSaving`: menuliskannya di dalam sana
+    // membuat dua ternary bersarang, dan yang di dalam menjawab pertanyaan
+    // yang berbeda — mode form, bukan keadaan simpan.
+    final label = _isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah';
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -334,7 +338,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
                 ),
               )
             : Text(
-                _isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah',
+                label,
                 // headline3 sudah berukuran 16, jadi tidak ada fontSize yang
                 // perlu ditulis ulang di luar `lib/design/`.
                 style: AppTextStyle.headline3.copyWith(
