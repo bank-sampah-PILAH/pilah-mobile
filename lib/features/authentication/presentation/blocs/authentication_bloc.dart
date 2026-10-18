@@ -23,6 +23,7 @@ class AuthenticationBloc
   final AuthenticationUseCases _useCases;
   final LoginWithGoogleUseCase _loginWithGoogleUseCase;
   final bool _isWeb;
+  AuthEntity? _activeSession;
 
   AuthenticationBloc(
     this._useCases,
@@ -42,16 +43,14 @@ class AuthenticationBloc
 
   Future _onPostLoginEvent(
       PostLoginEvent event, Emitter<AuthenticationStates> emitter) async {
-    emitter(PostLoginLoadingState());
-    final response = await _useCases.postLogin(event.username, event.password);
-    await response.fold(
-      (l) {
-        emitter(PostLoginErrorState(message: l.message ?? ''));
-      },
-      (r) async {
-        await _useCases.saveToken(r.token, r.token);
-        emitter(PostLoginSuccessState(auth: r));
-      },
+    final current = state;
+    if (current is Authenticated) _activeSession = current.authEntity;
+    emitter(AuthenticationLoading());
+    final response = await _useCases.postLogin(event.email, event.password);
+    response.fold(
+      (failure) =>
+          emitter(AuthenticationFailure(message: failure.displayMessage)),
+      (entity) => _emitAuthenticated(emitter, entity),
     );
   }
 
@@ -68,6 +67,8 @@ class AuthenticationBloc
     LoginWithGoogleRequested event,
     Emitter<AuthenticationStates> emitter,
   ) async {
+    final current = state;
+    if (current is Authenticated) _activeSession = current.authEntity;
     emitter(AuthenticationLoading());
 
     final response = await _loginWithGoogleUseCase.execute(event.idToken);
@@ -79,7 +80,7 @@ class AuthenticationBloc
       },
       (outcome) {
         if (outcome is GoogleSession) {
-          emitter(Authenticated(authEntity: outcome.auth));
+          _emitAuthenticated(emitter, outcome.auth);
         } else if (outcome is GoogleRegistrationRequired) {
           emitter(GoogleRegistrationPending(registration: outcome));
         } else {
@@ -124,7 +125,7 @@ class AuthenticationBloc
           ));
         }
       },
-      (entity) => emitter(Authenticated(authEntity: entity)),
+      (entity) => _emitAuthenticated(emitter, entity),
     );
   }
 
@@ -136,6 +137,8 @@ class AuthenticationBloc
     ChangeGoogleAccountRequested event,
     Emitter<AuthenticationStates> emitter,
   ) async {
+    final current = state;
+    if (current is Authenticated) _activeSession = current.authEntity;
     try {
       await GoogleSignIn.instance.disconnect();
     } catch (_) {}
@@ -149,10 +152,12 @@ class AuthenticationBloc
     CheckSessionRequested event,
     Emitter<AuthenticationStates> emitter,
   ) async {
+    final current = state;
+    if (current is Authenticated) _activeSession = current.authEntity;
     emitter(AuthenticationLoading());
 
     if (!await _useCases.hasSession()) {
-      emitter(Unauthenticated());
+      _emitUnauthenticated(emitter);
       return;
     }
 
@@ -161,10 +166,10 @@ class AuthenticationBloc
       (failure) async {
         // Token missing/expired/invalid — drop the stale session.
         await _useCases.logout();
-        emitter(Unauthenticated());
+        _emitUnauthenticated(emitter);
       },
       (entity) async {
-        emitter(Authenticated(authEntity: entity));
+        _emitAuthenticated(emitter, entity);
       },
     );
   }
@@ -182,7 +187,7 @@ class AuthenticationBloc
       }
     }
     await _useCases.logout();
-    emitter(Unauthenticated());
+    _emitUnauthenticated(emitter);
   }
 
   /// Silently re-fetches the current user (no loading state, keeps the current
@@ -194,7 +199,30 @@ class AuthenticationBloc
     final result = await _useCases.getMe();
     result.fold(
       (_) {},
-      (entity) => emitter(Authenticated(authEntity: entity)),
+      (entity) => _emitAuthenticated(emitter, entity),
     );
+  }
+
+  void _emitAuthenticated(
+    Emitter<AuthenticationStates> emitter,
+    AuthEntity entity,
+  ) {
+    final current = state;
+    final previous = _activeSession ??
+        (current is Authenticated ? current.authEntity : null);
+    final previousId = previous?.id;
+    final nextId = entity.id;
+    final sameAccount = previousId != null && nextId != null
+        ? previousId == nextId
+        : previous?.email.trim().toLowerCase() ==
+            entity.email.trim().toLowerCase();
+    if (previous != null && !sameAccount) _emitUnauthenticated(emitter);
+    _activeSession = entity;
+    emitter(Authenticated(authEntity: entity));
+  }
+
+  void _emitUnauthenticated(Emitter<AuthenticationStates> emitter) {
+    _activeSession = null;
+    emitter(Unauthenticated());
   }
 }

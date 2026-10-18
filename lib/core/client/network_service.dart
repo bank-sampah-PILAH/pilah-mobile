@@ -243,7 +243,7 @@ final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
 ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}''',
       'headers': resp.requestOptions.headers,
       'queryParams': resp.requestOptions.queryParameters,
-      'body': resp.requestOptions.data,
+      'body': _requestBodyForLog(resp.requestOptions),
       'response': isBytes ? 'bytes' : resp.data,
     });
   }
@@ -255,7 +255,7 @@ ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}'''
 ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOptions.path}''',
       'headers': err.requestOptions.headers,
       'queryParams': err.requestOptions.queryParameters,
-      'body': err.requestOptions.data,
+      'body': _requestBodyForLog(err.requestOptions),
       'response': err.response?.data,
       'type': err.type,
       // `type` alone can't tell a dropped connection from a parse failure —
@@ -274,6 +274,19 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
   }
   return handler.next(err);
 });
+
+Object? _requestBodyForLog(RequestOptions options) {
+  final data = options.data;
+  try {
+    final body = data is String ? jsonDecode(data) : data;
+    if (body is Map && body.containsKey('password')) {
+      return {...body, 'password': '[REDACTED]'};
+    }
+  } on FormatException {
+    if (data is String && data.contains('password')) return '[REDACTED]';
+  }
+  return data;
+}
 
 final options = Options(
   receiveTimeout: const Duration(milliseconds: 120000),
