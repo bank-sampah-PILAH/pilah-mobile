@@ -77,6 +77,19 @@ void main() {
     expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
   });
 
+  testWidgets(
+      'a wide screen puts the search beside the title on the web gutter',
+      (tester) async {
+    await openPage(tester, size: const Size(1000, 900));
+
+    final title = tester.getRect(find.text('Jenis Sampah & Harga'));
+    final search = tester.getRect(find.byType(TextField));
+    expect(title.left, 32);
+    expect(search.width, 360);
+    expect(search.left, greaterThan(title.right));
+    expect(search.top, lessThan(title.bottom));
+  });
+
   testWidgets('lists active jenis sampah with their price', (tester) async {
     await openPage(tester);
 
