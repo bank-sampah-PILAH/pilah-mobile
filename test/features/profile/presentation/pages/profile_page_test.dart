@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -83,7 +84,8 @@ void main() {
       (tester) async {
     await openPage(tester);
 
-    expect(find.text('Profil & Pengaturan'), findsOneWidget);
+    expect(find.widgetWithText(AppBackHeader, 'Profil & Pengaturan'),
+        findsOneWidget);
     expect(find.text('Siti Aminah'), findsOneWidget);
     expect(
         find.widgetWithText(TextFormField, 'Bank Sampah BTH'), findsOneWidget);

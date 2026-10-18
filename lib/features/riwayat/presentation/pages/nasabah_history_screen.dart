@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -54,7 +55,8 @@ class NasabahHistoryScreen extends StatelessWidget {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: NasabahStyle.emerald,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
                               ),
                               child: Row(
                                 children: [
@@ -116,7 +118,8 @@ class NasabahHistoryScreen extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: NasabahStyle.line
                                           .withValues(alpha: 0.25),
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.md),
                                     ),
                                     child: Row(
                                       children: [

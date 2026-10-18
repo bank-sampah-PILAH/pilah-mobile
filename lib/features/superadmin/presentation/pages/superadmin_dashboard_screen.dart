@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
@@ -149,8 +152,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       decoration: const BoxDecoration(
         color: AppColors.greenDark,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+          bottomLeft: Radius.circular(AppRadius.xl),
+          bottomRight: Radius.circular(AppRadius.xl),
         ),
       ),
       child: Column(
@@ -186,7 +189,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                   decoration: BoxDecoration(
                     border:
                         Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child:
                       const Icon(Icons.logout, color: Colors.white, size: 20),
@@ -320,31 +323,13 @@ class _PendingBankCardState extends State<PendingBankCard> {
     required String confirmLabel,
     required bool destructive,
   }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        content: Text(message, style: const TextStyle(fontSize: 14)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: destructive ? Colors.red : AppColors.greenDark,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: Text(confirmLabel),
-          ),
-        ],
-      ),
+    return showAppConfirmDialog(
+      context,
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      destructive: destructive,
     );
-    return result ?? false;
   }
 
   Future<void> _runAction({required bool approve}) async {
@@ -432,63 +417,32 @@ class _PendingBankCardState extends State<PendingBankCard> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton(
+                    label: 'Lihat Bukti',
+                    variant: AppButtonVariant.tonal,
+                    size: AppButtonSize.compact,
+                    icon: Icons.image_outlined,
                     onPressed: () => showProofImageDialog(context,
                         imageUrl: bank.fotoKegiatan),
-                    icon: const Icon(Icons.image_outlined,
-                        size: 14, color: AppColors.greenDark),
-                    label: const Text('Lihat Bukti',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
-                      foregroundColor: AppColors.greenDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: AppButton(
+                    label: 'Setujui',
+                    size: AppButtonSize.compact,
+                    icon: Icons.check,
                     onPressed: () => _runAction(approve: true),
-                    icon:
-                        const Icon(Icons.check, size: 14, color: Colors.white),
-                    label: const Text('Setujui',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: AppButton(
+                    label: 'Tolak',
+                    variant: AppButtonVariant.destructiveOutlined,
+                    size: AppButtonSize.compact,
+                    icon: Icons.close,
                     onPressed: () => _runAction(approve: false),
-                    icon: const Icon(Icons.close, size: 14, color: Colors.red),
-                    label: const Text('Tolak',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red, width: 1),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
                   ),
                 ),
               ],
@@ -576,7 +530,7 @@ class _CardShell extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -593,8 +547,8 @@ class _CardShell extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accentColor,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
+                  topLeft: Radius.circular(AppRadius.lg),
+                  bottomLeft: Radius.circular(AppRadius.lg),
                 ),
               ),
             ),
@@ -642,7 +596,8 @@ class _CardHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-              color: badgeBg, borderRadius: BorderRadius.circular(12)),
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(AppRadius.md)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

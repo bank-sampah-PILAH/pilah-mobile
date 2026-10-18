@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -167,7 +168,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                         padding: const EdgeInsets.all(40),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
                           border: Border.all(color: AppColors.greenLight),
                           boxShadow: [
                             BoxShadow(
