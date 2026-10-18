@@ -77,8 +77,8 @@ class DraftListView extends StatelessWidget {
           child: BlocBuilder<DraftListCubit, DraftListState>(
             builder: (context, state) => Column(
               children: [
-                AppBackHeader(
-                  backKey: const Key('kembali'),
+                const AppBackHeader(
+                  backKey: Key('kembali'),
                   title: 'Pencairan',
                 ),
                 const _SearchBar(),
