@@ -97,6 +97,15 @@ void main() {
           result.fold((l) => l.displayMessage, (r) => ''), 'Kredensial salah');
     });
 
+    test('a malformed success body is returned as a general failure', () async {
+      api.on('POST', '/api/v1/auth/login', json: {});
+
+      final result = await stack.interactor.postLogin('siti@x.test', 'secret');
+
+      expect(result.fold((error) => error, (auth) => null),
+          isA<GeneralException>());
+    });
+
     test('the request serialises its fields', () {
       expect(const PostLoginRequest(email: 'a', password: 'b').toJson(),
           {'email': 'a', 'password': 'b'});

@@ -60,6 +60,16 @@ void main() {
         find.byKey(const ValueKey('login-password-field')), 'correct horse');
   }
 
+  String fieldValue(WidgetTester tester, String key) => tester
+      .widget<TextField>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(TextField),
+        ),
+      )
+      .controller!
+      .text;
+
   Future<void> tapEmailSignIn(WidgetTester tester) async {
     final button = find.text('Masuk dengan Email');
     await tester.ensureVisible(button);
@@ -130,6 +140,23 @@ void main() {
     expect(find.byKey(const ValueKey('login-email-field')), findsOneWidget);
     expect(find.byKey(const ValueKey('login-password-field')), findsOneWidget);
     expect(find.text('Masuk dengan Email'), findsOneWidget);
+  });
+
+  testWidgets(
+      'preserves credentials when resizing across the layout breakpoint',
+      (tester) async {
+    await pumpPage(tester);
+    await enterCredentials(tester);
+
+    tester.view.physicalSize = const Size(1440, 900);
+    await tester.pumpAndSettle();
+    expect(fieldValue(tester, 'login-email-field'), 'ayu@example.com');
+    expect(fieldValue(tester, 'login-password-field'), 'correct horse');
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(fieldValue(tester, 'login-email-field'), 'ayu@example.com');
+    expect(fieldValue(tester, 'login-password-field'), 'correct horse');
   });
 
   testWidgets('email sign-in success uses the existing authenticated route',
