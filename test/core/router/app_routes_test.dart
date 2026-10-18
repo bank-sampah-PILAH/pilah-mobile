@@ -222,6 +222,45 @@ void main() {
       expect(find.text('Cair Oktober'), findsOneWidget);
     });
 
+    testWidgets(
+        'a saved draft reopens from its link alone (a refreshed web tab)',
+        (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/draft-pencairan/editor?id=d-1');
+
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Cair Oktober'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a link whose id is not a draft id goes to the list and asks nothing',
+        (tester) async {
+      final router = await boot(tester);
+      // The router is shared, so booting can replay the previous test's page;
+      // let it settle on the list before counting.
+      await visit(tester, router, DraftListPage.route);
+      final sebelum = api.requests.length;
+
+      for (final id in ['..%2Fnasabah', 'd-1%2Fkonfirmasi', '%20']) {
+        await visit(tester, router, '/draft-pencairan/editor?id=$id');
+
+        expect(find.byType(DraftEditorPage), findsNothing, reason: id);
+        expect(find.byType(DraftListPage), findsOneWidget, reason: id);
+      }
+      // The list loads itself; nothing beyond it is built from the link.
+      const daftar = {'/api/v1/draft-pencairan', '/api/v1/draft-pencairan/'};
+      expect(
+          api.requests
+              .skip(sebelum)
+              .map((r) => r.path)
+              .where((path) => path.contains('draft-pencairan'))
+              .where((path) => !daftar.contains(path)),
+          isEmpty,
+          reason: 'no request built from the link');
+    });
+
     testWidgets('opening the draft editor without a draft goes to the list',
         (tester) async {
       final router = await boot(tester);

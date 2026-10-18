@@ -58,10 +58,6 @@ class CatatPencairanView extends StatefulWidget {
     this.initialCustomer,
   });
 
-  /// Width of the saldo and submit panel on a wide window; the same as
-  /// Setoran Baru's summary panel.
-  static const double lebarPanel = 340;
-
   @override
   State<CatatPencairanView> createState() => _CatatPencairanViewState();
 }
@@ -325,7 +321,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                         children: [
                           Expanded(child: formScroll),
                           SizedBox(
-                            width: CatatPencairanView.lebarPanel,
+                            width: LayoutBreakpoint.sidePanelWidth,
                             child: SingleChildScrollView(
                               key: const Key('catat-pencairan-panel'),
                               padding: const EdgeInsets.all(16),
