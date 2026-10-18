@@ -21,6 +21,7 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_controls.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -1372,6 +1373,26 @@ void main() {
           greaterThanOrEqualTo(tester.getTopRight(form).dx));
       expect(tester.getTopLeft(samping).dy,
           lessThan(tester.getBottomLeft(form).dy));
+    });
+
+    testWidgets('resizing across the desktop breakpoint keeps the search',
+        (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+      final cari = find.descendant(
+          of: find.byType(EditorItemControls),
+          matching: find.byType(TextField));
+      await tester.enterText(cari, 'budi');
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+
+      tester.view.physicalSize = const Size(420, 2600);
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+      expect(tester.widget<TextField>(cari).controller!.text, 'budi');
+
+      tester.view.physicalSize = const Size(1440, 900);
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
     });
 
     testWidgets('its amounts line up at the right edge, under Total dibayar',
