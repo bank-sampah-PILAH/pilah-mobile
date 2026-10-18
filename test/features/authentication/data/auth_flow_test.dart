@@ -42,6 +42,22 @@ void main() {
       expect(logs.join('\n'), isNot(contains('do-not-log')));
     });
 
+    test('never logs the password from a rejected login', () async {
+      api.on('POST', '/api/v1/auth/login',
+          status: 401, json: {'error': 'Kredensial salah'});
+      final logs = <String>[];
+      void capture(LogEvent event) => logs.add(event.message.toString());
+      Logger.addLogListener(capture);
+      try {
+        await stack.interactor.postLogin('siti@x.test', 'rejected-secret');
+      } finally {
+        Logger.removeLogListener(capture);
+      }
+
+      expect(logs, isNotEmpty);
+      expect(logs.join('\n'), isNot(contains('rejected-secret')));
+    });
+
     test('maps the response into the session entity', () async {
       api.on('POST', '/api/v1/auth/login',
           json: authPayload(bankStatus: 'active'));
