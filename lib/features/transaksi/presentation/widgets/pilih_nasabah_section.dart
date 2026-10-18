@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart';
@@ -39,12 +40,12 @@ class PilihNasabahSection extends StatelessWidget {
               onCustomerSelected(result);
             }
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
                   color: hasError
                       ? AppColors.danger // errorColor
@@ -84,7 +85,7 @@ class PilihNasabahSection extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           color: selectedCustomer!.avatarColor,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         alignment: Alignment.center,
                         child: Text(

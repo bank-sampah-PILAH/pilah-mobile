@@ -1,4 +1,8 @@
 import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -249,45 +253,10 @@ class _ProfileViewState extends State<_ProfileView>
         body: SafeArea(
           child: Column(
             children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.arrow_back,
-                            color: Colors.grey[800], size: 20),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          'Profil & Pengaturan',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyle.headline1.copyWith(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 36),
-                  ],
-                ),
+              AppBackHeader(
+                title: 'Profil & Pengaturan',
+                onBack: () => context.pop(),
               ),
-              const SizedBox(height: 16),
 
               // Tab Bar
               Container(
@@ -332,79 +301,43 @@ class _ProfileViewState extends State<_ProfileView>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isSavingSettings ? null : _onSaveSettings,
-                          icon: _isSavingSettings
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.save_outlined,
-                                  color: Colors.white, size: 20),
-                          label: Text(
-                            _isSavingSettings
-                                ? 'Menyimpan...'
-                                : 'Simpan Pengaturan',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.greenDark,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
+                      AppButton(
+                        label: _isSavingSettings
+                            ? 'Menyimpan...'
+                            : 'Simpan Pengaturan',
+                        icon: Icons.save_outlined,
+                        leading: _isSavingSettings
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : null,
+                        onPressed: _isSavingSettings ? null : _onSaveSettings,
                       ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final confirmed = await showAppConfirmDialog(
-                              context,
-                              title: 'Keluar dari akun?',
-                              message: 'Anda perlu masuk kembali untuk '
-                                  'mengakses akun ini.',
-                              confirmLabel: 'Ya, Keluar',
-                              destructive: true,
-                            );
-                            if (confirmed && context.mounted) {
-                              context
-                                  .read<AuthenticationBloc>()
-                                  .add(LogoutRequested());
-                            }
-                          },
-                          icon: Icon(Icons.logout,
-                              color: Colors.red[600], size: 20),
-                          label: Text(
-                            'Keluar dari Aplikasi',
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.red[600],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            side: BorderSide(color: Colors.red[200]!),
-                            backgroundColor: Colors.white,
-                          ),
-                        ),
+                      AppButton(
+                        label: 'Keluar dari Aplikasi',
+                        variant: AppButtonVariant.destructiveOutlined,
+                        icon: Icons.logout,
+                        onPressed: () async {
+                          final confirmed = await showAppConfirmDialog(
+                            context,
+                            title: 'Keluar dari akun?',
+                            message: 'Anda perlu masuk kembali untuk '
+                                'mengakses akun ini.',
+                            confirmLabel: 'Ya, Keluar',
+                            destructive: true,
+                          );
+                          if (confirmed && context.mounted) {
+                            context
+                                .read<AuthenticationBloc>()
+                                .add(LogoutRequested());
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -515,7 +448,7 @@ class _ProfileViewState extends State<_ProfileView>
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     _roleLabel(auth?.role),
@@ -663,7 +596,16 @@ class _ProfileViewState extends State<_ProfileView>
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              onTap: () => context.read<ProfileCubit>().pickLogo(),
+              onTap: () async {
+                try {
+                  await context.read<ProfileCubit>().pickLogo();
+                } catch (_) {
+                  if (!mounted) return;
+                  AppNotification.showError(context,
+                      title: 'Gagal',
+                      message: 'Foto tidak dapat dibaca. Silakan coba lagi.');
+                }
+              },
               child: Container(
                 width: _logoDiameter,
                 height: _logoDiameter,
@@ -710,20 +652,6 @@ class _ProfileViewState extends State<_ProfileView>
         width: _logoDiameter,
         height: _logoDiameter,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _logoPlaceholder,
-      );
-    }
-
-    final file = state.selectedLogoFile;
-    if (file != null) {
-      return Image.file(
-        file,
-        width: _logoDiameter,
-        height: _logoDiameter,
-        fit: BoxFit.cover,
-        // The file came from the gallery a moment ago, so this is close to
-        // unreachable — but an unreadable pick should still leave a logo on
-        // screen rather than a broken-image glyph inside the avatar.
         errorBuilder: (_, __, ___) => _logoPlaceholder,
       );
     }
@@ -785,7 +713,7 @@ class _ProfileViewState extends State<_ProfileView>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: AppColors.greenDark,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,29 +735,11 @@ class _ProfileViewState extends State<_ProfileView>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _onCopyInvite,
-                        icon: const Icon(Icons.copy,
-                            color: AppColors.greenDark, size: 18),
-                        label: Text(
-                          'Salin Link Undangan',
-                          style: AppTextStyle.small.copyWith(
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.greenDark,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
+                    AppButton(
+                      label: 'Salin Link Undangan',
+                      variant: AppButtonVariant.outlined,
+                      icon: Icons.copy,
+                      onPressed: _onCopyInvite,
                     ),
                   ],
                 ),
@@ -847,7 +757,7 @@ class _ProfileViewState extends State<_ProfileView>
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.greenLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     '${team.length} aktif',
@@ -949,7 +859,7 @@ class _ProfileViewState extends State<_ProfileView>
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.greenDark,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Text(
                       'Anda',
@@ -969,7 +879,7 @@ class _ProfileViewState extends State<_ProfileView>
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.greenLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Text(
               member.isPrimary ? 'Pengurus Utama' : 'Pengurus',
@@ -1037,32 +947,10 @@ class _ProfileViewState extends State<_ProfileView>
           maxLines: maxLines,
           keyboardType: keyboardType,
           style: AppTextStyle.small.copyWith(color: Colors.black87),
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: Colors.grey[50],
+          decoration: appInputDecoration(
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: iconColor, size: 20)
                 : null,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.greenDark, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1.5),
-            ),
           ),
         ),
       ],
@@ -1094,7 +982,7 @@ class _ProfileViewState extends State<_ProfileView>
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.greenLight.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   children: [
@@ -1129,22 +1017,7 @@ class _ProfileViewState extends State<_ProfileView>
                 minLines: 3,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.greenDark),
-                  ),
-                ),
+                decoration: appInputDecoration(),
                 style: AppTextStyle.small.copyWith(color: Colors.black87),
               ),
               const SizedBox(height: 24),
@@ -1171,7 +1044,7 @@ class _ProfileViewState extends State<_ProfileView>
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppColors.greenLight.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

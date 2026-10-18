@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_bottom_sheet.dart';
@@ -52,12 +53,12 @@ class PilihBankSampahSection extends StatelessWidget {
                     onBankSelected(result);
                   }
                 },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: enabled ? Colors.white : AppColors.fill,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
                 color: hasError
                     ? AppColors.danger
@@ -99,7 +100,7 @@ class PilihBankSampahSection extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           color: AppColors.greenDark.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         alignment: Alignment.center,
                         child: const Icon(Icons.recycling,

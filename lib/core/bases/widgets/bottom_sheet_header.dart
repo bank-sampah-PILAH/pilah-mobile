@@ -1,21 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final String title;
 
   /// Apakah pegangan tarik di atas judul ikut ditampilkan.
   ///
-  /// Default true, karena hampir semua pemakai header ini memang bottom sheet.
-  /// Picker yang tampil sebagai dialog pada jendela lebar mematikannya: dialog
-  /// tidak dapat ditarik, jadi di sana pegangan itu janji palsu.
-  final bool showDragHandle;
+  /// Null berarti otomatis: tampil pada bottom sheet, tersembunyi di dalam
+  /// [DialogSurface] karena dialog tidak dapat ditarik dan pegangan di sana
+  /// janji palsu. Picker yang memutuskannya sendiri memberi nilai eksplisit.
+  final bool? showDragHandle;
+
+  static const dragHandleKey = ValueKey('bottom-sheet-drag-handle');
+
+  /// Cara menutup, bila bukan dengan menutup route.
+  ///
+  /// Default null berarti `context.pop()`, yang benar untuk bottom sheet dan
+  /// dialog karena keduanya memang sebuah route. Panel berada inline di dalam
+  /// body halaman, jadi ia harus memberikan caranya sendiri; tanpa ini tombol
+  /// silangnya akan menutup halaman, bukan panelnya.
+  final VoidCallback? onClose;
 
   const BottomSheetHeader({
     super.key,
     required this.title,
-    this.showDragHandle = true,
+    this.showDragHandle,
+    this.onClose,
   });
 
   @override
@@ -24,38 +38,37 @@ class BottomSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showDragHandle) ...[
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+        if (showDragHandle ?? !DialogSurface.of(context)) ...[
+          const AppSheetHandle(key: dragHandleKey),
           const SizedBox(height: 24),
         ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+            // Judul mengambil ruang yang tersisa setelah tombol tutup, bukan
+            // lebar alaminya. Tanpa ini judul sepanjang "Tambah Jenis Sampah"
+            // melimpah ke kanan pada lebar telepon — 372 px ruang isi sheet
+            // tidak cukup untuk judul 20 px tebal berdampingan dengan tombol
+            // tutup 36 px, dan yang melimpah terpotong tanpa dapat dibaca.
+            Expanded(
+              child: Text(
+                title,
+                style: AppTextStyle.headline1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
               ),
             ),
+            const SizedBox(width: 12),
             InkWell(
-              onTap: () => context.pop(),
-              borderRadius: BorderRadius.circular(12),
+              onTap: onClose ?? () => context.pop(),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Icon(Icons.close, color: Colors.grey[600], size: 20),
               ),

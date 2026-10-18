@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 import 'layout_breakpoint.dart';
 
@@ -99,7 +100,8 @@ Future<T?> showAdaptivePicker<T>({
             height: size.height * PickerPresentation.heightFactor,
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
             ),
             padding: padding,
             child: builder(sheetContext, presentation),
@@ -114,7 +116,7 @@ Future<T?> showAdaptivePicker<T>({
         builder: (dialogContext) => Dialog(
           backgroundColor: Colors.white,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(24)),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
           ),
           // Ukuran eksplisit, bukan sekadar batas: Dialog memberi anaknya
           // constraint longgar, dan isi picker memakai Expanded yang menuntut
@@ -170,7 +172,8 @@ Future<T?> showAdaptiveConfirmation<T>({
         builder: (sheetContext) => Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
           ),
           padding: padding,
           child: builder(sheetContext, presentation),
@@ -187,7 +190,7 @@ Future<T?> showAdaptiveConfirmation<T>({
           child: Dialog(
             backgroundColor: Colors.white,
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(24)),
+              borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
             ),
             // Lebar tetap, tinggi mengikuti isi: tidak ada daftar yang bergulir
             // di sini, jadi memaksakan tinggi hanya menambah ruang kosong.

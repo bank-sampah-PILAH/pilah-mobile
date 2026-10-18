@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -39,7 +40,7 @@ class EditorItemCard extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheet) => Padding(
@@ -68,10 +69,6 @@ class EditorItemCard extends StatelessWidget {
                     key: const Key('terapkan-item'),
                     onPressed: () => Navigator.of(sheetContext)
                         .pop(_PotonganChoice(pilihan)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      foregroundColor: Colors.white,
-                    ),
                     child: const Text('Terapkan'),
                   ),
                   const SizedBox(width: 12),
@@ -134,7 +131,7 @@ class EditorItemCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.statOrangeLight,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text('Disesuaikan',
                       style: AppTextStyle.extraSmall
@@ -247,7 +244,7 @@ class _HasilStrip extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.greenLight,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         children: [
@@ -284,12 +281,12 @@ class _HasilStrip extends StatelessWidget {
         child: InkWell(
           key: Key('potongan-item-$nasabahId'),
           onTap: onEdit,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -399,7 +396,7 @@ class _NominalFieldState extends State<_NominalField> {
   @override
   Widget build(BuildContext context) {
     final red = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       borderSide: const BorderSide(color: Colors.red),
     );
     final base = appInputDecoration(hintText: 'Contoh: 50000');

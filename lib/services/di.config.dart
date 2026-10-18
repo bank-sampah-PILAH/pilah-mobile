@@ -90,8 +90,12 @@ import '../features/harga/domain/use_cases/add_harga_usecase.dart' as _i948;
 import '../features/harga/domain/use_cases/deactivate_harga_usecase.dart'
     as _i989;
 import '../features/harga/domain/use_cases/get_harga_usecase.dart' as _i1009;
+import '../features/harga/domain/use_cases/get_riwayat_harga_usecase.dart'
+    as _i123;
+import '../features/harga/domain/use_cases/ubah_harga_usecase.dart' as _i465;
 import '../features/harga/domain/use_cases/update_harga_usecase.dart' as _i240;
 import '../features/harga/presentation/cubit/harga_cubit.dart' as _i815;
+import '../features/harga/presentation/cubit/riwayat_harga_cubit.dart' as _i867;
 import '../features/jadwal/data/datasources/jadwal_remote_data_source.dart'
     as _i915;
 import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
@@ -414,6 +418,10 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i989.DeactivateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i1009.GetHargaUseCase>(
         () => _i1009.GetHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i123.GetRiwayatHargaUseCase>(
+        () => _i123.GetRiwayatHargaUseCase(gh<_i40.HargaRepository>()));
+    gh.lazySingleton<_i465.UbahHargaUseCase>(
+        () => _i465.UbahHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i240.UpdateHargaUseCase>(
         () => _i240.UpdateHargaUseCase(gh<_i40.HargaRepository>()));
     gh.lazySingleton<_i454.RiwayatAktivitasCubit>(
@@ -451,17 +459,20 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i383.GetTransaksiUseCase>(),
           gh<_i686.PencairanUseCases>(),
         ));
+    gh.factory<_i867.RiwayatHargaCubit>(
+        () => _i867.RiwayatHargaCubit(gh<_i123.GetRiwayatHargaUseCase>()));
+    gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
+          gh<_i268.GetBankSampahUseCase>(),
+          gh<_i958.ApproveBankSampahUseCase>(),
+          gh<_i868.RejectBankSampahUseCase>(),
+        ));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),
           gh<_i240.UpdateHargaUseCase>(),
           gh<_i989.DeactivateHargaUseCase>(),
           gh<_i520.ActivateHargaUseCase>(),
-        ));
-    gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
-          gh<_i268.GetBankSampahUseCase>(),
-          gh<_i958.ApproveBankSampahUseCase>(),
-          gh<_i868.RejectBankSampahUseCase>(),
+          gh<_i465.UbahHargaUseCase>(),
         ));
     gh.lazySingleton<_i932.DashboardCubit>(
         () => _i932.DashboardCubit(gh<_i137.GetDashboardStatsUseCase>()));

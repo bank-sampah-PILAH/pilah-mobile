@@ -18,29 +18,6 @@ abstract final class NasabahStyle {
   // Matches the pill/segmented-control radius used elsewhere on this screen.
   static const inputRadius = 12.0;
 
-  /// A borderless-until-focused text field that reads as part of a
-  /// [NasabahCard] rather than a dropped-in Material form field. Uses the
-  /// screen's own emerald/line tokens instead of the app theme's primary.
-  static InputDecoration input({String? hint}) => InputDecoration(
-        isDense: true,
-        hintText: hint,
-        hintStyle: text(15, color: muted),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(inputRadius),
-          borderSide: const BorderSide(color: line),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(inputRadius),
-          borderSide: const BorderSide(color: line),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(inputRadius),
-          borderSide: const BorderSide(color: emerald, width: 1.5),
-        ),
-      );
-
   static TextStyle text(
     double size, {
     FontWeight weight = FontWeight.w400,

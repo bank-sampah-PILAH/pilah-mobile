@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/pencairan.dart';
@@ -46,45 +52,59 @@ class _RevisiPencairanViewState extends State<RevisiPencairanView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Riwayat Perubahan')),
-      body: BlocBuilder<RevisiPencairanCubit, RevisiPencairanState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case RevisiStatus.loading:
-              return const Center(child: CircularProgressIndicator());
-            case RevisiStatus.failure:
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(state.errorMessage ?? 'Gagal memuat riwayat'),
-                    TextButton(
-                      onPressed: () => context
-                          .read<RevisiPencairanCubit>()
-                          .load(widget.pencairanId),
-                      child: const Text('Coba lagi'),
-                    ),
-                  ],
-                ),
-              );
-            case RevisiStatus.loaded:
-              final riwayat = state.riwayat!;
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _VersiCard(
-                    judul: 'Versi sekarang',
-                    nominal: riwayat.pencairan.nominal,
-                    metode: riwayat.pencairan.metode,
-                    tanggal: riwayat.pencairan.tanggal,
-                    keterangan: riwayat.pencairan.keterangan,
-                    saldoSesudah: riwayat.pencairan.saldoSesudah,
-                  ),
-                  for (final versi in riwayat.revisi) _RevisiCard(versi: versi),
-                ],
-              );
-          }
-        },
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppBackHeader(title: 'Riwayat Perubahan'),
+            Expanded(
+              child: BlocBuilder<RevisiPencairanCubit, RevisiPencairanState>(
+                builder: (context, state) {
+                  switch (state.status) {
+                    case RevisiStatus.loading:
+                      return const Center(child: CircularProgressIndicator());
+                    case RevisiStatus.failure:
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(state.errorMessage ?? 'Gagal memuat riwayat'),
+                            TextButton(
+                              onPressed: () => context
+                                  .read<RevisiPencairanCubit>()
+                                  .load(widget.pencairanId),
+                              child: const Text('Coba lagi'),
+                            ),
+                          ],
+                        ),
+                      );
+                    case RevisiStatus.loaded:
+                      final riwayat = state.riwayat!;
+                      return ContentBounds(
+                        maxWidth: LayoutBreakpoint.formMaxWidth,
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          children: [
+                            _VersiCard(
+                              judul: 'Versi sekarang',
+                              nominal: riwayat.pencairan.nominal,
+                              metode: riwayat.pencairan.metode,
+                              tanggal: riwayat.pencairan.tanggal,
+                              keterangan: riwayat.pencairan.keterangan,
+                              saldoSesudah: riwayat.pencairan.saldoSesudah,
+                            ),
+                            for (final versi in riwayat.revisi)
+                              _RevisiCard(versi: versi),
+                          ],
+                        ),
+                      );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -105,13 +125,12 @@ class _RevisiCard extends StatelessWidget {
       keterangan: versi.keterangan,
       saldoSesudah: versi.saldoSesudah,
       footer: [
-        const SizedBox(height: 8),
-        Text('Alasan perubahan', style: AppTextStyle.small),
-        Text(versi.alasan, style: AppTextStyle.title1),
+        const Divider(height: 24, color: AppColors.border),
+        AppDetailRow(label: 'Alasan perubahan', value: versi.alasan),
         const SizedBox(height: 4),
         Text(
           'Diubah oleh ${versi.diubahOlehNama} · ${_waktu(versi.diubahPada)}',
-          style: AppTextStyle.small,
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
         ),
       ],
     );
@@ -146,19 +165,20 @@ class _VersiCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(judul, style: AppTextStyle.small),
+            AppFieldLabel(judul.toUpperCase()),
             const SizedBox(height: 4),
-            Text('Rp ${CurrencyFormatter.formatNumber(nominal)}',
-                style: AppTextStyle.title1),
             Text(
-              '${metode.label} · ${_waktu(tanggal)}',
-              style: AppTextStyle.small,
+              'Rp ${CurrencyFormatter.formatNumber(nominal)}',
+              style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
             ),
+            const SizedBox(height: 8),
+            AppDetailRow(label: 'Metode', value: metode.label),
+            AppDetailRow(label: 'Tanggal', value: _waktu(tanggal)),
             if (keterangan.isNotEmpty)
-              Text(keterangan, style: AppTextStyle.small),
-            Text(
-              'Saldo sesudah Rp ${CurrencyFormatter.formatNumber(saldoSesudah)}',
-              style: AppTextStyle.small,
+              AppDetailRow(label: 'Keterangan', value: keterangan),
+            AppDetailRow(
+              label: 'Saldo sesudah',
+              value: 'Rp ${CurrencyFormatter.formatNumber(saldoSesudah)}',
             ),
             ...footer,
           ],
@@ -168,9 +188,5 @@ class _VersiCard extends StatelessWidget {
   }
 }
 
-String _waktu(DateTime? waktu) {
-  if (waktu == null) return '-';
-  final h = waktu.hour.toString().padLeft(2, '0');
-  final m = waktu.minute.toString().padLeft(2, '0');
-  return '${formatTanggalId(waktu)}, $h:$m';
-}
+String _waktu(DateTime? waktu) =>
+    waktu == null ? '-' : formatTanggalJamId(waktu);

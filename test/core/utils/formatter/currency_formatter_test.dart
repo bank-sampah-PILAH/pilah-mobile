@@ -27,6 +27,20 @@ void main() {
     });
   });
 
+  group('formatRupiahSen (amounts held in sen)', () {
+    test('shows sen after a comma, and drops them when there are none', () {
+      expect(CurrencyFormatter.formatRupiahSen(333399), 'Rp 3.333,99');
+      expect(CurrencyFormatter.formatRupiahSen(350005), 'Rp 3.500,05');
+      expect(CurrencyFormatter.formatRupiahSen(350000), 'Rp 3.500');
+      expect(CurrencyFormatter.formatRupiahSen(0), 'Rp 0');
+    });
+
+    test('keeps the sign of an amount under one rupiah', () {
+      expect(CurrencyFormatter.formatRupiahSen(-50), 'Rp -0,50');
+      expect(CurrencyFormatter.formatRupiahSen(-350000), 'Rp -3.500');
+    });
+  });
+
   group('formatRupiahValue (backend numbers)', () {
     test('accepts ints, doubles and numeric strings, rounding to rupiah', () {
       expect(CurrencyFormatter.formatRupiahValue(1500), 'Rp 1.500');

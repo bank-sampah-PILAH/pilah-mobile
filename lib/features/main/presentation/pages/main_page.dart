@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -14,6 +15,7 @@ import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class MainPage extends StatelessWidget {
@@ -235,6 +237,12 @@ class _ShellContent extends StatelessWidget {
       );
     }
 
+    final account = context.watch<AuthenticationBloc>().state;
+    final profileName =
+        account is Authenticated ? account.authEntity.name : null;
+    final profileEmail =
+        account is Authenticated ? account.authEntity.email : null;
+
     // Rail menggantikan bottom bar, tidak menemaninya: menampilkan keduanya
     // berarti menawarkan menu yang sama dua kali.
     return Scaffold(
@@ -245,9 +253,17 @@ class _ShellContent extends StatelessWidget {
             limitedNasabah: limitedNasabah,
             currentIndex: railSelected,
             bankSampahNama: bankSampahNama,
+            profileName: profileName,
+            profileEmail: profileEmail,
+            onProfile: () => context.push(AppLocations.profile),
+            profileSelected:
+                GoRouterState.of(context).uri.path == AppLocations.profile,
+            onHome: () => navigationShell.goBranch(0, initialLocation: true),
             onSelected: select,
           ),
-          Expanded(child: ContentBounds(child: body)),
+          Expanded(
+            child: WebContentSurface(child: ContentBounds(child: body)),
+          ),
         ],
       ),
     );

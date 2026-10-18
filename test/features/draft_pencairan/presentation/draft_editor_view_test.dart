@@ -1458,7 +1458,10 @@ void main() {
 
     bool terapkanAktif(WidgetTester tester) =>
         tester
-            .widget<ElevatedButton>(find.byKey(const Key('terapkan-umum')))
+            .widget<ElevatedButton>(find.descendant(
+              of: find.byKey(const Key('terapkan-umum')),
+              matching: find.byType(ElevatedButton),
+            ))
             .onPressed !=
         null;
 

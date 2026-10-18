@@ -6,7 +6,10 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
@@ -186,7 +189,8 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       body: SafeArea(
         child: Column(
           children: [
-            PencairanHeader(
+            AppBackHeader(
+              backKey: const Key('kembali'),
               title: state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
               actions: [
                 ExportMenuButton(
@@ -537,33 +541,11 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
             const SizedBox(height: 8),
           ],
           // Slimmer than the page's main buttons: this one sits inside a card.
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              key: const Key('terapkan-umum'),
-              onPressed: _siap ? _terapkan : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey[300],
-                disabledForegroundColor: Colors.white,
-                minimumSize: const Size(0, 36),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Terapkan',
-                style: AppTextStyle.title1.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
+          AppButton(
+            key: const Key('terapkan-umum'),
+            label: 'Terapkan',
+            size: AppButtonSize.compact,
+            onPressed: _siap ? _terapkan : null,
           ),
         ],
       ),
@@ -646,7 +628,7 @@ class _RingkasanBayar extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.greenLight,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Column(
             children: [
@@ -678,7 +660,7 @@ class _RingkasanBayar extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.statOrangeLight,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,

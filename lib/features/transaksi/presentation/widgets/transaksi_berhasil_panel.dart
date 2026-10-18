@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 class TransaksiBerhasilPanel extends StatefulWidget {
   final String customerName;
@@ -70,7 +72,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: Colors.grey[200]!),
           ),
           child: Column(
@@ -96,39 +98,15 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         const SizedBox(height: 32),
 
         // Action Buttons
-        ElevatedButton(
-          onPressed: _isSending
-              ? null
-              : () async {
-                  setState(() => _isSending = true);
-                  await widget.onKirimWaSelesai();
-                  if (!mounted) return;
-                  setState(() => _isSending = false);
-                },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.greenDark,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            minimumSize: const Size(double.infinity, 0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-          ),
-          child: _isSending
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
-                )
-              : Text(
-                  'Kirim Notif WhatsApp & Selesai',
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+        AppButton(
+          label: 'Kirim Notif WhatsApp & Selesai',
+          isLoading: _isSending,
+          onPressed: () async {
+            setState(() => _isSending = true);
+            await widget.onKirimWaSelesai();
+            if (!mounted) return;
+            setState(() => _isSending = false);
+          },
         ),
       ],
     );

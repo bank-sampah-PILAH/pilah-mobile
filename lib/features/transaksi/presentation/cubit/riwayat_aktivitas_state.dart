@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/aktivitas_entity.dart';
+import '../../domain/entities/aktivitas_summary.dart';
 
 enum AktivitasStatus { initial, loading, loaded, failure }
 
@@ -18,6 +19,7 @@ class RiwayatAktivitasState extends Equatable {
   final String? errorMessage;
   final bool hasNext;
   final bool loadingMore;
+  final AktivitasSummary? summary;
 
   const RiwayatAktivitasState({
     this.status = AktivitasStatus.initial,
@@ -30,13 +32,10 @@ class RiwayatAktivitasState extends Equatable {
     this.errorMessage,
     this.hasNext = false,
     this.loadingMore = false,
+    this.summary,
   });
 
   bool get isCustomPeriode => periode == 'custom';
-
-  /// Legacy XLS exports cannot represent activity type or name filters.
-  bool get canExportSetoran =>
-      tipeFilter == AktivitasTipeFilter.semua && search.trim().isEmpty;
 
   RiwayatAktivitasState copyWith({
     AktivitasStatus? status,
@@ -49,6 +48,8 @@ class RiwayatAktivitasState extends Equatable {
     String? errorMessage,
     bool? hasNext,
     bool? loadingMore,
+    AktivitasSummary? summary,
+    bool clearSummary = false,
   }) {
     return RiwayatAktivitasState(
       status: status ?? this.status,
@@ -61,6 +62,7 @@ class RiwayatAktivitasState extends Equatable {
       errorMessage: errorMessage,
       hasNext: hasNext ?? this.hasNext,
       loadingMore: loadingMore ?? this.loadingMore,
+      summary: clearSummary ? null : summary ?? this.summary,
     );
   }
 
@@ -76,5 +78,6 @@ class RiwayatAktivitasState extends Equatable {
         errorMessage,
         hasNext,
         loadingMore,
+        summary,
       ];
 }

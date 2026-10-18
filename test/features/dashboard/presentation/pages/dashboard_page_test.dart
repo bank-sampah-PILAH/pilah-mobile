@@ -258,6 +258,25 @@ void main() {
     expect(find.byType(TotalKasCard), findsNothing);
   });
 
+  testWidgets('a wide web dashboard leaves the profile to the sidebar',
+      (tester) async {
+    arrange(dashboardCubit: emptyDashboardCubit());
+    await pumpDashboardPage(tester, isWeb: true, size: const Size(1440, 1800));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DashboardHeader), findsOneWidget);
+    expect(find.byType(CircleAvatar), findsNothing);
+  });
+
+  testWidgets('a narrow web dashboard keeps the avatar, with no sidebar',
+      (tester) async {
+    arrange(dashboardCubit: emptyDashboardCubit());
+    await pumpDashboardPage(tester, isWeb: true, size: const Size(400, 1800));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircleAvatar), findsOneWidget);
+  });
+
   testWidgets('web details form a desktop grid and stack on narrow screens',
       (tester) async {
     arrange(dashboardCubit: emptyDashboardCubit());

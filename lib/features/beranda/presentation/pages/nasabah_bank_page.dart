@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -20,11 +21,9 @@ class NasabahBankPage extends StatelessWidget {
           final auth = state is Authenticated ? state.authEntity : null;
           return Scaffold(
             backgroundColor: NasabahStyle.background,
-            appBar: AppBar(
-              backgroundColor: NasabahStyle.background,
-              surfaceTintColor: Colors.transparent,
-              title: Text('Detail Bank Sampah',
-                  style: NasabahStyle.text(20, weight: FontWeight.w700)),
+            appBar: const NasabahPageAppBar(
+              title: 'Detail Bank Sampah',
+              showBack: true,
             ),
             body: SafeArea(
               child: Align(

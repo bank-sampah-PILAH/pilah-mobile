@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
@@ -137,7 +138,7 @@ class _PilihNasabahPickerState extends State<PilihNasabahPicker> {
                     onTap: () {
                       context.pop(customer);
                     },
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12.0),
                       child: Row(
@@ -147,7 +148,7 @@ class _PilihNasabahPickerState extends State<PilihNasabahPicker> {
                             height: 48,
                             decoration: BoxDecoration(
                               color: customer.avatarColor,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             alignment: Alignment.center,
                             child: Text(
