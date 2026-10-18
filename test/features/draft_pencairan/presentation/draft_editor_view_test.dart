@@ -1525,6 +1525,27 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(panel(), findsNothing);
     });
+
+    testWidgets(
+        'on a desktop window the panel is there while loading, spinner beside it',
+        (tester) async {
+      when(() => repository.getDraft('d-1')).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
+      cubit = DraftEditorCubit(repository);
+      _current = cubit;
+      unawaited(cubit.load('d-1'));
+      await pumpRouted(tester, const _Host(), size: const Size(1440, 900));
+      await tester.pump();
+
+      expect(panel(), findsOneWidget);
+      expect(find.byKey(const Key('draft-editor-panel')), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(tester.getCenter(find.byType(CircularProgressIndicator)).dx,
+          lessThan(tester.getTopLeft(panel()).dx));
+      // Nothing to save or pay before the draft has arrived.
+      expect(find.byKey(const Key('simpan')), findsNothing);
+      expect(find.byKey(const Key('konfirmasi')), findsNothing);
+    });
   });
 
   group('the general settings', () {
