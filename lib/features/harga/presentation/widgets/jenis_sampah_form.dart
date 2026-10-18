@@ -366,6 +366,19 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     return null;
   }
 
+  static String _pesanStatus(bool wasActive) => wasActive
+      ? 'Jenis sampah berhasil dinonaktifkan.'
+      : 'Jenis sampah berhasil diaktifkan.';
+
+  /// Panel sudah beralih ke tampilan lain selagi permintaan berjalan, sehingga
+  /// form ini tidak lagi ada. Perubahannya tetap terjadi, jadi tetap
+  /// dikabarkan, lewat navigator utama.
+  static void _kabarkanTanpaForm(String message) =>
+      AppNotification.afterNavigation((context) => AppNotification.showSuccess(
+          context,
+          title: 'Berhasil',
+          message: message));
+
   Future<void> _handleToggleStatus() async {
     final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
     final id = widget.initialData!.id;
@@ -386,7 +399,10 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     final error = wasActive
         ? await cubit.deactivateHarga(id)
         : await cubit.activateHarga(id);
-    if (!mounted) return;
+    if (!mounted) {
+      if (error == null) _kabarkanTanpaForm(_pesanStatus(wasActive));
+      return;
+    }
 
     // Seperti `_handleSimpan`: hasil yang datang setelah panel berganti
     // baris tidak boleh menutup panel baris yang sekarang tampil.
@@ -398,9 +414,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
-        message: wasActive
-            ? 'Jenis sampah berhasil dinonaktifkan.'
-            : 'Jenis sampah berhasil diaktifkan.',
+        message: _pesanStatus(wasActive),
       );
       return;
     }
@@ -471,7 +485,16 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ));
       hanyaHargaGagal = error != null;
     }
-    if (!mounted) return;
+    if (!mounted) {
+      if (error == null) {
+        _kabarkanTanpaForm(pesanSimpanJenis(
+          isEditMode: isEditMode,
+          hargaBerubah: hargaBerubah,
+          berlakuMulai: berlakuMulai,
+        ));
+      }
+      return;
+    }
 
     // Hasil ini milik baris yang memulainya. Bila panel sudah pindah
     // baris, hanya kabarnya yang masih berlaku: `onSaved` akan menutup

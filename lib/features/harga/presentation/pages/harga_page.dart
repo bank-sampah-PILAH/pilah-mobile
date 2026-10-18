@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_table.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -15,7 +16,6 @@ import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
@@ -24,10 +24,8 @@ import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
-import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
-import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 class HargaPage extends StatelessWidget {
@@ -58,7 +56,16 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   /// sendiri, panel tambah tidak dapat dibedakan dari panel tertutup.
   bool _creating = false;
 
-  bool get _isPanelOpen => _creating || _editing != null;
+  /// Jenis sampah yang detailnya terbuka di panel, atau null.
+  ///
+  /// Mengetuk baris membuka detail, bukan form: edit dan riwayat harga adalah
+  /// pilihan di dalamnya. Detail, form, dan riwayat bergantian di panel yang
+  /// sama, sehingga tabel tetap terlihat.
+  HargaEntity? _viewing;
+
+  bool get _isPanelOpen => _creating || _editing != null || _viewing != null;
+
+  HargaEntity? get _selected => _editing ?? _viewing;
 
   @override
   void initState() {
@@ -85,6 +92,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     if (_isPanelOpen && context.layoutBreakpoint != LayoutBreakpoint.expanded) {
       _editing = null;
       _creating = false;
+      _viewing = null;
     }
   }
 
@@ -100,6 +108,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       setState(() {
         _editing = item;
         _creating = item == null;
+        _viewing = null;
       });
       return;
     }
@@ -117,20 +126,28 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     );
   }
 
-  /// Membuka detail [item]. Mengedit dan melihat riwayat harga adalah dua
-  /// pilihan di dalamnya, dan masing-masing menutup detail lebih dulu.
+  /// Membuka detail [item]: di panel samping pada expanded, di bottom sheet di
+  /// bawahnya. Mengedit dan melihat riwayat harga adalah dua pilihan di dalam
+  /// detail itu.
   void _openDetail(HargaEntity item) {
-    showNasabahSurface<void>(
-      context,
-      builder: (sheetContext) => HargaDetailSheet(
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      setState(() {
+        _viewing = item;
+        _editing = null;
+        _creating = false;
+      });
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => HargaDetailFlow(
         item: item,
         onEdit: () {
           Navigator.of(sheetContext).pop();
           _openForm(item);
-        },
-        onRiwayat: () {
-          Navigator.of(sheetContext).pop();
-          context.push(RiwayatHargaPage.route, extra: item);
         },
       ),
     );
@@ -141,6 +158,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     setState(() {
       _editing = null;
       _creating = false;
+      _viewing = null;
     });
   }
 
@@ -165,11 +183,9 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
               child: const Icon(Icons.add, color: Colors.white),
             ),
       body: SafeArea(
-        child: ContentBounds(
-          child: MasterDetailLayout(
-            master: _buildList(),
-            detail: _isPanelOpen ? _buildPanel() : null,
-          ),
+        child: MasterDetailLayout(
+          master: _buildList(),
+          detail: _isPanelOpen ? _buildPanel() : null,
         ),
       ),
     );
@@ -294,7 +310,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
               padding: const EdgeInsets.only(bottom: AppSpacing.xl),
               child: HargaTable(
                 items: items,
-                selectedId: _editing?.id,
+                selectedId: _selected?.id,
                 onTap: _openDetail,
               ),
             )
@@ -307,7 +323,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
                 final item = items[index];
                 return _HargaCard(
                   item: item,
-                  selected: _editing?.id == item.id,
+                  selected: _selected?.id == item.id,
                   onTap: () => _openDetail(item),
                 );
               },
@@ -352,24 +368,52 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   /// yang berada inline di dalam body. Pegangan tarik dimatikan karena panel
   /// tidak dapat ditarik.
   Widget _buildPanel() {
-    return ColoredBox(
-      color: Colors.white,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            BottomSheetHeader(
-              title: JenisSampahForm.titleFor(_editing),
-              showDragHandle: false,
-              onClose: _closePanel,
+    final viewing = _viewing;
+    final Widget content;
+    if (viewing != null) {
+      content = HargaDetailFlow(
+        item: viewing,
+        embedded: true,
+        onClose: _closePanel,
+        onEdit: () => _openForm(viewing),
+      );
+    } else {
+      final editing = _editing;
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppPanelHeader(
+            title: JenisSampahForm.titleFor(editing),
+            subtitle: editing?.name,
+            // Edit dibuka dari detail, jadi ada jalan kembali ke sana.
+            onBack: editing == null ? null : () => _openDetail(editing),
+            onClose: _closePanel,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: SingleChildScrollView(
+              child: JenisSampahForm(
+                initialData: editing,
+                onSaved: _closePanel,
+              ),
             ),
-            const SizedBox(height: 16),
-            JenisSampahForm(
-              initialData: _editing,
-              onSaved: _closePanel,
-            ),
-          ],
+          ),
+        ],
+      );
+    }
+    // Esc menutup panel dari mana pun fokusnya berada di dalamnya.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): _closePanel,
+      },
+      child: Focus(
+        autofocus: true,
+        child: ColoredBox(
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: content,
+          ),
         ),
       ),
     );

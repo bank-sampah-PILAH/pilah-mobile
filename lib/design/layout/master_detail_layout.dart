@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
+import 'content_bounds.dart';
 import 'layout_breakpoint.dart';
 
 /// Pola daftar dan detail berdampingan untuk layar lebar.
@@ -37,7 +38,10 @@ class MasterDetailLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final split =
         context.layoutBreakpoint != LayoutBreakpoint.compact && detail != null;
-    if (!split) return master;
+    // Sendiri, daftar dibatasi lebarnya. Dengan panel, daftar dan panel
+    // mengisi seluruh lebar: panel menempel di tepi kanan jendela, bukan
+    // mengambang di tengah dengan ruang kosong di kanannya.
+    if (!split) return ContentBounds(child: master);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

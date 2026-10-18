@@ -10,7 +10,6 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
@@ -262,7 +261,7 @@ class _ShellContent extends StatelessWidget {
             onSelected: select,
           ),
           Expanded(
-            child: WebContentSurface(child: ContentBounds(child: body)),
+            child: WebContentSurface(child: body),
           ),
         ],
       ),
