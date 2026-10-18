@@ -208,6 +208,54 @@ void main() {
       ],
     );
 
+    blocTest<AuthenticationBloc, AuthenticationStates>(
+      'retains the old account identity across a failed switch retry',
+      build: () {
+        when(() => mockUseCases.postLogin('new@example.com', 'wrong'))
+            .thenAnswer((_) async => Left(
+                  GeneralException(message: 'Login failed'),
+                ));
+        when(() => mockUseCases.postLogin(tEmail, tPassword))
+            .thenAnswer((_) async => Right(tAuth));
+        return bloc;
+      },
+      seed: () => Authenticated(
+        authEntity: AuthEntity(
+          id: 'previous-user',
+          name: 'Previous User',
+          email: 'previous@example.com',
+          photoUrl: '',
+          token: 'previous-token',
+        ),
+      ),
+      act: (bloc) async {
+        final failed = bloc.stream.firstWhere(
+          (state) => state is AuthenticationFailure,
+        );
+        bloc.add(const PostLoginEvent(
+          email: 'new@example.com',
+          password: 'wrong',
+        ));
+        await failed;
+
+        final succeeded = bloc.stream.firstWhere(
+          (state) => state is Authenticated,
+        );
+        bloc.add(const PostLoginEvent(
+          email: tEmail,
+          password: tPassword,
+        ));
+        await succeeded;
+      },
+      expect: () => [
+        AuthenticationLoading(),
+        AuthenticationFailure(message: 'Login failed'),
+        AuthenticationLoading(),
+        Unauthenticated(),
+        Authenticated(authEntity: tAuth),
+      ],
+    );
+
     blocTest<AuthenticationBloc, dynamic>(
       'emits a generic authentication failure when password login fails',
       build: () {
