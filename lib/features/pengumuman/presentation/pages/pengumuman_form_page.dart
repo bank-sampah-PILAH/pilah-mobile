@@ -126,15 +126,22 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
     return null;
   }
 
-  PengumumanEntity _entity() => PengumumanEntity(
-        id: widget.existing?.id ?? '',
-        bankSampahId: widget.existing?.bankSampahId ?? '',
-        judul: _judul.text.trim(),
-        isi: _isi.text.trim(),
-        terbitPada: _terbitPada,
-        masaBerlakuHingga: _masaBerlakuHingga,
-        status: widget.existing?.status ?? 'draft',
-      );
+  PengumumanEntity _entity() {
+    // Only a scheduled row keeps terbit_pada in a plain save: a draft's
+    // schedule belongs to the Jadwalkan/Terbitkan actions, so "Simpan
+    // Draft" never sends one the backend would label terjadwal without
+    // ever publishing (review finding PIL-243).
+    final keepsSchedule = _isTerjadwal;
+    return PengumumanEntity(
+      id: widget.existing?.id ?? '',
+      bankSampahId: widget.existing?.bankSampahId ?? '',
+      judul: _judul.text.trim(),
+      isi: _isi.text.trim(),
+      terbitPada: keepsSchedule ? _terbitPada : null,
+      masaBerlakuHingga: _masaBerlakuHingga,
+      status: widget.existing?.status ?? 'draft',
+    );
+  }
 
   String? _savedId;
 
