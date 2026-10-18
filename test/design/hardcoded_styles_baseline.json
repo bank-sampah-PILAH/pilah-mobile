@@ -127,10 +127,6 @@
     "color": 0,
     "fontSize": 1
   },
-  "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
   "lib/features/profile/presentation/pages/profile_page.dart": {
     "color": 0,
     "fontSize": 7

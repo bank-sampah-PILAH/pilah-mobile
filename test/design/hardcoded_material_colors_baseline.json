@@ -39,7 +39,6 @@
   "lib/features/onboarding/presentation/pages/register_nasabah_screen.dart": 4,
   "lib/features/onboarding/presentation/widgets/pilih_bank_sampah_bottom_sheet.dart": 4,
   "lib/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart": 7,
-  "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": 15,
   "lib/features/profile/presentation/pages/profil_nasabah_page.dart": 1,
   "lib/features/profile/presentation/pages/profile_page.dart": 20,
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": 11,

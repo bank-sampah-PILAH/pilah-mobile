@@ -65,7 +65,6 @@ void main() {
       extraRoutes: const [
         DraftListPage.routePilih,
         DraftListPage.routeEditor,
-        '/catat-pencairan',
       ],
       size: size,
     );
