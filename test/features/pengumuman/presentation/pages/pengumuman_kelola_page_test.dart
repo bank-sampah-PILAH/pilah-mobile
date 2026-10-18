@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -130,7 +131,7 @@ void main() {
 
     await tester.tap(find.text('Tarik'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Tarik').last);
+    await tester.tap(find.widgetWithText(AppButton, 'Tarik').last);
     await drainToast(tester);
 
     expect(
@@ -159,7 +160,7 @@ void main() {
 
     await tester.tap(find.text('Batalkan Jadwal'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Batalkan').last);
+    await tester.tap(find.widgetWithText(AppButton, 'Batalkan').last);
     await drainToast(tester);
 
     final call = api.requests.lastWhere((call) => call.method == 'PATCH');
@@ -181,7 +182,7 @@ void main() {
 
     await tester.tap(find.text('Batalkan Jadwal'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Batalkan').last);
+    await tester.tap(find.widgetWithText(AppButton, 'Batalkan').last);
     await drainToast(tester);
 
     // The failed PATCH leaves the row on the list.
@@ -221,7 +222,7 @@ void main() {
 
     await tester.tap(find.text('Tarik'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Tarik').last);
+    await tester.tap(find.widgetWithText(AppButton, 'Tarik').last);
     await drainToast(tester);
 
     // The failed transition leaves the row on the list, unchanged.
@@ -243,7 +244,7 @@ void main() {
 
     await tester.tap(find.text('Hapus'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Hapus').last);
+    await tester.tap(find.widgetWithText(AppButton, 'Hapus').last);
     await drainToast(tester);
 
     expect(
