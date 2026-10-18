@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_table.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -149,11 +151,10 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       // putih karena di sana halaman ini bukan isi sebuah shell.
       backgroundColor:
           WebContentSurface.pageColor(context, phone: Colors.white),
-      // Disembunyikan selama panel terbuka: FAB melayang di sudut kanan bawah
-      // jendela, yaitu tepat di atas tombol "Simpan Perubahan" milik panel,
-      // sehingga tombol simpan tertutup sebagian. Panel hanya ada pada
-      // expanded, jadi di bawah itu FAB tidak pernah hilang.
-      floatingActionButton: _isPanelOpen
+      // Hanya di telepon. Di layar lebar tombol tambah ada di kepala halaman,
+      // seperti tabel nasabah, sehingga tidak ada yang melayang di atas
+      // tombol "Simpan Perubahan" milik panel.
+      floatingActionButton: context.layoutBreakpoint != LayoutBreakpoint.compact
           ? null
           : FloatingActionButton(
               heroTag: 'harga_page_fab',
@@ -191,7 +192,18 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
         children: [
           SizedBox(height: web ? AppSpacing.webTop : 16),
           if (web)
-            AppPageHeader(title: 'Jenis Sampah & Harga', search: search)
+            AppPageHeader(
+              title: 'Jenis Sampah & Harga',
+              search: search,
+              actions: [
+                AppButton(
+                  label: 'Tambah Jenis Sampah',
+                  icon: Icons.add,
+                  expand: false,
+                  onPressed: _openForm,
+                ),
+              ],
+            )
           else ...[
             Text(
               'Jenis Sampah & Harga',
@@ -277,20 +289,29 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       emptyTitle: empty.title,
       emptySubtitle: empty.subtitle,
       emptyIcon: empty.icon,
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 80),
-        itemCount: items.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          return _HargaCard(
-            item: item,
-            selected: _editing?.id == item.id,
-            onTap: () => _openDetail(item),
-          );
-        },
-      ),
+      child: context.layoutBreakpoint != LayoutBreakpoint.compact
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+              child: HargaTable(
+                items: items,
+                selectedId: _editing?.id,
+                onTap: _openDetail,
+              ),
+            )
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 80),
+              itemCount: items.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return _HargaCard(
+                  item: item,
+                  selected: _editing?.id == item.id,
+                  onTap: () => _openDetail(item),
+                );
+              },
+            ),
     );
   }
 

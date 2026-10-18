@@ -70,6 +70,7 @@ class HargaTable extends StatelessWidget {
             const Divider(height: 1, color: AppColors.border),
             Expanded(
               child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: items.length,
                 separatorBuilder: (_, __) =>
                     const Divider(height: 1, color: AppColors.border),
@@ -117,86 +118,90 @@ class _RowState extends State<_Row> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
-      child: InkWell(
-        onTap: widget.onTap,
-        child: Container(
-          key: HargaTable.rowKey(item.id),
-          color: widget.selected
-              ? AppColors.greenLight
-              : _hover
-                  ? AppColors.greenLight.withValues(alpha: 0.45)
-                  : null,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(children: [
-            HargaTable._cell(
-              0,
-              Row(children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.fill,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Icon(item.icon, color: AppColors.inkSoft, size: 20),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: base.copyWith(fontWeight: FontWeight.w600)),
-                      Text(item.subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: base.copyWith(color: AppColors.grey100)),
-                    ],
-                  ),
-                ),
-              ]),
+      child: Semantics(
+        button: true,
+        selected: widget.selected,
+        child: InkWell(
+          onTap: widget.onTap,
+          child: Container(
+            key: HargaTable.rowKey(item.id),
+            color: widget.selected
+                ? AppColors.greenLight
+                : _hover
+                    ? AppColors.greenLight.withValues(alpha: 0.45)
+                    : null,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl,
+              vertical: AppSpacing.md,
             ),
-            HargaTable._cell(
-              1,
-              Align(
-                alignment: Alignment.centerLeft,
-                child: CustomStatusBadge(statusText: item.badgeText),
-              ),
-            ),
-            HargaTable._cell(
-              2,
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(item.priceFormatted,
-                      style: base.copyWith(fontWeight: FontWeight.w600)),
-                  if (terjadwal != null)
-                    Text(
-                      '${CurrencyFormatter.formatRupiah(terjadwal.harga)} mulai '
-                      '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
-                      textAlign: TextAlign.end,
-                      style: AppTextStyle.extraSmall.copyWith(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w600,
-                      ),
+            child: Row(children: [
+              HargaTable._cell(
+                0,
+                Row(children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.fill,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                ],
+                    child: Icon(item.icon, color: AppColors.inkSoft, size: 20),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: base.copyWith(fontWeight: FontWeight.w600)),
+                        Text(item.subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: base.copyWith(color: AppColors.grey100)),
+                      ],
+                    ),
+                  ),
+                ]),
               ),
-            ),
-            HargaTable._cell(
-              3,
-              Align(
-                alignment: Alignment.centerLeft,
-                child: CustomStatusBadge(isActive: item.isActive),
+              HargaTable._cell(
+                1,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: CustomStatusBadge(statusText: item.badgeText),
+                ),
               ),
-              padLeft: true,
-            ),
-          ]),
+              HargaTable._cell(
+                2,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(item.priceFormatted,
+                        style: base.copyWith(fontWeight: FontWeight.w600)),
+                    if (terjadwal != null)
+                      Text(
+                        '${CurrencyFormatter.formatRupiah(terjadwal.harga)} mulai '
+                        '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+                        textAlign: TextAlign.end,
+                        style: AppTextStyle.extraSmall.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              HargaTable._cell(
+                3,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: CustomStatusBadge(isActive: item.isActive),
+                ),
+                padLeft: true,
+              ),
+            ]),
+          ),
         ),
       ),
     );
