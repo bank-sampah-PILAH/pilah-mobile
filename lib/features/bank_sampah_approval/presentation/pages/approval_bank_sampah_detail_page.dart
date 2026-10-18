@@ -4,7 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
@@ -74,11 +79,9 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          foregroundColor: Colors.black87,
-          title: Text(membership.bankSampahNama, style: AppTextStyle.appBar),
+        appBar: NasabahPageAppBar(
+          title: membership.bankSampahNama,
+          showBack: true,
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -137,7 +140,7 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: AppColors.greenDark.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 alignment: Alignment.center,
                 child: const Icon(Icons.recycling, color: AppColors.greenDark),
@@ -200,35 +203,10 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
     return BlocBuilder<NasabahAppealCubit, NasabahAppealState>(
       builder: (context, state) {
         final submitting = state is NasabahAppealSubmitting;
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: submitting ? null : () => _appeal(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: submitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    'Ajukan Banding',
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
+        return AppButton(
+          label: 'Ajukan Banding',
+          isLoading: submitting,
+          onPressed: () => _appeal(context),
         );
       },
     );
@@ -254,31 +232,17 @@ class _AppealMessageDialogState extends State<_AppealMessageDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text(
-        'Ajukan Banding',
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
+    return AppDialog(
+      title: 'Ajukan Banding',
       content: TextField(
         controller: _controller,
         maxLines: 3,
-        decoration: const InputDecoration(
-          hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)',
-          border: OutlineInputBorder(),
-        ),
+        decoration: appInputDecoration(
+            hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)'),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.greenDark),
-          child: const Text('Kirim'),
-        ),
-      ],
+      confirmLabel: 'Kirim',
+      onConfirm: () => Navigator.of(context).pop(_controller.text.trim()),
+      onCancel: () => Navigator.of(context).pop(),
     );
   }
 }

@@ -4,12 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
@@ -513,7 +515,6 @@ class _RetryableMessage extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
               onPressed: onPressed,
               icon: const Icon(Icons.refresh),
               label: Text(buttonLabel),
@@ -566,7 +567,6 @@ class _CustomerEmptyScheduleDay extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Muat Ulang'),
@@ -624,17 +624,12 @@ class _EmptyScheduleDay extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
               onPressed: onCreate,
               icon: const Icon(Icons.add),
               label: const Text('Buat Jadwal'),
             ),
           ),
           TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
             onPressed: onRefresh,
             icon: const Icon(Icons.refresh, size: 18),
             label: const Text('Muat Ulang'),
@@ -671,18 +666,10 @@ class _ScheduleCard extends StatelessWidget {
         : '${_formatDateTime(startsAt)} – ${_formatDateTime(endsAt)}';
 
     return Card(
-      margin: EdgeInsets.zero,
-      color: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
       child: Column(
         children: [
           InkWell(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -759,26 +746,18 @@ class _ScheduleCard extends StatelessWidget {
 
   Widget _actionButton(JadwalAction action) => switch (action) {
         JadwalAction.batalkan => TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.greenDark,
-            ),
             onPressed: onCancel,
             child: Text(action.label),
           ),
         JadwalAction.terbitkan => FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-            ),
             onPressed: onPublish,
             child: Text(action.label),
           ),
-        JadwalAction.selesaikan => FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.greenLight,
-              foregroundColor: AppColors.greenDark,
-            ),
+        JadwalAction.selesaikan => AppButton(
+            label: action.label,
+            variant: AppButtonVariant.tonal,
+            expand: false,
             onPressed: onComplete,
-            child: Text(action.label),
           ),
       };
 }
@@ -939,15 +918,6 @@ class _JadwalFormState extends State<_JadwalForm> {
     super.dispose();
   }
 
-  Widget _buildLabel(String text) => Text(
-        text,
-        style: AppTextStyle.extraSmall.copyWith(
-          color: Colors.grey[500],
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-      );
-
   Future<void> _pickDateTime({required bool start}) async {
     final current = start ? _startsAt : _endsAt;
     final currentDate = DateUtils.dateOnly(current);
@@ -1045,7 +1015,8 @@ class _JadwalFormState extends State<_JadwalForm> {
         key: const ValueKey('jadwal-form'),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SingleChildScrollView(
@@ -1061,7 +1032,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onClose: widget.onClose,
                 ),
                 const SizedBox(height: 24),
-                _buildLabel('JENIS KEGIATAN'),
+                const AppFieldLabel('JENIS KEGIATAN'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _activity,
@@ -1079,7 +1050,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onChanged: (value) => setState(() => _activity = value!),
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('LOKASI'),
+                const AppFieldLabel('LOKASI'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _locationController,
@@ -1089,7 +1060,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                       : null,
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('KETERANGAN'),
+                const AppFieldLabel('KETERANGAN'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
@@ -1113,7 +1084,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onTap: () => _pickDateTime(start: false),
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('CAKUPAN PENERIMA'),
+                const AppFieldLabel('CAKUPAN PENERIMA'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _audience,
@@ -1137,8 +1108,8 @@ class _JadwalFormState extends State<_JadwalForm> {
                     final isSaving = state is JadwalLoaded && state.isSaving;
                     return SizedBox(
                       width: double.infinity,
-                      child: CustomPrimaryButton(
-                        title: isSaving
+                      child: AppButton(
+                        label: isSaving
                             ? 'Menyimpan...'
                             : widget.initial == null
                                 ? 'Simpan Jadwal'
@@ -1174,7 +1145,7 @@ class _DateTimeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AppTapTarget(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: InputDecorator(
           decoration: decoration.copyWith(
             labelText: label,

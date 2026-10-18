@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
@@ -195,6 +196,13 @@ void main() {
       await tester.tap(find.text('Simpan Perubahan'));
       await pumpToast(tester);
     }
+
+    testWidgets('the phone field carries the shared +62 prefix',
+        (tester) async {
+      await openEdit(tester, _nasabah());
+
+      expect(find.byType(PhonePrefix), findsOneWidget);
+    });
 
     testWidgets('strips the country prefix and saves the changes',
         (tester) async {

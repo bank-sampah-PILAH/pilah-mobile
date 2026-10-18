@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 const _monthNames = [
   'Januari',
@@ -226,7 +227,7 @@ class _JadwalDateCell extends StatelessWidget {
         selected: selected,
         child: InkWell(
           key: ValueKey('jadwal-date-${date.year}-${date.month}-${date.day}'),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: showWeekday ? 5 : 2),

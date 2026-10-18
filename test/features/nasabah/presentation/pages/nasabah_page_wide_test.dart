@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
@@ -167,7 +168,7 @@ void main() {
     listAs([nasabahRow('1')]);
     await open(tester);
 
-    expect(find.widgetWithText(OutlinedButton, 'Lihat detail'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Lihat detail'), findsOneWidget);
   });
 
   group('a dialog has no drag handle', () {
@@ -266,17 +267,17 @@ void main() {
     testWidgets('approve and reject sit on the row', (tester) async {
       await openPending(tester);
 
-      expect(find.widgetWithText(FilledButton, 'Setujui'), findsOneWidget);
-      expect(find.widgetWithText(OutlinedButton, 'Tolak'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Setujui'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Tolak'), findsOneWidget);
     });
 
     testWidgets('approving from the row sends the decision', (tester) async {
       api.on('POST', '$_path/p1/approve', json: {});
       await openPending(tester);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Setujui'));
+      await tester.tap(find.widgetWithText(AppButton, 'Setujui'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Setujui'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Setujui').last);
       await pumpToast(tester);
 
       expect(api.requests.any((r) => r.path == '$_path/p1/approve'), isTrue);
@@ -289,9 +290,9 @@ void main() {
           status: 409, json: {'error': 'Sudah diputuskan'});
       await openPending(tester);
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Tolak'));
+      await tester.tap(find.widgetWithText(AppButton, 'Tolak'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Tolak'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Tolak').last);
       await pumpToast(tester);
 
       expect(find.text('Sudah diputuskan'), findsOneWidget);
@@ -302,9 +303,9 @@ void main() {
       api.on('POST', '$_path/p1/reject', json: {});
       await openPending(tester);
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Tolak'));
+      await tester.tap(find.widgetWithText(AppButton, 'Tolak'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Tolak'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Tolak').last);
       await pumpToast(tester);
 
       expect(api.requests.any((r) => r.path == '$_path/p1/reject'), isTrue);

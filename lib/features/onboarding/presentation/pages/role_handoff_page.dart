@@ -4,8 +4,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
@@ -68,7 +70,7 @@ class RoleHandoffPage extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: AppColors.greenLight,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -101,35 +103,21 @@ class RoleHandoffPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     if (showPayoutHistory) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.push(Uri(
-                            path: AppLocations.history,
-                            queryParameters: {'filter': 'pencairan'},
-                          ).toString()),
-                          icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Riwayat Nasabah'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(48),
-                            foregroundColor: AppColors.greenDark,
-                          ),
-                        ),
+                      AppButton(
+                        label: 'Riwayat Nasabah',
+                        variant: AppButtonVariant.outlined,
+                        icon: Icons.receipt_long_outlined,
+                        onPressed: () => context.push(Uri(
+                          path: AppLocations.history,
+                          queryParameters: {'filter': 'pencairan'},
+                        ).toString()),
                       ),
                       const SizedBox(height: 12),
                     ],
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _changeAccount(context),
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Keluar dan ganti akun'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          backgroundColor: AppColors.greenDark,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
+                    AppButton(
+                      label: 'Keluar dan ganti akun',
+                      icon: Icons.logout,
+                      onPressed: () => _changeAccount(context),
                     ),
                   ],
                 ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 class BottomSheetHeader extends StatelessWidget {
   final String title;
@@ -37,38 +39,36 @@ class BottomSheetHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showDragHandle ?? !DialogSurface.of(context)) ...[
-          Center(
-            child: Container(
-              key: dragHandleKey,
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const AppSheetHandle(key: dragHandleKey),
           const SizedBox(height: 24),
         ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+            // Judul mengambil ruang yang tersisa setelah tombol tutup, bukan
+            // lebar alaminya. Tanpa ini judul sepanjang "Tambah Jenis Sampah"
+            // melimpah ke kanan pada lebar telepon — 372 px ruang isi sheet
+            // tidak cukup untuk judul 20 px tebal berdampingan dengan tombol
+            // tutup 36 px, dan yang melimpah terpotong tanpa dapat dibaca.
+            Expanded(
+              child: Text(
+                title,
+                style: AppTextStyle.headline1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
               ),
             ),
+            const SizedBox(width: 12),
             InkWell(
               onTap: onClose ?? () => context.pop(),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Icon(Icons.close, color: Colors.grey[600], size: 20),
               ),

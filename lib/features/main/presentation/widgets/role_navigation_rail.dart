@@ -1,5 +1,6 @@
 import 'bank_sampah_label.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -252,7 +253,7 @@ class _RailHeader extends StatelessWidget {
               child: InkWell(
                 key: RoleNavigationRail.brandKey,
                 onTap: onHome,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.all(4),
                   child: extended
@@ -340,12 +341,12 @@ class _ProfileFooter extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? AppColors.greenLight : null,
             border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: InkWell(
             key: RoleNavigationRail.profileKey,
             onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             child: extended
                 ? ConstrainedBox(
                     constraints:
