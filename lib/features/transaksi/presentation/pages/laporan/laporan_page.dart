@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -38,6 +39,9 @@ class _LaporanPageState extends State<LaporanPage> {
     super.dispose();
   }
 
+  bool _webPadding(BuildContext context) =>
+      context.layoutBreakpoint != LayoutBreakpoint.compact;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,32 +54,26 @@ class _LaporanPageState extends State<LaporanPage> {
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: _webPadding(context)
+                      ? const EdgeInsets.fromLTRB(
+                          AppSpacing.webGutter,
+                          AppSpacing.webTop,
+                          AppSpacing.webGutter,
+                          AppSpacing.lg,
+                        )
+                      : const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      LayoutBuilder(builder: (context, constraints) {
-                        final title = Text('Riwayat Aktivitas',
-                            style: AppTextStyle.headline1);
-                        final search = CustomSearchField(
+                      AppPageHeader(
+                        title: 'Riwayat Aktivitas',
+                        search: CustomSearchField(
                           hintText: 'Cari nama pelanggan...',
                           controller: _searchController,
                           onChanged:
                               context.read<RiwayatAktivitasCubit>().search,
-                        );
-                        if (LayoutBreakpoint.fromWidth(constraints.maxWidth) ==
-                            LayoutBreakpoint.expanded) {
-                          return Row(children: [
-                            Expanded(child: title),
-                            const SizedBox(width: 24),
-                            SizedBox(width: 360, child: search),
-                          ]);
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [title, const SizedBox(height: 16), search],
-                        );
-                      }),
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       const AktivitasTipeChips(),
                       const SizedBox(height: 12),
