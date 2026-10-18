@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
@@ -282,7 +284,14 @@ class _HomeSessionState extends State<_HomeSession> {
                               const SizedBox(height: 24),
                               _SectionHeading(
                                 title: 'Pengumuman',
-                                onAll: () => context.push(PengumumanPage.route),
+                                // Same keanggotaan_id scoping as Terbaru: a
+                                // nasabah with two banks gets 422 without it.
+                                onAll: () => context.push(Uri(
+                                  path: PengumumanPage.route,
+                                  queryParameters: {
+                                    'keanggotaan_id': home.membershipId,
+                                  },
+                                ).toString()),
                               ),
                               const SizedBox(height: 8),
                               NasabahResource<PengumumanBeranda>(
@@ -574,6 +583,13 @@ class _PengumumanSection extends StatelessWidget {
     PengumumanBerandaItem item,
   ) async {
     final router = GoRouter.of(context);
+    // Tapping the row is a read: the backend POST flips the receipt and the
+    // coming-back reload refreshes the dot (review finding PIL-333).
+    if (!item.dibaca) {
+      // No await: the reload after returning reconciles any failure.
+      unawaited(di<NasabahPengumumanRepository>()
+          .tandaiDibaca(item.id, membershipId: membershipId));
+    }
     await router.push(
       PengumumanDetailPage.route,
       extra: PengumumanEntity(

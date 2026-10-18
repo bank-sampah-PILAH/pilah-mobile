@@ -271,6 +271,53 @@ void main() {
       );
     });
 
+    testWidgets('tapping an unread row fires the baca POST', (tester) async {
+      api.on('POST', '/api/v1/nasabah/me/pengumuman/p2/baca',
+          json: {'id': 'p2', 'dibaca': true});
+      await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
+        '/pengumuman/detail': (_, __) =>
+            const Scaffold(body: Text('detail pengumuman')),
+      });
+
+      await tester.ensureVisible(find.text('Pengumuman baru'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pengumuman baru'));
+      await tester.pumpAndSettle();
+      expect(find.text('detail pengumuman'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final baca = api.requests.lastWhere(
+        (call) => call.path == '/api/v1/nasabah/me/pengumuman/p2/baca',
+      );
+      expect(baca.query['keanggotaan_id'], 'membership-1');
+      // An already-read row does not post again.
+      expect(
+        api.requests
+            .where(
+                (call) => call.path == '/api/v1/nasabah/me/pengumuman/p1/baca')
+            .isEmpty,
+        isTrue,
+      );
+    });
+
+    testWidgets('Semua opens the list scoped to the membership',
+        (tester) async {
+      await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
+        '/pengumuman': (_, state) => Scaffold(
+            body:
+                Text('daftar ${state.uri.queryParameters['keanggotaan_id']}')),
+      });
+
+      // Headings carry their own Semua (Jadwal, Pengumuman, Terbaru); the
+      // middle one is Pengumuman's.
+      final semuaButtons = find.widgetWithText(TextButton, 'Semua');
+      await tester.ensureVisible(semuaButtons.at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(semuaButtons.at(1));
+      await tester.pumpAndSettle();
+      expect(find.text('daftar membership-1'), findsOneWidget);
+    });
+
     testWidgets('an empty section shows the standalone card', (tester) async {
       api.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
           json: {'items': [], 'unread_count': 0});
