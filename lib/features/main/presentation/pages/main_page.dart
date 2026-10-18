@@ -17,6 +17,9 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/services/di.dart';
 
+/// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
+const _profileBranch = 7;
+
 class MainPage extends StatelessWidget {
   const MainPage({
     super.key,
@@ -159,7 +162,7 @@ class _ShellContent extends StatelessWidget {
     // Keduanya satu gagasan, jadi ditulis satu kali.
     final offDestination = selected < 0 &&
         ((RoleNavigationBar.isStaff(role) &&
-                navigationShell.currentIndex == 7) ||
+                navigationShell.currentIndex == _profileBranch) ||
             // Mati hari ini: Jadwal kini salah satu tab nasabah penuh, jadi
             // `selected` tidak pernah negatif di sana. Dipertahankan sebagai
             // penjaga bila ia keluar dari tab mereka lagi.
@@ -181,9 +184,10 @@ class _ShellContent extends StatelessWidget {
         child: const Text('Kembali ke Beranda'),
       )));
     }
-    final body = limitedNasabah && navigationShell.currentIndex != 7
-        ? NasabahVerificationHome(name: name)
-        : navigationShell;
+    final body =
+        limitedNasabah && navigationShell.currentIndex != _profileBranch
+            ? NasabahVerificationHome(name: name)
+            : navigationShell;
 
     // Satu handler untuk kedua bentuk navigasi: keduanya melaporkan indeks
     // menu, jadi penerjemahan ke branch hanya ditulis sekali.
@@ -254,7 +258,9 @@ class _ShellContent extends StatelessWidget {
             bankSampahNama: bankSampahNama,
             profileName: profileName,
             profileEmail: profileEmail,
-            onProfile: () => context.push(AppLocations.profile),
+            // Pindah ke branch profil, bukan mendorong halamannya: dengan push,
+            // branch sebelumnya tetap menjadi yang terpilih di rail.
+            onProfile: () => navigationShell.goBranch(_profileBranch),
             profileSelected:
                 GoRouterState.of(context).uri.path == AppLocations.profile,
             onHome: () => navigationShell.goBranch(0, initialLocation: true),
