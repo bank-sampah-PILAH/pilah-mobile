@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_calendar_range_picker.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 
 const _indonesianMonths = [
@@ -64,6 +65,8 @@ class DashboardReportRangeFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = MenuController();
+    final today = DateUtils.dateOnly(DateTime.now());
+    final lastDate = range.end.isAfter(today) ? range.end : today;
     final style = OutlinedButton.styleFrom(
       minimumSize: const Size(0, 48),
       visualDensity: VisualDensity.standard,
@@ -140,11 +143,20 @@ class DashboardReportRangeFilter extends StatelessWidget {
                   ),
                 ),
                 menuChildren: [
-                  _ReportRangeCalendar(
-                    range: range,
-                    onChanged: (value) {
+                  AppCalendarRangePicker(
+                    key: const ValueKey('report-range-calendar'),
+                    initialRange: DateTimeRange(
+                      start: range.start,
+                      end: range.end,
+                    ),
+                    firstDate: DateTime(2000),
+                    lastDate: lastDate,
+                    onApply: (value) {
                       controller.close();
-                      onChanged(value);
+                      onChanged(DashboardReportRange(
+                        start: value.start,
+                        end: value.end,
+                      ));
                     },
                   ),
                 ],
@@ -158,185 +170,6 @@ class DashboardReportRangeFilter extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ReportRangeCalendar extends StatefulWidget {
-  final DashboardReportRange range;
-  final ValueChanged<DashboardReportRange> onChanged;
-
-  const _ReportRangeCalendar({required this.range, required this.onChanged});
-
-  @override
-  State<_ReportRangeCalendar> createState() => _ReportRangeCalendarState();
-}
-
-class _ReportRangeCalendarState extends State<_ReportRangeCalendar> {
-  late DateTime _month;
-  DateTime? _start;
-  DateTime? _end;
-
-  @override
-  void initState() {
-    super.initState();
-    _month = DateTime(widget.range.start.year, widget.range.start.month);
-    _start = widget.range.start;
-    _end = widget.range.end;
-  }
-
-  DateTime get _lastDate {
-    final today = DateUtils.dateOnly(DateTime.now());
-    return widget.range.end.isAfter(today) ? widget.range.end : today;
-  }
-
-  void _select(DateTime day) {
-    setState(() {
-      if (_start == null || _end != null) {
-        _start = day;
-        _end = null;
-      } else if (day.isBefore(_start!)) {
-        _end = _start;
-        _start = day;
-      } else {
-        _end = day;
-      }
-    });
-  }
-
-  Widget _day(DateTime day) {
-    final endpoint =
-        DateUtils.isSameDay(day, _start) || DateUtils.isSameDay(day, _end);
-    final inRange = _start != null &&
-        _end != null &&
-        !day.isBefore(_start!) &&
-        !day.isAfter(_end!);
-    return Container(
-      color: inRange ? AppColors.greenLight : Colors.transparent,
-      child: Semantics(
-        selected: endpoint || inRange,
-        child: TextButton(
-          key: ValueKey('report-date-${reportDate(day)}'),
-          onPressed: day.isAfter(_lastDate) ? null : () => _select(day),
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(44, 44),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            foregroundColor: endpoint ? Colors.white : AppColors.black,
-            backgroundColor:
-                endpoint ? AppColors.greenDark : Colors.transparent,
-            shape: const CircleBorder(),
-            textStyle: AppTextStyle.small,
-          ),
-          child: Text('${day.day}',
-              semanticsLabel:
-                  MaterialLocalizations.of(context).formatFullDate(day)),
-        ),
-      ),
-    );
-  }
-
-  Widget _calendarGrid(int offset, int days) => Column(
-        children: [
-          for (var week = 0; week < ((offset + days) / 7).ceil(); week++)
-            Row(children: [
-              for (var column = 0; column < 7; column++)
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: week * 7 + column >= offset &&
-                            week * 7 + column < offset + days
-                        ? _day(DateTime(_month.year, _month.month,
-                            week * 7 + column - offset + 1))
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-            ]),
-        ],
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    final localizations = MaterialLocalizations.of(context);
-    final offset =
-        (_month.weekday % 7 - localizations.firstDayOfWeekIndex + 7) % 7;
-    final days = DateUtils.getDaysInMonth(_month.year, _month.month);
-    return SizedBox(
-      key: const ValueKey('report-range-calendar'),
-      width: 336,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(children: [
-              IconButton(
-                tooltip: localizations.previousMonthTooltip,
-                onPressed: _month.isAfter(DateTime(2000))
-                    ? () => setState(
-                        () => _month = DateTime(_month.year, _month.month - 1))
-                    : null,
-                icon: const Icon(Icons.chevron_left),
-              ),
-              Expanded(
-                  child: Text(localizations.formatMonthYear(_month),
-                      textAlign: TextAlign.center,
-                      style: AppTextStyle.small
-                          .copyWith(fontWeight: FontWeight.w600))),
-              IconButton(
-                tooltip: localizations.nextMonthTooltip,
-                onPressed: _month
-                        .isBefore(DateTime(_lastDate.year, _lastDate.month))
-                    ? () => setState(
-                        () => _month = DateTime(_month.year, _month.month + 1))
-                    : null,
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ]),
-            Row(children: [
-              for (var i = 0; i < 7; i++)
-                Expanded(
-                    child: Text(
-                  localizations.narrowWeekdays[
-                      (i + localizations.firstDayOfWeekIndex) % 7],
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.extraSmall,
-                )),
-            ]),
-            const SizedBox(height: 8),
-            _calendarGrid(offset, days),
-            const Divider(height: 24),
-            Text(
-              _start == null || _end == null
-                  ? 'Pilih tanggal mulai dan selesai'
-                  : DateUtils.isSameDay(_start!, _end!)
-                      ? _reportDateIndonesian(_start!)
-                      : '${_reportDateIndonesian(_start!)} – '
-                          '${_reportDateIndonesian(_end!)}',
-              style: AppTextStyle.extraSmall,
-            ),
-            const SizedBox(height: 8),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              TextButton(
-                onPressed: () => setState(() {
-                  _start = null;
-                  _end = null;
-                }),
-                child: Text('Reset',
-                    style: AppTextStyle.small
-                        .copyWith(color: AppColors.greenDark)),
-              ),
-              FilledButton(
-                onPressed: _start != null && _end != null
-                    ? () => widget.onChanged(
-                        DashboardReportRange(start: _start!, end: _end!))
-                    : null,
-                child: const Text('Terapkan'),
-              ),
-            ]),
-          ],
-        ),
       ),
     );
   }

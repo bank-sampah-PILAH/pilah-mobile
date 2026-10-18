@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
@@ -82,7 +83,7 @@ class _EditPencairanViewState extends State<EditPencairanView> {
   Future<void> _pickTanggal() async {
     if (_terkunci) return;
     final now = widget.now();
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: _tanggal,
       firstDate: DateUtils.dateOnly(_tanggalMinimum),

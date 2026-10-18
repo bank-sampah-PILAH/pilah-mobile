@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
@@ -945,7 +946,7 @@ class _JadwalFormState extends State<_JadwalForm> {
     final today = DateUtils.dateOnly(DateTime.now());
     final firstDate = currentDate.isBefore(today) ? currentDate : today;
     final lastDate = today.add(const Duration(days: 730));
-    final date = await showDatePicker(
+    final date = await showAppDatePicker(
       context: context,
       initialDate: currentDate.isAfter(lastDate) ? lastDate : currentDate,
       firstDate: firstDate,
