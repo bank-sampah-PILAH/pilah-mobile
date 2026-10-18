@@ -42,16 +42,12 @@ class AuthenticationBloc
 
   Future _onPostLoginEvent(
       PostLoginEvent event, Emitter<AuthenticationStates> emitter) async {
-    emitter(PostLoginLoadingState());
-    final response = await _useCases.postLogin(event.username, event.password);
-    await response.fold(
-      (l) {
-        emitter(PostLoginErrorState(message: l.message ?? ''));
-      },
-      (r) async {
-        await _useCases.saveToken(r.token, r.token);
-        emitter(PostLoginSuccessState(auth: r));
-      },
+    emitter(AuthenticationLoading());
+    final response = await _useCases.postLogin(event.email, event.password);
+    response.fold(
+      (failure) => emitter(
+          AuthenticationFailure(message: failure.displayMessage)),
+      (entity) => emitter(Authenticated(authEntity: entity)),
     );
   }
 

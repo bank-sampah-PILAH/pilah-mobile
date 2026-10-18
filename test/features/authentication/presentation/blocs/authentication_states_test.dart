@@ -28,8 +28,8 @@ void main() {
   });
 
   test('a login event carries the entered credentials', () {
-    final event = PostLoginEvent(username: 'siti', password: 'rahasia');
-    expect(event.username, 'siti');
+    final event = PostLoginEvent(email: 'siti@example.com', password: 'rahasia');
+    expect(event.email, 'siti@example.com');
     expect(event.password, 'rahasia');
   });
 }

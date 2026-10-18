@@ -21,12 +21,11 @@ class AuthRepositoryImpl implements AuthRepository {
     this._localDataSources,
   );
 
-  Future<AuthEntity> _persistGoogleSession(Map<String, dynamic> payload) async {
-    final response = AuthResponse.fromJson(payload);
+  Future<AuthEntity> _persistSession(AuthResponse response) async {
     final entity = AuthMapper.mapResponseToDomain(response);
     await _localDataSources.saveToken(
       SaveTokenRequest(
-        accessToken: entity.token,
+        accessToken: response.accessToken,
         refreshToken: response.refreshToken,
       ),
     );
@@ -39,10 +38,14 @@ class AuthRepositoryImpl implements AuthRepository {
     String password,
   ) async {
     final request = PostLoginRequest(email: email, password: password);
-    return apiCall<AuthEntity>(
-      func: _remoteDataSources.postLogin(request),
-      mapper: (value) => AuthMapper.mapResponseToDomain(value),
-    );
+    try {
+      final response = await _remoteDataSources.postLogin(request);
+      return Right(await _persistSession(response));
+    } on Exception catch (error) {
+      return Left(NetworkException.handleException(error));
+    } catch (error) {
+      return Left(GeneralException(message: error.toString()));
+    }
   }
 
   @override
@@ -61,7 +64,7 @@ class AuthRepositoryImpl implements AuthRepository {
           photoUrl: profile['picture']?.toString() ?? '',
         ));
       }
-      final entity = await _persistGoogleSession(payload);
+      final entity = await _persistSession(AuthResponse.fromJson(payload));
       return Right(GoogleSession(entity));
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
@@ -84,7 +87,7 @@ class AuthRepositoryImpl implements AuthRepository {
         registrationToken,
         role.wireValue,
       );
-      final entity = await _persistGoogleSession(payload);
+      final entity = await _persistSession(AuthResponse.fromJson(payload));
       return Right(entity);
     } on Exception catch (error) {
       return Left(NetworkException.handleException(error));

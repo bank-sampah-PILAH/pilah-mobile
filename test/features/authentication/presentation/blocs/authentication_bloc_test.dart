@@ -142,7 +142,7 @@ void main() {
         return bloc;
       },
       act: (bloc) => bloc.add(const PostLoginEvent(
-        username: tEmail,
+        email: tEmail,
         password: tPassword,
       )),
       expect: () => [
@@ -163,7 +163,7 @@ void main() {
         return bloc;
       },
       act: (bloc) => bloc.add(const PostLoginEvent(
-        username: tEmail,
+        email: tEmail,
         password: tPassword,
       )),
       expect: () => [
