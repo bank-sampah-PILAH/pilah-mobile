@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -467,6 +468,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     OnboardingFormField(
                       label: 'JENIS KELAMIN',
                       child: DropdownButtonFormField<String>(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         initialValue: _gender,
                         hint: Text(
                           'Pilih jenis kelamin',
