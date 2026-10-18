@@ -4,6 +4,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,9 +12,14 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -26,7 +32,10 @@ import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.d
 import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({super.key, this.isWeb});
+
+  /// Mengganti `kIsWeb`, supaya test dapat memilih bentuk web atau aplikasi.
+  final bool? isWeb;
 
   static const route = AppLocations.profile;
 
@@ -39,7 +48,7 @@ class ProfilePage extends StatelessWidget {
     final role = state is Authenticated ? state.authEntity.role : null;
     if (role == 'nasabah') return const ProfilNasabahPage();
     if (role == 'pengelola' || role == 'pengelola_induk') {
-      return const _ProfileView();
+      return _ProfileView(isWeb: isWeb ?? kIsWeb);
     }
     return const Scaffold(
       body: SafeArea(
@@ -50,7 +59,9 @@ class ProfilePage extends StatelessWidget {
 }
 
 class _ProfileView extends StatefulWidget {
-  const _ProfileView();
+  const _ProfileView({required this.isWeb});
+
+  final bool isWeb;
 
   @override
   State<_ProfileView> createState() => _ProfileViewState();
@@ -70,6 +81,43 @@ class _ProfileViewState extends State<_ProfileView>
   // Covers the whole save (bank profile then WA template) — see _onSaveSettings.
   bool _isSavingSettings = false;
 
+  /// Di browser halaman ini berada di dalam shell dengan rail, bukan didorong
+  /// di atasnya, jadi memakai gutter dan judul halaman tab web.
+  bool get _webShell =>
+      NavigationForm.resolve(
+        isWeb: widget.isWeb,
+        width: MediaQuery.sizeOf(context).width,
+      ) !=
+      NavigationForm.bottomBar;
+
+  double get _gutter => _webShell ? AppSpacing.webGutter : 16;
+
+  // Isi form saat dimuat atau terakhir disimpan; pembanding untuk [_dirty].
+  String _baseWa = '';
+  String _baseNama = '';
+  String _baseAlamat = '';
+  String _baseHp = '';
+
+  /// Ada isian yang berbeda dari yang tersimpan, atau logo baru yang dipilih
+  /// tetapi belum disimpan.
+  bool get _dirty =>
+      _waController.text != _baseWa ||
+      _namaBankController.text != _baseNama ||
+      _alamatBankController.text != _baseAlamat ||
+      _hpBankController.text != _baseHp ||
+      context.read<ProfileCubit>().state.selectedLogoBytes != null;
+
+  void _rebuildOnEdit() {
+    if (mounted) setState(() {});
+  }
+
+  void _markSaved() {
+    _baseWa = _waController.text;
+    _baseNama = _namaBankController.text;
+    _baseAlamat = _alamatBankController.text;
+    _baseHp = _hpBankController.text;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +135,14 @@ class _ProfileViewState extends State<_ProfileView>
     // silent: keeps an already-loaded profile on screen instead of collapsing
     // the tab into a spinner. load() ignores it when there is nothing to keep.
     cubit.load(silent: true);
+    for (final c in [
+      _waController,
+      _namaBankController,
+      _alamatBankController,
+      _hpBankController,
+    ]) {
+      c.addListener(_rebuildOnEdit);
+    }
   }
 
   @override
@@ -146,6 +202,7 @@ class _ProfileViewState extends State<_ProfileView>
   void _seed(ProfileState state) {
     if (!_waSeeded && state.waTemplate != null) {
       _waController.text = state.waTemplate!.template;
+      _baseWa = _waController.text;
       _waSeeded = true;
     }
     if (!_bankSeeded && state.bankSampah != null) {
@@ -153,6 +210,9 @@ class _ProfileViewState extends State<_ProfileView>
       _namaBankController.text = bank.nama;
       _alamatBankController.text = bank.alamat;
       _hpBankController.text = bank.noHpPic;
+      _baseNama = _namaBankController.text;
+      _baseAlamat = _alamatBankController.text;
+      _baseHp = _hpBankController.text;
       _bankSeeded = true;
     }
   }
@@ -215,11 +275,25 @@ class _ProfileViewState extends State<_ProfileView>
     // user made purely for the bank fields.
     final waErr = await cubit.saveWaTemplate(_waController.text.trim());
     if (!mounted) return;
+    if (waErr == null) _markSaved();
     setState(() => _isSavingSettings = false);
     _snack(
       waErr == null ? 'Pengaturan berhasil disimpan' : waErr.displayMessage,
       error: waErr != null,
     );
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari akun?',
+      message: 'Anda perlu masuk kembali untuk mengakses akun ini.',
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
+    );
+    if (confirmed && mounted) {
+      context.read<AuthenticationBloc>().add(LogoutRequested());
+    }
   }
 
   Future<void> _onCopyInvite() async {
@@ -251,101 +325,130 @@ class _ProfileViewState extends State<_ProfileView>
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: Column(
-            children: [
-              AppBackHeader(
-                title: 'Profil & Pengaturan',
-                onBack: () => context.pop(),
-              ),
-
-              // Tab Bar
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+          child: ContentBounds(
+            child: Column(
+              children: [
+                // Di browser rail di kiri adalah jalan keluarnya, jadi tidak ada
+                // tombol kembali; judulnya mengikuti halaman tab web lain.
+                if (_webShell)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.webGutter,
+                      AppSpacing.webTop,
+                      AppSpacing.webGutter,
+                      AppSpacing.md,
+                    ),
+                    child: AppPageHeader(title: 'Profil & Pengaturan'),
+                  )
+                else
+                  AppBackHeader(
+                    title: 'Profil & Pengaturan',
+                    onBack: () => context.pop(),
                   ),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: AppColors.greenDark,
-                  unselectedLabelColor: Colors.grey[400],
-                  labelStyle: AppTextStyle.small.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  unselectedLabelStyle: AppTextStyle.small.copyWith(
-                    fontWeight: FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                  indicatorColor: AppColors.greenDark,
-                  indicatorWeight: 3,
-                  tabs: const [
-                    Tab(text: 'Pengaturan Umum'),
-                    Tab(text: 'Manajemen Tim'),
-                  ],
-                ),
-              ),
 
-              // Tab Views
-              Expanded(
-                child: _buildTabBody(profileState, auth),
-              ),
-
-              // Bottom Buttons (only visible on Pengaturan Umum tab)
-              if (_tabController.index == 0 &&
-                  profileState.status == ProfileStatus.loaded)
+                // Tab Bar
                 Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.transparent,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppButton(
-                        label: _isSavingSettings
-                            ? 'Menyimpan...'
-                            : 'Simpan Pengaturan',
-                        icon: Icons.save_outlined,
-                        leading: _isSavingSettings
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : null,
-                        onPressed: _isSavingSettings ? null : _onSaveSettings,
-                      ),
-                      const SizedBox(height: 16),
-                      AppButton(
-                        label: 'Keluar dari Aplikasi',
-                        variant: AppButtonVariant.destructiveOutlined,
-                        icon: Icons.logout,
-                        onPressed: () async {
-                          final confirmed = await showAppConfirmDialog(
-                            context,
-                            title: 'Keluar dari akun?',
-                            message: 'Anda perlu masuk kembali untuk '
-                                'mengakses akun ini.',
-                            confirmLabel: 'Ya, Keluar',
-                            destructive: true,
-                          );
-                          if (confirmed && context.mounted) {
-                            context
-                                .read<AuthenticationBloc>()
-                                .add(LogoutRequested());
-                          }
-                        },
-                      ),
+                  margin: EdgeInsets.symmetric(horizontal: _gutter),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    // Di web tab rata kiri selebar isinya, bukan dibagi rata
+                    // ke seluruh lebar halaman.
+                    isScrollable: _webShell,
+                    tabAlignment:
+                        _webShell ? TabAlignment.start : TabAlignment.fill,
+                    labelColor: AppColors.greenDark,
+                    unselectedLabelColor: Colors.grey[400],
+                    labelStyle: AppTextStyle.small.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    unselectedLabelStyle: AppTextStyle.small.copyWith(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                    indicatorColor: AppColors.greenDark,
+                    indicatorWeight: 3,
+                    tabs: const [
+                      Tab(text: 'Pengaturan Umum'),
+                      Tab(text: 'Manajemen Tim'),
                     ],
                   ),
                 ),
-            ],
+
+                // Tab Views
+                Expanded(
+                  child: _buildTabBody(profileState, auth),
+                ),
+
+                // Bar bawah: hanya Simpan, dan hanya di tab Pengaturan Umum.
+                if (_tabController.index == 0 &&
+                    profileState.status == ProfileStatus.loaded)
+                  _buildActionBar(),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Bar bawah berisi Simpan saja, dan hanya ada bila ada yang berubah. Di web
+  /// ia rata kanan selebar isinya; di aplikasi selebar layar, dengan petunjuk di
+  /// atasnya. Keluar ada di paling bawah isi halaman.
+  Widget _buildActionBar() {
+    final dirty = _dirty;
+    // Tidak ada bar sama sekali sampai ada yang berubah; ia muncul bersama
+    // petunjuknya dan hilang lagi setelah tersimpan.
+    if (!dirty && !_isSavingSettings) return const SizedBox.shrink();
+    final showHint = dirty && !_isSavingSettings;
+    final save = AppButton(
+      label: _isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan',
+      icon: Icons.save_outlined,
+      expand: !_webShell,
+      leading: _isSavingSettings
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+          : null,
+      onPressed: _isSavingSettings ? null : _onSaveSettings,
+    );
+    final hint = Text(
+      'Perubahan belum disimpan',
+      style: AppTextStyle.small.copyWith(color: AppColors.warning),
+    );
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: _gutter,
+        vertical: AppSpacing.md,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: _webShell
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (showHint) ...[hint, const SizedBox(width: AppSpacing.lg)],
+                save,
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showHint) ...[hint, const SizedBox(height: AppSpacing.sm)],
+                save,
+              ],
+            ),
     );
   }
 
@@ -394,76 +497,81 @@ class _ProfileViewState extends State<_ProfileView>
 
   // ── Tab 1: Pengaturan Umum ──────────────────────────────────────────
 
-  Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
-    final name =
-        (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
-    final accountCard = Container(
-      padding: const EdgeInsets.all(20),
+  /// Kartu akun, sama di web dan di aplikasi: putih dengan garis tepi, berisi
+  /// identitas. Di web Keluar ada di kanannya; di aplikasi Keluar ada di paling
+  /// bawah halaman ([_buildLogoutButton]).
+  Widget _buildAccountCard(String name, AuthEntity? auth) {
+    final email = auth?.email.trim() ?? '';
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.greenDark,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 30,
+            radius: 28,
             backgroundColor: AppColors.greenLight,
             child: Text(
               _initials(name),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
+              style: AppTextStyle.title1.copyWith(color: AppColors.greenDark),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle.title1.copyWith(color: AppColors.black),
                 ),
-                if (auth?.email.trim().isNotEmpty ?? false) ...[
-                  const SizedBox(height: 4),
+                if (email.isNotEmpty)
                   Text(
-                    auth!.email,
+                    email,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100),
                   ),
-                ],
-                const SizedBox(height: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Text(
-                    _roleLabel(auth?.role),
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                const SizedBox(height: AppSpacing.sm),
+                CustomStatusBadge(statusText: _roleLabel(auth?.role)),
               ],
             ),
           ),
+          if (_webShell) ...[
+            const SizedBox(width: AppSpacing.lg),
+            AppButton(
+              label: 'Keluar dari Aplikasi',
+              variant: AppButtonVariant.destructiveOutlined,
+              size: AppButtonSize.compact,
+              icon: Icons.logout,
+              expand: false,
+              onPressed: _confirmLogout,
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Keluar di aplikasi, di paling bawah isi halaman: aksi akun yang jarang
+  /// dipakai, jauh dari Simpan supaya tidak tertekan tanpa sengaja.
+  Widget _buildLogoutButton() => AppButton(
+        label: 'Keluar dari Aplikasi',
+        variant: AppButtonVariant.destructiveOutlined,
+        icon: Icons.logout,
+        onPressed: _confirmLogout,
+      );
+
+  Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
+    final name =
+        (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
+    final accountCard = _buildAccountCard(name, auth);
     final bankProfile = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -473,14 +581,8 @@ class _ProfileViewState extends State<_ProfileView>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Form(
             key: _bankFormKey,
@@ -506,7 +608,7 @@ class _ProfileViewState extends State<_ProfileView>
                   controller: _hpBankController,
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone,
-                  iconColor: Colors.pink[400],
+                  iconColor: AppColors.inkSoft,
                   validator: _validateNomorHpPic,
                 ),
               ],
@@ -527,7 +629,10 @@ class _ProfileViewState extends State<_ProfileView>
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(
-                isDesktop ? 24 : 16, 16, isDesktop ? 24 : 16, 24),
+                _webShell ? _gutter : (isDesktop ? 24 : 16),
+                16,
+                _webShell ? _gutter : (isDesktop ? 24 : 16),
+                24),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -551,6 +656,10 @@ class _ProfileViewState extends State<_ProfileView>
                       bankProfile,
                       const SizedBox(height: 32),
                       whatsappTemplate,
+                    ],
+                    if (!_webShell) ...[
+                      const SizedBox(height: 32),
+                      _buildLogoutButton(),
                     ],
                   ],
                 ),
@@ -970,8 +1079,8 @@ class _ProfileViewState extends State<_ProfileView>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey[200]!),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
