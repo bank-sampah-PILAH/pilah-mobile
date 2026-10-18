@@ -31,7 +31,8 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  Future<void> openPage(WidgetTester tester) async {
+  Future<void> openPage(WidgetTester tester,
+      {Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
       MultiBlocProvider(
@@ -46,7 +47,7 @@ void main() {
       ),
       extraRoutes: ['/pengumuman/detail'],
       pushed: true,
-      size: const Size(800, 2000),
+      size: size,
     );
     await tester.pumpAndSettle();
   }
@@ -138,5 +139,49 @@ void main() {
 
     expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
     expect(find.text('Coba Lagi'), findsNothing);
+  });
+
+  testWidgets('reaching the end of the list loads the next page',
+      (tester) async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 9,
+      'next': 'http://api.test/api/v1/nasabah/me/pengumuman?page=2',
+      'results': [
+        for (var i = 1; i <= 8; i++) _row('$i'),
+      ],
+    });
+    await openPage(tester, size: const Size(800, 400));
+
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 9,
+      'next': null,
+      'results': [_row('9')],
+    });
+    await tester.fling(find.text('Pengumuman 1'), const Offset(0, -1200), 3000);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('pengumuman-9')), findsOneWidget);
+    expect(
+      api.requests.where((call) => call.method == 'GET').length,
+      greaterThanOrEqualTo(2),
+    );
+  });
+
+  testWidgets('pulling down refreshes the list in place', (tester) async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1')],
+    });
+    await openPage(tester);
+
+    await tester.drag(find.text('Pengumuman 1'), const Offset(0, 600));
+    await tester.pumpAndSettle();
+
+    expect(
+      api.requests.where((call) => call.method == 'GET').length,
+      greaterThanOrEqualTo(2),
+    );
+    expect(find.byKey(const ValueKey('pengumuman-1')), findsOneWidget);
   });
 }
