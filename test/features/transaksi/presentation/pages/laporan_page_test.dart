@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
@@ -72,7 +74,8 @@ void main() {
     });
   });
 
-  Future<void> pumpPage(WidgetTester tester, {double textScale = 1}) async {
+  Future<void> pumpPage(WidgetTester tester,
+      {double textScale = 1, bool inWebShell = false}) async {
     await tester.pumpWidget(
       MaterialApp(
         builder: (context, child) => MediaQuery(
@@ -85,7 +88,9 @@ void main() {
             getTransaksi,
             _MockExportTransaksiUseCase(),
           ),
-          child: const LaporanPage(),
+          child: inWebShell
+              ? const WebContentSurface(child: LaporanPage())
+              : const LaporanPage(),
         ),
       ),
     );
@@ -116,6 +121,29 @@ void main() {
         .last as TransaksiFilter;
     expect(filter.periode, '12_bulan');
     expect(tester.takeException(), isNull);
+  });
+
+  Color pageBackground(WidgetTester tester) => tester
+      .widget<Scaffold>(find
+          .descendant(
+              of: find.byType(LaporanPage), matching: find.byType(Scaffold))
+          .first)
+      .backgroundColor!;
+
+  testWidgets('the web shell shows the report on a white page', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester, inWebShell: true);
+
+    expect(pageBackground(tester), Colors.white);
+  });
+
+  testWidgets('the phone layout keeps its grey page', (tester) async {
+    await pumpPage(tester);
+
+    expect(pageBackground(tester), AppColors.surface);
   });
 
   testWidgets('resizing keeps the visible search consistent with the report',
