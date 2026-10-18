@@ -167,7 +167,7 @@ void main() {
     expect(source.requestedCategoryRanges.single.end, expectedRange.end);
   });
 
-  testWidgets('category widget ranks by weight and displays kg and count',
+  testWidgets('category report shows ranked weight chart for selected range',
       (tester) async {
     final source = _ReportingDataSource()
       ..categories = const [
@@ -177,14 +177,30 @@ void main() {
             category: 'Kertas', totalWeightKg: 8, depositCount: 1),
       ];
     await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+      home: Scaffold(
+        body: WasteCategoriesWidget(
+          dataSource: source,
+          initialRange: DashboardReportRange(
+            start: DateTime(2026, 10, 1),
+            end: DateTime(2026, 10, 31),
+          ),
+        ),
+      ),
     ));
     await tester.pumpAndSettle();
 
     expect(tester.getTopLeft(find.text('Kertas')).dy,
         lessThan(tester.getTopLeft(find.text('Plastik')).dy));
+    expect(find.byType(PieChart), findsOneWidget);
+    expect(
+        find.text('Berat per kategori, 1 sampai 31 Okt 2026'), findsOneWidget);
+    expect(find.text('Total 10 kg'), findsOneWidget);
     expect(find.text('8 kg'), findsOneWidget);
+    expect(find.text('80,0%'), findsOneWidget);
     expect(find.text('1 setoran'), findsOneWidget);
+
+    final chart = tester.widget<PieChart>(find.byType(PieChart));
+    expect(chart.data.sections.map((section) => section.value), [8, 2]);
   });
 
   testWidgets('category weight uses a decimal comma, not a dot',
