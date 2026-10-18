@@ -146,6 +146,18 @@ void main() {
     expect(pageBackground(tester), AppColors.surface);
   });
 
+  testWidgets('a wide screen keeps the web gutter around the title',
+      (tester) async {
+    tester.view.physicalSize = const Size(1000, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+
+    expect(tester.getTopLeft(find.text('Riwayat Aktivitas')).dx, 32);
+    expect(tester.getRect(find.byType(TextField)).right, 1000 - 32);
+  });
+
   testWidgets('resizing keeps the visible search consistent with the report',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
