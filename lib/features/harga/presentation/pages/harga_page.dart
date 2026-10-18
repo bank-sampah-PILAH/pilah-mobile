@@ -464,7 +464,7 @@ class _HargaCard extends StatelessWidget {
     if (!selected) return card;
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.greenDark, width: 2),
       ),
       child: card,
