@@ -99,6 +99,37 @@ void main() {
     expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
   });
 
+  testWidgets('the price is the most prominent text on a card', (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+
+    double size(Finder f) => tester.widget<Text>(f.first).style!.fontSize ?? 14;
+    expect(
+        size(find.text('Rp 2.500')), greaterThan(size(find.text('Botol PET'))));
+  });
+
+  testWidgets('a card has no chevron: the whole card opens the detail',
+      (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+  });
+
+  testWidgets('a long name and description stay on one line each',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [
+        _row('9', 'Botol plastik bening berukuran sangat besar sekali'),
+      ],
+    });
+    await openPage(tester, size: const Size(360, 1400));
+
+    expect(tester.takeException(), isNull);
+    final name = tester.widget<Text>(
+        find.text('Botol plastik bening berukuran sangat besar sekali'));
+    expect(name.maxLines, 1);
+    expect(name.overflow, TextOverflow.ellipsis);
+  });
+
   testWidgets('a card no longer carries its own history link', (tester) async {
     await openPage(tester);
 
