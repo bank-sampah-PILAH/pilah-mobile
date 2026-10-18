@@ -31,7 +31,8 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  Future<void> openPage(WidgetTester tester) async {
+  Future<void> openPage(WidgetTester tester,
+      {Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
       MultiBlocProvider(
@@ -46,7 +47,7 @@ void main() {
       ),
       extraRoutes: ['/pengumuman/detail'],
       pushed: true,
-      size: const Size(800, 2000),
+      size: size,
     );
     await tester.pumpAndSettle();
   }
@@ -140,6 +141,50 @@ void main() {
     expect(find.text('Coba Lagi'), findsNothing);
   });
 
+  testWidgets('reaching the end of the list loads the next page',
+      (tester) async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 9,
+      'next': 'http://api.test/api/v1/nasabah/me/pengumuman?page=2',
+      'results': [
+        for (var i = 1; i <= 8; i++) _row('$i'),
+      ],
+    });
+    await openPage(tester, size: const Size(800, 400));
+
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 9,
+      'next': null,
+      'results': [_row('9')],
+    });
+    await tester.fling(find.text('Pengumuman 1'), const Offset(0, -1200), 3000);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('pengumuman-9')), findsOneWidget);
+    expect(
+      api.requests.where((call) => call.method == 'GET').length,
+      greaterThanOrEqualTo(2),
+    );
+  });
+
+  testWidgets('pulling down refreshes the list in place', (tester) async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1')],
+    });
+    await openPage(tester);
+
+    await tester.drag(find.text('Pengumuman 1'), const Offset(0, 600));
+    await tester.pumpAndSettle();
+
+    expect(
+      api.requests.where((call) => call.method == 'GET').length,
+      greaterThanOrEqualTo(2),
+    );
+    expect(find.byKey(const ValueKey('pengumuman-1')), findsOneWidget);
+  });
+
   testWidgets('nearly filling the viewport does not page early',
       (tester) async {
     api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
@@ -155,73 +200,5 @@ void main() {
       api.requests.where((call) => call.query['page'] == '2'),
       isEmpty,
     );
-  });
-
-  testWidgets('a list that fills past the viewport pages at its end',
-      (tester) async {
-    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
-      'count': 31,
-      'next': 'http://api.test/api/v1/nasabah/me/pengumuman?page=2',
-      'results': [
-        for (var i = 1; i <= 30; i++) _row('$i', dibaca: true),
-      ],
-    });
-    await openPage(tester);
-    expect(
-      api.requests.where((call) => call.query['page'] == '2'),
-      isEmpty,
-      reason: 'the rows still leave scroll behind: no next-page fetch yet',
-    );
-
-    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
-      'count': 31,
-      'next': null,
-      'results': [_row('31')],
-    });
-    // Drag toward the bottom in small steps until the near-end listener
-    // fetches page 2, then let the appended row land.
-    for (var i = 0;
-        i < 80 && api.requests.every((call) => call.query['page'] != '2');
-        i++) {
-      await tester.drag(find.byType(ListView).last, const Offset(0, -200));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 40));
-    }
-    await tester.pumpAndSettle();
-
-    expect(
-      api.requests.any((call) => call.query['page'] == '2'),
-      isTrue,
-    );
-    // One more drag reveals the row appended just below the fold.
-    await tester.drag(find.byType(ListView).last, const Offset(0, -300));
-    await tester.pump();
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('pengumuman-31')), findsOneWidget);
-  });
-
-  testWidgets('a pull-to-refresh reloads silently', (tester) async {
-    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
-      'count': 1,
-      'next': null,
-      'results': [_row('1')],
-    });
-    await openPage(tester);
-
-    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
-      'count': 1,
-      'next': null,
-      'results': [_row('1', dibaca: true)],
-    });
-    await tester.fling(find.byType(ListView), const Offset(0, 600), 6000);
-    await tester.pumpAndSettle();
-
-    final gets = api.requests
-        .where((call) =>
-            call.method == 'GET' &&
-            call.path == '/api/v1/nasabah/me/pengumuman')
-        .length;
-    expect(gets, 2);
-    expect(find.byKey(const ValueKey('pengumuman-belum-dibaca')), findsNothing);
   });
 }

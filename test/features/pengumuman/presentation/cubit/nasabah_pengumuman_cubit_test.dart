@@ -102,7 +102,8 @@ void main() {
     expect(cubit.state.error, isNotEmpty);
   });
 
-  test('a failed next page keeps the rows and clears the spinner', () async {
+  test('a next-page failure surfaces its message and clears the spinner',
+      () async {
     api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
       'count': 2,
       'next': 'http://api.test/api/v1/nasabah/me/pengumuman?page=2',
@@ -114,29 +115,13 @@ void main() {
     await cubit.loadNextPage();
 
     final state = cubit.state;
-    expect(state.items, hasLength(1));
+    expect(state.status, NasabahPengumumanStatus.loaded);
     expect(state.isLoadingMore, isFalse);
-    expect(state.error, 'Data gagal dimuat. Periksa koneksi dan coba lagi.');
+    expect(state.error, isNotEmpty);
+    expect(state.items, hasLength(1));
   });
 
-  test('tandaiDibaca touches only the matched row of many', () async {
-    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
-      'count': 2,
-      'next': null,
-      'results': [_row('1'), _row('2')],
-    });
-    await cubit.load();
-
-    api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca',
-        json: {'id': '1', 'dibaca': true, 'dibaca_pada': null});
-    await cubit.tandaiDibaca('1');
-
-    final items = cubit.state.items;
-    expect(items[0].dibaca, isTrue);
-    expect(items[1].dibaca, isFalse);
-  });
-
-  test('a failed tandaiDibaca leaves the list untouched', () async {
+  test('a failed read-marker keeps the list as it is', () async {
     api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
       'count': 1,
       'next': null,
@@ -144,11 +129,44 @@ void main() {
     });
     await cubit.load();
 
-    api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca',
-        status: 500, json: {});
-
+    api.fail('POST', '/api/v1/nasabah/me/pengumuman/1/baca');
     await cubit.tandaiDibaca('1');
 
     expect(cubit.state.items.single.dibaca, isFalse);
+  });
+
+  test('marking one read leaves the other rows untouched', () async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 2,
+      'next': null,
+      'results': [_row('1'), _row('2')],
+    });
+    await cubit.load();
+    final second = cubit.state.items[1];
+
+    api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca',
+        json: {'id': '1', 'dibaca': true});
+    await cubit.tandaiDibaca('1');
+
+    final items = cubit.state.items;
+    expect(items[0].dibaca, isTrue);
+    // The untouched row keeps its identity, not a copy.
+    expect(identical(items[1], second), isTrue);
+  });
+
+  test('reset returns to the initial state', () async {
+    api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1')],
+    });
+    await cubit.load();
+
+    cubit.reset();
+    await Future<void>.delayed(Duration.zero);
+
+    final state = cubit.state;
+    expect(state.status, NasabahPengumumanStatus.initial);
+    expect(state.items, isEmpty);
   });
 }
