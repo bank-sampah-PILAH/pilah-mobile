@@ -339,7 +339,7 @@ class _WasteCategoryBreakdown extends StatelessWidget {
       return PieChartSectionData(
         value: entry.$2.totalWeightKg,
         color: color,
-        radius: 80,
+        radius: 42,
         showTitle: false,
         borderSide: const BorderSide(color: Colors.white, width: 2),
       );
