@@ -45,8 +45,8 @@ class AuthenticationBloc
     emitter(AuthenticationLoading());
     final response = await _useCases.postLogin(event.email, event.password);
     response.fold(
-      (failure) => emitter(
-          AuthenticationFailure(message: failure.displayMessage)),
+      (failure) =>
+          emitter(AuthenticationFailure(message: failure.displayMessage)),
       (entity) => emitter(Authenticated(authEntity: entity)),
     );
   }

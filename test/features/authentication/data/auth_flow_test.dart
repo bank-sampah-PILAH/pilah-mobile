@@ -74,8 +74,7 @@ void main() {
       api.on('POST', '/api/v1/auth/login',
           json: authPayload(bankStatus: 'active'));
 
-      final result = await stack.interactor
-          .postLogin('siti@x.test', 'rahasia');
+      final result = await stack.interactor.postLogin('siti@x.test', 'rahasia');
 
       final auth = result.getOrElse(() => throw StateError('failed'));
       expect(auth.name, 'Siti Aminah');
@@ -85,8 +84,7 @@ void main() {
       expect(auth.noHp, '+62812');
       expect(auth.photoUrl, contains('Siti%20Aminah'));
       expect(api.last.path, '/api/v1/auth/login');
-      expect(api.last.json,
-          {'email': 'siti@x.test', 'password': 'rahasia'});
+      expect(api.last.json, {'email': 'siti@x.test', 'password': 'rahasia'});
     });
 
     test('a rejected login is a failure', () async {
