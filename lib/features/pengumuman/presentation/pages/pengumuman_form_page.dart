@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
@@ -235,15 +237,6 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: Text(
-          _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman',
-          style: AppTextStyle.title1.copyWith(color: Colors.black),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
       body: BlocBuilder<PengumumanCubit, PengumumanState>(
         builder: (context, state) {
           final isSaving = state is PengumumanLoaded && state.isSaving;
@@ -253,6 +246,8 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
           return SafeArea(
             child: Column(
               children: [
+                AppBackHeader(
+                    title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman'),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.all(16),
@@ -261,7 +256,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.greenDark.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Text(
                           'Pengumuman akan dikirim ke semua nasabah bank sampah Anda.',
@@ -316,7 +311,8 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
                         const SizedBox(height: 12),
                         Text(
                           _validationError!,
-                          style: AppTextStyle.small.copyWith(color: Colors.red),
+                          style: AppTextStyle.small
+                              .copyWith(color: AppColors.danger),
                         ),
                       ],
                     ],
@@ -326,8 +322,8 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      CustomPrimaryButton(
-                        title:
+                      AppButton(
+                        label:
                             _isTerjadwal ? 'Simpan Perubahan' : 'Simpan Draft',
                         onPressed: busy ? null : _simpanDraft,
                       ),
@@ -336,30 +332,18 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
                         Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
+                              child: AppButton(
+                                label: 'Jadwalkan',
+                                variant: AppButtonVariant.outlined,
                                 onPressed: busy
                                     ? null
                                     : () => _terbitkan(jadwalkan: true),
-                                style: OutlinedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Jadwalkan',
-                                  style: AppTextStyle.title1.copyWith(
-                                    color: AppColors.greenDark,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: CustomPrimaryButton(
-                                title: 'Terbitkan Sekarang',
+                              child: AppButton(
+                                label: 'Terbitkan Sekarang',
                                 onPressed: busy
                                     ? null
                                     : () => _terbitkan(jadwalkan: false),
@@ -410,13 +394,14 @@ class _WaktuField extends StatelessWidget {
             Expanded(
               child: InkWell(
                 onTap: onPick,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: InputDecorator(
                   decoration: appInputDecoration(hintText: 'Pilih waktu'),
                   child: Text(
                     text,
                     style: AppTextStyle.regularSemiBold.copyWith(
-                      color: waktu == null ? AppColors.grey200 : Colors.black,
+                      color:
+                          waktu == null ? AppColors.grey200 : AppColors.black,
                     ),
                   ),
                 ),
