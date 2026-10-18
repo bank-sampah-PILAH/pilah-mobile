@@ -42,7 +42,7 @@ class PengumumanDetailPage extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.schedule_outlined,
+                  const Icon(Icons.schedule_outlined,
                       size: 14, color: NasabahStyle.muted),
                   const SizedBox(width: 6),
                   Text(
