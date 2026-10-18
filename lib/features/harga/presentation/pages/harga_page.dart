@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -153,27 +155,35 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   }
 
   Widget _buildList() {
+    final web = context.layoutBreakpoint != LayoutBreakpoint.compact;
+    final search = CustomSearchField(
+      hintText: 'Cari jenis sampah...',
+      onChanged: (value) {
+        context.read<HargaCubit>().searchHarga(value);
+      },
+    );
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: web
+          ? const EdgeInsets.symmetric(horizontal: AppSpacing.webGutter)
+          : const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
-          Text(
-            'Jenis Sampah & Harga',
-            style: AppTextStyle.headline1.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
+          SizedBox(height: web ? AppSpacing.webTop : 16),
+          if (web)
+            AppPageHeader(title: 'Jenis Sampah & Harga', search: search)
+          else ...[
+            Text(
+              'Jenis Sampah & Harga',
+              style: AppTextStyle.headline1.copyWith(
+                color: Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          CustomSearchField(
-            hintText: 'Cari jenis sampah...',
-            onChanged: (value) {
-              context.read<HargaCubit>().searchHarga(value);
-            },
-          ),
+            const SizedBox(height: 16),
+            search,
+          ],
           const SizedBox(height: 16),
           BlocBuilder<HargaCubit, HargaState>(
             buildWhen: (previous, current) {
