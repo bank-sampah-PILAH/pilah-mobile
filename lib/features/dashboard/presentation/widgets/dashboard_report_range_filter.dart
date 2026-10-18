@@ -27,6 +27,9 @@ String reportDateRangeCaption(DashboardReportRange range) =>
     '${_reportDateIndonesian(range.end)}';
 
 String reportCategoryWeightSubtitle(DashboardReportRange range) {
+  if (DateUtils.isSameDay(range.start, range.end)) {
+    return 'Berat per kategori, ${_reportDateIndonesian(range.start)}';
+  }
   if (range.start.year == range.end.year &&
       range.start.month == range.end.month) {
     return 'Berat per kategori, ${range.start.day} sampai ${range.end.day} '
@@ -307,7 +310,10 @@ class _ReportRangeCalendarState extends State<_ReportRangeCalendar> {
             Text(
               _start == null || _end == null
                   ? 'Pilih tanggal mulai dan selesai'
-                  : '${reportDate(_start!)} – ${reportDate(_end!)}',
+                  : DateUtils.isSameDay(_start!, _end!)
+                      ? _reportDateIndonesian(_start!)
+                      : '${_reportDateIndonesian(_start!)} – '
+                          '${_reportDateIndonesian(_end!)}',
               style: AppTextStyle.extraSmall,
             ),
             const SizedBox(height: 8),

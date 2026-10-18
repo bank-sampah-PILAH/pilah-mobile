@@ -115,6 +115,15 @@ void main() {
 
     expect(find.text('Periode laporan'), findsOneWidget);
     expect(find.text('2 kg'), findsOneWidget);
+    expect(find.byType(PieChart), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(PieChart)).dy,
+      lessThan(tester.getTopLeft(find.text('Plastik')).dy),
+    );
+    expect(
+      find.text('Plastik menyumbang 100,0% dari total berat periode ini.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -198,6 +207,12 @@ void main() {
     expect(find.text('8 kg'), findsOneWidget);
     expect(find.text('80,0%'), findsOneWidget);
     expect(find.text('1 setoran'), findsOneWidget);
+    expect(
+      find.text(
+        'Kertas menyumbang 80,0% dari total berat periode ini, diikuti Plastik.',
+      ),
+      findsOneWidget,
+    );
 
     final chart = tester.widget<PieChart>(find.byType(PieChart));
     expect(chart.data.sections.map((section) => section.value), [8, 2]);
@@ -206,6 +221,29 @@ void main() {
         (section) => section.radius + chart.data.centerSpaceRadius <= 110,
       ),
       isTrue,
+    );
+  });
+
+  testWidgets('category summary names two following categories',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(category: 'Kaca', totalWeightKg: 6, depositCount: 1),
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 3, depositCount: 1),
+        WasteCategoryTotal(
+            category: 'Logam', totalWeightKg: 1, depositCount: 1),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Kaca menyumbang 60,0% dari total berat periode ini, diikuti Plastik dan Logam.',
+      ),
+      findsOneWidget,
     );
   });
 
@@ -336,6 +374,33 @@ void main() {
     ]).single!;
     expect(withdrawalTooltip.text, contains('Pencairan: 1 transaksi'));
     expect(withdrawalTooltip.text, contains('Rp 40'));
+  });
+
+  testWidgets('empty category reports say there is no data', (tester) async {
+    final source = _ReportingDataSource();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada data'), findsOneWidget);
+    expect(find.text('Belum ada berat'), findsNothing);
+  });
+
+  testWidgets('zero-weight categories say there is no weight', (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 0, depositCount: 3),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada berat'), findsOneWidget);
+    expect(find.text('Belum ada data'), findsNothing);
+    expect(find.byType(PieChart), findsNothing);
   });
 
   testWidgets('empty and failed reports have independent feedback',

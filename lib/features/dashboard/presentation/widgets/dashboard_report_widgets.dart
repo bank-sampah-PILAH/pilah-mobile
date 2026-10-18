@@ -208,16 +208,19 @@ class _WasteCategoriesWidgetState extends State<WasteCategoriesWidget> {
               snapshot.hasData ? [...snapshot.data!] : <WasteCategoryTotal>[];
           categories.sort((a, b) => b.totalWeightKg.compareTo(a.totalWeightKg));
           final totalWeightKg = categories.fold<double>(
-              0, (total, category) => total + category.totalWeightKg);
-          final hasData = snapshot.connectionState == ConnectionState.done &&
-              !snapshot.hasError &&
-              categories.isNotEmpty &&
-              totalWeightKg > 0;
+            0,
+            (total, category) => total + category.totalWeightKg,
+          );
+          final hasPositiveWeight =
+              snapshot.connectionState == ConnectionState.done &&
+                  !snapshot.hasError &&
+                  categories.isNotEmpty &&
+                  totalWeightKg > 0;
 
           return _ReportCard(
             title: 'Kategori sampah',
             subtitle: reportCategoryWeightSubtitle(widget.range ?? _range),
-            trailing: hasData
+            trailing: hasPositiveWeight
                 ? _ReportTotalBadge(totalWeightKg: totalWeightKg)
                 : null,
             controls: [
@@ -230,19 +233,33 @@ class _WasteCategoriesWidgetState extends State<WasteCategoriesWidget> {
                   }),
                 ),
             ],
-            child: snapshot.connectionState != ConnectionState.done
-                ? const Center(child: CircularProgressIndicator())
-                : snapshot.hasError
-                    ? const _ReportMessage('Gagal memuat kategori')
-                    : !hasData
-                        ? const _ReportMessage('Belum ada data')
-                        : _WasteCategoryBreakdown(
-                            categories: categories,
-                            totalWeightKg: totalWeightKg,
-                          ),
+            child: _reportContent(snapshot, categories, totalWeightKg),
           );
         },
       );
+
+  Widget _reportContent(
+    AsyncSnapshot<List<WasteCategoryTotal>> snapshot,
+    List<WasteCategoryTotal> categories,
+    double totalWeightKg,
+  ) {
+    if (snapshot.connectionState != ConnectionState.done) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (snapshot.hasError) {
+      return const _ReportMessage('Gagal memuat kategori');
+    }
+    if (categories.isEmpty) {
+      return const _ReportMessage('Belum ada data');
+    }
+    if (totalWeightKg <= 0) {
+      return const _ReportMessage('Belum ada berat');
+    }
+    return _WasteCategoryBreakdown(
+      categories: categories,
+      totalWeightKg: totalWeightKg,
+    );
+  }
 }
 
 final _categoryChartColors = <Color>[
