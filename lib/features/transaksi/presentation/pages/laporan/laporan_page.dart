@@ -87,7 +87,16 @@ class _LaporanPageState extends State<LaporanPage> {
             body: AppRefreshIndicator(
               onRefresh: () =>
                   context.read<RiwayatAktivitasCubit>().load(silent: true),
-              child: const AktivitasListView(),
+              // Baris daftar sudah memberi 16 sendiri; sisanya melengkapi gutter
+              // web supaya daftar sejajar dengan judul.
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: _webPadding(context)
+                      ? AppSpacing.webGutter - AppSpacing.lg
+                      : 0,
+                ),
+                child: const AktivitasListView(),
+              ),
             ),
           ),
         ),
