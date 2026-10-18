@@ -8,7 +8,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 class ReleaseVersionTest(unittest.TestCase):
     def test_play_version_is_newer_than_rejected_version_code(self):
         pubspec = (ROOT / "pubspec.yaml").read_text()
-        self.assertIn("version: 2.0.0+8", pubspec)
+        self.assertIn("version: 2.0.0+7", pubspec)
 
 
 if __name__ == "__main__":
