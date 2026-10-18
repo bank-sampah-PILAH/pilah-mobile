@@ -144,14 +144,16 @@ abstract final class AppTheme {
         dayOverlayColor: WidgetStatePropertyAll(
           AppColors.greenDark.withValues(alpha: 0.08),
         ),
-        todayForegroundColor: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.selected)
-                ? Colors.white
-                : AppColors.greenDark),
-        todayBackgroundColor: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.selected)
-                ? AppColors.greenDark
-                : AppColors.greenLight),
+        todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return AppColors.grey100;
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return AppColors.greenDark;
+        }),
+        todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return null;
+          if (states.contains(WidgetState.selected)) return AppColors.greenDark;
+          return AppColors.greenLight;
+        }),
         todayBorder: const BorderSide(color: AppColors.greenDark),
         yearStyle: AppTextStyle.small,
         yearForegroundColor: WidgetStateProperty.resolveWith((states) {

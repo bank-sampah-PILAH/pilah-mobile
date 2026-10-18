@@ -56,6 +56,14 @@ void main() {
       AppColors.greenLight,
     );
     expect(
+      pickerTheme.todayForegroundColor!.resolve(const {WidgetState.disabled}),
+      AppColors.grey100,
+    );
+    expect(
+      pickerTheme.todayBackgroundColor!.resolve(const {WidgetState.disabled}),
+      isNull,
+    );
+    expect(
       pickerTheme.yearForegroundColor!.resolve(const {WidgetState.disabled}),
       AppColors.grey100,
     );
