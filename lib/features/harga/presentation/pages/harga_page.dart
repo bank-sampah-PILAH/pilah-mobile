@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
-import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -24,7 +23,9 @@ import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 class HargaPage extends StatelessWidget {
@@ -110,6 +111,25 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       builder: (_) => TambahJenisSampahBottomSheet(
         hargaCubit: hargaCubit,
         initialData: item,
+      ),
+    );
+  }
+
+  /// Membuka detail [item]. Mengedit dan melihat riwayat harga adalah dua
+  /// pilihan di dalamnya, dan masing-masing menutup detail lebih dulu.
+  void _openDetail(HargaEntity item) {
+    showNasabahSurface<void>(
+      context,
+      builder: (sheetContext) => HargaDetailSheet(
+        item: item,
+        onEdit: () {
+          Navigator.of(sheetContext).pop();
+          _openForm(item);
+        },
+        onRiwayat: () {
+          Navigator.of(sheetContext).pop();
+          context.push(RiwayatHargaPage.route, extra: item);
+        },
       ),
     );
   }
@@ -267,7 +287,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
           return _HargaCard(
             item: item,
             selected: _editing?.id == item.id,
-            onTap: () => _openForm(item),
+            onTap: () => _openDetail(item),
           );
         },
       ),
@@ -407,16 +427,6 @@ class _HargaCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                // Its own tap target: tapping elsewhere on the card still
-                // opens the edit form.
-                AppButton(
-                  label: 'Riwayat harga',
-                  variant: AppButtonVariant.text,
-                  size: AppButtonSize.compact,
-                  expand: false,
-                  onPressed: () =>
-                      context.push(RiwayatHargaPage.route, extra: item),
-                ),
               ],
             ),
           ),
