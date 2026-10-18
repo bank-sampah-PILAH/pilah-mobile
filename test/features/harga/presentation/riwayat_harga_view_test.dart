@@ -76,6 +76,29 @@ void main() {
     expect(find.text('Harga awal dari data lama'), findsOneWidget);
   });
 
+  testWidgets('shows how much each version moved from the one before',
+      (tester) async {
+    api.on('GET', _path, json: {
+      'results': [
+        _versi('5500.00', '2026-10-14T17:00:00Z', 'terjadwal'),
+        _versi('5000.00', '2026-10-14T17:00:00Z', 'digantikan'),
+        _versi('4000.00', '2026-10-01T02:30:00Z', 'berlaku'),
+        _versi('3500.00', '2026-09-01T03:00:00Z', 'sebelumnya', oleh: null),
+        _versi('3600.00', '2026-08-01T03:00:00Z', 'sebelumnya'),
+      ],
+    });
+
+    await pumpView(tester);
+
+    expect(find.text('▲ Rp 1.500 (+38%)'), findsOneWidget,
+        reason: 'compared with 4.000, skipping the replaced 5.000');
+    expect(find.text('▲ Rp 500 (+14%)'), findsOneWidget);
+    expect(find.text('▼ Rp 100 (-3%)'), findsOneWidget);
+    expect(find.textContaining('▲'), findsNWidgets(2));
+    expect(find.textContaining('▼'), findsOneWidget,
+        reason: 'the replaced version and the very first one have no change');
+  });
+
   testWidgets('says so when the jenis has no price history yet',
       (tester) async {
     api.on('GET', _path, json: {'results': <Object>[]});
@@ -89,7 +112,7 @@ void main() {
     api.fail('GET', _path);
     await pumpView(tester);
 
-    expect(find.text('Gagal Memuat Riwayat Harga'), findsOneWidget);
+    expect(find.text('Coba lagi'), findsOneWidget);
     api.on('GET', _path, json: {
       'results': [_versi('4000.00', '2026-10-01T02:30:00Z', 'berlaku')],
     });
