@@ -4,6 +4,20 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
+Color? _dateForeground(Set<WidgetState> states, Color normal) {
+  if (states.contains(WidgetState.disabled)) return AppColors.grey100;
+  if (states.contains(WidgetState.selected)) return Colors.white;
+  return normal;
+}
+
+Color? _selectedDateBackground(Set<WidgetState> states) =>
+    states.contains(WidgetState.selected) ? AppColors.greenDark : null;
+
+Color? _todayBackground(Set<WidgetState> states) {
+  if (states.contains(WidgetState.disabled)) return null;
+  return _selectedDateBackground(states) ?? AppColors.greenLight;
+}
+
 /// The app's [ThemeData], so a stock Material widget looks like the rest of
 /// the app without every screen restyling it.
 abstract final class AppTheme {
@@ -134,35 +148,25 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w600,
         ),
         dayStyle: AppTextStyle.small,
-        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) return AppColors.grey100;
-          if (states.contains(WidgetState.selected)) return Colors.white;
-          return AppColors.black;
-        }),
-        dayBackgroundColor: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.selected) ? AppColors.greenDark : null),
+        dayForegroundColor: WidgetStateProperty.resolveWith(
+          (states) => _dateForeground(states, AppColors.black),
+        ),
+        dayBackgroundColor:
+            WidgetStateProperty.resolveWith(_selectedDateBackground),
         dayOverlayColor: WidgetStatePropertyAll(
           AppColors.greenDark.withValues(alpha: 0.08),
         ),
-        todayForegroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) return AppColors.grey100;
-          if (states.contains(WidgetState.selected)) return Colors.white;
-          return AppColors.greenDark;
-        }),
-        todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) return null;
-          if (states.contains(WidgetState.selected)) return AppColors.greenDark;
-          return AppColors.greenLight;
-        }),
+        todayForegroundColor: WidgetStateProperty.resolveWith(
+          (states) => _dateForeground(states, AppColors.greenDark),
+        ),
+        todayBackgroundColor: WidgetStateProperty.resolveWith(_todayBackground),
         todayBorder: const BorderSide(color: AppColors.greenDark),
         yearStyle: AppTextStyle.small,
-        yearForegroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) return AppColors.grey100;
-          if (states.contains(WidgetState.selected)) return Colors.white;
-          return AppColors.black;
-        }),
-        yearBackgroundColor: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.selected) ? AppColors.greenDark : null),
+        yearForegroundColor: WidgetStateProperty.resolveWith(
+          (states) => _dateForeground(states, AppColors.black),
+        ),
+        yearBackgroundColor:
+            WidgetStateProperty.resolveWith(_selectedDateBackground),
         dividerColor: AppColors.border,
         cancelButtonStyle:
             TextButton.styleFrom(foregroundColor: AppColors.grey100),
