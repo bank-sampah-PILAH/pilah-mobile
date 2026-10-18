@@ -64,6 +64,20 @@ void main() {
     );
   });
 
+  testWidgets('on a desktop window the title is a page header, not an AppBar',
+      (tester) async {
+    await _pumpAt(tester, const Size(1000, 900));
+
+    expect(find.byType(AppBar), findsNothing);
+    expect(tester.getTopLeft(find.text('Jadwal Kegiatan')).dx, 32);
+  });
+
+  testWidgets('on a phone the title stays in the AppBar', (tester) async {
+    await _pumpAt(tester, const Size(420, 900));
+
+    expect(find.byType(AppBar), findsOneWidget);
+  });
+
   testWidgets('on a desktop window the form opens as a panel, not a sheet',
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));

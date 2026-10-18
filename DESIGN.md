@@ -58,7 +58,7 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 | | Scale | Status |
 |---|---|---|
 | Radius | 8 (chips, small tiles), 12 (inputs, buttons), 16 (cards, dialogs), 24 (sheets, hero cards) | **in code**: `AppRadius.sm`, `md`, `lg`, `xl` (`lib/design/constants/radius.dart`). A bare number in `BorderRadius.circular(...)` fails `test/design/hardcoded_radius_test.dart`; the 44 off-scale ones left (10, 18, 20 and so on) are in its baseline and can only go down. |
-| Spacing | 4, 8, 12, 16, 24, 32 | proposed; no token yet |
+| Spacing | 4, 8, 12, 16, 24, 32 | **in code**: `AppSpacing.xs` … `xxl` (`lib/design/constants/spacing.dart`), plus `webGutter` and `webTop` for the web shell. Existing screens still use bare numbers; move them over as you touch them. |
 | Content width | 600 max on nasabah pages (`NasabahStyle.maxWidth`, `ContentBounds`) | in code |
 
 ### Surfaces (**in code**, `lib/design/theme/app_theme.dart`)
@@ -67,7 +67,8 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 - Bottom sheets: white, 24 top radius, no tint.
 - Pages: a `Scaffold` with no background of its own is white (`AppTheme.scaffoldBackgroundColor`); the Material default was a green-tinted off-white that made a screen unlike the rest.
 - App bars: white, no scroll tint, 18/w600 Poppins title.
-- Web shell (browser, wide): the navigation rail is a white panel with a 1 px `AppColors.border` on its right edge; pages sit on `AppColors.surface` and their cards stay white. A page that paints its own `Scaffold` background must not hard-code white: call `WebContentSurface.pageColor(context, phone: …)`, which gives `surface` inside the web shell and the phone colour everywhere else. Rail labels are 12 (`AppTextStyle.small`) in both the expanded and the narrow rail, in `AppColors.inkSoft`; the selected item uses `greenDark` on a `greenLight` indicator.
+- Web shell (browser, wide): the navigation rail is a white panel with a 1 px `AppColors.border` on its right edge; pages sit on white, the same as on the phone, and their cards stay white with a 1 px border. A page that paints its own `Scaffold` background must not hard-code a colour: call `WebContentSurface.pageColor(context, phone: …)`, which gives white inside the web shell and the phone colour everywhere else.
+- Web page header (**in code**, `AppPageHeader`): every tab page in the web shell starts the same way. The body has `AppSpacing.webGutter` (32) left and right and `AppSpacing.webTop` (24) above the title. Title (`headline1`), optional subtitle, a 360 wide search and the page actions share one row on an expanded window; below that the search drops under the title. Do not build a page title, search placement or `AppBar` per page. Rail labels are 12 (`AppTextStyle.small`) in both the expanded and the narrow rail, in `AppColors.inkSoft`; the selected item uses `greenDark` on a `greenLight` indicator.
 - Cards: white, flat, 16 radius, a 1 dp `AppColors.border` outline, no tint and no margin (put the margin where the card sits). A stock `Card(...)` needs no `color`, `shape` or `elevation`.
 
 ## 3. Components
@@ -82,7 +83,8 @@ Use these instead of building another one.
 | Header of a full Pengurus page | `AppBackHeader` (`design/widgets`) | Grey back button ("Kembali", 48 dp), a 20 bold title and optional `actions`. Without `onBack` it uses `maybePop`, so a `PopScope` is asked. Do not build a stock `AppBar`: `test/design/hardcoded_app_bars_test.dart` fails on a new one. |
 | Caption above a form field | `AppFieldLabel` (`design/widgets`) | `NAMA LENGKAP`: small bold capitals in `AppColors.grey100`, hint inside the field. Do not use a floating `labelText`. |
 | Button | `AppButton` (`design/widgets`) | Variants `primary`, `outlined`, `neutral` (cancel, back), `destructive`, `destructiveOutlined`, `warning`, `warningOutlined`, `tonal` (soft green, beside a primary) and `text` (a bare link inside a line of content). `size: AppButtonSize.compact` is 40 high with a 12 label and a 16 icon, for an action inside a card or a row; the regular size is 48 high, radius 12, 14 semibold label. Optional leading or trailing icon, `isLoading` and `expand`. A plain `ElevatedButton`, `FilledButton` or `OutlinedButton` already gets the same look from `AppTheme`, so do not write `styleFrom` per screen: `test/design/hardcoded_button_styles_test.dart` fails on a new one. |
-| Search | `CustomSearchField` | |
+| Search | `CustomSearchField` | On a web tab page put it in `AppPageHeader`'s `search` slot, which sets the 360 width and the place. |
+| Header of a web tab page | `AppPageHeader` (`design/layout`) | Title, optional subtitle, search and `actions` on one row in an expanded window, search under the title below it. Pair with `AppSpacing.webGutter` and `webTop` padding. Used by Daftar Nasabah, Jenis Sampah & Harga, Riwayat Aktivitas and Jadwal Kegiatan. |
 | Status chip | `CustomStatusBadge` | |
 | Filter / tab pill | `AppChip` (`design/widgets`) | Announced to screen readers as a selected or unselected button, ripple, 48 dp hit area, optional icon and count. Used by the nasabah, harga, aktivitas and pencairan filters and the metode of both pencairan forms; `PencairanChip` wraps it. `test/design/single_chip_test.dart` fails on a stock `ChoiceChip(` or `FilterChip(`. |
 | Tappable icon, link or field | `AppTapTarget` (`design/widgets`) | Button role, optional `label` for icon-only controls, ripple, 48 dp hit area, optional selected state for options in a group. Use instead of a bare `GestureDetector`. |

@@ -2,6 +2,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surf
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -83,7 +84,15 @@ class _DashboardPageState extends State<DashboardPage> {
           onRefresh: _onRefresh,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16.0),
+            padding: isPengurusWeb &&
+                    context.layoutBreakpoint != LayoutBreakpoint.compact
+                ? const EdgeInsets.fromLTRB(
+                    AppSpacing.webGutter,
+                    AppSpacing.webTop,
+                    AppSpacing.webGutter,
+                    AppSpacing.xl,
+                  )
+                : const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

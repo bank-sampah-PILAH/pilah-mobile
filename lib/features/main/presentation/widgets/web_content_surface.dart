@@ -1,35 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Latar halaman untuk shell web.
 ///
-/// Pada layar lebar rail berwarna putih dan kartu juga putih. Tanpa latar
-/// abu-abu di antaranya, keduanya melebur dengan halaman. Scaffold di setiap
+/// Latar halaman web sama dengan tampilan telepon: putih. Scaffold di setiap
 /// halaman mengambil warnanya dari tema, jadi cukup menimpa
 /// `scaffoldBackgroundColor` di sini; tema aplikasi dan tampilan telepon tidak
 /// berubah.
 ///
 /// Halaman yang mengecat latarnya sendiri (kebanyakan memakai putih) tidak
-/// terpengaruh tema, jadi mereka memanggil [pageColor]: abu-abu di dalam shell
+/// terpengaruh tema, jadi mereka memanggil [pageColor]: putih di dalam shell
 /// web, warna lama mereka di tempat lain.
 class WebContentSurface extends StatelessWidget {
   const WebContentSurface({super.key, required this.child});
 
   final Widget child;
 
-  /// Latar halaman: [AppColors.surface] di dalam shell web, selain itu [phone].
+  /// Latar halaman: [Colors.white] di dalam shell web, selain itu [phone].
   static Color pageColor(BuildContext context, {required Color phone}) =>
       context.getInheritedWidgetOfExactType<_WebSurfaceScope>() != null
-          ? AppColors.surface
+          ? Colors.white
           : phone;
 
   @override
   Widget build(BuildContext context) => Theme(
         data: Theme.of(context).copyWith(
-          scaffoldBackgroundColor: AppColors.surface,
+          scaffoldBackgroundColor: Colors.white,
         ),
         child: _WebSurfaceScope(
-          child: ColoredBox(color: AppColors.surface, child: child),
+          child: ColoredBox(color: Colors.white, child: child),
         ),
       );
 }

@@ -219,7 +219,7 @@ void main() {
   });
 
   group('WebContentSurface', () {
-    testWidgets('puts pages on the grey page colour', (tester) async {
+    testWidgets('puts pages on the white page colour', (tester) async {
       late Color background;
       await tester.pumpWidget(MaterialApp(
         home: WebContentSurface(
@@ -230,7 +230,7 @@ void main() {
         ),
       ));
 
-      expect(background, AppColors.surface);
+      expect(background, Colors.white);
     });
 
     testWidgets('lets a page that paints its own background follow it',
@@ -253,7 +253,7 @@ void main() {
         ]),
       ));
 
-      expect(inside, AppColors.surface);
+      expect(inside, Colors.white);
       expect(outside, Colors.white,
           reason: 'the phone layout keeps the colour it has today');
     });
