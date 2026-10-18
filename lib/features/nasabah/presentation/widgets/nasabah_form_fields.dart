@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -189,6 +190,7 @@ class NasabahGenderField extends StatelessWidget {
       label: 'JENIS KELAMIN',
       spaced: false,
       child: DropdownButtonFormField<String>(
+        borderRadius: BorderRadius.circular(AppRadius.md),
         initialValue: value,
         validator: (value) =>
             (value == null || value.isEmpty) ? 'Pilih jenis kelamin.' : null,

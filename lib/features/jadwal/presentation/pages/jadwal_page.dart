@@ -1056,6 +1056,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const AppFieldLabel('JENIS KEGIATAN'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   initialValue: _activity,
                   decoration: appInputDecoration(),
                   items: const [
@@ -1108,6 +1109,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                 const AppFieldLabel('CAKUPAN PENERIMA'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   initialValue: _audience,
                   decoration: appInputDecoration(),
                   items: [

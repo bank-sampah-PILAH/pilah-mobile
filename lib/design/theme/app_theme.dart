@@ -30,6 +30,13 @@ abstract final class AppTheme {
       // The Material default is a green-tinted off-white from the seed colour,
       // which made a screen that sets no background look unlike the rest.
       scaffoldBackgroundColor: Colors.white,
+      // A dropdown's menu is painted in the canvas colour, which is the same
+      // green-tinted off-white. White, like every other surface.
+      canvasColor: Colors.white,
+      // Hovered and keyboard-focused rows (a dropdown item, a popup item) get
+      // the soft green of a hovered table row, not Material's grey.
+      hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
+      focusColor: AppColors.greenLight.withValues(alpha: 0.45),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -94,6 +101,15 @@ abstract final class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
+          side: const BorderSide(color: AppColors.border),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
           side: const BorderSide(color: AppColors.border),
         ),
       ),

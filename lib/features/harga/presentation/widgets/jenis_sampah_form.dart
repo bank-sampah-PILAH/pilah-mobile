@@ -242,6 +242,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
         const AppFieldLabel('KATEGORI'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          borderRadius: BorderRadius.circular(AppRadius.md),
           initialValue: _selectedCategory,
           validator: _validateWajib,
           hint: const Text('— Pilih Kategori —'),

@@ -282,4 +282,55 @@ void main() {
       );
     });
   });
+
+  group('menus', () {
+    testWidgets('a dropdown menu is white, not the tinted canvas',
+        (tester) async {
+      await tester.pumpWidget(_app(
+        DropdownButton<String>(
+          value: 'a',
+          items: const [
+            DropdownMenuItem(value: 'a', child: Text('Kertas')),
+            DropdownMenuItem(value: 'b', child: Text('Plastik')),
+          ],
+          onChanged: (_) {},
+        ),
+      ));
+      await tester.tap(find.text('Kertas'));
+      await tester.pumpAndSettle();
+
+      // The menu paints itself in the canvas colour of the theme it sits in,
+      // which used to be the green-tinted off-white of the seed colour.
+      expect(Theme.of(tester.element(find.text('Plastik'))).canvasColor,
+          Colors.white);
+    });
+
+    testWidgets('a popup menu is white with a border and the input radius',
+        (tester) async {
+      await tester.pumpWidget(_app(
+        PopupMenuButton<int>(
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 1, child: Text('Satu')),
+          ],
+        ),
+      ));
+      await tester.tap(find.byType(PopupMenuButton<int>));
+      await tester.pumpAndSettle();
+
+      final menu = tester.widget<Material>(find
+          .ancestor(of: find.text('Satu'), matching: find.byType(Material))
+          .first);
+      expect(menu.color, Colors.white);
+      final shape = menu.shape! as RoundedRectangleBorder;
+      expect(shape.borderRadius, BorderRadius.circular(12));
+      expect(shape.side.color, AppColors.border);
+    });
+
+    test('hover and focus are the soft green, not Material grey', () {
+      expect(AppTheme.light.hoverColor,
+          AppColors.greenLight.withValues(alpha: 0.45));
+      expect(AppTheme.light.focusColor,
+          AppColors.greenLight.withValues(alpha: 0.45));
+    });
+  });
 }
