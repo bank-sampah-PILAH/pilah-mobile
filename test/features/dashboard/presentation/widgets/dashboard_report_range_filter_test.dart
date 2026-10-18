@@ -44,8 +44,8 @@ void main() {
       await pumpFilter(tester, changes);
       final custom =
           tester.getRect(find.widgetWithText(OutlinedButton, 'Kustom'));
-      final caption =
-          tester.getRect(find.text('Showing from 2026-06-01 to 2026-06-30'));
+      final caption = tester
+          .getRect(find.text('Menampilkan 1 Jun 2026 sampai 30 Jun 2026'));
       expect(caption.left, greaterThan(custom.right));
       expect(caption.center.dy, closeTo(custom.center.dy, 1));
       for (final label in ['Hari ini', '7 Hari', '30 Hari', 'Kustom']) {
@@ -73,6 +73,23 @@ void main() {
       expect(panel, findsNothing);
     });
   }
+
+  testWidgets('range captions use Indonesian abbreviated months',
+      (tester) async {
+    final range = DashboardReportRange(
+        start: DateTime(2026, 10, 1), end: DateTime(2026, 10, 31));
+    await pumpFilter(tester, [], initialRange: range);
+
+    expect(
+        find.text('Menampilkan 1 Okt 2026 sampai 31 Okt 2026'), findsOneWidget);
+    expect(reportCategoryWeightSubtitle(range),
+        'Berat per kategori, 1 sampai 31 Okt 2026');
+    expect(
+      reportCategoryWeightSubtitle(DashboardReportRange(
+          start: DateTime(2026, 9, 30), end: DateTime(2026, 10, 2))),
+      'Berat per kategori, 30 Sep 2026 sampai 2 Okt 2026',
+    );
+  });
 
   testWidgets(
       'presets select inclusive trailing ranges and mark the active button',
