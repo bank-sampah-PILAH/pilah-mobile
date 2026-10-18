@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -42,11 +44,11 @@ class NasabahTable extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   child: const _TableBody(),
                 ),
               ),
@@ -83,19 +85,13 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        FilledButton.icon(
+        AppButton(
+          label: 'Tambah Nasabah',
+          icon: Icons.add,
+          expand: false,
           onPressed: () => showNasabahSurface<void>(
             context,
             builder: (_) => const TambahNasabahBottomSheet(),
-          ),
-          icon: const Icon(Icons.add, size: 20),
-          label: const Text('Tambah Nasabah'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.greenDark,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            textStyle: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -356,7 +352,7 @@ class _RowState extends State<_Row> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                       color: n.avatarColor,
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(AppRadius.md)),
                   child: Text(n.initials,
                       style: AppTextStyle.small.copyWith(
                           color: n.textColor, fontWeight: FontWeight.bold)),
@@ -419,29 +415,27 @@ class _RowState extends State<_Row> {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerRight,
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          OutlinedButton(
-                              onPressed: () => _decide(true),
-                              style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.danger,
-                                  visualDensity: VisualDensity.compact,
-                                  side: const BorderSide(
-                                      color: AppColors.danger)),
-                              child: const Text('Tolak')),
+                          AppButton(
+                            label: 'Tolak',
+                            variant: AppButtonVariant.destructiveOutlined,
+                            size: AppButtonSize.compact,
+                            expand: false,
+                            onPressed: () => _decide(true),
+                          ),
                           const SizedBox(width: 8),
-                          FilledButton(
-                              onPressed: () => _decide(false),
-                              style: FilledButton.styleFrom(
-                                  visualDensity: VisualDensity.compact,
-                                  backgroundColor: AppColors.greenDark),
-                              child: const Text('Setujui')),
+                          AppButton(
+                            label: 'Setujui',
+                            size: AppButtonSize.compact,
+                            expand: false,
+                            onPressed: () => _decide(false),
+                          ),
                         ]))
-                    : OutlinedButton(
+                    : AppButton(
+                        label: 'Lihat detail',
+                        variant: AppButtonVariant.outlined,
+                        size: AppButtonSize.compact,
+                        expand: false,
                         onPressed: _open,
-                        style: OutlinedButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            foregroundColor: AppColors.greenDark,
-                            side: const BorderSide(color: AppColors.border)),
-                        child: const Text('Lihat detail'),
                       ),
               ),
             ),

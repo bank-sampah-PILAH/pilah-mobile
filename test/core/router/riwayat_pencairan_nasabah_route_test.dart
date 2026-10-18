@@ -122,7 +122,7 @@ void main() {
     router.go(RevisiPencairanPage.route, extra: 'p-1');
     await tester.pumpAndSettle();
     expect(find.text('Riwayat Perubahan'), findsOneWidget);
-    expect(find.text('Versi sekarang'), findsOneWidget);
+    expect(find.text('VERSI SEKARANG'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

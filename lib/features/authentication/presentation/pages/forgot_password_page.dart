@@ -1,5 +1,6 @@
 ﻿import 'package:pilah_mobile/core/utils/formatter/phone_formatter.dart';
-import 'package:pilah_mobile/design/widgets/atom/primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -35,52 +36,54 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
           children: [
-            const Icon(
-              Icons.lock_reset,
-              color: AppColors.primary,
-              size: 100,
-            ),
-            Text(
-              'Lupa kata sandi?',
-              style: AppTextStyle.headline1.copyWith(
-                color: AppColors.secondary,
+            const AppBackHeader(title: 'Atur Ulang Kata Sandi'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.lock_reset,
+                    color: AppColors.greenDark,
+                    size: 100,
+                  ),
+                  Text(
+                    'Lupa kata sandi?',
+                    style: AppTextStyle.headline1.copyWith(
+                      color: AppColors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Kami akan mengirimkan OTP untuk mengganti kata sandimu',
+                    style: AppTextStyle.regularSemiBold.copyWith(
+                      color: AppColors.grey100,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  AppTextField(
+                    controller: _phoneController,
+                    label: 'Nomor Telepon',
+                    hint: 'Masukkan nomor telepon...',
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      PhoneFormatter(),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  AppButton(
+                    label: 'Kirim',
+                    onPressed: () {
+                      context.pop();
+                    },
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            Text(
-              'Kami akan mengirimkan OTP untuk mengganti kata sandimu',
-              style: AppTextStyle.regularSemiBold.copyWith(
-                color: Colors.black54,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(
-              height: 24,
-            ),
-            AppTextField(
-              controller: _phoneController,
-              label: 'Nomor Telepon',
-              hint: 'Masukkan nomor telepon...',
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                PhoneFormatter(),
-              ],
-            ),
-            const SizedBox(
-              height: 24,
-            ),
-            PrimaryButton(
-              text: 'Kirim',
-              onTap: () {
-                context.pop();
-              },
             ),
           ],
         ),

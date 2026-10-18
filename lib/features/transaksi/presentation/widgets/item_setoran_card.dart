@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -47,7 +49,7 @@ class ItemSetoranCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: Colors.grey[200]!, width: 1.5),
       ),
       child: Column(
@@ -62,7 +64,7 @@ class ItemSetoranCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                         color: hasError ? errorColor : Colors.grey[200]!),
                   ),
@@ -140,13 +142,13 @@ class ItemSetoranCard extends StatelessWidget {
               const SizedBox(width: 12),
               InkWell(
                 onTap: onDelete,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
                     color: errorLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Icon(Icons.close, color: errorColor, size: 20),
                 ),
@@ -176,7 +178,7 @@ class ItemSetoranCard extends StatelessWidget {
                 width: 120,
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Row(
@@ -204,10 +206,7 @@ class ItemSetoranCard extends StatelessWidget {
                         // pengelola, jadi ia tidak punya urusan dengan papan
                         // tik sama sekali.
                         canRequestFocus: false,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.only(bottom: 12),
-                        ),
+                        decoration: appBorderlessInputDecoration(),
                         style: AppTextStyle.small.copyWith(
                           color: Colors.grey.shade700,
                           fontWeight: FontWeight.bold,
@@ -234,7 +233,7 @@ class ItemSetoranCard extends StatelessWidget {
                 height: 40,
                 width: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: TextFormField(
@@ -261,10 +260,7 @@ class ItemSetoranCard extends StatelessWidget {
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.only(bottom: 12),
-                  ),
+                  decoration: appBorderlessInputDecoration(),
                   onChanged: (value) {
                     final cleanValue = value.replaceAll(',', '.');
                     final newBerat = num.tryParse(cleanValue) ?? 0.0;

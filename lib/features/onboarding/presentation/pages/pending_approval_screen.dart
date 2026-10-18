@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
@@ -170,7 +172,7 @@ class PendingApprovalScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.04),
@@ -214,7 +216,7 @@ class PendingApprovalScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,31 +244,14 @@ class PendingApprovalScreen extends StatelessWidget {
               // 5. Action Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      // Real logout: revoke + clear the token, then the listener
-                      // above routes back to login on Unauthenticated.
-                      context.read<AuthenticationBloc>().add(LogoutRequested());
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      side: BorderSide(color: Colors.grey.shade300),
-                      backgroundColor: Colors.white,
-                    ),
-                    child: Text(
-                      'Kembali ke Halaman Login',
-                      style: TextStyle(
-                        color: Colors.grey.shade800,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
+                child: AppButton(
+                  label: 'Kembali ke Halaman Login',
+                  variant: AppButtonVariant.neutral,
+                  onPressed: () {
+                    // Real logout: revoke + clear the token, then the listener
+                    // above routes back to login on Unauthenticated.
+                    context.read<AuthenticationBloc>().add(LogoutRequested());
+                  },
                 ),
               ),
 

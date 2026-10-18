@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 import '../blocs/draft_editor_state.dart';
 import 'draft_format.dart';
@@ -64,14 +65,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                       child: Column(
                         children: [
-                          Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
+                          const AppSheetHandle(),
                           const SizedBox(height: 8),
                           Row(
                             children: [

@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/form_style.dart';
 import '../../constants/text_style.dart';
 
 class AppTextField extends StatefulWidget {
@@ -52,7 +53,7 @@ class _AppTextFieldState extends State<AppTextField> {
           Text(
             widget.label!,
             style: AppTextStyle.regularSemiBold.copyWith(
-              color: widget.isError ? Colors.red : Colors.black45,
+              color: widget.isError ? AppColors.danger : Colors.black45,
             ),
           ),
         ValueListenableBuilder(
@@ -66,11 +67,9 @@ class _AppTextFieldState extends State<AppTextField> {
               ),
               onChanged: widget.onChanged,
               inputFormatters: widget.inputFormatters,
-              decoration: InputDecoration(
+              decoration: appInputDecoration(
                 hintText: widget.hint,
-                hintStyle: AppTextStyle.regularSemiBold.copyWith(
-                  color: AppColors.grey200,
-                ),
+                hasError: widget.isError,
                 suffixIcon: widget.obscureText
                     ? IconButton(
                         tooltip: obscure
@@ -81,7 +80,7 @@ class _AppTextFieldState extends State<AppTextField> {
                         },
                         icon: Icon(
                           obscure ? Icons.visibility : Icons.visibility_off,
-                          color: obscure ? AppColors.primary : Colors.black45,
+                          color: obscure ? AppColors.greenDark : Colors.black45,
                         ),
                       )
                     : null,
