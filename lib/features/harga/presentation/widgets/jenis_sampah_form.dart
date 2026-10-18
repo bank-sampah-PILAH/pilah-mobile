@@ -386,7 +386,21 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     final error = wasActive
         ? await cubit.deactivateHarga(id)
         : await cubit.activateHarga(id);
-    if (!mounted) return;
+    if (!mounted) {
+      // Panel sudah beralih ke tampilan lain selagi permintaan berjalan,
+      // tetapi perubahan itu tetap terjadi dan tetap dikabarkan.
+      if (error == null) {
+        AppNotification.afterNavigation(
+            (context) => AppNotification.showSuccess(
+                  context,
+                  title: 'Berhasil',
+                  message: wasActive
+                      ? 'Jenis sampah berhasil dinonaktifkan.'
+                      : 'Jenis sampah berhasil diaktifkan.',
+                ));
+      }
+      return;
+    }
 
     // Seperti `_handleSimpan`: hasil yang datang setelah panel berganti
     // baris tidak boleh menutup panel baris yang sekarang tampil.
@@ -471,7 +485,23 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ));
       hanyaHargaGagal = error != null;
     }
-    if (!mounted) return;
+    if (!mounted) {
+      // Lihat `_handleToggleStatus`: panel beralih selagi menyimpan, kabarnya
+      // tetap sampai.
+      if (error == null) {
+        AppNotification.afterNavigation(
+            (context) => AppNotification.showSuccess(
+                  context,
+                  title: 'Berhasil',
+                  message: pesanSimpanJenis(
+                    isEditMode: isEditMode,
+                    hargaBerubah: hargaBerubah,
+                    berlakuMulai: berlakuMulai,
+                  ),
+                ));
+      }
+      return;
+    }
 
     // Hasil ini milik baris yang memulainya. Bila panel sudah pindah
     // baris, hanya kabarnya yang masih berlaku: `onSaved` akan menutup

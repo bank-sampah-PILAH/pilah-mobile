@@ -25,109 +25,120 @@ class HargaDetailSheet extends StatelessWidget {
     required this.item,
     required this.onEdit,
     required this.onRiwayat,
+    this.embedded = false,
+    this.showName = true,
   });
 
   final HargaEntity item;
   final VoidCallback onEdit;
   final VoidCallback onRiwayat;
 
+  /// Di dalam panel samping, yang sudah punya latar, sudut, dan header-nya
+  /// sendiri: tanpa wadah sheet dan tanpa pegangan tarik.
+  final bool embedded;
+
+  /// Bila false, nama tidak diulang di sini karena header di atasnya sudah
+  /// memuatnya.
+  final bool showName;
+
   @override
   Widget build(BuildContext context) {
     final terjadwal = item.hargaTerjadwal;
     final berlakuMulai = item.berlakuMulai;
-    return AppSheetContainer(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // A dialog cannot be dragged, so it has no handle there.
-          if (!DialogSurface.of(context)) ...[
-            const AppSheetHandle(),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          Row(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.fill,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Icon(item.icon, color: AppColors.inkSoft, size: 28),
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // A dialog cannot be dragged, so it has no handle there.
+        if (!embedded && !DialogSurface.of(context)) ...[
+          const AppSheetHandle(),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.fill,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Icon(item.icon, color: AppColors.inkSoft, size: 28),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (showName) ...[
                     Text(item.name,
                         style: AppTextStyle.title1
                             .copyWith(color: AppColors.black)),
                     const SizedBox(height: AppSpacing.sm),
-                    Row(children: [
-                      CustomStatusBadge(isActive: item.isActive),
-                      const SizedBox(width: AppSpacing.sm),
-                      CustomStatusBadge(statusText: item.badgeText),
-                    ]),
                   ],
-                ),
+                  Row(children: [
+                    CustomStatusBadge(isActive: item.isActive),
+                    const SizedBox(width: AppSpacing.sm),
+                    CustomStatusBadge(statusText: item.badgeText),
+                  ]),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: AppColors.cardOffWhite,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.border),
             ),
-            child: Column(
-              children: [
-                AppDetailRow(label: 'Keterangan', value: item.subtitle),
-                AppDetailRow(
-                  label: 'Harga beli',
-                  value: '${item.priceFormatted} / kg',
-                ),
-                if (berlakuMulai != null)
-                  AppDetailRow(
-                    label: 'Berlaku sejak',
-                    value: formatTanggalId(berlakuMulai.toLocal()),
-                  ),
-                if (terjadwal != null)
-                  AppDetailRow(
-                    label: 'Harga terjadwal',
-                    value: '${CurrencyFormatter.formatRupiah(terjadwal.harga)} '
-                        'mulai ${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
-                  ),
-              ],
-            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.cardOffWhite,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
-          const SizedBox(height: AppSpacing.xl),
-          Row(
+          child: Column(
             children: [
-              Expanded(
-                child: AppButton(
-                  label: 'Riwayat harga',
-                  variant: AppButtonVariant.outlined,
-                  icon: Icons.history,
-                  onPressed: onRiwayat,
-                ),
+              AppDetailRow(label: 'Keterangan', value: item.subtitle),
+              AppDetailRow(
+                label: 'Harga beli',
+                value: '${item.priceFormatted} / kg',
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: AppButton(
-                  label: 'Edit',
-                  icon: Icons.edit_outlined,
-                  onPressed: onEdit,
+              if (berlakuMulai != null)
+                AppDetailRow(
+                  label: 'Berlaku sejak',
+                  value: formatTanggalId(berlakuMulai.toLocal()),
                 ),
-              ),
+              if (terjadwal != null)
+                AppDetailRow(
+                  label: 'Harga terjadwal',
+                  value: '${CurrencyFormatter.formatRupiah(terjadwal.harga)} '
+                      'mulai ${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
+                ),
             ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          children: [
+            Expanded(
+              child: AppButton(
+                label: 'Riwayat harga',
+                variant: AppButtonVariant.outlined,
+                icon: Icons.history,
+                onPressed: onRiwayat,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: AppButton(
+                label: 'Edit',
+                icon: Icons.edit_outlined,
+                onPressed: onEdit,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
+    return embedded ? content : AppSheetContainer(child: content);
   }
 }
