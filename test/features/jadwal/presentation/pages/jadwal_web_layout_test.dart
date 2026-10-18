@@ -181,4 +181,81 @@ void main() {
       reason: 'compact behaviour must be left exactly as it was',
     );
   });
+
+  // The container is chosen when the form opens, but the window can be resized
+  // afterwards. These cover the shrink, which used to leave the panel in widths
+  // the open path deliberately avoids.
+  testWidgets(
+      'shrinking to medium closes the open panel rather than '
+      'narrowing it', (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
+
+    tester.view.physicalSize = const Size(800, 900);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('jadwal-form')),
+      findsNothing,
+      reason: 'a 2/5 panel at medium is the width the open path refuses',
+    );
+  });
+
+  testWidgets('shrinking to compact closes the open panel', (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('jadwal-form')),
+      findsNothing,
+      reason: 'MasterDetailLayout drops the detail at compact anyway; the page '
+          'must not keep believing a panel is open',
+    );
+  });
+
+  testWidgets(
+      'after shrinking, the add button gives a sheet and no stale panel',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
+    expect(
+      find.byType(BottomSheet),
+      findsOneWidget,
+      reason: 'the reopened form belongs in the container for the new width',
+    );
+  });
+
+  testWidgets('widening past expanded does not resurrect a closed panel',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(800, 900);
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(1440, 900);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('jadwal-form')),
+      findsNothing,
+      reason: 'a blank form reappearing on resize reads as a bug; the panel is '
+          'closed, and reopening it is the user\'s call',
+    );
+  });
 }

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
@@ -138,10 +138,7 @@ void main() {
   testWidgets('continue stays off until someone is picked', (tester) async {
     await pump(tester);
 
-    expect(
-        tester
-            .widget<CustomPrimaryButton>(find.byKey(const Key('lanjut')))
-            .onPressed,
+    expect(tester.widget<AppButton>(find.byKey(const Key('lanjut'))).onPressed,
         isNull);
 
     await tester.tap(find.byKey(const Key('kandidat-n-2')));
@@ -149,10 +146,7 @@ void main() {
 
     expect(find.text('1 dipilih'), findsOneWidget);
     expect(find.textContaining('Rp 50.000'), findsWidgets);
-    expect(
-        tester
-            .widget<CustomPrimaryButton>(find.byKey(const Key('lanjut')))
-            .onPressed,
+    expect(tester.widget<AppButton>(find.byKey(const Key('lanjut'))).onPressed,
         isNotNull);
   });
 
@@ -164,9 +158,7 @@ void main() {
         ];
 
     bool lanjutAktif(WidgetTester tester) =>
-        tester
-            .widget<CustomPrimaryButton>(find.byKey(const Key('lanjut')))
-            .onPressed !=
+        tester.widget<AppButton>(find.byKey(const Key('lanjut'))).onPressed !=
         null;
 
     testWidgets('picking more says so and keeps continue off', (tester) async {

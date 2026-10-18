@@ -8,7 +8,9 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -76,7 +78,8 @@ class DraftListView extends StatelessWidget {
           child: BlocBuilder<DraftListCubit, DraftListState>(
             builder: (context, state) => Column(
               children: [
-                PencairanHeader(
+                AppBackHeader(
+                  backKey: const Key('kembali'),
                   title: 'Pencairan',
                   actions: [
                     PencairanPopupMenu<String>(
@@ -343,8 +346,6 @@ class _TidakAdaHasil extends StatelessWidget {
                     ),
                     TextButton(
                       key: const Key('hapus-pencarian'),
-                      style: TextButton.styleFrom(
-                          foregroundColor: AppColors.greenDark),
                       onPressed: onClear,
                       child: const Text('Hapus pencarian'),
                     ),
@@ -370,7 +371,7 @@ Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,7 +420,7 @@ class _DraftCardState extends State<_DraftCard> {
     return InkWell(
       key: Key('draft-${draft.id}'),
       onTap: widget.onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: PencairanCard.shadow(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,7 +524,7 @@ class _Rincian extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.greenLight,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         children: [

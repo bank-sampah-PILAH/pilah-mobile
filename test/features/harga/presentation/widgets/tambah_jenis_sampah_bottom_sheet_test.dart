@@ -126,6 +126,29 @@ void main() {
     await settleToasts(tester);
   });
 
+  testWidgets('pressing Enter in the price field saves, without the button',
+      (tester) async {
+    api.on('POST', '/api/v1/jenis-sampah', status: 201, json: {});
+    await openSheet(tester);
+    await fillForm(tester);
+
+    // fillForm ends on the category dropdown, so the price field has to take
+    // focus back before the action is sent — receiveAction goes to whichever
+    // field currently holds the connection, not to a chosen one.
+    await tester.enterText(find.byType(TextFormField).at(3), '1500');
+
+    // The price is the last field filled from the keyboard, so its action is
+    // "done" rather than "next": the form can be completed without the mouse.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await pumpToast(tester);
+
+    final post = api.requests.firstWhere((r) => r.method == 'POST');
+    expect(post.json['kode'], 'NEW-1');
+    expect(
+        find.text('Jenis sampah baru berhasil ditambahkan.'), findsOneWidget);
+    await settleToasts(tester);
+  });
+
   testWidgets('a code that is already in the list is rejected locally',
       (tester) async {
     await tester.runAsync(cubit.loadHarga);

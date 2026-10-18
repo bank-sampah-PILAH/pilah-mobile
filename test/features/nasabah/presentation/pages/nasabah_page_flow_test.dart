@@ -31,7 +31,7 @@ void main() {
       // ignore: prefer_const_constructors
       NasabahPage(),
       wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
-      size: const Size(800, 2000),
+      size: const Size(590, 2000),
     );
     await tester.pumpAndSettle();
   }

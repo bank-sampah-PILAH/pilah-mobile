@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 
@@ -129,7 +130,7 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
               color: nilai > 0 && memenuhi == 0
                   ? Colors.red.shade50
                   : AppColors.greenLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Row(
               children: [
@@ -164,17 +165,11 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
               ElevatedButton(
                 key: const Key('terapkan-saldo-min'),
                 onPressed: () => Navigator.of(context).pop(_nilai),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.greenDark,
-                  foregroundColor: Colors.white,
-                ),
                 child: const Text('Terapkan'),
               ),
               const SizedBox(width: 12),
               TextButton(
                 key: const Key('batal-saldo-min'),
-                style:
-                    TextButton.styleFrom(foregroundColor: AppColors.greenDark),
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Batal'),
               ),

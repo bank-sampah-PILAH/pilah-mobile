@@ -5,7 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -23,8 +27,6 @@ import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/wa_deeplink.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_outlined_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Satu jenis sampah hanya boleh muncul sekali (CPBI-08): backend
@@ -111,8 +113,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 
   /// Tombol simpan. Satu definisi dipakai dua layout: di telepon ia menjadi
   /// bottomNavigationBar, di layar lebar ia duduk di panel samping.
-  Widget _saveButton() => CustomPrimaryButton(
-        title: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
+  Widget _saveButton() => AppButton(
+        label: _isSaving ? 'Menyimpan...' : 'Simpan Transaksi',
         icon: Icons.save_outlined,
         onPressed: _isSaving ? null : _handleSubmit,
       );
@@ -366,35 +368,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
               child: Column(
             children: [
               // Header
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    InkWell(
-                      onTap: () => context.pop(),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.arrow_back,
-                            color: Colors.grey[800], size: 20),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Transaksi Baru',
-                      style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              AppBackHeader(
+                  title: 'Transaksi Baru', onBack: () => context.pop()),
 
               Expanded(
                 child: Row(
@@ -409,14 +384,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Section 1: PILIH NASABAH
-                            Text(
-                              'PILIH NASABAH',
-                              style: AppTextStyle.extraSmall.copyWith(
-                                color: Colors.grey[500],
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
+                            const AppFieldLabel('PILIH NASABAH'),
                             const SizedBox(height: 16),
                             PilihNasabahSection(
                               selectedCustomer: selectedCustomer,
@@ -435,14 +403,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'DAFTAR SETORAN',
-                                  style: AppTextStyle.extraSmall.copyWith(
-                                    color: Colors.grey[500],
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.0,
-                                  ),
-                                ),
+                                const AppFieldLabel('DAFTAR SETORAN'),
                                 Text(
                                   '${setoranItems.length} item',
                                   style: AppTextStyle.small.copyWith(
@@ -463,7 +424,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                     padding: const EdgeInsets.all(24),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.lg),
                                       border: Border.all(
                                           color: (_hasSubmitted &&
                                                   setoranItems.isEmpty)
@@ -477,8 +439,8 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
                                             color: Colors.grey[50],
-                                            borderRadius:
-                                                BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                                AppRadius.lg),
                                           ),
                                           child: Icon(Icons.add,
                                               color: Colors.grey[400],
@@ -567,11 +529,10 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
                             const SizedBox(height: 16),
 
                             // Add Item Button
-                            CustomOutlinedButton(
-                              title: 'Tambah Item Setoran',
+                            AppButton(
+                              label: 'Tambah Item Setoran',
+                              variant: AppButtonVariant.outlined,
                               icon: Icons.add,
-                              borderColor: Colors.grey[300]!,
-                              textColor: AppColors.greenDark,
                               onPressed: _addItem,
                             ),
                             const SizedBox(height: 24),

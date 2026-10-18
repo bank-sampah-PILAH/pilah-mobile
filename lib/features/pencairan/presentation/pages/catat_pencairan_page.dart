@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
-import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_form_fields.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -20,7 +24,6 @@ import '../../domain/model/pencairan.dart';
 import '../../domain/pencairan_validator.dart';
 import '../blocs/pencairan_cubit.dart';
 import '../blocs/pencairan_state.dart';
-import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Pengurus records a payout. Nasabah is picked inside the form — the same
@@ -89,14 +92,6 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
 
   /// Matches the "PILIH NASABAH" section label already on this screen, so
   /// every section header in the form reads the same way.
-  Widget _buildLabel(String text) => Text(
-        text,
-        style: AppTextStyle.extraSmall.copyWith(
-          color: Colors.grey[500],
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
-        ),
-      );
 
   void _onCustomerSelected(NasabahEntity customer) {
     setState(() => _selectedCustomer = customer);
@@ -121,27 +116,14 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
   }
 
   Future<void> _confirmAndSubmit(int nominal) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Konfirmasi pencairan'),
-        content: Text(
-          'Pencairan Rp ${CurrencyFormatter.formatNumber(nominal)} akan dicatat sebagai '
-          'pembayaran ${_metode.label}.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Catat'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Konfirmasi pencairan',
+      message: 'Pencairan Rp ${CurrencyFormatter.formatNumber(nominal)} akan '
+          'dicatat sebagai pembayaran ${_metode.label}.',
+      confirmLabel: 'Catat',
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     await context.read<PencairanCubit>().submit(
           PencairanRequest(
             nasabahId: _selectedCustomer!.id,
@@ -165,7 +147,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           // The summary is square at the bottom (it is drawn for a sheet).
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _lebarDialogBerhasil),
@@ -189,7 +171,7 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
   /// Nominal, metode, tanggal and keterangan: the same fields in either
   /// layout.
   List<Widget> _buildIsian(PencairanState state, String? localError) => [
-        _buildLabel('NOMINAL'),
+        const AppFieldLabel('NOMINAL'),
         const SizedBox(height: 8),
         TextField(
           key: const Key('nominal-field'),
@@ -211,38 +193,17 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildLabel('METODE'),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final metode in MetodePencairan.values)
-              AppChip(
-                key: Key('metode-chip-${metode.name}'),
-                label: metode.label,
-                selected: _metode == metode,
-                onTap: () => setState(() => _metode = metode),
-              ),
-          ],
+        MetodePencairanSelector(
+          selected: _metode,
+          onChanged: (metode) => setState(() => _metode = metode),
         ),
         const SizedBox(height: 16),
-        _buildLabel('TANGGAL'),
-        const SizedBox(height: 8),
-        InkWell(
-          key: const Key('tanggal-field'),
+        TanggalPencairanField(
+          tanggal: _tanggal,
           onTap: _pickTanggal,
-          child: InputDecorator(
-            decoration: appInputDecoration().copyWith(
-              suffixIcon: const Icon(Icons.calendar_month, color: Colors.grey),
-            ),
-            child: Text(
-              formatTanggalId(_tanggal),
-              style: AppTextStyle.small.copyWith(color: Colors.black87),
-            ),
-          ),
         ),
         const SizedBox(height: 16),
-        _buildLabel('KETERANGAN (OPSIONAL)'),
+        const AppFieldLabel('KETERANGAN (OPSIONAL)'),
         const SizedBox(height: 8),
         TextField(
           key: const Key('keterangan-field'),
@@ -300,9 +261,9 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                 saldo: state.saldo,
                 nominal: localError == null ? nominal : null,
               );
-        final submitButton = CustomPrimaryButton(
+        final submitButton = AppButton(
           key: const Key('submit-pencairan'),
-          title: state.submitStatus == SubmitStatus.submitting
+          label: state.submitStatus == SubmitStatus.submitting
               ? 'Menyimpan...'
               : 'Catat Pencairan',
           onPressed: canSubmit
@@ -311,48 +272,14 @@ class _CatatPencairanViewState extends State<CatatPencairanView> {
                   ? () => setState(() => _hasSubmitted = true)
                   : null),
         );
-        final header = Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () => context.pop(),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child:
-                      Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Catat Pencairan',
-                style: AppTextStyle.headline1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-            ],
-          ),
-        );
+        final header = AppBackHeader(
+            title: 'Catat Pencairan', onBack: () => context.pop());
         final formScroll = SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'PILIH NASABAH',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
+              const AppFieldLabel('PILIH NASABAH'),
               const SizedBox(height: 16),
               PilihNasabahSection(
                 selectedCustomer: customer,
@@ -476,7 +403,7 @@ class _SaldoCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,7 +513,7 @@ class _PencairanBerhasilSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -624,7 +551,7 @@ class _PencairanBerhasilSheet extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(color: Colors.grey[200]!),
             ),
             child: Column(
@@ -642,8 +569,8 @@ class _PencairanBerhasilSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          CustomPrimaryButton(
-            title: 'Selesai',
+          AppButton(
+            label: 'Selesai',
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],

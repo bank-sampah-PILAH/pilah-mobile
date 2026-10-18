@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -11,6 +12,9 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
 
 class NasabahPage extends StatelessWidget {
   const NasabahPage({super.key});
@@ -40,16 +44,20 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
 
   @override
   Widget build(BuildContext context) {
+    if (context.layoutBreakpoint != LayoutBreakpoint.compact) {
+      return const Scaffold(
+        backgroundColor: AppColors.cardOffWhite,
+        body: SafeArea(child: NasabahTable()),
+      );
+    }
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       floatingActionButton: FloatingActionButton(
         heroTag: 'nasabah_page_fab',
         onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            useRootNavigator: true, // This hides the bottom navbar
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
+          showNasabahSurface<void>(
+            context,
             builder: (context) => const TambahNasabahBottomSheet(),
           );
         },

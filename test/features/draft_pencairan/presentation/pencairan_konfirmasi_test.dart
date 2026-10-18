@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_konfirmasi_sheet.dart';
 
 void main() {
@@ -18,6 +19,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
       home: Builder(
         builder: (context) => Scaffold(
           body: TextButton(
@@ -123,11 +125,15 @@ void main() {
   });
 
   testWidgets('a harmful action reads red, a plain one green', (tester) async {
+    // The colour the button is painted with, which is what a user sees.
     Color? yaColor() => tester
-        .widget<ElevatedButton>(find.byKey(const Key('konfirmasi-ya')))
-        .style
-        ?.backgroundColor
-        ?.resolve({});
+        .widget<Material>(find
+            .descendant(
+              of: find.byKey(const Key('konfirmasi-ya')),
+              matching: find.byType(Material),
+            )
+            .first)
+        .color;
 
     await open(tester);
     expect(yaColor(), AppColors.greenDark);
