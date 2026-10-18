@@ -180,6 +180,14 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     if (buang && context.mounted) context.pop();
   }
 
+  // One key for both layouts: the form moves between two trees when the
+  // window crosses the desktop breakpoint, and its search, filter and sort
+  // must move with it instead of resetting.
+  final _formKey = GlobalKey();
+
+  Widget _form(DraftEditorState state) =>
+      _Form(key: _formKey, state: state, nama: _nama);
+
   Widget _scaffold(BuildContext context, DraftEditorState state) {
     final cubit = context.read<DraftEditorCubit>();
     final loading = state.phase == EditorPhase.loading;
@@ -207,7 +215,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _Form(state: state, nama: _nama)),
+                      Expanded(child: _form(state)),
                       SizedBox(
                         width: LayoutBreakpoint.sidePanelWidth,
                         child: SingleChildScrollView(
@@ -245,7 +253,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
             Expanded(
               child: loading
                   ? const Center(child: CircularProgressIndicator())
-                  : _Form(state: state, nama: _nama),
+                  : _form(state),
             ),
           ],
         ),
@@ -304,7 +312,7 @@ class _Form extends StatefulWidget {
   final DraftEditorState state;
   final TextEditingController nama;
 
-  const _Form({required this.state, required this.nama});
+  const _Form({super.key, required this.state, required this.nama});
 
   @override
   State<_Form> createState() => _FormState();
