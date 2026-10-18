@@ -366,6 +366,19 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     return null;
   }
 
+  static String _pesanStatus(bool wasActive) => wasActive
+      ? 'Jenis sampah berhasil dinonaktifkan.'
+      : 'Jenis sampah berhasil diaktifkan.';
+
+  /// Panel sudah beralih ke tampilan lain selagi permintaan berjalan, sehingga
+  /// form ini tidak lagi ada. Perubahannya tetap terjadi, jadi tetap
+  /// dikabarkan, lewat navigator utama.
+  static void _kabarkanTanpaForm(String message) =>
+      AppNotification.afterNavigation((context) => AppNotification.showSuccess(
+          context,
+          title: 'Berhasil',
+          message: message));
+
   Future<void> _handleToggleStatus() async {
     final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
     final id = widget.initialData!.id;
@@ -387,18 +400,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
         ? await cubit.deactivateHarga(id)
         : await cubit.activateHarga(id);
     if (!mounted) {
-      // Panel sudah beralih ke tampilan lain selagi permintaan berjalan,
-      // tetapi perubahan itu tetap terjadi dan tetap dikabarkan.
-      if (error == null) {
-        AppNotification.afterNavigation(
-            (context) => AppNotification.showSuccess(
-                  context,
-                  title: 'Berhasil',
-                  message: wasActive
-                      ? 'Jenis sampah berhasil dinonaktifkan.'
-                      : 'Jenis sampah berhasil diaktifkan.',
-                ));
-      }
+      if (error == null) _kabarkanTanpaForm(_pesanStatus(wasActive));
       return;
     }
 
@@ -412,9 +414,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
-        message: wasActive
-            ? 'Jenis sampah berhasil dinonaktifkan.'
-            : 'Jenis sampah berhasil diaktifkan.',
+        message: _pesanStatus(wasActive),
       );
       return;
     }
@@ -486,19 +486,12 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       hanyaHargaGagal = error != null;
     }
     if (!mounted) {
-      // Lihat `_handleToggleStatus`: panel beralih selagi menyimpan, kabarnya
-      // tetap sampai.
       if (error == null) {
-        AppNotification.afterNavigation(
-            (context) => AppNotification.showSuccess(
-                  context,
-                  title: 'Berhasil',
-                  message: pesanSimpanJenis(
-                    isEditMode: isEditMode,
-                    hargaBerubah: hargaBerubah,
-                    berlakuMulai: berlakuMulai,
-                  ),
-                ));
+        _kabarkanTanpaForm(pesanSimpanJenis(
+          isEditMode: isEditMode,
+          hargaBerubah: hargaBerubah,
+          berlakuMulai: berlakuMulai,
+        ));
       }
       return;
     }
