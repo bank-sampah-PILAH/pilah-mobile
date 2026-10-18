@@ -140,15 +140,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 SizedBox(
                   width: width,
                   child: Card(
-                    color: Colors.white,
-                    surfaceTintColor: Colors.transparent,
-                    elevation: 0,
-                    margin: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                          color: AppColors.grey200.withValues(alpha: 0.3)),
-                    ),
                     child: Padding(
                         padding: const EdgeInsets.all(20), child: section),
                   ),

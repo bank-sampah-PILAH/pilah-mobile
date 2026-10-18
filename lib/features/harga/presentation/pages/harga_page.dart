@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -9,6 +10,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
@@ -353,7 +355,7 @@ class _HargaCard extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(item.icon, color: Colors.grey[600]),
           ),
@@ -397,22 +399,13 @@ class _HargaCard extends StatelessWidget {
                 ],
                 // Its own tap target: tapping elsewhere on the card still
                 // opens the edit form.
-                TextButton(
+                AppButton(
+                  label: 'Riwayat harga',
+                  variant: AppButtonVariant.text,
+                  size: AppButtonSize.compact,
+                  expand: false,
                   onPressed: () =>
                       context.push(RiwayatHargaPage.route, extra: item),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: AppColors.greenDark,
-                  ),
-                  child: Text(
-                    'Riwayat harga',
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -463,7 +456,7 @@ class _HargaCard extends StatelessWidget {
     if (!selected) return card;
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.greenDark, width: 2),
       ),
       child: card,

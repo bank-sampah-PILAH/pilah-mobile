@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 
@@ -74,7 +75,7 @@ class DashboardReportRangeFilter extends StatelessWidget {
                       const WidgetStatePropertyAll(Colors.transparent),
                   padding: const WidgetStatePropertyAll(EdgeInsets.zero),
                   shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     side: BorderSide(
                         color: AppColors.grey200.withValues(alpha: 0.3)),
                   )),
@@ -294,9 +295,6 @@ class _ReportRangeCalendarState extends State<_ReportRangeCalendar> {
                     ? () => widget.onChanged(
                         DashboardReportRange(start: _start!, end: _end!))
                     : null,
-                style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.greenDark,
-                    textStyle: AppTextStyle.small),
                 child: const Text('Terapkan'),
               ),
             ]),

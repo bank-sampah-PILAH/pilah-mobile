@@ -5,7 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
@@ -83,7 +86,7 @@ void main() {
     return results;
   }
 
-  CustomPrimaryButton submitButton(WidgetTester tester) =>
+  AppButton submitButton(WidgetTester tester) =>
       tester.widget(find.byKey(const Key('submit-edit-pencairan')));
 
   Future<void> tapSubmit(WidgetTester tester) async {
@@ -117,6 +120,74 @@ void main() {
       find.text('Tanggal hanya bisa dimundurkan sampai 14 September 2026'),
       findsOneWidget,
     );
+  });
+
+  group('looks like the catat form', () {
+    testWidgets('has a white page headed by the back button, not an app bar',
+        (tester) async {
+      await pumpView(tester);
+
+      expect(find.byType(AppBar), findsNothing);
+      expect(
+          find.widgetWithText(AppBackHeader, 'Edit Pencairan'), findsOneWidget);
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+        Colors.white,
+      );
+    });
+
+    testWidgets('captions every field above it, with no floating label',
+        (tester) async {
+      await pumpView(tester);
+
+      for (final caption in [
+        'NOMINAL',
+        'METODE',
+        'TANGGAL',
+        'KETERANGAN (OPSIONAL)',
+        'ALASAN PERUBAHAN',
+      ]) {
+        expect(find.widgetWithText(AppFieldLabel, caption), findsOneWidget,
+            reason: caption);
+      }
+      for (final key in ['nominal-field', 'keterangan-field', 'alasan-field']) {
+        expect(
+          tester.widget<TextField>(find.byKey(Key(key))).decoration?.labelText,
+          isNull,
+          reason: key,
+        );
+      }
+    });
+
+    testWidgets('keeps the submit button at the foot, out of the scroll',
+        (tester) async {
+      await pumpView(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(SingleChildScrollView),
+          matching: find.byKey(const Key('submit-edit-pencairan')),
+        ),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('submit-edit-pencairan')), findsOneWidget);
+    });
+  });
+
+  testWidgets('offers the metode as the same chips as the catat form',
+      (tester) async {
+    await pumpView(tester);
+
+    AppChip chip(MetodePencairan metode) =>
+        tester.widget(find.byKey(Key('metode-chip-${metode.name}')));
+    expect(chip(MetodePencairan.tunai).selected, isTrue);
+    expect(chip(MetodePencairan.transfer).selected, isFalse);
+
+    await tester.tap(find.byKey(const Key('metode-chip-transfer')));
+    await tester.pump();
+
+    expect(chip(MetodePencairan.tunai).selected, isFalse);
+    expect(chip(MetodePencairan.transfer).selected, isTrue);
   });
 
   testWidgets('keeps submit disabled until an alasan and valid nominal',

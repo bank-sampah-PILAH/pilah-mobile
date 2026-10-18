@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -201,7 +205,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   // terlalu rumit untuk dibaca sekaligus.
 
   List<Widget> _buildKodeField() => [
-        _buildLabel('ID / KODE SAMPAH'),
+        const AppFieldLabel('ID / KODE SAMPAH'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _kodeSampahController,
@@ -223,7 +227,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildNamaField() => [
-        _buildLabel('NAMA JENIS SAMPAH'),
+        const AppFieldLabel('NAMA JENIS SAMPAH'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _nameController,
@@ -235,7 +239,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildKategoriField() => [
-        _buildLabel('KATEGORI'),
+        const AppFieldLabel('KATEGORI'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: _selectedCategory,
@@ -254,7 +258,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildDeskripsiField() => [
-        _buildLabel('DESKRIPSI (OPSIONAL)'),
+        const AppFieldLabel('DESKRIPSI (OPSIONAL)'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _descController,
@@ -266,7 +270,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ];
 
   List<Widget> _buildHargaField() => [
-        _buildLabel('HARGA BELI PER KG (RP)'),
+        const AppFieldLabel('HARGA BELI PER KG (RP)'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _priceController,
@@ -309,7 +313,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   /// ditunjukkan bersama peringatan bahwa perubahan tidak berlaku surut.
   List<Widget> _buildPengaturanHarga() => [
         const SizedBox(height: 20),
-        _buildLabel('BERLAKU MULAI'),
+        const AppFieldLabel('BERLAKU MULAI'),
         const SizedBox(height: 8),
         _buildPilihanBerlaku(),
         const SizedBox(height: 16),
@@ -323,72 +327,23 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     // membuat dua ternary bersarang, dan yang di dalam menjawab pertanyaan
     // yang berbeda — mode form, bukan keadaan simpan.
     final label = _isEditMode ? 'Simpan Perubahan' : 'Simpan Jenis Sampah';
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isSaving ? null : _handleSimpan,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.greenDark,
-          disabledBackgroundColor: AppColors.greenDark.withValues(alpha: 0.6),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-        ),
-        child: _isSaving
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Text(
-                label,
-                // headline3 sudah berukuran 16, jadi tidak ada fontSize yang
-                // perlu ditulis ulang di luar `lib/design/`.
-                style: AppTextStyle.headline3.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-      ),
+    return AppButton(
+      label: label,
+      isLoading: _isSaving,
+      onPressed: _handleSimpan,
     );
   }
 
   Widget _buildToggleStatusButton() {
-    final warna = _isActive ? Colors.red[600] : AppColors.greenDark;
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: _isSaving ? null : _handleToggleStatus,
-          icon: Icon(
-            _isActive ? Icons.block : Icons.check_circle_outline,
-            size: 20,
-            color: warna,
-          ),
-          label: Text(
-            _isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
-            style: AppTextStyle.headline3.copyWith(
-              color: warna,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            side: BorderSide(
-              color: _isActive ? Colors.red[200]! : AppColors.greenLight,
-            ),
-            backgroundColor: Colors.white,
-          ),
-        ),
+      child: AppButton(
+        label: _isActive ? 'Nonaktifkan Jenis Sampah' : 'Aktifkan Jenis Sampah',
+        variant: _isActive
+            ? AppButtonVariant.destructiveOutlined
+            : AppButtonVariant.outlined,
+        icon: _isActive ? Icons.block : Icons.check_circle_outline,
+        onPressed: _isSaving ? null : _handleToggleStatus,
       ),
     );
   }
@@ -572,15 +527,15 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
         Wrap(
           spacing: 8,
           children: [
-            ChoiceChip(
-              label: const Text('Sekarang'),
+            AppChip(
+              label: 'Sekarang',
               selected: berlakuMulai == null,
-              onSelected: (_) => setState(() => _berlakuMulai = null),
+              onTap: () => setState(() => _berlakuMulai = null),
             ),
-            ChoiceChip(
-              label: const Text('Tanggal lain'),
+            AppChip(
+              label: 'Tanggal lain',
               selected: berlakuMulai != null,
-              onSelected: (_) => _pilihTanggalBerlaku(),
+              onTap: _pilihTanggalBerlaku,
             ),
           ],
         ),
@@ -623,7 +578,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -659,7 +614,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.avatarYellow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -678,17 +633,6 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: AppTextStyle.extraSmall.copyWith(
-        color: Colors.grey[500],
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.5,
       ),
     );
   }

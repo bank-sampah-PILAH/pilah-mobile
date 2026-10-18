@@ -1,63 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// The look of Catat Pencairan, shared by the draft screens so they read as
 /// one flow: a grey rounded back button, bold title, spaced section labels,
 /// white 12px inputs, pill chips and soft cards.
-
-/// Title row with the app's grey rounded back button. Going back uses
-/// `maybePop`, so a screen guarding unsaved edits with a `PopScope` is asked.
-class PencairanHeader extends StatelessWidget {
-  final String title;
-  final List<Widget> actions;
-
-  const PencairanHeader({
-    super.key,
-    required this.title,
-    this.actions = const [],
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          InkWell(
-            key: const Key('kembali'),
-            onTap: () => Navigator.of(context).maybePop(),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          ...actions,
-        ],
-      ),
-    );
-  }
-}
 
 /// Heading above a group of fields (`RINGKASAN`). [SectionLabel.field] is the
 /// quieter label of a single field inside a card (`NOMINAL`).
@@ -141,7 +91,7 @@ class PencairanCard extends StatelessWidget {
         padding: padding,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: borderColor == null
               ? null
               : Border.all(color: borderColor!, width: 2),
@@ -270,7 +220,8 @@ class PencairanPopupMenu<T> extends StatelessWidget {
       surfaceTintColor: Colors.transparent,
       elevation: 8,
       shadowColor: Colors.black38,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       onSelected: onSelected,
       itemBuilder: (_) => [
         for (final entry in entries)
@@ -370,7 +321,7 @@ class PencairanActionButton extends StatelessWidget {
       ],
     );
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
     );
     return SizedBox(
       height: 52,
