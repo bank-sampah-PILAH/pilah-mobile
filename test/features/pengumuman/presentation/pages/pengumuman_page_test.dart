@@ -137,7 +137,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
-    expect(find.text('Coba lagi'), findsNothing);
+    expect(find.text('Coba Lagi'), findsNothing);
   });
 
   testWidgets('nearly filling the viewport does not page early',
