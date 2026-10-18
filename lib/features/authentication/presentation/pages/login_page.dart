@@ -9,9 +9,13 @@ import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_background_wrapper.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_button.dart';
@@ -110,6 +114,8 @@ class LoginPage extends StatelessWidget {
             const WelcomeCard(),
             const SizedBox(height: 32),
             LoginButton(isLoading: isLoading),
+            const SizedBox(height: 16),
+            _EmailPasswordLoginForm(isLoading: isLoading),
             if (showDemoLogin) ...[
               const SizedBox(height: 12),
               DemoLoginButton(
@@ -190,7 +196,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Gunakan akun Google yang terdaftar untuk melanjutkan.',
+                              'Pilih Google atau gunakan email dan kata sandi yang terdaftar untuk melanjutkan.',
                               style: AppTextStyle.small.copyWith(
                                 color: AppColors.grey100,
                                 fontSize: 14,
@@ -198,6 +204,8 @@ class _DesktopLoginLayout extends StatelessWidget {
                             ),
                             const SizedBox(height: 32),
                             Center(child: LoginButton(isLoading: isLoading)),
+                            const SizedBox(height: 16),
+                            _EmailPasswordLoginForm(isLoading: isLoading),
                             if (showDemoLogin) ...[
                               const SizedBox(height: 12),
                               DemoLoginButton(
@@ -217,6 +225,103 @@ class _DesktopLoginLayout extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmailPasswordLoginForm extends StatefulWidget {
+  final bool isLoading;
+
+  const _EmailPasswordLoginForm({required this.isLoading});
+
+  @override
+  State<_EmailPasswordLoginForm> createState() =>
+      _EmailPasswordLoginFormState();
+}
+
+class _EmailPasswordLoginFormState extends State<_EmailPasswordLoginForm> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  String get _email => _emailController.text;
+  String get _password => _passwordController.text;
+
+  bool get _canSubmit =>
+      !widget.isLoading && _email.trim().isNotEmpty && _password.isNotEmpty;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_canSubmit) return;
+    FocusScope.of(context).unfocus();
+    context.read<AuthenticationBloc>().add(
+          PostLoginEvent(email: _email.trim(), password: _password),
+        );
+  }
+
+  void _updateInput(String _) => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    return AutofillGroup(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Expanded(child: Divider(color: AppColors.border)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'ATAU',
+                  style: AppTextStyle.extraSmall.copyWith(
+                    color: AppColors.grey100,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Expanded(child: Divider(color: AppColors.border)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const AppFieldLabel('EMAIL'),
+          const SizedBox(height: 8),
+          AppTextField(
+            key: const ValueKey('login-email-field'),
+            controller: _emailController,
+            hint: 'Masukkan email Anda',
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.username],
+            onChanged: _updateInput,
+          ),
+          const SizedBox(height: 16),
+          const AppFieldLabel('KATA SANDI'),
+          const SizedBox(height: 8),
+          AppTextField(
+            key: const ValueKey('login-password-field'),
+            controller: _passwordController,
+            hint: 'Masukkan kata sandi',
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.password],
+            onChanged: _updateInput,
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 20),
+          AppButton(
+            key: const ValueKey('login-email-submit'),
+            label: 'Masuk dengan Email',
+            onPressed: _canSubmit ? _submit : null,
+            isLoading: widget.isLoading,
+          ),
+        ],
       ),
     );
   }
