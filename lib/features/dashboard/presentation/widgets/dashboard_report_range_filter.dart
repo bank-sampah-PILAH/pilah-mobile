@@ -4,6 +4,41 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 
+const _indonesianMonths = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
+String _reportDateIndonesian(DateTime date) =>
+    '${date.day} ${_indonesianMonths[date.month - 1]} ${date.year}';
+
+String reportDateRangeCaption(DashboardReportRange range) =>
+    'Menampilkan ${_reportDateIndonesian(range.start)} sampai '
+    '${_reportDateIndonesian(range.end)}';
+
+String reportCategoryWeightSubtitle(DashboardReportRange range) {
+  if (DateUtils.isSameDay(range.start, range.end)) {
+    return 'Berat per kategori, ${_reportDateIndonesian(range.start)}';
+  }
+  if (range.start.year == range.end.year &&
+      range.start.month == range.end.month) {
+    return 'Berat per kategori, ${range.start.day} sampai ${range.end.day} '
+        '${_indonesianMonths[range.end.month - 1]} ${range.end.year}';
+  }
+  return 'Berat per kategori, ${_reportDateIndonesian(range.start)} sampai '
+      '${_reportDateIndonesian(range.end)}';
+}
+
 class DashboardReportRangeFilter extends StatelessWidget {
   final DashboardReportRange range;
   final ValueChanged<DashboardReportRange> onChanged;
@@ -116,8 +151,7 @@ class DashboardReportRangeFilter extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Flexible(
-                child: Text(
-                    'Showing from ${reportDate(range.start)} to ${reportDate(range.end)}',
+                child: Text(reportDateRangeCaption(range),
                     style:
                         AppTextStyle.small.copyWith(color: AppColors.grey100)),
               ),
@@ -276,7 +310,10 @@ class _ReportRangeCalendarState extends State<_ReportRangeCalendar> {
             Text(
               _start == null || _end == null
                   ? 'Pilih tanggal mulai dan selesai'
-                  : '${reportDate(_start!)} – ${reportDate(_end!)}',
+                  : DateUtils.isSameDay(_start!, _end!)
+                      ? _reportDateIndonesian(_start!)
+                      : '${_reportDateIndonesian(_start!)} – '
+                          '${_reportDateIndonesian(_end!)}',
               style: AppTextStyle.extraSmall,
             ),
             const SizedBox(height: 8),

@@ -44,8 +44,8 @@ void main() {
       await pumpFilter(tester, changes);
       final custom =
           tester.getRect(find.widgetWithText(OutlinedButton, 'Kustom'));
-      final caption =
-          tester.getRect(find.text('Showing from 2026-06-01 to 2026-06-30'));
+      final caption = tester
+          .getRect(find.text('Menampilkan 1 Juni 2026 sampai 30 Juni 2026'));
       expect(caption.left, greaterThan(custom.right));
       expect(caption.center.dy, closeTo(custom.center.dy, 1));
       for (final label in ['Hari ini', '7 Hari', '30 Hari', 'Kustom']) {
@@ -55,6 +55,7 @@ void main() {
       }
       await open(tester);
       final panel = find.byKey(const ValueKey('report-range-calendar'));
+      expect(find.text('1 Juni 2026 – 30 Juni 2026'), findsOneWidget);
       final bounds = tester.getRect(panel);
       expect(bounds.width, lessThanOrEqualTo(336));
       expect(bounds.height, lessThan(size.height));
@@ -73,6 +74,27 @@ void main() {
       expect(panel, findsNothing);
     });
   }
+
+  testWidgets('range captions use full Indonesian month names', (tester) async {
+    final range = DashboardReportRange(
+        start: DateTime(2026, 10, 1), end: DateTime(2026, 10, 31));
+    await pumpFilter(tester, [], initialRange: range);
+
+    expect(find.text('Menampilkan 1 Oktober 2026 sampai 31 Oktober 2026'),
+        findsOneWidget);
+    expect(reportCategoryWeightSubtitle(range),
+        'Berat per kategori, 1 sampai 31 Oktober 2026');
+    expect(
+      reportCategoryWeightSubtitle(DashboardReportRange(
+          start: DateTime(2026, 10, 5), end: DateTime(2026, 10, 5))),
+      'Berat per kategori, 5 Oktober 2026',
+    );
+    expect(
+      reportCategoryWeightSubtitle(DashboardReportRange(
+          start: DateTime(2026, 9, 30), end: DateTime(2026, 10, 2))),
+      'Berat per kategori, 30 September 2026 sampai 2 Oktober 2026',
+    );
+  });
 
   testWidgets(
       'presets select inclusive trailing ranges and mark the active button',
@@ -158,6 +180,7 @@ void main() {
     expect(disabled.onPressed, isNull);
     await select(tester, '2099-06-10');
     await select(tester, '2099-06-10');
+    expect(find.text('10 Juni 2099'), findsOneWidget);
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
     expect(changes.single.start, changes.single.end);
