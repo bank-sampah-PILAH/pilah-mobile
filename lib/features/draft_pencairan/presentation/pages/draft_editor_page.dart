@@ -203,7 +203,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     );
     // On a desktop window the totals and the buttons that act on them sit in
     // a panel beside the nasabah list, not in a bar across the whole width.
-    if (!loading && context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
@@ -215,7 +215,11 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _form(state)),
+                      Expanded(
+                        child: loading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _form(state),
+                      ),
                       SizedBox(
                         width: LayoutBreakpoint.sidePanelWidth,
                         child: SingleChildScrollView(
@@ -224,7 +228,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                           child: EditorSummaryPanel(
                             state: state,
                             samping: true,
-                            aksi: state.status.terkunci
+                            aksi: loading || state.status.terkunci
                                 ? null
                                 : _BottomBar(
                                     state: state,
