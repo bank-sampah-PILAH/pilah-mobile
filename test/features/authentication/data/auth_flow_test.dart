@@ -27,12 +27,11 @@ void main() {
 
   group('password login', () {
     test('maps the response into the session entity', () async {
-      // `Endpoints.login` is `auth/login` without a leading slash, so the request
-      // goes to `http://api.testauth/login` (host `api.testauth`). Recorded as a
-      // suspected bug; the stub matches the path the client really sends.
-      api.on('POST', '/login', json: authPayload(bankStatus: 'active'));
+      api.on('POST', '/api/v1/auth/login',
+          json: authPayload(bankStatus: 'active'));
 
-      final result = await stack.interactor.postLogin('siti', 'rahasia');
+      final result = await stack.interactor
+          .postLogin('siti@x.test', 'rahasia');
 
       final auth = result.getOrElse(() => throw StateError('failed'));
       expect(auth.name, 'Siti Aminah');
@@ -41,14 +40,16 @@ void main() {
       expect(auth.bankSampahStatus, 'active');
       expect(auth.noHp, '+62812');
       expect(auth.photoUrl, contains('Siti%20Aminah'));
-      expect(api.last.json, {'username': 'siti', 'password': 'rahasia'});
+      expect(api.last.path, '/api/v1/auth/login');
+      expect(api.last.json,
+          {'email': 'siti@x.test', 'password': 'rahasia'});
     });
 
     test('a rejected login is a failure', () async {
-      api.on('POST', '/login',
+      api.on('POST', '/api/v1/auth/login',
           status: 401, json: {'error': 'Kredensial salah'});
 
-      final result = await stack.interactor.postLogin('siti', 'x');
+      final result = await stack.interactor.postLogin('siti@x.test', 'x');
 
       expect(
           result.fold((l) => l.displayMessage, (r) => ''), 'Kredensial salah');
@@ -56,7 +57,7 @@ void main() {
 
     test('the request serialises its fields', () {
       expect(const PostLoginRequest(username: 'a', password: 'b').toJson(),
-          {'username': 'a', 'password': 'b'});
+          {'email': 'a', 'password': 'b'});
     });
 
     test('the response round-trips through JSON', () {
