@@ -58,8 +58,7 @@ void main() {
     expect(find.text('Nonaktif'), findsOneWidget);
   });
 
-  testWidgets('a scheduled price shows with the day it starts',
-      (tester) async {
+  testWidgets('a scheduled price shows with the day it starts', (tester) async {
     await _pump(
       tester,
       _item(
@@ -72,8 +71,7 @@ void main() {
     expect(find.textContaining('Rp 4.000'), findsOneWidget);
   });
 
-  testWidgets('without a scheduled price there is no such row',
-      (tester) async {
+  testWidgets('without a scheduled price there is no such row', (tester) async {
     await _pump(tester, _item());
 
     expect(find.text('Harga terjadwal'), findsNothing);
