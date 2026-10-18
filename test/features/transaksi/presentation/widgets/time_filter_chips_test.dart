@@ -139,61 +139,39 @@ void main() {
     await open(tester);
     await tester.tap(find.byIcon(Icons.calendar_today_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('03/02/2025'), findsOneWidget);
-    expect(find.text('15/04/2025'), findsOneWidget);
+    expect(find.text('03/02/2025 – 15/04/2025'), findsOneWidget);
     await tester.tap(find.text('Terapkan Filter'));
     await tester.pumpAndSettle();
     expect(cubit.state.dariTanggal, DateTime(2025, 2, 3));
     expect(cubit.state.sampaiTanggal, DateTime(2025, 4, 15));
   });
 
-  group('picking dates', () {
-    String format(DateTime d) =>
-        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  testWidgets('the filter sheet normalizes a stored reversed range',
+      (tester) async {
+    cubit.applyCustomRange(DateTime(2026, 6, 30), DateTime(2026, 6, 1));
+    await open(tester);
+    await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+    await tester.pumpAndSettle();
 
-    Future<void> pickDay(WidgetTester tester, Finder field, String day) async {
-      await tester.tap(field);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(day).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
-    }
+    expect(find.text('01/06/2026 – 30/06/2026'), findsOneWidget);
+  });
 
-    testWidgets('a start after the end drags the end along, and vice versa',
-        (tester) async {
-      await open(tester);
-      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
-      await tester.pumpAndSettle();
-      final now = DateTime.now();
-      String day(int d) => format(DateTime(now.year, now.month, d));
-      final lastDay = DateTime(now.year, now.month + 1, 0).day;
+  testWidgets('the shared calendar applies a reversed range in order',
+      (tester) async {
+    cubit.applyCustomRange(DateTime(2026, 6, 1), DateTime(2026, 6, 30));
+    await open(tester);
+    await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset'));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-20')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-10')));
+    await tester.tap(find.text('Terapkan Filter'));
+    await tester.pumpAndSettle();
 
-      await pickDay(tester, find.text(day(lastDay)), '3');
-      expect(find.text(day(1)), findsOneWidget);
-      expect(find.text(day(3)), findsOneWidget);
-
-      await pickDay(tester, find.text(day(1)), '10');
-      expect(find.text(day(10)), findsNWidgets(2));
-
-      await pickDay(tester, find.text(day(10)).last, '5');
-      expect(find.text(day(5)), findsNWidgets(2));
-    });
-
-    testWidgets('cancelling the picker changes nothing', (tester) async {
-      await open(tester);
-      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
-      await tester.pumpAndSettle();
-      final now = DateTime.now();
-      final start = format(DateTime(now.year, now.month, 1));
-
-      await tester.tap(find.text(start));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-
-      expect(find.text(start), findsOneWidget);
-    });
+    expect(cubit.state.dariTanggal, DateTime(2026, 6, 10));
+    expect(cubit.state.sampaiTanggal, DateTime(2026, 6, 20));
   });
 
   testWidgets('export control reacts to type and search filters',

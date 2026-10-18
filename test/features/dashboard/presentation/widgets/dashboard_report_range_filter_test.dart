@@ -30,7 +30,7 @@ void main() {
   }
 
   Future<void> select(WidgetTester tester, String date) async {
-    await tester.tap(find.byKey(ValueKey('report-date-$date')));
+    await tester.tap(find.byKey(ValueKey('app-calendar-date-$date')));
     await tester.pumpAndSettle();
   }
 
@@ -55,7 +55,7 @@ void main() {
       }
       await open(tester);
       final panel = find.byKey(const ValueKey('report-range-calendar'));
-      expect(find.text('1 Juni 2026 – 30 Juni 2026'), findsOneWidget);
+      expect(find.text('01/06/2026 – 30/06/2026'), findsOneWidget);
       final bounds = tester.getRect(panel);
       expect(bounds.width, lessThanOrEqualTo(336));
       expect(bounds.height, lessThan(size.height));
@@ -176,11 +176,11 @@ void main() {
             .onPressed,
         isNull);
     final disabled = tester.widget<TextButton>(
-        find.byKey(const ValueKey('report-date-2099-06-11')));
+        find.byKey(const ValueKey('app-calendar-date-2099-06-11')));
     expect(disabled.onPressed, isNull);
     await select(tester, '2099-06-10');
     await select(tester, '2099-06-10');
-    expect(find.text('10 Juni 2099'), findsOneWidget);
+    expect(find.text('10/06/2099 – 10/06/2099'), findsOneWidget);
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
     expect(changes.single.start, changes.single.end);

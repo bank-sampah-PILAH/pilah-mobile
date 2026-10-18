@@ -119,6 +119,54 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg)),
       ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        headerBackgroundColor: AppColors.greenDark,
+        headerForegroundColor: Colors.white,
+        headerHeadlineStyle: AppTextStyle.headline1,
+        headerHelpStyle: AppTextStyle.small,
+        weekdayStyle: AppTextStyle.extraSmall.copyWith(
+          color: AppColors.grey100,
+          fontWeight: FontWeight.w600,
+        ),
+        dayStyle: AppTextStyle.small,
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return AppColors.grey100;
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return AppColors.black;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected) ? AppColors.greenDark : null),
+        dayOverlayColor: WidgetStatePropertyAll(
+          AppColors.greenDark.withValues(alpha: 0.08),
+        ),
+        todayForegroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected)
+                ? Colors.white
+                : AppColors.greenDark),
+        todayBackgroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected)
+                ? AppColors.greenDark
+                : AppColors.greenLight),
+        todayBorder: const BorderSide(color: AppColors.greenDark),
+        yearStyle: AppTextStyle.small,
+        yearForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return AppColors.grey100;
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return AppColors.black;
+        }),
+        yearBackgroundColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected) ? AppColors.greenDark : null),
+        dividerColor: AppColors.border,
+        cancelButtonStyle:
+            TextButton.styleFrom(foregroundColor: AppColors.grey100),
+        confirmButtonStyle:
+            TextButton.styleFrom(foregroundColor: AppColors.greenDark),
+      ),
     );
   }
 }

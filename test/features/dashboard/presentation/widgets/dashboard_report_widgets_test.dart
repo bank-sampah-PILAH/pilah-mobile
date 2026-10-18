@@ -293,9 +293,11 @@ void main() {
 
     await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-20')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
@@ -486,9 +488,11 @@ void main() {
 
     await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-20')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
@@ -524,9 +528,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-20')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();

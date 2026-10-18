@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -578,7 +579,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   /// dipilih, paling cepat besok (harga hari ini memakai "Sekarang").
   Future<void> _pilihTanggalBerlaku() async {
     final besok = DateUtils.dateOnly(widget.now()).add(const Duration(days: 1));
-    final dipilih = await showDatePicker(
+    final dipilih = await showAppDatePicker(
       context: context,
       initialDate: _berlakuMulai ?? besok,
       firstDate: besok,
