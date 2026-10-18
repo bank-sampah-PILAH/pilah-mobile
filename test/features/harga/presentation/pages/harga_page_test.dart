@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
-import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
+import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
+import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
+import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_table.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
@@ -58,6 +63,12 @@ void main() {
 
   setUp(() {
     api = StubApi();
+    if (di.isRegistered<RiwayatHargaCubit>()) {
+      di.unregister<RiwayatHargaCubit>();
+    }
+    di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
+        GetRiwayatHargaUseCase(
+            HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
     cubit = buildHargaCubit(api);
     api.on('GET', '/api/v1/jenis-sampah', json: {
       'results': [
@@ -68,28 +79,162 @@ void main() {
     });
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() async {
+    await cubit.close();
+    if (di.isRegistered<RiwayatHargaCubit>()) {
+      await di.unregister<RiwayatHargaCubit>();
+    }
+  });
 
-  testWidgets("tapping a card opens its detail, with history from there",
+  testWidgets('below expanded a card opens a detail sheet, with history in it',
       (tester) async {
-    final router = await pumpRouted(
-      tester,
-      BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
-      extraRoutes: [RiwayatHargaPage.route],
-      size: const Size(800, 1600),
-    );
-    await tester.pumpAndSettle();
+    api.on('GET', '/api/v1/jenis-sampah/1/harga', json: {
+      'results': [
+        {
+          'id': 1,
+          'harga_per_kg': '3500.00',
+          'satuan': 'kg',
+          'berlaku_mulai': '2026-09-01T03:00:00Z',
+          'dibuat_oleh': null,
+          'status': 'berlaku',
+        },
+      ],
+    });
+    await openPage(tester);
 
     await tester.tap(find.text('Botol PET'));
     await tester.pumpAndSettle();
-    expect(find.byType(HargaDetailSheet), findsOneWidget);
+    expect(find.byType(HargaDetailFlow), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
     expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
 
     await tester.tap(find.text('Riwayat harga'));
     await tester.pumpAndSettle();
+    expect(find.text('Rp 3.500 / kg'), findsOneWidget);
+    expect(find.text('Berlaku sekarang'), findsOneWidget);
 
-    expect(find.text('route:${RiwayatHargaPage.route}'), findsOneWidget);
-    expect((router.state.extra as HargaEntity).name, 'Botol PET');
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit'), findsOneWidget, reason: 'back to the detail');
+  });
+
+  testWidgets('on a wide screen a row opens a side panel, not a dialog',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail jenis sampah'), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(HargaTable), findsOneWidget,
+        reason: 'the table stays beside the panel');
+    expect(find.text('Kardus'), findsOneWidget);
+  });
+
+  testWidgets('the panel goes detail, edit, and back to detail',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.byType(JenisSampahForm), findsNothing);
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+  });
+
+  testWidgets('in the panel history opens in place and returns to the detail',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum Ada Riwayat Harga'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+  });
+
+  testWidgets('the panel has one header whose title follows the view',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    // Detail: the jenis is the title; no back, only close.
+    expect(find.byTooltip('Kembali'), findsNothing);
+    expect(find.byTooltip('Tutup'), findsOneWidget);
+
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+    expect(find.text('Riwayat harga'), findsOneWidget);
+    expect(find.text('Detail jenis sampah'), findsNothing);
+    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.byTooltip('Tutup'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Jenis Sampah'), findsOneWidget);
+    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.byTooltip('Tutup'), findsOneWidget);
+  });
+
+  testWidgets('Esc closes the panel', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HargaDetailSheet), findsNothing);
+  });
+
+  testWidgets('the sheet below expanded has back but no close button',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Tutup'), findsNothing);
+
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.byTooltip('Tutup'), findsNothing);
+  });
+
+  testWidgets('choosing another row starts from its detail', (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Kardus'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+    expect(find.text('Belum Ada Riwayat Harga'), findsNothing);
   });
 
   testWidgets('Edit in the detail opens the edit sheet below expanded',
