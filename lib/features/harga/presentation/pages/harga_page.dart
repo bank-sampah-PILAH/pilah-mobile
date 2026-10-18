@@ -378,51 +378,47 @@ class _HargaCard extends StatelessWidget {
     final card = AppTappableCard(
       onTap: onTap,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Leading icon
           Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: AppColors.fill,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(item.icon, color: Colors.grey[600]),
+            child: Icon(item.icon, color: AppColors.inkSoft),
           ),
-          const SizedBox(width: 16),
-          // Middle content
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.name,
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle.headline3.copyWith(
+                    color: AppColors.black,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   item.subtitle,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[500],
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
-                const SizedBox(height: 8),
-                CustomStatusBadge(
-                  statusText: item.badgeText,
-                  backgroundColor: Colors.blue[50],
-                  textColor: Colors.blue[600],
-                ),
+                const SizedBox(height: AppSpacing.sm),
+                CustomStatusBadge(statusText: item.badgeText),
                 if (terjadwal != null) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     '${CurrencyFormatter.formatRupiah(terjadwal.harga)} mulai '
                     '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.avatarYellowText,
+                      color: AppColors.warning,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -430,45 +426,23 @@ class _HargaCard extends StatelessWidget {
               ],
             ),
           ),
-          // Trailing content
+          const SizedBox(width: AppSpacing.md),
+          // The price is what the pengurus came for, so it is the largest
+          // text on the card and stays level with the name.
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'HARGA BELI',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[400],
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
+                item.priceFormatted,
+                style: AppTextStyle.title1.copyWith(color: AppColors.black),
               ),
-              const SizedBox(height: 4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    item.priceFormatted,
-                    style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  Text(
-                    ' / kg',
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                ],
+              Text(
+                'per kg',
+                style:
+                    AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
               ),
             ],
           ),
-          const SizedBox(width: 12),
-          Icon(Icons.chevron_right, color: Colors.grey[400]),
         ],
       ),
     );
