@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
@@ -233,6 +235,12 @@ class _JadwalPageState extends State<JadwalPage> {
     await _changeStatus(item, JadwalAction.selesaikan);
   }
 
+  /// Pengurus di layar lebar memakai kepala halaman yang sama dengan tab web
+  /// lain, di dalam daftar, bukan `AppBar`.
+  bool get _webHeader =>
+      !widget.customerMode &&
+      context.layoutBreakpoint != LayoutBreakpoint.compact;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -240,19 +248,21 @@ class _JadwalPageState extends State<JadwalPage> {
           WebContentSurface.pageColor(context, phone: Colors.white),
       appBar: widget.customerMode
           ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
-          : AppBar(
-              title: Text(
-                'Jadwal Kegiatan',
-                style: AppTextStyle.headline1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
+          : _webHeader
+              ? null
+              : AppBar(
+                  title: Text(
+                    'Jadwal Kegiatan',
+                    style: AppTextStyle.headline1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  surfaceTintColor: Colors.transparent,
                 ),
-              ),
-              backgroundColor: Colors.white,
-              elevation: 0,
-              surfaceTintColor: Colors.transparent,
-            ),
       floatingActionButton: widget.customerMode
           ? null
           : BlocBuilder<JadwalCubit, JadwalState>(
@@ -403,8 +413,19 @@ class _JadwalPageState extends State<JadwalPage> {
     return ListView(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+      padding: _webHeader
+          ? const EdgeInsets.fromLTRB(
+              AppSpacing.webGutter,
+              AppSpacing.webTop,
+              AppSpacing.webGutter,
+              104,
+            )
+          : const EdgeInsets.fromLTRB(16, 16, 16, 104),
       children: [
+        if (_webHeader) ...[
+          const AppPageHeader(title: 'Jadwal Kegiatan'),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         JadwalCalendar(
           selectedDate: _selectedDate,
           scheduledDates: loadedState.scheduledDates,
