@@ -114,6 +114,19 @@ void main() {
     expect(event.password, 'correct horse');
   });
 
+  testWidgets('submits credentials when Done is pressed in the password field',
+      (tester) async {
+    await pumpPage(tester);
+    await enterCredentials(tester);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    final event =
+        verify(() => auth.add(captureAny())).captured.single as PostLoginEvent;
+    expect(event.email, 'ayu@example.com');
+    expect(event.password, 'correct horse');
+  });
+
   testWidgets('shows the shared loading state on the email action',
       (tester) async {
     await pumpPage(tester);
