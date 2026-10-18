@@ -203,9 +203,9 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: const BackHeaderRow(title: 'Kelola Pengumuman'),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: BackHeaderRow(title: 'Kelola Pengumuman'),
               ),
               const SizedBox(height: 16),
               const Padding(

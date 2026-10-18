@@ -116,15 +116,20 @@ void main() {
           builder: (_, __) => const Scaffold(body: DashboardActionButtons()),
         ),
         GoRoute(
+          path: '/pengumuman/kelola',
+          builder: (_, __) => const Scaffold(body: Text('kelola pengumuman')),
+        ),
+        GoRoute(
           path: '/pengurusan-lain',
           builder: (_, __) => const SizedBox(),
         ),
       ],
     );
     addTearDown(router.dispose);
-    // Route table of the real app is heavy; assert only that the tile exists
-    // — its push target is covered by the router tests in test/core/router/.
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-    expect(find.text('Pengumuman'), findsOneWidget);
+    await tester.tap(find.text('Pengumuman'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('kelola pengumuman'), findsOneWidget);
   });
 }
