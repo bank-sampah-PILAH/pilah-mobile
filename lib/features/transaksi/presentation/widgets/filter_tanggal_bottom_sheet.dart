@@ -37,50 +37,64 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return AppSheetContainer(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const BottomSheetHeader(title: 'Pilih Rentang Waktu'),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: BottomSheetHeader(title: 'Pilih Rentang Waktu'),
+          ),
           const SizedBox(height: 24),
           LayoutBuilder(
-            builder: (context, constraints) => AppCalendarRangePicker(
-              initialRange: _initialRange,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-              applyLabel: 'Terapkan Filter',
-              width: constraints.maxWidth.clamp(0.0, 336.0).toDouble(),
-              onApply: (range) {
-                context
-                    .read<RiwayatAktivitasCubit>()
-                    .applyCustomRange(range.start, range.end);
-                context.pop();
-              },
-            ),
+            builder: (context, constraints) {
+              final calendar = AppCalendarRangePicker(
+                initialRange: _initialRange,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+                applyLabel: 'Terapkan Filter',
+                width: 336,
+                onApply: (range) {
+                  context
+                      .read<RiwayatAktivitasCubit>()
+                      .applyCustomRange(range.start, range.end);
+                  context.pop();
+                },
+              );
+              return constraints.maxWidth < 336
+                  ? SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: calendar,
+                    )
+                  : Center(child: calendar);
+            },
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: mintTint,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline,
-                    color: AppColors.greenDark, size: 18),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Filter akan diterapkan ke daftar transaksi.',
-                    style: AppTextStyle.small.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: mintTint,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      color: AppColors.greenDark, size: 18),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Filter akan diterapkan ke daftar transaksi.',
+                      style: AppTextStyle.small.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

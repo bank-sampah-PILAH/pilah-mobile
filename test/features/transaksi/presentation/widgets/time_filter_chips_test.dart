@@ -41,7 +41,8 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  Future<void> open(WidgetTester tester) async {
+  Future<void> open(WidgetTester tester,
+      {Size size = const Size(800, 1600)}) async {
     await pumpRouted(
       tester,
       BlocProvider<RiwayatAktivitasCubit>.value(
@@ -50,7 +51,7 @@ void main() {
         // ignore: prefer_const_constructors
         child: Scaffold(body: TimeFilterChips()),
       ),
-      size: const Size(800, 1600),
+      size: size,
     );
   }
 
@@ -120,6 +121,23 @@ void main() {
         tester.widget<Icon>(find.byIcon(Icons.calendar_today_outlined));
     expect(icon.color, Colors.white);
   });
+
+  for (final size in [const Size(375, 844), const Size(320, 844)]) {
+    testWidgets('calendar day targets stay 48dp at ${size.width}dp',
+        (tester) async {
+      await open(tester, size: size);
+      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      await tester.pumpAndSettle();
+
+      final today = DateUtils.dateOnly(DateTime.now());
+      final dateKey = 'app-calendar-date-${today.year}-'
+          '${today.month.toString().padLeft(2, '0')}-'
+          '${today.day.toString().padLeft(2, '0')}';
+      final dateButton = find.byKey(ValueKey(dateKey));
+      expect(tester.getSize(dateButton), const Size(48, 48));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('the range sheet can be closed without applying', (tester) async {
     await open(tester);
