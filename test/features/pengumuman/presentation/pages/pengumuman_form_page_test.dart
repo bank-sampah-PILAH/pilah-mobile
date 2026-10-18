@@ -147,6 +147,31 @@ void main() {
     );
   });
 
+  testWidgets('Simpan Draft does not send the picked terbit_pada',
+      (tester) async {
+    await openForm(tester);
+
+    await tester.tap(find.text('Belum dipilih').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    await fillForm(tester);
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await showToast(tester);
+
+    expect(find.text('Pengumuman disimpan sebagai draft.'), findsOneWidget);
+    final create = api.requests.lastWhere((call) => call.method == 'POST');
+    expect(create.json['terbit_pada'], isNull,
+        reason: 'the schedule is a Jadwalkan concern, not a draft-save one');
+    expect(find.text('route:/'), findsOneWidget);
+    await settleToasts(tester);
+  });
+
   testWidgets('a save that returns no id reports the missing anchor',
       (tester) async {
     api.on('POST', '/api/v1/pengumuman', json: _row(''));
