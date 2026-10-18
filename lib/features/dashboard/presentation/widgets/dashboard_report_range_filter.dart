@@ -4,6 +4,38 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 
+const _indonesianMonths = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
+];
+
+String _reportDateIndonesian(DateTime date) =>
+    '${date.day} ${_indonesianMonths[date.month - 1]} ${date.year}';
+
+String reportDateRangeCaption(DashboardReportRange range) =>
+    'Menampilkan ${_reportDateIndonesian(range.start)} sampai '
+    '${_reportDateIndonesian(range.end)}';
+
+String reportCategoryWeightSubtitle(DashboardReportRange range) {
+  if (range.start.year == range.end.year &&
+      range.start.month == range.end.month) {
+    return 'Berat per kategori, ${range.start.day} sampai ${range.end.day} '
+        '${_indonesianMonths[range.end.month - 1]} ${range.end.year}';
+  }
+  return 'Berat per kategori, ${_reportDateIndonesian(range.start)} sampai '
+      '${_reportDateIndonesian(range.end)}';
+}
+
 class DashboardReportRangeFilter extends StatelessWidget {
   final DashboardReportRange range;
   final ValueChanged<DashboardReportRange> onChanged;
