@@ -259,9 +259,49 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(await backPresses(tester, router), 1,
-          reason: 'one back press must leave the profile, however many '
-              'times it was tapped');
+      expect(await backPresses(tester, router), 0,
+          reason: 'the profile is a destination of the shell, not a page '
+              'pushed over it, so there is nothing to pop');
+    });
+
+    testWidgets('opening it keeps the rail and marks no other item',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1280, 900),
+          isWeb: true,
+          initialLocation: '/customers');
+      expect(
+          tester
+              .widget<NavigationRail>(find.byType(NavigationRail))
+              .selectedIndex,
+          1);
+
+      await tester.tap(find.byKey(RoleNavigationRail.profileKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RoleNavigationRail), findsOneWidget);
+      expect(
+          tester
+              .widget<NavigationRail>(find.byType(NavigationRail))
+              .selectedIndex,
+          isNull,
+          reason: 'Nasabah must not stay highlighted behind the profile');
+    });
+
+    testWidgets('another rail item leads back out of the profile',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(1280, 900),
+          isWeb: true,
+          initialLocation: '/profile');
+
+      await tester.tap(find.text('Nasabah'));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/customers');
     });
   });
 

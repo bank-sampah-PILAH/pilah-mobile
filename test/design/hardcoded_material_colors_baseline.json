@@ -39,7 +39,7 @@
   "lib/features/onboarding/presentation/widgets/pilih_bank_sampah_bottom_sheet.dart": 4,
   "lib/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart": 7,
   "lib/features/profile/presentation/pages/profil_nasabah_page.dart": 1,
-  "lib/features/profile/presentation/pages/profile_page.dart": 20,
+  "lib/features/profile/presentation/pages/profile_page.dart": 17,
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": 11,
   "lib/features/transaksi/presentation/pages/transaksi_baru_page.dart": 6,
   "lib/features/transaksi/presentation/widgets/aktivitas_list_view.dart": 1,
