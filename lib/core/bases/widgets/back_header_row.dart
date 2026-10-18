@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 /// The back tile + headline row the pushed pages share: grey-tile back button
@@ -19,21 +21,21 @@ class BackHeaderRow extends StatelessWidget {
       children: [
         InkWell(
           onTap: onBack ?? () => context.pop(),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.fill,
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
+            child: Icon(Icons.arrow_back, color: AppColors.inkSoft, size: 20),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
             title,
-            style: AppTextStyle.appBar.copyWith(color: Colors.black87),
+            style: AppTextStyle.appBar.copyWith(color: AppColors.black),
           ),
         ),
       ],

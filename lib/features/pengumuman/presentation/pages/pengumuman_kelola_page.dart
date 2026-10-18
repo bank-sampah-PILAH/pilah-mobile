@@ -9,6 +9,8 @@ import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
@@ -332,7 +334,7 @@ class _KelolaRow extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -343,7 +345,7 @@ class _KelolaRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   pengumuman.judul,
-                  style: AppTextStyle.title1.copyWith(color: Colors.black),
+                  style: AppTextStyle.title1.copyWith(color: AppColors.black),
                 ),
               ),
               _StatusBadge(status: pengumuman.status),
@@ -360,34 +362,44 @@ class _KelolaRow extends StatelessWidget {
           Row(
             children: [
               if (pengumuman.isDraft) ...[
-                _ActionPill(
+                AppButton(
                   label: 'Ubah',
-                  color: AppColors.greenDark,
-                  onTap: () => onUbah(pengumuman),
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.outlined,
+                  expand: false,
+                  onPressed: () => onUbah(pengumuman),
                 ),
                 const SizedBox(width: 8),
-                _ActionPill(
+                AppButton(
                   label: 'Hapus',
-                  color: AppColors.danger,
-                  onTap: () => onHapus(pengumuman),
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.destructiveOutlined,
+                  expand: false,
+                  onPressed: () => onHapus(pengumuman),
                 ),
               ] else if (pengumuman.isTerjadwal) ...[
-                _ActionPill(
+                AppButton(
                   label: 'Ubah',
-                  color: AppColors.greenDark,
-                  onTap: () => onUbah(pengumuman),
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.outlined,
+                  expand: false,
+                  onPressed: () => onUbah(pengumuman),
                 ),
                 const SizedBox(width: 8),
-                _ActionPill(
+                AppButton(
                   label: 'Batalkan Jadwal',
-                  color: AppColors.danger,
-                  onTap: () => onBatalkanJadwal(pengumuman),
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.destructiveOutlined,
+                  expand: false,
+                  onPressed: () => onBatalkanJadwal(pengumuman),
                 ),
               ] else if (pengumuman.isTerbit) ...[
-                _ActionPill(
+                AppButton(
                   label: 'Tarik',
-                  color: AppColors.danger,
-                  onTap: () => onTarik(pengumuman),
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.destructiveOutlined,
+                  expand: false,
+                  onPressed: () => onTarik(pengumuman),
                 ),
               ],
               // kedaluwarsa and ditarik are read-only.
@@ -396,29 +408,6 @@ class _KelolaRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ActionPill extends StatelessWidget {
-  const _ActionPill({required this.label, required this.color, this.onTap});
-
-  final String label;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        side: BorderSide(color: color),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      child: Text(label,
-          style: AppTextStyle.small
-              .copyWith(color: color, fontWeight: FontWeight.w600)),
     );
   }
 }

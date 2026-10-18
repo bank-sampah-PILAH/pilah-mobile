@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/back_header_row.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
@@ -235,9 +235,6 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
 
   @override
   Widget build(BuildContext context) {
-    // Page shape copied from Transaksi Baru: grey-tile back button + headline
-    // in a padded header row (no AppBar), sections announced by small
-    // uppercase grey captions, and helper text under the section label.
     return Scaffold(
       backgroundColor: Colors.white,
       body: BlocBuilder<PengumumanCubit, PengumumanState>(
@@ -246,209 +243,119 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
           final isTransitioning =
               state is PengumumanLoaded && state.isTransitioning;
           final busy = isSaving || isTransitioning;
-          return AbsorbPointer(
-            absorbing: busy,
-            child: SafeArea(
-              child: ContentBounds(
-                child: Column(
-                  children: [
-                    // Header — same back-tile + title row as Transaksi Baru.
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: BackHeaderRow(
-                        title:
-                            _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman',
+          return SafeArea(
+            child: Column(
+              children: [
+                AppBackHeader(
+                    title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman'),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenDark.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Text(
+                          'Pengumuman akan dikirim ke semua nasabah bank sampah Anda.',
+                          style: AppTextStyle.small
+                              .copyWith(color: AppColors.greenDark),
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 8.0),
-                        children: [
-                          // Section 1: ISI PENGUMUMAN
-                          Text(
-                            'PENGUMUMAN',
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
+                      const SizedBox(height: 16),
+                      Text('Judul', style: AppTextStyle.regularSemiBold),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _judul,
+                        maxLength: 150,
+                        decoration: appInputDecoration(
+                            hintText: 'Contoh: Kerja bakti akhir bulan'),
+                      ),
+                      const SizedBox(height: 16),
+                      Text('Isi Pengumuman',
+                          style: AppTextStyle.regularSemiBold),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _isi,
+                        maxLines: 6,
+                        decoration: appInputDecoration(
+                            hintText: 'Tulis isi pengumuman'),
+                      ),
+                      const SizedBox(height: 16),
+                      _WaktuField(
+                        label: 'Waktu Terbit (untuk jadwal)',
+                        value: _terbitPada,
+                        onPick: () => _pilihWaktu(isMasaBerlaku: false),
+                        onClear: _terbitPada == null
+                            ? null
+                            : () => setState(() {
+                                  _terbitPada = null;
+                                  _validationError = null;
+                                }),
+                      ),
+                      const SizedBox(height: 12),
+                      _WaktuField(
+                        label: 'Masa Berlaku Hingga (opsional)',
+                        value: _masaBerlakuHingga,
+                        onPick: () => _pilihWaktu(isMasaBerlaku: true),
+                        onClear: _masaBerlakuHingga == null
+                            ? null
+                            : () => setState(() {
+                                  _masaBerlakuHingga = null;
+                                  _validationError = null;
+                                }),
+                      ),
+                      if (_validationError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _validationError!,
+                          style: AppTextStyle.small
+                              .copyWith(color: AppColors.danger),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      AppButton(
+                        label:
+                            _isTerjadwal ? 'Simpan Perubahan' : 'Simpan Draft',
+                        onPressed: busy ? null : _simpanDraft,
+                      ),
+                      if (!_isTerjadwal) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppButton(
+                                label: 'Jadwalkan',
+                                variant: AppButtonVariant.outlined,
+                                onPressed: busy
+                                    ? null
+                                    : () => _terbitkan(jadwalkan: true),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color:
-                                  AppColors.greenDark.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.campaign_outlined,
-                                    color: AppColors.greenDark, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Pengumuman akan dikirim ke semua nasabah bank sampah Anda.',
-                                    style: AppTextStyle.small
-                                        .copyWith(color: AppColors.greenDark),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text('Judul', style: AppTextStyle.regularSemiBold),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Maksimal 150 karakter. Contoh: Kerja bakti akhir bulan.',
-                            style: AppTextStyle.small
-                                .copyWith(color: Colors.grey[500]),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _judul,
-                            maxLength: 150,
-                            decoration: appInputDecoration(
-                                hintText: 'Tulis judul pengumuman'),
-                          ),
-                          const SizedBox(height: 16),
-                          Text('Isi Pengumuman',
-                              style: AppTextStyle.regularSemiBold),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Beritahu yang akan dilakukan, tanggalnya, dan siapa yang harus datang.',
-                            style: AppTextStyle.small
-                                .copyWith(color: Colors.grey[500]),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _isi,
-                            maxLines: 6,
-                            decoration: appInputDecoration(
-                                hintText: 'Tulis isi pengumuman'),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Section 2: JADWAL (opsional)
-                          Text(
-                            'JADWAL (OPSIONAL)',
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text('Waktu Terbit',
-                              style: AppTextStyle.regularSemiBold),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Kosongkan untuk menyimpan sebagai draft. Isi lalu tekan "Jadwalkan" untuk terbit otomatis nanti.',
-                            style: AppTextStyle.small
-                                .copyWith(color: Colors.grey[500]),
-                          ),
-                          const SizedBox(height: 8),
-                          _WaktuField(
-                            value: _terbitPada,
-                            hint: 'Pilih waktu terbit',
-                            onPick: () => _pilihWaktu(isMasaBerlaku: false),
-                            onClear: _terbitPada == null
-                                ? null
-                                : () => setState(() {
-                                      _terbitPada = null;
-                                      _validationError = null;
-                                    }),
-                          ),
-                          const SizedBox(height: 16),
-                          Text('Masa Berlaku Hingga',
-                              style: AppTextStyle.regularSemiBold),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Setelah lewat waktu ini pengumuman berhenti tampil untuk nasabah.',
-                            style: AppTextStyle.small
-                                .copyWith(color: Colors.grey[500]),
-                          ),
-                          const SizedBox(height: 8),
-                          _WaktuField(
-                            value: _masaBerlakuHingga,
-                            hint: 'Pilih masa berlaku',
-                            onPick: () => _pilihWaktu(isMasaBerlaku: true),
-                            onClear: _masaBerlakuHingga == null
-                                ? null
-                                : () => setState(() {
-                                      _masaBerlakuHingga = null;
-                                      _validationError = null;
-                                    }),
-                          ),
-                          if (_validationError != null) ...[
-                            const SizedBox(height: 12),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Text(
-                                _validationError!,
-                                style: AppTextStyle.small
-                                    .copyWith(color: Colors.red),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: AppButton(
+                                label: 'Terbitkan Sekarang',
+                                onPressed: busy
+                                    ? null
+                                    : () => _terbitkan(jadwalkan: false),
                               ),
                             ),
                           ],
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          CustomPrimaryButton(
-                            title: _isTerjadwal
-                                ? 'Simpan Perubahan'
-                                : 'Simpan Draft',
-                            onPressed: busy ? null : _simpanDraft,
-                          ),
-                          if (!_isTerjadwal) ...[
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: busy
-                                        ? null
-                                        : () => _terbitkan(jadwalkan: true),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Jadwalkan',
-                                      style: AppTextStyle.title1.copyWith(
-                                        color: AppColors.greenDark,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: CustomPrimaryButton(
-                                    title: 'Terbitkan Sekarang',
-                                    onPressed: busy
-                                        ? null
-                                        : () => _terbitkan(jadwalkan: false),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           );
         },
@@ -458,14 +365,14 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
 }
 
 class _WaktuField extends StatelessWidget {
+  final String label;
   final DateTime? value;
-  final String hint;
   final VoidCallback onPick;
   final VoidCallback? onClear;
 
   const _WaktuField({
+    required this.label,
     required this.value,
-    required this.hint,
     required this.onPick,
     this.onClear,
   });
@@ -477,29 +384,37 @@ class _WaktuField extends StatelessWidget {
         ? 'Belum dipilih'
         : '${waktu.day}/${waktu.month}/${waktu.year} '
             '${waktu.hour.toString().padLeft(2, '0')}:${waktu.minute.toString().padLeft(2, '0')}';
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: InkWell(
-            onTap: onPick,
-            borderRadius: BorderRadius.circular(12),
-            child: InputDecorator(
-              decoration: appInputDecoration(hintText: hint),
-              child: Text(
-                text,
-                style: AppTextStyle.regularSemiBold.copyWith(
-                  color: waktu == null ? AppColors.grey200 : Colors.black,
+        Text(label, style: AppTextStyle.regularSemiBold),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: onPick,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: InputDecorator(
+                  decoration: appInputDecoration(hintText: 'Pilih waktu'),
+                  child: Text(
+                    text,
+                    style: AppTextStyle.regularSemiBold.copyWith(
+                      color:
+                          waktu == null ? AppColors.grey200 : AppColors.black,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+            if (onClear != null)
+              IconButton(
+                tooltip: 'Hapus waktu',
+                onPressed: onClear,
+                icon: const Icon(Icons.close, size: 20),
+              ),
+          ],
         ),
-        if (onClear != null)
-          IconButton(
-            tooltip: 'Hapus waktu',
-            onPressed: onClear,
-            icon: const Icon(Icons.close, size: 20),
-          ),
       ],
     );
   }

@@ -27,7 +27,7 @@ class PengumumanDetailPage extends StatelessWidget {
       backgroundColor: NasabahStyle.background,
       appBar: const NasabahPageAppBar(
         title: 'Detail Pengumuman',
-        showBackButton: true,
+        showBack: true,
       ),
       body: SafeArea(
         child: ListView(

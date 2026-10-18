@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
@@ -95,7 +96,7 @@ class _MenuTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Column(
         children: [
           Container(
@@ -103,7 +104,7 @@ class _MenuTile extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: AppColors.greenDark.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             alignment: Alignment.center,
             child: Icon(icon, color: AppColors.greenDark, size: 24),
@@ -140,7 +141,7 @@ class _TransaksiChooserSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
@@ -185,12 +186,12 @@ class _ChoiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Row(
           children: [
@@ -198,7 +199,7 @@ class _ChoiceTile extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.greenLight,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(icon, color: AppColors.greenDark, size: 22),
             ),

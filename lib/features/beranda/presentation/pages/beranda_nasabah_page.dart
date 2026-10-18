@@ -608,7 +608,7 @@ class _PengumumanSection extends StatelessWidget {
       children: [
         for (final item in beranda.items)
           InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             onTap: () => _bukaRow(context, item),
             child: _card(
               child: Row(children: [
