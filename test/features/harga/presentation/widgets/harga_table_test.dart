@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -103,6 +104,26 @@ void main() {
       isSemantics(isButton: true, hasTapAction: true),
     );
     handle.dispose();
+  });
+
+  testWidgets('a row is tinted while the pointer is over it', (tester) async {
+    await _pump(tester, [_item('1', 'Botol PET'), _item('2', 'Kardus')]);
+    Color? tint(String id) =>
+        tester.widget<Container>(find.byKey(HargaTable.rowKey(id))).color;
+    expect(tint('1'), isNull);
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.byKey(HargaTable.rowKey('1'))));
+    await tester.pump();
+
+    expect(tint('1'), isNotNull, reason: 'hovered');
+    expect(tint('2'), isNull, reason: 'the other row is not');
+
+    await mouse.moveTo(const Offset(900, 890));
+    await tester.pump();
+    expect(tint('1'), isNull, reason: 'the tint goes when the pointer leaves');
   });
 
   testWidgets('the selected row is tinted', (tester) async {
