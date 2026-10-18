@@ -570,8 +570,10 @@ class _ProfileViewState extends State<_ProfileView>
 
   /// Jarak kiri dan kanan isi tab: gutter web, atau 24 di desktop non-web dan
   /// 16 di bawahnya.
-  double _sideGutter(bool isDesktop) =>
-      _webShell ? _gutter : (isDesktop ? 24.0 : 16.0);
+  double _sideGutter(bool isDesktop) {
+    if (_webShell) return _gutter;
+    return isDesktop ? 24.0 : 16.0;
+  }
 
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name =
