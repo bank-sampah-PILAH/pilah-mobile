@@ -1,5 +1,8 @@
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -117,7 +120,7 @@ class _IdentityCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
                 color: NasabahStyle.emeraldLight,
-                borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(AppRadius.sm)),
             child: Text('Nasabah',
                 style: NasabahStyle.text(13,
                     weight: FontWeight.w600, color: NasabahStyle.emeraldDark))),
@@ -173,16 +176,11 @@ class _LogoutCard extends StatelessWidget {
               ])),
         ]),
         const SizedBox(height: 16),
-        SizedBox(
-            height: 46,
-            child: OutlinedButton(
-                onPressed: onLogout,
-                style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: NasabahStyle.line),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                child: Text('Keluar',
-                    style: NasabahStyle.text(15, weight: FontWeight.w600)))),
+        AppButton(
+          label: 'Keluar',
+          variant: AppButtonVariant.neutral,
+          onPressed: onLogout,
+        ),
       ]));
 }
 
@@ -490,7 +488,7 @@ class _ProfileEditForm extends StatelessWidget {
               controller: namaCtrl,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           const SizedBox(height: 16),
           _fieldLabel('NOMOR HP'),
           TextField(
@@ -498,7 +496,7 @@ class _ProfileEditForm extends StatelessWidget {
               keyboardType: TextInputType.phone,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           const SizedBox(height: 16),
           _fieldLabel('JENIS KELAMIN'),
           Row(children: [
@@ -535,7 +533,7 @@ class _ProfileEditForm extends StatelessWidget {
               maxLines: 3,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           if (error != null) ...[
             const SizedBox(height: 12),
             Text(error!,
@@ -544,26 +542,17 @@ class _ProfileEditForm extends StatelessWidget {
           const SizedBox(height: 20),
           Row(children: [
             Expanded(
-                child: OutlinedButton(
-                    onPressed: onCancel,
-                    style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: NasabahStyle.line),
-                        foregroundColor: NasabahStyle.ink,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
-                    child: const Text('Batal'))),
+                child: AppButton(
+              label: 'Batal',
+              variant: AppButtonVariant.neutral,
+              onPressed: onCancel,
+            )),
             const SizedBox(width: 12),
             Expanded(
-                child: ElevatedButton(
-                    onPressed: onSave,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: NasabahStyle.emerald,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
-                    child: Text(saving ? 'Menyimpan...' : 'Simpan Perubahan'))),
+                child: AppButton(
+              label: saving ? 'Menyimpan...' : 'Simpan Perubahan',
+              onPressed: onSave,
+            )),
           ]),
         ]),
       );

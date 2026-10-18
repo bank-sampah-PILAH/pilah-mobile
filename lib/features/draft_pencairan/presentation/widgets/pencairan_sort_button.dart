@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 /// The sort button beside a search field: a grey square with a swap icon that
@@ -56,7 +57,8 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
         elevation: const WidgetStatePropertyAll(8),
         shadowColor: const WidgetStatePropertyAll(Colors.black38),
         shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg)),
         ),
         padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(vertical: 8),
@@ -103,14 +105,14 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
         message: 'Urutkan',
         child: InkWell(
           key: buttonKey,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap: () =>
               controller.isOpen ? controller.close() : controller.open(),
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Icon(Icons.swap_vert, color: Colors.grey[800]),
           ),

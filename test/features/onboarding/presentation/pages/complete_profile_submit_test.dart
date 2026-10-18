@@ -384,6 +384,19 @@ void main() {
       verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
     });
 
+    testWidgets('the logout button in the header asks before logging out',
+        (tester) async {
+      await open(tester, _account());
+
+      await tester.tap(find.byTooltip('Keluar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Batal Lengkapi Profil?'), findsOneWidget);
+
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+    });
+
     testWidgets('signing out routes to the login page', (tester) async {
       final bloc = MockAuthBloc();
       whenListen(

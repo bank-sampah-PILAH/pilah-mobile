@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 import '../../../../support/harga_support.dart';
@@ -25,15 +25,21 @@ Map<String, dynamic> _row(String id, String nama,
       'is_active': active,
     };
 
+/// Blok `medium`: form tetap sebuah bottom sheet, seperti di telepon.
+const _medium = Size(800, 1600);
+
+/// Blok `expanded`: form muncul sebagai panel di samping daftar.
+const _expanded = Size(1440, 900);
+
 void main() {
   late StubApi api;
   late HargaCubit cubit;
 
-  Future<void> openPage(WidgetTester tester) async {
+  Future<void> openPage(WidgetTester tester, {Size size = _medium}) async {
     await pumpRouted(
       tester,
       BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
-      size: const Size(800, 1600),
+      size: size,
     );
     await tester.pumpAndSettle();
   }
@@ -150,18 +156,31 @@ void main() {
     expect(find.text('Tidak Ada Jenis Nonaktif'), findsOneWidget);
   });
 
-  testWidgets('a failed load shows the message and can be retried by pulling',
+  testWidgets('a failed load names the failure and offers a retry button',
       (tester) async {
     api.on('GET', '/api/v1/jenis-sampah',
         status: 400, json: {'error': 'Server sibuk'});
     await openPage(tester);
-    expect(find.text('Gagal Memuat Data'), findsOneWidget);
     expect(find.text('Server sibuk'), findsOneWidget);
 
     api.on('GET', '/api/v1/jenis-sampah', json: {
       'results': [_row('1', 'Botol PET')],
     });
-    await tester.fling(find.byType(EmptyView), const Offset(0, 400), 1000);
+    await tester.tap(find.text('Coba lagi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('a failed load can also be retried by pulling down',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah',
+        status: 400, json: {'error': 'Server sibuk'});
+    await openPage(tester);
+
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [_row('1', 'Botol PET')],
+    });
+    await tester.fling(find.text('Server sibuk'), const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
     expect(find.text('Botol PET'), findsOneWidget);
   });
@@ -195,5 +214,238 @@ void main() {
 
     expect(find.text('Edit Jenis Sampah'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
+  });
+
+  // On a desktop window the same form becomes a panel beside the list, so the
+  // list stays readable while a price is edited. Only expanded gets it: at
+  // medium the panel would be about 320px, too narrow for this form, which is
+  // the same rule the jadwal page follows.
+  testWidgets('on a desktop window the add button opens a panel, not a sheet',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+    expect(
+      find.byType(TambahJenisSampahBottomSheet),
+      findsNothing,
+      reason: 'a panel must not also be hosted in a sheet',
+    );
+    expect(
+      find.text('Botol PET'),
+      findsOneWidget,
+      reason: 'the list stays visible beside the form; that is the point',
+    );
+  });
+
+  testWidgets('on a desktop window tapping a card fills the panel',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
+    expect(find.text('Edit Jenis Sampah'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('the panel close button clears the form', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsNothing,
+      reason: 'a panel is not on a route, so it cannot be dismissed by a pop',
+    );
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('selecting another row refills the open panel', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
+
+    await tester.tap(find.text('Kardus'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Kardus'), findsOneWidget);
+    expect(
+      find.widgetWithText(TextFormField, 'Botol PET'),
+      findsNothing,
+      reason: 'the previous row must not be left in any field',
+    );
+  });
+
+  // A panel outlives the selection it was opened for, so a request sent for
+  // one row can come back while another row is on screen. Raised by Scallss'
+  // review of this PR: the result used to close the panel it found, taking
+  // the next row's unsaved edits with it.
+  testWidgets('a save that lands after the row changed leaves the panel alone',
+      (tester) async {
+    api.on('PUT', '/api/v1/jenis-sampah/1', json: {});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    // Slow enough that the row can be switched while the PUT is still out.
+    api.latency = const Duration(milliseconds: 300);
+    await tester.ensureVisible(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pump();
+
+    // Single frames, not pumpAndSettle: settling would run the clock past the
+    // success toast's three seconds, and the toast is part of what is asserted.
+    await tester.tap(find.text('Kardus'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
+    await tester.pump();
+
+    // Botol PET's answer arrives here, with Kardus on screen.
+    await pumpToast(tester);
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsOneWidget,
+      reason: "Botol PET's save must not close the panel showing Kardus",
+    );
+    expect(
+      find.widgetWithText(TextFormField, 'Kardus Tebal'),
+      findsOneWidget,
+      reason: 'the edit in progress on Kardus must survive',
+    );
+    expect(api.requests.where((r) => r.method == 'PUT'), isNotEmpty,
+        reason: 'the save this test is about has to have been sent');
+    expect(find.text('Jenis sampah berhasil diperbarui.'), findsOneWidget,
+        reason: 'the save did succeed, so it is still reported');
+    await settleToasts(tester);
+  });
+
+  testWidgets('a status change that lands after the row changed is contained',
+      (tester) async {
+    api.on('PATCH', '/api/v1/jenis-sampah/1/status', json: {});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Nonaktifkan Jenis Sampah'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nonaktifkan Jenis Sampah'));
+    await tester.pumpAndSettle();
+    // Far longer than the dialog's own exit, so the ordering under test is not
+    // left to how long a settle happens to run for.
+    api.latency = const Duration(seconds: 5);
+    await tester.tap(find.text('Ya, Nonaktifkan'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('Kardus'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
+    await tester.pump();
+
+    // Botol PET's answer arrives here, with Kardus on screen. A panel that
+    // closed and was reopened would look the same, so the assertion is the
+    // unsaved text rather than the panel's presence alone.
+    await tester.pump(const Duration(seconds: 5));
+    await pumpToast(tester);
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsOneWidget,
+      reason: 'the same rule applies to the status toggle',
+    );
+    expect(
+      find.widgetWithText(TextFormField, 'Kardus Tebal'),
+      findsOneWidget,
+      reason: "Botol PET's status change must not discard Kardus' edit",
+    );
+    expect(api.requests.where((r) => r.method == 'PATCH'), isNotEmpty,
+        reason: 'the status change this test is about has to have been sent');
+    await settleToasts(tester);
+  });
+
+  testWidgets('no panel is rendered until something is selected',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    expect(find.byType(JenisSampahForm), findsNothing);
+  });
+
+  testWidgets('the add button hides while the panel is open', (tester) async {
+    await openPage(tester, size: _expanded);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(FloatingActionButton),
+      findsNothing,
+      reason: 'the FAB sits exactly over the panel\'s save button',
+    );
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+  });
+
+  testWidgets('on a phone the add button is always there', (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(FloatingActionButton),
+      findsOneWidget,
+      reason: 'compact opens a sheet, so there is no panel to overlap',
+    );
+  });
+
+  // The container is chosen when the form opens, but the window can be resized
+  // afterwards. Raised by TrayMachi's review of the same pattern on PR #113.
+  testWidgets('shrinking below expanded closes the open panel', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+
+    tester.view.physicalSize = _medium;
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsNothing,
+      reason: 'a 2/5 panel at medium is the width the open path refuses',
+    );
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('widening back does not resurrect a closed panel',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = _medium;
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = _expanded;
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(JenisSampahForm),
+      findsNothing,
+      reason: 'a blank form reappearing on resize reads as a bug',
+    );
   });
 }

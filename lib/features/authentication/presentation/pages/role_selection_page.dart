@@ -7,7 +7,9 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -183,34 +185,16 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                       ),
                     ],
                   ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _selectedRole == null || isLoading
-                          ? null
-                          : () => context.read<AuthenticationBloc>().add(
-                                RegisterGoogleRoleRequested(
-                                  role: _selectedRole!,
-                                ),
+                  child: AppButton(
+                    label: 'Lanjutkan',
+                    isLoading: isLoading,
+                    onPressed: _selectedRole == null
+                        ? null
+                        : () => context.read<AuthenticationBloc>().add(
+                              RegisterGoogleRoleRequested(
+                                role: _selectedRole!,
                               ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.greenDark,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const SizedBox.square(
-                              dimension: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Lanjutkan'),
-                    ),
+                            ),
                   ),
                 ),
               ],
@@ -240,7 +224,7 @@ class _VerifiedIdentity extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.grey200),
       ),
       child: Row(
@@ -327,15 +311,15 @@ class _RoleCard extends StatelessWidget {
       child: ExcludeSemantics(
         child: Material(
           color: selected ? AppColors.greenLight : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: InkWell(
             onTap: enabled ? onTap : null,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             child: Container(
               constraints: const BoxConstraints(minHeight: 80),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(
                   color: selected ? AppColors.greenDark : AppColors.grey200,
                   width: selected ? 2 : 1,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
@@ -126,23 +127,12 @@ class RiwayatNasabahPage extends StatelessWidget {
                       state.hasNext)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: NasabahStyle.emerald,
-                          minimumSize: const Size.fromHeight(48),
-                        ),
+                      child: AppButton(
+                        label: 'Muat Lagi',
+                        icon: Icons.expand_more,
                         onPressed: () => context
                             .read<RiwayatHistoryCubit>()
                             .loadHistoryCurrent(),
-                        icon: const Icon(Icons.expand_more),
-                        label: Text(
-                          'Muat Lagi',
-                          style: NasabahStyle.text(
-                            14,
-                            weight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
                       ),
                     ),
                 ],
