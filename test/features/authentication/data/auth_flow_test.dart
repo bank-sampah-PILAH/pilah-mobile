@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/data/auth_repository_impl.dart';
 import 'package:pilah_mobile/features/authentication/data/local/auth_local_data_sources.dart';
@@ -26,6 +27,21 @@ void main() {
   });
 
   group('password login', () {
+    test('never logs the password sent to the API', () async {
+      api.on('POST', '/api/v1/auth/login', json: authPayload());
+      final logs = <String>[];
+      void capture(LogEvent event) => logs.add(event.message.toString());
+      Logger.addLogListener(capture);
+      try {
+        await stack.interactor.postLogin('siti@x.test', 'do-not-log');
+      } finally {
+        Logger.removeLogListener(capture);
+      }
+
+      expect(logs, isNotEmpty);
+      expect(logs.join('\n'), isNot(contains('do-not-log')));
+    });
+
     test('maps the response into the session entity', () async {
       api.on('POST', '/api/v1/auth/login',
           json: authPayload(bankStatus: 'active'));
