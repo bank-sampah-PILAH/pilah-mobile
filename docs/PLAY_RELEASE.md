@@ -3,8 +3,8 @@
 ## Android identity and version
 
 - Keep the application ID `com.mobile.pilahapp`; it is the identity of the existing Play app.
-- `pubspec.yaml` uses `MAJOR.MINOR.PATCH+BUILD`. The next unused GitHub release name is `1.0.3`, so its tag is `v1.0.3`. The planned recovery build code is 7, after the rejected Play version code 6.
-- Before creating the tag or uploading, an authorized operator must check Play Console's highest version code and set `+BUILD` to a greater value. The workflow only enforces the known rejected-code lower bound; it cannot query Play's latest version. Match the tag to the version name. Never reuse a version code or move an existing release tag.
+- `pubspec.yaml` uses `MAJOR.MINOR.PATCH+BUILD`. The planned release is `2.0.0+7`, so its tag is `v2.0.0`. Play Console currently shows version code 6 as the highest uploaded bundle.
+- Before creating the tag or uploading, recheck Play Console's highest version code and set `+BUILD` to a greater value. The workflow only enforces the known rejected-code lower bound of 6; it cannot query Play's latest version. Match the tag to the version name. Never reuse a version code or move an existing release tag.
 - Keep the existing upload key and Play App Signing configuration. Do not generate or rotate an upload key as part of a release.
 
 ## Required GitHub configuration
@@ -19,7 +19,7 @@ Protect the `production` environment with an approval reviewer. Store the signin
 
 Store `SONAR_TOKEN` as a repository Actions secret with permission to run the mobile project scan. The tag verification job intentionally does not use the protected `production` environment, so the repository-scoped secret is available without production-environment approval.
 
-Keep reviewer login credentials in backend production configuration only; store the password as a Django password hash. Do not add reviewer credentials to `APP_ENV_FILE`, Firebase configuration, a Dart define, an asset, or GitHub release metadata.
+The production seed creates PILAH users for the review roles, but it does not create their Google accounts or passwords. Do not put Google account credentials in backend configuration, `APP_ENV_FILE`, Firebase configuration, a Dart define, an asset, or GitHub release metadata.
 
 ## Build and test track upload
 
@@ -29,13 +29,16 @@ The workflow fails before building if required production configuration or signi
 
 ## Reviewer access and policy resubmission
 
-The current Play rejection says reviewer credentials must not depend on device-bound authentication. Before resubmitting:
+The PILAH production seed provides these isolated review accounts and fixtures:
 
-1. Provision the dedicated active `pengelola` reviewer account on a synthetic bank and enable reviewer login through the documented backend settings. Keep `DJANGO_DEBUG=false` and fake Google tokens disabled.
-2. Install the exact Alpha-delivered build on a clean Android device or profile with no prior Google account/device trust. Verify reviewer login works, Google Sign-In still works for normal users, and disabling the backend flag hides the entry and rejects direct login attempts.
-3. In Play Console's App access / Sign in details declaration, have the authorized operator enter the dedicated reviewer credentials and concise steps for reaching the features under review. Use a non-device-bound password login; do not put the credentials in this repository, Linear, release notes, or screenshots.
-4. Submit the corrected build and access instructions for review. Record the outcome, affected version, and sanitized evidence in the QA and production-access tracking issues.
-5. Before requesting production access, confirm the account's current closed-testing eligibility, then maintain at least 12 active testers opted in continuously for 14 days. If the count drops below 12, the waiting period may restart.
+- Pengelola: `traymachi@gmail.com`, owner of the active synthetic demo bank.
+- Pengurus: `pilah.pengurus@gmail.com`.
+- Nasabah: `pilah.nasabah@gmail.com`, with synthetic transaction history, catalog, schedules, and balance.
+- Superadmin: `pilah.superadmin@gmail.com`, restricted to the synthetic pending bank and its approval flow.
+
+Before submitting or resubmitting, confirm each Google account exists and can sign in on a clean device without a device-bound challenge. In Play Console's App access / Sign in details, provide the reusable account credentials and concise role-specific steps for reaching the features under review. The credentials must be available to Google reviewers; do not put them in this repository, Linear, release notes, or screenshots. Submit the corrected build and access instructions for review, then record the outcome, affected version, and sanitized evidence in the QA and production-access tracking issues.
+
+The Play Console dashboard currently reports that this app has production access, so no 12-testers-for-14-days wait is pending for this release. Apply that eligibility requirement only if Play Console shows it for a future account or app state.
 
 ## Retry and production promotion
 
@@ -43,4 +46,4 @@ Use the `CD - Production` workflow's manual dispatch with an existing release ta
 
 If a track assignment fails after the bundle is registered in Play, fix the access/configuration problem and dispatch the same release tag again. A dispatch cannot recover an upload that never registered the bundle in Play because it deliberately does not upload bundles. Do not create another tag for the same version code. If the app needs a code fix, create a new patch version and version code, then run the checks and upload a new AAB.
 
-To disable reviewer entry during an incident, set the backend `PILAH_ENABLE_DEMO_LOGIN` flag to false; the backend must reject the login even if an older app screen is open. If a production rollout needs to stop, halt it in Play Console and document the decision and recovery owner.
+If a production rollout needs to stop, halt it in Play Console and document the decision and recovery owner.
