@@ -184,7 +184,7 @@ void main() {
 
   testWidgets('a price card is announced as a button', (tester) async {
     final handle = tester.ensureSemantics();
-    await openPage(tester);
+    await openPage(tester, size: const Size(420, 1400));
 
     expect(
       tester.getSemantics(find.text('Botol PET')),
@@ -278,7 +278,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
-    expect(find.text('Tambah Jenis Sampah'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(TambahJenisSampahBottomSheet),
+        matching: find.text('Tambah Jenis Sampah'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('tapping a card opens the edit form prefilled', (tester) async {

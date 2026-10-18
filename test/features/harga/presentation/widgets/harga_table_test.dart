@@ -94,6 +94,17 @@ void main() {
     expect(tapped?.id, '2');
   });
 
+  testWidgets('a row is announced as a button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _pump(tester, [_item('1', 'Botol PET')]);
+
+    expect(
+      tester.getSemantics(find.text('Botol PET')),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
+  });
+
   testWidgets('the selected row is tinted', (tester) async {
     await _pump(tester, [_item('1', 'Botol PET'), _item('2', 'Kardus')],
         selectedId: '2');
