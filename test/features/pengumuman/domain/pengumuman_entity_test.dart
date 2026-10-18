@@ -88,8 +88,10 @@ void main() {
 
   test('page results with the same fields are equal', () {
     const row = PengumumanEntity(id: '1', bankSampahId: '', judul: '', isi: '');
-    final result = PengumumanPageResult(items: [row], totalCount: 1, hasMore: false);
-    final same = PengumumanPageResult(items: [row], totalCount: 1, hasMore: false);
+    final result =
+        PengumumanPageResult(items: [row], totalCount: 1, hasMore: false);
+    final same =
+        PengumumanPageResult(items: [row], totalCount: 1, hasMore: false);
     expect(result, same);
     expect(result.hashCode, same.hashCode);
   });
