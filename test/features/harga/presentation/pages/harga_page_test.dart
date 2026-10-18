@@ -6,7 +6,10 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_table.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
@@ -455,21 +458,54 @@ void main() {
     expect(find.byType(JenisSampahForm), findsNothing);
   });
 
-  testWidgets('the add button hides while the panel is open', (tester) async {
+  testWidgets('a wide screen lists jenis sampah in a table', (tester) async {
     await openPage(tester, size: _expanded);
-    expect(find.byType(FloatingActionButton), findsOneWidget);
 
+    expect(find.byType(HargaTable), findsOneWidget);
+    expect(find.byType(AppTappableCard), findsNothing);
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('a medium screen also gets the table', (tester) async {
+    await openPage(tester);
+
+    expect(find.byType(HargaTable), findsOneWidget);
+  });
+
+  testWidgets('a phone keeps the cards', (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+
+    expect(find.byType(HargaTable), findsNothing);
+    expect(find.byType(AppTappableCard), findsWidgets);
+  });
+
+  testWidgets('tapping a table row opens its detail', (tester) async {
+    await openPage(tester, size: _expanded);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+  });
+
+  testWidgets('the row being edited stays tinted in the table', (tester) async {
+    await openPage(tester, size: _expanded);
     await editJenis(tester, 'Botol PET');
 
-    expect(
-      find.byType(FloatingActionButton),
-      findsNothing,
-      reason: 'the FAB sits exactly over the panel\'s save button',
-    );
+    final row = tester.widget<Container>(find.byKey(HargaTable.rowKey('1')));
+    expect(row.color, AppColors.greenLight);
+  });
 
-    await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+  testWidgets('on a wide screen the add button is in the header, not a FAB',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.text('Tambah Jenis Sampah'), findsOneWidget);
+
+    await editJenis(tester, 'Botol PET');
+    expect(find.text('Tambah Jenis Sampah'), findsOneWidget,
+        reason: 'nothing floats over the panel any more, so it can stay');
   });
 
   testWidgets('on a phone the add button is always there', (tester) async {
