@@ -568,6 +568,11 @@ class _ProfileViewState extends State<_ProfileView>
         onPressed: _confirmLogout,
       );
 
+  /// Jarak kiri dan kanan isi tab: gutter web, atau 24 di desktop non-web dan
+  /// 16 di bawahnya.
+  double _sideGutter(bool isDesktop) =>
+      _webShell ? _gutter : (isDesktop ? 24.0 : 16.0);
+
   Widget _buildPengaturanUmumTab(ProfileState state, AuthEntity? auth) {
     final name =
         (auth?.name.trim().isNotEmpty ?? false) ? auth!.name : 'Pengguna';
@@ -629,10 +634,7 @@ class _ProfileViewState extends State<_ProfileView>
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(
-                _webShell ? _gutter : (isDesktop ? 24 : 16),
-                16,
-                _webShell ? _gutter : (isDesktop ? 24 : 16),
-                24),
+                _sideGutter(isDesktop), 16, _sideGutter(isDesktop), 24),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
