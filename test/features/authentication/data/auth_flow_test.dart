@@ -27,6 +27,18 @@ void main() {
   });
 
   group('password login', () {
+    test('stores the access and refresh tokens returned by the API', () async {
+      api.on('POST', '/api/v1/auth/login', json: authPayload());
+
+      final result = await stack.interactor.postLogin('siti@x.test', 'secret');
+
+      expect(result.isRight(), isTrue);
+      expect(api.utils.accessToken, 'access-1');
+      expect(api.utils.refreshToken, 'refresh-1');
+      expect(await stack.database.getString('token'), 'access-1');
+      expect(await stack.database.getString('refresh_token'), 'refresh-1');
+    });
+
     test('never logs the password sent to the API', () async {
       api.on('POST', '/api/v1/auth/login', json: authPayload());
       final logs = <String>[];

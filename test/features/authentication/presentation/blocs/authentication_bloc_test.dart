@@ -21,7 +21,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/r
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
 
 class MockAuthenticationUseCases extends Mock
     implements AuthenticationUseCases {}
@@ -49,7 +48,7 @@ void main() {
   });
 
   group('AuthenticationBloc', () {
-    const tUsername = 'test_user';
+    const tEmail = 'test@example.com';
     const tPassword = 'password123';
     final tAuth = AuthEntity(
       id: '1',
@@ -136,46 +135,43 @@ void main() {
     });
 
     blocTest<AuthenticationBloc, dynamic>(
-      'emits [Loading, Success] when login is successful',
+      'emits [Loading, Authenticated] when password login succeeds',
       build: () {
-        when(() => mockUseCases.postLogin(tUsername, tPassword))
+        when(() => mockUseCases.postLogin(tEmail, tPassword))
             .thenAnswer((_) async => Right(tAuth));
-        when(() => mockUseCases.saveToken(tAuth.token, tAuth.token))
-            .thenAnswer((_) async => const Right(null));
         return bloc;
       },
       act: (bloc) => bloc.add(const PostLoginEvent(
-        username: tUsername,
+        username: tEmail,
         password: tPassword,
       )),
       expect: () => [
-        isA<PostLoginLoadingState>(),
-        isA<PostLoginSuccessState>(),
+        AuthenticationLoading(),
+        Authenticated(authEntity: tAuth),
       ],
       verify: (_) {
-        verify(() => mockUseCases.postLogin(tUsername, tPassword)).called(1);
-        verify(() => mockUseCases.saveToken(tAuth.token, tAuth.token))
-            .called(1);
+        verify(() => mockUseCases.postLogin(tEmail, tPassword)).called(1);
+        verifyNever(() => mockUseCases.saveToken(any(), any()));
       },
     );
 
     blocTest<AuthenticationBloc, dynamic>(
-      'emits [Loading, Error] when login fails',
+      'emits a generic authentication failure when password login fails',
       build: () {
-        when(() => mockUseCases.postLogin(tUsername, tPassword)).thenAnswer(
+        when(() => mockUseCases.postLogin(tEmail, tPassword)).thenAnswer(
             (_) async => Left(GeneralException(message: 'Login failed')));
         return bloc;
       },
       act: (bloc) => bloc.add(const PostLoginEvent(
-        username: tUsername,
+        username: tEmail,
         password: tPassword,
       )),
       expect: () => [
-        isA<PostLoginLoadingState>(),
-        isA<PostLoginErrorState>(),
+        AuthenticationLoading(),
+        AuthenticationFailure(message: 'Login failed'),
       ],
       verify: (_) {
-        verify(() => mockUseCases.postLogin(tUsername, tPassword)).called(1);
+        verify(() => mockUseCases.postLogin(tEmail, tPassword)).called(1);
         verifyNever(() => mockUseCases.saveToken(any(), any()));
       },
     );
@@ -183,7 +179,7 @@ void main() {
     blocTest<AuthenticationBloc, dynamic>(
       'emits [InitState] when LoginRefreshEvent is added and state is Error',
       build: () => bloc,
-      seed: () => PostLoginErrorState(message: 'Error'),
+      seed: () => AuthenticationFailure(message: 'Error'),
       act: (bloc) => bloc.add(LoginRefreshEvent()),
       expect: () => [
         isA<AuthenticationInitial>(),
