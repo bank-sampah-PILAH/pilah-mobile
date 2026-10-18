@@ -155,6 +155,59 @@ void main() {
       },
     );
 
+    blocTest<AuthenticationBloc, AuthenticationStates>(
+      'clears the old session before accepting a different email account',
+      build: () {
+        when(() => mockUseCases.postLogin(tEmail, tPassword))
+            .thenAnswer((_) async => Right(tAuth));
+        return bloc;
+      },
+      seed: () => Authenticated(
+        authEntity: AuthEntity(
+          id: 'previous-user',
+          name: 'Previous User',
+          email: 'previous@example.com',
+          photoUrl: '',
+          token: 'previous-token',
+        ),
+      ),
+      act: (bloc) => bloc.add(const PostLoginEvent(
+        email: tEmail,
+        password: tPassword,
+      )),
+      expect: () => [
+        AuthenticationLoading(),
+        Unauthenticated(),
+        Authenticated(authEntity: tAuth),
+      ],
+    );
+
+    blocTest<AuthenticationBloc, AuthenticationStates>(
+      'keeps the session when email login is for the same account',
+      build: () {
+        when(() => mockUseCases.postLogin(tEmail, tPassword))
+            .thenAnswer((_) async => Right(tAuth));
+        return bloc;
+      },
+      seed: () => Authenticated(
+        authEntity: AuthEntity(
+          id: '1',
+          name: 'Test User',
+          email: 'TEST@example.com',
+          photoUrl: '',
+          token: 'existing-token',
+        ),
+      ),
+      act: (bloc) => bloc.add(const PostLoginEvent(
+        email: tEmail,
+        password: tPassword,
+      )),
+      expect: () => [
+        AuthenticationLoading(),
+        Authenticated(authEntity: tAuth),
+      ],
+    );
+
     blocTest<AuthenticationBloc, dynamic>(
       'emits a generic authentication failure when password login fails',
       build: () {

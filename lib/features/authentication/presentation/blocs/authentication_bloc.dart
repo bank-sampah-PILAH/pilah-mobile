@@ -42,12 +42,22 @@ class AuthenticationBloc
 
   Future _onPostLoginEvent(
       PostLoginEvent event, Emitter<AuthenticationStates> emitter) async {
+    final previous = state;
+    final previousEmail = previous is Authenticated
+        ? previous.authEntity.email.trim().toLowerCase()
+        : null;
     emitter(AuthenticationLoading());
     final response = await _useCases.postLogin(event.email, event.password);
     response.fold(
       (failure) =>
           emitter(AuthenticationFailure(message: failure.displayMessage)),
-      (entity) => emitter(Authenticated(authEntity: entity)),
+      (entity) {
+        if (previousEmail != null &&
+            previousEmail != entity.email.trim().toLowerCase()) {
+          emitter(Unauthenticated());
+        }
+        emitter(Authenticated(authEntity: entity));
+      },
     );
   }
 
