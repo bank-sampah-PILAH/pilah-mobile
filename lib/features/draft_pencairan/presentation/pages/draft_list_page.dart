@@ -11,7 +11,6 @@ import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/draft_pencairan.dart';
@@ -78,23 +77,9 @@ class DraftListView extends StatelessWidget {
           child: BlocBuilder<DraftListCubit, DraftListState>(
             builder: (context, state) => Column(
               children: [
-                AppBackHeader(
-                  backKey: const Key('kembali'),
+                const AppBackHeader(
+                  backKey: Key('kembali'),
                   title: 'Pencairan',
-                  actions: [
-                    PencairanPopupMenu<String>(
-                      key: const Key('menu-lainnya'),
-                      onSelected: (_) => context.push(CatatPencairanPage.route),
-                      entries: const [
-                        PencairanMenuEntry(
-                          key: Key('aksi-catat'),
-                          value: 'catat',
-                          label: 'Catat pencairan satu nasabah',
-                          icon: Icons.edit_note,
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
                 const _SearchBar(),
                 _FilterChips(state: state),

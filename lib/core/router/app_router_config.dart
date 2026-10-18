@@ -35,7 +35,6 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_e
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
@@ -153,11 +152,6 @@ class AppRouterConfig {
         path: TransaksiBaruPage.route,
         name: TransaksiBaruPage.route,
         builder: (context, state) => const TransaksiBaruPage(),
-      ),
-      GoRoute(
-        path: CatatPencairanPage.route,
-        name: CatatPencairanPage.route,
-        builder: (context, state) => const CatatPencairanPage(),
       ),
       GoRoute(
         path: DraftListPage.route,

@@ -65,7 +65,6 @@ void main() {
       extraRoutes: const [
         DraftListPage.routePilih,
         DraftListPage.routeEditor,
-        '/catat-pencairan',
       ],
       size: size,
     );
@@ -335,31 +334,13 @@ void main() {
     expect(find.byKey(const Key('batalkan-d-1')), findsOneWidget);
   });
 
-  testWidgets('the three dots open a white card to log one nasabah',
+  testWidgets('the header has no menu to log a pencairan for one nasabah',
       (tester) async {
     await pump(tester, const []);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('menu-lainnya')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Catat pencairan satu nasabah'), findsOneWidget);
-    expect(
-        find.descendant(
-            of: find.byKey(const Key('aksi-catat')),
-            matching: find.byIcon(Icons.edit_note)),
-        findsOneWidget);
-    final kartu = tester.widget<Material>(find
-        .ancestor(
-            of: find.byKey(const Key('aksi-catat')),
-            matching: find.byType(Material))
-        .first);
-    expect(kartu.color, Colors.white);
-    expect(kartu.surfaceTintColor, Colors.transparent);
-
-    await tester.tap(find.byKey(const Key('aksi-catat')));
-    await tester.pumpAndSettle();
-    expect(find.text('route:/catat-pencairan'), findsOneWidget);
+    expect(find.byKey(const Key('menu-lainnya')), findsNothing);
+    expect(find.text('Catat pencairan satu nasabah'), findsNothing);
   });
 
   testWidgets(

@@ -34,7 +34,6 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_appr
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
@@ -100,7 +99,6 @@ void main() {
         '/register-nasabah': RegisterNasabahScreen,
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
-        '/catat-pencairan': CatatPencairanPage,
         '/pengelola-induk-dashboard': RoleHandoffPage,
         '/register-bank-sampah-induk': RoleHandoffPage,
       };
@@ -110,6 +108,15 @@ void main() {
             settle: !entry.key.contains('induk'));
         expect(find.byType(entry.value), findsOneWidget, reason: entry.key);
       }
+    });
+
+    testWidgets('cannot open the removed single-nasabah pencairan page',
+        (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/catat-pencairan');
+
+      expect(find.text('Catat Pencairan'), findsNothing);
     });
 
     testWidgets('can open the pencairan edit and revision pages',

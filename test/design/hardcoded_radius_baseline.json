@@ -14,7 +14,6 @@
   "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": 1,
   "lib/features/nasabah/presentation/widgets/nasabah_table.dart": 1,
   "lib/features/onboarding/presentation/pages/splash_page.dart": 1,
-  "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": 1,
   "lib/features/profile/presentation/pages/profil_nasabah_page.dart": 2,
   "lib/features/profile/presentation/pages/profile_page.dart": 6,
   "lib/features/profile/presentation/widgets/wa_variable_chips.dart": 2,
