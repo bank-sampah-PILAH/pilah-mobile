@@ -78,10 +78,10 @@ void main() {
               harga: 4000, berlakuMulai: DateTime.utc(2026, 11, 1, 5))),
     ]);
 
-    final price = tester.getTopLeft(find.text('Rp 3.500'));
-    final scheduled = tester.getTopLeft(find.textContaining('Rp 4.000'));
+    final price = tester.getTopRight(find.text('Rp 3.500'));
+    final scheduled = tester.getTopRight(find.textContaining('Rp 4.000'));
     expect(scheduled.dy, greaterThan(price.dy));
-    expect(scheduled.dx, price.dx);
+    expect(scheduled.dx, price.dx, reason: 'the column is right aligned');
   });
 
   testWidgets('tapping a row reports that jenis', (tester) async {
