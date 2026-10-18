@@ -312,6 +312,23 @@ void main() {
     expect(find.text('Connection Timeout'), findsOneWidget);
   });
 
+  testWidgets('a failed load offers Coba Lagi and reloads', (tester) async {
+    api.fail('GET', '/api/v1/pengumuman');
+    await openPage(tester);
+
+    expect(find.text('Coba Lagi'), findsOneWidget);
+
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 1,
+      'next': null,
+      'results': [_row('1', judul: 'Baris 1', status: 'draft')],
+    });
+    await tester.tap(find.text('Coba Lagi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Baris 1'), findsOneWidget);
+  });
+
   testWidgets('the FAB opens a blank form', (tester) async {
     api.on('GET', '/api/v1/pengumuman', json: {
       'count': 0,

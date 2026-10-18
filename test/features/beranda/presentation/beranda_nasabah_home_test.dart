@@ -244,6 +244,22 @@ void main() {
       );
     });
 
+    testWidgets('Semua opens the pengumuman list', (tester) async {
+      await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
+        '/pengumuman': (_, __) => const Scaffold(body: Text('daftar')),
+      });
+
+      // Headings carry their own Semua (Jadwal, Pengumuman, Terbaru); the
+      // middle one is Pengumuman's.
+      final semuaButtons = find.widgetWithText(TextButton, 'Semua');
+      await tester.ensureVisible(semuaButtons.at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(semuaButtons.at(1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('daftar'), findsOneWidget);
+    });
+
     testWidgets('tapping a row opens the detail and refreshes on return',
         (tester) async {
       final repository = _HomeRepository(null, const []);
