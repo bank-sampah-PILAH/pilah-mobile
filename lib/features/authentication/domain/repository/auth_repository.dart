@@ -4,7 +4,7 @@ import 'package:dartz/dartz.dart';
 
 abstract class AuthRepository {
   Future<Either<NetworkException, AuthEntity>> postLogin(
-    String username,
+    String email,
     String password,
   );
 

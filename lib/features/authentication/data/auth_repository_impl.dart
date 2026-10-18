@@ -35,10 +35,10 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<NetworkException, AuthEntity>> postLogin(
-    String username,
+    String email,
     String password,
   ) async {
-    final request = PostLoginRequest(username: username, password: password);
+    final request = PostLoginRequest(email: email, password: password);
     return apiCall<AuthEntity>(
       func: _remoteDataSources.postLogin(request),
       mapper: (value) => AuthMapper.mapResponseToDomain(value),

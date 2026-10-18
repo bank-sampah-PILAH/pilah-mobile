@@ -56,7 +56,7 @@ void main() {
     });
 
     test('the request serialises its fields', () {
-      expect(const PostLoginRequest(username: 'a', password: 'b').toJson(),
+      expect(const PostLoginRequest(email: 'a', password: 'b').toJson(),
           {'email': 'a', 'password': 'b'});
     });
 
