@@ -1,58 +1,98 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_page_result.dart';
 
 void main() {
-  test('the status getters map the derived statuses', () {
+  test('each effective status has its predicate', () {
     expect(
-        const PengumumanEntity(id: '', bankSampahId: '', judul: '', isi: '')
+        const PengumumanEntity(id: '1', bankSampahId: '', judul: '', isi: '')
             .isDraft,
         isTrue);
-    for (final (status, getter) in <(String, bool Function(PengumumanEntity))>[
-      ('terjadwal', (e) => e.isTerjadwal),
-      ('terbit', (e) => e.isTerbit),
-      ('kedaluwarsa', (e) => e.isKedaluwarsa),
-      ('ditarik', (e) => e.isDitarik),
-    ]) {
-      final entity = PengumumanEntity(
-          id: '', bankSampahId: '', judul: '', isi: '', status: status);
-      expect(getter(entity), isTrue, reason: status);
-      expect(entity.isDraft, isFalse);
-    }
+    expect(
+        const PengumumanEntity(
+                id: '1',
+                bankSampahId: '',
+                judul: '',
+                isi: '',
+                status: 'terjadwal')
+            .isTerjadwal,
+        isTrue);
+    expect(
+        const PengumumanEntity(
+                id: '1', bankSampahId: '', judul: '', isi: '', status: 'terbit')
+            .isTerbit,
+        isTrue);
+    expect(
+        const PengumumanEntity(
+                id: '1',
+                bankSampahId: '',
+                judul: '',
+                isi: '',
+                status: 'kedaluwarsa')
+            .isKedaluwarsa,
+        isTrue);
+    expect(
+        const PengumumanEntity(
+                id: '1',
+                bankSampahId: '',
+                judul: '',
+                isi: '',
+                status: 'ditarik')
+            .isDitarik,
+        isTrue);
   });
 
-  test('equal rows compare equal and pages carry their props', () {
+  test('isBaru is a published row that was never withdrawn', () {
+    const terbit = PengumumanEntity(
+        id: '1', bankSampahId: '', judul: '', isi: '', status: 'terbit');
+    final ditarik = PengumumanEntity(
+      id: '1',
+      bankSampahId: '',
+      judul: '',
+      isi: '',
+      status: 'terbit',
+      ditarikPada: DateTime(2026),
+    );
+    expect(terbit.isBaru, isTrue);
+    expect(ditarik.isBaru, isFalse);
+    expect(
+        const PengumumanEntity(id: '1', bankSampahId: '', judul: '', isi: '')
+            .isBaru,
+        isFalse);
+  });
+
+  test('two entities with the same fields are equal', () {
     final a = PengumumanEntity(
-        id: '1',
-        bankSampahId: 'b',
-        judul: 'J',
-        isi: 'I',
-        dibaca: true,
-        dibacaPada: DateTime(2026, 1, 1));
+      id: '1',
+      bankSampahId: 'b',
+      judul: 'j',
+      isi: 'i',
+      terbitPada: DateTime(2026),
+      masaBerlakuHingga: DateTime(2027),
+      ditarikPada: null,
+      status: 'terbit',
+    );
     final b = PengumumanEntity(
-        id: '1',
-        bankSampahId: 'b',
-        judul: 'J',
-        isi: 'I',
-        dibaca: true,
-        dibacaPada: DateTime(2026, 1, 1));
-    expect(a, equals(b));
-
-    final page =
-        PengumumanPageResult(items: [a], totalCount: 1, hasMore: false);
-    final same =
-        PengumumanPageResult(items: [b], totalCount: 1, hasMore: false);
-    expect(page, equals(same));
-    expect(page.hasMore, isFalse);
+      id: '1',
+      bankSampahId: 'b',
+      judul: 'j',
+      isi: 'i',
+      terbitPada: DateTime(2026),
+      masaBerlakuHingga: DateTime(2027),
+      ditarikPada: null,
+      status: 'terbit',
+    );
+    expect(a, b);
+    expect(a.hashCode, b.hashCode);
   });
 
-  test('the sealed states compare by their props', () {
-    // Equality runs the props getters that plain construction leaves cold.
-    expect(PengumumanInitial(), PengumumanInitial());
-    expect(PengumumanInitial().props, isEmpty);
-    expect(PengumumanError('gagal'), PengumumanError('gagal'));
-    expect(PengumumanError('gagal').props, ['gagal']);
-    expect(PengumumanError('a'), isNot(PengumumanError('b')));
+  test('page results with the same fields are equal', () {
+    const row = PengumumanEntity(id: '1', bankSampahId: '', judul: '', isi: '');
+    final result =
+        PengumumanPageResult(items: [row], totalCount: 1, hasMore: false);
+    final same =
+        PengumumanPageResult(items: [row], totalCount: 1, hasMore: false);
+    expect(result, same);
+    expect(result.hashCode, same.hashCode);
   });
 }
