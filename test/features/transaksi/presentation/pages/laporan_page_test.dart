@@ -158,6 +158,19 @@ void main() {
     expect(tester.getRect(find.byType(TextField)).right, 1000 - 32);
   });
 
+  testWidgets('the activity list lines up with the header on a wide screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(1000, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+
+    final dayHeader = find.textContaining('HARI').first;
+    expect(tester.getTopLeft(dayHeader).dx,
+        tester.getTopLeft(find.text('Riwayat Aktivitas')).dx);
+  });
+
   testWidgets('resizing keeps the visible search consistent with the report',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
