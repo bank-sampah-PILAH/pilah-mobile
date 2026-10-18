@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_table.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -24,7 +25,9 @@ import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 class HargaPage extends StatelessWidget {
@@ -114,6 +117,25 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     );
   }
 
+  /// Membuka detail [item]. Mengedit dan melihat riwayat harga adalah dua
+  /// pilihan di dalamnya, dan masing-masing menutup detail lebih dulu.
+  void _openDetail(HargaEntity item) {
+    showNasabahSurface<void>(
+      context,
+      builder: (sheetContext) => HargaDetailSheet(
+        item: item,
+        onEdit: () {
+          Navigator.of(sheetContext).pop();
+          _openForm(item);
+        },
+        onRiwayat: () {
+          Navigator.of(sheetContext).pop();
+          context.push(RiwayatHargaPage.route, extra: item);
+        },
+      ),
+    );
+  }
+
   void _closePanel() {
     if (!_isPanelOpen) return;
     setState(() {
@@ -129,11 +151,10 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       // putih karena di sana halaman ini bukan isi sebuah shell.
       backgroundColor:
           WebContentSurface.pageColor(context, phone: Colors.white),
-      // Disembunyikan selama panel terbuka: FAB melayang di sudut kanan bawah
-      // jendela, yaitu tepat di atas tombol "Simpan Perubahan" milik panel,
-      // sehingga tombol simpan tertutup sebagian. Panel hanya ada pada
-      // expanded, jadi di bawah itu FAB tidak pernah hilang.
-      floatingActionButton: _isPanelOpen
+      // Hanya di telepon. Di layar lebar tombol tambah ada di kepala halaman,
+      // seperti tabel nasabah, sehingga tidak ada yang melayang di atas
+      // tombol "Simpan Perubahan" milik panel.
+      floatingActionButton: context.layoutBreakpoint != LayoutBreakpoint.compact
           ? null
           : FloatingActionButton(
               heroTag: 'harga_page_fab',
@@ -171,7 +192,18 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
         children: [
           SizedBox(height: web ? AppSpacing.webTop : 16),
           if (web)
-            AppPageHeader(title: 'Jenis Sampah & Harga', search: search)
+            AppPageHeader(
+              title: 'Jenis Sampah & Harga',
+              search: search,
+              actions: [
+                AppButton(
+                  label: 'Tambah Jenis Sampah',
+                  icon: Icons.add,
+                  expand: false,
+                  onPressed: _openForm,
+                ),
+              ],
+            )
           else ...[
             Text(
               'Jenis Sampah & Harga',
@@ -257,20 +289,29 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       emptyTitle: empty.title,
       emptySubtitle: empty.subtitle,
       emptyIcon: empty.icon,
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 80),
-        itemCount: items.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          return _HargaCard(
-            item: item,
-            selected: _editing?.id == item.id,
-            onTap: () => _openForm(item),
-          );
-        },
-      ),
+      child: context.layoutBreakpoint != LayoutBreakpoint.compact
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+              child: HargaTable(
+                items: items,
+                selectedId: _editing?.id,
+                onTap: _openDetail,
+              ),
+            )
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 80),
+              itemCount: items.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return _HargaCard(
+                  item: item,
+                  selected: _editing?.id == item.id,
+                  onTap: () => _openDetail(item),
+                );
+              },
+            ),
     );
   }
 
@@ -358,107 +399,71 @@ class _HargaCard extends StatelessWidget {
     final card = AppTappableCard(
       onTap: onTap,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Leading icon
           Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: AppColors.fill,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(item.icon, color: Colors.grey[600]),
+            child: Icon(item.icon, color: AppColors.inkSoft),
           ),
-          const SizedBox(width: 16),
-          // Middle content
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.name,
-                  style: AppTextStyle.title1.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle.headline3.copyWith(
+                    color: AppColors.black,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   item.subtitle,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[500],
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 ),
-                const SizedBox(height: 8),
-                CustomStatusBadge(
-                  statusText: item.badgeText,
-                  backgroundColor: Colors.blue[50],
-                  textColor: Colors.blue[600],
-                ),
+                const SizedBox(height: AppSpacing.sm),
+                CustomStatusBadge(statusText: item.badgeText),
                 if (terjadwal != null) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     '${CurrencyFormatter.formatRupiah(terjadwal.harga)} mulai '
                     '${formatTanggalId(terjadwal.berlakuMulai.toLocal())}',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.avatarYellowText,
+                      color: AppColors.warning,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-                // Its own tap target: tapping elsewhere on the card still
-                // opens the edit form.
-                AppButton(
-                  label: 'Riwayat harga',
-                  variant: AppButtonVariant.text,
-                  size: AppButtonSize.compact,
-                  expand: false,
-                  onPressed: () =>
-                      context.push(RiwayatHargaPage.route, extra: item),
-                ),
               ],
             ),
           ),
-          // Trailing content
+          const SizedBox(width: AppSpacing.md),
+          // The price is what the pengurus came for, so it is the largest
+          // text on the card and stays level with the name.
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'HARGA BELI',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[400],
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
+                item.priceFormatted,
+                style: AppTextStyle.title1.copyWith(color: AppColors.black),
               ),
-              const SizedBox(height: 4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    item.priceFormatted,
-                    style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  Text(
-                    ' / kg',
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                ],
+              Text(
+                'per kg',
+                style:
+                    AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
               ),
             ],
           ),
-          const SizedBox(width: 12),
-          Icon(Icons.chevron_right, color: Colors.grey[400]),
         ],
       ),
     );
