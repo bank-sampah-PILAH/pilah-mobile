@@ -192,8 +192,8 @@ void main() {
     expect(tester.getTopLeft(find.text('Kertas')).dy,
         lessThan(tester.getTopLeft(find.text('Plastik')).dy));
     expect(find.byType(PieChart), findsOneWidget);
-    expect(
-        find.text('Berat per kategori, 1 sampai 31 Okt 2026'), findsOneWidget);
+    expect(find.text('Berat per kategori, 1 sampai 31 Oktober 2026'),
+        findsOneWidget);
     expect(find.text('Total 10 kg'), findsOneWidget);
     expect(find.text('8 kg'), findsOneWidget);
     expect(find.text('80,0%'), findsOneWidget);

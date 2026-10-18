@@ -5,18 +5,18 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 
 const _indonesianMonths = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
   'Mei',
-  'Jun',
-  'Jul',
-  'Agu',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Des',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
 ];
 
 String _reportDateIndonesian(DateTime date) =>
