@@ -201,6 +201,12 @@ void main() {
 
     final chart = tester.widget<PieChart>(find.byType(PieChart));
     expect(chart.data.sections.map((section) => section.value), [8, 2]);
+    expect(
+      chart.data.sections.every(
+        (section) => section.radius + chart.data.centerSpaceRadius <= 110,
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('category weight uses a decimal comma, not a dot',
