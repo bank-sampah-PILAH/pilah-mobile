@@ -4,14 +4,14 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
-import 'layout_breakpoint.dart';
-
 /// Kepala halaman tab di shell web: judul, subjudul opsional, pencarian, dan
 /// aksi, dengan jarak yang sama di setiap halaman.
 ///
-/// Pada layar lebar semuanya satu baris: judul di kiri, pencarian selebar
-/// [searchWidth] di kanan judul, lalu [actions]. Di bawah expanded pencarian
-/// turun di bawah judul dan selebar baris.
+/// Bila ruangnya cukup ([inlineMinWidth]) semuanya satu baris: judul di kiri,
+/// pencarian selebar [searchWidth] di kanan judul, lalu [actions]. Bila tidak,
+/// pencarian turun di bawah judul dan selebar baris. Yang dihitung adalah
+/// lebar yang diberikan kepadanya, bukan lebar jendela, karena halaman dengan
+/// panel samping hanya menyisakan sebagian.
 class AppPageHeader extends StatelessWidget {
   const AppPageHeader({
     super.key,
@@ -24,6 +24,9 @@ class AppPageHeader extends StatelessWidget {
   /// Lebar kolom pencarian di baris judul.
   static const double searchWidth = 360;
 
+  /// Lebar minimum agar judul, pencarian, dan sebuah tombol muat satu baris.
+  static const double inlineMinWidth = 880;
+
   final String title;
   final Widget? subtitle;
 
@@ -32,7 +35,12 @@ class AppPageHeader extends StatelessWidget {
   final List<Widget> actions;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) =>
+            _build(constraints.maxWidth >= inlineMinWidth),
+      );
+
+  Widget _build(bool inline) {
     final titleBlock = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +56,6 @@ class AppPageHeader extends StatelessWidget {
         ],
       ],
     );
-    final inline = context.layoutBreakpoint == LayoutBreakpoint.expanded;
     if (inline) {
       return Row(
         children: [
