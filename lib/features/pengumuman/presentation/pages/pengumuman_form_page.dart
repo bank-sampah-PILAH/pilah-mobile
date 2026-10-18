@@ -186,27 +186,34 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
             ));
   }
 
-  Future<void> _terbitkan({required bool jadwalkan}) async {
+  /// Returns the row id a publish action targets, or null after showing why.
+  Future<String?> _idUntukTerbit({required bool jadwalkan}) async {
     if (jadwalkan && _terbitPada == null) {
       setState(
           () => _validationError = 'Pilih waktu terbit untuk menjadwalkan.');
-      return;
+      return null;
     }
-    if (!await _simpanPerubahan()) return;
+    if (!await _simpanPerubahan()) return null;
 
     final id = _savedId ?? widget.existing?.id;
     if (id == null || id.isEmpty) {
-      if (!mounted) return;
+      if (!mounted) return null;
       AppNotification.showError(context,
           title: 'Gagal', message: 'Pengumuman belum tersimpan.');
-      return;
+      return null;
     }
+    return id;
+  }
+
+  Future<void> _terbitkan({required bool jadwalkan}) async {
+    final id = await _idUntukTerbit(jadwalkan: jadwalkan);
+    if (id == null || !mounted) return;
+
     // A scheduled row keeps its schedule from the PATCH above; everything
     // else publishes through the terbitkan action (null terbit_pada = now).
     NetworkException? failure;
     if (!_isTerjadwal) {
-      final cubit = _cubit;
-      failure = await cubit.terbitkan(
+      failure = await _cubit.terbitkan(
         id,
         terbitPada: jadwalkan ? _terbitPada : null,
         masaBerlakuHingga: _masaBerlakuHingga,
@@ -239,127 +246,122 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
       backgroundColor: Colors.white,
       body: BlocBuilder<PengumumanCubit, PengumumanState>(
         builder: (context, state) {
-          final isSaving = state is PengumumanLoaded && state.isSaving;
-          final isTransitioning =
-              state is PengumumanLoaded && state.isTransitioning;
-          final busy = isSaving || isTransitioning;
+          final busy = state is PengumumanLoaded &&
+              (state.isSaving || state.isTransitioning);
           return SafeArea(
             child: Column(
               children: [
                 AppBackHeader(
                     title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman'),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.greenDark.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: Text(
-                          'Pengumuman akan dikirim ke semua nasabah bank sampah Anda.',
-                          style: AppTextStyle.small
-                              .copyWith(color: AppColors.greenDark),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text('Judul', style: AppTextStyle.regularSemiBold),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _judul,
-                        maxLength: 150,
-                        decoration: appInputDecoration(
-                            hintText: 'Contoh: Kerja bakti akhir bulan'),
-                      ),
-                      const SizedBox(height: 16),
-                      Text('Isi Pengumuman',
-                          style: AppTextStyle.regularSemiBold),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _isi,
-                        maxLines: 6,
-                        decoration: appInputDecoration(
-                            hintText: 'Tulis isi pengumuman'),
-                      ),
-                      const SizedBox(height: 16),
-                      _WaktuField(
-                        label: 'Waktu Terbit (untuk jadwal)',
-                        value: _terbitPada,
-                        onPick: () => _pilihWaktu(isMasaBerlaku: false),
-                        onClear: _terbitPada == null
-                            ? null
-                            : () => setState(() {
-                                  _terbitPada = null;
-                                  _validationError = null;
-                                }),
-                      ),
-                      const SizedBox(height: 12),
-                      _WaktuField(
-                        label: 'Masa Berlaku Hingga (opsional)',
-                        value: _masaBerlakuHingga,
-                        onPick: () => _pilihWaktu(isMasaBerlaku: true),
-                        onClear: _masaBerlakuHingga == null
-                            ? null
-                            : () => setState(() {
-                                  _masaBerlakuHingga = null;
-                                  _validationError = null;
-                                }),
-                      ),
-                      if (_validationError != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          _validationError!,
-                          style: AppTextStyle.small
-                              .copyWith(color: AppColors.danger),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                Expanded(child: _bagianForm()),
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      AppButton(
-                        label:
-                            _isTerjadwal ? 'Simpan Perubahan' : 'Simpan Draft',
-                        onPressed: busy ? null : _simpanDraft,
-                      ),
-                      if (!_isTerjadwal) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppButton(
-                                label: 'Jadwalkan',
-                                variant: AppButtonVariant.outlined,
-                                onPressed: busy
-                                    ? null
-                                    : () => _terbitkan(jadwalkan: true),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: AppButton(
-                                label: 'Terbitkan Sekarang',
-                                onPressed: busy
-                                    ? null
-                                    : () => _terbitkan(jadwalkan: false),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
+                  child: _tombolAksi(busy),
                 ),
               ],
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _bagianForm() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.greenDark.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Text(
+            'Pengumuman akan dikirim ke semua nasabah bank sampah Anda.',
+            style: AppTextStyle.small.copyWith(color: AppColors.greenDark),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text('Judul', style: AppTextStyle.regularSemiBold),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _judul,
+          maxLength: 150,
+          decoration:
+              appInputDecoration(hintText: 'Contoh: Kerja bakti akhir bulan'),
+        ),
+        const SizedBox(height: 16),
+        Text('Isi Pengumuman', style: AppTextStyle.regularSemiBold),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _isi,
+          maxLines: 6,
+          decoration: appInputDecoration(hintText: 'Tulis isi pengumuman'),
+        ),
+        const SizedBox(height: 16),
+        _WaktuField(
+          label: 'Waktu Terbit (untuk jadwal)',
+          value: _terbitPada,
+          onPick: () => _pilihWaktu(isMasaBerlaku: false),
+          onClear: _terbitPada == null
+              ? null
+              : () => setState(() {
+                    _terbitPada = null;
+                    _validationError = null;
+                  }),
+        ),
+        const SizedBox(height: 12),
+        _WaktuField(
+          label: 'Masa Berlaku Hingga (opsional)',
+          value: _masaBerlakuHingga,
+          onPick: () => _pilihWaktu(isMasaBerlaku: true),
+          onClear: _masaBerlakuHingga == null
+              ? null
+              : () => setState(() {
+                    _masaBerlakuHingga = null;
+                    _validationError = null;
+                  }),
+        ),
+        if (_validationError != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            _validationError!,
+            style: AppTextStyle.small.copyWith(color: AppColors.danger),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _tombolAksi(bool busy) {
+    return Column(
+      children: [
+        AppButton(
+          label: _isTerjadwal ? 'Simpan Perubahan' : 'Simpan Draft',
+          onPressed: busy ? null : _simpanDraft,
+        ),
+        if (!_isTerjadwal) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: 'Jadwalkan',
+                  variant: AppButtonVariant.outlined,
+                  onPressed: busy ? null : () => _terbitkan(jadwalkan: true),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AppButton(
+                  label: 'Terbitkan Sekarang',
+                  onPressed: busy ? null : () => _terbitkan(jadwalkan: false),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }
