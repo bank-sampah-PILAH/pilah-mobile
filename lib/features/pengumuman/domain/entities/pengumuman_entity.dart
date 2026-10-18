@@ -45,6 +45,9 @@ class PengumumanEntity extends Equatable {
   bool get isKedaluwarsa => status == 'kedaluwarsa';
   bool get isDitarik => status == 'ditarik';
 
+  /// Pengurus-side "baru" marker (PIL-243): published and never withdrawn.
+  bool get isBaru => status == 'terbit' && ditarikPada == null;
+
   @override
   List<Object?> get props => [
         id,
