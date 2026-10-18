@@ -72,6 +72,21 @@ void main() {
     expect(page.backgroundColor, Colors.white);
   });
 
+  testWidgets('the header puts title, search and add button on one row',
+      (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester, size: const Size(1000, 900));
+
+    final title = tester.getRect(find.text('Daftar Nasabah'));
+    final search = tester.getRect(find.byType(TextField));
+    final add = tester.getRect(find.text('Tambah Nasabah'));
+    expect(title.left, 32, reason: 'web gutter');
+    expect(search.width, 360);
+    expect(search.left, greaterThan(title.right));
+    expect(add.left, greaterThan(search.right));
+    expect(search.top, lessThan(title.bottom + 24));
+  });
+
   testWidgets('a phone keeps the list instead of the table', (tester) async {
     listAs([nasabahRow('1')]);
     await open(tester, size: const Size(590, 2000));
