@@ -332,7 +332,7 @@ void main() {
     await editJenis(tester, 'Botol PET');
 
     // Slow enough that the row can be switched while the PUT is still out.
-    api.latency = const Duration(milliseconds: 300);
+    api.latency = const Duration(seconds: 4);
     await tester.ensureVisible(find.text('Simpan Perubahan'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Simpan Perubahan'));
@@ -340,12 +340,19 @@ void main() {
 
     // Single frames, not pumpAndSettle: settling would run the clock past the
     // success toast's three seconds, and the toast is part of what is asserted.
+    // Kardus opens its detail first; Edit then swaps the panel.
+    // The spinner keeps frames coming, so these are bounded pumps.
     await tester.tap(find.text('Kardus'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Edit'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
     await tester.pump();
 
     // Botol PET's answer arrives here, with Kardus on screen.
+    await tester.pump(const Duration(seconds: 4));
     await pumpToast(tester);
 
     expect(
@@ -382,8 +389,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
+    // Kardus opens its detail first; Edit then swaps the panel.
     await tester.tap(find.text('Kardus'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
     await tester.pump();
 
