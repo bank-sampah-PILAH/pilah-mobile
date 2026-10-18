@@ -148,8 +148,7 @@ class DashboardReportRangeFilter extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Flexible(
-                child: Text(
-                    'Showing from ${reportDate(range.start)} to ${reportDate(range.end)}',
+                child: Text(reportDateRangeCaption(range),
                     style:
                         AppTextStyle.small.copyWith(color: AppColors.grey100)),
               ),
