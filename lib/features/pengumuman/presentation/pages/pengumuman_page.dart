@@ -86,7 +86,10 @@ class _PengumumanListBodyState extends State<_PengumumanListBody> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: NasabahStyle.background,
-      appBar: const NasabahPageAppBar(title: 'Pengumuman'),
+      appBar: const NasabahPageAppBar(
+        title: 'Pengumuman',
+        showBack: true,
+      ),
       body: BlocBuilder<NasabahPengumumanCubit, NasabahPengumumanState>(
         builder: (context, state) {
           switch (state.status) {
@@ -105,21 +108,22 @@ class _PengumumanListBodyState extends State<_PengumumanListBody> {
                 ),
               );
             case NasabahPengumumanStatus.failure:
-              return Center(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Text(state.error, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: () => context
-                            .read<NasabahPengumumanCubit>()
-                            .load(membershipId: widget.membershipId),
-                        child: const Text('Coba lagi'),
-                      ),
-                    ],
+              return Column(
+                children: [
+                  Expanded(
+                    child: EmptyView(
+                      title: 'Gagal Memuat Data',
+                      subtitle: state.error,
+                      icon: Icons.error_outline,
+                    ),
                   ),
-                ),
+                  TextButton(
+                    onPressed: () => context
+                        .read<NasabahPengumumanCubit>()
+                        .load(membershipId: widget.membershipId),
+                    child: const Text('Coba Lagi'),
+                  ),
+                ],
               );
             case NasabahPengumumanStatus.loaded:
               if (state.items.isEmpty) {
@@ -127,6 +131,7 @@ class _PengumumanListBodyState extends State<_PengumumanListBody> {
                   title: 'Belum ada pengumuman',
                   subtitle:
                       'Pengumuman dari bank sampah Anda akan muncul di sini.',
+                  icon: Icons.campaign_outlined,
                 );
               }
               return AppRefreshIndicator(

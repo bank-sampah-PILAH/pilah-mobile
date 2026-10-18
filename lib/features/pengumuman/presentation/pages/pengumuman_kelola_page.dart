@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/core/bases/widgets/back_header_row.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
@@ -175,54 +179,83 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    // Same page shape as the Riwayat Aktivitas (Laporan) screen: white page,
+    // fixed header + filter block, scrollable feed under it (no AppBar, the
+    // header row carries the back button like aktivitas'.
+    return BlocListener<PengumumanCubit, PengumumanState>(
+      listener: (context, state) {
+        if (state is PengumumanError) {
+          AppNotification.showError(context,
+              title: 'Gagal', message: state.message);
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: Text('Kelola Pengumuman',
-            style: AppTextStyle.title1.copyWith(color: Colors.black)),
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _bukaForm(),
-        backgroundColor: AppColors.greenDark,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Buat',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-      ),
-      body: BlocBuilder<PengumumanCubit, PengumumanState>(
-        builder: (context, state) {
-          switch (state) {
-            case PengumumanInitial _:
-            case PengumumanLoading _:
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: const [
-                  SkeletonListItem(),
-                  SizedBox(height: 12),
-                  SkeletonListItem(),
-                  SizedBox(height: 12),
-                  SkeletonListItem(),
-                ],
-              );
-            case PengumumanError _:
-              return Center(
-                child: SingleChildScrollView(child: Text(state.message)),
-              );
-            case PengumumanLoaded loaded:
-              return Column(
-                children: [
-                  _FilterChips(
-                    selected: loaded.statusFilter,
-                    onSelect: (value) => _cubit.loadPengumuman(
-                        status: value.isEmpty ? null : value),
-                  ),
-                  Expanded(child: _daftar(loaded)),
-                ],
-              );
-          }
-        },
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _bukaForm,
+          backgroundColor: AppColors.greenDark,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text('Buat',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        ),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: const BackHeaderRow(title: 'Kelola Pengumuman'),
+              ),
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _FilterChips(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: BlocBuilder<PengumumanCubit, PengumumanState>(
+                  builder: (context, state) {
+                    switch (state) {
+                      case PengumumanInitial _:
+                      case PengumumanLoading _:
+                        return ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                          itemCount: 5,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) =>
+                              const SkeletonListItem(),
+                        );
+                      case PengumumanError state:
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: EmptyView(
+                                title: 'Gagal Memuat Data',
+                                subtitle: state.message,
+                                icon: Icons.error_outline,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => _cubit.loadPengumuman(),
+                              child: const Text('Coba Lagi'),
+                            ),
+                          ],
+                        );
+                      case PengumumanLoaded loaded:
+                        return _daftar(loaded);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -239,6 +272,8 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
         subtitle: filtered
             ? 'Coba filter status lain.'
             : 'Buat pengumuman untuk nasabah bank sampah Anda.',
+        icon:
+            filtered ? Icons.filter_alt_off_outlined : Icons.campaign_outlined,
       );
     }
     return Column(
@@ -299,7 +334,7 @@ class _KelolaRow extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -310,7 +345,7 @@ class _KelolaRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   pengumuman.judul,
-                  style: AppTextStyle.title1.copyWith(color: Colors.black),
+                  style: AppTextStyle.title1.copyWith(color: AppColors.black),
                 ),
               ),
               _StatusBadge(status: pengumuman.status),
@@ -327,79 +362,44 @@ class _KelolaRow extends StatelessWidget {
           Row(
             children: [
               if (pengumuman.isDraft) ...[
-                OutlinedButton(
+                AppButton(
+                  label: 'Ubah',
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.outlined,
+                  expand: false,
                   onPressed: () => onUbah(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.greenDark),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Ubah',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(width: 8),
-                OutlinedButton(
+                AppButton(
+                  label: 'Hapus',
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.destructiveOutlined,
+                  expand: false,
                   onPressed: () => onHapus(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Hapus',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600)),
                 ),
               ] else if (pengumuman.isTerjadwal) ...[
-                OutlinedButton(
+                AppButton(
+                  label: 'Ubah',
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.outlined,
+                  expand: false,
                   onPressed: () => onUbah(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.greenDark),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Ubah',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.greenDark,
-                          fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(width: 8),
-                OutlinedButton(
+                AppButton(
+                  label: 'Batalkan Jadwal',
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.destructiveOutlined,
+                  expand: false,
                   onPressed: () => onBatalkanJadwal(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Batalkan Jadwal',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600)),
                 ),
               ] else if (pengumuman.isTerbit) ...[
-                OutlinedButton(
+                AppButton(
+                  label: 'Tarik',
+                  size: AppButtonSize.compact,
+                  variant: AppButtonVariant.destructiveOutlined,
+                  expand: false,
                   onPressed: () => onTarik(pengumuman),
-                  style: OutlinedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Tarik',
-                      style: AppTextStyle.small.copyWith(
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600)),
                 ),
               ],
               // kedaluwarsa and ditarik are read-only.
@@ -443,36 +443,29 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _FilterChips extends StatelessWidget {
-  const _FilterChips({required this.selected, required this.onSelect});
-
-  final String selected;
-  final ValueChanged<String> onSelect;
+  const _FilterChips();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        children: [
-          for (final entry in _filterOptions.entries)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(entry.key),
-                selected: selected == entry.value,
-                showCheckmark: false,
-                selectedColor: AppColors.greenDark,
-                labelStyle: TextStyle(
-                  color:
-                      selected == entry.value ? Colors.white : AppColors.black,
-                ),
-                onSelected: (_) => onSelect(entry.value),
-              ),
-            ),
+    final selected = context.select<PengumumanCubit, String>((cubit) =>
+        cubit.state is PengumumanLoaded
+            ? (cubit.state as PengumumanLoaded).statusFilter
+            : '');
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final entry in _filterOptions.entries) ...[
+          AppChip(
+            label: entry.key,
+            selected: selected == entry.value,
+            onTap: () => context
+                .read<PengumumanCubit>()
+                .loadPengumuman(status: entry.value),
+// '' is the no-filter bucket; null keeps the current filter.
+          ),
         ],
-      ),
+      ],
     );
   }
 }
