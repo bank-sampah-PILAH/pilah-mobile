@@ -61,19 +61,40 @@ class _DashboardPageState extends State<DashboardPage> {
     ]);
   }
 
+  /// Kunci halaman pengurus di web (akun dan bank sampahnya), atau null bila
+  /// ini bukan pengurus di web. Berubah saat akun berganti, supaya laporan
+  /// dimuat ulang.
+  String? _webPengurusKey(BuildContext context) {
+    if (!(widget.isWeb ?? kIsWeb)) return null;
+    return context.select<AuthenticationBloc, String?>((bloc) {
+      final state = bloc.state;
+      if (state is! Authenticated || state.authEntity.role != 'pengelola') {
+        return null;
+      }
+      return '${state.authEntity.id ?? state.authEntity.email}:'
+          '${state.authEntity.bankSampahNama ?? ''}';
+    });
+  }
+
+  /// Padding area gulir: gutter web di layar lebar, 16 di telepon, ditambah
+  /// batas lebar dari `ContentFrame`.
+  EdgeInsets _scrollPadding(BuildContext context, {required bool pengurusWeb}) {
+    final webGutter =
+        pengurusWeb && context.layoutBreakpoint != LayoutBreakpoint.compact;
+    return ContentFrame.insetOf(context) +
+        (webGutter
+            ? const EdgeInsets.fromLTRB(
+                AppSpacing.webGutter,
+                AppSpacing.webTop,
+                AppSpacing.webGutter,
+                AppSpacing.xl,
+              )
+            : const EdgeInsets.all(16.0));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final webPengurusKey = (widget.isWeb ?? kIsWeb)
-        ? context.select<AuthenticationBloc, String?>((bloc) {
-            final state = bloc.state;
-            if (state is! Authenticated ||
-                state.authEntity.role != 'pengelola') {
-              return null;
-            }
-            return '${state.authEntity.id ?? state.authEntity.email}:'
-                '${state.authEntity.bankSampahNama ?? ''}';
-          })
-        : null;
+    final webPengurusKey = _webPengurusKey(context);
     final isPengurusWeb = webPengurusKey != null;
 
     return Scaffold(
@@ -90,17 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Builder(
               builder: (context) => SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: ContentFrame.insetOf(context).add(
-                  isPengurusWeb &&
-                          context.layoutBreakpoint != LayoutBreakpoint.compact
-                      ? const EdgeInsets.fromLTRB(
-                          AppSpacing.webGutter,
-                          AppSpacing.webTop,
-                          AppSpacing.webGutter,
-                          AppSpacing.xl,
-                        )
-                      : const EdgeInsets.all(16.0),
-                ),
+                padding: _scrollPadding(context, pengurusWeb: isPengurusWeb),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
