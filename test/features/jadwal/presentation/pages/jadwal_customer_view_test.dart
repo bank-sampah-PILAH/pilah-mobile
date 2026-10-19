@@ -69,6 +69,36 @@ void main() {
     expect(find.text('Ubah Jadwal'), findsNothing);
   });
 
+  testWidgets('customer pull-to-refresh reloads visible calendar dates', (
+    tester,
+  ) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final cubit = _MockJadwalCubit();
+    when(() => cubit.state).thenReturn(const JadwalLoaded([]));
+    when(() => cubit.loadJadwal(date: today)).thenAnswer((_) async {});
+    when(() => cubit.loadJadwal(silent: true, date: today))
+        .thenAnswer((_) async {});
+    _stubCalendarLoad(cubit, today);
+
+    await tester.pumpWidget(
+      BlocProvider<JadwalCubit>.value(
+        value: cubit,
+        child: const MaterialApp(home: JadwalPage(customerMode: true)),
+      ),
+    );
+    await tester.pump();
+    await tester.drag(find.byType(ListView), const Offset(0, 300));
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.loadJadwal(silent: true, date: today)).called(1);
+    verify(
+      () => cubit.loadCalendarDates(
+        startDate: any(named: 'startDate'),
+        endDate: any(named: 'endDate'),
+      ),
+    ).called(2);
+  });
+
   testWidgets('customer can select a date and sees a read-only empty state', (
     tester,
   ) async {

@@ -149,7 +149,7 @@ class _JadwalPageState extends State<JadwalPage> {
     context.read<JadwalCubit>().loadNextPage();
   }
 
-  void _loadCalendarDatesFor(DateTime date) {
+  Future<void> _loadCalendarDatesFor(DateTime date) {
     final month = DateTime(date.year, date.month);
     _markerMonth = month;
     final first = DateTime(date.year, date.month, 1);
@@ -158,10 +158,17 @@ class _JadwalPageState extends State<JadwalPage> {
     final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
     final weekCount = (offset + daysInMonth + 6) ~/ 7;
     final lastVisible = firstVisible.add(Duration(days: weekCount * 7 - 1));
-    context.read<JadwalCubit>().loadCalendarDates(
+    return context.read<JadwalCubit>().loadCalendarDates(
           startDate: firstVisible,
           endDate: lastVisible,
         );
+  }
+
+  Future<void> _refreshAgenda() async {
+    await Future.wait([
+      _loadAgenda(_selectedDate, silent: true),
+      _loadCalendarDatesFor(_selectedDate),
+    ]);
   }
 
   void _selectDate(DateTime date) {
@@ -350,7 +357,7 @@ class _JadwalPageState extends State<JadwalPage> {
           final items = List<JadwalEntity>.of(visibleItems)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
           return RefreshIndicator(
-            onRefresh: () => _loadAgenda(_selectedDate, silent: true),
+            onRefresh: _refreshAgenda,
             child: widget.customerMode
                 ? _buildCustomerAgenda(items, loadedState)
                 : MasterDetailLayout(
