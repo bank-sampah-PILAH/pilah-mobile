@@ -430,4 +430,54 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('pengumuman-kelola-31')), findsOneWidget);
   });
+
+  group('the page header', () {
+    Future<void> stubEmpty() async =>
+        api.on('GET', '/api/v1/pengumuman', json: {
+          'count': 0,
+          'next': null,
+          'results': [],
+        });
+
+    testWidgets('on the web the title stands alone: no back arrow',
+        (tester) async {
+      await stubEmpty();
+      await openPage(tester, isWeb: true, size: const Size(1280, 900));
+
+      expect(find.text('Kelola Pengumuman'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsNothing,
+          reason: 'a sidebar destination has nowhere to go back to');
+    });
+
+    testWidgets('in the app, back returns to Profil when nothing was pushed',
+        (tester) async {
+      await stubEmpty();
+      await openPage(tester,
+          extraRoutes: ['/profile'], size: const Size(390, 844));
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/profile'), findsOneWidget,
+          reason: 'the page is a shell branch, so there is nothing to pop');
+    });
+
+    testWidgets('in the app, back pops when the page was pushed',
+        (tester) async {
+      await stubEmpty();
+      await pumpRouted(
+        tester,
+        BlocProvider<PengumumanCubit>.value(
+          value: cubit,
+          child: const PengumumanKelolaPage(isWeb: false),
+        ),
+        size: const Size(390, 844),
+        pushed: true,
+      );
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/'), findsOneWidget);
+    });
+  });
 }
