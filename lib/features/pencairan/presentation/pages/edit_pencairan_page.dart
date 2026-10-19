@@ -226,21 +226,24 @@ class _EditPencairanViewState extends State<EditPencairanView> {
     );
   }
 
+  /// Sukses menutup form (memberi tahu pemanggil); gagal menampilkan pesannya.
+  void _onState(BuildContext context, EditPencairanState state) {
+    if (state.status == EditStatus.success) {
+      final onSaved = widget.onSaved;
+      onSaved != null ? onSaved() : Navigator.of(context).pop(true);
+    } else if (state.errorMessage != null) {
+      AppNotification.showError(
+        context,
+        title: 'Perubahan gagal disimpan',
+        message: state.errorMessage!,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<EditPencairanCubit, EditPencairanState>(
-      listener: (context, state) {
-        if (state.status == EditStatus.success) {
-          final onSaved = widget.onSaved;
-          onSaved != null ? onSaved() : Navigator.of(context).pop(true);
-        } else if (state.errorMessage != null) {
-          AppNotification.showError(
-            context,
-            title: 'Perubahan gagal disimpan',
-            message: state.errorMessage!,
-          );
-        }
-      },
+      listener: _onState,
       builder: (context, state) {
         final nominal = _nominal;
         final nominalError = PencairanValidator.nominalEdit(nominal);
