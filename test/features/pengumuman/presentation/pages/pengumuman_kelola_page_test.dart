@@ -449,6 +449,17 @@ void main() {
           reason: 'a sidebar destination has nowhere to go back to');
     });
 
+    testWidgets('a narrow browser keeps the plain title and the FAB',
+        (tester) async {
+      await stubEmpty();
+      await openPage(tester, isWeb: true, size: const Size(390, 844));
+
+      expect(find.text('Kelola Pengumuman'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsNothing);
+      expect(find.byType(FloatingActionButton), findsOneWidget,
+          reason: 'the header button is for wide windows only');
+    });
+
     testWidgets('in the app, back returns to Profil when nothing was pushed',
         (tester) async {
       await stubEmpty();
