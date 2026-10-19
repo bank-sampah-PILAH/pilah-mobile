@@ -176,6 +176,28 @@ void main() {
         tester.getTopLeft(find.text('Riwayat Aktivitas')).dx);
   });
 
+  testWidgets(
+      'on a wide window the list scrolls full width, content in a column',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+
+    final scroll = find.ancestor(
+      of: find.byType(AktivitasTable),
+      matching: find.byType(ListView),
+    );
+    expect(tester.getSize(scroll).width, 1440,
+        reason: 'so the scrollbar is at the window edge');
+    final table = tester.getRect(find.byType(AktivitasTable));
+    expect(table.left, (1440 - 1200) / 2 + 32);
+    expect(table.right, 1440 - (1440 - 1200) / 2 - 32);
+    expect(tester.getTopLeft(find.text('Riwayat Aktivitas')).dx, table.left,
+        reason: 'the title and the table share a left edge');
+  });
+
   testWidgets('resizing keeps the visible search consistent with the report',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
