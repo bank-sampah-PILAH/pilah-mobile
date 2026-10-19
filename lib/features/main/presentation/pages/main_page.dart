@@ -11,6 +11,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/na
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
@@ -19,6 +20,7 @@ import 'package:pilah_mobile/services/di.dart';
 
 /// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
 const _profileBranch = 7;
+const _pengumumanBranch = 8;
 
 class MainPage extends StatelessWidget {
   const MainPage({
@@ -137,14 +139,6 @@ class _ShellContent extends StatelessWidget {
     final confirmedLimitedNasabah = role == 'nasabah' &&
         approval is NasabahApprovalLoaded &&
         limitedNasabah;
-    final branches = RoleNavigationBar.branchIndicesFor(role,
-        limitedNasabah: limitedNasabah);
-    final selected = branches.indexOf(navigationShell.currentIndex);
-    if (confirmedLimitedNasabah && selected < 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
-      });
-    }
     // Platform menentukan keluarga bentuk navigasi, lebar hanya menentukan
     // seberapa banyak navigasi kiri yang muat. Role tetap menentukan
     // destinasinya, pada ketiga bentuk, dari sumber yang sama.
@@ -157,12 +151,27 @@ class _ShellContent extends StatelessWidget {
       width: MediaQuery.sizeOf(context).width,
     );
 
-    // Rute sah yang berada di luar lima destinasi: profil staff (branch 7),
+    // Bottom bar hanya memuat lima destinasi; rail dan drawer memuat semuanya.
+    final branches = RoleDestinations.branchIndicesFor(role,
+        limitedNasabah: limitedNasabah,
+        bottomBar: form == NavigationForm.bottomBar);
+    final selected = branches.indexOf(navigationShell.currentIndex);
+    if (confirmedLimitedNasabah && selected < 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) navigationShell.goBranch(0, initialLocation: true);
+      });
+    }
+
+    // Rute sah yang berada di luar lima destinasi: profil dan pengumuman staff
+    // (branch 7 dan 8),
     // dan jadwal nasabah (branch 4) bila ia pernah keluar dari tab mereka.
     // Keduanya satu gagasan, jadi ditulis satu kali.
     final offDestination = selected < 0 &&
         ((RoleNavigationBar.isStaff(role) &&
-                navigationShell.currentIndex == _profileBranch) ||
+                (navigationShell.currentIndex == _profileBranch ||
+                    // Kelola Pengumuman: tujuan rail dan drawer, tetapi di
+                    // aplikasi dibuka dari Profil dan tidak ada di bottom bar.
+                    navigationShell.currentIndex == _pengumumanBranch)) ||
             // Mati hari ini: Jadwal kini salah satu tab nasabah penuh, jadi
             // `selected` tidak pernah negatif di sana. Dipertahankan sebagai
             // penjaga bila ia keluar dari tab mereka lagi.

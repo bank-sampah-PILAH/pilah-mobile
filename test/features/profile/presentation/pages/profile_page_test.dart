@@ -106,6 +106,8 @@ void main() {
         (tester) async {
       await openPage(tester, size: const Size(1440, 900), isWeb: true);
 
+      expect(find.text('Kelola Pengumuman'), findsNothing,
+          reason: 'on the web it is in the sidebar');
       final keluar = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
       expect(keluar, findsOneWidget, reason: 'only one, not also at the end');
       expect(tester.getTopLeft(keluar).dy,
@@ -210,6 +212,21 @@ void main() {
   });
 
   group('on a phone', () {
+    testWidgets(
+        'Kelola Pengumuman sits above Keluar, since the bottom bar has '
+        'no tab for it', (tester) async {
+      await openPage(tester, size: const Size(390, 844), isWeb: false);
+
+      final kelola = find.widgetWithText(AppButton, 'Kelola Pengumuman');
+      expect(kelola, findsOneWidget);
+      expect(
+          tester.getTopLeft(kelola).dy,
+          lessThan(tester
+              .getTopLeft(
+                  find.widgetWithText(AppButton, 'Keluar dari Aplikasi'))
+              .dy));
+    });
+
     testWidgets('Keluar is the last thing on the page, full width',
         (tester) async {
       await openPage(tester, size: const Size(390, 844), isWeb: false);
