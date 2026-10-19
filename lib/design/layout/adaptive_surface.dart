@@ -30,7 +30,10 @@ Future<T?> showAdaptiveSurface<T>(
       insetPadding: const EdgeInsets.all(24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
-        child: DialogSurface(child: builder(dialogContext)),
+        // Builder, bukan builder(dialogContext) langsung: konteks yang diterima
+        // isi harus berada di bawah DialogSurface supaya ia dapat bertanya
+        // apakah dirinya sedang di dalam dialog.
+        child: DialogSurface(child: Builder(builder: builder)),
       ),
     ),
   );
