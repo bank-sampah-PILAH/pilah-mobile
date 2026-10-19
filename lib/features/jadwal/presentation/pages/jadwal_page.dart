@@ -473,6 +473,7 @@ class _JadwalPageState extends State<JadwalPage> {
                         width: _sideCalendarWidth,
                         child: SingleChildScrollView(
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               calendar,
                               const SizedBox(height: AppSpacing.lg),
@@ -741,12 +742,16 @@ class _EmptyScheduleDay extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('Buat Jadwal'),
+          // Penuh lebar di ponsel, tetapi tidak melebar di agenda web.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onCreate,
+                icon: const Icon(Icons.add),
+                label: const Text('Buat Jadwal'),
+              ),
             ),
           ),
           TextButton.icon(
