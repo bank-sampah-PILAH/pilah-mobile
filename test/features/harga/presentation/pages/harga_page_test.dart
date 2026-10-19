@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
@@ -306,6 +308,48 @@ void main() {
     expect(find.text('Kaleng'), findsNothing);
     expect(find.text('Rp 2.500'), findsNWidgets(2));
   });
+
+  if (kIsWeb) {
+    testWidgets('web harga table paginates and search returns to page one',
+        (tester) async {
+      api.on('GET', '/api/v1/jenis-sampah', json: {
+        'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
+      });
+      await openPage(tester, size: _expanded);
+
+      HargaTable table() => tester.widget<HargaTable>(find.byType(HargaTable));
+      expect(
+          find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+      expect(table().items.map((item) => item.name),
+          [for (var i = 1; i <= 10; i++) 'Jenis $i']);
+
+      await tester.tap(find.bySemanticsLabel('Halaman 2'));
+      await tester.pumpAndSettle();
+      expect(
+          find.text('Menampilkan 11–12 dari 12 jenis sampah'), findsOneWidget);
+      expect(table().items.map((item) => item.name), ['Jenis 11', 'Jenis 12']);
+
+      await tester.enterText(find.byType(TextField).first, 'Jenis 2');
+      await tester.pumpAndSettle();
+      expect(find.text('Menampilkan 1–2 dari 2 jenis sampah'), findsOneWidget);
+      expect(table().items.map((item) => item.name), ['Jenis 2', 'Jenis 12']);
+    });
+
+    testWidgets('compact web paginates cards', (tester) async {
+      api.on('GET', '/api/v1/jenis-sampah', json: {
+        'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
+      });
+      await openPage(tester, size: const Size(390, 844));
+
+      expect(find.byType(WebPaginationBar), findsOneWidget);
+      expect(
+          find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Halaman 2'));
+      await tester.pumpAndSettle();
+      expect(find.text('Jenis 11'), findsOneWidget);
+      expect(find.text('Jenis 1'), findsNothing);
+    });
+  }
 
   testWidgets('the Aktif and Tidak Aktif chips announce which one is selected',
       (tester) async {
@@ -628,6 +672,7 @@ void main() {
 
     expect(find.byType(HargaTable), findsNothing);
     expect(find.byType(AppTappableCard), findsWidgets);
+    expect(find.byType(WebPaginationBar), findsNothing);
   });
 
   testWidgets('tapping a table row opens its detail', (tester) async {
