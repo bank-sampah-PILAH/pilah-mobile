@@ -47,12 +47,39 @@ class _JadwalPageState extends State<JadwalPage> {
   bool _panelOpen = false;
   JadwalEntity? _panelInitial;
 
+  /// Agenda Pengurus di jendela expanded memuat dari tanggal terpilih sampai
+  /// akhir bulan; selain itu satu hari saja.
+  late bool _rangeMode;
+
+  bool _wantsRange(LayoutBreakpoint breakpoint) =>
+      !widget.customerMode && breakpoint == LayoutBreakpoint.expanded;
+
+  /// Memuat agenda untuk [date] sesuai [_rangeMode]. Tanpa rentang, argumen
+  /// `dateTo` tidak dikirim sama sekali.
+  Future<void> _loadAgenda(DateTime date, {bool silent = false}) {
+    final cubit = context.read<JadwalCubit>();
+    final end = _rangeMode ? DateTime(date.year, date.month + 1, 0) : null;
+    if (end == null) {
+      return silent
+          ? cubit.loadJadwal(silent: true, date: date)
+          : cubit.loadJadwal(date: date);
+    }
+    return silent
+        ? cubit.loadJadwal(silent: true, date: date, dateTo: end)
+        : cubit.loadJadwal(date: date, dateTo: end);
+  }
+
   @override
   void initState() {
     super.initState();
     _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
-    context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
+    // Belum boleh berlangganan MediaQuery di sini; lebar dibaca tanpa
+    // dependensi dan didChangeDependencies menjaga perubahannya.
+    final width =
+        context.getInheritedWidgetOfExactType<MediaQuery>()?.data.size.width;
+    _rangeMode = _wantsRange(LayoutBreakpoint.fromWidth(width ?? 0));
+    _loadAgenda(_selectedDate);
     context.read<JadwalCubit>().loadUpcomingDates();
     _loadCalendarDatesFor(_selectedDate);
   }
@@ -81,6 +108,14 @@ class _JadwalPageState extends State<JadwalPage> {
     if (_panelOpen && context.layoutBreakpoint != LayoutBreakpoint.expanded) {
       _panelOpen = false;
       _panelInitial = null;
+    }
+    final wantsRange = _wantsRange(context.layoutBreakpoint);
+    if (wantsRange != _rangeMode) {
+      _rangeMode = wantsRange;
+      // Memuat mengubah state kubit, yang tidak boleh terjadi di tengah build.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadAgenda(_selectedDate);
+      });
     }
   }
 
@@ -130,7 +165,7 @@ class _JadwalPageState extends State<JadwalPage> {
     final selectedDate = DateUtils.dateOnly(date);
     if (DateUtils.isSameDay(selectedDate, _selectedDate)) return;
     setState(() => _selectedDate = selectedDate);
-    context.read<JadwalCubit>().loadJadwal(date: selectedDate);
+    _loadAgenda(selectedDate);
     final month = DateTime(selectedDate.year, selectedDate.month);
     if (_markerMonth != month) _loadCalendarDatesFor(selectedDate);
   }
@@ -295,8 +330,7 @@ class _JadwalPageState extends State<JadwalPage> {
             return _RetryableMessage(
               message: state.message,
               buttonLabel: 'Coba Lagi',
-              onPressed: () =>
-                  context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
+              onPressed: () => _loadAgenda(_selectedDate),
             );
           }
 
@@ -316,10 +350,7 @@ class _JadwalPageState extends State<JadwalPage> {
           final items = List<JadwalEntity>.of(visibleItems)
             ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
           return RefreshIndicator(
-            onRefresh: () => context.read<JadwalCubit>().loadJadwal(
-                  silent: true,
-                  date: _selectedDate,
-                ),
+            onRefresh: () => _loadAgenda(_selectedDate, silent: true),
             child: widget.customerMode
                 ? _buildCustomerAgenda(items, loadedState)
                 : MasterDetailLayout(
@@ -383,8 +414,7 @@ class _JadwalPageState extends State<JadwalPage> {
         else if (items.isEmpty)
           _CustomerEmptyScheduleDay(
             date: _selectedDate,
-            onRefresh: () =>
-                context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
+            onRefresh: () => _loadAgenda(_selectedDate),
           )
         else
           ...items.map(
@@ -410,12 +440,14 @@ class _JadwalPageState extends State<JadwalPage> {
     List<JadwalEntity> items,
     JadwalLoaded loadedState,
   ) {
-    final dayItems = items
-        .where(
-          (item) =>
-              DateUtils.isSameDay(item.mulaiPada.toLocal(), _selectedDate),
-        )
-        .toList();
+    final dayItems = _rangeMode
+        ? items
+        : items
+            .where(
+              (item) =>
+                  DateUtils.isSameDay(item.mulaiPada.toLocal(), _selectedDate),
+            )
+            .toList();
 
     // Lebar daftar, bukan jendela: dengan panel form terbuka daftar tinggal
     // sebagian lebar dan kembali bertumpuk.
@@ -531,8 +563,45 @@ class _JadwalPageState extends State<JadwalPage> {
   static const _sideCalendarWidth = 400.0;
 
   /// Judul hari, kartu jadwal (atau keadaan kosong), dan pemuat berikutnya.
+  ///
+  /// Satu hari: [items] sudah hanya hari terpilih. Rentang: [items] adalah sisa
+  /// bulan; tiap hari berjadwal mendapat judul sendiri, dan hari terpilih
+  /// selalu tampil, kosong atau tidak, sebagai titik awal.
   List<Widget> _pengurusAgendaChildren(
+    List<JadwalEntity> items,
+    JadwalLoaded loadedState,
+  ) {
+    final byDay = <DateTime, List<JadwalEntity>>{};
+    for (final item in items) {
+      byDay
+          .putIfAbsent(DateUtils.dateOnly(item.mulaiPada.toLocal()), () => [])
+          .add(item);
+    }
+    final days = (_rangeMode ? {_selectedDate, ...byDay.keys} : {_selectedDate})
+        .toList()
+      ..sort();
+    return [
+      for (var i = 0; i < days.length; i++) ...[
+        if (i > 0) const SizedBox(height: 12),
+        ..._dayAgenda(
+          days[i],
+          byDay[days[i]] ?? const [],
+          // Satu hari memakai jumlah dari server; rentang menghitung per hari.
+          _rangeMode
+              ? (byDay[days[i]] ?? const []).length
+              : loadedState.totalCount,
+          loadedState,
+        ),
+      ],
+      if (!loadedState.isLoading && loadedState.hasMore)
+        _buildLoadMoreFooter(loadedState),
+    ];
+  }
+
+  List<Widget> _dayAgenda(
+    DateTime day,
     List<JadwalEntity> dayItems,
+    int count,
     JadwalLoaded loadedState,
   ) {
     final isTransitioning = loadedState.isTransitioning;
@@ -543,7 +612,7 @@ class _JadwalPageState extends State<JadwalPage> {
         children: [
           Expanded(
             child: Text(
-              formatJadwalDayHeading(_selectedDate),
+              formatJadwalDayHeading(day),
               style: const TextStyle(
                 color: Colors.black87,
                 fontSize: 18,
@@ -552,7 +621,7 @@ class _JadwalPageState extends State<JadwalPage> {
             ),
           ),
           Text(
-            '${loadedState.totalCount} jadwal',
+            '$count jadwal',
             style: TextStyle(
               color: Colors.grey.shade600,
               fontSize: 13,
@@ -564,10 +633,9 @@ class _JadwalPageState extends State<JadwalPage> {
       const SizedBox(height: 12),
       if (dayItems.isEmpty)
         _EmptyScheduleDay(
-          date: _selectedDate,
+          date: day,
           onCreate: _openForm,
-          onRefresh: () =>
-              context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
+          onRefresh: () => _loadAgenda(_selectedDate),
         )
       else
         ...dayItems.map(
@@ -588,8 +656,6 @@ class _JadwalPageState extends State<JadwalPage> {
             ),
           ),
         ),
-      if (!loadedState.isLoading && loadedState.hasMore)
-        _buildLoadMoreFooter(loadedState),
     ];
   }
 

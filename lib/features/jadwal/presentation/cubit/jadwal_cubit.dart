@@ -1,7 +1,9 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 
@@ -18,6 +20,7 @@ class JadwalCubit extends Cubit<JadwalState> {
   bool _hasMore = false;
   bool _isLoadingMore = false;
   DateTime? _dateFilter;
+  DateTime? _dateEnd;
   DateTime? _calendarStart;
   DateTime? _calendarEnd;
   Set<DateTime> _scheduledDates = {};
@@ -35,11 +38,20 @@ class JadwalCubit extends Cubit<JadwalState> {
   List<JadwalEntity> get _items =>
       state is JadwalLoaded ? (state as JadwalLoaded).items : const [];
 
-  Future<void> loadJadwal({bool silent = false, DateTime? date}) async {
+  /// Satu halaman jadwal: satu hari ([date]), atau rentang dari [date] sampai
+  /// [dateTo] bila diisi.
+  Future<void> loadJadwal({
+    bool silent = false,
+    DateTime? date,
+    DateTime? dateTo,
+  }) async {
     final sessionGeneration = _sessionGeneration;
     final requestedDate = date == null ? null : _dateOnly(date);
-    final dateChanged = !_sameDate(requestedDate, _dateFilter);
+    final requestedEnd = dateTo == null ? null : _dateOnly(dateTo);
+    final dateChanged = !_sameDate(requestedDate, _dateFilter) ||
+        !_sameDate(requestedEnd, _dateEnd);
     _dateFilter = requestedDate;
+    _dateEnd = requestedEnd;
     _page = 1;
     _hasMore = false;
     _isLoadingMore = false;
@@ -59,7 +71,7 @@ class JadwalCubit extends Cubit<JadwalState> {
       emit(const JadwalLoading());
     }
 
-    final result = await repository.getJadwal(page: 1, date: requestedDate);
+    final result = await _fetch(1);
     if (version != _loadVersion || sessionGeneration != _sessionGeneration) {
       return;
     }
@@ -81,6 +93,14 @@ class JadwalCubit extends Cubit<JadwalState> {
     );
   }
 
+  /// Tanpa [_dateEnd] argumen rentang tidak dikirim sama sekali.
+  Future<Either<NetworkException, JadwalPageResult>> _fetch(int page) {
+    final end = _dateEnd;
+    return end == null
+        ? repository.getJadwal(page: page, date: _dateFilter)
+        : repository.getJadwal(page: page, date: _dateFilter, dateTo: end);
+  }
+
   Future<void> loadNextPage() async {
     final current = state;
     if (current is! JadwalLoaded ||
@@ -96,8 +116,7 @@ class JadwalCubit extends Cubit<JadwalState> {
       clearLoadingMoreError: true,
     ));
 
-    final result =
-        await repository.getJadwal(page: _page + 1, date: _dateFilter);
+    final result = await _fetch(_page + 1);
     if (version != _loadVersion || state is! JadwalLoaded) return;
     _isLoadingMore = false;
     result.fold(
@@ -263,7 +282,7 @@ class JadwalCubit extends Cubit<JadwalState> {
   }
 
   Future<void> _reloadAfterMutation() async {
-    await loadJadwal(silent: true, date: _dateFilter);
+    await loadJadwal(silent: true, date: _dateFilter, dateTo: _dateEnd);
     final start = _calendarStart;
     final end = _calendarEnd;
     if (start != null && end != null) {
@@ -291,6 +310,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     _hasMore = false;
     _isLoadingMore = false;
     _dateFilter = null;
+    _dateEnd = null;
     _calendarStart = null;
     _calendarEnd = null;
     _scheduledDates = {};

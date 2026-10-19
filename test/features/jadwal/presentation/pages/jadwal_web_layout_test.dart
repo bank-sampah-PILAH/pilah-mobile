@@ -307,15 +307,16 @@ void main() {
       ], totalCount: 3),
     );
 
-    expect(find.text('Senin, 19 Oktober'), findsOneWidget);
-    expect(find.text('Jumat, 23 Oktober'), findsOneWidget);
+    // "Hari ini, " prefixes whichever heading is today.
+    expect(find.textContaining('Senin, 19 Oktober'), findsOneWidget);
+    expect(find.textContaining('Jumat, 23 Oktober'), findsOneWidget);
     expect(find.text('2 jadwal'), findsOneWidget);
     expect(find.text('1 jadwal'), findsOneWidget);
     for (final lokasi in ['Balai Satu', 'Balai Dua', 'Balai Tiga']) {
       expect(find.text(lokasi), findsOneWidget);
     }
     expect(
-      tester.getTopLeft(find.text('Senin, 19 Oktober')).dy,
+      tester.getTopLeft(find.textContaining('Senin, 19 Oktober')).dy,
       lessThan(tester.getTopLeft(find.text('Balai Tiga')).dy),
     );
   });
@@ -339,7 +340,7 @@ void main() {
     );
 
     expect(find.text('Belum ada jadwal kegiatan'), findsOneWidget);
-    expect(find.text('Jumat, 23 Oktober'), findsOneWidget);
+    expect(find.textContaining('Jumat, 23 Oktober'), findsOneWidget);
     expect(find.text('Balai Tiga'), findsOneWidget);
   });
 
