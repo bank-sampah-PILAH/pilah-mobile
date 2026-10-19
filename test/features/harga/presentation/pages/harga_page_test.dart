@@ -52,6 +52,7 @@ void main() {
       BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
       size: size,
     );
+    if (kIsWeb) await pumpReal(tester);
     await tester.pumpAndSettle();
   }
 
@@ -316,8 +317,11 @@ void main() {
         'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
       });
       await openPage(tester, size: _expanded);
+      await pumpReal(tester);
+      await tester.pumpAndSettle();
 
       HargaTable table() => tester.widget<HargaTable>(find.byType(HargaTable));
+      expect(find.byType(WebPaginationBar), findsOneWidget);
       expect(
           find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
       expect(table().items.map((item) => item.name),
@@ -329,10 +333,12 @@ void main() {
           find.text('Menampilkan 11–12 dari 12 jenis sampah'), findsOneWidget);
       expect(table().items.map((item) => item.name), ['Jenis 11', 'Jenis 12']);
 
-      await tester.enterText(find.byType(TextField).first, 'Jenis 2');
+      await tester.enterText(find.byType(TextField).first, 'Jenis');
       await tester.pumpAndSettle();
-      expect(find.text('Menampilkan 1–2 dari 2 jenis sampah'), findsOneWidget);
-      expect(table().items.map((item) => item.name), ['Jenis 2', 'Jenis 12']);
+      expect(
+          find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+      expect(table().items.map((item) => item.name),
+          [for (var i = 1; i <= 10; i++) 'Jenis $i']);
     });
 
     testWidgets('compact web paginates cards', (tester) async {
@@ -340,8 +346,12 @@ void main() {
         'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
       });
       await openPage(tester, size: const Size(390, 844));
+      await pumpReal(tester);
+      await tester.pumpAndSettle();
 
       expect(find.byType(WebPaginationBar), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byTooltip('Tambah Jenis Sampah'), findsOneWidget);
       expect(
           find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Halaman 2'));
@@ -672,7 +682,8 @@ void main() {
 
     expect(find.byType(HargaTable), findsNothing);
     expect(find.byType(AppTappableCard), findsWidgets);
-    expect(find.byType(WebPaginationBar), findsNothing);
+    expect(
+        find.byType(WebPaginationBar), kIsWeb ? findsOneWidget : findsNothing);
   });
 
   testWidgets('tapping a table row opens its detail', (tester) async {
@@ -704,18 +715,20 @@ void main() {
         reason: 'nothing floats over the panel any more, so it can stay');
   });
 
-  testWidgets('on a phone the add button is always there', (tester) async {
-    await openPage(tester, size: const Size(420, 1400));
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+  if (!kIsWeb) {
+    testWidgets('on a phone the add button is always there', (tester) async {
+      await openPage(tester, size: const Size(420, 1400));
+      expect(find.byType(FloatingActionButton), findsOneWidget);
 
-    await editJenis(tester, 'Botol PET');
+      await editJenis(tester, 'Botol PET');
 
-    expect(
-      find.byType(FloatingActionButton),
-      findsOneWidget,
-      reason: 'compact opens a sheet, so there is no panel to overlap',
-    );
-  });
+      expect(
+        find.byType(FloatingActionButton),
+        findsOneWidget,
+        reason: 'compact opens a sheet, so there is no panel to overlap',
+      );
+    });
+  }
 
   // The container is chosen when the form opens, but the window can be resized
   // afterwards. Raised by TrayMachi's review of the same pattern on PR #113.

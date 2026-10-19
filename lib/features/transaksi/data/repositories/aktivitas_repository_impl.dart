@@ -46,6 +46,8 @@ class AktivitasRepositoryImpl implements AktivitasRepository {
           DateTime.tryParse(data['tanggal']?.toString() ?? '')?.toLocal()));
     }).toList();
     return AktivitasPage(items, json['next'] != null,
+        totalCount:
+            int.tryParse(json['count']?.toString() ?? '') ?? items.length,
         summary: AktivitasSummary.fromJson(json['summary']));
   }
 }

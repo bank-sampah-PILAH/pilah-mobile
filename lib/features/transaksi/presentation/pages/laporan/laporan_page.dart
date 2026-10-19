@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
@@ -29,7 +30,7 @@ class _LaporanPageState extends State<LaporanPage> {
   @override
   void initState() {
     super.initState();
-    context.read<RiwayatAktivitasCubit>().load();
+    context.read<RiwayatAktivitasCubit>().load(pageSize: kIsWeb ? 10 : null);
   }
 
   @override

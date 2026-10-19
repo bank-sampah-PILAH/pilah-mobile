@@ -19,6 +19,10 @@ class RiwayatAktivitasState extends Equatable {
   final String? errorMessage;
   final bool hasNext;
   final bool loadingMore;
+  final int currentPage;
+  final int pageSize;
+  final int totalCount;
+  final int? retryPage;
   final AktivitasSummary? summary;
 
   const RiwayatAktivitasState({
@@ -32,6 +36,10 @@ class RiwayatAktivitasState extends Equatable {
     this.errorMessage,
     this.hasNext = false,
     this.loadingMore = false,
+    this.currentPage = 1,
+    this.pageSize = 20,
+    this.totalCount = 0,
+    this.retryPage,
     this.summary,
   });
 
@@ -48,8 +56,13 @@ class RiwayatAktivitasState extends Equatable {
     String? errorMessage,
     bool? hasNext,
     bool? loadingMore,
+    int? currentPage,
+    int? pageSize,
+    int? totalCount,
+    int? retryPage,
     AktivitasSummary? summary,
     bool clearSummary = false,
+    bool clearRetryPage = false,
   }) {
     return RiwayatAktivitasState(
       status: status ?? this.status,
@@ -62,6 +75,10 @@ class RiwayatAktivitasState extends Equatable {
       errorMessage: errorMessage,
       hasNext: hasNext ?? this.hasNext,
       loadingMore: loadingMore ?? this.loadingMore,
+      currentPage: currentPage ?? this.currentPage,
+      pageSize: pageSize ?? this.pageSize,
+      totalCount: totalCount ?? this.totalCount,
+      retryPage: clearRetryPage ? null : retryPage ?? this.retryPage,
       summary: clearSummary ? null : summary ?? this.summary,
     );
   }
@@ -78,6 +95,10 @@ class RiwayatAktivitasState extends Equatable {
         errorMessage,
         hasNext,
         loadingMore,
+        currentPage,
+        pageSize,
+        totalCount,
+        retryPage,
         summary,
       ];
 }

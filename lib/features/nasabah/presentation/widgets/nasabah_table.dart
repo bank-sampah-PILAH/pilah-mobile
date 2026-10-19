@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
@@ -158,7 +160,10 @@ class _Loaded extends StatelessWidget {
   /// Cubit sendiri yang menolak permintaan ganda dan permintaan setelah
   /// halaman terakhir, jadi di sini cukup memberi tahu.
   bool _onScroll(BuildContext context, ScrollNotification notification) {
-    if (state.hasMore && !state.isLoadingMore && _hampirUjung(notification)) {
+    if (!kIsWeb &&
+        state.hasMore &&
+        !state.isLoadingMore &&
+        _hampirUjung(notification)) {
       context.read<NasabahCubit>().loadMoreNasabah();
     }
     return false;
@@ -183,15 +188,27 @@ class _Loaded extends StatelessWidget {
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) => _onScroll(context, notification),
             child: ListView.separated(
-              itemCount: state.nasabahList.length + 1,
+              itemCount: state.nasabahList.length + (kIsWeb ? 0 : 1),
               separatorBuilder: (_, __) =>
                   const Divider(height: 1, color: AppColors.border),
-              itemBuilder: (context, index) => index == state.nasabahList.length
-                  ? _Footer(state: state)
-                  : _Row(nasabah: state.nasabahList[index]),
+              itemBuilder: (context, index) =>
+                  !kIsWeb && index == state.nasabahList.length
+                      ? _Footer(state: state)
+                      : _Row(nasabah: state.nasabahList[index]),
             ),
           ),
         ),
+        if (kIsWeb)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: WebPaginationBar(
+              currentPage: state.currentPage,
+              totalItems: state.totalCount,
+              pageSize: state.pageSize,
+              itemLabel: 'nasabah',
+              onPageChanged: context.read<NasabahCubit>().loadPage,
+            ),
+          ),
       ],
     );
   }

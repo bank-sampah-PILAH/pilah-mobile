@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -230,21 +231,23 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  for (final error in <String?>[null, 'Halaman berikutnya gagal']) {
-    testWidgets('next-page action retains rows and retries: $error',
-        (tester) async {
-      when(() => cubit.loadMore()).thenAnswer((_) async {});
-      await pumpList(
-          tester,
-          RiwayatAktivitasState(
-              status: AktivitasStatus.loaded,
-              hasNext: true,
-              errorMessage: error,
-              items: [_setoran('Siti', _now)]));
-      expect(find.text('Siti'), findsOneWidget);
-      if (error != null) expect(find.text(error), findsOneWidget);
-      await tester.tap(find.text(error == null ? 'Muat Lagi' : 'Coba Lagi'));
-      verify(() => cubit.loadMore()).called(1);
-    });
+  if (!kIsWeb) {
+    for (final error in <String?>[null, 'Halaman berikutnya gagal']) {
+      testWidgets('next-page action retains rows and retries: $error',
+          (tester) async {
+        when(() => cubit.loadMore()).thenAnswer((_) async {});
+        await pumpList(
+            tester,
+            RiwayatAktivitasState(
+                status: AktivitasStatus.loaded,
+                hasNext: true,
+                errorMessage: error,
+                items: [_setoran('Siti', _now)]));
+        expect(find.text('Siti'), findsOneWidget);
+        if (error != null) expect(find.text(error), findsOneWidget);
+        await tester.tap(find.text(error == null ? 'Muat Lagi' : 'Coba Lagi'));
+        verify(() => cubit.loadMore()).called(1);
+      });
+    }
   }
 }

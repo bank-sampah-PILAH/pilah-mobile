@@ -58,6 +58,7 @@ dependencies:
   google_fonts: ^8.0.2
   # I
   infinite_scroll_pagination: ^5.1.1
+  intl: ^0.20.2
   injectable: ^3.0.0
   # J
   json_annotation: ^4.12.0

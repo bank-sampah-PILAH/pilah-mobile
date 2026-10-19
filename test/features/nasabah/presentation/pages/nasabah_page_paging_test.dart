@@ -172,6 +172,8 @@ void main() {
 
       expect(find.byType(NasabahPagedListView), findsOneWidget);
       expect(find.byType(WebPaginationBar), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byTooltip('Tambah Nasabah'), findsOneWidget);
       expect(
           tester
               .widget<NasabahPagedListView>(
