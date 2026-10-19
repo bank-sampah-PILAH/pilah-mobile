@@ -7,6 +7,9 @@ abstract class JadwalRepository {
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
+
+    /// Akhir rentang (inklusif) yang dimulai di [date]; kosong berarti satu hari.
+    DateTime? dateTo,
   });
   Future<Either<NetworkException, Set<DateTime>>> getCalendarDates(
     DateTime startDate,

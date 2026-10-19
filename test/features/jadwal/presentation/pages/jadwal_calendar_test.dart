@@ -34,6 +34,7 @@ void main() {
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         )).thenAnswer((_) async {});
+    when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       BlocProvider<JadwalCubit>.value(
@@ -97,6 +98,7 @@ void main() {
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         )).thenAnswer((_) async {});
+    when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       BlocProvider<JadwalCubit>.value(

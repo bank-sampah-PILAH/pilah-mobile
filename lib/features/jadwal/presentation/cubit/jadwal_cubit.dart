@@ -1,7 +1,9 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 
@@ -18,20 +20,38 @@ class JadwalCubit extends Cubit<JadwalState> {
   bool _hasMore = false;
   bool _isLoadingMore = false;
   DateTime? _dateFilter;
+  DateTime? _dateEnd;
   DateTime? _calendarStart;
   DateTime? _calendarEnd;
   Set<DateTime> _scheduledDates = {};
+  Set<DateTime> _upcomingDates = {};
+  int _upcomingVersion = 0;
+
+  /// Jangkauan ke depan untuk ringkasan jadwal mendatang: sekitar tiga bulan.
+  static const upcomingDays = 90;
+
+  /// Rentang terpanjang yang diterima `calendar-dates` (selisih hari).
+  static const _maxCalendarRangeDays = 62;
 
   JadwalCubit(this.repository) : super(const JadwalInitial());
 
   List<JadwalEntity> get _items =>
       state is JadwalLoaded ? (state as JadwalLoaded).items : const [];
 
-  Future<void> loadJadwal({bool silent = false, DateTime? date}) async {
+  /// Satu halaman jadwal: satu hari ([date]), atau rentang dari [date] sampai
+  /// [dateTo] bila diisi.
+  Future<void> loadJadwal({
+    bool silent = false,
+    DateTime? date,
+    DateTime? dateTo,
+  }) async {
     final sessionGeneration = _sessionGeneration;
     final requestedDate = date == null ? null : _dateOnly(date);
-    final dateChanged = !_sameDate(requestedDate, _dateFilter);
+    final requestedEnd = dateTo == null ? null : _dateOnly(dateTo);
+    final dateChanged = !_sameDate(requestedDate, _dateFilter) ||
+        !_sameDate(requestedEnd, _dateEnd);
     _dateFilter = requestedDate;
+    _dateEnd = requestedEnd;
     _page = 1;
     _hasMore = false;
     _isLoadingMore = false;
@@ -45,12 +65,13 @@ class JadwalCubit extends Cubit<JadwalState> {
         isTransitioning: _transitionInProgress,
         isLoading: true,
         scheduledDates: _scheduledDates,
+        upcomingDates: _upcomingDates,
       ));
     } else if (!silent || current is! JadwalLoaded) {
       emit(const JadwalLoading());
     }
 
-    final result = await repository.getJadwal(page: 1, date: requestedDate);
+    final result = await _fetch(1);
     if (version != _loadVersion || sessionGeneration != _sessionGeneration) {
       return;
     }
@@ -66,9 +87,18 @@ class JadwalCubit extends Cubit<JadwalState> {
           hasMore: page.hasMore,
           totalCount: page.totalCount,
           scheduledDates: _scheduledDates,
+          upcomingDates: _upcomingDates,
         ));
       },
     );
+  }
+
+  /// Tanpa [_dateEnd] argumen rentang tidak dikirim sama sekali.
+  Future<Either<NetworkException, JadwalPageResult>> _fetch(int page) {
+    final end = _dateEnd;
+    return end == null
+        ? repository.getJadwal(page: page, date: _dateFilter)
+        : repository.getJadwal(page: page, date: _dateFilter, dateTo: end);
   }
 
   Future<void> loadNextPage() async {
@@ -86,8 +116,7 @@ class JadwalCubit extends Cubit<JadwalState> {
       clearLoadingMoreError: true,
     ));
 
-    final result =
-        await repository.getJadwal(page: _page + 1, date: _dateFilter);
+    final result = await _fetch(_page + 1);
     if (version != _loadVersion || state is! JadwalLoaded) return;
     _isLoadingMore = false;
     result.fold(
@@ -147,6 +176,41 @@ class JadwalCubit extends Cubit<JadwalState> {
         }
       },
     );
+  }
+
+  /// Tanggal berjadwal dari [today] sampai [upcomingDays] hari ke depan.
+  ///
+  /// Server menolak rentang lebih dari 62 hari, jadi jangkauan dipecah menjadi
+  /// potongan yang berurutan tanpa celah dan diminta bersamaan. Bila salah
+  /// satunya gagal, tanggal sebelumnya dibiarkan, bukan diganti separuh data.
+  Future<void> loadUpcomingDates({DateTime? today}) async {
+    final start = _dateOnly(today ?? DateTime.now());
+    final last = start.add(const Duration(days: upcomingDays));
+    final ranges = <(DateTime, DateTime)>[];
+    for (var from = start; !from.isAfter(last);) {
+      final to = from.add(const Duration(days: _maxCalendarRangeDays));
+      final end = to.isAfter(last) ? last : to;
+      ranges.add((from, end));
+      from = end.add(const Duration(days: 1));
+    }
+    final version = ++_upcomingVersion;
+    final results = await Future.wait([
+      for (final (from, to) in ranges) repository.getCalendarDates(from, to),
+    ]);
+    if (version != _upcomingVersion) return;
+    final dates = <DateTime>{};
+    for (final result in results) {
+      final failed = result.fold((_) => true, (found) {
+        dates.addAll(found.map(_dateOnly));
+        return false;
+      });
+      if (failed) return;
+    }
+    _upcomingDates = dates;
+    final current = state;
+    if (current is JadwalLoaded) {
+      emit(current.copyWith(upcomingDates: _upcomingDates));
+    }
   }
 
   Future<NetworkException?> saveJadwal(JadwalEntity jadwal) async {
@@ -218,12 +282,13 @@ class JadwalCubit extends Cubit<JadwalState> {
   }
 
   Future<void> _reloadAfterMutation() async {
-    await loadJadwal(silent: true, date: _dateFilter);
+    await loadJadwal(silent: true, date: _dateFilter, dateTo: _dateEnd);
     final start = _calendarStart;
     final end = _calendarEnd;
     if (start != null && end != null) {
       await loadCalendarDates(startDate: start, endDate: end);
     }
+    await loadUpcomingDates();
   }
 
   DateTime _dateOnly(DateTime date) =>
@@ -239,10 +304,13 @@ class JadwalCubit extends Cubit<JadwalState> {
     _saveInProgress = false;
     _loadVersion++;
     _calendarVersion++;
+    _upcomingVersion++;
+    _upcomingDates = {};
     _page = 1;
     _hasMore = false;
     _isLoadingMore = false;
     _dateFilter = null;
+    _dateEnd = null;
     _calendarStart = null;
     _calendarEnd = null;
     _scheduledDates = {};

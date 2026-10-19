@@ -27,6 +27,10 @@ class JadwalLoaded extends JadwalState {
   final int totalCount;
   final Set<DateTime> scheduledDates;
 
+  /// Tanggal berjadwal dari hari ini sampai [JadwalCubit.upcomingDays] hari
+  /// ke depan, terlepas dari bulan yang sedang tampil di kalender.
+  final Set<DateTime> upcomingDates;
+
   const JadwalLoaded(
     this.items, {
     this.isSaving = false,
@@ -37,6 +41,7 @@ class JadwalLoaded extends JadwalState {
     this.loadingMoreError,
     this.totalCount = 0,
     this.scheduledDates = const {},
+    this.upcomingDates = const {},
   });
 
   JadwalLoaded copyWith({
@@ -50,6 +55,7 @@ class JadwalLoaded extends JadwalState {
     bool clearLoadingMoreError = false,
     int? totalCount,
     Set<DateTime>? scheduledDates,
+    Set<DateTime>? upcomingDates,
   }) =>
       JadwalLoaded(
         items ?? this.items,
@@ -63,6 +69,7 @@ class JadwalLoaded extends JadwalState {
             : loadingMoreError ?? this.loadingMoreError,
         totalCount: totalCount ?? this.totalCount,
         scheduledDates: scheduledDates ?? this.scheduledDates,
+        upcomingDates: upcomingDates ?? this.upcomingDates,
       );
 
   @override
@@ -76,6 +83,7 @@ class JadwalLoaded extends JadwalState {
         loadingMoreError,
         totalCount,
         scheduledDates,
+        upcomingDates,
       ];
 }
 

@@ -17,9 +17,16 @@ class JadwalRepositoryImpl implements JadwalRepository {
   Future<Either<NetworkException, JadwalPageResult>> getJadwal({
     required int page,
     DateTime? date,
+    DateTime? dateTo,
   }) async {
     try {
-      final response = await remoteDataSource.getJadwal(page: page, date: date);
+      final response = dateTo == null
+          ? await remoteDataSource.getJadwal(page: page, date: date)
+          : await remoteDataSource.getJadwal(
+              page: page,
+              date: date,
+              dateTo: dateTo,
+            );
       return Right(JadwalPageResult(
         items: response.items,
         totalCount: response.totalCount,

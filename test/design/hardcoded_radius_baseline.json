@@ -9,7 +9,6 @@
   "lib/features/draft_pencairan/presentation/widgets/export_menu_button.dart": 1,
   "lib/features/draft_pencairan/presentation/widgets/pencairan_ui.dart": 1,
   "lib/features/jadwal/presentation/pages/jadwal_page.dart": 3,
-  "lib/features/jadwal/presentation/widgets/jadwal_calendar.dart": 1,
   "lib/features/nasabah/presentation/pages/nasabah_page.dart": 1,
   "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": 1,
   "lib/features/nasabah/presentation/widgets/nasabah_table.dart": 1,
