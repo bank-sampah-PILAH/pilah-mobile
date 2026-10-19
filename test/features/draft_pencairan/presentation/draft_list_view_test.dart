@@ -184,6 +184,17 @@ void main() {
     expect(find.byKey(const Key('buat-pencairan')), findsNothing);
   });
 
+  testWidgets('on a phone the floating button starts picking nasabah',
+      (tester) async {
+    await pump(tester, const [], size: const Size(390, 844));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routePilih}'), findsOneWidget);
+  });
+
   testWidgets('the add button starts picking nasabah', (tester) async {
     await pump(tester, const []);
     await tester.pumpAndSettle();
