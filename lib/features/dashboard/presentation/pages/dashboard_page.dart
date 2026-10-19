@@ -2,6 +2,8 @@ import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surf
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -79,41 +81,51 @@ class _DashboardPageState extends State<DashboardPage> {
           ? WebContentSurface.pageColor(context, phone: AppColors.cardOffWhite)
           : Colors.white,
       body: SafeArea(
-        child: AppRefreshIndicator(
-          onRefresh: _onRefresh,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Di web lebar profil ada di kaki sidebar, jadi avatar di sini
-                // hanya menggandakannya.
-                DashboardHeader(
-                  showProfile: !(isPengurusWeb &&
-                      context.layoutBreakpoint != LayoutBreakpoint.compact),
-                ),
-                const SizedBox(height: 24),
-                if (isPengurusWeb)
-                  const DashboardWebKpiSection()
-                else ...[
-                  const TotalKasCard(),
-                  const SizedBox(height: 24),
-                  const DashboardStatisticsSection(),
-                ],
-                const SizedBox(height: 24),
-                const DashboardActionButtons(),
-                const SizedBox(height: 32),
-                if (isPengurusWeb) ...[
-                  DashboardReportsSection(
-                    key: ValueKey('reports-$webPengurusKey'),
-                    dataSource: di<DashboardReportingDataSource>(),
+        child: ContentBounds(
+          child: AppRefreshIndicator(
+            onRefresh: _onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: isPengurusWeb &&
+                      context.layoutBreakpoint != LayoutBreakpoint.compact
+                  ? const EdgeInsets.fromLTRB(
+                      AppSpacing.webGutter,
+                      AppSpacing.webTop,
+                      AppSpacing.webGutter,
+                      AppSpacing.xl,
+                    )
+                  : const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Di web lebar profil ada di kaki sidebar, jadi avatar di sini
+                  // hanya menggandakannya.
+                  DashboardHeader(
+                    showProfile: !(isPengurusWeb &&
+                        context.layoutBreakpoint != LayoutBreakpoint.compact),
                   ),
                   const SizedBox(height: 24),
-                  _webDetails(webPengurusKey),
-                ] else
-                  const RecentActivitySection(),
-              ],
+                  if (isPengurusWeb)
+                    const DashboardWebKpiSection()
+                  else ...[
+                    const TotalKasCard(),
+                    const SizedBox(height: 24),
+                    const DashboardStatisticsSection(),
+                  ],
+                  const SizedBox(height: 24),
+                  const DashboardActionButtons(),
+                  const SizedBox(height: 32),
+                  if (isPengurusWeb) ...[
+                    DashboardReportsSection(
+                      key: ValueKey('reports-$webPengurusKey'),
+                      dataSource: di<DashboardReportingDataSource>(),
+                    ),
+                    const SizedBox(height: 24),
+                    _webDetails(webPengurusKey),
+                  ] else
+                    const RecentActivitySection(),
+                ],
+              ),
             ),
           ),
         ),

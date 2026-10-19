@@ -28,7 +28,6 @@ import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_rem
 import 'package:pilah_mobile/features/pengumuman/data/repositories/pengumuman_repository_impl.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
@@ -79,7 +78,6 @@ class AppShell {
         JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network)));
     pengumuman = PengumumanCubit(
         PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network)));
-    pencairanCubit = PencairanCubit(pencairan);
     superadmin = buildSuperadminCubit(api);
     states = StreamController<AuthenticationStates>.broadcast();
     auth = MockAuthBloc();
@@ -96,7 +94,6 @@ class AppShell {
   late final OnboardingCubit onboarding;
   late final JadwalCubit jadwal;
   late final PengumumanCubit pengumuman;
-  late final PencairanCubit pencairanCubit;
   late final SuperadminCubit superadmin;
   late final StreamController<AuthenticationStates> states;
   late final MockAuthBloc auth;
@@ -110,7 +107,6 @@ class AppShell {
     di.registerSingleton<AppEnvironment>(StubEnvironment());
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
     di.registerFactory<SuperadminCubit>(() => superadmin);
-    di.registerFactory<PencairanCubit>(() => pencairanCubit);
     final useCases = buildPencairanUseCases(api);
     di.registerFactory<EditPencairanCubit>(() => EditPencairanCubit(useCases));
     di.registerFactory<RevisiPencairanCubit>(
@@ -134,7 +130,6 @@ class AppShell {
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
     await di.unregister<SuperadminCubit>();
-    await di.unregister<PencairanCubit>();
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();

@@ -164,6 +164,8 @@ void main() {
   group('coming back to the foreground', () {
     Future<void> resume(WidgetTester tester) async {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
     }
@@ -171,6 +173,8 @@ void main() {
     // Resumes without settling, so a slow invite gate stays on screen.
     Future<void> resumeAndPump(WidgetTester tester) async {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       for (var i = 0; i < 4; i++) {
         await tester.pump(const Duration(milliseconds: 100));

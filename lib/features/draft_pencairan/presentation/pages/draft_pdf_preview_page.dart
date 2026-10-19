@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:printing/printing.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import '../widgets/draft_file_actions.dart';
@@ -49,29 +51,35 @@ class DraftPdfPreviewPage extends StatelessWidget {
           ],
         ),
       ),
+      // The page is at most 700 px wide; on a desktop window the buttons keep
+      // to a column under it instead of spanning the window.
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  key: const Key('bagikan'),
-                  onPressed: () => bagikanBerkasDraft(file),
-                  icon: const Icon(Icons.share_outlined),
-                  label: const Text('Bagikan'),
+        child: ContentBounds(
+          maxWidth: LayoutBreakpoint.formMaxWidth,
+          heightFactor: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('bagikan'),
+                    onPressed: () => bagikanBerkasDraft(file),
+                    icon: const Icon(Icons.share_outlined),
+                    label: const Text('Bagikan'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  key: const Key('unduh'),
-                  onPressed: () => simpanBerkasDraft(context, file),
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('Unduh'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    key: const Key('unduh'),
+                    onPressed: () => simpanBerkasDraft(context, file),
+                    icon: const Icon(Icons.download_outlined),
+                    label: const Text('Unduh'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -35,7 +35,6 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_appr
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
@@ -101,7 +100,6 @@ void main() {
         '/register-nasabah': RegisterNasabahScreen,
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
-        '/catat-pencairan': CatatPencairanPage,
         '/pengelola-induk-dashboard': RoleHandoffPage,
         '/register-bank-sampah-induk': RoleHandoffPage,
       };
@@ -111,6 +109,15 @@ void main() {
             settle: !entry.key.contains('induk'));
         expect(find.byType(entry.value), findsOneWidget, reason: entry.key);
       }
+    });
+
+    testWidgets('cannot open the removed single-nasabah pencairan page',
+        (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/catat-pencairan');
+
+      expect(find.text('Catat Pencairan'), findsNothing);
     });
 
     testWidgets('can open the pencairan edit and revision pages',
@@ -244,6 +251,45 @@ void main() {
 
       expect(find.byType(DraftEditorPage), findsOneWidget);
       expect(find.text('Cair Oktober'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a saved draft reopens from its link alone (a refreshed web tab)',
+        (tester) async {
+      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/draft-pencairan/editor?id=d-1');
+
+      expect(find.byType(DraftEditorPage), findsOneWidget);
+      expect(find.text('Cair Oktober'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a link whose id is not a draft id goes to the list and asks nothing',
+        (tester) async {
+      final router = await boot(tester);
+      // The router is shared, so booting can replay the previous test's page;
+      // let it settle on the list before counting.
+      await visit(tester, router, DraftListPage.route);
+      final sebelum = api.requests.length;
+
+      for (final id in ['..%2Fnasabah', 'd-1%2Fkonfirmasi', '%20']) {
+        await visit(tester, router, '/draft-pencairan/editor?id=$id');
+
+        expect(find.byType(DraftEditorPage), findsNothing, reason: id);
+        expect(find.byType(DraftListPage), findsOneWidget, reason: id);
+      }
+      // The list loads itself; nothing beyond it is built from the link.
+      const daftar = {'/api/v1/draft-pencairan', '/api/v1/draft-pencairan/'};
+      expect(
+          api.requests
+              .skip(sebelum)
+              .map((r) => r.path)
+              .where((path) => path.contains('draft-pencairan'))
+              .where((path) => !daftar.contains(path)),
+          isEmpty,
+          reason: 'no request built from the link');
     });
 
     testWidgets('opening the draft editor without a draft goes to the list',

@@ -1,0 +1,211 @@
+import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
+
+/// Daftar aktivitas untuk layar lebar: satu baris per setoran atau pencairan
+/// dengan kolom yang sejajar, seperti tabel nasabah dan harga. Di telepon
+/// daftar tetap berupa kartu yang dikelompokkan per hari.
+///
+/// Hanya menyajikan baris yang sudah dimuat; memuat berikutnya, kosong, dan
+/// gagal ditangani halamannya.
+class AktivitasTable extends StatelessWidget {
+  const AktivitasTable({
+    super.key,
+    required this.items,
+    required this.onTap,
+    this.footer = const [],
+  });
+
+  final List<ActivitasEntity> items;
+  final ValueChanged<ActivitasEntity> onTap;
+
+  /// Isi di bawah baris terakhir: indikator muat atau tombol "Muat Lagi".
+  final List<Widget> footer;
+
+  /// Lebar relatif kolom: waktu, nasabah, tipe, rincian, nominal.
+  static const _columns = [4, 4, 2, 4, 3];
+
+  static final _headStyle = AppTextStyle.extraSmall.copyWith(
+    color: AppColors.grey100,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.3,
+  );
+
+  static Key rowKey(int index) => ValueKey('aktivitas-row-$index');
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              color: AppColors.fill,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: 14,
+              ),
+              child: Row(children: [
+                _cell(0, Text('WAKTU', style: _headStyle)),
+                _cell(1, Text('NASABAH', style: _headStyle)),
+                _cell(2, Text('TIPE', style: _headStyle)),
+                _cell(3, Text('RINCIAN', style: _headStyle)),
+                _cell(
+                  4,
+                  Text('NOMINAL', style: _headStyle, textAlign: TextAlign.end),
+                ),
+              ]),
+            ),
+            const Divider(height: 1, color: AppColors.border),
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) const Divider(height: 1, color: AppColors.border),
+              _Row(
+                key: rowKey(i),
+                item: items[i],
+                onTap: () => onTap(items[i]),
+              ),
+            ],
+            ...footer,
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _cell(int i, Widget child) => Expanded(
+        flex: _columns[i],
+        child: Padding(
+          padding: const EdgeInsets.only(right: AppSpacing.md),
+          child: child,
+        ),
+      );
+}
+
+class _Row extends StatefulWidget {
+  const _Row({super.key, required this.item, required this.onTap});
+
+  final ActivitasEntity item;
+  final VoidCallback onTap;
+
+  @override
+  State<_Row> createState() => _RowState();
+}
+
+class _RowState extends State<_Row> {
+  bool _hover = false;
+
+  ActivitasEntity get item => widget.item;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = AppTextStyle.small.copyWith(color: AppColors.black);
+    final muted = base.copyWith(color: AppColors.grey100);
+    final waktu = item.trailingCaptions;
+    return Semantics(
+      button: true,
+      // Every row opens a detail, so it gets the hover of the nasabah and
+      // harga tables.
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() => _hover = false),
+        child: InkWell(
+          onTap: widget.onTap,
+          child: Container(
+            color: _hover ? AppColors.greenLight.withValues(alpha: 0.45) : null,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl,
+              vertical: AppSpacing.md,
+            ),
+            child: Row(children: [
+              AktivitasTable._cell(
+                0,
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: 2,
+                  children: [
+                    if (waktu.isNotEmpty) Text(waktu.first, style: base),
+                    if (waktu.length > 1) Text(waktu[1], style: muted),
+                  ],
+                ),
+              ),
+              AktivitasTable._cell(
+                1,
+                Row(children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: item.avatarColor,
+                    child: Text(
+                      item.avatarText,
+                      style: AppTextStyle.extraSmall.copyWith(
+                        color: item.avatarTextColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: base.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ]),
+              ),
+              AktivitasTable._cell(
+                2,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: CustomStatusBadge(
+                    statusText: item.tipe == ActivitasTipe.setoran
+                        ? 'Setoran'
+                        : 'Pencairan',
+                    backgroundColor: item.tipe == ActivitasTipe.setoran
+                        ? AppColors.greenLight
+                        : AppColors.warningLight,
+                    textColor: item.tipe == ActivitasTipe.setoran
+                        ? AppColors.greenDark
+                        : AppColors.warning,
+                  ),
+                ),
+              ),
+              AktivitasTable._cell(
+                3,
+                Text(
+                  item.subtitleLines.join(' • '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: muted,
+                ),
+              ),
+              AktivitasTable._cell(
+                4,
+                Text(
+                  item.amount,
+                  textAlign: TextAlign.end,
+                  style: base.copyWith(
+                    color: item.amountColor ?? AppColors.greenDark,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}

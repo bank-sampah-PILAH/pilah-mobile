@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
@@ -11,6 +12,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_u
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 
 class _MockGetAktivitasUseCase extends Mock implements GetAktivitasUseCase {}
 
@@ -72,7 +74,8 @@ void main() {
     });
   });
 
-  Future<void> pumpPage(WidgetTester tester, {double textScale = 1}) async {
+  Future<void> pumpPage(WidgetTester tester,
+      {double textScale = 1, bool inWebShell = false}) async {
     await tester.pumpWidget(
       MaterialApp(
         builder: (context, child) => MediaQuery(
@@ -85,14 +88,17 @@ void main() {
             getTransaksi,
             _MockExportTransaksiUseCase(),
           ),
-          child: const LaporanPage(),
+          child: inWebShell
+              ? const WebContentSurface(child: LaporanPage())
+              : const LaporanPage(),
         ),
       ),
     );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('desktop exposes all periods and puts search beside the title',
+  testWidgets(
+      'desktop offers every period in one picker and puts search beside the title',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -106,6 +112,10 @@ void main() {
     expect(search.top, lessThan(title.bottom));
     expect(search.width, lessThanOrEqualTo(360));
     expect(tester.getSize(find.byType(LaporanPage)).width, 1440);
+    expect(find.text('Bulan Ini'), findsOneWidget);
+    expect(find.text('Ekspor XLSX'), findsOneWidget);
+    await tester.tap(find.text('Bulan Ini'));
+    await tester.pumpAndSettle();
     for (final label in ['Hari Ini', 'Minggu Ini', '12 Bulan', 'Semua Waktu']) {
       expect(find.text(label).hitTestable(), findsOneWidget);
     }
@@ -115,7 +125,55 @@ void main() {
         .captured
         .last as TransaksiFilter;
     expect(filter.periode, '12_bulan');
+    expect(find.text('Pilih Periode'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  Color pageBackground(WidgetTester tester) => tester
+      .widget<Scaffold>(find
+          .descendant(
+              of: find.byType(LaporanPage), matching: find.byType(Scaffold))
+          .first)
+      .backgroundColor!;
+
+  testWidgets('the web shell shows the report on a white page', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester, inWebShell: true);
+
+    expect(pageBackground(tester), Colors.white);
+  });
+
+  testWidgets('the phone layout is white like the other pages', (tester) async {
+    await pumpPage(tester);
+
+    expect(pageBackground(tester), Colors.white);
+  });
+
+  testWidgets('a wide screen keeps the web gutter around the title',
+      (tester) async {
+    tester.view.physicalSize = const Size(1000, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+
+    expect(tester.getTopLeft(find.text('Riwayat Aktivitas')).dx, 32);
+    expect(tester.getRect(find.byType(TextField)).right, 1000 - 32);
+  });
+
+  testWidgets('the activity list lines up with the header on a wide screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(1000, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+
+    expect(tester.getTopLeft(find.byType(AktivitasTable)).dx,
+        tester.getTopLeft(find.text('Riwayat Aktivitas')).dx);
   });
 
   testWidgets('resizing keeps the visible search consistent with the report',
@@ -135,7 +193,15 @@ void main() {
     expect(find.text('Budi Santoso'), findsNothing);
   });
 
+  void usePhone(WidgetTester tester) {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
   testWidgets('shows both setoran and pencairan in one feed', (tester) async {
+    usePhone(tester);
     await pumpPage(tester);
 
     expect(find.text('Riwayat Aktivitas'), findsOneWidget);
@@ -150,6 +216,7 @@ void main() {
   });
 
   testWidgets('the Pencairan filter hides setoran rows', (tester) async {
+    usePhone(tester);
     await pumpPage(tester);
 
     await tester.tap(find.text('Pencairan'));
@@ -168,15 +235,16 @@ void main() {
     expect(find.text('Ani Wijaya'), findsOneWidget);
     expect(find.text('Budi Santoso'), findsNothing);
   });
-  testWidgets('day and week filters are visible without overflow at 360px',
+  testWidgets('the period button and export icon fit without overflow at 360px',
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester);
-    expect(find.text('Hari Ini'), findsOneWidget);
-    expect(find.text('Minggu Ini'), findsOneWidget);
+    expect(find.text('Bulan Ini'), findsOneWidget);
+    expect(find.byTooltip('Ekspor XLSX'), findsOneWidget);
+    expect(find.text('Ekspor XLSX'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -203,6 +271,27 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => getTransaksi.execute(any())).called(1);
+    expect(find.text('Budi Santoso'), findsOneWidget);
+  });
+
+  testWidgets('resetting the filters also clears the search box',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+    await tester.enterText(find.byType(TextField), 'Ani');
+    await tester.pumpAndSettle();
+
+    tester
+        .element(find.byType(LaporanPage))
+        .read<RiwayatAktivitasCubit>()
+        .resetFilters();
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty);
     expect(find.text('Budi Santoso'), findsOneWidget);
   });
 }

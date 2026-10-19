@@ -116,6 +116,12 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
     load();
   }
 
+  /// Kembali ke periode, tipe, dan pencarian bawaan, lalu memuat ulang.
+  void resetFilters() {
+    emit(const RiwayatAktivitasState());
+    load();
+  }
+
   /// Export the same period, type and search as the displayed report.
   Future<({TransaksiExport? export, String? error})> exportTransaksi() async {
     final result = await _export.execute(_filter(1));

@@ -7,8 +7,8 @@ import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
-/// The METODE caption and a chip for each way of paying out, shared by the
-/// catat and the edit forms so the two cannot drift apart.
+/// The METODE caption and a chip for each way of paying out, used by the
+/// edit form.
 class MetodePencairanSelector extends StatelessWidget {
   const MetodePencairanSelector({
     super.key,

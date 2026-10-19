@@ -45,9 +45,10 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
   @override
   Widget build(BuildContext context) {
     if (context.layoutBreakpoint != LayoutBreakpoint.compact) {
-      return const Scaffold(
-        backgroundColor: AppColors.cardOffWhite,
-        body: SafeArea(child: NasabahTable()),
+      return Scaffold(
+        backgroundColor:
+            WebContentSurface.pageColor(context, phone: Colors.white),
+        body: const SafeArea(child: NasabahTable()),
       );
     }
     return Scaffold(

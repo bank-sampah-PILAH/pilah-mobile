@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// How a question weighs: green for going ahead, red for throwing something
@@ -25,10 +25,10 @@ class KonfirmasiJawaban {
   const KonfirmasiJawaban(this.ya, [this.tidak = 'Batal']);
 }
 
-/// Asks a yes-or-no question in a white, rounded bottom sheet, like the other
-/// sheets of pencairan: an icon in a tinted circle, a title, a line of
+/// Asks a yes-or-no question: an icon in a tinted circle, a title, a line of
 /// explanation, optional [isi] of its own, and the two answers side by side.
-/// Dismissing the sheet answers no.
+/// A bottom sheet on a phone and a centred dialog in a wider window, through
+/// [showAdaptiveConfirmation]. Dismissing it answers no.
 Future<bool> showPencairanKonfirmasi(
   BuildContext context, {
   required IconData icon,
@@ -38,69 +38,61 @@ Future<bool> showPencairanKonfirmasi(
   required KonfirmasiJawaban jawaban,
   KonfirmasiNada nada = KonfirmasiNada.normal,
 }) async {
-  final hasil = await showModalBottomSheet<bool>(
+  final hasil = await showAdaptiveConfirmation<bool>(
     context: context,
-    backgroundColor: Colors.white,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-    ),
-    builder: (sheetContext) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration:
-                      BoxDecoration(color: nada.latar, shape: BoxShape.circle),
-                  child: Icon(icon, color: nada.warna, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(judul, style: AppTextStyle.headline3)),
-              ],
-            ),
-            if (pesan != null) ...[
-              const SizedBox(height: 12),
-              Text(pesan,
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[800])),
+    builder: (sheetContext, _) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration:
+                    BoxDecoration(color: nada.latar, shape: BoxShape.circle),
+                child: Icon(icon, color: nada.warna, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(judul, style: AppTextStyle.headline3)),
             ],
-            if (isi != null) ...[
-              const SizedBox(height: 16),
-              isi,
-            ],
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    key: const Key('konfirmasi-tidak'),
-                    label: jawaban.tidak,
-                    variant: AppButtonVariant.neutral,
-                    onPressed: () => Navigator.of(sheetContext).pop(false),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppButton(
-                    key: const Key('konfirmasi-ya'),
-                    label: jawaban.ya,
-                    variant: switch (nada) {
-                      KonfirmasiNada.normal => AppButtonVariant.primary,
-                      KonfirmasiNada.bahaya => AppButtonVariant.destructive,
-                      KonfirmasiNada.peringatan => AppButtonVariant.warning,
-                    },
-                    onPressed: () => Navigator.of(sheetContext).pop(true),
-                  ),
-                ),
-              ],
-            ),
+          ),
+          if (pesan != null) ...[
+            const SizedBox(height: 12),
+            Text(pesan,
+                style: AppTextStyle.small.copyWith(color: Colors.grey[800])),
           ],
-        ),
+          if (isi != null) ...[
+            const SizedBox(height: 16),
+            isi,
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  key: const Key('konfirmasi-tidak'),
+                  label: jawaban.tidak,
+                  variant: AppButtonVariant.neutral,
+                  onPressed: () => Navigator.of(sheetContext).pop(false),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AppButton(
+                  key: const Key('konfirmasi-ya'),
+                  label: jawaban.ya,
+                  variant: switch (nada) {
+                    KonfirmasiNada.normal => AppButtonVariant.primary,
+                    KonfirmasiNada.bahaya => AppButtonVariant.destructive,
+                    KonfirmasiNada.peringatan => AppButtonVariant.warning,
+                  },
+                  onPressed: () => Navigator.of(sheetContext).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ),
   );
