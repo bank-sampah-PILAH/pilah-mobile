@@ -108,6 +108,10 @@ void main() {
         lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
     expect(tester.getCenter(field).dx, closeTo(720, 1),
         reason: 'centred in the window');
+    final scroll =
+        find.ancestor(of: field, matching: find.byType(SingleChildScrollView));
+    expect(tester.getSize(scroll.first).width, 1440,
+        reason: 'the form scrolls across the window: scrollbar at the edge');
     final submit = find.byKey(const Key('submit-edit-pencairan'));
     expect(field.hitTestable(), findsOneWidget,
         reason: 'the form is not squeezed out by the save bar');
