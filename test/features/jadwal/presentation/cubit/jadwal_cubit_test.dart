@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart' show DateUtils;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -55,12 +56,18 @@ void main() {
   );
 
   blocTest<JadwalCubit, JadwalState>(
-    'upcoming dates cover the next 90 days, beyond the visible month',
+    'upcoming dates cover 90 days in ranges the server accepts (max 62 days)',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null))
           .thenAnswer((_) async => Right(_page(const [])));
       when(() => repository.getCalendarDates(any(), any())).thenAnswer(
-        (_) async => Right({DateTime(2026, 12, 9)}),
+        (invocation) async {
+          final start = invocation.positionalArguments[0] as DateTime;
+          return Right({
+            if (start == DateTime(2026, 10, 19)) DateTime(2026, 11, 3),
+            if (start != DateTime(2026, 10, 19)) DateTime(2027, 1, 5),
+          });
+        },
       );
       return JadwalCubit(repository);
     },
@@ -69,12 +76,29 @@ void main() {
       await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19, 14));
     },
     verify: (cubit) {
-      verify(() => repository.getCalendarDates(
-            DateTime(2026, 10, 19),
-            DateTime(2026, 10, 19).add(const Duration(days: 90)),
-          )).called(1);
+      final ranges = verify(
+        () => repository.getCalendarDates(captureAny(), captureAny()),
+      ).captured;
+      final starts = [for (var i = 0; i < ranges.length; i += 2) ranges[i]];
+      final ends = [for (var i = 1; i < ranges.length; i += 2) ranges[i]];
+      expect(starts.first, DateTime(2026, 10, 19));
+      expect(ends.last, DateTime(2026, 10, 19).add(const Duration(days: 90)));
+      for (var i = 0; i < starts.length; i++) {
+        expect(
+          (ends[i] as DateTime).difference(starts[i] as DateTime).inDays,
+          lessThanOrEqualTo(62),
+        );
+      }
+      for (var i = 1; i < starts.length; i++) {
+        expect(
+          (starts[i] as DateTime).difference(ends[i - 1] as DateTime).inDays,
+          1,
+          reason: 'ranges follow each other without a gap',
+        );
+      }
       expect((cubit.state as JadwalLoaded).upcomingDates, {
-        DateTime(2026, 12, 9),
+        DateTime(2026, 11, 3),
+        DateTime(2027, 1, 5),
       });
     },
   );
@@ -142,14 +166,20 @@ void main() {
       final ranges = verify(
         () => repository.getCalendarDates(captureAny(), captureAny()),
       ).captured;
-      final starts = [for (var i = 0; i < ranges.length; i += 2) ranges[i]];
       final ends = [for (var i = 1; i < ranges.length; i += 2) ranges[i]];
+      final starts = [for (var i = 0; i < ranges.length; i += 2) ranges[i]];
       expect(
         [
           for (var i = 0; i < starts.length; i++)
             (ends[i] as DateTime).difference(starts[i] as DateTime).inDays,
         ],
-        contains(90),
+        isNotEmpty,
+      );
+      final today = DateUtils.dateOnly(DateTime.now());
+      expect(
+        ends,
+        contains(today.add(const Duration(days: 90))),
+        reason: 'the upcoming ranges are requested again after saving',
       );
     },
   );
