@@ -5,7 +5,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
@@ -92,19 +92,26 @@ class _RevisiPencairanViewState extends State<RevisiPencairanView> {
           case RevisiStatus.loaded:
             final riwayat = state.riwayat!;
             final perubahan = _perubahan(riwayat);
-            return ContentBounds(
+            // The list spans the body, so its scrollbar is at the window edge;
+            // the frame keeps the cards to a form's column.
+            return ContentFrame(
               maxWidth: LayoutBreakpoint.formMaxWidth,
-              child: ListView(
-                shrinkWrap: widget.embedded,
-                padding: EdgeInsets.symmetric(
-                    horizontal: widget.embedded ? 0 : 16, vertical: 8),
-                children: [
-                  _SekarangCard(pencairan: riwayat.pencairan),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppFieldLabel('PERUBAHAN (${perubahan.length})'),
-                  const SizedBox(height: AppSpacing.md),
-                  for (final item in perubahan) _PerubahanCard(perubahan: item),
-                ],
+              child: Builder(
+                builder: (context) => ListView(
+                  shrinkWrap: widget.embedded,
+                  padding: ContentFrame.insetOf(context).add(
+                    EdgeInsets.symmetric(
+                        horizontal: widget.embedded ? 0 : 16, vertical: 8),
+                  ),
+                  children: [
+                    _SekarangCard(pencairan: riwayat.pencairan),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppFieldLabel('PERUBAHAN (${perubahan.length})'),
+                    const SizedBox(height: AppSpacing.md),
+                    for (final item in perubahan)
+                      _PerubahanCard(perubahan: item),
+                  ],
+                ),
               ),
             );
         }
