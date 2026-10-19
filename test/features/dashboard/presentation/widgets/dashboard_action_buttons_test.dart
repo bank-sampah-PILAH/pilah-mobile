@@ -6,7 +6,7 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_l
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 void main() {
-  testWidgets('add customer label stays on one line on a narrow screen',
+  testWidgets('menu labels stay on two lines on a narrow screen',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(375, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -14,9 +14,9 @@ void main() {
       home: Scaffold(body: DashboardActionButtons()),
     ));
 
-    final label = tester.widget<Text>(find.text('Tambah Nasabah'));
-    expect(label.maxLines, 1);
-    expect(label.softWrap, isFalse);
+    final label = tester.widget<Text>(find.textContaining('Tambah'));
+    expect(label.maxLines, 2);
+    expect(label.softWrap, isTrue);
     expect(tester.takeException(), isNull);
   });
 
@@ -38,13 +38,13 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
 
-    await tester.tap(find.text('Tambah Nasabah'));
+    await tester.tap(find.textContaining('Tambah'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Nasabah'), findsOneWidget);
-    expect(find.text('Tambah Nasabah'), findsOneWidget);
+    expect(find.textContaining('Tambah'), findsOneWidget);
   });
 
   Future<GoRouter> pumpChooser(WidgetTester tester) async {
@@ -76,7 +76,13 @@ void main() {
     await pumpChooser(tester);
 
     expect(find.text('Catat Setoran'), findsOneWidget);
-    expect(find.text('Pencairan'), findsOneWidget);
+    // The sheet entry, not the dashboard menu tile behind the barrier.
+    expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Pencairan'),
+        ),
+        findsOneWidget);
   });
 
   testWidgets('opens Setoran Baru when Catat Setoran is chosen',
@@ -93,9 +99,37 @@ void main() {
       (tester) async {
     await pumpChooser(tester);
 
-    await tester.tap(find.text('Pencairan'));
+    await tester.tap(find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.text('Pencairan'),
+    ));
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Pencairan'), findsOneWidget);
+  });
+
+  testWidgets('the Pengumuman tile opens the kelola page', (tester) async {
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, __) => const Scaffold(body: DashboardActionButtons()),
+        ),
+        GoRoute(
+          path: '/pengumuman/kelola',
+          builder: (_, __) => const Scaffold(body: Text('kelola pengumuman')),
+        ),
+        GoRoute(
+          path: '/pengurusan-lain',
+          builder: (_, __) => const SizedBox(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.tap(find.text('Pengumuman'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('kelola pengumuman'), findsOneWidget);
   });
 }

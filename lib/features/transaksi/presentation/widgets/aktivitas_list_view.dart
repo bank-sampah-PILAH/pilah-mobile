@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
@@ -10,6 +11,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
@@ -34,8 +36,13 @@ EdgeInsetsGeometry _scrollPadding(BuildContext context,
 
 class AktivitasListView extends StatelessWidget {
   final DateTime Function() now;
+  final bool isWeb;
 
-  const AktivitasListView({super.key, this.now = DateTime.now});
+  const AktivitasListView({
+    super.key,
+    this.now = DateTime.now,
+    this.isWeb = kIsWeb,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -92,20 +99,39 @@ class AktivitasListView extends StatelessWidget {
                 ),
               ]
             : _groupedRows(state, now(), footer);
-        return NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification.metrics.axis == Axis.vertical &&
-                  notification.metrics.extentAfter < 200 &&
-                  state.errorMessage == null) {
-                context.read<RiwayatAktivitasCubit>().loadMore();
-              }
-              return false;
-            },
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: _scrollPadding(context, bottom: 24),
-              children: children,
-            ));
+        final activityList = NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (!isWeb &&
+                notification.metrics.axis == Axis.vertical &&
+                notification.metrics.extentAfter < 200 &&
+                state.errorMessage == null) {
+              context.read<RiwayatAktivitasCubit>().loadMore();
+            }
+            return false;
+          },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: _scrollPadding(context, bottom: 24),
+            children: children,
+          ),
+        );
+        if (!isWeb) return activityList;
+        return Column(
+          children: [
+            Expanded(child: activityList),
+            Padding(
+              padding: ContentFrame.insetOf(context)
+                  .add(const EdgeInsets.symmetric(horizontal: 16)),
+              child: WebPaginationBar(
+                currentPage: state.currentPage,
+                totalItems: state.totalCount,
+                pageSize: state.pageSize,
+                itemLabel: 'transaksi',
+                onPageChanged: context.read<RiwayatAktivitasCubit>().loadPage,
+              ),
+            ),
+          ],
+        );
       },
     );
   }
@@ -154,10 +180,19 @@ class AktivitasListView extends StatelessWidget {
         ),
       ];
     }
-    if (!state.hasNext) return const [];
+    if (isWeb && state.retryPage == null) return const [];
+    if (!state.hasNext && state.retryPage == null) return const [];
     return [
       TextButton(
-        onPressed: () => context.read<RiwayatAktivitasCubit>().loadMore(),
+        onPressed: () {
+          final cubit = context.read<RiwayatAktivitasCubit>();
+          final retryPage = state.retryPage;
+          if (retryPage == null) {
+            cubit.loadMore();
+          } else {
+            cubit.loadPage(retryPage);
+          }
+        },
         child: Text(state.errorMessage == null ? 'Muat Lagi' : 'Coba Lagi'),
       ),
       if (state.errorMessage != null)

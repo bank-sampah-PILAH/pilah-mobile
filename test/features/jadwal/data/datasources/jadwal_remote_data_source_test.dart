@@ -92,6 +92,37 @@ void main() {
     ]);
   });
 
+  test('asks for a date range with date_from and date_to, not date', () async {
+    final network = _MockNetworkService();
+    final queries = <Map<String, dynamic>>[];
+    when(() => network.get(
+          '/api/v1/jadwal',
+          queryParams: any(named: 'queryParams'),
+        )).thenAnswer((invocation) async {
+      queries
+          .add(invocation.namedArguments[#queryParams] as Map<String, dynamic>);
+      return Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/api/v1/jadwal'),
+        data: {'count': 0, 'next': null, 'results': []},
+      );
+    });
+
+    await JadwalRemoteDataSourceImpl(network).getJadwal(
+      page: 2,
+      date: DateTime(2026, 10, 19),
+      dateTo: DateTime(2026, 10, 31),
+    );
+
+    expect(queries, [
+      {
+        'page_size': 20,
+        'page': 2,
+        'date_from': '2026-10-19',
+        'date_to': '2026-10-31',
+      },
+    ]);
+  });
+
   test('loads calendar date markers for a bounded range', () async {
     final network = _MockNetworkService();
     when(() => network.get(

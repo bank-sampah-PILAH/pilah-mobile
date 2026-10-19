@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
@@ -28,7 +30,9 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasaba
 class NasabahTable extends StatelessWidget {
   static const headerKey = ValueKey('nasabah-table-header');
 
-  const NasabahTable({super.key});
+  const NasabahTable({super.key, this.isWeb = kIsWeb});
+
+  final bool isWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +60,7 @@ class NasabahTable extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  child: const _TableBody(),
+                  child: _TableBody(isWeb: isWeb),
                 ),
               ),
             ),
@@ -125,7 +129,8 @@ class _Toolbar extends StatelessWidget {
 }
 
 class _TableBody extends StatelessWidget {
-  const _TableBody();
+  const _TableBody({required this.isWeb});
+  final bool isWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +149,7 @@ class _TableBody extends StatelessWidget {
         }
         if (state is! NasabahLoaded) return const SizedBox.shrink();
         if (state.nasabahList.isEmpty) return _Empty(state: state);
-        return _Loaded(state: state);
+        return _Loaded(state: state, isWeb: isWeb);
       },
     );
   }
@@ -152,13 +157,17 @@ class _TableBody extends StatelessWidget {
 
 /// Tabel dengan isi: kepala kolom, penanda muat ulang, dan daftar baris.
 class _Loaded extends StatelessWidget {
-  const _Loaded({required this.state});
+  const _Loaded({required this.state, required this.isWeb});
   final NasabahLoaded state;
+  final bool isWeb;
 
   /// Cubit sendiri yang menolak permintaan ganda dan permintaan setelah
   /// halaman terakhir, jadi di sini cukup memberi tahu.
   bool _onScroll(BuildContext context, ScrollNotification notification) {
-    if (state.hasMore && !state.isLoadingMore && _hampirUjung(notification)) {
+    if (!isWeb &&
+        state.hasMore &&
+        !state.isLoadingMore &&
+        _hampirUjung(notification)) {
       context.read<NasabahCubit>().loadMoreNasabah();
     }
     return false;
@@ -183,15 +192,27 @@ class _Loaded extends StatelessWidget {
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) => _onScroll(context, notification),
             child: ListView.separated(
-              itemCount: state.nasabahList.length + 1,
+              itemCount: state.nasabahList.length + (isWeb ? 0 : 1),
               separatorBuilder: (_, __) =>
                   const Divider(height: 1, color: AppColors.border),
-              itemBuilder: (context, index) => index == state.nasabahList.length
-                  ? _Footer(state: state)
-                  : _Row(nasabah: state.nasabahList[index]),
+              itemBuilder: (context, index) =>
+                  !isWeb && index == state.nasabahList.length
+                      ? _Footer(state: state)
+                      : _Row(nasabah: state.nasabahList[index]),
             ),
           ),
         ),
+        if (isWeb)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: WebPaginationBar(
+              currentPage: state.currentPage,
+              totalItems: state.totalCount,
+              pageSize: state.pageSize,
+              itemLabel: 'nasabah',
+              onPageChanged: context.read<NasabahCubit>().loadPage,
+            ),
+          ),
       ],
     );
   }

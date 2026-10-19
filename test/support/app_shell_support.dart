@@ -24,6 +24,11 @@ import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart';
+import 'package:pilah_mobile/features/pengumuman/data/repositories/pengumuman_repository_impl.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
@@ -73,6 +78,10 @@ class AppShell {
     onboarding = buildOnboardingCubit(api);
     jadwal = JadwalCubit(
         JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network)));
+    pengumuman = PengumumanCubit(
+        PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network)));
+    nasabahPengumuman =
+        NasabahPengumumanCubit(NasabahPengumumanRepository(api.network));
     superadmin = buildSuperadminCubit(api);
     states = StreamController<AuthenticationStates>.broadcast();
     auth = MockAuthBloc();
@@ -88,6 +97,8 @@ class AppShell {
   late final NasabahCubit nasabah;
   late final OnboardingCubit onboarding;
   late final JadwalCubit jadwal;
+  late final PengumumanCubit pengumuman;
+  late final NasabahPengumumanCubit nasabahPengumuman;
   late final SuperadminCubit superadmin;
   late final StreamController<AuthenticationStates> states;
   late final MockAuthBloc auth;
@@ -100,6 +111,8 @@ class AppShell {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<AppEnvironment>(StubEnvironment());
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(api.network));
     di.registerFactory<SuperadminCubit>(() => superadmin);
     final useCases = buildPencairanUseCases(api);
     di.registerFactory<EditPencairanCubit>(() => EditPencairanCubit(useCases));
@@ -123,6 +136,7 @@ class AppShell {
     await di.unregister<InviteTokenStore>();
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
+    await di.unregister<NasabahPengumumanRepository>();
     await di.unregister<SuperadminCubit>();
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
@@ -147,6 +161,8 @@ class AppShell {
       nasabah.close,
       onboarding.close,
       jadwal.close,
+      pengumuman.close,
+      nasabahPengumuman.close,
       // The pencairan and superadmin cubits are closed by the pages that own
       // them (BlocProvider.create), and closing them again never completes.
     ]) {
@@ -183,6 +199,8 @@ class AppShell {
           BlocProvider<NasabahCubit>.value(value: nasabah),
           BlocProvider<HargaCubit>.value(value: harga),
           BlocProvider<JadwalCubit>.value(value: jadwal),
+          BlocProvider<PengumumanCubit>.value(value: pengumuman),
+          BlocProvider<NasabahPengumumanCubit>.value(value: nasabahPengumuman),
           BlocProvider<TransaksiCubit>.value(value: transaksi),
           BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: recent),

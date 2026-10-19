@@ -39,6 +39,7 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// Halaman daftar nasabah yang sedang ditampilkan, hasil paginasi server.
   List<NasabahEntity> _items = [];
   int _halaman = 1;
+  int? _pageSize;
   bool _hasMore = false;
   bool _isLoadingMore = false;
   int _totalCount = 0;
@@ -89,7 +90,8 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// Existing rows stay visible while the first page reloads. Pass [silent]
   /// when pull-to-refresh already shows its own indicator. Without loaded data,
   /// a real [NasabahLoading] state is emitted.
-  Future<void> loadNasabah({bool silent = false}) async {
+  Future<void> loadNasabah({bool silent = false, int? pageSize}) async {
+    _pageSize = pageSize ?? _pageSize;
     _jedaCari?.cancel();
     final requestGeneration = ++_listRequestGeneration;
     _listNeedsReload = false;
@@ -119,6 +121,35 @@ class NasabahCubit extends Cubit<NasabahState> {
             activeCountRequestGeneration == _activeCountRequestGeneration) {
           _totalAktif = data.totalCount;
         }
+        _emitLoaded();
+      },
+    );
+  }
+
+  /// Replaces the visible rows with one server page, for numbered web controls.
+  Future<void> loadPage(int page) async {
+    if (_listNeedsReload || page < 1 || state is! NasabahLoaded) return;
+    final loaded = state as NasabahLoaded;
+    final pageCount = (_totalCount + loaded.pageSize - 1) ~/ loaded.pageSize;
+    if (loaded.isReloading ||
+        _isLoadingMore ||
+        page == _halaman ||
+        page > pageCount) {
+      return;
+    }
+
+    final requestGeneration = ++_listRequestGeneration;
+    _emitLoaded(isReloading: true);
+    final result = await getNasabahUseCase.execute(_params(page));
+    if (isClosed || requestGeneration != _listRequestGeneration) return;
+    result.fold(
+      // Keep the current page visible if the selected page fails to load.
+      (_) => _emitLoaded(),
+      (data) {
+        _halaman = page;
+        _items = data.items;
+        _hasMore = data.hasMore;
+        _totalCount = data.totalCount;
         _emitLoaded();
       },
     );
@@ -162,6 +193,7 @@ class NasabahCubit extends Cubit<NasabahState> {
 
   GetNasabahParams _params(int halaman) => GetNasabahParams(
         page: halaman,
+        pageSize: _pageSize,
         status: _statusParam,
         // Server mengabaikan kata kunci di bawah dua huruf, jadi jangan dikirim.
         search: _searchQuery.length >= 2 ? _searchQuery : null,
@@ -304,6 +336,7 @@ class NasabahCubit extends Cubit<NasabahState> {
     _allNasabah = [];
     _items = [];
     _halaman = 1;
+    _pageSize = null;
     _hasMore = false;
     _isLoadingMore = false;
     _totalCount = 0;
@@ -322,6 +355,8 @@ class NasabahCubit extends Cubit<NasabahState> {
       isLoadingMore: _isLoadingMore,
       isReloading: isReloading,
       totalCount: _totalCount,
+      currentPage: _halaman,
+      pageSize: _pageSize ?? 20,
     ));
   }
 }

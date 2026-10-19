@@ -8,6 +8,7 @@ abstract class NasabahRemoteDataSource {
   /// `ditolak`. [search] diabaikan server bila kurang dari dua karakter.
   Future<HalamanNasabah> getNasabah({
     int page,
+    int? pageSize,
     String status,
     String? search,
   });

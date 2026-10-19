@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,7 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 
 class _MockGetAktivitasUseCase extends Mock implements GetAktivitasUseCase {}
 
@@ -75,7 +77,9 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester,
-      {double textScale = 1, bool inWebShell = false}) async {
+      {double textScale = 1,
+      bool inWebShell = false,
+      bool isWeb = kIsWeb}) async {
     await tester.pumpWidget(
       MaterialApp(
         builder: (context, child) => MediaQuery(
@@ -89,13 +93,65 @@ void main() {
             _MockExportTransaksiUseCase(),
           ),
           child: inWebShell
-              ? const WebContentSurface(child: LaporanPage())
-              : const LaporanPage(),
+              ? WebContentSurface(child: LaporanPage(isWeb: isWeb))
+              : LaporanPage(isWeb: isWeb),
         ),
       ),
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('web pagination requests and displays the selected report page',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final requests = <TransaksiFilter>[];
+    when(() => getTransaksi.execute(any())).thenAnswer((invocation) async {
+      final filter = invocation.positionalArguments.first as TransaksiFilter;
+      requests.add(filter);
+      final start = (filter.page - 1) * 10 + 1;
+      return Right(AktivitasPage(
+        [
+          for (var i = start; i < start + 10; i++)
+            ActivitasEntity.fromTransaksi(
+                _setoran('Nasabah $i', DateTime(2026, 9, 22, 8))),
+        ],
+        filter.page < 3,
+        totalCount: 25,
+      ));
+    });
+    await pumpPage(tester, isWeb: true);
+
+    expect(find.byType(WebPaginationBar), findsOneWidget);
+    expect(find.text('Menampilkan 1–10 dari 25 transaksi'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Halaman 2'));
+    await tester.pumpAndSettle();
+
+    expect(requests.map((filter) => filter.page), [1, 2]);
+    expect(requests.map((filter) => filter.pageSize), [10, 10]);
+    expect(find.text('Menampilkan 11–20 dari 25 transaksi'), findsOneWidget);
+    expect(
+        tester
+            .widget<AktivitasTable>(find.byType(AktivitasTable))
+            .items
+            .map((item) => item.title)
+            .first,
+        'Nasabah 11');
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(find.byType(AktivitasTable), findsNothing);
+    expect(find.text('Menampilkan 11–20 dari 25 transaksi'), findsOneWidget);
+    expect(find.text('Nasabah 11'), findsOneWidget);
+    await tester.fling(
+        find.byType(ListView).last, const Offset(0, -2000), 2000);
+    await tester.pumpAndSettle();
+    expect(requests, hasLength(2),
+        reason: 'web scrolling must not request another page');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
       'desktop offers every period in one picker and puts search beside the title',
@@ -235,6 +291,7 @@ void main() {
     expect(find.text('22/09/2026'), findsNWidgets(2));
     expect(find.text('08:00'), findsOneWidget);
     expect(find.text('10:00'), findsOneWidget);
+    if (!kIsWeb) expect(find.byType(WebPaginationBar), findsNothing);
   });
 
   testWidgets('the Pencairan filter hides setoran rows', (tester) async {
