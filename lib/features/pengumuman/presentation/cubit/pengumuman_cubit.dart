@@ -84,11 +84,11 @@ class PengumumanCubit extends Cubit<PengumumanState> {
       },
       (page) {
         final loaded = state as PengumumanLoaded;
+        final items = [...loaded.items];
         final existingIds = loaded.items.map((item) => item.id).toSet();
-        final items = [
-          ...loaded.items,
-          ...page.items.where((item) => existingIds.add(item.id)),
-        ];
+        for (final item in page.items) {
+          if (existingIds.add(item.id)) items.add(item);
+        }
         _page++;
         _hasMore = page.hasMore;
         emit(loaded.copyWith(
