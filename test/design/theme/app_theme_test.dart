@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 
 Widget _app(Widget child) => MaterialApp(
@@ -343,6 +344,26 @@ void main() {
           AppColors.greenDark);
       expect(style.side!.resolve({})!.color, AppColors.border);
       expect(style.minimumSize!.resolve({})!.height, AppButton.height);
+    });
+  });
+
+  group('scrollbar', () {
+    final theme = AppTheme.light.scrollbarTheme;
+
+    test('is a slim rounded thumb that widens when hovered', () {
+      expect(theme.radius, const Radius.circular(AppRadius.sm));
+      expect(theme.thickness!.resolve({}), 8);
+      expect(theme.thickness!.resolve({WidgetState.hovered}), 12);
+    });
+
+    test('keeps clear of the edge it sits on', () {
+      expect(theme.crossAxisMargin, 2);
+    });
+
+    test('is a soft grey that darkens under the pointer', () {
+      final rest = theme.thumbColor!.resolve({})!;
+      final hover = theme.thumbColor!.resolve({WidgetState.hovered})!;
+      expect(rest.a, lessThan(hover.a));
     });
   });
 }
