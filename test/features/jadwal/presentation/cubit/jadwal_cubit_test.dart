@@ -55,6 +55,82 @@ void main() {
     ],
   );
 
+  group('a date range', () {
+    final from = DateTime(2026, 10, 19);
+    final to = DateTime(2026, 10, 31);
+
+    void stubRange({bool hasMore = false}) {
+      when(() => repository.getJadwal(page: 1, date: from, dateTo: to))
+          .thenAnswer((_) async => Right(_page([schedule], hasMore: hasMore)));
+      when(() => repository.getJadwal(page: 2, date: from, dateTo: to))
+          .thenAnswer((_) async => Right(_page(const [])));
+      when(() => repository.createJadwal(any()))
+          .thenAnswer((_) async => Right(schedule));
+    }
+
+    blocTest<JadwalCubit, JadwalState>(
+      'is requested from the start date to the end date',
+      build: () {
+        stubRange();
+        return JadwalCubit(repository);
+      },
+      act: (cubit) => cubit.loadJadwal(date: from, dateTo: to),
+      verify: (cubit) {
+        verify(() => repository.getJadwal(page: 1, date: from, dateTo: to))
+            .called(1);
+        expect((cubit.state as JadwalLoaded).items, [schedule]);
+      },
+    );
+
+    blocTest<JadwalCubit, JadwalState>(
+      'keeps its end date when the next page is requested',
+      build: () {
+        stubRange(hasMore: true);
+        return JadwalCubit(repository);
+      },
+      act: (cubit) async {
+        await cubit.loadJadwal(date: from, dateTo: to);
+        await cubit.loadNextPage();
+      },
+      verify: (_) => verify(
+        () => repository.getJadwal(page: 2, date: from, dateTo: to),
+      ).called(1),
+    );
+
+    blocTest<JadwalCubit, JadwalState>(
+      'is reloaded as a range after saving a schedule',
+      build: () {
+        stubRange();
+        return JadwalCubit(repository);
+      },
+      act: (cubit) async {
+        await cubit.loadJadwal(date: from, dateTo: to);
+        await cubit.saveJadwal(schedule);
+      },
+      verify: (_) => verify(
+        () => repository.getJadwal(page: 1, date: from, dateTo: to),
+      ).called(2),
+    );
+
+    blocTest<JadwalCubit, JadwalState>(
+      'moving only the end date is a new list, shown as loading',
+      build: () {
+        stubRange();
+        when(() => repository.getJadwal(
+              page: 1,
+              date: from,
+              dateTo: DateTime(2026, 10, 25),
+            )).thenAnswer((_) async => Right(_page(const [])));
+        return JadwalCubit(repository);
+      },
+      act: (cubit) async {
+        await cubit.loadJadwal(date: from, dateTo: to);
+        await cubit.loadJadwal(date: from, dateTo: DateTime(2026, 10, 25));
+      },
+      verify: (cubit) => expect((cubit.state as JadwalLoaded).items, isEmpty),
+    );
+  });
+
   blocTest<JadwalCubit, JadwalState>(
     'upcoming dates cover 90 days in ranges the server accepts (max 62 days)',
     build: () {

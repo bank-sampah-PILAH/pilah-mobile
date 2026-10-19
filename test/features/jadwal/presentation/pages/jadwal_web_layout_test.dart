@@ -16,6 +16,10 @@ class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 void _stubManagerLoads(_MockJadwalCubit cubit) {
   when(() => cubit.loadJadwal(date: any(named: 'date')))
       .thenAnswer((_) async {});
+  when(() => cubit.loadJadwal(
+        date: any(named: 'date'),
+        dateTo: any(named: 'dateTo'),
+      )).thenAnswer((_) async {});
   when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
   when(
     () => cubit.loadCalendarDates(
@@ -200,7 +204,10 @@ void main() {
         .last);
     await tester.pump();
 
-    verify(() => cubit.loadJadwal(date: later)).called(1);
+    verify(() => cubit.loadJadwal(
+          date: later,
+          dateTo: DateTime(later.year, later.month + 1, 0),
+        )).called(1);
   });
 
   testWidgets('the next-dates card is as wide as the calendar above it',
@@ -232,6 +239,108 @@ void main() {
     final cubit = await _pumpAt(tester, const Size(1440, 900));
 
     verify(() => cubit.loadUpcomingDates()).called(1);
+  });
+
+  testWidgets('an expanded window loads the agenda to the end of the month',
+      (tester) async {
+    final cubit = await _pumpAt(
+      tester,
+      const Size(1440, 900),
+      initialDate: DateTime(2026, 10, 19),
+    );
+
+    verify(() => cubit.loadJadwal(
+          date: DateTime(2026, 10, 19),
+          dateTo: DateTime(2026, 10, 31),
+        )).called(1);
+  });
+
+  testWidgets('a medium window and a phone keep a one-day agenda',
+      (tester) async {
+    final cubit = await _pumpAt(
+      tester,
+      const Size(700, 900),
+      initialDate: DateTime(2026, 10, 19),
+    );
+
+    verify(() => cubit.loadJadwal(date: DateTime(2026, 10, 19))).called(1);
+    verifyNever(() => cubit.loadJadwal(
+          date: any(named: 'date'),
+          dateTo: any(named: 'dateTo'),
+        ));
+  });
+
+  testWidgets('widening to expanded reloads the agenda as a range',
+      (tester) async {
+    final cubit = await _pumpAt(
+      tester,
+      const Size(700, 900),
+      initialDate: DateTime(2026, 10, 19),
+    );
+
+    tester.view.physicalSize = const Size(1440, 900);
+    await tester.pump();
+
+    verify(() => cubit.loadJadwal(
+          date: DateTime(2026, 10, 19),
+          dateTo: DateTime(2026, 10, 31),
+        )).called(1);
+  });
+
+  testWidgets('the agenda groups the rest of the month by day', (tester) async {
+    JadwalEntity at(String id, int day, String lokasi) => JadwalEntity(
+          id: id,
+          bankSampahId: 'b',
+          jenisKegiatan: 'penimbangan',
+          mulaiPada: DateTime(2026, 10, day, 9),
+          selesaiPada: DateTime(2026, 10, day, 11),
+          lokasi: lokasi,
+        );
+    await _pumpAt(
+      tester,
+      const Size(1440, 900),
+      initialDate: DateTime(2026, 10, 19),
+      state: JadwalLoaded([
+        at('a', 19, 'Balai Satu'),
+        at('b', 19, 'Balai Dua'),
+        at('c', 23, 'Balai Tiga'),
+      ], totalCount: 3),
+    );
+
+    expect(find.text('Senin, 19 Oktober'), findsOneWidget);
+    expect(find.text('Jumat, 23 Oktober'), findsOneWidget);
+    expect(find.text('2 jadwal'), findsOneWidget);
+    expect(find.text('1 jadwal'), findsOneWidget);
+    for (final lokasi in ['Balai Satu', 'Balai Dua', 'Balai Tiga']) {
+      expect(find.text(lokasi), findsOneWidget);
+    }
+    expect(
+      tester.getTopLeft(find.text('Senin, 19 Oktober')).dy,
+      lessThan(tester.getTopLeft(find.text('Balai Tiga')).dy),
+    );
+  });
+
+  testWidgets('a selected day without schedules still gets its own heading',
+      (tester) async {
+    await _pumpAt(
+      tester,
+      const Size(1440, 900),
+      initialDate: DateTime(2026, 10, 19),
+      state: JadwalLoaded([
+        JadwalEntity(
+          id: 'c',
+          bankSampahId: 'b',
+          jenisKegiatan: 'penimbangan',
+          mulaiPada: DateTime(2026, 10, 23, 9),
+          selesaiPada: DateTime(2026, 10, 23, 11),
+          lokasi: 'Balai Tiga',
+        ),
+      ], totalCount: 1),
+    );
+
+    expect(find.text('Belum ada jadwal kegiatan'), findsOneWidget);
+    expect(find.text('Jumat, 23 Oktober'), findsOneWidget);
+    expect(find.text('Balai Tiga'), findsOneWidget);
   });
 
   testWidgets('on a phone the title stays in the AppBar', (tester) async {
