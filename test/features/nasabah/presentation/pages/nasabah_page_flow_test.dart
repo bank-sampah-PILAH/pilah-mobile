@@ -99,6 +99,27 @@ void main() {
     expect(find.text('Budi Santoso'), findsOneWidget);
   });
 
+  testWidgets('pull-to-refresh fetches the current nasabah balance', (
+    tester,
+  ) async {
+    listAs([nasabahRow('1', saldo: '25000')]);
+    await open(tester);
+    expect(find.text('Rp 25.000'), findsOneWidget);
+
+    listAs([nasabahRow('1', saldo: '30000')]);
+    await tester.drag(find.byType(ListView).first, const Offset(0, 500));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rp 30.000'), findsOneWidget);
+    expect(
+      api.requests
+          .where((request) => request.method == 'GET' && request.path == _path),
+      hasLength(2),
+    );
+  });
+
   testWidgets('the add button opens the form', (tester) async {
     listAs([]);
     await open(tester);

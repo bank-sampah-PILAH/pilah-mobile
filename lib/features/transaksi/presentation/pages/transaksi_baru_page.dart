@@ -13,6 +13,7 @@ import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -238,11 +239,13 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // loadStats updates the dashboard metrics (Total Kas / Sampah / Transaksi);
     // the dashboard's "Aktivitas Terbaru" and the Laporan list are separate
     // cubits and each needs its own nudge — silent so those lists update in
-    // place rather than flashing skeletons behind the success sheet. Fire-and-
-    // forget (not awaited), matching loadStats, so the success modal isn't blocked.
+    // place rather than flashing skeletons behind the success sheet. The
+    // nasabah list holds a separate balance snapshot, so reload it too.
+    // Fire-and-forget, like loadStats, to keep the success modal responsive.
     context.read<DashboardCubit>().loadStats();
     context.read<RecentActivityCubit>().load(silent: true);
     context.read<RiwayatAktivitasCubit>().load(silent: true);
+    context.read<NasabahCubit>().loadNasabah(silent: true);
 
     final created = result.created!;
     _idempotencyKey = null;
