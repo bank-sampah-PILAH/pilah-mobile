@@ -38,6 +38,9 @@ const _filterOptions = <String, String>{
 /// the status filter and per-row actions — edit drafts and scheduled rows,
 /// cancel a schedule, withdraw a published one, delete drafts. Kedaluwarsa and
 /// ditarik rows are read-only.
+/// Judul halaman, dipakai oleh setiap bentuk headernya.
+const _judul = 'Kelola Pengumuman';
+
 class PengumumanKelolaPage extends StatelessWidget {
   const PengumumanKelolaPage({super.key, this.isWeb = kIsWeb});
 
@@ -226,31 +229,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
                         ? const EdgeInsets.fromLTRB(AppSpacing.webGutter,
                             AppSpacing.webTop, AppSpacing.webGutter, 0)
                         : const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    // Di web halaman ini adalah destinasi sidebar, jadi tidak ada
-                    // yang perlu dikembalikan. Di aplikasi ia dibuka dari Profil
-                    // dan kembali ke sana.
-                    child: webHeader
-                        ? AppPageHeader(
-                            title: 'Kelola Pengumuman',
-                            actions: [
-                              AppButton(
-                                label: 'Buat',
-                                icon: Icons.add,
-                                expand: false,
-                                onPressed: _bukaForm,
-                              ),
-                            ],
-                          )
-                        : widget.isWeb
-                            ? Text('Kelola Pengumuman',
-                                style: AppTextStyle.appBar
-                                    .copyWith(color: AppColors.black))
-                            : BackHeaderRow(
-                                title: 'Kelola Pengumuman',
-                                onBack: () => context.canPop()
-                                    ? context.pop()
-                                    : context.go(AppLocations.profile),
-                              ),
+                    child: _header(webHeader: webHeader),
                   ),
                 ),
                 SizedBox(height: webHeader ? AppSpacing.lg : 16),
@@ -267,39 +246,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
                 const SizedBox(height: 12),
                 Expanded(
                   child: BlocBuilder<PengumumanCubit, PengumumanState>(
-                    builder: (context, state) {
-                      switch (state) {
-                        case PengumumanInitial _:
-                        case PengumumanLoading _:
-                          return ListView.separated(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: _listPadding(context, bottom: 80),
-                            itemCount: 5,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) =>
-                                const SkeletonListItem(),
-                          );
-                        case PengumumanError state:
-                          return Column(
-                            children: [
-                              Expanded(
-                                child: EmptyView(
-                                  title: 'Gagal Memuat Data',
-                                  subtitle: state.message,
-                                  icon: Icons.error_outline,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () => _cubit.loadPengumuman(),
-                                child: const Text('Coba Lagi'),
-                              ),
-                            ],
-                          );
-                        case PengumumanLoaded loaded:
-                          return _daftar(loaded);
-                      }
-                    },
+                    builder: (context, state) => _feed(context, state),
                   ),
                 ),
               ],
@@ -308,6 +255,67 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
         ),
       ),
     );
+  }
+
+  /// Judul halaman. Di web halaman ini adalah destinasi sidebar, jadi tidak
+  /// ada yang perlu dikembalikan: header halaman di layar lebar, judul saja di
+  /// browser sempit. Di aplikasi ia dibuka dari Profil dan kembali ke sana.
+  Widget _header({required bool webHeader}) {
+    if (webHeader) {
+      return AppPageHeader(
+        title: _judul,
+        actions: [
+          AppButton(
+            label: 'Buat',
+            icon: Icons.add,
+            expand: false,
+            onPressed: _bukaForm,
+          ),
+        ],
+      );
+    }
+    if (widget.isWeb) {
+      return Text(_judul,
+          style: AppTextStyle.appBar.copyWith(color: AppColors.black));
+    }
+    return BackHeaderRow(
+      title: _judul,
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(AppLocations.profile),
+    );
+  }
+
+  /// Daftar sesuai keadaan: memuat, gagal, atau terisi.
+  Widget _feed(BuildContext context, PengumumanState state) {
+    switch (state) {
+      case PengumumanInitial _:
+      case PengumumanLoading _:
+        return ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: _listPadding(context, bottom: 80),
+          itemCount: 5,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => const SkeletonListItem(),
+        );
+      case PengumumanError state:
+        return Column(
+          children: [
+            Expanded(
+              child: EmptyView(
+                title: 'Gagal Memuat Data',
+                subtitle: state.message,
+                icon: Icons.error_outline,
+              ),
+            ),
+            TextButton(
+              onPressed: () => _cubit.loadPengumuman(),
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        );
+      case PengumumanLoaded loaded:
+        return _daftar(loaded);
+    }
   }
 
   /// Jarak samping daftar: gutter halaman, ditambah batas lebar dari

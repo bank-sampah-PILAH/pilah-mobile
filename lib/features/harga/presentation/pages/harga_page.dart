@@ -355,32 +355,12 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
         );
       },
     );
-    final Widget content = wide
-        ? Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-            child: HargaTable(
-              items: visibleItems,
-              selectedId: _selected?.id,
-              onTap: _openDetail,
-              // Paginasi di dasar kartu, seperti tabel nasabah.
-              footer: widget.isWeb ? pagination : null,
-            ),
-          )
-        : widget.isWeb
-            // Browser sempit: kartu satu kolom, paginasi di bawahnya.
-            ? Column(
-                children: [
-                  Expanded(child: cards),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      top: AppSpacing.md,
-                      bottom: AppSpacing.xl,
-                    ),
-                    child: pagination,
-                  ),
-                ],
-              )
-            : cards;
+    final content = _listContent(
+      wide: wide,
+      cards: cards,
+      items: visibleItems,
+      pagination: pagination,
+    );
 
     return PageStateView(
       state: pageState,
@@ -390,6 +370,42 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       emptySubtitle: empty.subtitle,
       emptyIcon: empty.icon,
       child: content,
+    );
+  }
+
+  /// Isi daftar: kartu tabel di layar lebar, kartu satu kolom di bawahnya,
+  /// dengan paginasi di web.
+  Widget _listContent({
+    required bool wide,
+    required Widget cards,
+    required List<HargaEntity> items,
+    required Widget pagination,
+  }) {
+    if (wide) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+        child: HargaTable(
+          items: items,
+          selectedId: _selected?.id,
+          onTap: _openDetail,
+          // Paginasi di dasar kartu, seperti tabel nasabah.
+          footer: widget.isWeb ? pagination : null,
+        ),
+      );
+    }
+    if (!widget.isWeb) return cards;
+    // Browser sempit: kartu satu kolom, paginasi di bawahnya.
+    return Column(
+      children: [
+        Expanded(child: cards),
+        Padding(
+          padding: const EdgeInsets.only(
+            top: AppSpacing.md,
+            bottom: AppSpacing.xl,
+          ),
+          child: pagination,
+        ),
+      ],
     );
   }
 
