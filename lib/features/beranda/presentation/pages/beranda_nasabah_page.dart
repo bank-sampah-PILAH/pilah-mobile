@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
@@ -17,6 +19,10 @@ import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resou
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 
@@ -53,11 +59,13 @@ class _HomeSessionState extends State<_HomeSession> {
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
   Future<void> Function()? _reloadSchedule;
+  Future<void> Function()? _reloadPengumuman;
 
   Future<void> _refresh() async {
     await Future.wait([
       _reload?.call() ?? Future<void>.value(),
       _reloadSchedule?.call() ?? Future<void>.value(),
+      _reloadPengumuman?.call() ?? Future<void>.value(),
     ]);
   }
 
@@ -266,6 +274,35 @@ class _HomeSessionState extends State<_HomeSession> {
                                     ),
                                   );
                                 },
+                              ),
+                              const SizedBox(height: 24),
+                              _SectionHeading(
+                                title: 'Pengumuman',
+                                // Same keanggotaan_id scoping as Terbaru: a
+                                // nasabah with two banks gets 422 without it.
+                                onAll: () => context.push(Uri(
+                                  path: PengumumanPage.route,
+                                  queryParameters: {
+                                    'keanggotaan_id': home.membershipId,
+                                  },
+                                ).toString()),
+                              ),
+                              const SizedBox(height: 8),
+                              NasabahResource<PengumumanBeranda>(
+                                load: () => di<NasabahPengumumanRepository>()
+                                    .getBeranda(
+                                        membershipId: home.membershipId),
+                                registerReload: (reload) =>
+                                    _reloadPengumuman = reload,
+                                builder: (context, beranda) =>
+                                    _PengumumanSection(
+                                  beranda: beranda,
+                                  membershipId: home.membershipId,
+                                  bankName: home.bank.name,
+                                  // Reading inside the detail flips the rows;
+                                  // coming back refreshes the dots.
+                                  onKembali: () => _reloadPengumuman?.call(),
+                                ),
                               ),
                               const SizedBox(height: 24),
                               _SectionHeading(
@@ -508,6 +545,116 @@ String _greeting() {
   if (hour < 15) return 'Selamat siang';
   if (hour < 18) return 'Selamat sore';
   return 'Selamat malam';
+}
+
+class _PengumumanSection extends StatelessWidget {
+  const _PengumumanSection({
+    required this.beranda,
+    required this.membershipId,
+    required this.bankName,
+    required this.onKembali,
+  });
+
+  final PengumumanBeranda beranda;
+  final String membershipId;
+  final String bankName;
+  final VoidCallback onKembali;
+
+  Future<void> _bukaRow(
+    BuildContext context,
+    PengumumanBerandaItem item,
+  ) async {
+    final router = GoRouter.of(context);
+    // Tapping the row is a read: the backend POST flips the receipt and the
+    // coming-back reload refreshes the dot (review finding PIL-333).
+    if (!item.dibaca) {
+      // No await: the reload after returning reconciles any failure.
+      unawaited(di<NasabahPengumumanRepository>()
+          .tandaiDibaca(item.id, membershipId: membershipId));
+    }
+    await router.push(
+      PengumumanDetailPage.route,
+      extra: PengumumanEntity(
+        id: item.id,
+        bankSampahId: membershipId,
+        judul: item.judul,
+        isi: item.isi,
+        terbitPada: item.terbitPada,
+        status: 'terbit',
+        dibaca: item.dibaca,
+        bankSampahNama: bankName,
+      ),
+    );
+    onKembali();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (beranda.items.isEmpty) {
+      return _card(
+        child: Row(children: [
+          const Icon(Icons.campaign_outlined, color: _emerald),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Belum ada pengumuman.',
+              style: _text(13, color: _muted),
+            ),
+          ),
+        ]),
+      );
+    }
+    return Column(
+      children: [
+        for (final item in beranda.items)
+          InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            onTap: () => _bukaRow(context, item),
+            child: _card(
+              child: Row(children: [
+                const Icon(Icons.campaign_outlined, color: _emerald),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.judul,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: _text(14, weight: FontWeight.w600),
+                            ),
+                          ),
+                          if (!item.dibaca)
+                            Container(
+                              key: const ValueKey('beranda-pengumuman-baru'),
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: _emerald,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (item.terbitPada != null)
+                        Text(
+                          nasabahDate(item.terbitPada!),
+                          style: _text(12, color: _muted),
+                        ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: _muted),
+              ]),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _SectionHeading extends StatelessWidget {

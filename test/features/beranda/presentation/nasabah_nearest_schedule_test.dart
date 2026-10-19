@@ -15,7 +15,9 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
+import '../../../support/stub_api.dart';
 
 class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -102,6 +104,14 @@ void main() {
     );
 
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    // The beranda page resolves the pengumuman section from the service
+    // locator, so the stub API behind it needs the same registration.
+    final pengumumanApi = StubApi();
+    pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
+        json: {'items': [], 'unread_count': 0});
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(pengumumanApi.network));
+    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
       GoRoute(

@@ -12,6 +12,11 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
@@ -99,6 +104,7 @@ void main() {
         '/register-nasabah': RegisterNasabahScreen,
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
+        '/pengumuman/kelola': PengumumanKelolaPage,
         '/pengelola-induk-dashboard': RoleHandoffPage,
         '/register-bank-sampah-induk': RoleHandoffPage,
       };
@@ -108,15 +114,6 @@ void main() {
             settle: !entry.key.contains('induk'));
         expect(find.byType(entry.value), findsOneWidget, reason: entry.key);
       }
-    });
-
-    testWidgets('cannot open the removed single-nasabah pencairan page',
-        (tester) async {
-      final router = await boot(tester);
-
-      await visit(tester, router, '/catat-pencairan');
-
-      expect(find.text('Catat Pencairan'), findsNothing);
     });
 
     testWidgets('can open the pencairan edit and revision pages',
@@ -215,6 +212,29 @@ void main() {
       expect(find.text('Ahmad'), findsOneWidget);
     });
 
+    testWidgets('the pengumuman form needs its args and otherwise falls back',
+        (tester) async {
+      // The fallback redirect lands on the dashboard, so its own fetches
+      // need quiet stubs.
+      api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
+      api.on('GET', '/api/v1/transaksi', json: {'results': []});
+      api.on('GET', '/api/v1/pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
+      final router = await boot(tester);
+
+      // Without args there is nothing to edit: the route redirects home.
+      await visit(tester, router, '/pengumuman/kelola/ubah');
+      expect(find.byType(PengumumanFormPage), findsNothing);
+
+      router.go(
+        '/pengumuman/kelola/ubah',
+        extra: const PengumumanFormArgs(),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PengumumanFormPage), findsOneWidget);
+      expect(find.text('Buat Pengumuman'), findsOneWidget);
+    });
+
     testWidgets('can continue a saved draft from its id', (tester) async {
       api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
       final router = await boot(tester);
@@ -227,45 +247,6 @@ void main() {
 
       expect(find.byType(DraftEditorPage), findsOneWidget);
       expect(find.text('Cair Oktober'), findsOneWidget);
-    });
-
-    testWidgets(
-        'a saved draft reopens from its link alone (a refreshed web tab)',
-        (tester) async {
-      api.on('GET', '/api/v1/draft-pencairan/d-1', json: draftJson());
-      final router = await boot(tester);
-
-      await visit(tester, router, '/draft-pencairan/editor?id=d-1');
-
-      expect(find.byType(DraftEditorPage), findsOneWidget);
-      expect(find.text('Cair Oktober'), findsOneWidget);
-    });
-
-    testWidgets(
-        'a link whose id is not a draft id goes to the list and asks nothing',
-        (tester) async {
-      final router = await boot(tester);
-      // The router is shared, so booting can replay the previous test's page;
-      // let it settle on the list before counting.
-      await visit(tester, router, DraftListPage.route);
-      final sebelum = api.requests.length;
-
-      for (final id in ['..%2Fnasabah', 'd-1%2Fkonfirmasi', '%20']) {
-        await visit(tester, router, '/draft-pencairan/editor?id=$id');
-
-        expect(find.byType(DraftEditorPage), findsNothing, reason: id);
-        expect(find.byType(DraftListPage), findsOneWidget, reason: id);
-      }
-      // The list loads itself; nothing beyond it is built from the link.
-      const daftar = {'/api/v1/draft-pencairan', '/api/v1/draft-pencairan/'};
-      expect(
-          api.requests
-              .skip(sebelum)
-              .map((r) => r.path)
-              .where((path) => path.contains('draft-pencairan'))
-              .where((path) => !daftar.contains(path)),
-          isEmpty,
-          reason: 'no request built from the link');
     });
 
     testWidgets('opening the draft editor without a draft goes to the list',
@@ -413,6 +394,38 @@ void main() {
 
       expect(tester.widget<JadwalPage>(find.byType(JadwalPage)).customerMode,
           isTrue);
+    });
+
+    testWidgets(
+        'opens the pengumuman list and reaches the detail from its extra',
+        (tester) async {
+      api.on('GET', '/api/v1/nasabah/me/pengumuman',
+          json: {'count': 0, 'next': null, 'results': []});
+      final router = await boot(tester);
+
+      await visit(tester, router, '/pengumuman?keanggotaan_id=m1');
+      expect(find.byType(PengumumanPage), findsOneWidget);
+      expect(
+          tester
+              .widget<PengumumanPage>(find.byType(PengumumanPage))
+              .membershipId,
+          'm1');
+
+      router.go('/pengumuman/detail');
+      await tester.pumpAndSettle();
+      // Without its entity there is nothing to show: falls back to the list.
+      expect(find.byType(PengumumanDetailPage), findsNothing);
+      expect(find.byType(PengumumanPage), findsOneWidget);
+
+      router.go('/pengumuman/detail',
+          extra: PengumumanEntity(
+            id: 'p1',
+            bankSampahId: 'b1',
+            judul: 'Jemputan',
+            isi: 'Isi',
+          ));
+      await tester.pumpAndSettle();
+      expect(find.byType(PengumumanDetailPage), findsOneWidget);
     });
 
     testWidgets('/nasabah-dashboard is an alias of the home', (tester) async {

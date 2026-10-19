@@ -29,6 +29,12 @@ import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 
+import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
+
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
@@ -162,6 +168,38 @@ class AppRouterConfig {
         path: PilihNasabahPencairanPage.route,
         name: PilihNasabahPencairanPage.route,
         builder: (context, state) => const PilihNasabahPencairanPage(),
+      ),
+      GoRoute(
+        path: PengumumanKelolaPage.route,
+        name: PengumumanKelolaPage.route,
+        builder: (context, state) => const PengumumanKelolaPage(),
+      ),
+      GoRoute(
+        path: PengumumanPage.route,
+        name: PengumumanPage.route,
+        builder: (context, state) => PengumumanPage(
+          membershipId: state.uri.queryParameters['keanggotaan_id'],
+        ),
+      ),
+      GoRoute(
+        path: PengumumanDetailPage.route,
+        name: PengumumanDetailPage.route,
+        // Without the row (a stale link) there is nothing to show.
+        redirect: (context, state) =>
+            state.extra is PengumumanEntity ? null : PengumumanPage.route,
+        builder: (context, state) => PengumumanDetailPage(
+          pengumuman: state.extra! as PengumumanEntity,
+        ),
+      ),
+      GoRoute(
+        path: PengumumanFormPage.route,
+        name: PengumumanFormPage.route,
+        // Without args (a stale link, or a router restored on its own) there
+        // is nothing to edit, so fall back to the dashboard.
+        redirect: (context, state) =>
+            state.extra is PengumumanFormArgs ? null : AppLocations.dashboard,
+        builder: (context, state) =>
+            PengumumanFormPage(args: state.extra! as PengumumanFormArgs),
       ),
       GoRoute(
         path: DraftEditorPage.route,
@@ -426,13 +464,17 @@ class AppRouterConfig {
       NasabahPage.route,
       HargaPage.route,
       LaporanPage.route,
-      TransaksiBaruPage.route
+      TransaksiBaruPage.route,
+      PengumumanFormPage.route,
+      PengumumanKelolaPage.route,
     };
     final customerPaths = {
       AppLocations.history,
       AppLocations.customerBank,
       ApprovalBankSampahListPage.route,
       ApprovalBankSampahDetailPage.route,
+      PengumumanPage.route,
+      PengumumanDetailPage.route,
     };
     final protected = staffPaths.contains(path) ||
         customerPaths.contains(path) ||
