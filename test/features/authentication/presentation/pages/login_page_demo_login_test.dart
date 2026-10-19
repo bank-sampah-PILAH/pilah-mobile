@@ -1,12 +1,12 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/features/authentication/presentation/widgets/welcome_card.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -85,6 +85,9 @@ void main() {
     expect(find.text('Masuk ke akun Anda'), findsOneWidget);
     expect(find.text('Masuk dengan akun demo'), findsOneWidget);
     expect(tester.getSize(desktopContent).width, 1120);
+    expect(find.text('Selamat datang kembali'), findsNothing);
+    expect(tester.getSize(find.byType(SvgPicture)).height, 160,
+        reason: 'the brand fills the left column on its own');
     expect(tester.takeException(), isNull);
   });
 
@@ -105,7 +108,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Masuk ke akun Anda'), findsNothing);
-    expect(find.byType(WelcomeCard), findsOneWidget);
-    expect(tester.getSize(find.byType(WelcomeCard)).width, 752);
+    expect(find.text('Selamat datang kembali'), findsNothing,
+        reason: 'the phone goes straight to the sign-in buttons');
+  });
+
+  testWidgets('on a phone every sign-in button is visible without scrolling',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(411, 800);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<AuthenticationBloc>.value(
+          value: auth,
+          child: const LoginPage(debugShowDemoLogin: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Masuk dengan Email'), findsOneWidget);
+    expect(tester.getRect(find.text('Masuk dengan Email')).bottom,
+        lessThanOrEqualTo(800));
   });
 }
