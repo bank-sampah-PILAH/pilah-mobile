@@ -133,8 +133,8 @@ class _JadwalPageState extends State<JadwalPage> {
     if (_markerMonth != month) _loadCalendarDatesFor(selectedDate);
   }
 
-  void _navigateCalendar(int direction) {
-    if (!_isMonthExpanded) {
+  void _navigateCalendar(int direction, {bool wholeMonth = false}) {
+    if (!wholeMonth && !_isMonthExpanded) {
       _selectDate(_selectedDate.add(Duration(days: direction * 7)));
       return;
     }
@@ -402,8 +402,6 @@ class _JadwalPageState extends State<JadwalPage> {
     List<JadwalEntity> items,
     JadwalLoaded loadedState,
   ) {
-    final isTransitioning = loadedState.isTransitioning;
-    final isLifecycleActionDisabled = isTransitioning || loadedState.isSaving;
     final dayItems = items
         .where(
           (item) =>
@@ -411,86 +409,130 @@ class _JadwalPageState extends State<JadwalPage> {
         )
         .toList();
 
-    return ListView(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: _webHeader
-          ? const EdgeInsets.fromLTRB(
-              AppSpacing.webGutter,
-              AppSpacing.webTop,
-              AppSpacing.webGutter,
-              104,
-            )
-          : const EdgeInsets.fromLTRB(16, 16, 16, 104),
-      children: [
-        if (_webHeader) ...[
-          const AppPageHeader(title: 'Jadwal Kegiatan'),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        JadwalCalendar(
+    // Lebar daftar, bukan jendela: dengan panel form terbuka daftar tinggal
+    // sebagian lebar dan kembali bertumpuk.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sideBySide =
+            _webHeader && constraints.maxWidth >= _sideBySideMinWidth;
+        final calendar = JadwalCalendar(
           selectedDate: _selectedDate,
           scheduledDates: loadedState.scheduledDates,
-          isMonthExpanded: _isMonthExpanded,
+          isMonthExpanded: sideBySide || _isMonthExpanded,
+          showToggle: !sideBySide,
           onSelectDate: _selectDate,
-          onNavigate: _navigateCalendar,
+          onNavigate: (direction) =>
+              _navigateCalendar(direction, wholeMonth: sideBySide),
           onToggleMonth: () =>
               setState(() => _isMonthExpanded = !_isMonthExpanded),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        );
+        final agenda = _pengurusAgendaChildren(dayItems, loadedState);
+        return ListView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: _webHeader
+              ? const EdgeInsets.fromLTRB(
+                  AppSpacing.webGutter,
+                  AppSpacing.webTop,
+                  AppSpacing.webGutter,
+                  104,
+                )
+              : const EdgeInsets.fromLTRB(16, 16, 16, 104),
           children: [
-            Expanded(
-              child: Text(
-                formatJadwalDayHeading(_selectedDate),
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Text(
-              '${loadedState.totalCount} jadwal',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            if (_webHeader) ...[
+              const AppPageHeader(title: 'Jadwal Kegiatan'),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            if (sideBySide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: _sideCalendarWidth, child: calendar),
+                  const SizedBox(width: AppSpacing.xl),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: agenda,
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              calendar,
+              const SizedBox(height: 24),
+              ...agenda,
+            ],
           ],
-        ),
-        const SizedBox(height: 12),
-        if (dayItems.isEmpty)
-          _EmptyScheduleDay(
-            date: _selectedDate,
-            onCreate: _openForm,
-            onRefresh: () =>
-                context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
-          )
-        else
-          ...dayItems.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ScheduleCard(
-                item: item,
-                onTap: isTransitioning ? null : () => _openForm(item),
-                onCancel: isLifecycleActionDisabled
-                    ? null
-                    : () => _confirmCancellation(item),
-                onPublish: isLifecycleActionDisabled
-                    ? null
-                    : () => _changeStatus(item, JadwalAction.terbitkan),
-                onComplete: isLifecycleActionDisabled
-                    ? null
-                    : () => _confirmCompletion(item),
+        );
+      },
+    );
+  }
+
+  /// Daftar lebar daftar jadwal yang cukup untuk kalender di samping agenda.
+  static const _sideBySideMinWidth = 900.0;
+  static const _sideCalendarWidth = 400.0;
+
+  /// Judul hari, kartu jadwal (atau keadaan kosong), dan pemuat berikutnya.
+  List<Widget> _pengurusAgendaChildren(
+    List<JadwalEntity> dayItems,
+    JadwalLoaded loadedState,
+  ) {
+    final isTransitioning = loadedState.isTransitioning;
+    final isLifecycleActionDisabled = isTransitioning || loadedState.isSaving;
+    return [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Text(
+              formatJadwalDayHeading(_selectedDate),
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-        if (!loadedState.isLoading && loadedState.hasMore)
-          _buildLoadMoreFooter(loadedState),
-      ],
-    );
+          Text(
+            '${loadedState.totalCount} jadwal',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      if (dayItems.isEmpty)
+        _EmptyScheduleDay(
+          date: _selectedDate,
+          onCreate: _openForm,
+          onRefresh: () =>
+              context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
+        )
+      else
+        ...dayItems.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ScheduleCard(
+              item: item,
+              onTap: isTransitioning ? null : () => _openForm(item),
+              onCancel: isLifecycleActionDisabled
+                  ? null
+                  : () => _confirmCancellation(item),
+              onPublish: isLifecycleActionDisabled
+                  ? null
+                  : () => _changeStatus(item, JadwalAction.terbitkan),
+              onComplete: isLifecycleActionDisabled
+                  ? null
+                  : () => _confirmCompletion(item),
+            ),
+          ),
+        ),
+      if (!loadedState.isLoading && loadedState.hasMore)
+        _buildLoadMoreFooter(loadedState),
+    ];
   }
 
   Widget _buildLoadMoreFooter(JadwalLoaded loadedState) {
@@ -687,13 +729,17 @@ class _ScheduleCard extends StatelessWidget {
         ? '${_formatTime(startsAt)} – ${_formatTime(endsAt)}'
         : '${_formatDateTime(startsAt)} – ${_formatDateTime(endsAt)}';
 
+    // Seluruh kartu satu area ketuk, termasuk baris aksi: hover dan riak
+    // menutup kartu sampai sudut membulat. Tombol aksi menangkap ketukannya
+    // sendiri, jadi menekannya tidak ikut membuka formulir.
     return Card(
-      child: Column(
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            onTap: onTap,
-            child: Padding(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
+        child: Column(
+          children: [
+            Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -742,19 +788,20 @@ class _ScheduleCard extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-          if (!readOnly && _availableActions.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: OverflowBar(
-                alignment: MainAxisAlignment.end,
-                spacing: 8,
-                children: [
-                  for (final action in _availableActions) _actionButton(action),
-                ],
+            if (!readOnly && _availableActions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: OverflowBar(
+                  alignment: MainAxisAlignment.end,
+                  spacing: 8,
+                  children: [
+                    for (final action in _availableActions)
+                      _actionButton(action),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

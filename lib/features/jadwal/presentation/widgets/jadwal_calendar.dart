@@ -45,6 +45,9 @@ class JadwalCalendar extends StatelessWidget {
   final ValueChanged<int> onNavigate;
   final VoidCallback onToggleMonth;
 
+  /// Tombol pekan/bulan. Disembunyikan bila kalender selalu sebulan penuh.
+  final bool showToggle;
+
   const JadwalCalendar({
     super.key,
     required this.selectedDate,
@@ -53,6 +56,7 @@ class JadwalCalendar extends StatelessWidget {
     required this.onSelectDate,
     required this.onNavigate,
     required this.onToggleMonth,
+    this.showToggle = true,
   });
 
   bool _hasSchedule(DateTime date) =>
@@ -98,19 +102,20 @@ class JadwalCalendar extends StatelessWidget {
                 onPressed: () => onNavigate(1),
                 icon: const Icon(Icons.chevron_right),
               ),
-              IconButton(
-                key: const ValueKey('jadwal-calendar-toggle'),
-                tooltip: isMonthExpanded
-                    ? 'Tampilkan satu minggu'
-                    : 'Tampilkan kalender sebulan',
-                visualDensity: VisualDensity.compact,
-                onPressed: onToggleMonth,
-                icon: Icon(
-                  isMonthExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.calendar_month_outlined,
+              if (showToggle)
+                IconButton(
+                  key: const ValueKey('jadwal-calendar-toggle'),
+                  tooltip: isMonthExpanded
+                      ? 'Tampilkan satu minggu'
+                      : 'Tampilkan kalender sebulan',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onToggleMonth,
+                  icon: Icon(
+                    isMonthExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.calendar_month_outlined,
+                  ),
                 ),
-              ),
             ],
           ),
           AnimatedSize(
