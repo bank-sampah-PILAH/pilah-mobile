@@ -3,6 +3,7 @@ import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -139,9 +140,16 @@ class _EditPencairanViewState extends State<EditPencairanView> {
         );
   }
 
-  Widget _buildForm(EditPencairanState state, String? nominalError) {
+  /// [inset] is the side room a wide window leaves around the form column, so
+  /// the scroll view can span the body (scrollbar at the window edge).
+  Widget _buildForm(
+    EditPencairanState state,
+    String? nominalError, {
+    EdgeInsets inset = EdgeInsets.zero,
+  }) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: inset
+          .add(const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -281,14 +289,22 @@ class _EditPencairanViewState extends State<EditPencairanView> {
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
-            // A desktop window keeps the form to a readable column.
-            child: ContentBounds(
+            // A desktop window keeps the form to a readable column; the form
+            // scrolls across the body so its scrollbar is at the window edge.
+            child: ContentFrame(
               maxWidth: LayoutBreakpoint.formMaxWidth,
               child: Column(
                 children: [
-                  const AppBackHeader(title: 'Edit Pencairan'),
+                  const ContentInset(
+                      child: AppBackHeader(title: 'Edit Pencairan')),
                   Expanded(
-                    child: form,
+                    child: Builder(
+                      builder: (context) => _buildForm(
+                        state,
+                        nominalError,
+                        inset: ContentFrame.insetOf(context),
+                      ),
+                    ),
                   ),
                 ],
               ),
