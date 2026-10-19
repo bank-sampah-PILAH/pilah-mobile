@@ -450,6 +450,15 @@ void main() {
     // The shell tabs that stay alive were nudged to refresh.
     expect(
         api.requests.any((r) => r.path == '/api/v1/dashboard/stats'), isTrue);
+    expect(
+      api.requests.any((r) =>
+          r.method == 'GET' &&
+          r.path == '/api/v1/nasabah' &&
+          r.query['status'] == 'aktif' &&
+          r.query['page'] == '1'),
+      isTrue,
+      reason: 'the nasabah tab keeps its cached balance while this page is open',
+    );
 
     await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
     await pumpToast(tester);
