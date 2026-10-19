@@ -202,6 +202,31 @@ void main() {
     verify(() => cubit.loadJadwal(date: later)).called(1);
   });
 
+  testWidgets('the next-dates card is as wide as the calendar above it',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+
+    final calendar = tester.getRect(find.byType(JadwalCalendar));
+    final next = tester.getRect(find.byType(JadwalUpcomingDates));
+    expect(next.width, calendar.width);
+    expect(next.left, calendar.left);
+  });
+
+  testWidgets('the empty-day button does not stretch across a wide agenda',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+
+    final button = find.descendant(
+      of: find.byType(FilledButton),
+      matching: find.text('Buat Jadwal'),
+    );
+    expect(button, findsOneWidget);
+    expect(
+      tester.getSize(find.widgetWithText(FilledButton, 'Buat Jadwal')).width,
+      lessThanOrEqualTo(280),
+    );
+  });
+
   testWidgets('on a phone the title stays in the AppBar', (tester) async {
     await _pumpAt(tester, const Size(420, 900));
 
