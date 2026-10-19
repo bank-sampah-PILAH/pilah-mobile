@@ -8,7 +8,7 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dar
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_dates.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_months.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
@@ -181,24 +181,25 @@ void main() {
     expect(tester.getTopLeft(find.byType(JadwalCalendar)), before);
   });
 
-  testWidgets('the next scheduled dates sit under the calendar',
+  testWidgets('the later months sit under the calendar and open the month',
       (tester) async {
     final today = DateUtils.dateOnly(DateTime.now());
-    final later = today.add(const Duration(days: 2));
+    final later = DateTime(today.year, today.month + 1, 5);
     final cubit = await _pumpAt(
       tester,
       const Size(1440, 900),
       state: JadwalLoaded(const [], upcomingDates: {today, later}),
     );
 
-    expect(find.text('Berikutnya'), findsOneWidget);
+    expect(find.text('Bulan berikutnya'), findsOneWidget);
+    expect(find.text('1 hari berjadwal'), findsOneWidget);
     final calendar = tester.getRect(find.byType(JadwalCalendar));
-    expect(tester.getTopLeft(find.text('Berikutnya')).dy,
+    expect(tester.getTopLeft(find.text('Bulan berikutnya')).dy,
         greaterThan(calendar.bottom));
 
     await tester.tap(find
         .descendant(
-          of: find.byType(JadwalUpcomingDates),
+          of: find.byType(JadwalUpcomingMonths),
           matching: find.byType(InkWell),
         )
         .last);
@@ -210,12 +211,12 @@ void main() {
         )).called(1);
   });
 
-  testWidgets('the next-dates card is as wide as the calendar above it',
+  testWidgets('the month summary is as wide as the calendar above it',
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
 
     final calendar = tester.getRect(find.byType(JadwalCalendar));
-    final next = tester.getRect(find.byType(JadwalUpcomingDates));
+    final next = tester.getRect(find.byType(JadwalUpcomingMonths));
     expect(next.width, calendar.width);
     expect(next.left, calendar.left);
   });
