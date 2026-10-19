@@ -45,17 +45,94 @@ class AktivitasSummaryView extends StatelessWidget {
       );
 }
 
+/// Ringkasan periode dalam satu baris, untuk di dalam kartu tabel di layar
+/// lebar. Angkanya sama dengan [AktivitasSummaryView]; hanya bentuknya yang
+/// ringkas, supaya header halaman tetap sedikit memakan tinggi.
+class AktivitasSummaryStrip extends StatelessWidget {
+  const AktivitasSummaryStrip({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
+        builder: (context, state) {
+          final summary = state.summary;
+          if (state.status != AktivitasStatus.loaded ||
+              summary == null ||
+              summary.jumlahTransaksi == 0) {
+            return const SizedBox.shrink();
+          }
+          return _SummaryStripRow(summary: summary);
+        },
+      );
+}
+
+class _SummaryStripRow extends StatelessWidget {
+  const _SummaryStripRow({required this.summary});
+
+  final AktivitasSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget item(String label, String value,
+            {Color? color, bool bold = false}) =>
+        Text.rich(
+          TextSpan(children: [
+            TextSpan(
+              text: '$label  ',
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+            ),
+            TextSpan(
+              text: value,
+              style: AppTextStyle.small.copyWith(
+                color: color ?? AppColors.black,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ]),
+        );
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.md,
+      ),
+      child: Wrap(
+        spacing: AppSpacing.xl,
+        runSpacing: AppSpacing.xs,
+        children: [
+          item('Transaksi', '${summary.jumlahTransaksi}'),
+          item('Berat', _beratLabel(summary)),
+          item('Setoran', CurrencyFormatter.formatRupiah(summary.totalSetoran),
+              color: AppColors.greenDark),
+          item('Pencairan',
+              CurrencyFormatter.formatRupiah(summary.totalPencairan),
+              color: AppColors.danger),
+          Tooltip(
+            message:
+                'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.',
+            child: item('Saldo', _saldoLabel(summary),
+                color: AppColors.greenDark, bold: true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _beratLabel(AktivitasSummary summary) =>
+    '${summary.totalBerat.toString().replaceFirst(RegExp(r'\.0$'), '').replaceAll('.', ',')} kg';
+
+String _saldoLabel(AktivitasSummary summary) => summary.saldo < 0
+    ? '-${CurrencyFormatter.formatRupiah(summary.saldo.abs())}'
+    : CurrencyFormatter.formatRupiah(summary.saldo);
+
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.summary});
 
   final AktivitasSummary summary;
 
-  String get _berat =>
-      '${summary.totalBerat.toString().replaceFirst(RegExp(r'\.0$'), '').replaceAll('.', ',')} kg';
+  String get _berat => _beratLabel(summary);
 
-  String get _saldo => summary.saldo < 0
-      ? '-${CurrencyFormatter.formatRupiah(summary.saldo.abs())}'
-      : CurrencyFormatter.formatRupiah(summary.saldo);
+  String get _saldo => _saldoLabel(summary);
 
   _SummaryMetric get _setoran => _SummaryMetric(
         label: 'Total Nilai Setoran',

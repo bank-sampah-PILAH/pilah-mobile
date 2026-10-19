@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/data_table_card.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 
 /// Daftar jenis sampah untuk layar lebar: satu baris per jenis dengan kolom
@@ -20,11 +21,15 @@ class HargaTable extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.selectedId,
+    this.footer,
   });
 
   final List<HargaEntity> items;
   final ValueChanged<HargaEntity> onTap;
   final String? selectedId;
+
+  /// Paginasi di dasar kartu.
+  final Widget? footer;
 
   /// Kunci baris untuk [id], agar test dapat menemukannya.
   static Key rowKey(String id) => ValueKey('harga-row-$id');
@@ -40,50 +45,28 @@ class HargaTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Column(
-          children: [
-            Container(
-              color: AppColors.fill,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: 14,
-              ),
-              child: Row(children: [
-                _cell(0, Text('JENIS SAMPAH', style: _headStyle)),
-                _cell(1, Text('KATEGORI', style: _headStyle)),
-                _cell(
-                  2,
-                  Text('HARGA BELI / KG',
-                      style: _headStyle, textAlign: TextAlign.end),
-                ),
-                _cell(3, Text('STATUS', style: _headStyle), padLeft: true),
-              ]),
-            ),
+    return DataTableCard(
+      header: DataTableCard.head([
+        _cell(0, Text('JENIS SAMPAH', style: _headStyle)),
+        _cell(1, Text('KATEGORI', style: _headStyle)),
+        _cell(
+          2,
+          Text('HARGA BELI / KG', style: _headStyle, textAlign: TextAlign.end),
+        ),
+        _cell(3, Text('STATUS', style: _headStyle), padLeft: true),
+      ]),
+      body: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: items.length,
+        separatorBuilder: (_, __) =>
             const Divider(height: 1, color: AppColors.border),
-            Expanded(
-              child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: items.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(height: 1, color: AppColors.border),
-                itemBuilder: (context, index) => _Row(
-                  item: items[index],
-                  selected: items[index].id == selectedId,
-                  onTap: () => onTap(items[index]),
-                ),
-              ),
-            ),
-          ],
+        itemBuilder: (context, index) => _Row(
+          item: items[index],
+          selected: items[index].id == selectedId,
+          onTap: () => onTap(items[index]),
         ),
       ),
+      footer: footer,
     );
   }
 

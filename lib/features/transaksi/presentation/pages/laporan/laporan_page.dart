@@ -59,53 +59,79 @@ class _LaporanPageState extends State<LaporanPage> {
         backgroundColor:
             WebContentSurface.pageColor(context, phone: Colors.white),
         body: SafeArea(
-          // The lists scroll across the whole body, so their scrollbar is at the
-          // window edge; the frame keeps the content to a readable column.
+          // Wide: a data page, so only the table card scrolls. Phone: the whole
+          // page scrolls, across the body, so its scrollbar is at the edge.
           child: ContentFrame(
-            child: NestedScrollView(
-              // Let filters and totals scroll away on short screens or with a keyboard.
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverToBoxAdapter(
-                  child: ContentInset(
-                    child: Padding(
-                      padding: _webPadding(context)
-                          ? const EdgeInsets.fromLTRB(
-                              AppSpacing.webGutter,
-                              AppSpacing.webTop,
-                              AppSpacing.webGutter,
-                              AppSpacing.lg,
-                            )
-                          : const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppPageHeader(
-                            title: 'Riwayat Aktivitas',
-                            search: CustomSearchField(
-                              hintText: 'Cari nama pelanggan...',
-                              controller: _searchController,
-                              onChanged:
-                                  context.read<RiwayatAktivitasCubit>().search,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          const AktivitasFilterBar(),
-                          const AktivitasSummaryView(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              body: AppRefreshIndicator(
-                onRefresh: () =>
-                    context.read<RiwayatAktivitasCubit>().load(silent: true),
-                child: AktivitasListView(isWeb: widget.isWeb),
-              ),
-            ),
+            child: _webPadding(context) ? _dataPage() : _phonePage(),
           ),
         ),
       ),
     );
   }
+
+  Widget _header() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppPageHeader(
+            title: 'Riwayat Aktivitas',
+            search: CustomSearchField(
+              hintText: 'Cari nama pelanggan...',
+              controller: _searchController,
+              onChanged: context.read<RiwayatAktivitasCubit>().search,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const AktivitasFilterBar(),
+        ],
+      );
+
+  /// Halaman data (layar lebar): judul, pencarian, dan penyaring tetap di
+  /// atas; tabel di bawahnya satu-satunya yang bergulir, dengan ringkasan satu
+  /// baris dan paginasi di dalam kartunya.
+  Widget _dataPage() => Column(
+        children: [
+          ContentInset(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.webGutter,
+                AppSpacing.webTop,
+                AppSpacing.webGutter,
+                AppSpacing.lg,
+              ),
+              child: _header(),
+            ),
+          ),
+          Expanded(
+            child: AppRefreshIndicator(
+              onRefresh: () =>
+                  context.read<RiwayatAktivitasCubit>().load(silent: true),
+              child: AktivitasListView(isWeb: widget.isWeb),
+            ),
+          ),
+        ],
+      );
+
+  /// Telepon: header, penyaring, dan ringkasan bergulir bersama daftar.
+  Widget _phonePage() => NestedScrollView(
+        // Let filters and totals scroll away on short screens or with a keyboard.
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _header(),
+                  const AktivitasSummaryView(),
+                ],
+              ),
+            ),
+          ),
+        ],
+        body: AppRefreshIndicator(
+          onRefresh: () =>
+              context.read<RiwayatAktivitasCubit>().load(silent: true),
+          child: AktivitasListView(isWeb: widget.isWeb),
+        ),
+      );
 }

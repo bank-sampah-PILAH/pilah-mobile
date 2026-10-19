@@ -27,6 +27,8 @@ void main() {
     required List<ActivitasEntity> items,
     ValueChanged<ActivitasEntity>? onTap,
     List<Widget> footer = const [],
+    Widget? toolbar,
+    Widget? pagination,
   }) async {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1;
@@ -34,12 +36,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-        body: SingleChildScrollView(
-          child: AktivitasTable(
-            items: items,
-            onTap: onTap ?? (_) {},
-            footer: footer,
-          ),
+        body: AktivitasTable(
+          items: items,
+          onTap: onTap ?? (_) {},
+          footer: footer,
+          toolbar: toolbar,
+          pagination: pagination,
         ),
       ),
     ));
@@ -111,5 +113,29 @@ void main() {
     await tester.pump();
 
     expect(tint(0), isNull);
+  });
+
+  testWidgets('the card fills the screen and only its rows scroll',
+      (tester) async {
+    final items = [for (var i = 0; i < 30; i++) _pencairan('Nama $i')];
+    await pumpTable(
+      tester,
+      items: items,
+      toolbar: const Text('ringkasan'),
+      pagination: const Text('halaman'),
+    );
+
+    final card = tester.getRect(find.byType(AktivitasTable));
+    expect(card.height, greaterThan(850), reason: 'fills the body');
+    // Summary above the column heads, pagination pinned at the card's bottom.
+    expect(tester.getTopLeft(find.text('ringkasan')).dy,
+        lessThan(tester.getTopLeft(find.text('WAKTU')).dy));
+    expect(tester.getBottomLeft(find.text('halaman')).dy,
+        lessThanOrEqualTo(card.bottom));
+    expect(find.text('Nama 29'), findsNothing, reason: 'rows scroll inside');
+    await tester.drag(find.byType(ListView), const Offset(0, -4000));
+    await tester.pump();
+    expect(find.text('Nama 29'), findsOneWidget);
+    expect(find.text('halaman'), findsOneWidget, reason: 'footer stays put');
   });
 }

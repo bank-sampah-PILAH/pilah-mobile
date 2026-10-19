@@ -338,49 +338,54 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
             .take(_webPageSize)
             .toList()
         : items;
-    final Widget list = context.layoutBreakpoint != LayoutBreakpoint.compact
+    final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
+    final pagination = WebPaginationBar(
+      currentPage: _currentPage,
+      totalItems: items.length,
+      pageSize: _webPageSize,
+      itemLabel: 'jenis sampah',
+      onPageChanged: (page) => setState(() => _currentPage = page),
+    );
+    final Widget cards = ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: listBottomPadding,
+      itemCount: visibleItems.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = visibleItems[index];
+        return _HargaCard(
+          item: item,
+          selected: _selected?.id == item.id,
+          onTap: () => _openDetail(item),
+        );
+      },
+    );
+    final Widget content = wide
         ? Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xl),
             child: HargaTable(
               items: visibleItems,
               selectedId: _selected?.id,
               onTap: _openDetail,
+              // Paginasi di dasar kartu, seperti tabel nasabah.
+              footer: widget.isWeb ? pagination : null,
             ),
           )
-        : ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: listBottomPadding,
-            itemCount: visibleItems.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final item = visibleItems[index];
-              return _HargaCard(
-                item: item,
-                selected: _selected?.id == item.id,
-                onTap: () => _openDetail(item),
-              );
-            },
-          );
-    final Widget content = widget.isWeb
-        ? Column(
-            children: [
-              Expanded(child: list),
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: AppSpacing.md,
-                  bottom: AppSpacing.xl,
-                ),
-                child: WebPaginationBar(
-                  currentPage: _currentPage,
-                  totalItems: items.length,
-                  pageSize: _webPageSize,
-                  itemLabel: 'jenis sampah',
-                  onPageChanged: (page) => setState(() => _currentPage = page),
-                ),
-              ),
-            ],
-          )
-        : list;
+        : widget.isWeb
+            // Browser sempit: kartu satu kolom, paginasi di bawahnya.
+            ? Column(
+                children: [
+                  Expanded(child: cards),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: AppSpacing.md,
+                      bottom: AppSpacing.xl,
+                    ),
+                    child: pagination,
+                  ),
+                ],
+              )
+            : cards;
 
     return PageStateView(
       state: pageState,

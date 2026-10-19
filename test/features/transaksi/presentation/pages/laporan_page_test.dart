@@ -233,25 +233,23 @@ void main() {
   });
 
   testWidgets(
-      'on a wide window the list scrolls full width, content in a column',
-      (tester) async {
+      'on a wide window the table is a card that fills the rest of the screen '
+      'inside a centred column', (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester);
 
-    final scroll = find.ancestor(
-      of: find.byType(AktivitasTable),
-      matching: find.byType(ListView),
-    );
-    expect(tester.getSize(scroll).width, 1440,
-        reason: 'so the scrollbar is at the window edge');
     final table = tester.getRect(find.byType(AktivitasTable));
     expect(table.left, (1440 - 1200) / 2 + 32);
     expect(table.right, 1440 - (1440 - 1200) / 2 - 32);
     expect(tester.getTopLeft(find.text('Riwayat Aktivitas')).dx, table.left,
         reason: 'the title and the table share a left edge');
+    // Header and filters stay put; only the table scrolls, down to the window.
+    expect(table.top, lessThan(400));
+    expect(table.bottom, greaterThan(800));
+    expect(find.byType(NestedScrollView), findsNothing);
   });
 
   testWidgets('resizing keeps the visible search consistent with the report',

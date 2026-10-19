@@ -12,6 +12,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/data_table_card.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -203,8 +204,7 @@ class _Loaded extends StatelessWidget {
           ),
         ),
         if (isWeb)
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+          DataTableCardFooter(
             child: WebPaginationBar(
               currentPage: state.currentPage,
               totalItems: state.totalCount,
@@ -278,24 +278,19 @@ class _HeaderRow extends StatelessWidget {
         Expanded(
             flex: _columns[i],
             child: Text(text, style: _headStyle, textAlign: align));
-    return Container(
-      key: NasabahTable.headerKey,
-      color: AppColors.fill,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      child: Row(children: [
-        cell(0, 'NASABAH'),
-        cell(1, 'ID'),
-        cell(2, 'NO. HP'),
-        Expanded(
-            flex: _columns[3],
-            child: Padding(
-                padding: const EdgeInsets.only(right: _gutter),
-                child: Text('SALDO',
-                    style: _headStyle, textAlign: TextAlign.end))),
-        cell(4, 'STATUS'),
-        cell(5, '', align: TextAlign.end),
-      ]),
-    );
+    return DataTableCard.head(key: NasabahTable.headerKey, [
+      cell(0, 'NASABAH'),
+      cell(1, 'ID'),
+      cell(2, 'NO. HP'),
+      Expanded(
+          flex: _columns[3],
+          child: Padding(
+              padding: const EdgeInsets.only(right: _gutter),
+              child:
+                  Text('SALDO', style: _headStyle, textAlign: TextAlign.end))),
+      cell(4, 'STATUS'),
+      cell(5, '', align: TextAlign.end),
+    ]);
   }
 }
 

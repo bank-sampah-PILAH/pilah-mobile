@@ -12,6 +12,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
@@ -23,16 +24,11 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_tran
 /// Tapping a row opens that type's own detail sheet — setoran's
 /// [DetailTransaksiBottomSheet], pencairan's [showPencairanDetailSheet] with
 /// its Pengurus-only edit/riwayat-perubahan entry points.
-/// Jarak samping area gulir: batas lebar konten dari `ContentFrame`, ditambah
-/// bagian gutter web yang belum diberikan baris (baris memberi 16 sendiri), agar
-/// daftar sejajar dengan judul halaman.
+/// Jarak area gulir daftar kartu di telepon: batas lebar dari `ContentFrame`
+/// (nol di telepon) dan ruang di bawah baris terakhir.
 EdgeInsetsGeometry _scrollPadding(BuildContext context,
-    {required double bottom}) {
-  final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
-  final side = wide ? AppSpacing.webGutter - AppSpacing.lg : 0.0;
-  return ContentFrame.insetOf(context)
-      .add(EdgeInsets.fromLTRB(side, 0, side, bottom));
-}
+        {required double bottom}) =>
+    ContentFrame.insetOf(context).add(EdgeInsets.only(bottom: bottom));
 
 class AktivitasListView extends StatelessWidget {
   final DateTime Function() now;
@@ -86,42 +82,60 @@ class AktivitasListView extends StatelessWidget {
 
         final footer = _footer(context, state);
         final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
-        final children = wide
-            ? [
-                Padding(
-                  // Halaman memberi 16; 16 lagi melengkapi gutter web.
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, AppSpacing.lg),
-                  child: AktivitasTable(
-                    items: state.items,
-                    onTap: (item) => _openDetail(context, item),
-                    footer: footer,
-                  ),
-                ),
-              ]
-            : _groupedRows(state, now(), footer);
-        final activityList = NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (!isWeb &&
-                notification.metrics.axis == Axis.vertical &&
-                notification.metrics.extentAfter < 200 &&
-                state.errorMessage == null) {
-              context.read<RiwayatAktivitasCubit>().loadMore();
-            }
-            return false;
-          },
-          child: ListView(
+        Widget scrollNotifications(Widget child) =>
+            NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (!isWeb &&
+                    notification.metrics.axis == Axis.vertical &&
+                    notification.metrics.extentAfter < 200 &&
+                    state.errorMessage == null) {
+                  context.read<RiwayatAktivitasCubit>().loadMore();
+                }
+                return false;
+              },
+              child: child,
+            );
+        if (wide) {
+          // Halaman data: tabel sebagai kartu yang mengisi sisa tinggi layar,
+          // hanya barisnya yang bergulir, dan paginasi di dasar kartu.
+          final side = ContentFrame.insetOf(context).add(
+              const EdgeInsets.symmetric(horizontal: AppSpacing.webGutter));
+          return scrollNotifications(
+            Padding(
+              padding: side.add(const EdgeInsets.only(bottom: AppSpacing.xl)),
+              child: AktivitasTable(
+                items: state.items,
+                onTap: (item) => _openDetail(context, item),
+                footer: footer,
+                toolbar: const AktivitasSummaryStrip(),
+                pagination: isWeb
+                    ? WebPaginationBar(
+                        currentPage: state.currentPage,
+                        totalItems: state.totalCount,
+                        pageSize: state.pageSize,
+                        itemLabel: 'transaksi',
+                        onPageChanged:
+                            context.read<RiwayatAktivitasCubit>().loadPage,
+                      )
+                    : null,
+              ),
+            ),
+          );
+        }
+        final cards = scrollNotifications(
+          ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: _scrollPadding(context, bottom: 24),
-            children: children,
+            children: _groupedRows(state, now(), footer),
           ),
         );
-        if (!isWeb) return activityList;
+        if (!isWeb) return cards;
+        // Browser sempit: kartu satu kolom, paginasi di bawahnya.
         return Column(
           children: [
-            Expanded(child: activityList),
+            Expanded(child: cards),
             Padding(
-              padding: ContentFrame.insetOf(context)
-                  .add(const EdgeInsets.symmetric(horizontal: 16)),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: WebPaginationBar(
                 currentPage: state.currentPage,
                 totalItems: state.totalCount,
