@@ -25,6 +25,7 @@ void _stubManagerLoads(_MockJadwalCubit cubit) {
       endDate: any(named: 'endDate'),
     ),
   ).thenAnswer((_) async {});
+  when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
 }
 
 void main() {

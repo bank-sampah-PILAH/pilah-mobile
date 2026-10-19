@@ -28,6 +28,11 @@ void main() {
   setUp(() {
     repository = _MockJadwalRepository();
     registerFallbackValue(schedule);
+    registerFallbackValue(DateTime(2026));
+    // The upcoming-dates range is requested after every mutation; tests that
+    // care about the visible month stub their own range over this default.
+    when(() => repository.getCalendarDates(any(), any()))
+        .thenAnswer((_) async => const Right({}));
   });
 
   blocTest<JadwalCubit, JadwalState>(

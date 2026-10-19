@@ -21,6 +21,11 @@ class JadwalCubit extends Cubit<JadwalState> {
   DateTime? _calendarStart;
   DateTime? _calendarEnd;
   Set<DateTime> _scheduledDates = {};
+  Set<DateTime> _upcomingDates = {};
+  int _upcomingVersion = 0;
+
+  /// Jangkauan ke depan untuk ringkasan jadwal mendatang: sekitar tiga bulan.
+  static const upcomingDays = 90;
 
   JadwalCubit(this.repository) : super(const JadwalInitial());
 
@@ -45,6 +50,7 @@ class JadwalCubit extends Cubit<JadwalState> {
         isTransitioning: _transitionInProgress,
         isLoading: true,
         scheduledDates: _scheduledDates,
+        upcomingDates: _upcomingDates,
       ));
     } else if (!silent || current is! JadwalLoaded) {
       emit(const JadwalLoading());
@@ -66,6 +72,7 @@ class JadwalCubit extends Cubit<JadwalState> {
           hasMore: page.hasMore,
           totalCount: page.totalCount,
           scheduledDates: _scheduledDates,
+          upcomingDates: _upcomingDates,
         ));
       },
     );
@@ -149,6 +156,26 @@ class JadwalCubit extends Cubit<JadwalState> {
     );
   }
 
+  /// Tanggal berjadwal dari [today] sampai [upcomingDays] hari ke depan.
+  /// Gagal memuat membiarkan tanggal sebelumnya, bukan mengosongkannya.
+  Future<void> loadUpcomingDates({DateTime? today}) async {
+    final start = _dateOnly(today ?? DateTime.now());
+    final end = start.add(const Duration(days: upcomingDays));
+    final version = ++_upcomingVersion;
+    final result = await repository.getCalendarDates(start, end);
+    if (version != _upcomingVersion) return;
+    result.fold(
+      (_) {},
+      (dates) {
+        _upcomingDates = dates.map(_dateOnly).toSet();
+        final current = state;
+        if (current is JadwalLoaded) {
+          emit(current.copyWith(upcomingDates: _upcomingDates));
+        }
+      },
+    );
+  }
+
   Future<NetworkException?> saveJadwal(JadwalEntity jadwal) async {
     if (_saveInProgress || _transitionInProgress) {
       return GeneralException(
@@ -224,6 +251,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     if (start != null && end != null) {
       await loadCalendarDates(startDate: start, endDate: end);
     }
+    await loadUpcomingDates();
   }
 
   DateTime _dateOnly(DateTime date) =>
@@ -239,6 +267,8 @@ class JadwalCubit extends Cubit<JadwalState> {
     _saveInProgress = false;
     _loadVersion++;
     _calendarVersion++;
+    _upcomingVersion++;
+    _upcomingDates = {};
     _page = 1;
     _hasMore = false;
     _isLoadingMore = false;

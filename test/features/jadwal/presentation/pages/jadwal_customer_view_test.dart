@@ -157,4 +157,5 @@ void _stubCalendarLoad(_MockJadwalCubit cubit, DateTime date) {
     () =>
         cubit.loadCalendarDates(startDate: firstVisible, endDate: lastVisible),
   ).thenAnswer((_) async {});
+  when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
 }

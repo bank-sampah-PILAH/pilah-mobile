@@ -53,6 +53,7 @@ class _JadwalPageState extends State<JadwalPage> {
     _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
     context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
+    context.read<JadwalCubit>().loadUpcomingDates();
     _loadCalendarDatesFor(_selectedDate);
   }
 
@@ -478,7 +479,7 @@ class _JadwalPageState extends State<JadwalPage> {
                               calendar,
                               const SizedBox(height: AppSpacing.lg),
                               JadwalUpcomingDates(
-                                scheduledDates: loadedState.scheduledDates,
+                                upcomingDates: loadedState.upcomingDates,
                                 today: clock.now(),
                                 selectedDate: _selectedDate,
                                 onSelect: _selectDate,

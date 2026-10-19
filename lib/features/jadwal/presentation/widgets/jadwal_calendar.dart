@@ -37,6 +37,9 @@ String formatJadwalDayHeading(DateTime date, {DateTime? today}) {
   return DateUtils.isSameDay(selected, reference) ? 'Hari ini, $day' : day;
 }
 
+String formatJadwalMonth(DateTime date) =>
+    '${_monthNames[date.month - 1]} ${date.year}';
+
 class JadwalCalendar extends StatelessWidget {
   final DateTime selectedDate;
   final Set<DateTime> scheduledDates;
