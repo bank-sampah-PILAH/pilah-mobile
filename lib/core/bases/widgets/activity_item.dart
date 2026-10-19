@@ -49,8 +49,10 @@ class ActivityItem extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
+      // Avatar, text and amount share one vertical centre, so a row with a
+      // one-line subtitle and the taller amount column do not sit at the top.
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 48,
@@ -71,6 +73,7 @@ class ActivityItem extends StatelessWidget {
           const SizedBox(width: 16),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -97,6 +100,7 @@ class ActivityItem extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
@@ -107,13 +111,20 @@ class ActivityItem extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                for (final caption in trailingCaptions) ...[
+                if (trailingCaptions.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    caption,
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                  // Date and time share a line; they wrap only when the row
+                  // is too narrow for both.
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 6,
+                    runSpacing: 2,
+                    children: [
+                      for (var i = 0; i < trailingCaptions.length; i++) ...[
+                        if (i > 0) _caption('·'),
+                        _caption(trailingCaptions[i]),
+                      ],
+                    ],
                   ),
                 ],
                 if (badge != null) ...[
@@ -133,4 +144,9 @@ class ActivityItem extends StatelessWidget {
       ),
     );
   }
+
+  static Widget _caption(String text) => Text(
+        text,
+        style: AppTextStyle.extraSmall.copyWith(color: Colors.grey[600]),
+      );
 }
