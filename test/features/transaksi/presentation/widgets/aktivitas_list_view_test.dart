@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktiv
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 
 import '../../../../support/stub_api.dart';
 import '../../../../support/transaksi_support.dart';
@@ -134,6 +135,10 @@ void main() {
   });
 
   testWidgets('groups rows under day headings', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await pumpList(
         tester,
         RiwayatAktivitasState(status: AktivitasStatus.loaded, items: [
@@ -150,6 +155,27 @@ void main() {
     expect(find.text('Ani'), findsOneWidget);
   });
 
+  testWidgets('a wide screen lists the activity as a table', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpList(
+        tester,
+        RiwayatAktivitasState(
+            status: AktivitasStatus.loaded, items: [_setoran('Ani', _now)]));
+
+    expect(find.byType(AktivitasTable), findsOneWidget);
+    expect(find.text('HARI INI'), findsNothing);
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Plastik'), findsWidgets);
+    expect(find.byType(Dialog), findsOneWidget,
+        reason: 'a setoran opens as a dialog on a wide window');
+  });
+
   testWidgets('tapping a setoran opens its detail sheet', (tester) async {
     await pumpList(
         tester,
@@ -164,6 +190,10 @@ void main() {
 
   testWidgets('a saved pencairan edit refreshes the feed silently',
       (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await pumpList(
         tester,
         RiwayatAktivitasState(

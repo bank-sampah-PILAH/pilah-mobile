@@ -105,6 +105,21 @@ abstract final class AppTheme {
           minimumSize: const Size(64, AppButton.height),
         ),
       ),
+      // Segmented choices (type filters): white with a hairline border, the
+      // selected segment in the green tint, like the other selected states.
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.inkSoft,
+          selectedBackgroundColor: AppColors.greenLight,
+          selectedForegroundColor: AppColors.greenDark,
+          side: const BorderSide(color: AppColors.border),
+          textStyle: label,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          minimumSize: const Size(64, AppButton.height),
+          shape: shape,
+        ),
+      ),
       // White and flat with a thin border, like every card of the dashboard and
       // Jadwal. Margin is up to the screen: the stock 4 pushes a card off the
       // grid.

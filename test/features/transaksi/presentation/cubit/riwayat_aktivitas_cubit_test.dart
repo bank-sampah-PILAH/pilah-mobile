@@ -37,6 +37,29 @@ void main() {
     expect(cubit.state, const RiwayatAktivitasState());
   });
 
+  test('resetFilters returns to the default view and reloads the feed',
+      () async {
+    final feed = Feed();
+    final cubit = RiwayatAktivitasCubit(feed, Export());
+    addTearDown(cubit.close);
+    when(() => feed.execute(any()))
+        .thenAnswer((_) async => const Right(AktivitasPage([], false)));
+    cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
+    cubit.setPeriode('12_bulan');
+    cubit.search('Budi');
+    await Future<void>.delayed(Duration.zero);
+    clearInteractions(feed);
+
+    cubit.resetFilters();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(cubit.state.tipeFilter, AktivitasTipeFilter.semua);
+    expect(cubit.state.periode, 'bulan_ini');
+    expect(cubit.state.search, isEmpty);
+    expect(cubit.state.status, AktivitasStatus.loaded);
+    verify(() => feed.execute(any())).called(1);
+  });
+
   test('filtered feeds invoke the unified XLSX export', () async {
     final feed = Feed();
     final export = Export();

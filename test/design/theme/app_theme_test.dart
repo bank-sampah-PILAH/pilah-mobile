@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 
@@ -331,6 +332,17 @@ void main() {
           AppColors.greenLight.withValues(alpha: 0.45));
       expect(AppTheme.light.focusColor,
           AppColors.greenLight.withValues(alpha: 0.45));
+    });
+
+    test('segmented buttons are white with a green selected segment', () {
+      final style = AppTheme.light.segmentedButtonTheme.style!;
+      expect(style.backgroundColor!.resolve({}), Colors.white);
+      expect(style.backgroundColor!.resolve({WidgetState.selected}),
+          AppColors.greenLight);
+      expect(style.foregroundColor!.resolve({WidgetState.selected}),
+          AppColors.greenDark);
+      expect(style.side!.resolve({})!.color, AppColors.border);
+      expect(style.minimumSize!.resolve({})!.height, AppButton.height);
     });
   });
 }
