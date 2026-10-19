@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
@@ -20,6 +21,17 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_tran
 /// Tapping a row opens that type's own detail sheet — setoran's
 /// [DetailTransaksiBottomSheet], pencairan's [showPencairanDetailSheet] with
 /// its Pengurus-only edit/riwayat-perubahan entry points.
+/// Jarak samping area gulir: batas lebar konten dari `ContentFrame`, ditambah
+/// bagian gutter web yang belum diberikan baris (baris memberi 16 sendiri), agar
+/// daftar sejajar dengan judul halaman.
+EdgeInsetsGeometry _scrollPadding(BuildContext context,
+    {required double bottom}) {
+  final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
+  final side = wide ? AppSpacing.webGutter - AppSpacing.lg : 0.0;
+  return ContentFrame.insetOf(context)
+      .add(EdgeInsets.fromLTRB(side, 0, side, bottom));
+}
+
 class AktivitasListView extends StatelessWidget {
   final DateTime Function() now;
 
@@ -33,7 +45,7 @@ class AktivitasListView extends StatelessWidget {
             state.status == AktivitasStatus.loading) {
           return ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 80),
+            padding: _scrollPadding(context, bottom: 80),
             itemCount: 5,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) => const SkeletonListItem(),
@@ -91,7 +103,7 @@ class AktivitasListView extends StatelessWidget {
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: _scrollPadding(context, bottom: 24),
               children: children,
             ));
       },
