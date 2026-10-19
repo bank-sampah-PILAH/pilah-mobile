@@ -6,43 +6,38 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import 'jadwal_calendar.dart';
 
-/// Ringkasan jadwal mendatang di bawah kalender web: beberapa tanggal berjadwal
-/// terdekat, lalu satu baris per bulan berikutnya dengan jumlah harinya.
-/// Mengisi kolom kalender dan menjadi jalan pintas ke hari atau bulan yang akan
-/// datang; isi jadwalnya tetap di agenda.
+/// Ringkasan bulan-bulan berikutnya di bawah kalender web: satu baris per
+/// bulan dengan jumlah hari berjadwalnya. Bulan ini tidak ada di sini karena
+/// agenda di sebelahnya sudah memuat sisa bulan; baris ini menjadi jalan pintas
+/// ke bulan yang akan datang.
 ///
 /// [upcomingDates] memuat tanggal berjadwal dari hari ini ke depan, terlepas
 /// dari bulan yang tampil di kalender. Yang dihitung adalah hari berjadwal,
 /// bukan jumlah jadwal: itu yang diketahui dari titik-titik kalender.
-class JadwalUpcomingDates extends StatelessWidget {
-  const JadwalUpcomingDates({
+class JadwalUpcomingMonths extends StatelessWidget {
+  const JadwalUpcomingMonths({
     super.key,
     required this.upcomingDates,
     required this.today,
-    required this.selectedDate,
     required this.onSelect,
-    this.limit = 3,
   });
 
   final Set<DateTime> upcomingDates;
   final DateTime today;
-  final DateTime selectedDate;
 
-  /// Dipanggil dengan tanggal yang dipilih; untuk sebuah bulan, hari
-  /// berjadwal pertamanya.
+  /// Dipanggil dengan hari berjadwal pertama bulan yang diketuk.
   final ValueChanged<DateTime> onSelect;
-
-  /// Banyak tanggal terdekat yang ditampilkan.
-  final int limit;
 
   @override
   Widget build(BuildContext context) {
     final start = DateUtils.dateOnly(today);
-    final upcoming = (upcomingDates.map(DateUtils.dateOnly).toSet()
-          ..removeWhere((d) => d.isBefore(start)))
-        .toList()
-      ..sort();
-    final months = _laterMonths(upcoming, start);
+    final months = _laterMonths(
+      (upcomingDates.map(DateUtils.dateOnly).toSet()
+            ..removeWhere((d) => d.isBefore(start)))
+          .toList()
+        ..sort(),
+      start,
+    );
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -53,8 +48,22 @@ class JadwalUpcomingDates extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Heading('Berikutnya'),
-          if (upcoming.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.xs,
+              AppSpacing.sm,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              'Bulan berikutnya',
+              style: AppTextStyle.small.copyWith(
+                color: AppColors.black,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (months.isEmpty)
             Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
               child: Text(
@@ -63,24 +72,12 @@ class JadwalUpcomingDates extends StatelessWidget {
               ),
             )
           else
-            for (final date in upcoming.take(limit))
-              _Row(
-                label: formatJadwalDayHeading(date, today: start),
-                selected: DateUtils.isSameDay(date, selectedDate),
-                onTap: () => onSelect(date),
-              ),
-          if (months.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            const Divider(height: 1, color: AppColors.border),
-            const SizedBox(height: AppSpacing.sm),
-            const _Heading('Bulan berikutnya'),
             for (final month in months)
-              _Row(
+              _MonthRow(
                 label: formatJadwalMonth(month.first),
-                trailing: '${month.length} hari berjadwal',
+                days: month.length,
                 onTap: () => onSelect(month.first),
               ),
-          ],
         ],
       ),
     );
@@ -108,40 +105,15 @@ class JadwalUpcomingDates extends StatelessWidget {
   }
 }
 
-class _Heading extends StatelessWidget {
-  const _Heading(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.sm,
-          AppSpacing.xs,
-          AppSpacing.sm,
-          AppSpacing.sm,
-        ),
-        child: Text(
-          text,
-          style: AppTextStyle.small.copyWith(
-            color: AppColors.black,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-}
-
-class _Row extends StatelessWidget {
-  const _Row({
+class _MonthRow extends StatelessWidget {
+  const _MonthRow({
     required this.label,
+    required this.days,
     required this.onTap,
-    this.trailing,
-    this.selected = false,
   });
 
   final String label;
-  final String? trailing;
-  final bool selected;
+  final int days;
   final VoidCallback onTap;
 
   @override
@@ -150,14 +122,10 @@ class _Row extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
       hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.greenLight : null,
-          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [
@@ -165,19 +133,16 @@ class _Row extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTextStyle.small.copyWith(
-                  color: selected ? AppColors.greenDark : AppColors.black,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            if (trailing != null) ...[
-              Text(
-                trailing!,
-                style:
-                    AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-            ],
+            Text(
+              '$days hari berjadwal',
+              style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+            ),
+            const SizedBox(width: AppSpacing.xs),
             const Icon(Icons.chevron_right, size: 18, color: AppColors.grey100),
           ],
         ),

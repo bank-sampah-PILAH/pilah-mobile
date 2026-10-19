@@ -21,7 +21,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_dates.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_months.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
@@ -510,10 +510,9 @@ class _JadwalPageState extends State<JadwalPage> {
                             children: [
                               calendar,
                               const SizedBox(height: AppSpacing.lg),
-                              JadwalUpcomingDates(
+                              JadwalUpcomingMonths(
                                 upcomingDates: loadedState.upcomingDates,
                                 today: clock.now(),
-                                selectedDate: _selectedDate,
                                 onSelect: _selectDate,
                               ),
                             ],
