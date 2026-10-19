@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
@@ -22,6 +30,8 @@ Pencairan _pencairan({bool diperbarui = false, int potongan = 0}) => Pencairan(
       diperbarui: diperbarui,
     );
 
+class _MockUseCases extends Mock implements PencairanUseCases {}
+
 void main() {
   late int changes;
 
@@ -34,7 +44,12 @@ void main() {
     WidgetTester tester,
     Pencairan item, {
     bool? editResult,
+    Size size = const Size(390, 844),
   }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final router = GoRouter(
       routes: [
         GoRoute(
@@ -135,6 +150,72 @@ void main() {
     expect(find.text('Rp 10.000'), findsOneWidget);
     expect(find.text('Dibayar'), findsOneWidget);
     expect(find.text('Rp 140.000'), findsOneWidget);
+  });
+
+  testWidgets('the nominal is red and the saldo moves from before to after',
+      (tester) async {
+    await openSheet(tester, _pencairan());
+
+    expect(tester.widget<Text>(find.text('Rp 150.000').first).style!.color,
+        AppColors.danger);
+    expect(find.text('Rp 465.600'), findsOneWidget);
+    expect(find.text('Rp 315.600'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+    expect(find.text('Tercatat'), findsOneWidget);
+  });
+
+  testWidgets('a wide window opens the detail as a dialog', (tester) async {
+    await openSheet(tester, _pencairan(), size: const Size(1200, 900));
+
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.text('Budi Santoso'), findsOneWidget);
+  });
+
+  testWidgets('on a wide window edit opens as a dialog, not a page',
+      (tester) async {
+    di.registerFactory<EditPencairanCubit>(
+        () => EditPencairanCubit(_MockUseCases()));
+    addTearDown(() => di.unregister<EditPencairanCubit>());
+    await openSheet(tester, _pencairan(),
+        editResult: true, size: const Size(1200, 900));
+
+    await tapKey(tester, 'edit-pencairan');
+
+    expect(find.text('edit p-9'), findsNothing, reason: 'not the route');
+    expect(find.byType(Dialog), findsOneWidget, reason: 'the same dialog');
+    expect(find.text('Edit Pencairan'), findsOneWidget);
+    expect(find.byKey(const Key('nominal-field')), findsOneWidget);
+    expect(find.byKey(const Key('submit-edit-pencairan')), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail Pencairan'), findsOneWidget);
+    expect(find.byKey(const Key('nominal-field')), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget);
+  });
+
+  testWidgets('on a wide window the history opens as a dialog', (tester) async {
+    final useCases = _MockUseCases();
+    when(() => useCases.getRevisi('p-9')).thenAnswer((_) async =>
+        Left(NotFoundException(message: 'Riwayat tidak ditemukan')));
+    di.registerFactory<RevisiPencairanCubit>(
+        () => RevisiPencairanCubit(useCases));
+    addTearDown(() => di.unregister<RevisiPencairanCubit>());
+    await openSheet(tester, _pencairan(diperbarui: true),
+        size: const Size(1200, 900));
+
+    await tapKey(tester, 'riwayat-perubahan-pencairan');
+
+    expect(find.text('revisi p-9'), findsNothing, reason: 'not the route');
+    expect(find.byType(Dialog), findsOneWidget, reason: 'the same dialog');
+    expect(find.text('Riwayat Perubahan'), findsOneWidget);
+    expect(find.text('Riwayat tidak ditemukan'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Dialog), findsNothing);
   });
 
   testWidgets('a pencairan without a potongan still shows both rows',

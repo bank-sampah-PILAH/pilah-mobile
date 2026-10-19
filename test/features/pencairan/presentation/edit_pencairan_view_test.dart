@@ -108,6 +108,13 @@ void main() {
         lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
     expect(tester.getCenter(field).dx, closeTo(720, 1),
         reason: 'centred in the window');
+    final submit = find.byKey(const Key('submit-edit-pencairan'));
+    expect(field.hitTestable(), findsOneWidget,
+        reason: 'the form is not squeezed out by the save bar');
+    expect(find.byKey(const Key('alasan-field')), findsOneWidget);
+    expect(tester.getSize(submit).width,
+        lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth),
+        reason: 'the save button is not as wide as the window');
   });
 
   testWidgets('starts from the recorded values and states the tanggal limit',

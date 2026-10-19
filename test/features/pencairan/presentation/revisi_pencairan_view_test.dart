@@ -6,7 +6,6 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
-import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
@@ -73,7 +72,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('lists the current version, then replaced versions with why',
+  testWidgets('lists the current version, then each change with why',
       (tester) async {
     when(() => useCases.getRevisi('p-1'))
         .thenAnswer((_) async => Right(_riwayat));
@@ -81,13 +80,13 @@ void main() {
 
     expect(find.text('VERSI SEKARANG'), findsOneWidget);
     expect(find.text('Rp 150.000'), findsOneWidget);
-    expect(find.text('VERSI 2'), findsOneWidget);
-    expect(find.text('VERSI 1'), findsOneWidget);
+    expect(find.text('PERUBAHAN (2)'), findsOneWidget);
+    expect(find.text('Mengganti versi 2'), findsOneWidget);
+    expect(find.text('Mengganti versi 1'), findsOneWidget);
     expect(find.text('Salah ketik nominal'), findsOneWidget);
     expect(find.text('Salah pilih metode'), findsOneWidget);
     expect(find.text('Diubah oleh Ibu Sari · 22 September 2026, 11:05'),
         findsOneWidget);
-    expect(find.text('Rp 200.000'), findsNWidgets(2));
   });
 
   testWidgets('keeps the versions to a readable column on a desktop window',
@@ -122,7 +121,7 @@ void main() {
     await tester.tap(find.text('Coba lagi'));
     await tester.pumpAndSettle();
 
-    expect(find.text('VERSI 2'), findsOneWidget);
+    expect(find.text('Mengganti versi 2'), findsOneWidget);
   });
 
   group('looks like the rest of the app', () {
@@ -152,17 +151,48 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('shows each version as label and value rows, like the detail',
+    testWidgets('shows only what each change altered, old value to new',
         (tester) async {
       when(() => useCases.getRevisi('p-1'))
           .thenAnswer((_) async => Right(_riwayat));
       await pumpView(tester);
 
-      expect(find.widgetWithText(AppDetailRow, 'Metode'), findsNWidgets(3));
       expect(
-          find.widgetWithText(AppDetailRow, 'Saldo sesudah'), findsNWidgets(3));
-      expect(find.widgetWithText(AppDetailRow, 'Alasan perubahan'),
-          findsNWidgets(2));
+          find.textContaining('Rp 200.000  →  Rp 150.000', findRichText: true),
+          findsOneWidget);
+      expect(find.textContaining('Tunai  →  Transfer', findRichText: true),
+          findsOneWidget);
+      expect(
+          find.textContaining('Diambil pagi  →  Ditransfer',
+              findRichText: true),
+          findsOneWidget);
+      // Nominal did not change from version 1 to 2, so it is not listed there.
+      expect(find.text('Nominal'), findsOneWidget);
+    });
+
+    testWidgets('a change that altered no value says so', (tester) async {
+      final same = RiwayatRevisiPencairan(
+        pencairan: _riwayat.pencairan,
+        revisi: [
+          RevisiPencairan(
+            versi: 1,
+            tanggal: _riwayat.pencairan.tanggal,
+            nominal: _riwayat.pencairan.nominal,
+            metode: _riwayat.pencairan.metode,
+            keterangan: _riwayat.pencairan.keterangan,
+            saldoSebelum: 465600,
+            saldoSesudah: 315600,
+            alasan: 'Cek ulang',
+            diubahOlehNama: 'Ibu Sari',
+            diubahPada: DateTime(2026, 9, 22, 11, 5),
+          ),
+        ],
+      );
+      when(() => useCases.getRevisi('p-1'))
+          .thenAnswer((_) async => Right(same));
+      await pumpView(tester);
+
+      expect(find.text('Tidak ada nilai yang berubah.'), findsOneWidget);
     });
   });
 }
