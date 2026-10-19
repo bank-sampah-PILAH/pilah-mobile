@@ -12,6 +12,10 @@ import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
@@ -35,7 +39,9 @@ const _filterOptions = <String, String>{
 /// cancel a schedule, withdraw a published one, delete drafts. Kedaluwarsa and
 /// ditarik rows are read-only.
 class PengumumanKelolaPage extends StatelessWidget {
-  const PengumumanKelolaPage({super.key});
+  const PengumumanKelolaPage({super.key, this.isWeb = kIsWeb});
+
+  final bool isWeb;
 
   static const route = '/pengumuman/kelola';
 
@@ -48,13 +54,15 @@ class PengumumanKelolaPage extends StatelessWidget {
               title: 'Gagal', message: state.message);
         }
       },
-      child: const _PengumumanKelolaBody(),
+      child: _PengumumanKelolaBody(isWeb: isWeb),
     );
   }
 }
 
 class _PengumumanKelolaBody extends StatefulWidget {
-  const _PengumumanKelolaBody();
+  const _PengumumanKelolaBody({required this.isWeb});
+
+  final bool isWeb;
 
   @override
   State<_PengumumanKelolaBody> createState() => _PengumumanKelolaBodyState();
@@ -181,6 +189,8 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
 
   @override
   Widget build(BuildContext context) {
+    final webHeader =
+        widget.isWeb && context.layoutBreakpoint != LayoutBreakpoint.compact;
     // Same page shape as the Riwayat Aktivitas (Laporan) screen: white page,
     // fixed header + filter block, scrollable feed under it (no AppBar, the
     // header row carries the back button like aktivitas'.
@@ -193,85 +203,122 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _bukaForm,
-          backgroundColor: AppColors.greenDark,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text('Buat',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-        ),
+        // Di web lebar tombol "Buat" ada di header halaman, seperti Nasabah dan
+        // Harga; FAB hanya untuk layar sempit dan aplikasi.
+        floatingActionButton: webHeader
+            ? null
+            : FloatingActionButton.extended(
+                onPressed: _bukaForm,
+                backgroundColor: AppColors.greenDark,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text('Buat',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
         body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                // Di web halaman ini adalah destinasi sidebar, jadi tidak ada
-                // yang perlu dikembalikan. Di aplikasi ia dibuka dari Profil
-                // dan kembali ke sana.
-                child: kIsWeb
-                    ? Text('Kelola Pengumuman',
-                        style: AppTextStyle.appBar
-                            .copyWith(color: AppColors.black))
-                    : BackHeaderRow(
-                        title: 'Kelola Pengumuman',
-                        onBack: () => context.canPop()
-                            ? context.pop()
-                            : context.go(AppLocations.profile),
-                      ),
-              ),
-              const SizedBox(height: 16),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _FilterChips(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: BlocBuilder<PengumumanCubit, PengumumanState>(
-                  builder: (context, state) {
-                    switch (state) {
-                      case PengumumanInitial _:
-                      case PengumumanLoading _:
-                        return ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                          itemCount: 5,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) =>
-                              const SkeletonListItem(),
-                        );
-                      case PengumumanError state:
-                        return Column(
-                          children: [
-                            Expanded(
-                              child: EmptyView(
-                                title: 'Gagal Memuat Data',
-                                subtitle: state.message,
-                                icon: Icons.error_outline,
+          child: ContentFrame(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ContentInset(
+                  child: Padding(
+                    padding: webHeader
+                        ? const EdgeInsets.fromLTRB(AppSpacing.webGutter,
+                            AppSpacing.webTop, AppSpacing.webGutter, 0)
+                        : const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    // Di web halaman ini adalah destinasi sidebar, jadi tidak ada
+                    // yang perlu dikembalikan. Di aplikasi ia dibuka dari Profil
+                    // dan kembali ke sana.
+                    child: webHeader
+                        ? AppPageHeader(
+                            title: 'Kelola Pengumuman',
+                            actions: [
+                              AppButton(
+                                label: 'Buat',
+                                icon: Icons.add,
+                                expand: false,
+                                onPressed: _bukaForm,
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () => _cubit.loadPengumuman(),
-                              child: const Text('Coba Lagi'),
-                            ),
-                          ],
-                        );
-                      case PengumumanLoaded loaded:
-                        return _daftar(loaded);
-                    }
-                  },
+                            ],
+                          )
+                        : widget.isWeb
+                            ? Text('Kelola Pengumuman',
+                                style: AppTextStyle.appBar
+                                    .copyWith(color: AppColors.black))
+                            : BackHeaderRow(
+                                title: 'Kelola Pengumuman',
+                                onBack: () => context.canPop()
+                                    ? context.pop()
+                                    : context.go(AppLocations.profile),
+                              ),
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: webHeader ? AppSpacing.lg : 16),
+                ContentInset(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: webHeader ? AppSpacing.webGutter : 16),
+                    child: const Align(
+                      alignment: Alignment.centerLeft,
+                      child: _FilterChips(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: BlocBuilder<PengumumanCubit, PengumumanState>(
+                    builder: (context, state) {
+                      switch (state) {
+                        case PengumumanInitial _:
+                        case PengumumanLoading _:
+                          return ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: _listPadding(context, bottom: 80),
+                            itemCount: 5,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) =>
+                                const SkeletonListItem(),
+                          );
+                        case PengumumanError state:
+                          return Column(
+                            children: [
+                              Expanded(
+                                child: EmptyView(
+                                  title: 'Gagal Memuat Data',
+                                  subtitle: state.message,
+                                  icon: Icons.error_outline,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => _cubit.loadPengumuman(),
+                                child: const Text('Coba Lagi'),
+                              ),
+                            ],
+                          );
+                        case PengumumanLoaded loaded:
+                          return _daftar(loaded);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Jarak samping daftar: gutter halaman, ditambah batas lebar dari
+  /// `ContentFrame`, supaya scrollbar-nya di tepi jendela.
+  EdgeInsets _listPadding(BuildContext context, {required double bottom}) {
+    final gutter =
+        widget.isWeb && context.layoutBreakpoint != LayoutBreakpoint.compact
+            ? AppSpacing.webGutter
+            : 16.0;
+    return ContentFrame.insetOf(context) +
+        EdgeInsets.fromLTRB(gutter, 8, gutter, bottom);
   }
 
   Widget _daftar(PengumumanLoaded loaded) {
@@ -296,7 +343,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
           child: ListView.builder(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+            padding: _listPadding(context, bottom: 96),
             itemCount: loaded.items.length + (loaded.isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index >= loaded.items.length) {

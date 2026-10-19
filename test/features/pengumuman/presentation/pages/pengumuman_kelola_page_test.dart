@@ -42,18 +42,51 @@ void main() {
   tearDown(() => cubit.close());
 
   Future<void> openPage(WidgetTester tester,
-      {List<String> extraRoutes = const []}) async {
+      {List<String> extraRoutes = const [],
+      bool isWeb = false,
+      Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
       BlocProvider<PengumumanCubit>.value(
         value: cubit,
-        child: PengumumanKelolaPage(),
+        child: PengumumanKelolaPage(isWeb: isWeb),
       ),
       extraRoutes: extraRoutes,
-      size: const Size(800, 2000),
+      size: size,
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('on the web the create button is in the page header, no FAB',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Buat'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Kelola Pengumuman')).dx, 120 + 32,
+        reason: 'the title starts at the content column plus the gutter');
+    expect(find.byIcon(Icons.arrow_back), findsNothing,
+        reason: 'a sidebar destination has nowhere to go back to');
+  });
+
+  testWidgets('a phone keeps the FAB and the back header', (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+
+    await openPage(tester, size: const Size(390, 844));
+
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+  });
 
   testWidgets('renders rows with their status and the filter chips',
       (tester) async {

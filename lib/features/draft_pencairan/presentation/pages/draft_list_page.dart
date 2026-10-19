@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -69,6 +71,9 @@ class DraftListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Di layar lebar tombol buat ada di header halaman, seperti Nasabah dan
+    // Harga; FAB hanya untuk layar sempit.
+    final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -78,10 +83,20 @@ class DraftListView extends StatelessWidget {
           child: BlocBuilder<DraftListCubit, DraftListState>(
             builder: (context, state) => Column(
               children: [
-                const ContentInset(
+                ContentInset(
                   child: AppBackHeader(
-                    backKey: Key('kembali'),
+                    backKey: const Key('kembali'),
                     title: 'Pencairan',
+                    actions: [
+                      if (wide)
+                        AppButton(
+                          key: const Key('buat-pencairan'),
+                          label: 'Buat Pencairan',
+                          icon: Icons.add,
+                          expand: false,
+                          onPressed: () => _buat(context),
+                        ),
+                    ],
                   ),
                 ),
                 const ContentInset(child: _SearchBar()),
@@ -92,14 +107,16 @@ class DraftListView extends StatelessWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'draft_list_fab',
-        backgroundColor: AppColors.greenDark,
-        foregroundColor: Colors.white,
-        onPressed: () => _buat(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Buat Pencairan'),
-      ),
+      floatingActionButton: wide
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'draft_list_fab',
+              backgroundColor: AppColors.greenDark,
+              foregroundColor: Colors.white,
+              onPressed: () => _buat(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Buat Pencairan'),
+            ),
     );
   }
 }
