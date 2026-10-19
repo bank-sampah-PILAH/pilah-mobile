@@ -35,7 +35,9 @@ const _filterOptions = <String, String>{
 /// cancel a schedule, withdraw a published one, delete drafts. Kedaluwarsa and
 /// ditarik rows are read-only.
 class PengumumanKelolaPage extends StatelessWidget {
-  const PengumumanKelolaPage({super.key});
+  const PengumumanKelolaPage({super.key, this.isWeb = kIsWeb});
+
+  final bool isWeb;
 
   static const route = '/pengumuman/kelola';
 
@@ -48,13 +50,15 @@ class PengumumanKelolaPage extends StatelessWidget {
               title: 'Gagal', message: state.message);
         }
       },
-      child: const _PengumumanKelolaBody(),
+      child: _PengumumanKelolaBody(isWeb: isWeb),
     );
   }
 }
 
 class _PengumumanKelolaBody extends StatefulWidget {
-  const _PengumumanKelolaBody();
+  const _PengumumanKelolaBody({required this.isWeb});
+
+  final bool isWeb;
 
   @override
   State<_PengumumanKelolaBody> createState() => _PengumumanKelolaBodyState();
@@ -210,7 +214,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
                 // Di web halaman ini adalah destinasi sidebar, jadi tidak ada
                 // yang perlu dikembalikan. Di aplikasi ia dibuka dari Profil
                 // dan kembali ke sana.
-                child: kIsWeb
+                child: widget.isWeb
                     ? Text('Kelola Pengumuman',
                         style: AppTextStyle.appBar
                             .copyWith(color: AppColors.black))

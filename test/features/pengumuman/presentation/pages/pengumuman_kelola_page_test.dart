@@ -42,15 +42,17 @@ void main() {
   tearDown(() => cubit.close());
 
   Future<void> openPage(WidgetTester tester,
-      {List<String> extraRoutes = const []}) async {
+      {List<String> extraRoutes = const [],
+      bool isWeb = false,
+      Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
       BlocProvider<PengumumanCubit>.value(
         value: cubit,
-        child: PengumumanKelolaPage(),
+        child: PengumumanKelolaPage(isWeb: isWeb),
       ),
       extraRoutes: extraRoutes,
-      size: const Size(800, 2000),
+      size: size,
     );
     await tester.pumpAndSettle();
   }

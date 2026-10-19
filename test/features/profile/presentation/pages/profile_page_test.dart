@@ -69,7 +69,7 @@ void main() {
         // ignore: prefer_const_constructors
         child: ProfilePage(isWeb: isWeb),
       ),
-      extraRoutes: ['/login'],
+      extraRoutes: ['/login', '/pengumuman/kelola'],
       size: size,
       pushed: true,
     );
@@ -212,6 +212,19 @@ void main() {
   });
 
   group('on a phone', () {
+    testWidgets('Kelola Pengumuman opens the announcement manager',
+        (tester) async {
+      await openPage(tester, size: const Size(390, 844), isWeb: false);
+
+      final kelola = find.widgetWithText(AppButton, 'Kelola Pengumuman');
+      await tester.ensureVisible(kelola);
+      await tester.pumpAndSettle();
+      await tester.tap(kelola);
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/pengumuman/kelola'), findsOneWidget);
+    });
+
     testWidgets(
         'Kelola Pengumuman sits above Keluar, since the bottom bar has '
         'no tab for it', (tester) async {
