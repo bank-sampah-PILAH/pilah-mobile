@@ -39,7 +39,6 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_appr
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
