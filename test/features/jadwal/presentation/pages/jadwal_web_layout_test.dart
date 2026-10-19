@@ -16,6 +16,7 @@ class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 void _stubManagerLoads(_MockJadwalCubit cubit) {
   when(() => cubit.loadJadwal(date: any(named: 'date')))
       .thenAnswer((_) async {});
+  when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
   when(
     () => cubit.loadCalendarDates(
       startDate: any(named: 'startDate'),
@@ -183,7 +184,7 @@ void main() {
     final cubit = await _pumpAt(
       tester,
       const Size(1440, 900),
-      state: JadwalLoaded(const [], scheduledDates: {today, later}),
+      state: JadwalLoaded(const [], upcomingDates: {today, later}),
     );
 
     expect(find.text('Berikutnya'), findsOneWidget);
@@ -225,6 +226,12 @@ void main() {
       tester.getSize(find.widgetWithText(FilledButton, 'Buat Jadwal')).width,
       lessThanOrEqualTo(280),
     );
+  });
+
+  testWidgets('opening the page also loads the upcoming dates', (tester) async {
+    final cubit = await _pumpAt(tester, const Size(1440, 900));
+
+    verify(() => cubit.loadUpcomingDates()).called(1);
   });
 
   testWidgets('on a phone the title stays in the AppBar', (tester) async {

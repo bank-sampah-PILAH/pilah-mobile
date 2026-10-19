@@ -50,6 +50,106 @@ void main() {
   );
 
   blocTest<JadwalCubit, JadwalState>(
+    'upcoming dates cover the next 90 days, beyond the visible month',
+    build: () {
+      when(() => repository.getJadwal(page: 1, date: null))
+          .thenAnswer((_) async => Right(_page(const [])));
+      when(() => repository.getCalendarDates(any(), any())).thenAnswer(
+        (_) async => Right({DateTime(2026, 12, 9)}),
+      );
+      return JadwalCubit(repository);
+    },
+    act: (cubit) async {
+      await cubit.loadJadwal();
+      await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19, 14));
+    },
+    verify: (cubit) {
+      verify(() => repository.getCalendarDates(
+            DateTime(2026, 10, 19),
+            DateTime(2026, 10, 19).add(const Duration(days: 90)),
+          )).called(1);
+      expect((cubit.state as JadwalLoaded).upcomingDates, {
+        DateTime(2026, 12, 9),
+      });
+    },
+  );
+
+  blocTest<JadwalCubit, JadwalState>(
+    'upcoming dates fetched before the list loads are kept for it',
+    build: () {
+      when(() => repository.getJadwal(page: 1, date: null))
+          .thenAnswer((_) async => Right(_page(const [])));
+      when(() => repository.getCalendarDates(any(), any())).thenAnswer(
+        (_) async => Right({DateTime(2026, 11, 3)}),
+      );
+      return JadwalCubit(repository);
+    },
+    act: (cubit) async {
+      await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19));
+      await cubit.loadJadwal();
+    },
+    verify: (cubit) => expect(
+      (cubit.state as JadwalLoaded).upcomingDates,
+      {DateTime(2026, 11, 3)},
+    ),
+  );
+
+  blocTest<JadwalCubit, JadwalState>(
+    'a failed upcoming request leaves the earlier dates alone',
+    build: () {
+      when(() => repository.getJadwal(page: 1, date: null))
+          .thenAnswer((_) async => Right(_page(const [])));
+      var calls = 0;
+      when(() => repository.getCalendarDates(any(), any())).thenAnswer(
+        (_) async => ++calls == 1
+            ? Right({DateTime(2026, 11, 3)})
+            : Left(GeneralException(message: 'offline')),
+      );
+      return JadwalCubit(repository);
+    },
+    act: (cubit) async {
+      await cubit.loadJadwal();
+      await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19));
+      await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19));
+    },
+    verify: (cubit) => expect(
+      (cubit.state as JadwalLoaded).upcomingDates,
+      {DateTime(2026, 11, 3)},
+    ),
+  );
+
+  blocTest<JadwalCubit, JadwalState>(
+    'saving a schedule refreshes the upcoming dates too',
+    build: () {
+      when(() => repository.getJadwal(page: 1, date: null))
+          .thenAnswer((_) async => Right(_page(const [])));
+      when(() => repository.getCalendarDates(any(), any()))
+          .thenAnswer((_) async => const Right({}));
+      when(() => repository.createJadwal(any()))
+          .thenAnswer((_) async => Right(schedule));
+      return JadwalCubit(repository);
+    },
+    act: (cubit) async {
+      await cubit.loadJadwal();
+      await cubit.saveJadwal(schedule);
+    },
+    verify: (_) {
+      final ranges = verify(
+        () => repository.getCalendarDates(captureAny(), captureAny()),
+      ).captured;
+      final starts = [for (var i = 0; i < ranges.length; i += 2) ranges[i]];
+      final ends = [for (var i = 1; i < ranges.length; i += 2) ranges[i]];
+      expect(
+        [
+          for (var i = 0; i < starts.length; i++)
+            (ends[i] as DateTime).difference(starts[i] as DateTime).inDays,
+        ],
+        contains(90),
+      );
+    },
+  );
+
+  blocTest<JadwalCubit, JadwalState>(
     'emits an error when loading schedules fails',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
