@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
@@ -42,8 +43,11 @@ class _NasabahSetoranDetailSheetState extends State<NasabahSetoranDetailSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const AppSheetHandle(),
-            const SizedBox(height: 20),
+            // A dialog cannot be dragged, so it has no handle there.
+            if (!DialogSurface.of(context)) ...[
+              const AppSheetHandle(),
+              const SizedBox(height: 20),
+            ],
             Text(
               'Detail Setoran',
               style: NasabahStyle.text(20, weight: FontWeight.w600),

@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,6 +113,8 @@ void main() {
     expect(find.byType(HargaDetailFlow), findsOneWidget);
     expect(find.byType(Dialog), findsOneWidget,
         reason: 'a sheet as wide as the window looks wrong on the web');
+    expect(find.byType(AppSheetHandle), findsNothing,
+        reason: 'a dialog cannot be dragged');
     expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
 
     await tester.tap(find.text('Riwayat harga'));
