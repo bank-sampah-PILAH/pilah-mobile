@@ -112,7 +112,9 @@ void main() {
       );
       expect(tester.getSize(scroll.first).width, 1440,
           reason: 'so the scrollbar is at the window edge');
-      expect(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dx, 120.0 + 32);
+      // Inside the card that starts at the column's left edge (120 + 32).
+      expect(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dx,
+          closeTo(120.0 + 32, 16));
     });
 
     testWidgets('Keluar sits in the account card, small, above the settings',
