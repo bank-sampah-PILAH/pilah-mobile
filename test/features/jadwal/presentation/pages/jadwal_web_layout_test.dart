@@ -20,6 +20,11 @@ void _stubManagerLoads(_MockJadwalCubit cubit) {
         date: any(named: 'date'),
         dateTo: any(named: 'dateTo'),
       )).thenAnswer((_) async {});
+  when(() => cubit.loadJadwal(
+        silent: any(named: 'silent'),
+        date: any(named: 'date'),
+        dateTo: any(named: 'dateTo'),
+      )).thenAnswer((_) async {});
   when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
   when(
     () => cubit.loadCalendarDates(
@@ -252,6 +257,24 @@ void main() {
     );
 
     verify(() => cubit.loadJadwal(
+          date: DateTime(2026, 10, 19),
+          dateTo: DateTime(2026, 10, 31),
+        )).called(1);
+  });
+
+  testWidgets('pulling the agenda down reloads the range without clearing it',
+      (tester) async {
+    final cubit = await _pumpAt(
+      tester,
+      const Size(1440, 900),
+      initialDate: DateTime(2026, 10, 19),
+    );
+
+    await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+
+    verify(() => cubit.loadJadwal(
+          silent: true,
           date: DateTime(2026, 10, 19),
           dateTo: DateTime(2026, 10, 31),
         )).called(1);
