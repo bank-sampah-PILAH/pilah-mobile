@@ -84,6 +84,26 @@ void main() {
     expect(loaded.hasMore, isFalse);
   });
 
+  test('pagination keeps existing rows and filters overlapping IDs', () async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 2,
+      'next': 'http://api.test/api/v1/pengumuman?page=2',
+      'results': [_row('1')],
+    });
+    await cubit.loadPengumuman();
+
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 2,
+      'next': null,
+      'results': [_row('1', status: 'draft'), _row('2')],
+    });
+    await cubit.loadNextPage();
+
+    final loaded = cubit.state as PengumumanLoaded;
+    expect(loaded.items.map((item) => item.id), ['1', '2']);
+    expect(loaded.items.first.status, 'terbit');
+  });
+
   test('create saves a draft and update patches the saved row', () async {
     api.on('POST', '/api/v1/pengumuman', json: _row('9', status: 'draft'));
     api.on('PATCH', '/api/v1/pengumuman/9', json: _row('9', status: 'draft'));

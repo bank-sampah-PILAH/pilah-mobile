@@ -47,7 +47,7 @@ void main() {
       tester,
       BlocProvider<PengumumanCubit>.value(
         value: cubit,
-        child: const PengumumanKelolaPage(),
+        child: PengumumanKelolaPage(),
       ),
       extraRoutes: extraRoutes,
       size: const Size(800, 2000),
