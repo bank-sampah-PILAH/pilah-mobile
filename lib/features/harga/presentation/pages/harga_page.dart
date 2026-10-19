@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -123,11 +124,8 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
     }
 
     final hargaCubit = context.read<HargaCubit>();
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    showAdaptiveSurface<void>(
+      context,
       builder: (_) => TambahJenisSampahBottomSheet(
         hargaCubit: hargaCubit,
         initialData: item,
@@ -147,11 +145,8 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       });
       return;
     }
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    showAdaptiveSurface<void>(
+      context,
       builder: (sheetContext) => HargaDetailFlow(
         item: item,
         onEdit: () {

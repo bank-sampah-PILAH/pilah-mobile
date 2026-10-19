@@ -600,7 +600,7 @@ void main() {
       expect(find.text('Disesuaikan'), findsNothing);
     });
 
-    testWidgets('the potongan sheet is white with rounded top corners',
+    testWidgets('the potongan picker is a bottom sheet on a phone',
         (tester) async {
       await pumpNew(tester);
 
@@ -608,12 +608,19 @@ void main() {
       await tester.tap(find.byKey(const Key('potongan-item-n-2')));
       await tester.pumpAndSettle();
 
-      final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
-      expect(sheet.backgroundColor, Colors.white);
-      expect(
-          sheet.shape,
-          const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24))));
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+    });
+
+    testWidgets('and a dialog on a wide window', (tester) async {
+      await pumpNew(tester, size: const Size(1200, 2600));
+
+      await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
+      await tester.tap(find.byKey(const Key('potongan-item-n-2')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
     });
 
     testWidgets('Ikuti potongan umum sits to the right of Terapkan',

@@ -80,13 +80,26 @@ void main() {
     await pumpChooser(tester);
 
     expect(find.text('Catat Setoran'), findsOneWidget);
-    // The sheet entry, not the dashboard menu tile behind the barrier.
+    // The dialog entry, not anything behind the barrier. A wide window gets a
+    // dialog, not a sheet as wide as the window.
     expect(
         find.descendant(
-          of: find.byType(BottomSheet),
+          of: find.byType(Dialog),
           matching: find.text('Pencairan'),
         ),
         findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+  });
+
+  testWidgets('on a phone the choice is still a bottom sheet', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpChooser(tester);
+
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
   });
 
   testWidgets('opens Setoran Baru when Catat Setoran is chosen',
@@ -104,7 +117,7 @@ void main() {
     await pumpChooser(tester);
 
     await tester.tap(find.descendant(
-      of: find.byType(BottomSheet),
+      of: find.byType(Dialog),
       matching: find.text('Pencairan'),
     ));
     await tester.pumpAndSettle();

@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
@@ -17,11 +18,8 @@ class RiwayatNasabahPage extends StatelessWidget {
   void _showDetail(BuildContext context, String activityId) {
     final cubit = context.read<RiwayatHistoryCubit>();
     final membershipId = cubit.membershipId ?? '';
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    showAdaptiveSurface<void>(
+      context,
       builder: (sheetContext) => NasabahSetoranDetailSheet(
         loadDetail: () => cubit.loadDetail(membershipId, activityId),
       ),

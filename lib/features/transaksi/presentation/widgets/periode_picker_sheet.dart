@@ -6,7 +6,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
@@ -48,7 +48,7 @@ String _tanggal(DateTime d) =>
 /// Membuka pemilih periode: bottom sheet di telepon, dialog di layar lebar.
 Future<void> showPeriodePicker(BuildContext context) {
   final cubit = context.read<RiwayatAktivitasCubit>();
-  return showNasabahSurface<void>(
+  return showAdaptiveSurface<void>(
     context,
     builder: (_) => BlocProvider.value(
       value: cubit,
@@ -90,7 +90,7 @@ class PeriodePickerSheet extends StatelessWidget {
               final cubit = context.read<RiwayatAktivitasCubit>();
               final host = Navigator.of(context, rootNavigator: true).context;
               Navigator.of(context).pop();
-              showNasabahSurface<void>(
+              showAdaptiveSurface<void>(
                 host,
                 builder: (_) => BlocProvider.value(
                   value: cubit,

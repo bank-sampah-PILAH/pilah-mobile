@@ -91,7 +91,7 @@ void main() {
     }
   });
 
-  testWidgets('below expanded a card opens a detail sheet, with history in it',
+  testWidgets('below expanded a row opens a detail dialog, with history in it',
       (tester) async {
     api.on('GET', '/api/v1/jenis-sampah/1/harga', json: {
       'results': [
@@ -110,7 +110,8 @@ void main() {
     await tester.tap(find.text('Botol PET'));
     await tester.pumpAndSettle();
     expect(find.byType(HargaDetailFlow), findsOneWidget);
-    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget,
+        reason: 'a sheet as wide as the window looks wrong on the web');
     expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
 
     await tester.tap(find.text('Riwayat harga'));

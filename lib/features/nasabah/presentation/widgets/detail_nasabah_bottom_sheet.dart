@@ -12,7 +12,7 @@ import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
@@ -229,7 +229,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                     final rootContext =
                         Navigator.of(context, rootNavigator: true).context;
                     context.pop();
-                    showNasabahSurface<void>(
+                    showAdaptiveSurface<void>(
                       rootContext,
                       builder: (context) =>
                           EditNasabahBottomSheet(nasabah: nasabah),

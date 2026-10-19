@@ -15,7 +15,7 @@ import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
 
 class NasabahPage extends StatelessWidget {
@@ -39,7 +39,7 @@ class _NasabahPageBody extends StatefulWidget {
 }
 
 class _NasabahPageBodyState extends State<_NasabahPageBody> {
-  void _tambahNasabah() => showNasabahSurface<void>(
+  void _tambahNasabah() => showAdaptiveSurface<void>(
         context,
         builder: (context) => const TambahNasabahBottomSheet(),
       );
