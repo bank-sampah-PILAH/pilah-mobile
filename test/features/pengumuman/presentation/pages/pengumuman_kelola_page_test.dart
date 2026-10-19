@@ -449,4 +449,41 @@ void main() {
       expect(find.text('route:/'), findsOneWidget);
     });
   });
+
+  testWidgets('returning to the retained branch reloads the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    var active = true;
+    late StateSetter flip;
+    await pumpRouted(
+      tester,
+      BlocProvider<PengumumanCubit>.value(
+        value: cubit,
+        child: StatefulBuilder(builder: (context, setState) {
+          flip = setState;
+          return TickerMode(
+            enabled: active,
+            child: const PengumumanKelolaPage(isWeb: false),
+          );
+        }),
+      ),
+      size: const Size(390, 844),
+    );
+    await tester.pumpAndSettle();
+    final before = api.requests.length;
+
+    flip(() => active = false); // another tab takes over
+    await tester.pumpAndSettle();
+    expect(api.requests.length, before, reason: 'leaving does not reload');
+
+    flip(() => active = true); // the branch is selected again
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100)); // let the request run
+    expect(api.requests.length, before + 1,
+        reason: 'a retained page must refresh when it comes back');
+  });
 }
