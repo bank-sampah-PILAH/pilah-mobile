@@ -6,7 +6,6 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -666,16 +665,6 @@ class _ProfileViewState extends State<_ProfileView>
                     ],
                     if (!_webShell) ...[
                       const SizedBox(height: 32),
-                      // Di web Pengumuman ada di sidebar; bottom bar aplikasi
-                      // tidak memuat tab keenam.
-                      AppButton(
-                        label: 'Kelola Pengumuman',
-                        variant: AppButtonVariant.outlined,
-                        icon: Icons.campaign_outlined,
-                        onPressed: () =>
-                            context.push(PengumumanKelolaPage.route),
-                      ),
-                      const SizedBox(height: 12),
                       _buildLogoutButton(),
                     ],
                   ],

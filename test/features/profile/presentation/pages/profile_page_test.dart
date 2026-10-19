@@ -71,7 +71,7 @@ void main() {
         // ignore: prefer_const_constructors
         child: ProfilePage(isWeb: isWeb),
       ),
-      extraRoutes: ['/login', '/pengumuman/kelola', ...extraRoutes],
+      extraRoutes: ['/login', ...extraRoutes],
       size: size,
       pushed: pushed,
     );
@@ -108,8 +108,6 @@ void main() {
         (tester) async {
       await openPage(tester, size: const Size(1440, 900), isWeb: true);
 
-      expect(find.text('Kelola Pengumuman'), findsNothing,
-          reason: 'on the web it is in the sidebar');
       final keluar = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
       expect(keluar, findsOneWidget, reason: 'only one, not also at the end');
       expect(tester.getTopLeft(keluar).dy,
@@ -229,34 +227,6 @@ void main() {
 
       expect(find.text('route:/dashboard'), findsOneWidget,
           reason: 'pop() with an empty stack would throw and do nothing');
-    });
-
-    testWidgets('Kelola Pengumuman opens the announcement manager',
-        (tester) async {
-      await openPage(tester, size: const Size(390, 844), isWeb: false);
-
-      final kelola = find.widgetWithText(AppButton, 'Kelola Pengumuman');
-      await tester.ensureVisible(kelola);
-      await tester.pumpAndSettle();
-      await tester.tap(kelola);
-      await tester.pumpAndSettle();
-
-      expect(find.text('route:/pengumuman/kelola'), findsOneWidget);
-    });
-
-    testWidgets(
-        'Kelola Pengumuman sits above Keluar, since the bottom bar has '
-        'no tab for it', (tester) async {
-      await openPage(tester, size: const Size(390, 844), isWeb: false);
-
-      final kelola = find.widgetWithText(AppButton, 'Kelola Pengumuman');
-      expect(kelola, findsOneWidget);
-      expect(
-          tester.getTopLeft(kelola).dy,
-          lessThan(tester
-              .getTopLeft(
-                  find.widgetWithText(AppButton, 'Keluar dari Aplikasi'))
-              .dy));
     });
 
     testWidgets('Keluar is the last thing on the page, full width',
