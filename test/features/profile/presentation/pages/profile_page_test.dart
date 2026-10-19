@@ -102,6 +102,21 @@ void main() {
           reason: 'the action bar stops at the content edge too');
     });
 
+    testWidgets('the settings scroll across the window, content in a column',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      final scroll = find.ancestor(
+        of: find.text('PROFIL BANK SAMPAH'),
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(tester.getSize(scroll.first).width, 1440,
+          reason: 'so the scrollbar is at the window edge');
+      // Inside the card that starts at the column's left edge (120 + 32).
+      expect(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dx,
+          closeTo(120.0 + 32, 16));
+    });
+
     testWidgets('Keluar sits in the account card, small, above the settings',
         (tester) async {
       await openPage(tester, size: const Size(1440, 900), isWeb: true);

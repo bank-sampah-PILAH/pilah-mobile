@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -354,6 +355,7 @@ class _JadwalPageState extends State<JadwalPage> {
             child: widget.customerMode
                 ? _buildCustomerAgenda(items, loadedState)
                 : MasterDetailLayout(
+                    masterScrolls: true,
                     master: _buildPengurusAgenda(items, loadedState),
                     detail: _buildFormPanel(),
                   ),
@@ -455,108 +457,152 @@ class _JadwalPageState extends State<JadwalPage> {
       builder: (context, constraints) {
         final sideBySide =
             _webHeader && constraints.maxWidth >= _sideBySideMinWidth;
-        final calendar = JadwalCalendar(
-          selectedDate: _selectedDate,
-          scheduledDates: loadedState.scheduledDates,
-          isMonthExpanded: sideBySide || _isMonthExpanded,
-          showToggle: !sideBySide,
-          onSelectDate: _selectDate,
-          onNavigate: (direction) =>
-              _navigateCalendar(direction, wholeMonth: sideBySide),
-          onToggleMonth: () =>
-              setState(() => _isMonthExpanded = !_isMonthExpanded),
-        );
+        // Batas lebar konten sebagai jarak samping (nol bila panel terbuka),
+        // supaya area gulir selebar badan dan scrollbarnya di tepi jendela.
+        final gutter = _webHeader ? AppSpacing.webGutter : 16.0;
+        final sideInset = EdgeInsets.symmetric(horizontal: gutter) +
+            ContentFrame.insetOf(context);
+        final calendar = _agendaCalendar(loadedState, sideBySide: sideBySide);
         final agenda = _pengurusAgendaChildren(dayItems, loadedState);
-        final header = [
-          AppPageHeader(
-            title: 'Jadwal Kegiatan',
-            actions: [
-              if (_createInHeader)
-                AppButton(
-                  label: 'Buat Jadwal',
-                  icon: Icons.add,
-                  expand: false,
-                  onPressed: loadedState.isTransitioning || loadedState.isSaving
-                      ? null
-                      : _openForm,
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ];
-        if (sideBySide) {
-          // Kalender dan "Berikutnya" diam di kiri; hanya agenda yang
-          // bergulir, jadi kolom kiri tidak kosong saat agenda panjang.
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.webGutter,
-              AppSpacing.webTop,
-              AppSpacing.webGutter,
-              0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ...header,
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: _sideCalendarWidth,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              calendar,
-                              const SizedBox(height: AppSpacing.lg),
-                              JadwalUpcomingMonths(
-                                upcomingDates: loadedState.upcomingDates,
-                                today: clock.now(),
-                                selectedDate: _selectedDate,
-                                onSelect: _selectDate,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xl),
-                      Expanded(
-                        child: ListView(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(bottom: 24),
-                          children: agenda,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return ListView(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: _webHeader
-              ? const EdgeInsets.fromLTRB(
-                  AppSpacing.webGutter,
-                  AppSpacing.webTop,
-                  AppSpacing.webGutter,
-                  104,
-                )
-              : const EdgeInsets.fromLTRB(16, 16, 16, 104),
-          children: [
-            if (_webHeader) ...header,
-            calendar,
-            const SizedBox(height: 24),
-            ...agenda,
-          ],
-        );
+        final header = _agendaHeader(loadedState);
+        return sideBySide
+            ? _sideBySideAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda,
+                loadedState: loadedState,
+              )
+            : _stackedAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda,
+              );
       },
     );
   }
+
+  JadwalCalendar _agendaCalendar(
+    JadwalLoaded loadedState, {
+    required bool sideBySide,
+  }) =>
+      JadwalCalendar(
+        selectedDate: _selectedDate,
+        scheduledDates: loadedState.scheduledDates,
+        isMonthExpanded: sideBySide || _isMonthExpanded,
+        showToggle: !sideBySide,
+        onSelectDate: _selectDate,
+        onNavigate: (direction) =>
+            _navigateCalendar(direction, wholeMonth: sideBySide),
+        onToggleMonth: () =>
+            setState(() => _isMonthExpanded = !_isMonthExpanded),
+      );
+
+  List<Widget> _agendaHeader(JadwalLoaded loadedState) => [
+        AppPageHeader(
+          title: 'Jadwal Kegiatan',
+          actions: [
+            if (_createInHeader)
+              AppButton(
+                label: 'Buat Jadwal',
+                icon: Icons.add,
+                expand: false,
+                onPressed: loadedState.isTransitioning || loadedState.isSaving
+                    ? null
+                    : _openForm,
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+      ];
+
+  /// Kalender dan "Berikutnya" diam di kiri; hanya agenda yang bergulir, jadi
+  /// kolom kiri tidak kosong saat agenda panjang.
+  Widget _sideBySideAgenda({
+    required EdgeInsets sideInset,
+    required List<Widget> header,
+    required JadwalCalendar calendar,
+    required List<Widget> agenda,
+    required JadwalLoaded loadedState,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.webTop),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sideInset.left),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: header,
+              ),
+            ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: sideInset.left),
+                  SizedBox(
+                    width: _sideCalendarWidth,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          calendar,
+                          const SizedBox(height: AppSpacing.lg),
+                          JadwalUpcomingMonths(
+                            upcomingDates: loadedState.upcomingDates,
+                            today: clock.now(),
+                            selectedDate: _selectedDate,
+                            onSelect: _selectDate,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xl),
+                  Expanded(
+                    child: ListView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.only(
+                        right: sideInset.right,
+                        bottom: 24,
+                      ),
+                      children: agenda,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+  /// Kalender di atas agenda, satu kolom yang bergulir bersama.
+  Widget _stackedAgenda({
+    required EdgeInsets sideInset,
+    required List<Widget> header,
+    required JadwalCalendar calendar,
+    required List<Widget> agenda,
+  }) =>
+      ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          sideInset.left,
+          _webHeader ? AppSpacing.webTop : 16,
+          sideInset.right,
+          104,
+        ),
+        children: [
+          if (_webHeader) ...header,
+          calendar,
+          const SizedBox(height: 24),
+          ...agenda,
+        ],
+      );
 
   /// Daftar lebar daftar jadwal yang cukup untuk kalender di samping agenda.
   static const _sideBySideMinWidth = 900.0;

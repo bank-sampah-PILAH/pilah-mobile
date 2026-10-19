@@ -102,9 +102,16 @@ void main() {
       of: find.text('VERSI SEKARANG'),
       matching: find.byType(ListView),
     );
-    expect(tester.getSize(list).width,
+    // The scroll view spans the window, so its scrollbar is at the edge...
+    expect(tester.getSize(list).width, 1440);
+    // ...while the cards keep to a form's column, centred.
+    final card = find.ancestor(
+      of: find.text('VERSI SEKARANG'),
+      matching: find.byType(Card),
+    );
+    expect(tester.getSize(card).width,
         lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
-    expect(tester.getCenter(list).dx, closeTo(720, 1),
+    expect(tester.getCenter(card).dx, closeTo(720, 1),
         reason: 'centred in the window');
   });
 

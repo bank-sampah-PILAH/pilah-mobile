@@ -12,6 +12,7 @@ import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -84,40 +85,46 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
       backgroundColor: Colors.white,
       body: SafeArea(
         // A list of names and saldo is read row by row, so a desktop window
-        // keeps it to a form's column, and the footer below matches it.
-        child: ContentBounds(
+        // keeps it to a form's column, and the footer below matches it. The
+        // list itself scrolls across the body, so its scrollbar is at the edge.
+        child: ContentFrame(
           maxWidth: LayoutBreakpoint.formMaxWidth,
           child: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
             builder: (context, state) => Column(
               children: [
-                const AppBackHeader(
-                    backKey: Key('kembali'), title: 'Pilih Nasabah'),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CustomSearchField(
-                          key: const Key('cari-kandidat'),
-                          hintText: 'Cari nama, kode, atau nomor HP',
-                          onChanged: _onSearch,
+                const ContentInset(
+                  child: AppBackHeader(
+                      backKey: Key('kembali'), title: 'Pilih Nasabah'),
+                ),
+                ContentInset(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomSearchField(
+                            key: const Key('cari-kandidat'),
+                            hintText: 'Cari nama, kode, atau nomor HP',
+                            onChanged: _onSearch,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      PencairanSortButton<KandidatSortField>(
-                        buttonKey: const Key('urutkan-kandidat'),
-                        itemKeyPrefix: 'urut-kandidat-',
-                        fields: KandidatSortField.values,
-                        labelOf: (field) => field.label,
-                        current: state.urutan.field,
-                        ascending: state.urutan.ascending,
-                        onSort: cubit.setSortField,
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        PencairanSortButton<KandidatSortField>(
+                          buttonKey: const Key('urutkan-kandidat'),
+                          itemKeyPrefix: 'urut-kandidat-',
+                          fields: KandidatSortField.values,
+                          labelOf: (field) => field.label,
+                          current: state.urutan.field,
+                          ascending: state.urutan.ascending,
+                          onSort: cubit.setSortField,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                _Filters(state: state, onSaldoMin: _askSaldoMin),
-                _BulkRow(state: state),
+                ContentInset(
+                    child: _Filters(state: state, onSaldoMin: _askSaldoMin)),
+                ContentInset(child: _BulkRow(state: state)),
                 Expanded(child: _List(state: state)),
               ],
             ),
@@ -257,7 +264,8 @@ class _List extends StatelessWidget {
     switch (state.status) {
       case PilihStatus.loading:
         return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: ContentFrame.insetOf(context)
+              .add(const EdgeInsets.symmetric(horizontal: 16)),
           children: List.generate(5, (_) => const SkeletonListItem()),
         );
       case PilihStatus.failure:
@@ -272,12 +280,12 @@ class _List extends StatelessWidget {
           ),
         );
       case PilihStatus.loaded:
-        return _kosongAtauDaftar(cubit);
+        return _kosongAtauDaftar(context, cubit);
     }
   }
 
   /// An explanation when there is nothing to pick, otherwise the rows.
-  Widget _kosongAtauDaftar(PilihNasabahCubit cubit) {
+  Widget _kosongAtauDaftar(BuildContext context, PilihNasabahCubit cubit) {
     if (state.kandidat.isEmpty) {
       return EmptyView(
         title: state.search.isEmpty
@@ -295,7 +303,8 @@ class _List extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: ContentFrame.insetOf(context)
+          .add(const EdgeInsets.fromLTRB(16, 8, 16, 16)),
       itemCount: state.tampil.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {

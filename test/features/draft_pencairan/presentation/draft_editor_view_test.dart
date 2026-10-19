@@ -1375,6 +1375,19 @@ void main() {
           lessThan(tester.getBottomLeft(form).dy));
     });
 
+    testWidgets('both panes scroll out to the window edges', (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      final samping = find.byKey(const Key('draft-editor-panel'));
+      expect(tester.getRect(samping).right, 1440,
+          reason: 'the panel scrollbar is at the window edge');
+      expect(tester.getRect(find.byType(CustomScrollView).first).left, 0,
+          reason: 'the form scrolls from the window edge');
+      // The content itself still sits in the centred column.
+      expect(tester.getTopLeft(find.byKey(const Key('nama-draft'))).dx,
+          120.0 + 16);
+    });
+
     testWidgets('resizing across the desktop breakpoint keeps the search',
         (tester) async {
       await pumpNew(tester, size: const Size(1440, 900));

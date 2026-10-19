@@ -21,7 +21,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_b
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/item_setoran_card.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/setoran_draft.dart';
@@ -364,196 +364,207 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
       body: AbsorbPointer(
         absorbing: _isSaving,
         child: SafeArea(
-          child: ContentBounds(
+          // Both panes scroll out to the window edges, so their scrollbars sit
+          // there; the frame's inset keeps the content to a readable column.
+          child: ContentFrame(
               child: Column(
             children: [
               // Header
-              AppBackHeader(
-                  title: 'Transaksi Baru', onBack: () => context.pop()),
+              ContentInset(
+                child: AppBackHeader(
+                    title: 'Transaksi Baru', onBack: () => context.pop()),
+              ),
 
               Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Section 1: PILIH NASABAH
-                            const AppFieldLabel('PILIH NASABAH'),
-                            const SizedBox(height: 16),
-                            PilihNasabahSection(
-                              selectedCustomer: selectedCustomer,
-                              onCustomerSelected: (customer) {
-                                setState(() {
-                                  selectedCustomer = customer;
-                                });
-                              },
-                              hasError:
-                                  _hasSubmitted && selectedCustomer == null,
-                              errorText: 'Nasabah harus dipilih',
-                            ),
-                            const SizedBox(height: 24),
+                child: Builder(builder: (context) {
+                  final inset = ContentFrame.insetOf(context);
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.fromLTRB(
+                              16.0 + inset.left, 8.0, 16.0, 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Section 1: PILIH NASABAH
+                              const AppFieldLabel('PILIH NASABAH'),
+                              const SizedBox(height: 16),
+                              PilihNasabahSection(
+                                selectedCustomer: selectedCustomer,
+                                onCustomerSelected: (customer) {
+                                  setState(() {
+                                    selectedCustomer = customer;
+                                  });
+                                },
+                                hasError:
+                                    _hasSubmitted && selectedCustomer == null,
+                                errorText: 'Nasabah harus dipilih',
+                              ),
+                              const SizedBox(height: 24),
 
-                            // Section 2: DAFTAR SETORAN
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const AppFieldLabel('DAFTAR SETORAN'),
-                                Text(
-                                  '${setoranItems.length} item',
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Items or Empty State
-                            if (setoranItems.isEmpty)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              // Section 2: DAFTAR SETORAN
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(24),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.lg),
-                                      border: Border.all(
-                                          color: (_hasSubmitted &&
-                                                  setoranItems.isEmpty)
-                                              ? AppColors.danger
-                                              : Colors.grey[300]!,
-                                          width: 1.5),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[50],
-                                            borderRadius: BorderRadius.circular(
-                                                AppRadius.lg),
-                                          ),
-                                          child: Icon(Icons.add,
-                                              color: Colors.grey[400],
-                                              size: 24),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Belum Ada Item Setoran',
-                                          style: AppTextStyle.title1.copyWith(
-                                            color: Colors.grey[500],
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Tap tombol di bawah untuk menambah item.',
-                                          style: AppTextStyle.small.copyWith(
-                                            color: Colors.grey[400],
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
+                                  const AppFieldLabel('DAFTAR SETORAN'),
+                                  Text(
+                                    '${setoranItems.length} item',
+                                    style: AppTextStyle.small.copyWith(
+                                      color: Colors.grey[500],
                                     ),
                                   ),
-                                  if (_hasSubmitted &&
-                                      setoranItems.isEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 8),
-                                      child: Text(
-                                        'Daftar setoran tidak boleh kosong',
-                                        style: AppTextStyle.small.copyWith(
-                                          color: AppColors.danger,
-                                        ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Items or Empty State
+                              if (setoranItems.isEmpty)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.lg),
+                                        border: Border.all(
+                                            color: (_hasSubmitted &&
+                                                    setoranItems.isEmpty)
+                                                ? AppColors.danger
+                                                : Colors.grey[300]!,
+                                            width: 1.5),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[50],
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      AppRadius.lg),
+                                            ),
+                                            child: Icon(Icons.add,
+                                                color: Colors.grey[400],
+                                                size: 24),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Belum Ada Item Setoran',
+                                            style: AppTextStyle.title1.copyWith(
+                                              color: Colors.grey[500],
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Tap tombol di bawah untuk menambah item.',
+                                            style: AppTextStyle.small.copyWith(
+                                              color: Colors.grey[400],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
                                       ),
                                     ),
+                                    if (_hasSubmitted &&
+                                        setoranItems.isEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8),
+                                        child: Text(
+                                          'Daftar setoran tidak boleh kosong',
+                                          style: AppTextStyle.small.copyWith(
+                                            color: AppColors.danger,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
-                              )
-                            else
-                              Column(
-                                children:
-                                    List.generate(setoranItems.length, (index) {
-                                  return ItemSetoranCard(
-                                    index: index,
-                                    itemData: setoranItems[index],
-                                    hasError:
-                                        _flaggedItemIndexes.contains(index),
-                                    errorText: _itemErrorText(index),
-                                    onChanged: (updatedItem) {
-                                      final newId =
-                                          updatedItem['jenis_sampah_id']
-                                              as String?;
-                                      final bool duplicateExists =
-                                          jenisSampahSudahAda(
-                                              setoranItems, index, newId);
-                                      if (duplicateExists) {
-                                        AppNotification.showWarning(
+                                )
+                              else
+                                Column(
+                                  children: List.generate(setoranItems.length,
+                                      (index) {
+                                    return ItemSetoranCard(
+                                      index: index,
+                                      itemData: setoranItems[index],
+                                      hasError:
+                                          _flaggedItemIndexes.contains(index),
+                                      errorText: _itemErrorText(index),
+                                      onChanged: (updatedItem) {
+                                        final newId =
+                                            updatedItem['jenis_sampah_id']
+                                                as String?;
+                                        final bool duplicateExists =
+                                            jenisSampahSudahAda(
+                                                setoranItems, index, newId);
+                                        if (duplicateExists) {
+                                          AppNotification.showWarning(
+                                            context,
+                                            title: 'Jenis Sudah Dipilih',
+                                            message:
+                                                'Jenis sampah ini sudah ada di daftar item. Ubah berat pada item yang sudah ada.',
+                                          );
+                                          return;
+                                        }
+                                        setState(() {
+                                          setoranItems[index] = updatedItem;
+                                        });
+                                      },
+                                      onSubmitted: _handleSubmit,
+                                      onDelete: () {
+                                        setState(() {
+                                          setoranItems.removeAt(index);
+                                        });
+                                        AppNotification.showSuccess(
                                           context,
-                                          title: 'Jenis Sudah Dipilih',
+                                          title: 'Item Dihapus',
                                           message:
-                                              'Jenis sampah ini sudah ada di daftar item. Ubah berat pada item yang sudah ada.',
+                                              'Item setoran berhasil dihapus.',
                                         );
-                                        return;
-                                      }
-                                      setState(() {
-                                        setoranItems[index] = updatedItem;
-                                      });
-                                    },
-                                    onSubmitted: _handleSubmit,
-                                    onDelete: () {
-                                      setState(() {
-                                        setoranItems.removeAt(index);
-                                      });
-                                      AppNotification.showSuccess(
-                                        context,
-                                        title: 'Item Dihapus',
-                                        message:
-                                            'Item setoran berhasil dihapus.',
-                                      );
-                                    },
-                                  );
-                                }).toList(),
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              const SizedBox(height: 16),
+
+                              // Add Item Button
+                              AppButton(
+                                label: 'Tambah Item Setoran',
+                                variant: AppButtonVariant.outlined,
+                                icon: Icons.add,
+                                onPressed: _addItem,
                               ),
-                            const SizedBox(height: 16),
-
-                            // Add Item Button
-                            AppButton(
-                              label: 'Tambah Item Setoran',
-                              variant: AppButtonVariant.outlined,
-                              icon: Icons.add,
-                              onPressed: _addItem,
-                            ),
-                            const SizedBox(height: 24),
-
-                            if (!sideBySide) ...[
-                              TransactionSummarySection(grandTotal: grandTotal),
                               const SizedBox(height: 24),
+
+                              if (!sideBySide) ...[
+                                TransactionSummarySection(
+                                    grandTotal: grandTotal),
+                                const SizedBox(height: 24),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                    if (sideBySide) ...[
-                      const SizedBox(width: 24),
-                      _SummaryPanel(
-                        grandTotal: grandTotal,
-                        saveButton: _saveButton(),
-                      ),
+                      if (sideBySide) ...[
+                        const SizedBox(width: 24),
+                        _SummaryPanel(
+                          grandTotal: grandTotal,
+                          saveButton: _saveButton(),
+                          rightInset: inset.right,
+                        ),
+                      ],
                     ],
-                  ],
-                ),
+                  );
+                }),
               ),
             ],
           )),
@@ -577,17 +588,25 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
 /// Panel kanan pada layar lebar: ringkasan dan tombol simpan tetap terlihat
 /// sementara daftar item di kiri digulir.
 class _SummaryPanel extends StatelessWidget {
-  const _SummaryPanel({required this.grandTotal, required this.saveButton});
+  const _SummaryPanel({
+    required this.grandTotal,
+    required this.saveButton,
+    this.rightInset = 0,
+  });
 
   final int grandTotal;
   final Widget saveButton;
 
+  /// Room a wide window leaves right of the content column; the panel grows
+  /// into it so its scrollbar is at the window edge.
+  final double rightInset;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: LayoutBreakpoint.sidePanelWidth,
+      width: LayoutBreakpoint.sidePanelWidth + rightInset,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 8, 16, 24),
+        padding: EdgeInsets.fromLTRB(0, 8, 16 + rightInset, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

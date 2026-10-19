@@ -7,7 +7,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
@@ -72,17 +72,20 @@ class DraftListView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        // A desktop window keeps the list to the same column as the laporan.
-        child: ContentBounds(
+        // A desktop window keeps the list to the same column as the laporan;
+        // the lists scroll across the body so their scrollbar is at the edge.
+        child: ContentFrame(
           child: BlocBuilder<DraftListCubit, DraftListState>(
             builder: (context, state) => Column(
               children: [
-                const AppBackHeader(
-                  backKey: Key('kembali'),
-                  title: 'Pencairan',
+                const ContentInset(
+                  child: AppBackHeader(
+                    backKey: Key('kembali'),
+                    title: 'Pencairan',
+                  ),
                 ),
-                const _SearchBar(),
-                _FilterChips(state: state),
+                const ContentInset(child: _SearchBar()),
+                ContentInset(child: _FilterChips(state: state)),
                 Expanded(child: _Body(state: state, onOpen: _open)),
               ],
             ),
@@ -206,7 +209,8 @@ class _Body extends StatelessWidget {
     switch (state.status) {
       case DraftListStatus.loading:
         return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: ContentFrame.insetOf(context)
+              .add(const EdgeInsets.symmetric(horizontal: 16)),
           children: List.generate(4, (_) => const SkeletonListItem()),
         );
       case DraftListStatus.failure:
@@ -243,7 +247,8 @@ class _Body extends StatelessWidget {
                 )
               : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                  padding: ContentFrame.insetOf(context)
+                      .add(const EdgeInsets.fromLTRB(16, 4, 16, 96)),
                   itemCount: entries.length,
                   itemBuilder: (context, index) {
                     final entry = entries[index];

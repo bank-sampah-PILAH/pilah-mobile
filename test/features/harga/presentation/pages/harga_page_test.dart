@@ -322,6 +322,11 @@ void main() {
 
     HargaTable table() => tester.widget<HargaTable>(find.byType(HargaTable));
     expect(find.byType(WebPaginationBar), findsOneWidget);
+    // The bar is the card's footer, not a footer of the page below it.
+    final card = tester.getRect(find.byType(HargaTable));
+    final bar = tester.getRect(find.byType(WebPaginationBar));
+    expect(bar.bottom, lessThanOrEqualTo(card.bottom));
+    expect(bar.top, greaterThan(card.top));
     expect(find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
     expect(table().items.map((item) => item.name),
         [for (var i = 1; i <= 10; i++) 'Jenis $i']);

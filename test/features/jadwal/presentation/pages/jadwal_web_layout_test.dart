@@ -111,6 +111,22 @@ void main() {
     );
   });
 
+  testWidgets(
+      'on a very wide window the agenda scrolls across the window, so its '
+      'scrollbar sits at the edge', (tester) async {
+    await _pumpAt(tester, const Size(1920, 900));
+
+    final scroll = find.descendant(
+      of: find.byType(JadwalPage),
+      matching: find.byType(ListView),
+    );
+    expect(tester.getRect(scroll.first).right, 1920);
+    // The content still stays within the 1200 column: the title and the
+    // calendar start at the column's edge plus the gutter.
+    expect(tester.getTopLeft(find.text('Jadwal Kegiatan')).dx, 360 + 32);
+    expect(tester.getTopLeft(find.byType(JadwalCalendar)).dx, 360 + 32);
+  });
+
   testWidgets('a narrower window stacks the agenda under the calendar',
       (tester) async {
     await _pumpAt(tester, const Size(860, 900));

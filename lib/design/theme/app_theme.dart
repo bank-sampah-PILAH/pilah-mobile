@@ -44,6 +44,20 @@ abstract final class AppTheme {
       // The Material default is a green-tinted off-white from the seed colour,
       // which made a screen that sets no background look unlike the rest.
       scaffoldBackgroundColor: Colors.white,
+      // Scrollbar tipis dan membulat yang melebar saat disentuh pointer; margin
+      // silang menjauhkannya dari tepi, supaya tidak menempel pada konten.
+      scrollbarTheme: ScrollbarThemeData(
+        radius: const Radius.circular(AppRadius.sm),
+        crossAxisMargin: 2,
+        thickness: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered) ? 12 : 8,
+        ),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered)
+              ? AppColors.grey200.withValues(alpha: 0.65)
+              : AppColors.grey200,
+        ),
+      ),
       // A dropdown's menu is painted in the canvas colour, which is the same
       // green-tinted off-white. White, like every other surface.
       canvasColor: Colors.white,

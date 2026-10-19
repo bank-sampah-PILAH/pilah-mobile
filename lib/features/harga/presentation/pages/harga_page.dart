@@ -338,49 +338,34 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
             .take(_webPageSize)
             .toList()
         : items;
-    final Widget list = context.layoutBreakpoint != LayoutBreakpoint.compact
-        ? Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-            child: HargaTable(
-              items: visibleItems,
-              selectedId: _selected?.id,
-              onTap: _openDetail,
-            ),
-          )
-        : ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: listBottomPadding,
-            itemCount: visibleItems.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final item = visibleItems[index];
-              return _HargaCard(
-                item: item,
-                selected: _selected?.id == item.id,
-                onTap: () => _openDetail(item),
-              );
-            },
-          );
-    final Widget content = widget.isWeb
-        ? Column(
-            children: [
-              Expanded(child: list),
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: AppSpacing.md,
-                  bottom: AppSpacing.xl,
-                ),
-                child: WebPaginationBar(
-                  currentPage: _currentPage,
-                  totalItems: items.length,
-                  pageSize: _webPageSize,
-                  itemLabel: 'jenis sampah',
-                  onPageChanged: (page) => setState(() => _currentPage = page),
-                ),
-              ),
-            ],
-          )
-        : list;
+    final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
+    final pagination = WebPaginationBar(
+      currentPage: _currentPage,
+      totalItems: items.length,
+      pageSize: _webPageSize,
+      itemLabel: 'jenis sampah',
+      onPageChanged: (page) => setState(() => _currentPage = page),
+    );
+    final Widget cards = ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: listBottomPadding,
+      itemCount: visibleItems.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = visibleItems[index];
+        return _HargaCard(
+          item: item,
+          selected: _selected?.id == item.id,
+          onTap: () => _openDetail(item),
+        );
+      },
+    );
+    final content = _listContent(
+      wide: wide,
+      cards: cards,
+      items: visibleItems,
+      pagination: pagination,
+    );
 
     return PageStateView(
       state: pageState,
@@ -390,6 +375,43 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       emptySubtitle: empty.subtitle,
       emptyIcon: empty.icon,
       child: content,
+    );
+  }
+
+  /// Isi daftar: kartu tabel di layar lebar, kartu satu kolom di bawahnya,
+  /// dengan paginasi di web.
+  Widget _listContent({
+    required bool wide,
+    required Widget cards,
+    required List<HargaEntity> items,
+    required Widget pagination,
+  }) {
+    if (wide) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+        child: HargaTable(
+          items: items,
+          selectedId: _selected?.id,
+          onTap: _openDetail,
+          // Paginasi di dasar kartu, seperti tabel nasabah.
+          footer: widget.isWeb ? pagination : null,
+          page: _currentPage,
+        ),
+      );
+    }
+    if (!widget.isWeb) return cards;
+    // Browser sempit: kartu satu kolom, paginasi di bawahnya.
+    return Column(
+      children: [
+        Expanded(child: cards),
+        Padding(
+          padding: const EdgeInsets.only(
+            top: AppSpacing.md,
+            bottom: AppSpacing.xl,
+          ),
+          child: pagination,
+        ),
+      ],
     );
   }
 

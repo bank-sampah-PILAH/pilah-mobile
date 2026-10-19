@@ -208,6 +208,19 @@ void main() {
               'full-bleed fields would start at the page padding');
     });
 
+    testWidgets('both columns scroll out to the window edges', (tester) async {
+      await open(tester, window: const Size(1440, 1200));
+
+      final scrolls = find
+          .byType(SingleChildScrollView)
+          .evaluate()
+          .map((e) => tester.getRect(find.byWidget(e.widget)));
+      final left = scrolls.map((r) => r.left).reduce((a, b) => a < b ? a : b);
+      final right = scrolls.map((r) => r.right).reduce((a, b) => a > b ? a : b);
+      expect(left, 0, reason: 'the fields scroll from the window edge');
+      expect(right, 1440, reason: 'so the panel scrollbar is at the edge');
+    });
+
     testWidgets('a phone still stacks the save button below the fields',
         (tester) async {
       await open(tester, window: const Size(390, 2600));
