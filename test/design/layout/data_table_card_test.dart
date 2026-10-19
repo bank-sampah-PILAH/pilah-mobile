@@ -66,4 +66,38 @@ void main() {
 
     expect(find.byType(DataTableCardFooter), findsNothing);
   });
+
+  testWidgets('changing the page puts the rows back at the top',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    late StateSetter flip;
+    var page = 1;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: StatefulBuilder(builder: (context, setState) {
+          flip = setState;
+          return DataTableCard(
+            pageKey: page,
+            header: DataTableCard.head([const Text('KOLOM')]),
+            body: ListView(children: [
+              for (var i = 0; i < 40; i++) Text('baris $page-$i'),
+            ]),
+          );
+        }),
+      ),
+    ));
+
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
+    await tester.pump();
+    expect(find.text('baris 1-0'), findsNothing, reason: 'scrolled down');
+
+    flip(() => page = 2);
+    await tester.pump();
+
+    expect(find.text('baris 2-0'), findsOneWidget,
+        reason: 'a new page starts at its first row, not at the old offset');
+  });
 }

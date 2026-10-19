@@ -20,6 +20,7 @@ class AktivitasTable extends StatelessWidget {
     this.footer = const [],
     this.toolbar,
     this.pagination,
+    this.page,
   });
 
   final List<ActivitasEntity> items;
@@ -33,6 +34,9 @@ class AktivitasTable extends StatelessWidget {
 
   /// Paginasi di dasar kartu.
   final Widget? pagination;
+
+  /// Halaman yang tampil; berubahnya mengembalikan gulir ke atas.
+  final int? page;
 
   /// Lebar relatif kolom: waktu, nasabah, tipe, rincian, nominal.
   static const _columns = [4, 4, 2, 4, 3];
@@ -73,6 +77,7 @@ class AktivitasTable extends StatelessWidget {
               ),
       ),
       footer: pagination,
+      pageKey: page,
     );
   }
 
