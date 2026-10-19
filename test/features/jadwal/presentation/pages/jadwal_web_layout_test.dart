@@ -8,6 +8,8 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dar
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_dates.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 
@@ -22,10 +24,20 @@ void _stubManagerLoads(_MockJadwalCubit cubit) {
   ).thenAnswer((_) async {});
 }
 
+/// Opens the create form: the page action in an expanded window, the floating
+/// button below it.
+Future<void> _tapCreate(WidgetTester tester) async {
+  final fab = find.byTooltip('Buat Jadwal');
+  await tester.tap(fab.evaluate().isNotEmpty
+      ? fab
+      : find.widgetWithText(AppButton, 'Buat Jadwal'));
+}
+
 Future<_MockJadwalCubit> _pumpAt(
   WidgetTester tester,
   Size size, {
   DateTime? initialDate,
+  JadwalLoaded state = const JadwalLoaded([]),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -33,7 +45,7 @@ Future<_MockJadwalCubit> _pumpAt(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final cubit = _MockJadwalCubit();
-  when(() => cubit.state).thenReturn(const JadwalLoaded([]));
+  when(() => cubit.state).thenReturn(state);
   _stubManagerLoads(cubit);
 
   await tester.pumpWidget(
@@ -106,12 +118,88 @@ void main() {
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     final calendar = tester.getRect(find.byType(JadwalCalendar));
     final agenda = tester.getRect(find.text('0 jadwal'));
     expect(agenda.top, greaterThan(calendar.bottom));
+  });
+
+  testWidgets(
+      'an expanded window creates from the header, not a floating button',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Buat Jadwal'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
+  });
+
+  testWidgets('a medium window and a phone keep the floating button',
+      (tester) async {
+    await _pumpAt(tester, const Size(700, 900));
+
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Buat Jadwal'), findsNothing);
+  });
+
+  testWidgets('the calendar stays put while a long agenda scrolls',
+      (tester) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final items = [
+      for (var i = 0; i < 8; i++)
+        JadwalEntity(
+          id: 'j-$i',
+          bankSampahId: 'b',
+          jenisKegiatan: 'penimbangan',
+          mulaiPada: today.add(Duration(hours: 8, minutes: i)),
+          selesaiPada: today.add(Duration(hours: 10, minutes: i)),
+          lokasi: 'Balai $i',
+        ),
+    ];
+    await _pumpAt(
+      tester,
+      const Size(1440, 900),
+      state: JadwalLoaded(items, totalCount: 8, scheduledDates: {today}),
+    );
+    final before = tester.getTopLeft(find.byType(JadwalCalendar));
+
+    await tester.drag(find.text('Balai 0'), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Balai 0').hitTestable(), findsNothing);
+    expect(tester.getTopLeft(find.byType(JadwalCalendar)), before);
+  });
+
+  testWidgets('the next scheduled dates sit under the calendar',
+      (tester) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final later = today.add(const Duration(days: 2));
+    final cubit = await _pumpAt(
+      tester,
+      const Size(1440, 900),
+      state: JadwalLoaded(const [], scheduledDates: {today, later}),
+    );
+
+    expect(find.text('Berikutnya'), findsOneWidget);
+    final calendar = tester.getRect(find.byType(JadwalCalendar));
+    expect(tester.getTopLeft(find.text('Berikutnya')).dy,
+        greaterThan(calendar.bottom));
+
+    await tester.tap(find
+        .descendant(
+          of: find.byType(JadwalUpcomingDates),
+          matching: find.byType(InkWell),
+        )
+        .last);
+    await tester.pump();
+
+    verify(() => cubit.loadJadwal(date: later)).called(1);
   });
 
   testWidgets('on a phone the title stays in the AppBar', (tester) async {
@@ -124,7 +212,7 @@ void main() {
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
@@ -139,7 +227,7 @@ void main() {
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
 
@@ -175,7 +263,7 @@ void main() {
     final cubit = await _pumpAt(tester, const Size(1440, 900));
     when(() => cubit.saveJadwal(any())).thenAnswer((_) async => null);
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -197,7 +285,7 @@ void main() {
       (tester) async {
     await _pumpAt(tester, const Size(840, 900));
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     expect(
@@ -211,7 +299,7 @@ void main() {
       (tester) async {
     await _pumpAt(tester, const Size(839, 900));
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     expect(
@@ -225,7 +313,7 @@ void main() {
       (tester) async {
     await _pumpAt(tester, const Size(390, 844));
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
@@ -243,7 +331,7 @@ void main() {
       'shrinking to medium closes the open panel rather than '
       'narrowing it', (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
 
@@ -259,7 +347,7 @@ void main() {
 
   testWidgets('shrinking to compact closes the open panel', (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     tester.view.physicalSize = const Size(390, 844);
@@ -277,13 +365,13 @@ void main() {
       'after shrinking, the add button gives a sheet and no stale panel',
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     tester.view.physicalSize = const Size(390, 844);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('jadwal-form')), findsOneWidget);
@@ -297,7 +385,7 @@ void main() {
   testWidgets('widening past expanded does not resurrect a closed panel',
       (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
-    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await _tapCreate(tester);
     await tester.pumpAndSettle();
 
     tester.view.physicalSize = const Size(800, 900);
