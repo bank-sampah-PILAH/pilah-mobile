@@ -513,6 +513,7 @@ class _JadwalPageState extends State<JadwalPage> {
                               JadwalUpcomingMonths(
                                 upcomingDates: loadedState.upcomingDates,
                                 today: clock.now(),
+                                selectedDate: _selectedDate,
                                 onSelect: _selectDate,
                               ),
                             ],

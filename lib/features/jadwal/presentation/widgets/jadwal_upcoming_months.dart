@@ -6,10 +6,10 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import 'jadwal_calendar.dart';
 
-/// Ringkasan bulan-bulan berikutnya di bawah kalender web: satu baris per
-/// bulan dengan jumlah hari berjadwalnya. Bulan ini tidak ada di sini karena
-/// agenda di sebelahnya sudah memuat sisa bulan; baris ini menjadi jalan pintas
-/// ke bulan yang akan datang.
+/// Ringkasan "Berikutnya" di bawah kalender web: satu baris per bulan dengan
+/// jumlah hari berjadwal yang belum lewat, mulai dari bulan ini (hanya hari ini
+/// dan sesudahnya). Mengetuk satu baris membuka jadwal bulan itu yang belum
+/// lewat: hari berjadwal pertamanya sampai akhir bulan.
 ///
 /// [upcomingDates] memuat tanggal berjadwal dari hari ini ke depan, terlepas
 /// dari bulan yang tampil di kalender. Yang dihitung adalah hari berjadwal,
@@ -19,24 +19,28 @@ class JadwalUpcomingMonths extends StatelessWidget {
     super.key,
     required this.upcomingDates,
     required this.today,
+    required this.selectedDate,
     required this.onSelect,
   });
 
   final Set<DateTime> upcomingDates;
   final DateTime today;
 
-  /// Dipanggil dengan hari berjadwal pertama bulan yang diketuk.
+  /// Bulan yang memuat tanggal ini diberi warna.
+  final DateTime selectedDate;
+
+  /// Dipanggil dengan hari berjadwal pertama bulan yang diketuk yang belum
+  /// lewat.
   final ValueChanged<DateTime> onSelect;
 
   @override
   Widget build(BuildContext context) {
     final start = DateUtils.dateOnly(today);
-    final months = _laterMonths(
+    final months = _monthsFrom(
       (upcomingDates.map(DateUtils.dateOnly).toSet()
             ..removeWhere((d) => d.isBefore(start)))
           .toList()
         ..sort(),
-      start,
     );
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -56,7 +60,7 @@ class JadwalUpcomingMonths extends StatelessWidget {
               AppSpacing.sm,
             ),
             child: Text(
-              'Bulan berikutnya',
+              'Berikutnya',
               style: AppTextStyle.small.copyWith(
                 color: AppColors.black,
                 fontWeight: FontWeight.w700,
@@ -67,15 +71,18 @@ class JadwalUpcomingMonths extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
               child: Text(
-                'Belum ada jadwal dalam 3 bulan ke depan.',
+                'Belum ada jadwal mendatang dalam 3 bulan ke depan.',
                 style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
             )
           else
             for (final month in months)
               _MonthRow(
-                label: formatJadwalMonth(month.first),
+                label: _sameMonth(month.first, start)
+                    ? 'Bulan ini'
+                    : formatJadwalMonth(month.first),
                 days: month.length,
+                selected: _sameMonth(month.first, selectedDate),
                 onTap: () => onSelect(month.first),
               ),
         ],
@@ -83,19 +90,14 @@ class JadwalUpcomingMonths extends StatelessWidget {
     );
   }
 
-  /// Hari berjadwal per bulan setelah bulan [start], berurutan.
-  static List<List<DateTime>> _laterMonths(
-    List<DateTime> sorted,
-    DateTime start,
-  ) {
+  static bool _sameMonth(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month;
+
+  /// Hari berjadwal per bulan, dari [start] ke depan, berurutan.
+  static List<List<DateTime>> _monthsFrom(List<DateTime> sorted) {
     final months = <List<DateTime>>[];
     for (final date in sorted) {
-      final later = date.year > start.year ||
-          (date.year == start.year && date.month > start.month);
-      if (!later) continue;
-      if (months.isNotEmpty &&
-          months.last.first.year == date.year &&
-          months.last.first.month == date.month) {
+      if (months.isNotEmpty && _sameMonth(months.last.first, date)) {
         months.last.add(date);
       } else {
         months.add([date]);
@@ -109,11 +111,13 @@ class _MonthRow extends StatelessWidget {
   const _MonthRow({
     required this.label,
     required this.days,
+    required this.selected,
     required this.onTap,
   });
 
   final String label;
   final int days;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -122,10 +126,14 @@ class _MonthRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
       hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.greenLight : null,
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [
@@ -133,8 +141,8 @@ class _MonthRow extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTextStyle.small.copyWith(
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w500,
+                  color: selected ? AppColors.greenDark : AppColors.black,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ),
