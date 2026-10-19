@@ -316,6 +316,57 @@ void main() {
     expect(tester.getRect(tappable), tester.getRect(surface));
   });
 
+  testWidgets('the actions share a row with the status badge', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _MockJadwalRepository();
+    _stubJadwal(repository, [_schedule()]);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final badge = tester.getCenter(find.text('Draf'));
+    final publish = tester.getCenter(find.text('Terbitkan'));
+    expect((publish.dy - badge.dy).abs(), lessThan(12));
+    expect(publish.dx, greaterThan(badge.dx));
+    // Nothing is left under that row but the card's own padding.
+    final card = tester.getRect(find.byType(Card).first);
+    expect(
+      card.bottom - tester.getBottomLeft(find.text('Terbitkan')).dy,
+      lessThan(40),
+    );
+  });
+
+  testWidgets(
+      'on a phone the actions wrap under the badge instead of overflowing',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _MockJadwalRepository();
+    _stubJadwal(repository, [_schedule(status: 'diterbitkan')]);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Batalkan').hitTestable(), findsOneWidget);
+    expect(find.text('Tandai Selesai').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('shows the manager overlap warning when a schedule overlaps', (
     tester,
   ) async {
