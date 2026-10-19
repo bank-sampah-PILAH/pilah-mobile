@@ -149,6 +149,30 @@ void main() {
     expect(state.hasMore, isFalse);
   });
 
+  test('loads a selected page instead of appending and keeps page size',
+      () async {
+    final requests = <GetNasabahParams>[];
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      requests.add(params);
+      return Right(_page(
+        [_nasabah('NAS-PAGE-${params.page}')],
+        totalCount: 30,
+        hasMore: params.page < 3,
+      ));
+    });
+
+    await cubit.loadNasabah(pageSize: 10);
+    await cubit.loadPage(2);
+
+    final state = cubit.state as NasabahLoaded;
+    expect(state.nasabahList.map((n) => n.idNasabah), ['NAS-PAGE-2']);
+    expect(state.currentPage, 2);
+    expect(state.pageSize, 10);
+    expect(requests.map((request) => request.page), [1, 2]);
+    expect(requests.map((request) => request.pageSize), [10, 10]);
+  });
+
   test('a late response from the previous tab cannot replace the new tab',
       () async {
     final activeResponse =
