@@ -30,4 +30,24 @@ void main() {
       expect(weekdays.top - title.bottom, greaterThanOrEqualTo(16));
     });
   }
+
+  for (final width in [360.0, 440.0]) {
+    for (final month in [true, false]) {
+      testWidgets(
+          'the month name starts where "Sen" starts '
+          '(${month ? 'month' : 'week'}, ${width.toInt()} wide)',
+          (tester) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await pump(tester, month: month);
+
+        final title = tester.getTopLeft(find.text('Oktober 2026')).dx;
+        final sen = tester.getTopLeft(find.text('Sen')).dx;
+
+        expect(title, closeTo(sen, 1));
+      });
+    }
+  }
 }
