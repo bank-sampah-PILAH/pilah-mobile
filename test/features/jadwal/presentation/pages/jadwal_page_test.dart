@@ -292,6 +292,27 @@ void main() {
     }
   });
 
+  testWidgets('the tappable area covers the whole card, action row included',
+      (tester) async {
+    final repository = _MockJadwalRepository();
+    _stubJadwal(repository, [_schedule()]);
+    final cubit = JadwalCubit(repository);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(value: cubit, child: const JadwalPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final card = find.byType(Card).first;
+    final tappable =
+        find.descendant(of: card, matching: find.byType(InkWell)).first;
+
+    expect(find.text('Terbitkan'), findsOneWidget);
+    expect(tester.getRect(tappable), tester.getRect(card));
+  });
+
   testWidgets('shows the manager overlap warning when a schedule overlaps', (
     tester,
   ) async {

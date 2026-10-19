@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 
@@ -72,6 +73,47 @@ void main() {
     expect(tester.getTopLeft(find.text('Jadwal Kegiatan')).dx, 32);
   });
 
+  testWidgets('on a wide window the calendar sits beside the agenda',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+
+    final calendar = tester.getRect(find.byType(JadwalCalendar));
+    final agenda = tester.getRect(find.text('0 jadwal'));
+    expect(calendar.width, lessThanOrEqualTo(440));
+    expect(agenda.left, greaterThan(calendar.right));
+    expect(agenda.top, lessThan(calendar.bottom));
+    expect(
+      find.byKey(const ValueKey('jadwal-calendar-toggle')),
+      findsNothing,
+      reason: 'a side calendar is always the whole month',
+    );
+  });
+
+  testWidgets('a narrower window stacks the agenda under the calendar',
+      (tester) async {
+    await _pumpAt(tester, const Size(860, 900));
+
+    final calendar = tester.getRect(find.byType(JadwalCalendar));
+    final agenda = tester.getRect(find.text('0 jadwal'));
+    expect(agenda.top, greaterThan(calendar.bottom));
+    expect(
+      find.byKey(const ValueKey('jadwal-calendar-toggle')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('opening the form stacks the agenda so the panel has room',
+      (tester) async {
+    await _pumpAt(tester, const Size(1440, 900));
+
+    await tester.tap(find.byTooltip('Buat Jadwal'));
+    await tester.pumpAndSettle();
+
+    final calendar = tester.getRect(find.byType(JadwalCalendar));
+    final agenda = tester.getRect(find.text('0 jadwal'));
+    expect(agenda.top, greaterThan(calendar.bottom));
+  });
+
   testWidgets('on a phone the title stays in the AppBar', (tester) async {
     await _pumpAt(tester, const Size(420, 900));
 
@@ -119,8 +161,6 @@ void main() {
       initialDate: DateTime(2026, 1, 31),
     );
 
-    await tester.tap(find.byKey(const ValueKey('jadwal-calendar-toggle')));
-    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.chevron_right));
     await tester.pumpAndSettle();
 
