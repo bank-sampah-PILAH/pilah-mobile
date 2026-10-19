@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import '../cubit/riwayat_aktivitas_cubit.dart';
 import '../cubit/riwayat_aktivitas_state.dart';
@@ -9,9 +11,6 @@ import '../cubit/riwayat_aktivitas_state.dart';
 /// Displays authoritative totals for the selected period and filters.
 class AktivitasSummaryView extends StatelessWidget {
   const AktivitasSummaryView({super.key});
-
-  static const _horizontalPadding = 12.0;
-  static const _columnSpacing = 16.0;
 
   @override
   Widget build(BuildContext context) =>
@@ -32,7 +31,13 @@ class AktivitasSummaryView extends StatelessWidget {
             );
           }
           final summary = state.summary;
-          if (summary == null) return const SizedBox.shrink();
+          // Periode tanpa aktivitas: deretan angka nol hanya menambah bising
+          // di atas keadaan kosong.
+          if (summary == null || summary.jumlahTransaksi == 0) {
+            return const SizedBox.shrink();
+          }
+          final berat =
+              '${summary.totalBerat.toString().replaceFirst(RegExp(r'\.0$'), '').replaceAll('.', ',')} kg';
           final money = summary.saldo < 0
               ? '-${CurrencyFormatter.formatRupiah(summary.saldo.abs())}'
               : CurrencyFormatter.formatRupiah(summary.saldo);
@@ -40,7 +45,7 @@ class AktivitasSummaryView extends StatelessWidget {
             ('Total Transaksi', '${summary.jumlahTransaksi}', null),
             (
               'Total Berat Sampah',
-              '${summary.totalBerat.toString().replaceFirst(RegExp(r'\.0$'), '').replaceAll('.', ',')} kg',
+              berat,
               null,
             ),
             (
@@ -59,81 +64,146 @@ class AktivitasSummaryView extends StatelessWidget {
               'Selisih total setoran dan pencairan pada periode dan filter yang dipilih.'
             ),
           ];
-          return LayoutBuilder(builder: (context, constraints) {
-            final inline = constraints.maxWidth < 720;
-            final columns = inline ? 1 : 5;
-            final width = (constraints.maxWidth -
-                    2 * _horizontalPadding -
-                    (columns - 1) * _columnSpacing) /
-                columns;
-            return Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: _horizontalPadding, vertical: 8),
+          return Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: LayoutBuilder(builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 720;
+              final cells = [
+                for (var i = 0; i < values.length; i++)
+                  _SummaryMetric(
+                    label: values[i].$1,
+                    value: values[i].$2,
+                    explanation: values[i].$3,
+                    emphasis: i == values.length - 1,
+                    valueColor: switch (i) {
+                      2 => AppColors.greenDark,
+                      3 => AppColors.danger,
+                      _ => null,
+                    },
+                  ),
+              ];
+              return Container(
                 decoration: BoxDecoration(
-                  color: AppColors.greenLight,
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: AppColors.border),
                 ),
-                child: Wrap(
-                  spacing: _columnSpacing,
-                  runSpacing: 4,
-                  children: values
-                      .map((metric) => _SummaryMetric(
-                          label: metric.$1,
-                          value: metric.$2,
-                          explanation: metric.$3,
-                          width: width,
-                          inline: inline))
-                      .toList(),
-                ),
-              ),
-            );
-          });
+                child: wide
+                    ? IntrinsicHeight(
+                        child: Row(
+                          children: [
+                            for (var i = 0; i < cells.length; i++) ...[
+                              if (i > 0)
+                                const VerticalDivider(
+                                    width: 1, color: AppColors.border),
+                              Expanded(child: cells[i]),
+                            ],
+                          ],
+                        ),
+                      )
+                    // Telepon: setoran dan pencairan berdampingan, saldo di
+                    // bawahnya selebar penuh, tanpa geser ke samping.
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          IntrinsicHeight(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                    child: _SummaryMetric(
+                                  label: 'Total Nilai Setoran',
+                                  value: values[2].$2,
+                                  valueColor: AppColors.greenDark,
+                                )),
+                                const VerticalDivider(
+                                    width: 1, color: AppColors.border),
+                                Expanded(
+                                    child: _SummaryMetric(
+                                  label: 'Total Pencairan',
+                                  value: values[3].$2,
+                                  valueColor: AppColors.danger,
+                                )),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 1, color: AppColors.border),
+                          cells.last,
+                          const Divider(height: 1, color: AppColors.border),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.sm,
+                            ),
+                            child: Text(
+                              '${summary.jumlahTransaksi} transaksi · $berat',
+                              style: AppTextStyle.extraSmall
+                                  .copyWith(color: AppColors.grey100),
+                            ),
+                          ),
+                        ],
+                      ),
+              );
+            }),
+          );
         },
       );
 }
 
 class _SummaryMetric extends StatelessWidget {
-  const _SummaryMetric(
-      {required this.label,
-      required this.value,
-      required this.width,
-      required this.inline,
-      this.explanation});
+  const _SummaryMetric({
+    required this.label,
+    required this.value,
+    this.explanation,
+    this.emphasis = false,
+    this.valueColor,
+  });
 
   final String label;
   final String value;
-  final double width;
-  final bool inline;
   final String? explanation;
+
+  /// Saldo periode: angka yang dicari pengurus, jadi paling menonjol.
+  final bool emphasis;
+
+  /// Overrides the value colour, such as red for money out.
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
-    final texts = [
-      Text(label, style: AppTextStyle.small),
-      Text(value,
-          style: AppTextStyle.headline3.copyWith(fontWeight: FontWeight.bold)),
-    ];
-    final content = _layout(texts);
-    return SizedBox(
-      width: width,
-      child: explanation != null
-          ? Tooltip(message: explanation!, child: content)
-          : content,
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+          ),
+          const SizedBox(height: 2),
+          // Angka sangat besar mengecil, bukan terpotong atau keluar kartu.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: AppTextStyle.title1.copyWith(
+                color: valueColor ??
+                    (emphasis ? AppColors.greenDark : AppColors.black),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+    return explanation != null
+        ? Tooltip(message: explanation!, child: content)
+        : content;
   }
-
-  Widget _layout(List<Widget> texts) => inline
-      ? Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          runSpacing: 2,
-          children: texts,
-        )
-      : Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [texts.first, const SizedBox(height: 2), texts.last],
-        );
 }
