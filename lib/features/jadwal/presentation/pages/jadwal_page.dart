@@ -865,70 +865,73 @@ class _ScheduleCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _activityLabel(item.jenisKegiatan),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _ScheduleInfoLine(
+                icon: Icons.schedule_outlined,
+                text: timeRange,
+              ),
+              const SizedBox(height: 8),
+              _ScheduleInfoLine(
+                icon: Icons.place_outlined,
+                text: item.lokasi,
+              ),
+              if (item.keterangan.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _ScheduleInfoLine(
+                  icon: Icons.notes_outlined,
+                  text: item.keterangan,
+                ),
+              ],
+              const SizedBox(height: 8),
+              // Status and actions share one row; on a narrow card the actions
+              // wrap under the badge, right-aligned, rather than overflow.
+              Row(
                 children: [
-                  Text(
-                    _activityLabel(item.jenisKegiatan),
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ScheduleInfoLine(
-                    icon: Icons.schedule_outlined,
-                    text: timeRange,
-                  ),
-                  const SizedBox(height: 8),
-                  _ScheduleInfoLine(
-                    icon: Icons.place_outlined,
-                    text: item.lokasi,
-                  ),
-                  if (item.keterangan.trim().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _ScheduleInfoLine(
-                      icon: Icons.notes_outlined,
-                      text: item.keterangan,
+                  _ScheduleStatus(status: item.status),
+                  if (!readOnly && item.isOverlapping) ...[
+                    const SizedBox(width: 8),
+                    const Tooltip(
+                      message: 'Jadwal bertumpuk di lokasi yang sama',
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _ScheduleStatus(status: item.status),
-                      const Spacer(),
-                      if (!readOnly && item.isOverlapping)
-                        const Tooltip(
-                          message: 'Jadwal bertumpuk di lokasi yang sama',
-                          child: Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.orange,
-                            size: 20,
-                          ),
-                        ),
-                    ],
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          if (!readOnly)
+                            for (final action in _availableActions)
+                              _actionButton(action),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            if (!readOnly && _availableActions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: OverflowBar(
-                  alignment: MainAxisAlignment.end,
-                  spacing: 8,
-                  children: [
-                    for (final action in _availableActions)
-                      _actionButton(action),
-                  ],
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

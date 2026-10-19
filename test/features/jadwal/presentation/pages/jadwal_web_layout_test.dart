@@ -162,7 +162,7 @@ void main() {
       (tester) async {
     final today = DateUtils.dateOnly(DateTime.now());
     final items = [
-      for (var i = 0; i < 8; i++)
+      for (var i = 0; i < 20; i++)
         JadwalEntity(
           id: 'j-$i',
           bankSampahId: 'b',
@@ -175,7 +175,7 @@ void main() {
     await _pumpAt(
       tester,
       const Size(1440, 900),
-      state: JadwalLoaded(items, totalCount: 8, scheduledDates: {today}),
+      state: JadwalLoaded(items, totalCount: 20, scheduledDates: {today}),
     );
     final before = tester.getTopLeft(find.byType(JadwalCalendar));
 
