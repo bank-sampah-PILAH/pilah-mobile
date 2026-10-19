@@ -71,8 +71,8 @@ void main() {
 
   tearDown(() => transaksi.close());
 
-  Future<void> pumpList(
-      WidgetTester tester, RiwayatAktivitasState state) async {
+  Future<void> pumpList(WidgetTester tester, RiwayatAktivitasState state,
+      {bool isWeb = kIsWeb}) async {
     when(() => cubit.state).thenReturn(state);
     when(() => cubit.load(silent: true)).thenAnswer((_) async {});
     final router = GoRouter(routes: [
@@ -83,7 +83,8 @@ void main() {
             BlocProvider<RiwayatAktivitasCubit>.value(value: cubit),
             BlocProvider<TransaksiCubit>.value(value: transaksi),
           ],
-          child: Scaffold(body: AktivitasListView(now: () => _now)),
+          child:
+              Scaffold(body: AktivitasListView(now: () => _now, isWeb: isWeb)),
         ),
       ),
       GoRoute(
@@ -250,4 +251,23 @@ void main() {
       });
     }
   }
+
+  testWidgets('web retry uses the failed server page', (tester) async {
+    when(() => cubit.loadPage(any())).thenAnswer((_) async {});
+    await pumpList(
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        hasNext: true,
+        errorMessage: 'Halaman gagal dimuat',
+        retryPage: 2,
+        items: [_setoran('Siti', _now)],
+      ),
+      isWeb: true,
+    );
+
+    expect(find.text('Coba Lagi'), findsOneWidget);
+    await tester.tap(find.text('Coba Lagi'));
+    verify(() => cubit.loadPage(2)).called(1);
+  });
 }

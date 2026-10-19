@@ -31,18 +31,20 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_fo
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 class HargaPage extends StatelessWidget {
-  const HargaPage({super.key});
+  const HargaPage({super.key, this.isWeb = kIsWeb});
 
   static const route = '/harga';
+  final bool isWeb;
 
   @override
   Widget build(BuildContext context) {
-    return const _HargaPageBody();
+    return _HargaPageBody(isWeb: isWeb);
   }
 }
 
 class _HargaPageBody extends StatefulWidget {
-  const _HargaPageBody();
+  const _HargaPageBody({required this.isWeb});
+  final bool isWeb;
 
   @override
   State<_HargaPageBody> createState() => _HargaPageBodyState();
@@ -67,6 +69,8 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   int _currentPage = 1;
 
   static const _webPageSize = 10;
+  static const _pageTitle = 'Jenis Sampah & Harga';
+  static const _addLabel = 'Tambah Jenis Sampah';
 
   bool get _isPanelOpen => _creating || _editing != null || _viewing != null;
 
@@ -171,7 +175,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   Widget build(BuildContext context) {
     return BlocListener<HargaCubit, HargaState>(
       listenWhen: (previous, current) =>
-          kIsWeb &&
+          widget.isWeb &&
           current is HargaLoaded &&
           (previous is! HargaLoaded ||
               !identical(previous.jenisSampahList, current.jenisSampahList)),
@@ -187,11 +191,11 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
         // seperti tabel nasabah, sehingga tidak ada yang melayang di atas
         // tombol "Simpan Perubahan" milik panel.
         floatingActionButton:
-            context.layoutBreakpoint != LayoutBreakpoint.compact || kIsWeb
+            context.layoutBreakpoint != LayoutBreakpoint.compact || widget.isWeb
                 ? null
                 : FloatingActionButton(
                     heroTag: 'harga_page_fab',
-                    tooltip: 'Tambah Jenis Sampah',
+                    tooltip: _addLabel,
                     onPressed: () => _openForm(),
                     backgroundColor: AppColors.greenDark,
                     elevation: 4,
@@ -225,24 +229,24 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
           SizedBox(height: web ? AppSpacing.webTop : 16),
           if (web)
             AppPageHeader(
-              title: 'Jenis Sampah & Harga',
+              title: _pageTitle,
               search: search,
               actions: [
                 AppButton(
-                  label: 'Tambah Jenis Sampah',
+                  label: _addLabel,
                   icon: Icons.add,
                   expand: false,
                   onPressed: _openForm,
                 ),
               ],
             )
-          else if (kIsWeb)
+          else if (widget.isWeb)
             AppPageHeader(
-              title: 'Jenis Sampah & Harga',
+              title: _pageTitle,
               search: search,
               actions: [
                 IconButton(
-                  tooltip: 'Tambah Jenis Sampah',
+                  tooltip: _addLabel,
                   onPressed: _openForm,
                   icon: const Icon(Icons.add, color: AppColors.greenDark),
                 ),
@@ -250,7 +254,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
             )
           else ...[
             Text(
-              'Jenis Sampah & Harga',
+              _pageTitle,
               style: AppTextStyle.headline1.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.bold,
@@ -325,7 +329,10 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       isSearching: isSearching,
       isActiveTab: isActiveTab,
     );
-    final visibleItems = kIsWeb
+    final listBottomPadding = widget.isWeb
+        ? const EdgeInsets.only(bottom: 16)
+        : const EdgeInsets.only(bottom: 80);
+    final visibleItems = widget.isWeb
         ? items
             .skip((_currentPage - 1) * _webPageSize)
             .take(_webPageSize)
@@ -342,7 +349,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
           )
         : ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.only(bottom: kIsWeb ? 16 : 80),
+            padding: listBottomPadding,
             itemCount: visibleItems.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
@@ -354,7 +361,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
               );
             },
           );
-    final Widget content = kIsWeb
+    final Widget content = widget.isWeb
         ? Column(
             children: [
               Expanded(child: list),

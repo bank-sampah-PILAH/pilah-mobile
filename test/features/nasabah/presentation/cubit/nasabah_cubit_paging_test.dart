@@ -173,6 +173,36 @@ void main() {
     expect(requests.map((request) => request.pageSize), [10, 10]);
   });
 
+  test('keeps the visible page when a selected page request fails', () async {
+    var requests = 0;
+    when(() => getUseCase.execute(any())).thenAnswer((_) async {
+      if (requests++ == 0) {
+        return Right(_page([_nasabah('NAS-0001')], totalCount: 20));
+      }
+      return Left(NetworkException(message: 'offline'));
+    });
+
+    await cubit.loadNasabah(pageSize: 10);
+    await cubit.loadPage(2);
+
+    final state = cubit.state as NasabahLoaded;
+    expect(state.currentPage, 1);
+    expect(state.nasabahList.map((item) => item.id), ['NAS-0001']);
+    expect(state.isReloading, isFalse);
+  });
+
+  test('ignores a selected page past the last page', () async {
+    when(() => getUseCase.execute(any())).thenAnswer(
+      (_) async => Right(_page([_nasabah('NAS-0001')], totalCount: 20)),
+    );
+
+    await cubit.loadNasabah(pageSize: 10);
+    await cubit.loadPage(3);
+
+    verify(() => getUseCase.execute(any())).called(1);
+    expect((cubit.state as NasabahLoaded).currentPage, 1);
+  });
+
   test('a late response from the previous tab cannot replace the new tab',
       () async {
     final activeResponse =

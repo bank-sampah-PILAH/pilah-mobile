@@ -16,9 +16,10 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_f
 
 /// One filtered report and activity feed for Pengurus on mobile and web.
 class LaporanPage extends StatefulWidget {
-  const LaporanPage({super.key});
+  const LaporanPage({super.key, this.isWeb = kIsWeb});
 
   static const route = '/laporan';
+  final bool isWeb;
 
   @override
   State<LaporanPage> createState() => _LaporanPageState();
@@ -30,7 +31,9 @@ class _LaporanPageState extends State<LaporanPage> {
   @override
   void initState() {
     super.initState();
-    context.read<RiwayatAktivitasCubit>().load(pageSize: kIsWeb ? 10 : null);
+    context
+        .read<RiwayatAktivitasCubit>()
+        .load(pageSize: widget.isWeb ? 10 : null);
   }
 
   @override
@@ -101,7 +104,7 @@ class _LaporanPageState extends State<LaporanPage> {
                         ? AppSpacing.webGutter - AppSpacing.lg
                         : 0,
                   ),
-                  child: const AktivitasListView(),
+                  child: AktivitasListView(isWeb: widget.isWeb),
                 ),
               ),
             ),

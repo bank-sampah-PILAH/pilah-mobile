@@ -46,10 +46,12 @@ void main() {
   late StubApi api;
   late HargaCubit cubit;
 
-  Future<void> openPage(WidgetTester tester, {Size size = _medium}) async {
+  Future<void> openPage(WidgetTester tester,
+      {Size size = _medium, bool isWeb = kIsWeb}) async {
     await pumpRouted(
       tester,
-      BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
+      BlocProvider<HargaCubit>.value(
+          value: cubit, child: HargaPage(isWeb: isWeb)),
       size: size,
     );
     if (kIsWeb) await pumpReal(tester);
@@ -310,56 +312,52 @@ void main() {
     expect(find.text('Rp 2.500'), findsNWidgets(2));
   });
 
-  if (kIsWeb) {
-    testWidgets('web harga table paginates and search returns to page one',
-        (tester) async {
-      api.on('GET', '/api/v1/jenis-sampah', json: {
-        'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
-      });
-      await openPage(tester, size: _expanded);
-      await pumpReal(tester);
-      await tester.pumpAndSettle();
-
-      HargaTable table() => tester.widget<HargaTable>(find.byType(HargaTable));
-      expect(find.byType(WebPaginationBar), findsOneWidget);
-      expect(
-          find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
-      expect(table().items.map((item) => item.name),
-          [for (var i = 1; i <= 10; i++) 'Jenis $i']);
-
-      await tester.tap(find.bySemanticsLabel('Halaman 2'));
-      await tester.pumpAndSettle();
-      expect(
-          find.text('Menampilkan 11–12 dari 12 jenis sampah'), findsOneWidget);
-      expect(table().items.map((item) => item.name), ['Jenis 11', 'Jenis 12']);
-
-      await tester.enterText(find.byType(TextField).first, 'Jenis');
-      await tester.pumpAndSettle();
-      expect(
-          find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
-      expect(table().items.map((item) => item.name),
-          [for (var i = 1; i <= 10; i++) 'Jenis $i']);
+  testWidgets('web harga table paginates and search returns to page one',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
     });
+    await openPage(tester, size: _expanded, isWeb: true);
+    await tester.pumpAndSettle();
 
-    testWidgets('compact web paginates cards', (tester) async {
-      api.on('GET', '/api/v1/jenis-sampah', json: {
-        'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
-      });
-      await openPage(tester, size: const Size(390, 844));
-      await pumpReal(tester);
-      await tester.pumpAndSettle();
+    HargaTable table() => tester.widget<HargaTable>(find.byType(HargaTable));
+    expect(find.byType(WebPaginationBar), findsOneWidget);
+    expect(find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+    expect(table().items.map((item) => item.name),
+        [for (var i = 1; i <= 10; i++) 'Jenis $i']);
 
-      expect(find.byType(WebPaginationBar), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsNothing);
-      expect(find.byTooltip('Tambah Jenis Sampah'), findsOneWidget);
-      expect(
-          find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
-      await tester.tap(find.bySemanticsLabel('Halaman 2'));
-      await tester.pumpAndSettle();
-      expect(find.text('Jenis 11'), findsOneWidget);
-      expect(find.text('Jenis 1'), findsNothing);
+    await tester.tap(find.bySemanticsLabel('Halaman 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Menampilkan 11–12 dari 12 jenis sampah'), findsOneWidget);
+    expect(table().items.map((item) => item.name), ['Jenis 11', 'Jenis 12']);
+
+    await tester.enterText(find.byType(TextField).first, 'Jenis');
+    await tester.pumpAndSettle();
+    expect(find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+    expect(table().items.map((item) => item.name),
+        [for (var i = 1; i <= 10; i++) 'Jenis $i']);
+  });
+
+  testWidgets('compact web paginates cards', (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
     });
-  }
+    await openPage(tester, size: const Size(500, 844), isWeb: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WebPaginationBar), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byTooltip('Tambah Jenis Sampah'), findsOneWidget);
+    expect(find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Halaman 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Jenis 11'), findsOneWidget);
+    expect(find.text('Jenis 1'), findsNothing);
+
+    await tester.tap(find.byTooltip('Tambah Jenis Sampah'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
+  });
 
   testWidgets('the Aktif and Tidak Aktif chips announce which one is selected',
       (tester) async {
@@ -727,6 +725,16 @@ void main() {
         findsOneWidget,
         reason: 'compact opens a sheet, so there is no panel to overlap',
       );
+    });
+
+    testWidgets('on a compact screen the add button opens the form',
+        (tester) async {
+      await openPage(tester, size: const Size(500, 844));
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
     });
   }
 

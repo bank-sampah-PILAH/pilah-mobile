@@ -24,8 +24,13 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_tran
 /// its Pengurus-only edit/riwayat-perubahan entry points.
 class AktivitasListView extends StatelessWidget {
   final DateTime Function() now;
+  final bool isWeb;
 
-  const AktivitasListView({super.key, this.now = DateTime.now});
+  const AktivitasListView({
+    super.key,
+    this.now = DateTime.now,
+    this.isWeb = kIsWeb,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +89,7 @@ class AktivitasListView extends StatelessWidget {
             : _groupedRows(state, now(), footer);
         final activityList = NotificationListener<ScrollNotification>(
           onNotification: (notification) {
-            if (!kIsWeb &&
+            if (!isWeb &&
                 notification.metrics.axis == Axis.vertical &&
                 notification.metrics.extentAfter < 200 &&
                 state.errorMessage == null) {
@@ -98,7 +103,7 @@ class AktivitasListView extends StatelessWidget {
             children: children,
           ),
         );
-        if (!kIsWeb) return activityList;
+        if (!isWeb) return activityList;
         return Column(
           children: [
             Expanded(child: activityList),
@@ -162,7 +167,7 @@ class AktivitasListView extends StatelessWidget {
         ),
       ];
     }
-    if (kIsWeb && state.retryPage == null) return const [];
+    if (isWeb && state.retryPage == null) return const [];
     if (!state.hasNext && state.retryPage == null) return const [];
     return [
       TextButton(

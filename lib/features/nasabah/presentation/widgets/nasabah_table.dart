@@ -30,7 +30,9 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasaba
 class NasabahTable extends StatelessWidget {
   static const headerKey = ValueKey('nasabah-table-header');
 
-  const NasabahTable({super.key});
+  const NasabahTable({super.key, this.isWeb = kIsWeb});
+
+  final bool isWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +60,7 @@ class NasabahTable extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  child: const _TableBody(),
+                  child: _TableBody(isWeb: isWeb),
                 ),
               ),
             ),
@@ -127,7 +129,8 @@ class _Toolbar extends StatelessWidget {
 }
 
 class _TableBody extends StatelessWidget {
-  const _TableBody();
+  const _TableBody({required this.isWeb});
+  final bool isWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +149,7 @@ class _TableBody extends StatelessWidget {
         }
         if (state is! NasabahLoaded) return const SizedBox.shrink();
         if (state.nasabahList.isEmpty) return _Empty(state: state);
-        return _Loaded(state: state);
+        return _Loaded(state: state, isWeb: isWeb);
       },
     );
   }
@@ -154,13 +157,14 @@ class _TableBody extends StatelessWidget {
 
 /// Tabel dengan isi: kepala kolom, penanda muat ulang, dan daftar baris.
 class _Loaded extends StatelessWidget {
-  const _Loaded({required this.state});
+  const _Loaded({required this.state, required this.isWeb});
   final NasabahLoaded state;
+  final bool isWeb;
 
   /// Cubit sendiri yang menolak permintaan ganda dan permintaan setelah
   /// halaman terakhir, jadi di sini cukup memberi tahu.
   bool _onScroll(BuildContext context, ScrollNotification notification) {
-    if (!kIsWeb &&
+    if (!isWeb &&
         state.hasMore &&
         !state.isLoadingMore &&
         _hampirUjung(notification)) {
@@ -188,17 +192,17 @@ class _Loaded extends StatelessWidget {
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) => _onScroll(context, notification),
             child: ListView.separated(
-              itemCount: state.nasabahList.length + (kIsWeb ? 0 : 1),
+              itemCount: state.nasabahList.length + (isWeb ? 0 : 1),
               separatorBuilder: (_, __) =>
                   const Divider(height: 1, color: AppColors.border),
               itemBuilder: (context, index) =>
-                  !kIsWeb && index == state.nasabahList.length
+                  !isWeb && index == state.nasabahList.length
                       ? _Footer(state: state)
                       : _Row(nasabah: state.nasabahList[index]),
             ),
           ),
         ),
-        if (kIsWeb)
+        if (isWeb)
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: WebPaginationBar(

@@ -19,18 +19,20 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surfa
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
 
 class NasabahPage extends StatelessWidget {
-  const NasabahPage({super.key});
+  const NasabahPage({super.key, this.isWeb = kIsWeb});
 
   static const route = '/nasabah';
+  final bool isWeb;
 
   @override
   Widget build(BuildContext context) {
-    return const _NasabahPageBody();
+    return _NasabahPageBody(isWeb: isWeb);
   }
 }
 
 class _NasabahPageBody extends StatefulWidget {
-  const _NasabahPageBody();
+  const _NasabahPageBody({required this.isWeb});
+  final bool isWeb;
 
   @override
   State<_NasabahPageBody> createState() => _NasabahPageBodyState();
@@ -46,7 +48,9 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
   void initState() {
     super.initState();
     // Load with the authenticated session when the tab is first opened.
-    context.read<NasabahCubit>().loadNasabah(pageSize: kIsWeb ? 10 : null);
+    context.read<NasabahCubit>().loadNasabah(
+          pageSize: widget.isWeb ? 10 : null,
+        );
   }
 
   @override
@@ -55,13 +59,13 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
       return Scaffold(
         backgroundColor:
             WebContentSurface.pageColor(context, phone: Colors.white),
-        body: const SafeArea(child: NasabahTable()),
+        body: SafeArea(child: NasabahTable(isWeb: widget.isWeb)),
       );
     }
     return Scaffold(
       backgroundColor:
           WebContentSurface.pageColor(context, phone: Colors.white),
-      floatingActionButton: kIsWeb
+      floatingActionButton: widget.isWeb
           ? null
           : FloatingActionButton(
               heroTag: 'nasabah_page_fab',
@@ -114,7 +118,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                       );
                     },
                   ),
-                  if (kIsWeb)
+                  if (widget.isWeb)
                     IconButton(
                       tooltip: 'Tambah Nasabah',
                       onPressed: _tambahNasabah,
@@ -153,7 +157,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                       context.read<NasabahCubit>().setActiveTab(value);
                     },
                   );
-                  return kIsWeb
+                  return widget.isWeb
                       ? SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: chips,
@@ -220,8 +224,9 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                               } else {
                                 content = NasabahPagedListView(
                                   items: customers,
-                                  hasMore: !kIsWeb && state.hasMore,
-                                  isLoadingMore: !kIsWeb && state.isLoadingMore,
+                                  hasMore: !widget.isWeb && state.hasMore,
+                                  isLoadingMore:
+                                      !widget.isWeb && state.isLoadingMore,
                                   onLoadMore: () => context
                                       .read<NasabahCubit>()
                                       .loadMoreNasabah(),
@@ -278,7 +283,7 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                         ),
                       ),
                     ),
-                    if (kIsWeb)
+                    if (widget.isWeb)
                       BlocBuilder<NasabahCubit, NasabahState>(
                         builder: (context, state) => state is NasabahLoaded
                             ? Padding(
