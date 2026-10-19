@@ -4,7 +4,6 @@ import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -54,7 +53,7 @@ class _LaporanPageState extends State<LaporanPage> {
       },
       child: Scaffold(
         backgroundColor:
-            WebContentSurface.pageColor(context, phone: AppColors.surface),
+            WebContentSurface.pageColor(context, phone: Colors.white),
         body: SafeArea(
           child: ContentBounds(
             child: NestedScrollView(
