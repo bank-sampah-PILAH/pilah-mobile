@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:flutter/services.dart';
@@ -42,7 +43,7 @@ class EditorItemCard extends StatelessWidget {
         builder: (context, setSheet) => Padding(
           // Papan tik mendorong isi ke atas alih-alih menutupinya.
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: DialogSurface.keyboardInset(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

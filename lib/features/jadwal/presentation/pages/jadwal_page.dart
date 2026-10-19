@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -1254,7 +1255,7 @@ class _JadwalFormState extends State<_JadwalForm> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: DialogSurface.keyboardInset(context)),
       child: Container(
         key: const ValueKey('jadwal-form'),
         decoration: const BoxDecoration(

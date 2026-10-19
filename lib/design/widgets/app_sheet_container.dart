@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 
@@ -25,8 +26,7 @@ class AppSheetContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(bottom: DialogSurface.keyboardInset(context)),
       child: Container(
         key: surfaceKey,
         decoration: BoxDecoration(
