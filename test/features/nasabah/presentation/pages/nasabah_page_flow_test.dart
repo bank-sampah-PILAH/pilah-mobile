@@ -114,8 +114,8 @@ void main() {
 
     expect(find.text('Rp 30.000'), findsOneWidget);
     expect(
-      api.requests.where((request) =>
-          request.method == 'GET' && request.path == _path),
+      api.requests
+          .where((request) => request.method == 'GET' && request.path == _path),
       hasLength(2),
     );
   });

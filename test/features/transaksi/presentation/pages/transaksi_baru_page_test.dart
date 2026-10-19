@@ -457,7 +457,8 @@ void main() {
           r.query['status'] == 'aktif' &&
           r.query['page'] == '1'),
       isTrue,
-      reason: 'the nasabah tab keeps its cached balance while this page is open',
+      reason:
+          'the nasabah tab keeps its cached balance while this page is open',
     );
 
     await tester.tap(find.text('Kirim Notif WhatsApp & Selesai'));
