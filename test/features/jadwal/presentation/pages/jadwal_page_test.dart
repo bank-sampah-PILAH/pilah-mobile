@@ -308,9 +308,12 @@ void main() {
     final card = find.byType(Card).first;
     final tappable =
         find.descendant(of: card, matching: find.byType(InkWell)).first;
+    // The card's own surface, inside its outer margin.
+    final surface =
+        find.descendant(of: card, matching: find.byType(Material)).first;
 
     expect(find.text('Terbitkan'), findsOneWidget);
-    expect(tester.getRect(tappable), tester.getRect(card));
+    expect(tester.getRect(tappable), tester.getRect(surface));
   });
 
   testWidgets('shows the manager overlap warning when a schedule overlaps', (
