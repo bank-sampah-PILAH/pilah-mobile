@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/core/bases/widgets/back_header_row.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -203,9 +205,21 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: BackHeaderRow(title: 'Kelola Pengumuman'),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                // Di web halaman ini adalah destinasi sidebar, jadi tidak ada
+                // yang perlu dikembalikan. Di aplikasi ia dibuka dari Profil
+                // dan kembali ke sana.
+                child: kIsWeb
+                    ? Text('Kelola Pengumuman',
+                        style: AppTextStyle.appBar
+                            .copyWith(color: AppColors.black))
+                    : BackHeaderRow(
+                        title: 'Kelola Pengumuman',
+                        onBack: () => context.canPop()
+                            ? context.pop()
+                            : context.go(AppLocations.profile),
+                      ),
               ),
               const SizedBox(height: 16),
               const Padding(

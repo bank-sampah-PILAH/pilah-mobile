@@ -27,14 +27,6 @@
     "color": 0,
     "fontSize": 1
   },
-  "lib/features/authentication/presentation/widgets/login_header.dart": {
-    "color": 0,
-    "fontSize": 2
-  },
-  "lib/features/authentication/presentation/widgets/welcome_card.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
   "lib/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart": {
     "color": 0,
     "fontSize": 3
@@ -81,7 +73,7 @@
   },
   "lib/features/jadwal/presentation/widgets/jadwal_calendar.dart": {
     "color": 0,
-    "fontSize": 4
+    "fontSize": 3
   },
   "lib/features/nasabah/presentation/pages/nasabah_page.dart": {
     "color": 0,
@@ -142,10 +134,6 @@
   "lib/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart": {
     "color": 0,
     "fontSize": 3
-  },
-  "lib/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart": {
-    "color": 0,
-    "fontSize": 2
   },
   "lib/features/transaksi/presentation/widgets/item_setoran_card.dart": {
     "color": 0,
