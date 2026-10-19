@@ -8,7 +8,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -188,8 +188,8 @@ class _DraftEditorViewState extends State<DraftEditorView> {
   // must move with it instead of resetting.
   final _formKey = GlobalKey();
 
-  Widget _form(DraftEditorState state) =>
-      _Form(key: _formKey, state: state, nama: _nama);
+  Widget _form(DraftEditorState state, {double leftInset = 0}) =>
+      _Form(key: _formKey, state: state, nama: _nama, leftInset: leftInset);
 
   Widget _scaffold(BuildContext context, DraftEditorState state) {
     final cubit = context.read<DraftEditorCubit>();
@@ -211,40 +211,46 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       return Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: ContentBounds(
+          // Both panes scroll out to the window edges, so their scrollbars sit
+          // there; the frame's inset keeps the content to a readable column.
+          child: ContentFrame(
             child: Column(
               children: [
-                header,
+                ContentInset(child: header),
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: loading
-                            ? const Center(child: CircularProgressIndicator())
-                            : _form(state),
-                      ),
-                      SizedBox(
-                        width: LayoutBreakpoint.sidePanelWidth,
-                        child: SingleChildScrollView(
-                          key: const Key('draft-editor-panel'),
-                          padding: const EdgeInsets.all(16),
-                          child: EditorSummaryPanel(
-                            state: state,
-                            samping: true,
-                            aksi: loading || state.status.terkunci
-                                ? null
-                                : _BottomBar(
-                                    state: state,
-                                    onSave: cubit.save,
-                                    onConfirm: _confirmPayment,
-                                    tumpuk: true,
-                                  ),
+                  child: Builder(builder: (context) {
+                    final inset = ContentFrame.insetOf(context);
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: loading
+                              ? const Center(child: CircularProgressIndicator())
+                              : _form(state, leftInset: inset.left),
+                        ),
+                        SizedBox(
+                          width: LayoutBreakpoint.sidePanelWidth + inset.right,
+                          child: SingleChildScrollView(
+                            key: const Key('draft-editor-panel'),
+                            padding: EdgeInsets.fromLTRB(
+                                16, 16, 16 + inset.right, 16),
+                            child: EditorSummaryPanel(
+                              state: state,
+                              samping: true,
+                              aksi: loading || state.status.terkunci
+                                  ? null
+                                  : _BottomBar(
+                                      state: state,
+                                      onSave: cubit.save,
+                                      onConfirm: _confirmPayment,
+                                      tumpuk: true,
+                                    ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  }),
                 ),
               ],
             ),
@@ -320,7 +326,16 @@ class _Form extends StatefulWidget {
   final DraftEditorState state;
   final TextEditingController nama;
 
-  const _Form({super.key, required this.state, required this.nama});
+  /// Room a wide window leaves left of the content column; the form grows into
+  /// it so the scroll view starts at the window edge.
+  final double leftInset;
+
+  const _Form({
+    super.key,
+    required this.state,
+    required this.nama,
+    this.leftInset = 0,
+  });
 
   @override
   State<_Form> createState() => _FormState();
@@ -375,7 +390,7 @@ class _FormState extends State<_Form> {
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: EdgeInsets.fromLTRB(16 + widget.leftInset, 8, 16, 0),
           sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +453,7 @@ class _FormState extends State<_Form> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          padding: EdgeInsets.fromLTRB(16 + widget.leftInset, 0, 16, 24),
           sliver: tampil.isEmpty && state.items.isNotEmpty
               ? SliverToBoxAdapter(
                   child: Padding(
