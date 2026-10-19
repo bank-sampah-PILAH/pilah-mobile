@@ -21,6 +21,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_dates.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
@@ -242,6 +243,12 @@ class _JadwalPageState extends State<JadwalPage> {
       !widget.customerMode &&
       context.layoutBreakpoint != LayoutBreakpoint.compact;
 
+  /// Di jendela expanded "Buat Jadwal" ada di kepala halaman seperti tab web
+  /// lain, bukan tombol mengambang; di bawahnya tombol mengambang tetap.
+  bool get _createInHeader =>
+      !widget.customerMode &&
+      context.layoutBreakpoint == LayoutBreakpoint.expanded;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -264,7 +271,7 @@ class _JadwalPageState extends State<JadwalPage> {
                   elevation: 0,
                   surfaceTintColor: Colors.transparent,
                 ),
-      floatingActionButton: widget.customerMode
+      floatingActionButton: widget.customerMode || _createInHeader
           ? null
           : BlocBuilder<JadwalCubit, JadwalState>(
               builder: (context, state) => FloatingActionButton(
@@ -427,6 +434,74 @@ class _JadwalPageState extends State<JadwalPage> {
               setState(() => _isMonthExpanded = !_isMonthExpanded),
         );
         final agenda = _pengurusAgendaChildren(dayItems, loadedState);
+        final header = [
+          AppPageHeader(
+            title: 'Jadwal Kegiatan',
+            actions: [
+              if (_createInHeader)
+                AppButton(
+                  label: 'Buat Jadwal',
+                  icon: Icons.add,
+                  expand: false,
+                  onPressed: loadedState.isTransitioning || loadedState.isSaving
+                      ? null
+                      : _openForm,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ];
+        if (sideBySide) {
+          // Kalender dan "Berikutnya" diam di kiri; hanya agenda yang
+          // bergulir, jadi kolom kiri tidak kosong saat agenda panjang.
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.webGutter,
+              AppSpacing.webTop,
+              AppSpacing.webGutter,
+              0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...header,
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: _sideCalendarWidth,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              calendar,
+                              const SizedBox(height: AppSpacing.lg),
+                              JadwalUpcomingDates(
+                                scheduledDates: loadedState.scheduledDates,
+                                today: clock.now(),
+                                selectedDate: _selectedDate,
+                                onSelect: _selectDate,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xl),
+                      Expanded(
+                        child: ListView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 24),
+                          children: agenda,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         return ListView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -439,29 +514,10 @@ class _JadwalPageState extends State<JadwalPage> {
                 )
               : const EdgeInsets.fromLTRB(16, 16, 16, 104),
           children: [
-            if (_webHeader) ...[
-              const AppPageHeader(title: 'Jadwal Kegiatan'),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-            if (sideBySide)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(width: _sideCalendarWidth, child: calendar),
-                  const SizedBox(width: AppSpacing.xl),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: agenda,
-                    ),
-                  ),
-                ],
-              )
-            else ...[
-              calendar,
-              const SizedBox(height: 24),
-              ...agenda,
-            ],
+            if (_webHeader) ...header,
+            calendar,
+            const SizedBox(height: 24),
+            ...agenda,
           ],
         );
       },

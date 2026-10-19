@@ -71,7 +71,7 @@ class JadwalCalendar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
