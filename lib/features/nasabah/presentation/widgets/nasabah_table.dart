@@ -193,6 +193,8 @@ class _Loaded extends StatelessWidget {
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) => _onScroll(context, notification),
             child: ListView.separated(
+              // Halaman baru mulai dari atas, bukan di offset halaman lama.
+              key: ValueKey(state.currentPage),
               itemCount: state.nasabahList.length + (isWeb ? 0 : 1),
               separatorBuilder: (_, __) =>
                   const Divider(height: 1, color: AppColors.border),

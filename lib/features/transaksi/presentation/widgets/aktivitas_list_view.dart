@@ -108,6 +108,7 @@ class AktivitasListView extends StatelessWidget {
                 onTap: (item) => _openDetail(context, item),
                 footer: footer,
                 toolbar: const AktivitasSummaryStrip(),
+                page: state.currentPage,
                 pagination: isWeb
                     ? WebPaginationBar(
                         currentPage: state.currentPage,

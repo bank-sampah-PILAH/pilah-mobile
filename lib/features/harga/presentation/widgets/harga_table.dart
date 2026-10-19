@@ -22,6 +22,7 @@ class HargaTable extends StatelessWidget {
     required this.onTap,
     this.selectedId,
     this.footer,
+    this.page,
   });
 
   final List<HargaEntity> items;
@@ -30,6 +31,9 @@ class HargaTable extends StatelessWidget {
 
   /// Paginasi di dasar kartu.
   final Widget? footer;
+
+  /// Halaman yang tampil; berubahnya mengembalikan gulir ke atas.
+  final int? page;
 
   /// Kunci baris untuk [id], agar test dapat menemukannya.
   static Key rowKey(String id) => ValueKey('harga-row-$id');
@@ -67,6 +71,7 @@ class HargaTable extends StatelessWidget {
         ),
       ),
       footer: footer,
+      pageKey: page,
     );
   }
 

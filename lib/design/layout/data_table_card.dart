@@ -26,6 +26,7 @@ class DataTableCard extends StatelessWidget {
     required this.header,
     required this.body,
     this.footer,
+    this.pageKey,
   });
 
   /// Baris di atas kepala kolom, misalnya ringkasan satu garis. Opsional.
@@ -39,6 +40,11 @@ class DataTableCard extends StatelessWidget {
 
   /// Kontrol paginasi di dasar kartu. Opsional.
   final Widget? footer;
+
+  /// Halaman yang sedang tampil. Bila berubah, [body] dibangun ulang sehingga
+  /// gulirnya kembali ke atas; tanpa ini offset gulir halaman sebelumnya
+  /// terbawa ke baris-baris halaman berikutnya.
+  final Object? pageKey;
 
   /// Baris kepala kolom: latar `AppColors.fill`, jarak samping `xl`, dan sel
   /// ([Expanded] per kolom) yang disusun pemanggil.
@@ -70,7 +76,9 @@ class DataTableCard extends StatelessWidget {
             ],
             header,
             const Divider(height: 1, color: AppColors.border),
-            Expanded(child: body),
+            Expanded(
+              child: KeyedSubtree(key: ValueKey(pageKey), child: body),
+            ),
             if (footer != null) DataTableCardFooter(child: footer!),
           ],
         ),

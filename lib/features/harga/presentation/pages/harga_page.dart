@@ -395,6 +395,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
           onTap: _openDetail,
           // Paginasi di dasar kartu, seperti tabel nasabah.
           footer: widget.isWeb ? pagination : null,
+          page: _currentPage,
         ),
       );
     }
