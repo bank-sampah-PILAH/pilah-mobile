@@ -99,22 +99,8 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        final day = picked.day.toString().padLeft(2, '0');
-        final month = picked.month.toString().padLeft(2, '0');
-        final year = picked.year.toString();
-        _tanggalLahirController.text = '$day/$month/$year';
-      });
-    }
-  }
+  Future<void> _selectDate() =>
+      pickNasabahBirthDate(context, _tanggalLahirController);
 
   @override
   Widget build(BuildContext context) {

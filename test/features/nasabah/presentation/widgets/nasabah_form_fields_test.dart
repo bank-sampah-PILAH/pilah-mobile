@@ -298,6 +298,59 @@ void main() {
   });
 
   group('NasabahBirthDateField', () {
+    testWidgets('formats the selected date for both nasabah sheets',
+        (tester) async {
+      final controller = TextEditingController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => pickNasabahBirthDate(context, controller),
+                child: const Text('Pilih tanggal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Pilih tanggal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      final today = DateTime.now();
+      expect(
+        controller.text,
+        '${today.day.toString().padLeft(2, '0')}/'
+        '${today.month.toString().padLeft(2, '0')}/${today.year}',
+      );
+    });
+
+    testWidgets('keeps the current value when the picker is cancelled',
+        (tester) async {
+      final controller = TextEditingController(text: '01/01/1990');
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => pickNasabahBirthDate(context, controller),
+                child: const Text('Pilih tanggal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Pilih tanggal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(controller.text, '01/01/1990');
+    });
+
     testWidgets('is read-only, opens the picker on tap and is required',
         (tester) async {
       var taps = 0;

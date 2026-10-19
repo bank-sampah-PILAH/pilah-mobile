@@ -8,6 +8,8 @@ import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -32,12 +34,17 @@ class NasabahTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return ContentBounds(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.webGutter,
+          AppSpacing.webTop,
+          AppSpacing.webGutter,
+          AppSpacing.xl,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const _Header(),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             const _Toolbar(),
             const SizedBox(height: 16),
             Expanded(
@@ -66,25 +73,16 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<NasabahCubit>();
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Daftar Nasabah',
-                  style: AppTextStyle.headline1
-                      .copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 2),
-              BlocBuilder<NasabahCubit, NasabahState>(
-                builder: (context, state) => Text(
-                  '${cubit.activeCount} nasabah aktif',
-                  style: AppTextStyle.small.copyWith(color: AppColors.grey100),
-                ),
-              ),
-            ],
-          ),
-        ),
+    return AppPageHeader(
+      title: 'Daftar Nasabah',
+      subtitle: BlocBuilder<NasabahCubit, NasabahState>(
+        builder: (context, state) => Text('${cubit.activeCount} nasabah aktif'),
+      ),
+      search: CustomSearchField(
+        hintText: 'Cari nama nasabah...',
+        onChanged: cubit.searchNasabah,
+      ),
+      actions: [
         AppButton(
           label: 'Tambah Nasabah',
           icon: Icons.add,
@@ -105,36 +103,23 @@ class _Toolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<NasabahCubit>();
-    // Wrap, not Row: between 600 and ~840dp the search field and the chips no
-    // longer fit side by side, so the chips drop under the search.
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      runSpacing: 12,
-      children: [
-        SizedBox(
-          width: 360,
-          child: CustomSearchField(
-            hintText: 'Cari nama nasabah...',
-            onChanged: cubit.searchNasabah,
-          ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: BlocBuilder<NasabahCubit, NasabahState>(
+        buildWhen: (previous, current) =>
+            previous.runtimeType != current.runtimeType ||
+            (previous is NasabahLoaded &&
+                current is NasabahLoaded &&
+                previous.isActiveTab != current.isActiveTab),
+        builder: (context, state) => NasabahFilterChips(
+          activeTab: state is NasabahLoaded
+              ? state.isActiveTab
+              : state is NasabahLoading
+                  ? state.isActiveTab
+                  : cubit.isActiveTab,
+          onTabChanged: cubit.setActiveTab,
         ),
-        BlocBuilder<NasabahCubit, NasabahState>(
-          buildWhen: (previous, current) =>
-              previous.runtimeType != current.runtimeType ||
-              (previous is NasabahLoaded &&
-                  current is NasabahLoaded &&
-                  previous.isActiveTab != current.isActiveTab),
-          builder: (context, state) => NasabahFilterChips(
-            activeTab: state is NasabahLoaded
-                ? state.isActiveTab
-                : state is NasabahLoading
-                    ? state.isActiveTab
-                    : cubit.isActiveTab,
-            onTabChanged: cubit.setActiveTab,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

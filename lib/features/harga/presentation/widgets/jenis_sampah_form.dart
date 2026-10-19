@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -242,6 +243,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
         const AppFieldLabel('KATEGORI'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          borderRadius: BorderRadius.circular(AppRadius.md),
           initialValue: _selectedCategory,
           validator: _validateWajib,
           hint: const Text('— Pilih Kategori —'),
@@ -366,6 +368,19 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     return null;
   }
 
+  static String _pesanStatus(bool wasActive) => wasActive
+      ? 'Jenis sampah berhasil dinonaktifkan.'
+      : 'Jenis sampah berhasil diaktifkan.';
+
+  /// Panel sudah beralih ke tampilan lain selagi permintaan berjalan, sehingga
+  /// form ini tidak lagi ada. Perubahannya tetap terjadi, jadi tetap
+  /// dikabarkan, lewat navigator utama.
+  static void _kabarkanTanpaForm(String message) =>
+      AppNotification.afterNavigation((context) => AppNotification.showSuccess(
+          context,
+          title: 'Berhasil',
+          message: message));
+
   Future<void> _handleToggleStatus() async {
     final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
     final id = widget.initialData!.id;
@@ -386,7 +401,10 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     final error = wasActive
         ? await cubit.deactivateHarga(id)
         : await cubit.activateHarga(id);
-    if (!mounted) return;
+    if (!mounted) {
+      if (error == null) _kabarkanTanpaForm(_pesanStatus(wasActive));
+      return;
+    }
 
     // Seperti `_handleSimpan`: hasil yang datang setelah panel berganti
     // baris tidak boleh menutup panel baris yang sekarang tampil.
@@ -398,9 +416,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       AppNotification.showSuccess(
         context,
         title: 'Berhasil',
-        message: wasActive
-            ? 'Jenis sampah berhasil dinonaktifkan.'
-            : 'Jenis sampah berhasil diaktifkan.',
+        message: _pesanStatus(wasActive),
       );
       return;
     }
@@ -471,7 +487,16 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
       ));
       hanyaHargaGagal = error != null;
     }
-    if (!mounted) return;
+    if (!mounted) {
+      if (error == null) {
+        _kabarkanTanpaForm(pesanSimpanJenis(
+          isEditMode: isEditMode,
+          hargaBerubah: hargaBerubah,
+          berlakuMulai: berlakuMulai,
+        ));
+      }
+      return;
+    }
 
     // Hasil ini milik baris yang memulainya. Bila panel sudah pindah
     // baris, hanya kabarnya yang masih berlaku: `onSaved` akan menutup
@@ -554,7 +579,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   /// dipilih, paling cepat besok (harga hari ini memakai "Sekarang").
   Future<void> _pilihTanggalBerlaku() async {
     final besok = DateUtils.dateOnly(widget.now()).add(const Duration(days: 1));
-    final dipilih = await showDatePicker(
+    final dipilih = await showAppDatePicker(
       context: context,
       initialDate: _berlakuMulai ?? besok,
       firstDate: besok,

@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
@@ -257,21 +258,11 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   Future<void> _pickTanggalLahir() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: _tanggalLahir ?? DateTime(now.year - 20),
       firstDate: DateTime(1900),
       lastDate: now,
-      // NasabahStyle.emerald is the app's primary green, same as the theme; kept
-      // explicit so this picker does not depend on the theme.
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context)
-              .colorScheme
-              .copyWith(primary: NasabahStyle.emerald, onPrimary: Colors.white),
-        ),
-        child: child!,
-      ),
     );
     if (!mounted) return;
     if (picked != null) setState(() => _tanggalLahir = picked);
