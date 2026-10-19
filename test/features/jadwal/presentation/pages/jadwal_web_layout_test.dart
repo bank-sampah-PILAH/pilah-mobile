@@ -191,10 +191,11 @@ void main() {
       state: JadwalLoaded(const [], upcomingDates: {today, later}),
     );
 
-    expect(find.text('Bulan berikutnya'), findsOneWidget);
-    expect(find.text('1 hari berjadwal'), findsOneWidget);
+    expect(find.text('Berikutnya'), findsOneWidget);
+    expect(find.text('Bulan ini'), findsOneWidget);
+    expect(find.text('1 hari berjadwal'), findsNWidgets(2));
     final calendar = tester.getRect(find.byType(JadwalCalendar));
-    expect(tester.getTopLeft(find.text('Bulan berikutnya')).dy,
+    expect(tester.getTopLeft(find.text('Berikutnya')).dy,
         greaterThan(calendar.bottom));
 
     await tester.tap(find
