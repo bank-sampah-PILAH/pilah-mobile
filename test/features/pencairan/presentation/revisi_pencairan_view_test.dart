@@ -194,5 +194,61 @@ void main() {
 
       expect(find.text('Tidak ada nilai yang berubah.'), findsOneWidget);
     });
+
+    testWidgets('a changed date is listed as old to new', (tester) async {
+      final lama = _riwayat.revisi.last;
+      final riwayat = RiwayatRevisiPencairan(
+        pencairan: _riwayat.pencairan,
+        revisi: [
+          RevisiPencairan(
+            versi: 1,
+            tanggal: DateTime(2026, 9, 20, 8),
+            nominal: _riwayat.pencairan.nominal,
+            metode: _riwayat.pencairan.metode,
+            keterangan: _riwayat.pencairan.keterangan,
+            saldoSebelum: lama.saldoSebelum,
+            saldoSesudah: lama.saldoSesudah,
+            alasan: 'Salah tanggal',
+            diubahOlehNama: 'Ibu Sari',
+            diubahPada: DateTime(2026, 9, 22, 11, 5),
+          ),
+        ],
+      );
+      when(() => useCases.getRevisi('p-1'))
+          .thenAnswer((_) async => Right(riwayat));
+      await pumpView(tester);
+
+      expect(find.text('Tanggal'), findsWidgets);
+      expect(find.textContaining('→', findRichText: true), findsOneWidget);
+    });
+
+    testWidgets('the embedded header closes the surface it sits in',
+        (tester) async {
+      when(() => useCases.getRevisi('p-1'))
+          .thenAnswer((_) async => Right(_riwayat));
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => BlocProvider(
+                create: (_) => RevisiPencairanCubit(useCases),
+                child: const Scaffold(
+                  body: RevisiPencairanView(pencairanId: 'p-1', embedded: true),
+                ),
+              ),
+            )),
+            child: const Text('buka'),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('buka'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Tutup'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('buka'), findsOneWidget);
+      expect(find.text('Riwayat Perubahan'), findsNothing);
+    });
   });
 }

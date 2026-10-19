@@ -273,4 +273,25 @@ void main() {
     verify(() => getTransaksi.execute(any())).called(1);
     expect(find.text('Budi Santoso'), findsOneWidget);
   });
+
+  testWidgets('resetting the filters also clears the search box',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester);
+    await tester.enterText(find.byType(TextField), 'Ani');
+    await tester.pumpAndSettle();
+
+    tester
+        .element(find.byType(LaporanPage))
+        .read<RiwayatAktivitasCubit>()
+        .resetFilters();
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty);
+    expect(find.text('Budi Santoso'), findsOneWidget);
+  });
 }

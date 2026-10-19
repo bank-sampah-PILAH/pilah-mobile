@@ -443,4 +443,34 @@ void main() {
       expect(request.metode, MetodePencairan.tunai);
     });
   });
+
+  testWidgets('the embedded header closes the surface it sits in',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: rootNavigatorKey,
+      home: Builder(
+        builder: (context) => TextButton(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (_) => EditPencairanCubit(useCases),
+              child: Scaffold(
+                body: EditPencairanView(
+                    pencairan: _pencairan, embedded: true, now: () => _now),
+              ),
+            ),
+          )),
+          child: const Text('buka'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Pencairan'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Pencairan'), findsNothing);
+    expect(find.text('buka'), findsOneWidget);
+  });
 }

@@ -33,6 +33,17 @@ Pencairan _pencairan({bool diperbarui = false, int potongan = 0}) => Pencairan(
 class _MockUseCases extends Mock implements PencairanUseCases {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(EditPencairanRequest(
+      id: '',
+      nominal: 0,
+      metode: MetodePencairan.tunai,
+      tanggal: DateTime(2026),
+      keterangan: '',
+      alasan: '',
+    ));
+  });
+
   late int changes;
 
   setUp(() => changes = 0);
@@ -225,5 +236,49 @@ void main() {
     expect(find.text('Potongan'), findsOneWidget);
     expect(find.text('Rp 0'), findsOneWidget);
     expect(find.text('Dibayar'), findsOneWidget);
+  });
+
+  testWidgets('on a wide window the history goes back to the detail',
+      (tester) async {
+    final useCases = _MockUseCases();
+    when(() => useCases.getRevisi('p-9')).thenAnswer((_) async =>
+        Left(NotFoundException(message: 'Riwayat tidak ditemukan')));
+    di.registerFactory<RevisiPencairanCubit>(
+        () => RevisiPencairanCubit(useCases));
+    addTearDown(() => di.unregister<RevisiPencairanCubit>());
+    await openSheet(tester, _pencairan(diperbarui: true),
+        size: const Size(1200, 900));
+    await tapKey(tester, 'riwayat-perubahan-pencairan');
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail Pencairan'), findsOneWidget);
+    expect(find.text('Riwayat tidak ditemukan'), findsNothing);
+  });
+
+  testWidgets('on a wide window a saved edit refreshes the caller and closes',
+      (tester) async {
+    final useCases = _MockUseCases();
+    final edited = _pencairan(diperbarui: true);
+    when(() => useCases.editPencairan(any()))
+        .thenAnswer((_) async => Right(edited));
+    di.registerFactory<EditPencairanCubit>(() => EditPencairanCubit(useCases));
+    addTearDown(() => di.unregister<EditPencairanCubit>());
+    await openSheet(tester, _pencairan(), size: const Size(1200, 900));
+    await tapKey(tester, 'edit-pencairan');
+
+    await tester.enterText(find.byKey(const Key('nominal-field')), '100000');
+    await tester.enterText(
+        find.byKey(const Key('alasan-field')), 'Salah ketik');
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('submit-edit-pencairan')));
+    await tester.tap(find.byKey(const Key('submit-edit-pencairan')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan'));
+    await tester.pumpAndSettle();
+
+    expect(changes, 1);
+    expect(find.byType(Dialog), findsNothing);
   });
 }

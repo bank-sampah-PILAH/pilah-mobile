@@ -1,13 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_export_action.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/periode_picker_sheet.dart';
 
@@ -17,6 +22,7 @@ class _Export extends Mock implements ExportTransaksiUseCase {}
 
 void main() {
   late RiwayatAktivitasCubit cubit;
+  late _Export export;
 
   setUpAll(() => registerFallbackValue(const TransaksiFilter()));
 
@@ -24,7 +30,8 @@ void main() {
     final feed = _Feed();
     when(() => feed.execute(any()))
         .thenAnswer((_) async => const Right(AktivitasPage([], false)));
-    cubit = RiwayatAktivitasCubit(feed, _Export());
+    export = _Export();
+    cubit = RiwayatAktivitasCubit(feed, export);
   });
 
   tearDown(() => cubit.close());
@@ -35,6 +42,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(
+      navigatorKey: rootNavigatorKey,
       home: Scaffold(
         body: BlocProvider.value(
           value: cubit,
@@ -131,5 +139,76 @@ void main() {
     expect(cubit.state.periode, 'bulan_ini');
     expect(find.byTooltip('Reset filter'), findsNothing);
     expect(find.text('Bulan Ini'), findsOneWidget);
+  });
+
+  testWidgets('wide: Reset restores the defaults', (tester) async {
+    await pumpBar(tester, width: 1200);
+    cubit.setPeriode('12_bulan');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reset'));
+    await tester.pumpAndSettle();
+
+    expect(cubit.state.periode, 'bulan_ini');
+    expect(find.text('Reset'), findsNothing);
+  });
+
+  testWidgets('phone: tapping the period field opens the picker',
+      (tester) async {
+    await pumpBar(tester, width: 360);
+
+    await tester.tap(find.text('Bulan Ini'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pilih Periode'), findsOneWidget);
+  });
+
+  testWidgets('wide export asks the report for the current filters',
+      (tester) async {
+    when(() => export.execute(any())).thenAnswer((_) async {
+      // The loading toast needs a moment on screen before it can be dismissed.
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      return Left(NetworkException(message: 'Server sibuk'));
+    });
+    await pumpBar(tester, width: 1200);
+
+    await tester.tap(find.text('Ekspor XLSX'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+
+    verify(() => export.execute(any())).called(1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('phone export hands the downloaded file to the saver',
+      (tester) async {
+    when(() => export.execute(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      return Right(TransaksiExport(
+          bytes: Uint8List.fromList([1, 2]), filename: 'a.xlsx'));
+    });
+    await pumpBar(tester, width: 360);
+
+    await tester.tap(find.byTooltip('Ekspor XLSX'));
+    await tester.pumpAndSettle();
+    // Let the result toast run out so the navigator is idle at teardown.
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+
+    verify(() => export.execute(any())).called(1);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('the saved-report message names the folder', () {
+    expect(laporanTersimpanDi('Download'),
+        'Laporan berhasil disimpan ke folder Download');
+  });
+
+  testWidgets('an unknown period still shows a readable label', (tester) async {
+    cubit.setPeriode('tidak-dikenal');
+    await pumpBar(tester, width: 1200);
+
+    expect(find.text(periodePresets[2].$2), findsOneWidget);
   });
 }

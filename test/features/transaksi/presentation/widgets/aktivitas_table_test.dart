@@ -106,5 +106,10 @@ void main() {
 
     expect(tint(0), AppColors.greenLight.withValues(alpha: 0.45));
     expect(tint(1), isNull);
+
+    await mouse.moveTo(const Offset(1, 1));
+    await tester.pump();
+
+    expect(tint(0), isNull);
   });
 }
