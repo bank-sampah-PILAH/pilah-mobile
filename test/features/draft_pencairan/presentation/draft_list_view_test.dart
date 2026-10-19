@@ -277,6 +277,12 @@ void main() {
         reason: 'centred in the window');
     expect(tester.getSize(find.byKey(const Key('cari-draft'))).width,
         lessThanOrEqualTo(LayoutBreakpoint.contentMaxWidth));
+    final scroll = find
+        .ancestor(
+            of: find.text('Cair Oktober'), matching: find.byType(ListView))
+        .first;
+    expect(tester.getSize(scroll).width, 1440,
+        reason: 'so the scrollbar is at the window edge');
   });
 
   testWidgets('the trash icon asks first, then cancels and reloads',

@@ -3,7 +3,7 @@ import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -61,19 +61,40 @@ class _DashboardPageState extends State<DashboardPage> {
     ]);
   }
 
+  /// Kunci halaman pengurus di web (akun dan bank sampahnya), atau null bila
+  /// ini bukan pengurus di web. Berubah saat akun berganti, supaya laporan
+  /// dimuat ulang.
+  String? _webPengurusKey(BuildContext context) {
+    if (!(widget.isWeb ?? kIsWeb)) return null;
+    return context.select<AuthenticationBloc, String?>((bloc) {
+      final state = bloc.state;
+      if (state is! Authenticated || state.authEntity.role != 'pengelola') {
+        return null;
+      }
+      return '${state.authEntity.id ?? state.authEntity.email}:'
+          '${state.authEntity.bankSampahNama ?? ''}';
+    });
+  }
+
+  /// Padding area gulir: gutter web di layar lebar, 16 di telepon, ditambah
+  /// batas lebar dari `ContentFrame`.
+  EdgeInsets _scrollPadding(BuildContext context, {required bool pengurusWeb}) {
+    final webGutter =
+        pengurusWeb && context.layoutBreakpoint != LayoutBreakpoint.compact;
+    return ContentFrame.insetOf(context) +
+        (webGutter
+            ? const EdgeInsets.fromLTRB(
+                AppSpacing.webGutter,
+                AppSpacing.webTop,
+                AppSpacing.webGutter,
+                AppSpacing.xl,
+              )
+            : const EdgeInsets.all(16.0));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final webPengurusKey = (widget.isWeb ?? kIsWeb)
-        ? context.select<AuthenticationBloc, String?>((bloc) {
-            final state = bloc.state;
-            if (state is! Authenticated ||
-                state.authEntity.role != 'pengelola') {
-              return null;
-            }
-            return '${state.authEntity.id ?? state.authEntity.email}:'
-                '${state.authEntity.bankSampahNama ?? ''}';
-          })
-        : null;
+    final webPengurusKey = _webPengurusKey(context);
     final isPengurusWeb = webPengurusKey != null;
 
     return Scaffold(
@@ -81,50 +102,47 @@ class _DashboardPageState extends State<DashboardPage> {
           ? WebContentSurface.pageColor(context, phone: AppColors.cardOffWhite)
           : Colors.white,
       body: SafeArea(
-        child: ContentBounds(
+        // The scroll view spans the body, so its scrollbar is at the window
+        // edge; the frame supplies the side inset that keeps the content to a
+        // readable column.
+        child: ContentFrame(
           child: AppRefreshIndicator(
             onRefresh: _onRefresh,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: isPengurusWeb &&
-                      context.layoutBreakpoint != LayoutBreakpoint.compact
-                  ? const EdgeInsets.fromLTRB(
-                      AppSpacing.webGutter,
-                      AppSpacing.webTop,
-                      AppSpacing.webGutter,
-                      AppSpacing.xl,
-                    )
-                  : const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Di web lebar profil ada di kaki sidebar, jadi avatar di sini
-                  // hanya menggandakannya.
-                  DashboardHeader(
-                    showProfile: !(isPengurusWeb &&
-                        context.layoutBreakpoint != LayoutBreakpoint.compact),
-                  ),
-                  const SizedBox(height: 24),
-                  if (isPengurusWeb)
-                    const DashboardWebKpiSection()
-                  else ...[
-                    const TotalKasCard(),
-                    const SizedBox(height: 24),
-                    const DashboardStatisticsSection(),
-                  ],
-                  const SizedBox(height: 24),
-                  const DashboardActionButtons(),
-                  const SizedBox(height: 32),
-                  if (isPengurusWeb) ...[
-                    DashboardReportsSection(
-                      key: ValueKey('reports-$webPengurusKey'),
-                      dataSource: di<DashboardReportingDataSource>(),
+            child: Builder(
+              builder: (context) => SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: _scrollPadding(context, pengurusWeb: isPengurusWeb),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Di web lebar profil ada di kaki sidebar, jadi avatar di sini
+                    // hanya menggandakannya.
+                    DashboardHeader(
+                      showProfile: !(isPengurusWeb &&
+                          context.layoutBreakpoint != LayoutBreakpoint.compact),
                     ),
                     const SizedBox(height: 24),
-                    _webDetails(webPengurusKey),
-                  ] else
-                    const RecentActivitySection(),
-                ],
+                    if (isPengurusWeb)
+                      const DashboardWebKpiSection()
+                    else ...[
+                      const TotalKasCard(),
+                      const SizedBox(height: 24),
+                      const DashboardStatisticsSection(),
+                    ],
+                    const SizedBox(height: 24),
+                    const DashboardActionButtons(),
+                    const SizedBox(height: 32),
+                    if (isPengurusWeb) ...[
+                      DashboardReportsSection(
+                        key: ValueKey('reports-$webPengurusKey'),
+                        dataSource: di<DashboardReportingDataSource>(),
+                      ),
+                      const SizedBox(height: 24),
+                      _webDetails(webPengurusKey),
+                    ] else
+                      const RecentActivitySection(),
+                  ],
+                ),
               ),
             ),
           ),

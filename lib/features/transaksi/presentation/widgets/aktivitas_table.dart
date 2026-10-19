@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/data_table_card.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 
 /// Daftar aktivitas untuk layar lebar: satu baris per setoran atau pencairan
@@ -18,6 +18,9 @@ class AktivitasTable extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.footer = const [],
+    this.toolbar,
+    this.pagination,
+    this.page,
   });
 
   final List<ActivitasEntity> items;
@@ -25,6 +28,15 @@ class AktivitasTable extends StatelessWidget {
 
   /// Isi di bawah baris terakhir: indikator muat atau tombol "Muat Lagi".
   final List<Widget> footer;
+
+  /// Baris ringkasan di atas kepala kolom, di dalam kartu.
+  final Widget? toolbar;
+
+  /// Paginasi di dasar kartu.
+  final Widget? pagination;
+
+  /// Halaman yang tampil; berubahnya mengembalikan gulir ke atas.
+  final int? page;
 
   /// Lebar relatif kolom: waktu, nasabah, tipe, rincian, nominal.
   static const _columns = [4, 4, 2, 4, 3];
@@ -39,47 +51,33 @@ class AktivitasTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              color: AppColors.fill,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: 14,
-              ),
-              child: Row(children: [
-                _cell(0, Text('WAKTU', style: _headStyle)),
-                _cell(1, Text('NASABAH', style: _headStyle)),
-                _cell(2, Text('TIPE', style: _headStyle)),
-                _cell(3, Text('RINCIAN', style: _headStyle)),
-                _cell(
-                  4,
-                  Text('NOMINAL', style: _headStyle, textAlign: TextAlign.end),
-                ),
-              ]),
-            ),
+    return DataTableCard(
+      toolbar: toolbar,
+      header: DataTableCard.head([
+        _cell(0, Text('WAKTU', style: _headStyle)),
+        _cell(1, Text('NASABAH', style: _headStyle)),
+        _cell(2, Text('TIPE', style: _headStyle)),
+        _cell(3, Text('RINCIAN', style: _headStyle)),
+        _cell(
+          4,
+          Text('NOMINAL', style: _headStyle, textAlign: TextAlign.end),
+        ),
+      ]),
+      body: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: items.length + (footer.isEmpty ? 0 : 1),
+        separatorBuilder: (_, __) =>
             const Divider(height: 1, color: AppColors.border),
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0) const Divider(height: 1, color: AppColors.border),
-              _Row(
+        itemBuilder: (context, i) => i == items.length
+            ? Column(children: footer)
+            : _Row(
                 key: rowKey(i),
                 item: items[i],
                 onTap: () => onTap(items[i]),
               ),
-            ],
-            ...footer,
-          ],
-        ),
       ),
+      footer: pagination,
+      pageKey: page,
     );
   }
 

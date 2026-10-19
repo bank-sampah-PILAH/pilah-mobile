@@ -246,6 +246,12 @@ void main() {
     when(() => feed.execute(any())).thenAnswer((_) => pending.future);
     final cubit = RiwayatAktivitasCubit(feed, _Export());
     addTearDown(cubit.close);
+    // Phone: the summary card sits in the page header; wide windows show it as
+    // a strip inside the table card instead.
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(
         home: BlocProvider.value(value: cubit, child: const LaporanPage())));
     await tester.pump();
@@ -369,4 +375,57 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('the strip shows every total on one line, with the saldo marked',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final feed = _Feed();
+    when(() => feed.execute(any()))
+        .thenAnswer((_) async => Right(await _page(_totals)));
+    final cubit = RiwayatAktivitasCubit(feed, _Export());
+    addTearDown(cubit.close);
+    await cubit.load();
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: BlocProvider.value(
+                value: cubit, child: const AktivitasSummaryStrip()))));
+    await tester.pumpAndSettle();
+
+    expect(
+        tester.getSize(find.byType(AktivitasSummaryStrip)).height, lessThan(60),
+        reason: 'one line, not a card');
+    final text = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .map((r) => r.text.toPlainText())
+        .join('|');
+    for (final part in [
+      '25',
+      '12,5 kg',
+      'Rp 150.000',
+      'Rp 200.000',
+      '-Rp 50.000'
+    ]) {
+      expect(text, contains(part));
+    }
+  });
+
+  testWidgets('the strip hides itself while loading and for an empty period',
+      (tester) async {
+    final feed = _Feed();
+    when(() => feed.execute(any()))
+        .thenAnswer((_) async => Right(await _page(_zero)));
+    final cubit = RiwayatAktivitasCubit(feed, _Export());
+    addTearDown(cubit.close);
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: BlocProvider.value(
+                value: cubit, child: const AktivitasSummaryStrip()))));
+    expect(tester.getSize(find.byType(AktivitasSummaryStrip)).height, 0);
+    await cubit.load();
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(AktivitasSummaryStrip)).height, 0);
+  });
 }

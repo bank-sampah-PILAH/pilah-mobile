@@ -320,6 +320,10 @@ void main() {
           lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
       expect(tester.getCenter(baris).dx, closeTo(720, 1),
           reason: 'centred in the window');
+      final scroll =
+          find.ancestor(of: baris, matching: find.byType(ListView)).first;
+      expect(tester.getSize(scroll).width, 1440,
+          reason: 'the list scrolls across the window: scrollbar at the edge');
       // The button that takes the pick stays in that column, not at the far
       // edge of the window.
       expect(tester.getTopRight(find.byKey(const Key('lanjut'))).dx,

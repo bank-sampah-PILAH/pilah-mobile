@@ -17,7 +17,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
-import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
@@ -325,60 +325,65 @@ class _ProfileViewState extends State<_ProfileView>
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: ContentBounds(
+          // The tabs scroll across the whole body, so their scrollbar is at the
+          // window edge; the frame keeps the content to a readable column.
+          child: ContentFrame(
             child: Column(
               children: [
                 // Di browser rail di kiri adalah jalan keluarnya, jadi tidak ada
                 // tombol kembali; judulnya mengikuti halaman tab web lain.
-                if (_webShell)
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      AppSpacing.webGutter,
-                      AppSpacing.webTop,
-                      AppSpacing.webGutter,
-                      AppSpacing.md,
-                    ),
-                    child: AppPageHeader(title: 'Profil & Pengaturan'),
-                  )
-                else
-                  AppBackHeader(
-                    title: 'Profil & Pengaturan',
-                    onBack: () => context.canPop()
-                        ? context.pop()
-                        : context.go(AppLocations.dashboard),
-                  ),
+                ContentInset(
+                  child: _webShell
+                      ? const Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppSpacing.webGutter,
+                            AppSpacing.webTop,
+                            AppSpacing.webGutter,
+                            AppSpacing.md,
+                          ),
+                          child: AppPageHeader(title: 'Profil & Pengaturan'),
+                        )
+                      : AppBackHeader(
+                          title: 'Profil & Pengaturan',
+                          onBack: () => context.canPop()
+                              ? context.pop()
+                              : context.go(AppLocations.dashboard),
+                        ),
+                ),
 
                 // Tab Bar
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: _gutter),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                ContentInset(
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: _gutter),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                      ),
                     ),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    // Di web tab rata kiri selebar isinya, bukan dibagi rata
-                    // ke seluruh lebar halaman.
-                    isScrollable: _webShell,
-                    tabAlignment:
-                        _webShell ? TabAlignment.start : TabAlignment.fill,
-                    labelColor: AppColors.greenDark,
-                    unselectedLabelColor: Colors.grey[400],
-                    labelStyle: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                    child: TabBar(
+                      controller: _tabController,
+                      // Di web tab rata kiri selebar isinya, bukan dibagi rata
+                      // ke seluruh lebar halaman.
+                      isScrollable: _webShell,
+                      tabAlignment:
+                          _webShell ? TabAlignment.start : TabAlignment.fill,
+                      labelColor: AppColors.greenDark,
+                      unselectedLabelColor: Colors.grey[400],
+                      labelStyle: AppTextStyle.small.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      unselectedLabelStyle: AppTextStyle.small.copyWith(
+                        fontWeight: FontWeight.normal,
+                        fontSize: 14,
+                      ),
+                      indicatorColor: AppColors.greenDark,
+                      indicatorWeight: 3,
+                      tabs: const [
+                        Tab(text: 'Pengaturan Umum'),
+                        Tab(text: 'Manajemen Tim'),
+                      ],
                     ),
-                    unselectedLabelStyle: AppTextStyle.small.copyWith(
-                      fontWeight: FontWeight.normal,
-                      fontSize: 14,
-                    ),
-                    indicatorColor: AppColors.greenDark,
-                    indicatorWeight: 3,
-                    tabs: const [
-                      Tab(text: 'Pengaturan Umum'),
-                      Tab(text: 'Manajemen Tim'),
-                    ],
                   ),
                 ),
 
@@ -390,7 +395,7 @@ class _ProfileViewState extends State<_ProfileView>
                 // Bar bawah: hanya Simpan, dan hanya di tab Pengaturan Umum.
                 if (_tabController.index == 0 &&
                     profileState.status == ProfileStatus.loaded)
-                  _buildActionBar(),
+                  ContentInset(child: _buildActionBar()),
               ],
             ),
           ),
@@ -637,8 +642,8 @@ class _ProfileViewState extends State<_ProfileView>
           onRefresh: () => context.read<ProfileCubit>().load(silent: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(
-                _sideGutter(isDesktop), 16, _sideGutter(isDesktop), 24),
+            padding: ContentFrame.insetOf(context).add(EdgeInsets.fromLTRB(
+                _sideGutter(isDesktop), 16, _sideGutter(isDesktop), 24)),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -814,123 +819,127 @@ class _ProfileViewState extends State<_ProfileView>
 
     return AppRefreshIndicator(
       onRefresh: () => context.read<ProfileCubit>().load(silent: true),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Invite Banner — owner only. Both the banner and its trailing gap
-            // are guarded so hiding it leaves no dangling spacing above the list.
-            if (isPengelolaUtama) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.greenDark,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Undang Pengurus Baru',
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    AppButton(
-                      label: 'Salin Link Undangan',
-                      variant: AppButtonVariant.outlined,
-                      icon: Icons.copy,
-                      onPressed: _onCopyInvite,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-            ],
-
-            // Section Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _sectionTitle('PENGELOLA TERGABUNG'),
+      // A Builder, so the inset comes from the frame below the page body.
+      child: Builder(
+        builder: (context) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: ContentFrame.insetOf(context)
+              .add(const EdgeInsets.fromLTRB(16, 20, 16, 24)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Invite Banner — owner only. Both the banner and its trailing gap
+              // are guarded so hiding it leaves no dangling spacing above the list.
+              if (isPengelolaUtama) ...[
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.greenLight,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    color: AppColors.greenDark,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Undang Pengurus Baru',
+                        style: AppTextStyle.title1.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bagikan link agar pengurus lain bisa bergabung ke bank sampah Anda.',
+                        style: AppTextStyle.small.copyWith(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      AppButton(
+                        label: 'Salin Link Undangan',
+                        variant: AppButtonVariant.outlined,
+                        icon: Icons.copy,
+                        onPressed: _onCopyInvite,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+              ],
+
+              // Section Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _sectionTitle('PENGELOLA TERGABUNG'),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenLight,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Text(
+                      '${team.length} aktif',
+                      style: AppTextStyle.extraSmall.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Member List Card
+              if (team.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey[200]!),
                   ),
                   child: Text(
-                    '${team.length} aktif',
-                    style: AppTextStyle.extraSmall.copyWith(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    'Belum ada pengurus lain yang tergabung.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                  ),
+                )
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < team.length; i++) ...[
+                        if (i > 0)
+                          Divider(
+                              color: Colors.grey[100],
+                              height: 1,
+                              thickness: 1,
+                              indent: 16,
+                              endIndent: 16),
+                        _buildMemberRow(team[i]),
+                      ],
+                    ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Member List Card
-            if (team.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: Text(
-                  'Belum ada pengurus lain yang tergabung.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-                ),
-              )
-            else
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    for (int i = 0; i < team.length; i++) ...[
-                      if (i > 0)
-                        Divider(
-                            color: Colors.grey[100],
-                            height: 1,
-                            thickness: 1,
-                            indent: 16,
-                            endIndent: 16),
-                      _buildMemberRow(team[i]),
-                    ],
-                  ],
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
