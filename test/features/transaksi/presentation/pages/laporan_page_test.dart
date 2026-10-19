@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
@@ -147,10 +146,10 @@ void main() {
     expect(pageBackground(tester), Colors.white);
   });
 
-  testWidgets('the phone layout keeps its grey page', (tester) async {
+  testWidgets('the phone layout is white like the other pages', (tester) async {
     await pumpPage(tester);
 
-    expect(pageBackground(tester), AppColors.surface);
+    expect(pageBackground(tester), Colors.white);
   });
 
   testWidgets('a wide screen keeps the web gutter around the title',
