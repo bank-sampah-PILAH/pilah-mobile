@@ -346,7 +346,9 @@ class _ProfileViewState extends State<_ProfileView>
                         )
                       : AppBackHeader(
                           title: 'Profil & Pengaturan',
-                          onBack: () => context.pop(),
+                          onBack: () => context.canPop()
+                              ? context.pop()
+                              : context.go(AppLocations.dashboard),
                         ),
                 ),
 
@@ -675,7 +677,8 @@ class _ProfileViewState extends State<_ProfileView>
                         label: 'Kelola Pengumuman',
                         variant: AppButtonVariant.outlined,
                         icon: Icons.campaign_outlined,
-                        onPressed: () => context.go(PengumumanKelolaPage.route),
+                        onPressed: () =>
+                            context.push(PengumumanKelolaPage.route),
                       ),
                       const SizedBox(height: 12),
                       _buildLogoutButton(),

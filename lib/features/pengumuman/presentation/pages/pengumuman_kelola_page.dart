@@ -74,11 +74,26 @@ class _PengumumanKelolaBody extends StatefulWidget {
 class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
   late final ScrollController _scrollController;
 
+  /// Halaman ini adalah cabang shell yang tetap hidup saat tab lain dibuka.
+  /// Ia tidak dibangun ulang saat dibuka lagi, jadi daftarnya dimuat ulang
+  /// ketika cabangnya kembali aktif.
+  bool _active = true;
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
     context.read<PengumumanCubit>().loadPengumuman();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = TickerMode.valuesOf(context).enabled;
+    if (active && !_active) {
+      context.read<PengumumanCubit>().loadPengumuman(silent: true);
+    }
+    _active = active;
   }
 
   @override
