@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -41,11 +42,8 @@ class DashboardActionButtons extends StatelessWidget {
               // 2. Wait for the tab transition animation to complete before showing the modal
               Future.delayed(const Duration(milliseconds: 300), () {
                 if (context.mounted) {
-                  showModalBottomSheet(
-                    context: context,
-                    useRootNavigator: true,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
+                  showAdaptiveSurface(
+                    context,
                     builder: (context) => const TambahNasabahBottomSheet(),
                   );
                 }
@@ -58,11 +56,8 @@ class DashboardActionButtons extends StatelessWidget {
   }
 
   Future<void> _openTransaksiChooser(BuildContext context) async {
-    final choice = await showModalBottomSheet<_TransaksiChoice>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final choice = await showAdaptiveSurface<_TransaksiChoice>(
+      context,
       builder: (context) => const _TransaksiChooserSheet(),
     );
     if (choice == null || !context.mounted) return;

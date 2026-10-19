@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
@@ -85,7 +86,8 @@ class _HargaDetailFlowState extends State<HargaDetailFlow> {
       mainAxisSize: widget.embedded ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!widget.embedded) ...[
+        // A dialog cannot be dragged, so it has no handle there.
+        if (!widget.embedded && !DialogSurface.of(context)) ...[
           const AppSheetHandle(),
           const SizedBox(height: AppSpacing.lg),
         ],

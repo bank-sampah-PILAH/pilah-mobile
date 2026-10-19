@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/widgets/nasabah_setoran_detail_sheet.dart';
 
@@ -82,5 +84,21 @@ void main() {
     expect(calls, 2);
     expect(find.text('Rincian setoran gagal dimuat.'), findsNothing);
     expect(find.text('Plastik bersih'), findsOneWidget);
+  });
+
+  testWidgets('a sheet has a drag handle, a dialog does not', (tester) async {
+    await open(tester, () async => _detail());
+    expect(find.byType(AppSheetHandle), findsOneWidget);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: DialogSurface(
+          child: NasabahSetoranDetailSheet(loadDetail: () async => _detail()),
+        ),
+      ),
+    ));
+    await tester.pump();
+    expect(find.byType(AppSheetHandle), findsNothing,
+        reason: 'a dialog cannot be dragged');
   });
 }

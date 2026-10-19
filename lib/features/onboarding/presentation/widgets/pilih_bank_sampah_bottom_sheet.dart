@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -73,7 +74,7 @@ class _PilihBankSampahBottomSheetState
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: DialogSurface.keyboardInset(context),
       ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.85,

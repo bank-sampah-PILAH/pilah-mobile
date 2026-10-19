@@ -19,7 +19,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 
 String _time(DateTime? tanggal) {
   if (tanggal == null) return '-';
@@ -46,7 +46,7 @@ Future<void> showPencairanDetailSheet(
   // On a wide window detail, edit and history are one dialog with back
   // navigation; on a phone the edit form and the history are pages.
   if (context.layoutBreakpoint != LayoutBreakpoint.compact) {
-    return showNasabahSurface<void>(
+    return showAdaptiveSurface<void>(
       context,
       builder: (_) => PencairanDetailFlow(item: item, onChanged: onChanged),
     );
@@ -58,7 +58,7 @@ Future<void> showPencairanDetailSheet(
     if (saved == true) onChanged();
   }
 
-  return showNasabahSurface<void>(
+  return showAdaptiveSurface<void>(
     context,
     builder: (sheetContext) => PencairanDetailSheet(
       item: item,
@@ -78,7 +78,7 @@ Future<void> showNasabahPencairanDetailSheet(
   BuildContext context,
   Pencairan item,
 ) =>
-    showNasabahSurface<void>(
+    showAdaptiveSurface<void>(
       context,
       builder: (_) => PencairanDetailSheet(item: item),
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -230,7 +230,7 @@ class AktivitasListView extends StatelessWidget {
 void _openDetail(BuildContext context, ActivitasEntity item) {
   if (item.tipe == ActivitasTipe.setoran) {
     final t = item.transaksi!;
-    showNasabahSurface<void>(
+    showAdaptiveSurface<void>(
       context,
       builder: (context) => DetailTransaksiBottomSheet(
         transactionData: {

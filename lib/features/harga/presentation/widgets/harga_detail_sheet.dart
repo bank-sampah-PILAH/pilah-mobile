@@ -18,7 +18,7 @@ import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 /// Tidak mengubah apa pun: mengedit dan melihat riwayat harga adalah dua
 /// pilihan di bawahnya, dan masing-masing membuka layarnya sendiri. Isi yang
 /// sama dipakai di telepon (bottom sheet) dan di layar lebar (dialog); lihat
-/// `showNasabahSurface`.
+/// `showAdaptiveSurface`.
 class HargaDetailSheet extends StatelessWidget {
   const HargaDetailSheet({
     super.key,

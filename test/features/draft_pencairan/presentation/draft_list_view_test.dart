@@ -168,6 +168,33 @@ void main() {
     expect(find.text('Cair Oktober'), findsOneWidget);
   });
 
+  testWidgets('a wide window creates from the header, a phone from the FAB',
+      (tester) async {
+    await pump(tester, const [], size: const Size(1200, 900));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byKey(const Key('buat-pencairan')), findsOneWidget);
+    expect(tester.getTopRight(find.byKey(const Key('buat-pencairan'))).dy,
+        lessThan(100),
+        reason: 'in the header row');
+
+    await pump(tester, const [], size: const Size(390, 844));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byKey(const Key('buat-pencairan')), findsNothing);
+  });
+
+  testWidgets('on a phone the floating button starts picking nasabah',
+      (tester) async {
+    await pump(tester, const [], size: const Size(390, 844));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routePilih}'), findsOneWidget);
+  });
+
   testWidgets('the add button starts picking nasabah', (tester) async {
     await pump(tester, const []);
     await tester.pumpAndSettle();

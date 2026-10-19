@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
 
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -89,23 +90,20 @@ class _HomeSessionState extends State<_HomeSession> {
         return body;
       },
     );
-    showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        isScrollControlled: true,
-        builder: (context) => SafeArea(
-                child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w700)),
-                guardedBody,
-                TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Tutup')),
-              ]),
-            )));
+    showAdaptiveConfirmation<void>(
+      context: context,
+      builder: (context, _) => SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          guardedBody,
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Tutup')),
+        ]),
+      ),
+    );
   }
 
   @override

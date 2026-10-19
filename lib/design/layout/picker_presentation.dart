@@ -11,10 +11,10 @@ import 'layout_breakpoint.dart';
 /// membangun tree, dan supaya picker yang memakainya menjawab sama alih-alih
 /// masing-masing memeriksa MediaQuery.
 ///
-/// Dipakai dua tempat: picker nasabah (`pilih_nasabah_section.dart`) dan
-/// konfirmasi berhasil (`transaksi_baru_page.dart`). `aktivitas_list_view.dart`
-/// dan `time_filter_chips.dart` masih memanggil `showModalBottomSheet`
-/// langsung; keduanya di luar lingkup PIL-340 dan belum disentuh.
+/// Dipakai picker nasabah (`pilih_nasabah_section.dart`), konfirmasi berhasil
+/// (`transaksi_baru_page.dart`) dan beberapa sheet kecil di layar Pengurus.
+/// Tidak ada layar yang memanggil `showModalBottomSheet` sendiri; sebuah test
+/// penjaga (`test/design/raw_bottom_sheets_test.dart`) menjaganya.
 ///
 /// Perhatikan bahwa pembedanya di sini adalah **lebar**, bukan platform seperti
 /// pada [NavigationForm]. Aturan lead dev — bottom bar di aplikasi, navigasi
@@ -176,7 +176,11 @@ Future<T?> showAdaptiveConfirmation<T>({
                 BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
           ),
           padding: padding,
-          child: builder(sheetContext, presentation),
+          // Di bawah bilah sistem pada ponsel bernavigasi gestur.
+          child: SafeArea(
+            top: false,
+            child: builder(sheetContext, presentation),
+          ),
         ),
       );
 

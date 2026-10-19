@@ -40,4 +40,32 @@ void main() {
 
     expect(find.text('two'), findsOneWidget);
   });
+
+  group('keyboardInset', () {
+    Future<double> measure(WidgetTester tester,
+        {required bool inDialog}) async {
+      late double inset;
+      final probe = Builder(builder: (context) {
+        inset = DialogSurface.keyboardInset(context);
+        return const SizedBox();
+      });
+      await tester.pumpWidget(MediaQuery(
+        data: const MediaQueryData(viewInsets: EdgeInsets.only(bottom: 300)),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: inDialog ? DialogSurface(child: probe) : probe,
+        ),
+      ));
+      return inset;
+    }
+
+    testWidgets('lifts a sheet by the keyboard height', (tester) async {
+      expect(await measure(tester, inDialog: false), 300);
+    });
+
+    testWidgets('is zero in a dialog, which already moves itself',
+        (tester) async {
+      expect(await measure(tester, inDialog: true), 0);
+    });
+  });
 }

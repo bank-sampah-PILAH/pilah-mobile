@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -7,7 +8,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 
@@ -50,7 +51,7 @@ class NasabahListItem extends StatelessWidget {
       _showDecisionDialog(context);
       return;
     }
-    showNasabahSurface<void>(
+    showAdaptiveSurface<void>(
       context,
       builder: (context) => DetailNasabahBottomSheet(
         nasabah: nasabah,
@@ -91,38 +92,45 @@ class NasabahListItem extends StatelessWidget {
   /// Action sheet for a pending submission: Setujui / Tolak. Returns `true`
   /// to reject, `false` to approve, `null` when dismissed.
   Future<bool?> _showActionSheet(BuildContext context) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.greenDark,
-                ),
-                title: const Text('Setujui'),
-                onTap: () => Navigator.of(sheetContext).pop(false),
+    return showAdaptiveSurface<bool>(
+      context,
+      builder: (sheetContext) {
+        final options = Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.check_circle_outline,
+                color: AppColors.greenDark,
               ),
-              ListTile(
-                leading: const Icon(Icons.cancel_outlined, color: Colors.red),
-                title: const Text('Tolak'),
-                onTap: () => Navigator.of(sheetContext).pop(true),
-              ),
-            ],
+              title: const Text('Setujui'),
+              onTap: () => Navigator.of(sheetContext).pop(false),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cancel_outlined, color: Colors.red),
+              title: const Text('Tolak'),
+              onTap: () => Navigator.of(sheetContext).pop(true),
+            ),
+          ],
+        );
+        // Dialog sudah putih dan membulat; hanya sheet yang melayang di atas
+        // dasar halaman dengan kartunya sendiri.
+        if (DialogSurface.of(sheetContext)) {
+          return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8), child: options);
+        }
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: options,
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

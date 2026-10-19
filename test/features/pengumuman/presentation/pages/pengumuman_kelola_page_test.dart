@@ -57,6 +57,37 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('on the web the create button is in the page header, no FAB',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Buat'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Kelola Pengumuman')).dx, 120 + 32,
+        reason: 'the title starts at the content column plus the gutter');
+    expect(find.byIcon(Icons.arrow_back), findsNothing,
+        reason: 'a sidebar destination has nowhere to go back to');
+  });
+
+  testWidgets('a phone keeps the FAB and the back header', (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+
+    await openPage(tester, size: const Size(390, 844));
+
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+  });
+
   testWidgets('renders rows with their status and the filter chips',
       (tester) async {
     api.on('GET', '/api/v1/pengumuman', json: {
@@ -416,6 +447,17 @@ void main() {
       expect(find.text('Kelola Pengumuman'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsNothing,
           reason: 'a sidebar destination has nowhere to go back to');
+    });
+
+    testWidgets('a narrow browser keeps the plain title and the FAB',
+        (tester) async {
+      await stubEmpty();
+      await openPage(tester, isWeb: true, size: const Size(390, 844));
+
+      expect(find.text('Kelola Pengumuman'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsNothing);
+      expect(find.byType(FloatingActionButton), findsOneWidget,
+          reason: 'the header button is for wide windows only');
     });
 
     testWidgets('in the app, back returns to Profil when nothing was pushed',

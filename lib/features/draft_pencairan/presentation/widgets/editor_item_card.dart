@@ -1,4 +1,6 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -35,20 +37,13 @@ class EditorItemCard extends StatelessWidget {
 
   Future<void> _aturPotongan(BuildContext context) async {
     var pilihan = item.potongan ?? state.potonganDefault;
-    final hasil = await showModalBottomSheet<_PotonganChoice>(
+    final hasil = await showAdaptiveConfirmation<_PotonganChoice>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
-      builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, _) => StatefulBuilder(
         builder: (context, setSheet) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            16 + MediaQuery.of(context).viewInsets.bottom,
+          // Papan tik mendorong isi ke atas alih-alih menutupinya.
+          padding: EdgeInsets.only(
+            bottom: DialogSurface.keyboardInset(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

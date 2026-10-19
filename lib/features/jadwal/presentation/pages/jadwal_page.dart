@@ -1,3 +1,5 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
@@ -199,11 +201,8 @@ class _JadwalPageState extends State<JadwalPage> {
       return;
     }
 
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
+    showAdaptiveSurface<void>(
+      context,
       builder: (_) => BlocProvider.value(
         value: context.read<JadwalCubit>(),
         child: _JadwalForm(
@@ -1256,7 +1255,7 @@ class _JadwalFormState extends State<_JadwalForm> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: DialogSurface.keyboardInset(context)),
       child: Container(
         key: const ValueKey('jadwal-form'),
         decoration: const BoxDecoration(

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:pilah_mobile/design/layout/dialog_surface.dart';
-import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'dialog_surface.dart';
+import 'layout_breakpoint.dart';
 
-/// Menampilkan form atau detail nasabah di atas halaman.
+/// Menampilkan form atau detail di atas halaman.
 ///
 /// Di telepon tetap modal bottom sheet seperti sebelumnya. Di layar lebar,
 /// sheet selebar jendela terlihat janggal, jadi isi yang sama dibungkus dialog
 /// dengan lebar terbatas. Isinya tidak diubah; hanya pembungkusnya yang
 /// berbeda.
-Future<T?> showNasabahSurface<T>(
+Future<T?> showAdaptiveSurface<T>(
   BuildContext context, {
   required WidgetBuilder builder,
 }) {
@@ -30,7 +30,10 @@ Future<T?> showNasabahSurface<T>(
       insetPadding: const EdgeInsets.all(24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
-        child: DialogSurface(child: builder(dialogContext)),
+        // Builder, bukan builder(dialogContext) langsung: konteks yang diterima
+        // isi harus berada di bawah DialogSurface supaya ia dapat bertanya
+        // apakah dirinya sedang di dalam dialog.
+        child: DialogSurface(child: Builder(builder: builder)),
       ),
     ),
   );

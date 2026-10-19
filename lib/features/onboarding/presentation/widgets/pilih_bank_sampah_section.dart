@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -40,11 +41,8 @@ class PilihBankSampahSection extends StatelessWidget {
               ? null
               : () async {
                   final result =
-                      await showModalBottomSheet<BankSampahDirectoryEntity>(
-                    context: context,
-                    useRootNavigator: true,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
+                      await showAdaptiveSurface<BankSampahDirectoryEntity>(
+                    context,
                     builder: (context) => PilihBankSampahBottomSheet(
                       excludedBankIds: excludedBankIds,
                     ),

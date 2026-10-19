@@ -21,7 +21,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.d
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
 /// Daftar nasabah untuk layar lebar: tabel, bukan kartu satu kolom.
@@ -92,7 +92,7 @@ class _Header extends StatelessWidget {
           label: 'Tambah Nasabah',
           icon: Icons.add,
           expand: false,
-          onPressed: () => showNasabahSurface<void>(
+          onPressed: () => showAdaptiveSurface<void>(
             context,
             builder: (_) => const TambahNasabahBottomSheet(),
           ),
@@ -325,7 +325,7 @@ class _RowState extends State<_Row> {
     }
   }
 
-  void _open() => showNasabahSurface<void>(
+  void _open() => showAdaptiveSurface<void>(
         context,
         builder: (_) => DetailNasabahBottomSheet(
             nasabah: n, nasabahCubit: context.read<NasabahCubit>()),

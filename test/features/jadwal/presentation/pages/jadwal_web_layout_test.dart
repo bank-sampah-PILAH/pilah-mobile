@@ -478,7 +478,7 @@ void main() {
     );
   });
 
-  testWidgets('one pixel below expanded the form stays a sheet',
+  testWidgets('one pixel below expanded the form is a dialog, not a panel',
       (tester) async {
     await _pumpAt(tester, const Size(839, 900));
 
@@ -486,10 +486,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.byType(BottomSheet),
+      find.byType(Dialog),
       findsOneWidget,
       reason: 'a 2/5 panel at medium is about 320px, too narrow for this form',
     );
+    expect(find.byType(BottomSheet), findsNothing);
   });
 
   testWidgets('on a phone the form still opens as a bottom sheet',
