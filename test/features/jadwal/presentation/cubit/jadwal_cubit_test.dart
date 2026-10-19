@@ -123,22 +123,24 @@ void main() {
     ),
   );
 
+  var offline = false;
   blocTest<JadwalCubit, JadwalState>(
     'a failed upcoming request leaves the earlier dates alone',
     build: () {
+      offline = false;
       when(() => repository.getJadwal(page: 1, date: null))
           .thenAnswer((_) async => Right(_page(const [])));
-      var calls = 0;
       when(() => repository.getCalendarDates(any(), any())).thenAnswer(
-        (_) async => ++calls == 1
-            ? Right({DateTime(2026, 11, 3)})
-            : Left(GeneralException(message: 'offline')),
+        (_) async => offline
+            ? Left(GeneralException(message: 'offline'))
+            : Right({DateTime(2026, 11, 3)}),
       );
       return JadwalCubit(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
       await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19));
+      offline = true;
       await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19));
     },
     verify: (cubit) => expect(

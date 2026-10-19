@@ -27,6 +27,9 @@ class JadwalCubit extends Cubit<JadwalState> {
   /// Jangkauan ke depan untuk ringkasan jadwal mendatang: sekitar tiga bulan.
   static const upcomingDays = 90;
 
+  /// Rentang terpanjang yang diterima `calendar-dates` (selisih hari).
+  static const _maxCalendarRangeDays = 62;
+
   JadwalCubit(this.repository) : super(const JadwalInitial());
 
   List<JadwalEntity> get _items =>
@@ -157,23 +160,38 @@ class JadwalCubit extends Cubit<JadwalState> {
   }
 
   /// Tanggal berjadwal dari [today] sampai [upcomingDays] hari ke depan.
-  /// Gagal memuat membiarkan tanggal sebelumnya, bukan mengosongkannya.
+  ///
+  /// Server menolak rentang lebih dari 62 hari, jadi jangkauan dipecah menjadi
+  /// potongan yang berurutan tanpa celah dan diminta bersamaan. Bila salah
+  /// satunya gagal, tanggal sebelumnya dibiarkan, bukan diganti separuh data.
   Future<void> loadUpcomingDates({DateTime? today}) async {
     final start = _dateOnly(today ?? DateTime.now());
-    final end = start.add(const Duration(days: upcomingDays));
+    final last = start.add(const Duration(days: upcomingDays));
+    final ranges = <(DateTime, DateTime)>[];
+    for (var from = start; !from.isAfter(last);) {
+      final to = from.add(const Duration(days: _maxCalendarRangeDays));
+      final end = to.isAfter(last) ? last : to;
+      ranges.add((from, end));
+      from = end.add(const Duration(days: 1));
+    }
     final version = ++_upcomingVersion;
-    final result = await repository.getCalendarDates(start, end);
+    final results = await Future.wait([
+      for (final (from, to) in ranges) repository.getCalendarDates(from, to),
+    ]);
     if (version != _upcomingVersion) return;
-    result.fold(
-      (_) {},
-      (dates) {
-        _upcomingDates = dates.map(_dateOnly).toSet();
-        final current = state;
-        if (current is JadwalLoaded) {
-          emit(current.copyWith(upcomingDates: _upcomingDates));
-        }
-      },
-    );
+    final dates = <DateTime>{};
+    for (final result in results) {
+      final failed = result.fold((_) => true, (found) {
+        dates.addAll(found.map(_dateOnly));
+        return false;
+      });
+      if (failed) return;
+    }
+    _upcomingDates = dates;
+    final current = state;
+    if (current is JadwalLoaded) {
+      emit(current.copyWith(upcomingDates: _upcomingDates));
+    }
   }
 
   Future<NetworkException?> saveJadwal(JadwalEntity jadwal) async {
