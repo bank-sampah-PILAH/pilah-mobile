@@ -58,6 +58,54 @@ void main() {
     verify(() => feed.execute(any())).called(2);
   });
 
+  test('loads a selected server page and preserves its page size', () async {
+    final filters = <TransaksiFilter>[];
+    when(() => feed.execute(any())).thenAnswer((invocation) async {
+      final filter = invocation.positionalArguments.first as TransaksiFilter;
+      filters.add(filter);
+      return Right(AktivitasPage(
+        [item('page-${filter.page}')],
+        filter.page < 3,
+        totalCount: 30,
+      ));
+    });
+
+    await cubit.load(pageSize: 10);
+    await cubit.loadPage(2);
+
+    expect(cubit.state.items.single.transaksi!.id, 'page-2');
+    expect(cubit.state.currentPage, 2);
+    expect(cubit.state.pageSize, 10);
+    expect(cubit.state.totalCount, 30);
+    expect(filters.map((filter) => filter.page), [1, 2]);
+    expect(filters.map((filter) => filter.pageSize), [10, 10]);
+  });
+
+  test('selected-page failure keeps rows and retries the same page', () async {
+    var pageTwoCalls = 0;
+    when(() => feed.execute(any())).thenAnswer((invocation) async {
+      final filter = invocation.positionalArguments.first as TransaksiFilter;
+      if (filter.page == 1) {
+        return Right(AktivitasPage([item('page-1')], true, totalCount: 30));
+      }
+      if (++pageTwoCalls == 1) {
+        return Left(NetworkException(message: 'Offline'));
+      }
+      return Right(AktivitasPage([item('page-2')], true, totalCount: 30));
+    });
+
+    await cubit.load(pageSize: 10);
+    await cubit.loadPage(2);
+    expect(cubit.state.items.single.transaksi!.id, 'page-1');
+    expect(cubit.state.retryPage, 2);
+    expect(cubit.state.errorMessage, isNotNull);
+
+    await cubit.loadPage(cubit.state.retryPage!);
+    expect(cubit.state.items.single.transaksi!.id, 'page-2');
+    expect(cubit.state.retryPage, isNull);
+    expect(cubit.state.currentPage, 2);
+  });
+
   test('keeps distinct rows with empty ids across pages', () async {
     final first = item('');
     final second = item('');

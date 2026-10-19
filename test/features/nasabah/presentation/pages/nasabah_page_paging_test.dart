@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart' show Either, Right;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,8 +18,10 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_useca
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
@@ -89,37 +92,98 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  Widget host() => MaterialApp(
+  Widget host({bool isWeb = kIsWeb}) => MaterialApp(
         home: BlocProvider<NasabahCubit>.value(
           value: cubit,
-          child: const NasabahPage(),
+          child: NasabahPage(isWeb: isWeb),
         ),
       );
 
-  testWidgets('renders the paged list and forwards the load-more request',
-      (tester) async {
+  if (!kIsWeb) {
+    testWidgets('renders the paged list and forwards the load-more request',
+        (tester) async {
+      when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+        final params = invocation.positionalArguments.first as GetNasabahParams;
+        return Right(_halaman(params.page));
+      });
+
+      usePhone(tester);
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NasabahPagedListView), findsOneWidget);
+      expect(find.text('Nasabah 1'), findsOneWidget);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -4000));
+      await tester.pumpAndSettle();
+
+      // Halaman kedua diminta lewat callback milik halaman, bukan oleh widget
+      // daftar sendiri, jadi ini menguji sambungannya.
+      final params = verify(() => getUseCase.execute(captureAny()))
+          .captured
+          .cast<GetNasabahParams>();
+      expect(params.map((p) => p.page), contains(2));
+      expect(find.text('Nasabah 21'), findsOneWidget);
+    });
+  }
+
+  testWidgets('desktop web loads selected server pages', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
       final params = invocation.positionalArguments.first as GetNasabahParams;
-      return Right(_halaman(params.page));
+      return Right(_webHalaman(params.page));
     });
 
-    usePhone(tester);
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(host(isWeb: true));
     await tester.pumpAndSettle();
 
-    expect(find.byType(NasabahPagedListView), findsOneWidget);
+    expect(find.byType(NasabahTable), findsOneWidget);
+    expect(find.text('Menampilkan 1–10 dari 25 nasabah'), findsOneWidget);
     expect(find.text('Nasabah 1'), findsOneWidget);
-
-    await tester.drag(find.byType(ListView), const Offset(0, -4000));
+    expect(find.text('Nasabah 11'), findsNothing);
+    await tester.tap(find.bySemanticsLabel('Halaman 2'));
     await tester.pumpAndSettle();
+    expect(find.text('Menampilkan 11–20 dari 25 nasabah'), findsOneWidget);
+    expect(find.text('Nasabah 1'), findsNothing);
+    expect(find.text('Nasabah 11'), findsOneWidget);
 
-    // Halaman kedua diminta lewat callback milik halaman, bukan oleh widget
-    // daftar sendiri, jadi ini menguji sambungannya.
     final params = verify(() => getUseCase.execute(captureAny()))
         .captured
         .cast<GetNasabahParams>();
-    expect(params.map((p) => p.page), contains(2));
-    expect(find.text('Nasabah 21'), findsOneWidget);
+    expect(params.map((p) => p.page), [1, 2]);
+    expect(params.map((p) => p.pageSize), [10, 10]);
+  });
+
+  testWidgets('compact web paginates cards without infinite loading',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(() => getUseCase.execute(any())).thenAnswer((invocation) async {
+      final params = invocation.positionalArguments.first as GetNasabahParams;
+      return Right(_webHalaman(params.page));
+    });
+
+    await tester.pumpWidget(host(isWeb: true));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NasabahPagedListView), findsOneWidget);
+    expect(find.byType(WebPaginationBar), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byTooltip('Tambah Nasabah'), findsOneWidget);
+    expect(
+        tester
+            .widget<NasabahPagedListView>(
+              find.byType(NasabahPagedListView),
+            )
+            .hasMore,
+        isFalse);
+    await tester.tap(find.bySemanticsLabel('Halaman 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nasabah 11'), findsOneWidget);
+    expect(find.text('Nasabah 1'), findsNothing);
   });
 
   testWidgets('keeps current rows and selection visible while switching tabs',
@@ -203,5 +267,15 @@ HalamanNasabah _halaman(int halaman) {
     items: [for (var i = mulai; i < mulai + 20; i++) _nasabah(i)],
     totalCount: 40,
     hasMore: halaman < 2,
+  );
+}
+
+HalamanNasabah _webHalaman(int halaman) {
+  final mulai = (halaman - 1) * 10 + 1;
+  final akhir = halaman == 3 ? 25 : mulai + 9;
+  return HalamanNasabah(
+    items: [for (var i = mulai; i <= akhir; i++) _nasabah(i)],
+    totalCount: 25,
+    hasMore: halaman < 3,
   );
 }

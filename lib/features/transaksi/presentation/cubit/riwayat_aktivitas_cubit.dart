@@ -15,6 +15,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
   final ExportTransaksiUseCase _export;
   int _generation = 0;
   int _page = 0;
+  int? _pageSize;
 
   TransaksiFilter _filter(int page) => TransaksiFilter(
         periode: state.periode,
@@ -23,9 +24,11 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
         tipe: state.tipeFilter.name,
         search: state.search,
         page: page,
+        pageSize: _pageSize,
       );
 
-  Future<void> load({bool silent = false}) async {
+  Future<void> load({bool silent = false, int? pageSize}) async {
+    _pageSize = pageSize ?? _pageSize;
     final generation = ++_generation;
     _page = 0;
     emit(state.copyWith(
@@ -33,7 +36,11 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
             ? AktivitasStatus.loaded
             : AktivitasStatus.loading,
         hasNext: false,
+        currentPage: 1,
+        pageSize: _pageSize ?? 20,
+        totalCount: silent ? state.totalCount : 0,
         clearSummary: true,
+        clearRetryPage: true,
         loadingMore: false));
     final result = await _getAktivitas.execute(_filter(1));
     if (isClosed || generation != _generation) return;
@@ -41,6 +48,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
       (failure) => emit(state.copyWith(
           status: AktivitasStatus.failure,
           items: [],
+          totalCount: 0,
           clearSummary: true,
           errorMessage: failure.displayMessage)),
       (page) {
@@ -49,7 +57,43 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
             status: AktivitasStatus.loaded,
             items: page.items,
             summary: page.summary,
+            currentPage: 1,
+            pageSize: _pageSize ?? 20,
+            totalCount: page.totalCount,
             hasNext: page.hasNext));
+      },
+    );
+  }
+
+  Future<void> loadPage(int page) async {
+    final pageCount = (state.totalCount + state.pageSize - 1) ~/ state.pageSize;
+    if (page < 1 ||
+        page > pageCount ||
+        page == _page ||
+        state.loadingMore ||
+        state.status != AktivitasStatus.loaded) {
+      return;
+    }
+    final generation = ++_generation;
+    emit(state.copyWith(loadingMore: true, clearRetryPage: true));
+    final result = await _getAktivitas.execute(_filter(page));
+    if (isClosed || generation != _generation) return;
+    result.fold(
+      (failure) => emit(state.copyWith(
+          loadingMore: false,
+          retryPage: page,
+          errorMessage: failure.displayMessage)),
+      (data) {
+        _page = page;
+        emit(state.copyWith(
+            status: AktivitasStatus.loaded,
+            items: data.items,
+            summary: data.summary,
+            currentPage: page,
+            totalCount: data.totalCount,
+            hasNext: data.hasNext,
+            loadingMore: false,
+            clearRetryPage: true));
       },
     );
   }
@@ -66,17 +110,25 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
     if (isClosed || generation != _generation) return;
     result.fold(
       (failure) => emit(state.copyWith(
-          loadingMore: false, errorMessage: failure.displayMessage)),
+          loadingMore: false,
+          clearRetryPage: true,
+          errorMessage: failure.displayMessage)),
       (page) {
         _page++;
         final ids = state.items.map(_key).whereType<String>().toSet();
-        emit(state.copyWith(items: [
-          ...state.items,
-          ...page.items.where((item) {
-            final key = _key(item);
-            return key == null || ids.add(key);
-          })
-        ], hasNext: page.hasNext, loadingMore: false));
+        emit(state.copyWith(
+            items: [
+              ...state.items,
+              ...page.items.where((item) {
+                final key = _key(item);
+                return key == null || ids.add(key);
+              })
+            ],
+            hasNext: page.hasNext,
+            currentPage: _page,
+            totalCount: page.totalCount,
+            loadingMore: false,
+            clearRetryPage: true));
       },
     );
   }
@@ -133,6 +185,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
   void reset() {
     _generation++;
     _page = 0;
+    _pageSize = null;
     emit(const RiwayatAktivitasState());
   }
 }

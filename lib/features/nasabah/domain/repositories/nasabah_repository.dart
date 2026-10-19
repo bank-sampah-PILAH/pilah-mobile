@@ -5,6 +5,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 abstract class NasabahRepository {
   Future<Either<NetworkException, HalamanNasabah>> getNasabah({
     int page,
+    int? pageSize,
     String status,
     String? search,
   });

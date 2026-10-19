@@ -37,6 +37,8 @@ class NasabahLoaded extends NasabahState {
 
   /// Jumlah seluruh nasabah yang cocok di server, bukan yang sudah dimuat.
   final int totalCount;
+  final int currentPage;
+  final int pageSize;
 
   const NasabahLoaded({
     required this.nasabahList,
@@ -46,6 +48,8 @@ class NasabahLoaded extends NasabahState {
     this.isLoadingMore = false,
     this.isReloading = false,
     this.totalCount = 0,
+    this.currentPage = 1,
+    this.pageSize = 20,
   });
 
   bool get isMenungguTab => isActiveTab == null;
@@ -59,6 +63,8 @@ class NasabahLoaded extends NasabahState {
         isLoadingMore,
         isReloading,
         totalCount,
+        currentPage,
+        pageSize,
       ];
 }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
@@ -18,6 +19,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
@@ -29,18 +31,20 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_fo
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
 class HargaPage extends StatelessWidget {
-  const HargaPage({super.key});
+  const HargaPage({super.key, this.isWeb = kIsWeb});
 
   static const route = '/harga';
+  final bool isWeb;
 
   @override
   Widget build(BuildContext context) {
-    return const _HargaPageBody();
+    return _HargaPageBody(isWeb: isWeb);
   }
 }
 
 class _HargaPageBody extends StatefulWidget {
-  const _HargaPageBody();
+  const _HargaPageBody({required this.isWeb});
+  final bool isWeb;
 
   @override
   State<_HargaPageBody> createState() => _HargaPageBodyState();
@@ -62,6 +66,11 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   /// pilihan di dalamnya. Detail, form, dan riwayat bergantian di panel yang
   /// sama, sehingga tabel tetap terlihat.
   HargaEntity? _viewing;
+  int _currentPage = 1;
+
+  static const _webPageSize = 10;
+  static const _pageTitle = 'Jenis Sampah & Harga';
+  static const _addLabel = 'Tambah Jenis Sampah';
 
   bool get _isPanelOpen => _creating || _editing != null || _viewing != null;
 
@@ -164,28 +173,39 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Mengikuti warna permukaan shell web (6d094ba8); di telepon tetap
-      // putih karena di sana halaman ini bukan isi sebuah shell.
-      backgroundColor:
-          WebContentSurface.pageColor(context, phone: Colors.white),
-      // Hanya di telepon. Di layar lebar tombol tambah ada di kepala halaman,
-      // seperti tabel nasabah, sehingga tidak ada yang melayang di atas
-      // tombol "Simpan Perubahan" milik panel.
-      floatingActionButton: context.layoutBreakpoint != LayoutBreakpoint.compact
-          ? null
-          : FloatingActionButton(
-              heroTag: 'harga_page_fab',
-              tooltip: 'Tambah Jenis Sampah',
-              onPressed: () => _openForm(),
-              backgroundColor: AppColors.greenDark,
-              elevation: 4,
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
-      body: SafeArea(
-        child: MasterDetailLayout(
-          master: _buildList(),
-          detail: _isPanelOpen ? _buildPanel() : null,
+    return BlocListener<HargaCubit, HargaState>(
+      listenWhen: (previous, current) =>
+          widget.isWeb &&
+          current is HargaLoaded &&
+          (previous is! HargaLoaded ||
+              !identical(previous.jenisSampahList, current.jenisSampahList)),
+      listener: (context, state) {
+        if (_currentPage != 1) setState(() => _currentPage = 1);
+      },
+      child: Scaffold(
+        // Mengikuti warna permukaan shell web (6d094ba8); di telepon tetap
+        // putih karena di sana halaman ini bukan isi sebuah shell.
+        backgroundColor:
+            WebContentSurface.pageColor(context, phone: Colors.white),
+        // Hanya di telepon. Di layar lebar tombol tambah ada di kepala halaman,
+        // seperti tabel nasabah, sehingga tidak ada yang melayang di atas
+        // tombol "Simpan Perubahan" milik panel.
+        floatingActionButton:
+            context.layoutBreakpoint != LayoutBreakpoint.compact || widget.isWeb
+                ? null
+                : FloatingActionButton(
+                    heroTag: 'harga_page_fab',
+                    tooltip: _addLabel,
+                    onPressed: () => _openForm(),
+                    backgroundColor: AppColors.greenDark,
+                    elevation: 4,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
+        body: SafeArea(
+          child: MasterDetailLayout(
+            master: _buildList(),
+            detail: _isPanelOpen ? _buildPanel() : null,
+          ),
         ),
       ),
     );
@@ -209,20 +229,32 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
           SizedBox(height: web ? AppSpacing.webTop : 16),
           if (web)
             AppPageHeader(
-              title: 'Jenis Sampah & Harga',
+              title: _pageTitle,
               search: search,
               actions: [
                 AppButton(
-                  label: 'Tambah Jenis Sampah',
+                  label: _addLabel,
                   icon: Icons.add,
                   expand: false,
                   onPressed: _openForm,
                 ),
               ],
             )
+          else if (widget.isWeb)
+            AppPageHeader(
+              title: _pageTitle,
+              search: search,
+              actions: [
+                IconButton(
+                  tooltip: _addLabel,
+                  onPressed: _openForm,
+                  icon: const Icon(Icons.add, color: AppColors.greenDark),
+                ),
+              ],
+            )
           else ...[
             Text(
-              'Jenis Sampah & Harga',
+              _pageTitle,
               style: AppTextStyle.headline1.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.bold,
@@ -297,6 +329,58 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       isSearching: isSearching,
       isActiveTab: isActiveTab,
     );
+    final listBottomPadding = widget.isWeb
+        ? const EdgeInsets.only(bottom: 16)
+        : const EdgeInsets.only(bottom: 80);
+    final visibleItems = widget.isWeb
+        ? items
+            .skip((_currentPage - 1) * _webPageSize)
+            .take(_webPageSize)
+            .toList()
+        : items;
+    final Widget list = context.layoutBreakpoint != LayoutBreakpoint.compact
+        ? Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+            child: HargaTable(
+              items: visibleItems,
+              selectedId: _selected?.id,
+              onTap: _openDetail,
+            ),
+          )
+        : ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: listBottomPadding,
+            itemCount: visibleItems.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final item = visibleItems[index];
+              return _HargaCard(
+                item: item,
+                selected: _selected?.id == item.id,
+                onTap: () => _openDetail(item),
+              );
+            },
+          );
+    final Widget content = widget.isWeb
+        ? Column(
+            children: [
+              Expanded(child: list),
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.md,
+                  bottom: AppSpacing.xl,
+                ),
+                child: WebPaginationBar(
+                  currentPage: _currentPage,
+                  totalItems: items.length,
+                  pageSize: _webPageSize,
+                  itemLabel: 'jenis sampah',
+                  onPageChanged: (page) => setState(() => _currentPage = page),
+                ),
+              ),
+            ],
+          )
+        : list;
 
     return PageStateView(
       state: pageState,
@@ -305,29 +389,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       emptyTitle: empty.title,
       emptySubtitle: empty.subtitle,
       emptyIcon: empty.icon,
-      child: context.layoutBreakpoint != LayoutBreakpoint.compact
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-              child: HargaTable(
-                items: items,
-                selectedId: _selected?.id,
-                onTap: _openDetail,
-              ),
-            )
-          : ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 80),
-              itemCount: items.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return _HargaCard(
-                  item: item,
-                  selected: _selected?.id == item.id,
-                  onTap: () => _openDetail(item),
-                );
-              },
-            ),
+      child: content,
     );
   }
 

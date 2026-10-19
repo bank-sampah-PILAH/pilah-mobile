@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
@@ -44,12 +46,15 @@ void main() {
   late StubApi api;
   late HargaCubit cubit;
 
-  Future<void> openPage(WidgetTester tester, {Size size = _medium}) async {
+  Future<void> openPage(WidgetTester tester,
+      {Size size = _medium, bool isWeb = kIsWeb}) async {
     await pumpRouted(
       tester,
-      BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
+      BlocProvider<HargaCubit>.value(
+          value: cubit, child: HargaPage(isWeb: isWeb)),
       size: size,
     );
+    if (kIsWeb) await pumpReal(tester);
     await tester.pumpAndSettle();
   }
 
@@ -305,6 +310,53 @@ void main() {
     expect(find.text('Kardus'), findsOneWidget);
     expect(find.text('Kaleng'), findsNothing);
     expect(find.text('Rp 2.500'), findsNWidgets(2));
+  });
+
+  testWidgets('web harga table paginates and search returns to page one',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
+    });
+    await openPage(tester, size: _expanded, isWeb: true);
+    await tester.pumpAndSettle();
+
+    HargaTable table() => tester.widget<HargaTable>(find.byType(HargaTable));
+    expect(find.byType(WebPaginationBar), findsOneWidget);
+    expect(find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+    expect(table().items.map((item) => item.name),
+        [for (var i = 1; i <= 10; i++) 'Jenis $i']);
+
+    await tester.tap(find.bySemanticsLabel('Halaman 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Menampilkan 11–12 dari 12 jenis sampah'), findsOneWidget);
+    expect(table().items.map((item) => item.name), ['Jenis 11', 'Jenis 12']);
+
+    await tester.enterText(find.byType(TextField).first, 'Jenis');
+    await tester.pumpAndSettle();
+    expect(find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+    expect(table().items.map((item) => item.name),
+        [for (var i = 1; i <= 10; i++) 'Jenis $i']);
+  });
+
+  testWidgets('compact web paginates cards', (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [for (var i = 1; i <= 12; i++) _row('$i', 'Jenis $i')],
+    });
+    await openPage(tester, size: const Size(500, 844), isWeb: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WebPaginationBar), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byTooltip('Tambah Jenis Sampah'), findsOneWidget);
+    expect(find.text('Menampilkan 1–10 dari 12 jenis sampah'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Halaman 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Jenis 11'), findsOneWidget);
+    expect(find.text('Jenis 1'), findsNothing);
+
+    await tester.tap(find.byTooltip('Tambah Jenis Sampah'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
   });
 
   testWidgets('the Aktif and Tidak Aktif chips announce which one is selected',
@@ -628,6 +680,8 @@ void main() {
 
     expect(find.byType(HargaTable), findsNothing);
     expect(find.byType(AppTappableCard), findsWidgets);
+    expect(
+        find.byType(WebPaginationBar), kIsWeb ? findsOneWidget : findsNothing);
   });
 
   testWidgets('tapping a table row opens its detail', (tester) async {
@@ -659,18 +713,30 @@ void main() {
         reason: 'nothing floats over the panel any more, so it can stay');
   });
 
-  testWidgets('on a phone the add button is always there', (tester) async {
-    await openPage(tester, size: const Size(420, 1400));
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+  if (!kIsWeb) {
+    testWidgets('on a phone the add button is always there', (tester) async {
+      await openPage(tester, size: const Size(420, 1400));
+      expect(find.byType(FloatingActionButton), findsOneWidget);
 
-    await editJenis(tester, 'Botol PET');
+      await editJenis(tester, 'Botol PET');
 
-    expect(
-      find.byType(FloatingActionButton),
-      findsOneWidget,
-      reason: 'compact opens a sheet, so there is no panel to overlap',
-    );
-  });
+      expect(
+        find.byType(FloatingActionButton),
+        findsOneWidget,
+        reason: 'compact opens a sheet, so there is no panel to overlap',
+      );
+    });
+
+    testWidgets('on a compact screen the add button opens the form',
+        (tester) async {
+      await openPage(tester, size: const Size(500, 844));
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
+    });
+  }
 
   // The container is chosen when the form opens, but the window can be resized
   // afterwards. Raised by TrayMachi's review of the same pattern on PR #113.
