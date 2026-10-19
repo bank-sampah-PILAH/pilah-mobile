@@ -115,6 +115,15 @@ void main() {
 
     expect(find.text('Periode laporan'), findsOneWidget);
     expect(find.text('2 kg'), findsOneWidget);
+    expect(find.byType(PieChart), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(PieChart)).dy,
+      lessThan(tester.getTopLeft(find.text('Plastik')).dy),
+    );
+    expect(
+      find.text('Plastik menyumbang 100,0% dari total berat periode ini.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -167,7 +176,7 @@ void main() {
     expect(source.requestedCategoryRanges.single.end, expectedRange.end);
   });
 
-  testWidgets('category widget ranks by weight and displays kg and count',
+  testWidgets('category report shows ranked weight chart for selected range',
       (tester) async {
     final source = _ReportingDataSource()
       ..categories = const [
@@ -177,14 +186,65 @@ void main() {
             category: 'Kertas', totalWeightKg: 8, depositCount: 1),
       ];
     await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+      home: Scaffold(
+        body: WasteCategoriesWidget(
+          dataSource: source,
+          initialRange: DashboardReportRange(
+            start: DateTime(2026, 10, 1),
+            end: DateTime(2026, 10, 31),
+          ),
+        ),
+      ),
     ));
     await tester.pumpAndSettle();
 
     expect(tester.getTopLeft(find.text('Kertas')).dy,
         lessThan(tester.getTopLeft(find.text('Plastik')).dy));
+    expect(find.byType(PieChart), findsOneWidget);
+    expect(find.text('Berat per kategori, 1 sampai 31 Oktober 2026'),
+        findsOneWidget);
+    expect(find.text('Total 10 kg'), findsOneWidget);
     expect(find.text('8 kg'), findsOneWidget);
+    expect(find.text('80,0%'), findsOneWidget);
     expect(find.text('1 setoran'), findsOneWidget);
+    expect(
+      find.text(
+        'Kertas menyumbang 80,0% dari total berat periode ini, diikuti Plastik.',
+      ),
+      findsOneWidget,
+    );
+
+    final chart = tester.widget<PieChart>(find.byType(PieChart));
+    expect(chart.data.sections.map((section) => section.value), [8, 2]);
+    expect(
+      chart.data.sections.every(
+        (section) => section.radius + chart.data.centerSpaceRadius <= 110,
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('category summary names two following categories',
+      (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(category: 'Kaca', totalWeightKg: 6, depositCount: 1),
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 3, depositCount: 1),
+        WasteCategoryTotal(
+            category: 'Logam', totalWeightKg: 1, depositCount: 1),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Kaca menyumbang 60,0% dari total berat periode ini, diikuti Plastik dan Logam.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('category weight uses a decimal comma, not a dot',
@@ -233,9 +293,11 @@ void main() {
 
     await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-20')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
@@ -314,6 +376,33 @@ void main() {
     ]).single!;
     expect(withdrawalTooltip.text, contains('Pencairan: 1 transaksi'));
     expect(withdrawalTooltip.text, contains('Rp 40'));
+  });
+
+  testWidgets('empty category reports say there is no data', (tester) async {
+    final source = _ReportingDataSource();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada data'), findsOneWidget);
+    expect(find.text('Belum ada berat'), findsNothing);
+  });
+
+  testWidgets('zero-weight categories say there is no weight', (tester) async {
+    final source = _ReportingDataSource()
+      ..categories = const [
+        WasteCategoryTotal(
+            category: 'Plastik', totalWeightKg: 0, depositCount: 3),
+      ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: WasteCategoriesWidget(dataSource: source)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum ada berat'), findsOneWidget);
+    expect(find.text('Belum ada data'), findsNothing);
+    expect(find.byType(PieChart), findsNothing);
   });
 
   testWidgets('empty and failed reports have independent feedback',
@@ -399,9 +488,11 @@ void main() {
 
     await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-20')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
@@ -437,9 +528,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Kustom'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-10')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-10')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('report-date-2026-06-20')));
+    await tester
+        .tap(find.byKey(const ValueKey('app-calendar-date-2026-06-20')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();

@@ -1,6 +1,6 @@
 class Endpoints {
   // auth
-  static const String login = "auth/login";
+  static const String login = "/api/v1/auth/login";
   static const String loginWithGoogle = "/api/v1/auth/google";
   static const String registerGoogleUser = "/api/v1/auth/google/register";
   static const String authMe = "/api/v1/auth/me";

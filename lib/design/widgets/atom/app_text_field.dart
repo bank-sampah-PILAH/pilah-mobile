@@ -12,6 +12,10 @@ class AppTextField extends StatefulWidget {
   final bool obscureText;
   final bool isError;
   final void Function(String)? onChanged;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final Iterable<String>? autofillHints;
+  final ValueChanged<String>? onSubmitted;
   final List<TextInputFormatter>? inputFormatters;
 
   const AppTextField({
@@ -23,6 +27,10 @@ class AppTextField extends StatefulWidget {
     this.obscureText = false,
     this.isError = false,
     this.inputFormatters,
+    this.keyboardType,
+    this.textInputAction,
+    this.autofillHints,
+    this.onSubmitted,
   });
 
   @override
@@ -66,6 +74,10 @@ class _AppTextFieldState extends State<AppTextField> {
                 color: Colors.black,
               ),
               onChanged: widget.onChanged,
+              keyboardType: widget.keyboardType,
+              textInputAction: widget.textInputAction,
+              autofillHints: widget.autofillHints,
+              onSubmitted: widget.onSubmitted,
               inputFormatters: widget.inputFormatters,
               decoration: appInputDecoration(
                 hintText: widget.hint,

@@ -108,6 +108,13 @@ void main() {
         lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
     expect(tester.getCenter(field).dx, closeTo(720, 1),
         reason: 'centred in the window');
+    final submit = find.byKey(const Key('submit-edit-pencairan'));
+    expect(field.hitTestable(), findsOneWidget,
+        reason: 'the form is not squeezed out by the save bar');
+    expect(find.byKey(const Key('alasan-field')), findsOneWidget);
+    expect(tester.getSize(submit).width,
+        lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth),
+        reason: 'the save button is not as wide as the window');
   });
 
   testWidgets('starts from the recorded values and states the tanggal limit',
@@ -435,5 +442,35 @@ void main() {
       expect(request.tanggal, DateTime(2026, 9, 21, 9, 30));
       expect(request.metode, MetodePencairan.tunai);
     });
+  });
+
+  testWidgets('the embedded header closes the surface it sits in',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: rootNavigatorKey,
+      home: Builder(
+        builder: (context) => TextButton(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (_) => EditPencairanCubit(useCases),
+              child: Scaffold(
+                body: EditPencairanView(
+                    pencairan: _pencairan, embedded: true, now: () => _now),
+              ),
+            ),
+          )),
+          child: const Text('buka'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Pencairan'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Pencairan'), findsNothing);
+    expect(find.text('buka'), findsOneWidget);
   });
 }

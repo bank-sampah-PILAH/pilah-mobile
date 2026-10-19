@@ -16,6 +16,7 @@ class ContentBounds extends StatelessWidget {
     super.key,
     required this.child,
     this.maxWidth = LayoutBreakpoint.contentMaxWidth,
+    this.heightFactor,
   });
 
   final Widget child;
@@ -24,11 +25,17 @@ class ContentBounds extends StatelessWidget {
   /// formulir memakai [LayoutBreakpoint.formMaxWidth].
   final double maxWidth;
 
+  /// Diteruskan ke [Align.heightFactor]. Bawaannya null: setinggi ruang yang
+  /// ada, seperti badan halaman. Isi 1 untuk sebuah bar, misalnya footer di
+  /// `bottomNavigationBar`, supaya tingginya mengikuti isinya.
+  final double? heightFactor;
+
   @override
   Widget build(BuildContext context) {
     if (context.layoutBreakpoint != LayoutBreakpoint.expanded) return child;
     return Align(
       alignment: Alignment.topCenter,
+      heightFactor: heightFactor,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: child,

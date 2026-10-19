@@ -3,25 +3,6 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 
 void main() {
-  test('payout request equality includes every field', () {
-    final tanggal = DateTime(2026, 9, 22, 10, 30);
-    final request = PencairanRequest(
-      nasabahId: 'n-1',
-      nominal: 150000,
-      metode: MetodePencairan.transfer,
-      tanggal: tanggal,
-      keterangan: 'Diambil',
-    );
-
-    expect(request.props, [
-      'n-1',
-      150000,
-      MetodePencairan.transfer,
-      tanggal,
-      'Diambil',
-    ]);
-  });
-
   test('payout edit equality includes every field', () {
     final tanggal = DateTime(2026, 9, 22, 10, 30);
     final request = EditPencairanRequest(

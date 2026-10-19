@@ -15,10 +15,8 @@ import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.da
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -36,7 +34,6 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<PencairanCubit>()) di.unregister<PencairanCubit>();
     if (di.isRegistered<RiwayatPencairanCubit>()) {
       di.unregister<RiwayatPencairanCubit>();
     }
@@ -53,9 +50,6 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       await di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<PencairanCubit>()) {
-      await di.unregister<PencairanCubit>();
-    }
     if (di.isRegistered<RiwayatPencairanCubit>()) {
       await di.unregister<RiwayatPencairanCubit>();
     }
@@ -70,8 +64,6 @@ void main() {
   testWidgets('router builds every pengurus payout page with its extra',
       (tester) async {
     final useCases = _MockUseCases();
-    when(() => useCases.getSaldo('n-1'))
-        .thenAnswer((_) async => const Right<NetworkException, int>(500000));
     when(() => useCases.getRiwayat(any())).thenAnswer(
         (_) async => const Right<NetworkException, List<Pencairan>>([]));
     when(() => useCases.getRevisi('p-1')).thenAnswer(
@@ -82,7 +74,6 @@ void main() {
         ),
       ),
     );
-    di.registerFactory<PencairanCubit>(() => PencairanCubit(useCases));
     di.registerFactory<RiwayatPencairanCubit>(
       () => RiwayatPencairanCubit(useCases),
     );
@@ -108,11 +99,6 @@ void main() {
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-
-    router.go(CatatPencairanPage.route);
-    await tester.pumpAndSettle();
-    expect(find.text('Catat Pencairan'), findsNWidgets(2));
-    expect(find.text('Tap untuk pilih nasabah'), findsOneWidget);
 
     router.go(EditPencairanPage.route, extra: _pencairan);
     await tester.pumpAndSettle();

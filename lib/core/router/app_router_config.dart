@@ -40,7 +40,6 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_e
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
@@ -160,11 +159,6 @@ class AppRouterConfig {
         builder: (context, state) => const TransaksiBaruPage(),
       ),
       GoRoute(
-        path: CatatPencairanPage.route,
-        name: CatatPencairanPage.route,
-        builder: (context, state) => const CatatPencairanPage(),
-      ),
-      GoRoute(
         path: DraftListPage.route,
         name: DraftListPage.route,
         builder: (context, state) => const DraftListPage(),
@@ -204,12 +198,18 @@ class AppRouterConfig {
       GoRoute(
         path: DraftEditorPage.route,
         name: DraftEditorPage.route,
-        // The editor needs to know which draft; without it (a stale link, or a
-        // router restored on its own) there is nothing to show.
+        // The editor needs to know which draft. A saved draft is named by the
+        // link's ?id=, so a refreshed web tab reopens it; a new draft lives
+        // only in extra, and without either there is nothing to show.
         redirect: (context, state) =>
-            state.extra is DraftEditorArgs ? null : DraftListPage.route,
-        builder: (context, state) =>
-            DraftEditorPage(args: state.extra! as DraftEditorArgs),
+            DraftEditorArgs.fromRoute(state.extra, state.uri.queryParameters) ==
+                    null
+                ? DraftListPage.route
+                : null,
+        builder: (context, state) => DraftEditorPage(
+          args: DraftEditorArgs.fromRoute(
+              state.extra, state.uri.queryParameters)!,
+        ),
       ),
       // Both pages take their pencairan as extra, which a refreshed web tab
       // or a pasted link doesn't carry; those go back to the laporan, where

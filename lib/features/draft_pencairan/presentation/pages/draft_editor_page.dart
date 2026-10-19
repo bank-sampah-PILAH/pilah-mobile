@@ -8,6 +8,8 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/content_bounds.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
@@ -181,29 +183,85 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     if (buang && context.mounted) context.pop();
   }
 
+  // One key for both layouts: the form moves between two trees when the
+  // window crosses the desktop breakpoint, and its search, filter and sort
+  // must move with it instead of resetting.
+  final _formKey = GlobalKey();
+
+  Widget _form(DraftEditorState state) =>
+      _Form(key: _formKey, state: state, nama: _nama);
+
   Widget _scaffold(BuildContext context, DraftEditorState state) {
     final cubit = context.read<DraftEditorCubit>();
     final loading = state.phase == EditorPhase.loading;
+    final header = AppBackHeader(
+      backKey: const Key('kembali'),
+      title: state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
+      actions: [
+        ExportMenuButton(
+          enabled: state.canExport,
+          busy: state.phase == EditorPhase.exporting,
+          onSelected: _export,
+        ),
+      ],
+    );
+    // On a desktop window the totals and the buttons that act on them sit in
+    // a panel beside the nasabah list, not in a bar across the whole width.
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: ContentBounds(
+            child: Column(
+              children: [
+                header,
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: loading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _form(state),
+                      ),
+                      SizedBox(
+                        width: LayoutBreakpoint.sidePanelWidth,
+                        child: SingleChildScrollView(
+                          key: const Key('draft-editor-panel'),
+                          padding: const EdgeInsets.all(16),
+                          child: EditorSummaryPanel(
+                            state: state,
+                            samping: true,
+                            aksi: loading || state.status.terkunci
+                                ? null
+                                : _BottomBar(
+                                    state: state,
+                                    onSave: cubit.save,
+                                    onConfirm: _confirmPayment,
+                                    tumpuk: true,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            AppBackHeader(
-              backKey: const Key('kembali'),
-              title: state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
-              actions: [
-                ExportMenuButton(
-                  enabled: state.canExport,
-                  busy: state.phase == EditorPhase.exporting,
-                  onSelected: _export,
-                ),
-              ],
-            ),
+            header,
             Expanded(
               child: loading
                   ? const Center(child: CircularProgressIndicator())
-                  : _Form(state: state, nama: _nama),
+                  : _form(state),
             ),
           ],
         ),
@@ -262,7 +320,7 @@ class _Form extends StatefulWidget {
   final DraftEditorState state;
   final TextEditingController nama;
 
-  const _Form({required this.state, required this.nama});
+  const _Form({super.key, required this.state, required this.nama});
 
   @override
   State<_Form> createState() => _FormState();
@@ -558,10 +616,14 @@ class _BottomBar extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onConfirm;
 
+  /// One above the other, for the side panel, which is narrower than a phone.
+  final bool tumpuk;
+
   const _BottomBar({
     required this.state,
     required this.onSave,
     required this.onConfirm,
+    this.tumpuk = false,
   });
 
   @override
@@ -569,33 +631,35 @@ class _BottomBar extends StatelessWidget {
     final canSave = state.canSave &&
         !state.isBusy &&
         (state.dirty || state.draftId == null);
+    final simpan = PencairanActionButton(
+      key: const Key('simpan'),
+      label: 'Simpan Draft',
+      icon: Icons.save_outlined,
+      isLoading: state.phase == EditorPhase.saving,
+      onPressed: canSave ? onSave : null,
+    );
+    final konfirmasi = PencairanActionButton(
+      key: const Key('konfirmasi'),
+      label: 'Konfirmasi Pembayaran',
+      icon: Icons.check_circle_outline,
+      filled: true,
+      isLoading: state.phase == EditorPhase.confirming,
+      onPressed: state.canConfirm ? onConfirm : null,
+    );
+    if (tumpuk) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [simpan, const SizedBox(height: 12), konfirmasi],
+      );
+    }
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            Expanded(
-              flex: 5,
-              child: PencairanActionButton(
-                key: const Key('simpan'),
-                label: 'Simpan Draft',
-                icon: Icons.save_outlined,
-                isLoading: state.phase == EditorPhase.saving,
-                onPressed: canSave ? onSave : null,
-              ),
-            ),
+            Expanded(flex: 5, child: simpan),
             const SizedBox(width: 12),
-            Expanded(
-              flex: 6,
-              child: PencairanActionButton(
-                key: const Key('konfirmasi'),
-                label: 'Konfirmasi Pembayaran',
-                icon: Icons.check_circle_outline,
-                filled: true,
-                isLoading: state.phase == EditorPhase.confirming,
-                onPressed: state.canConfirm ? onConfirm : null,
-              ),
-            ),
+            Expanded(flex: 6, child: konfirmasi),
           ],
         ),
       ),

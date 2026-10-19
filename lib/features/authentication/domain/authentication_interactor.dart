@@ -13,10 +13,10 @@ class AuthenticationInteractor implements AuthenticationUseCases {
 
   @override
   Future<Either<NetworkException, AuthEntity>> postLogin(
-    String username,
+    String email,
     String password,
   ) {
-    return _repository.postLogin(username, password);
+    return _repository.postLogin(email, password);
   }
 
   @override

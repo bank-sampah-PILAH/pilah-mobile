@@ -21,6 +21,7 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_controls.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -93,11 +94,14 @@ void main() {
 
   setUp(() => repository = _MockRepository());
 
-  Future<void> pumpNew(WidgetTester tester) async {
+  Future<void> pumpNew(
+    WidgetTester tester, {
+    Size size = const Size(420, 2600),
+  }) async {
     cubit = DraftEditorCubit(repository)
       ..startNew(const [_ahmad, _budi, _citra]);
     _current = cubit;
-    await _pump(tester);
+    await _pump(tester, size: size);
   }
 
   Future<void> pumpSaved(
@@ -738,6 +742,29 @@ void main() {
       expect(cubit.state.status, DraftStatus.dikonfirmasi);
     });
 
+    testWidgets(
+        'on a desktop window paying from the side panel asks in a dialog',
+        (tester) async {
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) async => Right(_saved()));
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+
+      await tester.tap(find.text('Ya, sudah dibayar'));
+      await tester.pumpAndSettle();
+
+      verifyInOrder([
+        () => repository.createDraft(any()),
+        () => repository.confirmDraft('d-1'),
+      ]);
+      expect(cubit.state.status, DraftStatus.dikonfirmasi);
+    });
+
     testWidgets('declining the dialog saves and pays nothing', (tester) async {
       await pumpNew(tester);
 
@@ -1320,6 +1347,67 @@ void main() {
       expect(dekor.boxShadow, isNotEmpty);
     });
 
+    testWidgets(
+        'on a desktop window it is a side panel, open, holding the buttons',
+        (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      final samping = find.byKey(const Key('draft-editor-panel'));
+      expect(samping, findsOneWidget);
+      for (final key in [
+        'total-dibayar',
+        'total-nominal',
+        'total-potongan',
+        'simpan',
+        'konfirmasi',
+      ]) {
+        expect(find.descendant(of: samping, matching: find.byKey(Key(key))),
+            findsOneWidget,
+            reason: key);
+      }
+      // Nothing to open or swipe: there is room for every total.
+      expect(find.byKey(const Key('ringkasan-toggle')), findsNothing);
+      // Beside the form, not under it.
+      final form = find.byType(TextField).first;
+      expect(tester.getTopLeft(samping).dx,
+          greaterThanOrEqualTo(tester.getTopRight(form).dx));
+      expect(tester.getTopLeft(samping).dy,
+          lessThan(tester.getBottomLeft(form).dy));
+    });
+
+    testWidgets('resizing across the desktop breakpoint keeps the search',
+        (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+      final cari = find.descendant(
+          of: find.byType(EditorItemControls),
+          matching: find.byType(TextField));
+      await tester.enterText(cari, 'budi');
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+
+      tester.view.physicalSize = const Size(420, 2600);
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+      expect(tester.widget<TextField>(cari).controller!.text, 'budi');
+
+      tester.view.physicalSize = const Size(1440, 900);
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+    });
+
+    testWidgets('its amounts line up at the right edge, under Total dibayar',
+        (tester) async {
+      await pumpNew(tester);
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      final kanan = tester.getTopRight(panel()).dx - 20;
+      for (final key in ['total-nominal', 'total-potongan']) {
+        expect(tester.getTopRight(find.byKey(Key(key))).dx, closeTo(kanan, 1),
+            reason: key);
+      }
+    });
+
     testWidgets('tapping it opens the details, tapping again closes them',
         (tester) async {
       await pumpNew(tester);
@@ -1436,6 +1524,27 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(panel(), findsNothing);
+    });
+
+    testWidgets(
+        'on a desktop window the panel is there while loading, spinner beside it',
+        (tester) async {
+      when(() => repository.getDraft('d-1')).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
+      cubit = DraftEditorCubit(repository);
+      _current = cubit;
+      unawaited(cubit.load('d-1'));
+      await pumpRouted(tester, const _Host(), size: const Size(1440, 900));
+      await tester.pump();
+
+      expect(panel(), findsOneWidget);
+      expect(find.byKey(const Key('draft-editor-panel')), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(tester.getCenter(find.byType(CircularProgressIndicator)).dx,
+          lessThan(tester.getTopLeft(panel()).dx));
+      // Nothing to save or pay before the draft has arrived.
+      expect(find.byKey(const Key('simpan')), findsNothing);
+      expect(find.byKey(const Key('konfirmasi')), findsNothing);
     });
   });
 

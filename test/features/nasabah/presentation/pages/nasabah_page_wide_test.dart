@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
@@ -52,6 +53,38 @@ void main() {
     expect(find.text('Budi Santoso'), findsOneWidget);
     expect(find.text('Siti Aminah'), findsOneWidget);
     expect(find.text('Menampilkan 2 dari 2'), findsOneWidget);
+  });
+
+  testWidgets('the web table sits on a white page', (tester) async {
+    listAs([nasabahRow('1')]);
+    await pumpRouted(
+      tester,
+      WebContentSurface(child: NasabahPage()),
+      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
+      size: const Size(1280, 900),
+    );
+    await tester.pumpAndSettle();
+
+    final page = tester.widget<Scaffold>(find
+        .ancestor(
+            of: find.byType(NasabahTable), matching: find.byType(Scaffold))
+        .first);
+    expect(page.backgroundColor, Colors.white);
+  });
+
+  testWidgets('the header puts title, search and add button on one row',
+      (tester) async {
+    listAs([nasabahRow('1')]);
+    await open(tester, size: const Size(1000, 900));
+
+    final title = tester.getRect(find.text('Daftar Nasabah'));
+    final search = tester.getRect(find.byType(TextField));
+    final add = tester.getRect(find.text('Tambah Nasabah'));
+    expect(title.left, 32, reason: 'web gutter');
+    expect(search.width, 360);
+    expect(search.left, greaterThan(title.right));
+    expect(add.left, greaterThan(search.right));
+    expect(search.top, lessThan(title.bottom + 24));
   });
 
   testWidgets('a phone keeps the list instead of the table', (tester) async {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -171,23 +173,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   void _selectDate() async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAppDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.greenDark, // header background color
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black, // body text color
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
@@ -467,6 +457,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     OnboardingFormField(
                       label: 'JENIS KELAMIN',
                       child: DropdownButtonFormField<String>(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         initialValue: _gender,
                         hint: Text(
                           'Pilih jenis kelamin',

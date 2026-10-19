@@ -86,6 +86,7 @@ class ItemSetoranCard extends StatelessWidget {
 
                       return DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           isExpanded: true,
                           value: selectedValue,
                           hint: Row(

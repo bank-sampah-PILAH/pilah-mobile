@@ -45,6 +45,14 @@ enum LayoutBreakpoint {
   /// kurang lebih selebar di tablet.
   static const double formMaxWidth = 640;
 
+  /// Lebar panel samping pada blok `expanded`, dalam logical pixel.
+  ///
+  /// Panel yang memegang ringkasan dan tombol aksi di samping formulir:
+  /// Setoran Baru, Catat Pencairan, dan editor draft pencairan. Sedikit lebih
+  /// sempit dari telepon, cukup untuk satu kolom angka dan tombol selebar
+  /// panel.
+  static const double sidePanelWidth = 340;
+
   /// Mengklasifikasikan [width] logical pixel ke dalam satu blok.
   ///
   /// Batas dimiliki oleh blok yang lebih lebar: tepat 600 adalah [medium] dan
