@@ -67,6 +67,8 @@ Font: **Poppins**, bundled in `assets/fonts` (regular, medium, semibold, bold). 
 
 - Dialogs: white, 16 radius, no Material tint.
 - Bottom sheets: white, 24 top radius, no tint.
+- Sheets and dialogs on wide windows (**in code**): never open a bottom sheet with `showModalBottomSheet`; a guard test (`test/design/raw_bottom_sheets_test.dart`) fails on it. Use `showAdaptiveSurface` (a form or detail), `showAdaptivePicker` (a list to choose from) or `showAdaptiveConfirmation` (a few lines and a choice). Each is a bottom sheet on a phone and a centred dialog from the medium breakpoint up, so a sheet as wide as a browser window never appears. A panel beside the list (Harga, Jadwal at expanded) is still preferred where it exists.
+- Create button (**in code**): on wide windows it is an `AppButton` in the page header (`AppPageHeader` or `AppBackHeader` `actions`), as on Nasabah, Harga, Jadwal, Kelola Pengumuman and Draft Pencairan. The floating button is for phones only.
 - Pages: a `Scaffold` with no background of its own is white (`AppTheme.scaffoldBackgroundColor`); the Material default was a green-tinted off-white that made a screen unlike the rest.
 - App bars: white, no scroll tint, 18/w600 Poppins title.
 - Scrollbars: an 8 px rounded thumb (12 when hovered) in the soft grey of `AppColors.grey200`, 2 px off the edge it sits on, so it does not sit on the content. A scrollbar sits at the window edge because the scroll view spans the body (see `ContentFrame`).
