@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 import 'content_bounds.dart';
+import 'content_frame.dart';
 import 'layout_breakpoint.dart';
 
 /// Pola daftar dan detail berdampingan untuk layar lebar.
@@ -21,6 +22,7 @@ class MasterDetailLayout extends StatelessWidget {
     this.detail,
     this.masterFlex = 3,
     this.detailFlex = 2,
+    this.masterScrolls = false,
   });
 
   /// Daftar, dan permukaan utama layar.
@@ -34,6 +36,14 @@ class MasterDetailLayout extends StatelessWidget {
   final int masterFlex;
   final int detailFlex;
 
+  /// True bila [master] sendiri yang bergulir (agenda, daftar panjang). Batas
+  /// lebarnya lalu diberikan sebagai jarak samping lewat [ContentFrame], bukan
+  /// sebagai kolom di sekeliling master: master menambahkan
+  /// `ContentFrame.insetOf(context)` ke padding area gulirnya, sehingga
+  /// scrollbarnya ada di tepi jendela. Master yang tidak bergulir (tabel di
+  /// dalam kartu) tetap dibatasi kolom.
+  final bool masterScrolls;
+
   @override
   Widget build(BuildContext context) {
     final split =
@@ -41,7 +51,11 @@ class MasterDetailLayout extends StatelessWidget {
     // Sendiri, daftar dibatasi lebarnya. Dengan panel, daftar dan panel
     // mengisi seluruh lebar: panel menempel di tepi kanan jendela, bukan
     // mengambang di tengah dengan ruang kosong di kanannya.
-    if (!split) return ContentBounds(child: master);
+    if (!split) {
+      return masterScrolls
+          ? ContentFrame(child: master)
+          : ContentBounds(child: master);
+    }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
