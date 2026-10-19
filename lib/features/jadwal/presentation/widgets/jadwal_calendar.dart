@@ -121,6 +121,9 @@ class JadwalCalendar extends StatelessWidget {
                 ),
             ],
           ),
+          // Napas antara nama bulan dan baris hari, supaya judulnya tidak
+          // menempel pada kalender.
+          const SizedBox(height: 8),
           AnimatedSize(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeInOut,
