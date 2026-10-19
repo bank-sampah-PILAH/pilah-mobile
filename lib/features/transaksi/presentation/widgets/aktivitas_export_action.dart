@@ -4,6 +4,10 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/report_file_action.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 
+/// Pesan sukses setelah laporan tersimpan di [folder].
+String laporanTersimpanDi(String folder) =>
+    'Laporan berhasil disimpan ke folder $folder';
+
 /// Menyiapkan laporan XLSX untuk periode dan filter yang sedang dipilih, lalu
 /// menyimpannya atau membagikannya.
 Future<void> exportAktivitasReport(BuildContext context) async {
@@ -24,7 +28,7 @@ Future<void> exportAktivitasReport(BuildContext context) async {
     context,
     filename: export!.filename,
     bytes: export.bytes,
-    successMessage: (folder) => 'Laporan berhasil disimpan ke folder $folder',
+    successMessage: laporanTersimpanDi,
     shareText: 'Laporan Transaksi PILAH',
   );
 }

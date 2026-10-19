@@ -152,27 +152,38 @@ class _Perubahan {
 /// dari yang terbaru, jadi pengganti versi ke-i adalah versi ke-(i-1), atau
 /// versi sekarang untuk yang pertama.
 List<_Perubahan> _perubahan(RiwayatRevisiPencairan riwayat) {
-  final sekarang = riwayat.pencairan;
-  final hasil = <_Perubahan>[];
-  for (var i = 0; i < riwayat.revisi.length; i++) {
-    final lama = riwayat.revisi[i];
-    final nominal = i == 0 ? sekarang.nominal : riwayat.revisi[i - 1].nominal;
-    final metode = i == 0 ? sekarang.metode : riwayat.revisi[i - 1].metode;
-    final tanggal = i == 0 ? sekarang.tanggal : riwayat.revisi[i - 1].tanggal;
-    final keterangan =
-        i == 0 ? sekarang.keterangan : riwayat.revisi[i - 1].keterangan;
-    String rp(int v) => 'Rp ${CurrencyFormatter.formatNumber(v)}';
-    String ket(String v) => v.isEmpty ? '-' : v;
-    hasil.add(_Perubahan(versi: lama, baris: [
-      if (lama.nominal != nominal) ('Nominal', rp(lama.nominal), rp(nominal)),
-      if (lama.metode != metode) ('Metode', lama.metode.label, metode.label),
-      if (lama.tanggal != tanggal)
-        ('Tanggal', _waktu(lama.tanggal), _waktu(tanggal)),
-      if (lama.keterangan != keterangan)
-        ('Keterangan', ket(lama.keterangan), ket(keterangan)),
-    ]));
-  }
-  return hasil;
+  final revisi = riwayat.revisi;
+  return [
+    for (var i = 0; i < revisi.length; i++)
+      _Perubahan(
+        versi: revisi[i],
+        baris: _selisih(
+            revisi[i], i == 0 ? null : revisi[i - 1], riwayat.pencairan),
+      ),
+  ];
+}
+
+/// Nilai yang berbeda antara versi [lama] dan penggantinya: revisi sesudahnya,
+/// atau [sekarang] bila tidak ada.
+List<(String label, String lama, String baru)> _selisih(
+  RevisiPencairan lama,
+  RevisiPencairan? pengganti,
+  Pencairan sekarang,
+) {
+  final nominal = pengganti?.nominal ?? sekarang.nominal;
+  final metode = pengganti?.metode ?? sekarang.metode;
+  final tanggal = pengganti?.tanggal ?? sekarang.tanggal;
+  final keterangan = pengganti?.keterangan ?? sekarang.keterangan;
+  String rp(int v) => 'Rp ${CurrencyFormatter.formatNumber(v)}';
+  String ket(String v) => v.isEmpty ? '-' : v;
+  return [
+    if (lama.nominal != nominal) ('Nominal', rp(lama.nominal), rp(nominal)),
+    if (lama.metode != metode) ('Metode', lama.metode.label, metode.label),
+    if (lama.tanggal != tanggal)
+      ('Tanggal', _waktu(lama.tanggal), _waktu(tanggal)),
+    if (lama.keterangan != keterangan)
+      ('Keterangan', ket(lama.keterangan), ket(keterangan)),
+  ];
 }
 
 class _SekarangCard extends StatelessWidget {
