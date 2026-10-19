@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 
 import '../../support/stub_api.dart';
@@ -154,5 +155,22 @@ void main() {
       expect(bytes.data, [1]);
       await expectLater(dio.get('/err'), throwsA(isA<DioException>()));
     });
+  });
+
+  test('redacts passwords in malformed JSON request logs', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))
+      ..httpClientAdapter = api
+      ..interceptors.add(interceptors);
+    final logs = <String>[];
+    void capture(LogEvent event) => logs.add(event.message.toString());
+    Logger.addLogListener(capture);
+    try {
+      await dio.post('/ping', data: '{"password":"do-not-log"');
+    } finally {
+      Logger.removeLogListener(capture);
+    }
+
+    expect(logs.join('\n'), contains('[REDACTED]'));
+    expect(logs.join('\n'), isNot(contains('do-not-log')));
   });
 }

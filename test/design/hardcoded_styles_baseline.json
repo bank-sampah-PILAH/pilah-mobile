@@ -73,7 +73,7 @@
   },
   "lib/features/harga/presentation/pages/harga_page.dart": {
     "color": 0,
-    "fontSize": 4
+    "fontSize": 1
   },
   "lib/features/jadwal/presentation/pages/jadwal_page.dart": {
     "color": 0,
@@ -127,13 +127,9 @@
     "color": 0,
     "fontSize": 1
   },
-  "lib/features/pencairan/presentation/pages/catat_pencairan_page.dart": {
-    "color": 0,
-    "fontSize": 1
-  },
   "lib/features/profile/presentation/pages/profile_page.dart": {
     "color": 0,
-    "fontSize": 7
+    "fontSize": 5
   },
   "lib/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart": {
     "color": 0,

@@ -268,6 +268,17 @@ void main() {
     expect(find.byType(CircleAvatar), findsNothing);
   });
 
+  testWidgets('a wide web dashboard keeps the web gutter and top space',
+      (tester) async {
+    arrange(dashboardCubit: emptyDashboardCubit());
+    await pumpDashboardPage(tester, isWeb: true, size: const Size(1000, 1800));
+    await tester.pumpAndSettle();
+
+    final header = tester.getTopLeft(find.byType(DashboardHeader));
+    expect(header.dx, 32);
+    expect(header.dy, 24);
+  });
+
   testWidgets('a narrow web dashboard keeps the avatar, with no sidebar',
       (tester) async {
     arrange(dashboardCubit: emptyDashboardCubit());

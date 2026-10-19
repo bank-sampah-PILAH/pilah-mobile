@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
-import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
+import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
+import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
+import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
+import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
+import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/harga/presentation/widgets/harga_table.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
@@ -44,8 +53,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Mengetuk baris, lalu memilih Edit di detailnya.
+  Future<void> editJenis(WidgetTester tester, String name) async {
+    await tester.tap(find.text(name));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+  }
+
   setUp(() {
     api = StubApi();
+    if (di.isRegistered<RiwayatHargaCubit>()) {
+      di.unregister<RiwayatHargaCubit>();
+    }
+    di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
+        GetRiwayatHargaUseCase(
+            HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
     cubit = buildHargaCubit(api);
     api.on('GET', '/api/v1/jenis-sampah', json: {
       'results': [
@@ -56,25 +79,222 @@ void main() {
     });
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() async {
+    await cubit.close();
+    if (di.isRegistered<RiwayatHargaCubit>()) {
+      await di.unregister<RiwayatHargaCubit>();
+    }
+  });
 
-  testWidgets("each card opens that jenis's price history, not the edit sheet",
+  testWidgets('below expanded a card opens a detail sheet, with history in it',
       (tester) async {
-    final router = await pumpRouted(
-      tester,
-      BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
-      extraRoutes: [RiwayatHargaPage.route],
-      size: const Size(800, 1600),
-    );
-    await tester.pumpAndSettle();
+    api.on('GET', '/api/v1/jenis-sampah/1/harga', json: {
+      'results': [
+        {
+          'id': 1,
+          'harga_per_kg': '3500.00',
+          'satuan': 'kg',
+          'berlaku_mulai': '2026-09-01T03:00:00Z',
+          'dibuat_oleh': null,
+          'status': 'berlaku',
+        },
+      ],
+    });
+    await openPage(tester);
 
-    await tester.tap(find.text('Riwayat harga').first);
+    await tester.tap(find.text('Botol PET'));
     await tester.pumpAndSettle();
-
-    expect(find.text('route:${RiwayatHargaPage.route}'), findsOneWidget);
-    final jenis = router.state.extra;
-    expect((jenis as HargaEntity).name, 'Botol PET');
+    expect(find.byType(HargaDetailFlow), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
     expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
+
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rp 3.500 / kg'), findsOneWidget);
+    expect(find.text('Berlaku sekarang'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit'), findsOneWidget, reason: 'back to the detail');
+  });
+
+  testWidgets('on a wide screen a row opens a side panel, not a dialog',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail jenis sampah'), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(HargaTable), findsOneWidget,
+        reason: 'the table stays beside the panel');
+    expect(find.text('Kardus'), findsOneWidget);
+  });
+
+  testWidgets('the panel goes detail, edit, and back to detail',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.byType(JenisSampahForm), findsNothing);
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+  });
+
+  testWidgets('in the panel history opens in place and returns to the detail',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum Ada Riwayat Harga'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+  });
+
+  testWidgets('the panel has one header whose title follows the view',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    // Detail: the jenis is the title; no back, only close.
+    expect(find.byTooltip('Kembali'), findsNothing);
+    expect(find.byTooltip('Tutup'), findsOneWidget);
+
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+    expect(find.text('Riwayat harga'), findsOneWidget);
+    expect(find.text('Detail jenis sampah'), findsNothing);
+    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.byTooltip('Tutup'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Jenis Sampah'), findsOneWidget);
+    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.byTooltip('Tutup'), findsOneWidget);
+  });
+
+  testWidgets('Esc closes the panel', (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HargaDetailSheet), findsNothing);
+  });
+
+  testWidgets('the sheet below expanded has back but no close button',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Tutup'), findsNothing);
+
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Kembali'), findsOneWidget);
+    expect(find.byTooltip('Tutup'), findsNothing);
+  });
+
+  testWidgets('choosing another row starts from its detail', (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah/1/harga',
+        json: {'results': <Object>[]});
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Riwayat harga'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Kardus'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+    expect(find.text('Belum Ada Riwayat Harga'), findsNothing);
+  });
+
+  testWidgets('Edit in the detail opens the edit sheet below expanded',
+      (tester) async {
+    await openPage(tester);
+
+    await editJenis(tester, 'Botol PET');
+
+    expect(find.byType(HargaDetailSheet), findsNothing);
+    expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
+  });
+
+  testWidgets('the price is the most prominent text on a card', (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+
+    double size(Finder f) => tester.widget<Text>(f.first).style!.fontSize ?? 14;
+    expect(
+        size(find.text('Rp 2.500')), greaterThan(size(find.text('Botol PET'))));
+  });
+
+  testWidgets('a card has no chevron: the whole card opens the detail',
+      (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+  });
+
+  testWidgets('a long name and description stay on one line each',
+      (tester) async {
+    api.on('GET', '/api/v1/jenis-sampah', json: {
+      'results': [
+        _row('9', 'Botol plastik bening berukuran sangat besar sekali'),
+      ],
+    });
+    await openPage(tester, size: const Size(360, 1400));
+
+    expect(tester.takeException(), isNull);
+    final name = tester.widget<Text>(
+        find.text('Botol plastik bening berukuran sangat besar sekali'));
+    expect(name.maxLines, 1);
+    expect(name.overflow, TextOverflow.ellipsis);
+  });
+
+  testWidgets('a card no longer carries its own history link', (tester) async {
+    await openPage(tester);
+
+    expect(find.text('Riwayat harga'), findsNothing);
+  });
+
+  testWidgets(
+      'a wide screen puts the search beside the title on the web gutter',
+      (tester) async {
+    await openPage(tester, size: const Size(1000, 900));
+
+    final title = tester.getRect(find.text('Jenis Sampah & Harga'));
+    final search = tester.getRect(find.byType(TextField));
+    expect(title.left, 32);
+    expect(search.width, 360);
+    expect(search.left, greaterThan(title.right));
+    expect(search.top, lessThan(title.bottom));
   });
 
   testWidgets('lists active jenis sampah with their price', (tester) async {
@@ -109,7 +329,7 @@ void main() {
 
   testWidgets('a price card is announced as a button', (tester) async {
     final handle = tester.ensureSemantics();
-    await openPage(tester);
+    await openPage(tester, size: const Size(420, 1400));
 
     expect(
       tester.getSemantics(find.text('Botol PET')),
@@ -203,14 +423,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(TambahJenisSampahBottomSheet), findsOneWidget);
-    expect(find.text('Tambah Jenis Sampah'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(TambahJenisSampahBottomSheet),
+        matching: find.text('Tambah Jenis Sampah'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('tapping a card opens the edit form prefilled', (tester) async {
     await openPage(tester);
 
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
 
     expect(find.text('Edit Jenis Sampah'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
@@ -244,8 +469,7 @@ void main() {
       (tester) async {
     await openPage(tester, size: _expanded);
 
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
 
     expect(find.byType(TambahJenisSampahBottomSheet), findsNothing);
     expect(find.text('Edit Jenis Sampah'), findsOneWidget);
@@ -254,8 +478,7 @@ void main() {
 
   testWidgets('the panel close button clears the form', (tester) async {
     await openPage(tester, size: _expanded);
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
 
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
@@ -270,12 +493,10 @@ void main() {
 
   testWidgets('selecting another row refills the open panel', (tester) async {
     await openPage(tester, size: _expanded);
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
     expect(find.widgetWithText(TextFormField, 'Botol PET'), findsOneWidget);
 
-    await tester.tap(find.text('Kardus'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Kardus');
 
     expect(find.widgetWithText(TextFormField, 'Kardus'), findsOneWidget);
     expect(
@@ -293,11 +514,10 @@ void main() {
       (tester) async {
     api.on('PUT', '/api/v1/jenis-sampah/1', json: {});
     await openPage(tester, size: _expanded);
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
 
     // Slow enough that the row can be switched while the PUT is still out.
-    api.latency = const Duration(milliseconds: 300);
+    api.latency = const Duration(seconds: 4);
     await tester.ensureVisible(find.text('Simpan Perubahan'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Simpan Perubahan'));
@@ -305,12 +525,19 @@ void main() {
 
     // Single frames, not pumpAndSettle: settling would run the clock past the
     // success toast's three seconds, and the toast is part of what is asserted.
+    // Kardus opens its detail first; Edit then swaps the panel.
+    // The spinner keeps frames coming, so these are bounded pumps.
     await tester.tap(find.text('Kardus'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Edit'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
     await tester.pump();
 
     // Botol PET's answer arrives here, with Kardus on screen.
+    await tester.pump(const Duration(seconds: 4));
     await pumpToast(tester);
 
     expect(
@@ -334,8 +561,7 @@ void main() {
       (tester) async {
     api.on('PATCH', '/api/v1/jenis-sampah/1/status', json: {});
     await openPage(tester, size: _expanded);
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
 
     await tester.ensureVisible(find.text('Nonaktifkan Jenis Sampah'));
     await tester.pumpAndSettle();
@@ -348,8 +574,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
+    // Kardus opens its detail first; Edit then swaps the panel.
     await tester.tap(find.text('Kardus'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(1), 'Kardus Tebal');
     await tester.pump();
 
@@ -380,30 +609,61 @@ void main() {
     expect(find.byType(JenisSampahForm), findsNothing);
   });
 
-  testWidgets('the add button hides while the panel is open', (tester) async {
+  testWidgets('a wide screen lists jenis sampah in a table', (tester) async {
     await openPage(tester, size: _expanded);
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+
+    expect(find.byType(HargaTable), findsOneWidget);
+    expect(find.byType(AppTappableCard), findsNothing);
+    expect(find.text('Botol PET'), findsOneWidget);
+  });
+
+  testWidgets('a medium screen also gets the table', (tester) async {
+    await openPage(tester);
+
+    expect(find.byType(HargaTable), findsOneWidget);
+  });
+
+  testWidgets('a phone keeps the cards', (tester) async {
+    await openPage(tester, size: const Size(420, 1400));
+
+    expect(find.byType(HargaTable), findsNothing);
+    expect(find.byType(AppTappableCard), findsWidgets);
+  });
+
+  testWidgets('tapping a table row opens its detail', (tester) async {
+    await openPage(tester, size: _expanded);
 
     await tester.tap(find.text('Botol PET'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.byType(FloatingActionButton),
-      findsNothing,
-      reason: 'the FAB sits exactly over the panel\'s save button',
-    );
+    expect(find.byType(HargaDetailSheet), findsOneWidget);
+  });
 
-    await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsOneWidget);
+  testWidgets('the row being edited stays tinted in the table', (tester) async {
+    await openPage(tester, size: _expanded);
+    await editJenis(tester, 'Botol PET');
+
+    final row = tester.widget<Container>(find.byKey(HargaTable.rowKey('1')));
+    expect(row.color, AppColors.greenLight);
+  });
+
+  testWidgets('on a wide screen the add button is in the header, not a FAB',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.text('Tambah Jenis Sampah'), findsOneWidget);
+
+    await editJenis(tester, 'Botol PET');
+    expect(find.text('Tambah Jenis Sampah'), findsOneWidget,
+        reason: 'nothing floats over the panel any more, so it can stay');
   });
 
   testWidgets('on a phone the add button is always there', (tester) async {
     await openPage(tester, size: const Size(420, 1400));
     expect(find.byType(FloatingActionButton), findsOneWidget);
 
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
 
     expect(
       find.byType(FloatingActionButton),
@@ -416,8 +676,7 @@ void main() {
   // afterwards. Raised by TrayMachi's review of the same pattern on PR #113.
   testWidgets('shrinking below expanded closes the open panel', (tester) async {
     await openPage(tester, size: _expanded);
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
     expect(find.byType(JenisSampahForm), findsOneWidget);
 
     tester.view.physicalSize = _medium;
@@ -434,8 +693,7 @@ void main() {
   testWidgets('widening back does not resurrect a closed panel',
       (tester) async {
     await openPage(tester, size: _expanded);
-    await tester.tap(find.text('Botol PET'));
-    await tester.pumpAndSettle();
+    await editJenis(tester, 'Botol PET');
 
     tester.view.physicalSize = _medium;
     await tester.pumpAndSettle();

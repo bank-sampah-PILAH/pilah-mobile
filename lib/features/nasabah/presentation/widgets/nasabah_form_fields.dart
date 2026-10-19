@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
@@ -189,6 +191,7 @@ class NasabahGenderField extends StatelessWidget {
       label: 'JENIS KELAMIN',
       spaced: false,
       child: DropdownButtonFormField<String>(
+        borderRadius: BorderRadius.circular(AppRadius.md),
         initialValue: value,
         validator: (value) =>
             (value == null || value.isEmpty) ? 'Pilih jenis kelamin.' : null,
@@ -248,6 +251,24 @@ class NasabahEmailField extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Picks and formats the date of birth shared by the add and edit sheets.
+Future<void> pickNasabahBirthDate(
+  BuildContext context,
+  TextEditingController controller,
+) async {
+  final picked = await showAppDatePicker(
+    context: context,
+    initialDate: DateTime.now(),
+    firstDate: DateTime(1900),
+    lastDate: DateTime.now(),
+  );
+  if (picked == null) return;
+
+  final day = picked.day.toString().padLeft(2, '0');
+  final month = picked.month.toString().padLeft(2, '0');
+  controller.text = '$day/$month/${picked.year}';
 }
 
 /// The date of birth, picked with [onTap] rather than typed.

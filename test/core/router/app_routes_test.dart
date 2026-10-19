@@ -105,7 +105,6 @@ void main() {
         '/register-nasabah': RegisterNasabahScreen,
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
-        '/catat-pencairan': CatatPencairanPage,
         '/pengumuman/kelola': PengumumanKelolaPage,
         '/pengelola-induk-dashboard': RoleHandoffPage,
         '/register-bank-sampah-induk': RoleHandoffPage,

@@ -134,8 +134,6 @@ import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_c
     show PencairanUseCases;
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart'
     show EditPencairanCubit;
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart'
-    show PencairanCubit;
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart'
     show RevisiPencairanCubit;
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart'
@@ -326,7 +324,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('GetDashboardStatsUseCase', null, () => di<GetDashboardStatsUseCase>()),
   ('NasabahCubit', null, () => di<NasabahCubit>()),
   ('EditPencairanCubit', null, () => di<EditPencairanCubit>()),
-  ('PencairanCubit', null, () => di<PencairanCubit>()),
   ('RevisiPencairanCubit', null, () => di<RevisiPencairanCubit>()),
   ('RiwayatPencairanCubit', null, () => di<RiwayatPencairanCubit>()),
   ('RiwayatHistoryCubit', null, () => di<RiwayatHistoryCubit>()),
