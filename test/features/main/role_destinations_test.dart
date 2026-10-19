@@ -12,11 +12,27 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_destination
 /// the source directly is what lets the second renderer be trusted.
 void main() {
   group('RoleDestinations.forRole', () {
-    test('staff get the five operational destinations in order', () {
+    test('staff get the operational destinations and Pengumuman in order', () {
       final staff = RoleDestinations.forRole('pengelola');
-      expect(staff.map((d) => d.label),
+      expect(staff.map((d) => d.label), [
+        'Dashboard',
+        'Nasabah',
+        'Harga',
+        'Aktivitas',
+        'Jadwal',
+        'Pengumuman',
+      ]);
+      expect(staff.map((d) => d.branchIndex), [0, 1, 2, 3, 4, 8]);
+    });
+
+    test('the bottom bar keeps the first five; Pengumuman is rail-only', () {
+      final bar = RoleDestinations.forRole('pengelola', bottomBar: true);
+      expect(bar.map((d) => d.label),
           ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal']);
-      expect(staff.map((d) => d.branchIndex), [0, 1, 2, 3, 4]);
+      expect(RoleDestinations.branchIndicesFor('pengelola', bottomBar: true),
+          [0, 1, 2, 3, 4]);
+      expect(RoleDestinations.forRole('nasabah', bottomBar: true).length, 4,
+          reason: 'nasabah destinations are all in the bottom bar');
     });
 
     test('pengelola_induk sees the same destinations as pengelola', () {
@@ -48,7 +64,7 @@ void main() {
     test('limitedNasabah does not narrow a staff menu', () {
       expect(
         RoleDestinations.forRole('pengelola', limitedNasabah: true).length,
-        5,
+        6,
         reason: 'the flag only describes a nasabah membership state',
       );
     });

@@ -22,7 +22,6 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_l
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_footer.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_header.dart';
-import 'package:pilah_mobile/features/authentication/presentation/widgets/welcome_card.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -131,9 +130,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             const SizedBox(height: 40),
             const LoginHeader(),
-            const SizedBox(height: 48),
-            const WelcomeCard(),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             LoginButton(isLoading: isLoading),
             const SizedBox(height: 16),
             _EmailPasswordLoginForm(
@@ -187,15 +184,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                 child: Row(
                   children: [
                     const Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          LoginHeader(),
-                          SizedBox(height: 48),
-                          WelcomeCard(),
-                        ],
-                      ),
-                    ),
+                        child: Center(child: LoginHeader(large: true))),
                     const SizedBox(width: 64),
                     SizedBox(
                       width: 448,

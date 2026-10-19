@@ -6,7 +6,7 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_l
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 void main() {
-  testWidgets('menu labels stay on two lines on a narrow screen',
+  testWidgets('two main buttons, side by side, and no Pengumuman entry',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(375, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -14,9 +14,13 @@ void main() {
       home: Scaffold(body: DashboardActionButtons()),
     ));
 
-    final label = tester.widget<Text>(find.textContaining('Tambah'));
-    expect(label.maxLines, 2);
-    expect(label.softWrap, isTrue);
+    expect(find.text('Transaksi Baru'), findsOneWidget);
+    expect(find.text('Tambah Nasabah'), findsOneWidget);
+    expect(find.text('Pengumuman'), findsNothing,
+        reason:
+            'Pengumuman is a navigation destination, not a dashboard button');
+    expect(tester.getTopLeft(find.text('Transaksi Baru')).dy,
+        tester.getTopLeft(find.text('Tambah Nasabah')).dy);
     expect(tester.takeException(), isNull);
   });
 
@@ -106,30 +110,5 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Pencairan'), findsOneWidget);
-  });
-
-  testWidgets('the Pengumuman tile opens the kelola page', (tester) async {
-    final router = GoRouter(
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (_, __) => const Scaffold(body: DashboardActionButtons()),
-        ),
-        GoRoute(
-          path: '/pengumuman/kelola',
-          builder: (_, __) => const Scaffold(body: Text('kelola pengumuman')),
-        ),
-        GoRoute(
-          path: '/pengurusan-lain',
-          builder: (_, __) => const SizedBox(),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-    await tester.tap(find.text('Pengumuman'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('kelola pengumuman'), findsOneWidget);
   });
 }

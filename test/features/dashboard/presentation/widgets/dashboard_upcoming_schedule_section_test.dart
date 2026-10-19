@@ -32,7 +32,7 @@ void main() {
     expect(find.text('Belum ada jadwal mendatang.'), findsOneWidget);
   });
 
-  testWidgets('paginates and opens the nearest published future event',
+  testWidgets('paginates and lists the three nearest published future events',
       (tester) async {
     final repository = _JadwalRepository();
     final past = _schedule(
@@ -61,21 +61,33 @@ void main() {
       title: 'Pengumpulan',
       start: DateTime(2026, 6, 5, 10),
     );
+    final farthest = _schedule(
+      id: 'farthest',
+      title: 'Jadwal Terjauh',
+      start: DateTime(2026, 6, 20, 10),
+    );
     when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => Right(_page([past, draft, far], hasMore: true)),
     );
     when(() => repository.getJadwal(page: 2, date: null)).thenAnswer(
-      (_) async => Right(_page([later, nearest])),
+      (_) async => Right(_page([later, nearest, farthest])),
     );
 
     await _pumpSection(tester, repository);
     await tester.pumpAndSettle();
 
+    // The three nearest, soonest first: not just the single nearest.
     expect(find.text('Penimbangan'), findsOneWidget);
-    expect(find.text('Balai Warga'), findsOneWidget);
+    expect(find.text('Balai Warga'), findsNWidgets(3));
+    expect(find.text('Pengumpulan'), findsOneWidget);
+    expect(find.text('Jadwal Jauh'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Penimbangan')).dy,
+        lessThan(tester.getTopLeft(find.text('Pengumpulan')).dy));
+    expect(tester.getTopLeft(find.text('Pengumpulan')).dy,
+        lessThan(tester.getTopLeft(find.text('Jadwal Jauh')).dy));
+    expect(find.text('Jadwal Terjauh'), findsNothing, reason: 'only three');
     expect(find.text('Jadwal Lampau'), findsNothing);
     expect(find.text('Jadwal Draft'), findsNothing);
-    expect(find.text('Jadwal Jauh'), findsNothing);
     verify(() => repository.getJadwal(page: 1, date: null)).called(1);
     verify(() => repository.getJadwal(page: 2, date: null)).called(1);
 

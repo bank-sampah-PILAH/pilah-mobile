@@ -7,6 +7,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key, this.showProfile = true});
@@ -66,6 +67,26 @@ class DashboardHeader extends StatelessWidget {
             ),
             if (showProfile) ...[
               const SizedBox(width: 12),
+              // Pengumuman tidak punya tab di bottom bar, jadi pintunya di
+              // sini; di web lebar ada di sidebar.
+              AppTapTarget(
+                label: 'Kelola pengumuman',
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                onTap: () => context.push(PengumumanKelolaPage.route),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: AppColors.greenLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.campaign_outlined,
+                    color: AppColors.greenDark,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               AppTapTarget(
                 label: 'Buka profil',
                 borderRadius: BorderRadius.circular(AppRadius.xl),

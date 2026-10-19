@@ -57,6 +57,8 @@ void main() {
     MockAuthBloc? bloc,
     Size size = const Size(800, 2400),
     bool? isWeb,
+    bool pushed = true,
+    List<String> extraRoutes = const [],
   }) async {
     await pumpRouted(
       tester,
@@ -69,9 +71,9 @@ void main() {
         // ignore: prefer_const_constructors
         child: ProfilePage(isWeb: isWeb),
       ),
-      extraRoutes: ['/login'],
+      extraRoutes: ['/login', ...extraRoutes],
       size: size,
-      pushed: true,
+      pushed: pushed,
     );
     await tester.pumpAndSettle();
   }
@@ -225,6 +227,23 @@ void main() {
   });
 
   group('on a phone', () {
+    testWidgets('back falls back to the dashboard when nothing was pushed',
+        (tester) async {
+      await openPage(tester,
+          size: const Size(390, 844),
+          isWeb: false,
+          pushed: false,
+          extraRoutes: ['/dashboard']);
+
+      await tester.tap(find.byKey(const Key('kembali')).evaluate().isNotEmpty
+          ? find.byKey(const Key('kembali'))
+          : find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/dashboard'), findsOneWidget,
+          reason: 'pop() with an empty stack would throw and do nothing');
+    });
+
     testWidgets('Keluar is the last thing on the page, full width',
         (tester) async {
       await openPage(tester, size: const Size(390, 844), isWeb: false);

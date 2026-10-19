@@ -170,11 +170,6 @@ class AppRouterConfig {
         builder: (context, state) => const PilihNasabahPencairanPage(),
       ),
       GoRoute(
-        path: PengumumanKelolaPage.route,
-        name: PengumumanKelolaPage.route,
-        builder: (context, state) => const PengumumanKelolaPage(),
-      ),
-      GoRoute(
         path: PengumumanPage.route,
         name: PengumumanPage.route,
         builder: (context, state) => PengumumanPage(
@@ -441,6 +436,15 @@ class AppRouterConfig {
                 path: ProfilePage.route,
                 name: ProfilePage.route,
                 builder: (_, __) => const ProfilePage()),
+          ]),
+          // Kelola Pengumuman: destinasi rail dan drawer staff (branch 8). Di
+          // aplikasi dibuka dari Profil.
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: PengumumanKelolaPage.route,
+              name: PengumumanKelolaPage.route,
+              builder: (context, state) => const PengumumanKelolaPage(),
+            ),
           ]),
         ],
       ),

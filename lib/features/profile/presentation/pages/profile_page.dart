@@ -345,7 +345,9 @@ class _ProfileViewState extends State<_ProfileView>
                         )
                       : AppBackHeader(
                           title: 'Profil & Pengaturan',
-                          onBack: () => context.pop(),
+                          onBack: () => context.canPop()
+                              ? context.pop()
+                              : context.go(AppLocations.dashboard),
                         ),
                 ),
 

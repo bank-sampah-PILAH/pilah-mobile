@@ -36,14 +36,14 @@ void main() {
   }
 
   group('RoleNavigationRail', () {
-    testWidgets('offers the five staff destinations as rail destinations',
+    testWidgets('offers the staff destinations, Pengumuman included',
         (tester) async {
       await taps(tester, role: 'pengelola');
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.destinations.length, 5);
+      expect(rail.destinations.length, 6);
       expect(
         rail.destinations.map((d) => (d.label as Text).data),
-        ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal'],
+        ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal', 'Pengumuman'],
       );
     });
 

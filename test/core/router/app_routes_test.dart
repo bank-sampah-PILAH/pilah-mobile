@@ -22,6 +22,8 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
+import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
@@ -114,6 +116,19 @@ void main() {
             settle: !entry.key.contains('induk'));
         expect(find.byType(entry.value), findsOneWidget, reason: entry.key);
       }
+    });
+
+    testWidgets('Pengumuman is the shell branch the rail destination points at',
+        (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/pengumuman/kelola');
+
+      final shell = tester.widget<MainPage>(find.byType(MainPage));
+      expect(shell.navigationShell.currentIndex,
+          RoleDestinations.forRole('pengelola').last.branchIndex,
+          reason: 'the destination list and the router must agree on the '
+              'branch index, or the rail opens the wrong page');
     });
 
     testWidgets('can open the pencairan edit and revision pages',

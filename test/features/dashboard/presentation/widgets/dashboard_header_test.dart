@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -79,5 +80,72 @@ void main() {
       isSemantics(label: 'Buka profil', isButton: true, hasTapAction: true),
     );
     handle.dispose();
+  });
+
+  group('the Kelola Pengumuman door', () {
+    Future<GoRouter> pump(WidgetTester tester,
+        {bool showProfile = true}) async {
+      final router = GoRouter(routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, __) => BlocProvider<AuthenticationBloc>.value(
+            value: authBlocIn(
+              Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
+            ),
+            child: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16),
+                child: DashboardHeader(showProfile: showProfile),
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/pengumuman/kelola',
+          builder: (_, __) => const Scaffold(body: Text('kelola pengumuman')),
+        ),
+      ]);
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+          MaterialApp.router(theme: AppTheme.light, routerConfig: router));
+      await tester.pump();
+      return router;
+    }
+
+    testWidgets('a megaphone beside the avatar opens it, with a way back',
+        (tester) async {
+      final router = await pump(tester);
+
+      await tester.tap(find.bySemanticsLabel('Kelola pengumuman'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('kelola pengumuman'), findsOneWidget);
+      expect(router.canPop(), isTrue,
+          reason: 'pushed, so back returns to the dashboard');
+    });
+
+    testWidgets('is announced as a button', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester);
+
+      final door = find.ancestor(
+        of: find.byIcon(Icons.campaign_outlined),
+        matching: find.byType(AppTapTarget),
+      );
+      expect(
+        tester.getSemantics(door),
+        isSemantics(
+            label: 'Kelola pengumuman', isButton: true, hasTapAction: true),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('is left out when the sidebar already has both entries',
+        (tester) async {
+      await pump(tester, showProfile: false);
+
+      expect(find.byIcon(Icons.campaign_outlined), findsNothing);
+      expect(find.byType(CircleAvatar), findsNothing);
+    });
   });
 }

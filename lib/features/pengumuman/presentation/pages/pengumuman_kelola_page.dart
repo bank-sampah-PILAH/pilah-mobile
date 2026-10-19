@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/core/bases/widgets/back_header_row.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -33,7 +35,9 @@ const _filterOptions = <String, String>{
 /// cancel a schedule, withdraw a published one, delete drafts. Kedaluwarsa and
 /// ditarik rows are read-only.
 class PengumumanKelolaPage extends StatelessWidget {
-  const PengumumanKelolaPage({super.key});
+  const PengumumanKelolaPage({super.key, this.isWeb = kIsWeb});
+
+  final bool isWeb;
 
   static const route = '/pengumuman/kelola';
 
@@ -46,13 +50,15 @@ class PengumumanKelolaPage extends StatelessWidget {
               title: 'Gagal', message: state.message);
         }
       },
-      child: const _PengumumanKelolaBody(),
+      child: _PengumumanKelolaBody(isWeb: isWeb),
     );
   }
 }
 
 class _PengumumanKelolaBody extends StatefulWidget {
-  const _PengumumanKelolaBody();
+  const _PengumumanKelolaBody({required this.isWeb});
+
+  final bool isWeb;
 
   @override
   State<_PengumumanKelolaBody> createState() => _PengumumanKelolaBodyState();
@@ -61,11 +67,26 @@ class _PengumumanKelolaBody extends StatefulWidget {
 class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
   late final ScrollController _scrollController;
 
+  /// Halaman ini adalah cabang shell yang tetap hidup saat tab lain dibuka.
+  /// Ia tidak dibangun ulang saat dibuka lagi, jadi daftarnya dimuat ulang
+  /// ketika cabangnya kembali aktif.
+  bool _active = true;
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
     context.read<PengumumanCubit>().loadPengumuman();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = TickerMode.valuesOf(context).enabled;
+    if (active && !_active) {
+      context.read<PengumumanCubit>().loadPengumuman(silent: true);
+    }
+    _active = active;
   }
 
   @override
@@ -203,9 +224,21 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: BackHeaderRow(title: 'Kelola Pengumuman'),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                // Di web halaman ini adalah destinasi sidebar, jadi tidak ada
+                // yang perlu dikembalikan. Di aplikasi ia dibuka dari Profil
+                // dan kembali ke sana.
+                child: widget.isWeb
+                    ? Text('Kelola Pengumuman',
+                        style: AppTextStyle.appBar
+                            .copyWith(color: AppColors.black))
+                    : BackHeaderRow(
+                        title: 'Kelola Pengumuman',
+                        onBack: () => context.canPop()
+                            ? context.pop()
+                            : context.go(AppLocations.profile),
+                      ),
               ),
               const SizedBox(height: 16),
               const Padding(

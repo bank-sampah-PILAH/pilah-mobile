@@ -94,7 +94,8 @@ void main() {
               '/schedule',
               '/history',
               '/bank',
-              '/profile'
+              '/profile',
+              '/pengumuman'
             ])
               StatefulShellBranch(routes: [
                 GoRoute(
@@ -379,6 +380,44 @@ void main() {
       expect(find.byType(BottomNavigationBar), findsNothing,
           reason: 'parity with the behaviour before this PR: the bottom bar '
               'was never on the profile route, and web is the only gap');
+    });
+  });
+
+  group('Pengumuman is a sidebar destination, not a sixth bottom tab', () {
+    testWidgets('the rail lists it and opens its branch', (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+
+      await tester.tap(find.text('Pengumuman'));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/pengumuman');
+      expect(find.byType(NavigationRail), findsOneWidget,
+          reason: 'the rail stays while the page is open');
+    });
+
+    testWidgets('the app keeps five bottom tabs', (tester) async {
+      await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: false);
+
+      final bar =
+          tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
+      expect(bar.items.length, 5);
+      expect(find.text('Pengumuman'), findsNothing);
+    });
+
+    testWidgets('on the app the page opens without a bottom bar or a dead end',
+        (tester) async {
+      await mountShell(tester,
+          role: 'pengelola',
+          window: const Size(390, 844),
+          isWeb: false,
+          initialLocation: '/pengumuman');
+
+      expect(find.text('body:/pengumuman'), findsOneWidget);
+      expect(find.text('Kembali ke Beranda'), findsNothing);
+      expect(find.byType(BottomNavigationBar), findsNothing);
     });
   });
 
