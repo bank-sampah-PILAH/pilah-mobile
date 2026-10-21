@@ -1877,6 +1877,41 @@ void main() {
       expect(cubit.state.items.map((i) => i.nominal), [100000, 50000, 100000]);
     });
 
+    testWidgets(
+        'with more than one held to their saldo, the dialog lists who and '
+        'their saldo', (tester) async {
+      await pumpNew(tester);
+      Finder daftar() => find.byKey(const Key('daftar-saldo-kurang'));
+      Future<void> tanya(String nilai) async {
+        await jumlah(tester, 'rupiah', nilai);
+        await tester.pump();
+        await tester.ensureVisible(find.byKey(const Key('terapkan-umum')));
+        await tester.tap(find.byKey(const Key('terapkan-umum')));
+        await tester.pumpAndSettle();
+      }
+
+      await tanya('100000');
+      expect(daftar(), findsNothing, reason: 'one nasabah needs no list');
+      await tester.tap(find.byKey(const Key('konfirmasi-tidak')));
+      await tester.pumpAndSettle();
+
+      await tanya('300000');
+      expect(find.descendant(of: daftar(), matching: find.text('Budi Santoso')),
+          findsOneWidget);
+      expect(
+          find.descendant(of: daftar(), matching: find.text('Saldo Rp 50.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Citra Dewi')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: daftar(), matching: find.text('Saldo Rp 250.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Ahmad Ridwan')),
+          findsNothing,
+          reason: 'the saldo of Ahmad covers Rp 300.000');
+    });
+
     testWidgets('a Nominal every saldo covers applies without asking',
         (tester) async {
       await pumpNew(tester);
