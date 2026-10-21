@@ -157,8 +157,9 @@ class _EditPencairanViewState extends State<EditPencairanView> {
           const SizedBox(height: 16),
           if (_terkunci) ...[
             Text(
-              'Pencairan ini memakai potongan, jadi hanya metode '
-              'dan keterangan yang bisa diubah.',
+              'Pencairan ini memakai potongan, jadi nominal dan '
+              'tanggalnya dikunci; hanya metode dan keterangan yang bisa '
+              'diubah.',
               style: AppTextStyle.small,
             ),
             const SizedBox(height: 16),
@@ -189,6 +190,7 @@ class _EditPencairanViewState extends State<EditPencairanView> {
             tanggal: _tanggal,
             onTap: _pickTanggal,
             errorText: state.fieldErrors['tanggal'],
+            enabled: !_terkunci,
           ),
           if (!_terkunci) ...[
             const SizedBox(height: 4),
