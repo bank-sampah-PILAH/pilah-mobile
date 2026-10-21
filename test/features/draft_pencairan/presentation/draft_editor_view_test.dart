@@ -1825,6 +1825,27 @@ void main() {
       expect(find.text('Bermasalah 0'), findsOneWidget);
     });
 
+    testWidgets(
+        'a Nominal above some saldo warns, before Terapkan, who is paid '
+        'their whole saldo instead, and blocks nothing', (tester) async {
+      await pumpNew(tester);
+      Finder catatan() => find.byKey(const Key('jumlah-saldo-kurang'));
+
+      await jumlah(tester, 'rupiah', '40000');
+      expect(catatan(), findsNothing, reason: 'every saldo covers Rp 40.000');
+
+      await jumlah(tester, 'rupiah', '100000');
+      expect(
+        tester.widget<Text>(catatan()).data,
+        '1 nasabah saldonya di bawah Rp 100.000. '
+        'Mereka dicairkan seluruh saldonya.',
+      );
+      expect(terapkanAktif(tester), isTrue, reason: 'a warning, not a block');
+
+      await jumlah(tester, 'persen', '50');
+      expect(catatan(), findsNothing, reason: 'a share never exceeds a saldo');
+    });
+
     testWidgets('Persen pays that share of each saldo, rounded down',
         (tester) async {
       await pumpNew(tester);
