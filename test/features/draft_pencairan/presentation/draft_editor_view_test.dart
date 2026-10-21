@@ -1878,8 +1878,8 @@ void main() {
     });
 
     testWidgets(
-        'with more than one held to their saldo, the dialog lists who and '
-        'their saldo', (tester) async {
+        'the dialog lists everyone held to their saldo, by name and saldo, '
+        'even just one', (tester) async {
       await pumpNew(tester);
       Finder daftar() => find.byKey(const Key('daftar-saldo-kurang'));
       Future<void> tanya(String nilai) async {
@@ -1891,7 +1891,15 @@ void main() {
       }
 
       await tanya('100000');
-      expect(daftar(), findsNothing, reason: 'one nasabah needs no list');
+      expect(find.descendant(of: daftar(), matching: find.text('Budi Santoso')),
+          findsOneWidget,
+          reason: 'one nasabah is named too');
+      expect(
+          find.descendant(of: daftar(), matching: find.text('Saldo Rp 50.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Citra Dewi')),
+          findsNothing,
+          reason: 'the saldo of Citra covers Rp 100.000');
       await tester.tap(find.byKey(const Key('konfirmasi-tidak')));
       await tester.pumpAndSettle();
 
