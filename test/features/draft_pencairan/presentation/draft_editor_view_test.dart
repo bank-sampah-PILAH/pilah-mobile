@@ -1846,6 +1846,27 @@ void main() {
       expect(catatan(), findsNothing, reason: 'a share never exceeds a saldo');
     });
 
+    testWidgets(
+        'after Terapkan each nasabah held to their saldo says so on their card',
+        (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah', '100000');
+      await _terapkanUmum(tester);
+
+      final budi = find.byKey(const Key('saldo-kurang-n-2'));
+      await tester.ensureVisible(budi);
+      expect(tester.widget<Text>(budi).data,
+          'Saldo tidak cukup untuk Rp 100.000, dicairkan Rp 50.000');
+      expect(find.byKey(const Key('saldo-kurang-n-1')), findsNothing);
+      expect(find.byKey(const Key('saldo-kurang-n-3')), findsNothing);
+
+      // A nominal set by hand is the pengurus's own choice: no warning.
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '30000');
+      await tester.pump();
+      expect(budi, findsNothing);
+    });
+
     testWidgets('Persen pays that share of each saldo, rounded down',
         (tester) async {
       await pumpNew(tester);
