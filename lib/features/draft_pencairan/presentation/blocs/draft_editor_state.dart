@@ -149,7 +149,6 @@ class DraftEditorState extends Equatable {
       item.potongan != null ||
       item.metode != metodeUmum;
 
-  /// What the server said about [item], else what is wrong with it locally.
   /// Whether [item] got less than the general Nominal asked for: that rupiah
   /// is above their saldo, so they are paid the whole saldo. False once the
   /// nominal was set by hand to something else, the pengurus's own choice.
@@ -160,6 +159,7 @@ class DraftEditorState extends Equatable {
         item.nominal == item.saldo;
   }
 
+  /// What the server said about [item], else what is wrong with it locally.
   String? errorFor(EditorItem item) =>
       itemErrors[item.nasabahId] ?? localError(item);
 
