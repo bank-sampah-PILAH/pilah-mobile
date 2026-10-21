@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 
 /// Bentuk navigasi untuk layar lebar.
 ///
@@ -21,55 +22,10 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_destination
 class RoleNavigationRail extends StatelessWidget {
   const RoleNavigationRail({
     super.key,
-    required this.role,
-    required this.currentIndex,
-    required this.onSelected,
-    this.bankSampahNama,
-    this.profileName,
-    this.profileEmail,
-    this.onProfile,
-    this.onHome,
-    this.profileSelected = false,
-    this.limitedNasabah = false,
+    required this.navigation,
   });
 
-  final String? role;
-
-  /// Bank sampah yang sedang dikelola sesi ini.
-  ///
-  /// Diterima sebagai parameter, bukan dibaca dari AuthenticationBloc, supaya
-  /// widget ini tetap presentasi murni dan dapat diuji tanpa bloc. Null atau
-  /// hanya spasi diperlakukan sebagai tidak diketahui.
-  final String? bankSampahNama;
-
-  /// Indeks pada daftar destinasi role ini, bukan branch index.
-  /// Destinasi yang sedang aktif, atau null bila tidak ada.
-  ///
-  /// Null dipakai pada rute di luar daftar destinasi, misalnya halaman profil
-  /// staff: menandai Beranda di sana akan berbohong tentang posisi pengguna.
-  /// Material sendiri menerima null pada selectedIndex untuk maksud yang sama.
-  final int? currentIndex;
-
-  /// Menerima indeks menu yang dipilih, bukan branch index. Penerjemahan ke
-  /// branch dilakukan pemanggil, sama seperti pada bottom bar.
-  final ValueChanged<int> onSelected;
-
-  /// Akun yang sedang masuk, ditampilkan di kaki rail. Null atau hanya spasi
-  /// berarti tidak ada kaki profil.
-  final String? profileName;
-  final String? profileEmail;
-
-  /// Dipanggil saat kaki profil diketuk. Pemanggil yang memutuskan tujuannya.
-  final VoidCallback? onProfile;
-
-  /// Dipanggil saat logo atau nama PILAH diketuk; membuka beranda.
-  final VoidCallback? onHome;
-
-  /// Halaman profil sedang terbuka. Kartu profil ditandai dan tidak lagi
-  /// bereaksi, supaya ketukan berulang tidak menumpuk halaman yang sama.
-  final bool profileSelected;
-
-  final bool limitedNasabah;
+  final RoleNavigationConfig navigation;
 
   /// Kunci panel dan logo, untuk test.
   static const panelKey = ValueKey('rail-panel');
@@ -82,12 +38,14 @@ class RoleNavigationRail extends StatelessWidget {
   /// Label bank sampah, atau label umum bila namanya tidak diketahui.
   @override
   Widget build(BuildContext context) {
-    final destinations =
-        RoleDestinations.forRole(role, limitedNasabah: limitedNasabah);
+    final destinations = RoleDestinations.forRole(
+      navigation.role,
+      limitedNasabah: navigation.limitedNasabah,
+    );
     if (destinations.isEmpty) return const SizedBox.shrink();
     final extended = context.layoutBreakpoint == LayoutBreakpoint.expanded;
     final labelStyle = AppTextStyle.small;
-    final name = profileName?.trim() ?? '';
+    final name = navigation.profileName?.trim() ?? '';
     return DecoratedBox(
       key: panelKey,
       // Di atas isi rail: lebar minimumnya 256, jadi isinya melewati tepi yang
@@ -103,15 +61,15 @@ class RoleNavigationRail extends StatelessWidget {
           child: NavigationRail(
             extended: extended,
             leading: _RailHeader(
-              label: BankSampahLabel.of(bankSampahNama),
-              initials: BankSampahLabel.initialsOf(bankSampahNama),
+              label: BankSampahLabel.of(navigation.bankSampahNama),
+              initials: BankSampahLabel.initialsOf(navigation.bankSampahNama),
               extended: extended,
-              onHome: onHome,
+              onHome: navigation.onHome,
             ),
             backgroundColor: Colors.white,
             indicatorColor: AppColors.greenLight,
-            selectedIndex: currentIndex,
-            onDestinationSelected: onSelected,
+            selectedIndex: navigation.currentIndex,
+            onDestinationSelected: navigation.onSelected,
             // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
             // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
             labelType: extended
@@ -134,10 +92,12 @@ class RoleNavigationRail extends StatelessWidget {
                       alignment: Alignment.bottomCenter,
                       child: _ProfileFooter(
                         name: name,
-                        email: profileEmail?.trim() ?? '',
+                        email: navigation.profileEmail?.trim() ?? '',
                         extended: extended,
-                        onTap: profileSelected ? null : onProfile,
-                        selected: profileSelected,
+                        onTap: navigation.profileSelected
+                            ? null
+                            : navigation.onProfile,
+                        selected: navigation.profileSelected,
                       ),
                     ),
                   ),

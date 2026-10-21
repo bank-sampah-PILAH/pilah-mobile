@@ -2,6 +2,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 
 import '../../support/pump_app.dart';
@@ -26,11 +27,13 @@ void main() {
       tester,
       Scaffold(
         body: RoleNavigationDrawer(
-          role: role,
-          currentIndex: currentIndex,
-          bankSampahNama: bankSampahNama,
-          limitedNasabah: limitedNasabah,
-          onSelected: selected.add,
+          navigation: RoleNavigationConfig(
+            role: role,
+            currentIndex: currentIndex,
+            bankSampahNama: bankSampahNama,
+            limitedNasabah: limitedNasabah,
+            onSelected: selected.add,
+          ),
         ),
       ),
       size: const Size(390, 844),
@@ -105,10 +108,12 @@ void main() {
         tester,
         Scaffold(
           drawer: RoleNavigationDrawer(
-            role: 'pengelola',
-            currentIndex: 0,
-            bankSampahNama: 'Bank Sampah Melati',
-            onSelected: selected.add,
+            navigation: RoleNavigationConfig(
+              role: 'pengelola',
+              currentIndex: 0,
+              bankSampahNama: 'Bank Sampah Melati',
+              onSelected: selected.add,
+            ),
           ),
           body: Builder(
             builder: (context) => IconButton(

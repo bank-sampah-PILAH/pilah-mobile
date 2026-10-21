@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/bank_sampah_label.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 
 /// Bentuk navigasi untuk browser yang terlalu sempit untuk rail.
 ///
@@ -19,38 +20,10 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_destination
 class RoleNavigationDrawer extends StatelessWidget {
   const RoleNavigationDrawer({
     super.key,
-    required this.role,
-    required this.currentIndex,
-    required this.onSelected,
-    this.bankSampahNama,
-    this.profileName,
-    this.profileEmail,
-    this.onProfile,
-    this.onHome,
-    this.profileSelected = false,
-    this.limitedNasabah = false,
+    required this.navigation,
   });
 
-  final String? role;
-
-  /// Bank sampah yang sedang dikelola sesi ini. Null atau hanya spasi
-  /// diperlakukan sebagai tidak diketahui.
-  final String? bankSampahNama;
-
-  /// Indeks pada daftar destinasi role ini, bukan branch index.
-  /// Destinasi yang sedang aktif, atau null bila tidak ada.
-  final int? currentIndex;
-
-  /// Menerima indeks menu yang dipilih, bukan branch index.
-  final ValueChanged<int> onSelected;
-
-  /// Akun yang sedang masuk, ditampilkan di kaki drawer.
-  final String? profileName;
-  final String? profileEmail;
-  final VoidCallback? onProfile;
-  final VoidCallback? onHome;
-  final bool profileSelected;
-  final bool limitedNasabah;
+  final RoleNavigationConfig navigation;
 
   static const brandKey = ValueKey('drawer-brand');
   static const profileKey = ValueKey('drawer-profile');
@@ -60,25 +33,27 @@ class RoleNavigationDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final destinations =
-        RoleDestinations.forRole(role, limitedNasabah: limitedNasabah);
+    final destinations = RoleDestinations.forRole(
+      navigation.role,
+      limitedNasabah: navigation.limitedNasabah,
+    );
     if (destinations.isEmpty) return const SizedBox.shrink();
 
-    final name = profileName?.trim() ?? '';
+    final name = navigation.profileName?.trim() ?? '';
     return Drawer(
       backgroundColor: Colors.white,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _BrandHeader(onHome: onHome),
+            _BrandHeader(onHome: navigation.onHome),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: Divider(height: 1, color: AppColors.border),
             ),
             _BankHeader(
-              label: BankSampahLabel.of(bankSampahNama),
-              initials: BankSampahLabel.initialsOf(bankSampahNama),
+              label: BankSampahLabel.of(navigation.bankSampahNama),
+              initials: BankSampahLabel.initialsOf(navigation.bankSampahNama),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
@@ -99,10 +74,10 @@ class RoleNavigationDrawer extends StatelessWidget {
                     _Destination(
                       key: destinationKey(index),
                       destination: destinations[index],
-                      selected: currentIndex == index,
+                      selected: navigation.currentIndex == index,
                       onTap: () {
                         Navigator.maybeOf(context)?.maybePop();
-                        onSelected(index);
+                        navigation.onSelected(index);
                       },
                     ),
                 ],
@@ -111,14 +86,15 @@ class RoleNavigationDrawer extends StatelessWidget {
             if (name.isNotEmpty)
               _ProfileFooter(
                 name: name,
-                email: profileEmail?.trim() ?? '',
-                selected: profileSelected,
-                onTap: profileSelected || onProfile == null
-                    ? null
-                    : () {
-                        Navigator.maybeOf(context)?.maybePop();
-                        onProfile!();
-                      },
+                email: navigation.profileEmail?.trim() ?? '',
+                selected: navigation.profileSelected,
+                onTap:
+                    navigation.profileSelected || navigation.onProfile == null
+                        ? null
+                        : () {
+                            Navigator.maybeOf(context)?.maybePop();
+                            navigation.onProfile!();
+                          },
               ),
           ],
         ),

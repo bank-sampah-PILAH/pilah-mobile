@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/na
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_bar.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -233,25 +234,26 @@ class _ShellContent extends StatelessWidget {
         account is Authenticated ? account.authEntity.name : null;
     final profileEmail =
         account is Authenticated ? account.authEntity.email : null;
+    final navigation = RoleNavigationConfig(
+      role: role,
+      limitedNasabah: limitedNasabah,
+      currentIndex: railSelected,
+      bankSampahNama: bankSampahNama,
+      profileName: profileName,
+      profileEmail: profileEmail,
+      onProfile: () => navigationShell.goBranch(_profileBranch),
+      onHome: () => navigationShell.goBranch(0, initialLocation: true),
+      profileSelected:
+          GoRouterState.of(context).uri.path == AppLocations.profile,
+      onSelected: select,
+    );
 
     // Browser sempit: destinasi pindah ke balik tombol menu. Kepala tipis
     // dipakai alih-alih AppBar milik Scaffold karena sebagian halaman membawa
     // AppBar sendiri, dan dua AppBar bertumpuk akan terlihat.
     if (form.isOverlay) {
       return Scaffold(
-        drawer: RoleNavigationDrawer(
-          role: role,
-          limitedNasabah: limitedNasabah,
-          currentIndex: railSelected,
-          bankSampahNama: bankSampahNama,
-          profileName: profileName,
-          profileEmail: profileEmail,
-          onProfile: () => navigationShell.goBranch(_profileBranch),
-          onHome: () => navigationShell.goBranch(0, initialLocation: true),
-          profileSelected:
-              GoRouterState.of(context).uri.path == AppLocations.profile,
-          onSelected: select,
-        ),
+        drawer: RoleNavigationDrawer(navigation: navigation),
         body: Column(
           children: [
             const _MenuButtonHeader(),
@@ -266,21 +268,7 @@ class _ShellContent extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
-          RoleNavigationRail(
-            role: role,
-            limitedNasabah: limitedNasabah,
-            currentIndex: railSelected,
-            bankSampahNama: bankSampahNama,
-            profileName: profileName,
-            profileEmail: profileEmail,
-            // Pindah ke branch profil, bukan mendorong halamannya: dengan push,
-            // branch sebelumnya tetap menjadi yang terpilih di rail.
-            onProfile: () => navigationShell.goBranch(_profileBranch),
-            profileSelected:
-                GoRouterState.of(context).uri.path == AppLocations.profile,
-            onHome: () => navigationShell.goBranch(0, initialLocation: true),
-            onSelected: select,
-          ),
+          RoleNavigationRail(navigation: navigation),
           Expanded(
             child: WebContentSurface(child: body),
           ),

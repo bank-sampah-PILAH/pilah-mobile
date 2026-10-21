@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 
 import '../../support/pump_app.dart';
@@ -22,10 +23,12 @@ void main() {
       Scaffold(
         body: Row(children: [
           RoleNavigationRail(
-            role: role,
-            currentIndex: currentIndex,
-            limitedNasabah: limitedNasabah,
-            onSelected: tapped.add,
+            navigation: RoleNavigationConfig(
+              role: role,
+              currentIndex: currentIndex,
+              limitedNasabah: limitedNasabah,
+              onSelected: tapped.add,
+            ),
           ),
           const Expanded(child: SizedBox.shrink()),
         ]),
