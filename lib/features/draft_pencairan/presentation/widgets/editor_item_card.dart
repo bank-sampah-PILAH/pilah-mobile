@@ -187,6 +187,17 @@ class EditorItemCard extends StatelessWidget {
             potongan: potongan,
             onEdit: readOnly ? null : () => _aturPotongan(context),
           ),
+          if (state.dibatasiSaldo(item))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Saldo tidak cukup untuk '
+                '${rupiah(state.jumlahUmum!.nilai.floor())}, '
+                'dicairkan ${rupiah(item.nominal)}',
+                key: Key('saldo-kurang-${item.nasabahId}'),
+                style: AppTextStyle.small.copyWith(color: AppColors.warning),
+              ),
+            ),
           if (error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
