@@ -544,8 +544,22 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
 
   bool get _siap => _adaPerubahan && (!_jumlahBerubah || _jumlah!.valid);
 
-  void _terapkan() {
+  Future<void> _terapkan() async {
     final jumlah = _jumlahBerubah ? _jumlah : null;
+    // A warning shown under the field is easy to miss, so a Nominal that holds
+    // someone to their saldo is confirmed once more. It is never blocked.
+    final kurang = _jumlahKurang(jumlah);
+    if (jumlah != null && kurang > 0) {
+      final ya = await showPencairanKonfirmasi(
+        context,
+        icon: Icons.warning_amber_rounded,
+        judul: 'Terapkan Nominal ${rupiah(jumlah.nilai.floor())}?',
+        pesan: _pesanKurang(kurang, jumlah),
+        jawaban: const KonfirmasiJawaban('Ya, terapkan'),
+        nada: KonfirmasiNada.peringatan,
+      );
+      if (!ya || !mounted) return;
+    }
     context.read<DraftEditorCubit>().terapkanUmum(
           metode: _metodeBerubah ? _metode : null,
           jumlah: jumlah,
@@ -558,17 +572,24 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
     });
   }
 
+  /// How many nasabah [jumlah] would hold to their saldo.
+  int _jumlahKurang(JumlahUmum? jumlah) => jumlah == null
+      ? 0
+      : _items.where((i) => jumlah.melebihiSaldo(i.saldo)).length;
+
+  static String _pesanKurang(int kurang, JumlahUmum jumlah) =>
+      '$kurang nasabah saldonya di bawah ${rupiah(jumlah.nilai.floor())}. '
+      'Mereka dicairkan seluruh saldonya.';
+
   /// A fixed rupiah stops at each saldo; says how many it stops for, so a
   /// pengurus is not surprised. A warning only: they are still paid.
   List<Widget> _saldoKurang(JumlahUmum? jumlah) {
-    if (jumlah == null) return const [];
-    final kurang = _items.where((i) => jumlah.melebihiSaldo(i.saldo)).length;
-    if (kurang == 0) return const [];
+    final kurang = _jumlahKurang(jumlah);
+    if (jumlah == null || kurang == 0) return const [];
     return [
       const SizedBox(height: 8),
       Text(
-        '$kurang nasabah saldonya di bawah ${rupiah(jumlah.nilai.floor())}. '
-        'Mereka dicairkan seluruh saldonya.',
+        _pesanKurang(kurang, jumlah),
         key: const Key('jumlah-saldo-kurang'),
         style: AppTextStyle.small.copyWith(color: AppColors.warning),
       ),

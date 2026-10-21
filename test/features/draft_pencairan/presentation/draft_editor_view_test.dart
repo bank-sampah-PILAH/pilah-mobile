@@ -2643,6 +2643,15 @@ Future<void> _terapkanUmum(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('terapkan-umum')));
   await tester.pump();
   await tester.pump();
+  // A Nominal that holds someone to their saldo asks first; these tests mean
+  // to apply it.
+  final ya = find.byKey(const Key('konfirmasi-ya'));
+  if (ya.evaluate().isNotEmpty) {
+    await tester.pumpAndSettle();
+    await tester.tap(ya);
+    await tester.pump();
+    await tester.pump();
+  }
 }
 
 Future<void> _pump(
