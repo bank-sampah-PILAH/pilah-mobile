@@ -196,6 +196,29 @@ void main() {
       expect(find.text('body:/prices'), findsOneWidget);
     });
 
+    testWidgets('the mobile drawer matches the sidebar and opens the profile',
+        (tester) async {
+      final router = await mountShell(tester,
+          role: 'pengelola', window: const Size(390, 844), isWeb: true);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('PILAH'), findsOneWidget);
+      expect(find.text('MENU'), findsOneWidget);
+      expect(find.text('Sari'), findsOneWidget);
+      expect(find.text('sari@example.test'), findsOneWidget);
+
+      await tester.tap(find.text('Sari'));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
+          '/profile');
+      expect(find.text('body:/profile'), findsOneWidget);
+      expect(find.byIcon(Icons.menu), findsOneWidget,
+          reason: 'the narrow-browser navigation stays available on profile');
+    });
+
     testWidgets('widening the browser keeps the selected destination',
         (tester) async {
       await mountShell(tester,

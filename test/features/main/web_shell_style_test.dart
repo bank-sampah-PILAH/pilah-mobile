@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 
@@ -25,15 +26,17 @@ void main() {
       Scaffold(
         body: Row(children: [
           RoleNavigationRail(
-            role: 'pengelola',
-            currentIndex: 0,
-            bankSampahNama: 'Bank Sampah Melati',
-            profileName: profileName,
-            profileEmail: 'sari@example.test',
-            onProfile: () => profileTaps++,
-            onHome: () => homeTaps++,
-            profileSelected: profileSelected,
-            onSelected: (_) {},
+            navigation: RoleNavigationConfig(
+              role: 'pengelola',
+              currentIndex: 0,
+              bankSampahNama: 'Bank Sampah Melati',
+              profileName: profileName,
+              profileEmail: 'sari@example.test',
+              onProfile: () => profileTaps++,
+              onHome: () => homeTaps++,
+              profileSelected: profileSelected,
+              onSelected: (_) {},
+            ),
           ),
           const Expanded(child: SizedBox.shrink()),
         ]),
