@@ -1825,6 +1825,133 @@ void main() {
       expect(find.text('Bermasalah 0'), findsOneWidget);
     });
 
+    testWidgets(
+        'a Nominal above some saldo warns, before Terapkan, who is paid '
+        'their whole saldo instead, and blocks nothing', (tester) async {
+      await pumpNew(tester);
+      Finder catatan() => find.byKey(const Key('jumlah-saldo-kurang'));
+
+      await jumlah(tester, 'rupiah', '40000');
+      expect(catatan(), findsNothing, reason: 'every saldo covers Rp 40.000');
+
+      await jumlah(tester, 'rupiah', '100000');
+      expect(
+        tester.widget<Text>(catatan()).data,
+        '1 nasabah saldonya di bawah Rp 100.000. '
+        'Mereka dicairkan seluruh saldonya.',
+      );
+      expect(terapkanAktif(tester), isTrue, reason: 'a warning, not a block');
+
+      await jumlah(tester, 'persen', '50');
+      expect(catatan(), findsNothing, reason: 'a share never exceeds a saldo');
+    });
+
+    testWidgets(
+        'Terapkan asks first when the Nominal holds someone to their saldo',
+        (tester) async {
+      await pumpNew(tester);
+      Future<void> tekanTerapkan() async {
+        await tester.pump();
+        await tester.ensureVisible(find.byKey(const Key('terapkan-umum')));
+        await tester.tap(find.byKey(const Key('terapkan-umum')));
+        await tester.pumpAndSettle();
+      }
+
+      await jumlah(tester, 'rupiah', '100000');
+      await tekanTerapkan();
+      expect(find.text('Terapkan Nominal Rp 100.000?'), findsOneWidget);
+      expect(
+        find.text('1 nasabah saldonya di bawah Rp 100.000. '
+            'Mereka dicairkan seluruh saldonya.'),
+        findsWidgets,
+      );
+
+      await tester.tap(find.byKey(const Key('konfirmasi-tidak')));
+      await tester.pumpAndSettle();
+      expect(cubit.state.items.map((i) => i.nominal), [465600, 50000, 250000],
+          reason: 'Batal applies nothing');
+
+      await tekanTerapkan();
+      await tester.tap(find.byKey(const Key('konfirmasi-ya')));
+      await tester.pumpAndSettle();
+      expect(cubit.state.items.map((i) => i.nominal), [100000, 50000, 100000]);
+    });
+
+    testWidgets(
+        'the dialog lists everyone held to their saldo, by name and saldo, '
+        'even just one', (tester) async {
+      await pumpNew(tester);
+      Finder daftar() => find.byKey(const Key('daftar-saldo-kurang'));
+      Future<void> tanya(String nilai) async {
+        await jumlah(tester, 'rupiah', nilai);
+        await tester.pump();
+        await tester.ensureVisible(find.byKey(const Key('terapkan-umum')));
+        await tester.tap(find.byKey(const Key('terapkan-umum')));
+        await tester.pumpAndSettle();
+      }
+
+      await tanya('100000');
+      expect(find.descendant(of: daftar(), matching: find.text('Budi Santoso')),
+          findsOneWidget,
+          reason: 'one nasabah is named too');
+      expect(
+          find.descendant(of: daftar(), matching: find.text('Saldo Rp 50.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Citra Dewi')),
+          findsNothing,
+          reason: 'the saldo of Citra covers Rp 100.000');
+      await tester.tap(find.byKey(const Key('konfirmasi-tidak')));
+      await tester.pumpAndSettle();
+
+      await tanya('300000');
+      expect(find.descendant(of: daftar(), matching: find.text('Budi Santoso')),
+          findsOneWidget);
+      expect(
+          find.descendant(of: daftar(), matching: find.text('Saldo Rp 50.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Citra Dewi')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: daftar(), matching: find.text('Saldo Rp 250.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Ahmad Ridwan')),
+          findsNothing,
+          reason: 'the saldo of Ahmad covers Rp 300.000');
+    });
+
+    testWidgets('a Nominal every saldo covers applies without asking',
+        (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah', '40000');
+      await _terapkanUmum(tester);
+
+      expect(find.byKey(const Key('konfirmasi-ya')), findsNothing);
+      expect(cubit.state.items.map((i) => i.nominal), [40000, 40000, 40000]);
+    });
+
+    testWidgets(
+        'after Terapkan each nasabah held to their saldo says so on their card',
+        (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah', '100000');
+      await _terapkanUmum(tester);
+
+      final budi = find.byKey(const Key('saldo-kurang-n-2'));
+      await tester.ensureVisible(budi);
+      expect(tester.widget<Text>(budi).data,
+          'Saldo tidak cukup untuk Rp 100.000, dicairkan Rp 50.000');
+      expect(find.byKey(const Key('saldo-kurang-n-1')), findsNothing);
+      expect(find.byKey(const Key('saldo-kurang-n-3')), findsNothing);
+
+      // A nominal set by hand is the pengurus's own choice: no warning.
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '30000');
+      await tester.pump();
+      expect(budi, findsNothing);
+    });
+
     testWidgets('Persen pays that share of each saldo, rounded down',
         (tester) async {
       await pumpNew(tester);
@@ -2559,6 +2686,15 @@ Future<void> _terapkanUmum(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('terapkan-umum')));
   await tester.pump();
   await tester.pump();
+  // A Nominal that holds someone to their saldo asks first; these tests mean
+  // to apply it.
+  final ya = find.byKey(const Key('konfirmasi-ya'));
+  if (ya.evaluate().isNotEmpty) {
+    await tester.pumpAndSettle();
+    await tester.tap(ya);
+    await tester.pump();
+    await tester.pump();
+  }
 }
 
 Future<void> _pump(

@@ -544,8 +544,32 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
 
   bool get _siap => _adaPerubahan && (!_jumlahBerubah || _jumlah!.valid);
 
-  void _terapkan() {
+  /// A warning shown under the field is easy to miss, so a Nominal that holds
+  /// someone to their saldo is confirmed once more. It is never blocked: true
+  /// when there is nothing to confirm or the pengurus says yes.
+  Future<bool> _setujuSaldoKurang(JumlahUmum? jumlah) async {
+    final kurang = _jumlahKurang(jumlah);
+    if (jumlah == null || kurang == 0) return true;
+    return showPencairanKonfirmasi(
+      context,
+      icon: Icons.warning_amber_rounded,
+      judul: 'Terapkan Nominal ${rupiah(jumlah.nilai.floor())}?',
+      pesan: _pesanKurang(kurang, jumlah),
+      // Who is affected, by name and saldo, however many they are.
+      isi: _DaftarSaldoKurang(
+        items: [
+          for (final item in _items)
+            if (jumlah.melebihiSaldo(item.saldo)) item,
+        ],
+      ),
+      jawaban: const KonfirmasiJawaban('Ya, terapkan'),
+      nada: KonfirmasiNada.peringatan,
+    );
+  }
+
+  Future<void> _terapkan() async {
     final jumlah = _jumlahBerubah ? _jumlah : null;
+    if (!await _setujuSaldoKurang(jumlah) || !mounted) return;
     context.read<DraftEditorCubit>().terapkanUmum(
           metode: _metodeBerubah ? _metode : null,
           jumlah: jumlah,
@@ -556,6 +580,30 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
       _jumlah = null;
       _potongan = null;
     });
+  }
+
+  /// How many nasabah [jumlah] would hold to their saldo.
+  int _jumlahKurang(JumlahUmum? jumlah) => jumlah == null
+      ? 0
+      : _items.where((i) => jumlah.melebihiSaldo(i.saldo)).length;
+
+  static String _pesanKurang(int kurang, JumlahUmum jumlah) =>
+      '$kurang nasabah saldonya di bawah ${rupiah(jumlah.nilai.floor())}. '
+      'Mereka dicairkan seluruh saldonya.';
+
+  /// A fixed rupiah stops at each saldo; says how many it stops for, so a
+  /// pengurus is not surprised. A warning only: they are still paid.
+  List<Widget> _saldoKurang(JumlahUmum? jumlah) {
+    final kurang = _jumlahKurang(jumlah);
+    if (jumlah == null || kurang == 0) return const [];
+    return [
+      const SizedBox(height: 8),
+      Text(
+        _pesanKurang(kurang, jumlah),
+        key: const Key('jumlah-saldo-kurang'),
+        style: AppTextStyle.small.copyWith(color: AppColors.warning),
+      ),
+    ];
   }
 
   @override
@@ -593,6 +641,7 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
             value: _jumlah ?? _jumlahTersimpan,
             onChanged: (jumlah) => setState(() => _jumlah = jumlah),
           ),
+          ..._saldoKurang(_jumlah ?? _jumlahTersimpan),
           const SizedBox(height: 16),
           const SectionLabel.field('POTONGAN UMUM'),
           const SizedBox(height: 8),
@@ -621,6 +670,52 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
             onPressed: _siap ? _terapkan : null,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Who a Nominal holds to their saldo, with that saldo: a short list that
+/// scrolls once it grows past a few names.
+class _DaftarSaldoKurang extends StatelessWidget {
+  final List<EditorItem> items;
+
+  const _DaftarSaldoKurang({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      key: const Key('daftar-saldo-kurang'),
+      constraints: const BoxConstraints(maxHeight: 220),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            for (final item in items)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.nasabahNama,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyle.small
+                            .copyWith(color: AppColors.inkSoft),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Saldo ${rupiah(item.saldo)}',
+                      style: AppTextStyle.small.copyWith(
+                        color: AppColors.inkSoft,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
