@@ -555,15 +555,13 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
       icon: Icons.warning_amber_rounded,
       judul: 'Terapkan Nominal ${rupiah(jumlah.nilai.floor())}?',
       pesan: _pesanKurang(kurang, jumlah),
-      // One nasabah is clear from the line above; more are named.
-      isi: kurang > 1
-          ? _DaftarSaldoKurang(
-              items: [
-                for (final item in _items)
-                  if (jumlah.melebihiSaldo(item.saldo)) item,
-              ],
-            )
-          : null,
+      // Who is affected, by name and saldo, however many they are.
+      isi: _DaftarSaldoKurang(
+        items: [
+          for (final item in _items)
+            if (jumlah.melebihiSaldo(item.saldo)) item,
+        ],
+      ),
       jawaban: const KonfirmasiJawaban('Ya, terapkan'),
       nada: KonfirmasiNada.peringatan,
     );
