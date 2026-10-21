@@ -558,6 +558,23 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
     });
   }
 
+  /// A fixed rupiah stops at each saldo; says how many it stops for, so a
+  /// pengurus is not surprised. A warning only: they are still paid.
+  List<Widget> _saldoKurang(JumlahUmum? jumlah) {
+    if (jumlah == null) return const [];
+    final kurang = _items.where((i) => jumlah.melebihiSaldo(i.saldo)).length;
+    if (kurang == 0) return const [];
+    return [
+      const SizedBox(height: 8),
+      Text(
+        '$kurang nasabah saldonya di bawah ${rupiah(jumlah.nilai.floor())}. '
+        'Mereka dicairkan seluruh saldonya.',
+        key: const Key('jumlah-saldo-kurang'),
+        style: AppTextStyle.small.copyWith(color: AppColors.warning),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final metode = _metode ?? _metodeTersimpan;
@@ -593,6 +610,7 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
             value: _jumlah ?? _jumlahTersimpan,
             onChanged: (jumlah) => setState(() => _jumlah = jumlah),
           ),
+          ..._saldoKurang(_jumlah ?? _jumlahTersimpan),
           const SizedBox(height: 16),
           const SectionLabel.field('POTONGAN UMUM'),
           const SizedBox(height: 8),
