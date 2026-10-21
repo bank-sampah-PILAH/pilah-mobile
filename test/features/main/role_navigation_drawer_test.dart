@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
@@ -66,9 +68,12 @@ void main() {
 
     testWidgets('marks the current destination as selected', (tester) async {
       await mountDrawer(tester, currentIndex: 3);
-      final drawer =
-          tester.widget<NavigationDrawer>(find.byType(NavigationDrawer));
-      expect(drawer.selectedIndex, 3);
+      final selected = tester
+          .getSemantics(find.byKey(RoleNavigationDrawer.destinationKey(3)))
+          .getSemanticsData()
+          .flagsCollection
+          .isSelected;
+      expect(selected, Tristate.isTrue);
     });
 
     testWidgets('an unapproved nasabah only sees their two destinations',
@@ -83,13 +88,13 @@ void main() {
     testWidgets('a role without navigation gets nothing at all',
         (tester) async {
       await mountDrawer(tester, role: 'satpam');
-      expect(find.byType(NavigationDrawer), findsNothing,
+      expect(find.byType(Drawer), findsNothing,
           reason: 'an unknown role fails closed, as it does on the rail');
     });
 
     testWidgets('no session gets nothing at all', (tester) async {
       await mountDrawer(tester, role: '');
-      expect(find.byType(NavigationDrawer), findsNothing);
+      expect(find.byType(Drawer), findsNothing);
     });
   });
 

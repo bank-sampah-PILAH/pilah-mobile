@@ -228,6 +228,12 @@ class _ShellContent extends StatelessWidget {
       );
     }
 
+    final account = context.watch<AuthenticationBloc>().state;
+    final profileName =
+        account is Authenticated ? account.authEntity.name : null;
+    final profileEmail =
+        account is Authenticated ? account.authEntity.email : null;
+
     // Browser sempit: destinasi pindah ke balik tombol menu. Kepala tipis
     // dipakai alih-alih AppBar milik Scaffold karena sebagian halaman membawa
     // AppBar sendiri, dan dua AppBar bertumpuk akan terlihat.
@@ -238,6 +244,12 @@ class _ShellContent extends StatelessWidget {
           limitedNasabah: limitedNasabah,
           currentIndex: railSelected,
           bankSampahNama: bankSampahNama,
+          profileName: profileName,
+          profileEmail: profileEmail,
+          onProfile: () => navigationShell.goBranch(_profileBranch),
+          onHome: () => navigationShell.goBranch(0, initialLocation: true),
+          profileSelected:
+              GoRouterState.of(context).uri.path == AppLocations.profile,
           onSelected: select,
         ),
         body: Column(
@@ -248,12 +260,6 @@ class _ShellContent extends StatelessWidget {
         ),
       );
     }
-
-    final account = context.watch<AuthenticationBloc>().state;
-    final profileName =
-        account is Authenticated ? account.authEntity.name : null;
-    final profileEmail =
-        account is Authenticated ? account.authEntity.email : null;
 
     // Rail menggantikan bottom bar, tidak menemaninya: menampilkan keduanya
     // berarti menawarkan menu yang sama dua kali.
