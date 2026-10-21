@@ -51,11 +51,16 @@ class TanggalPencairanField extends StatelessWidget {
     required this.tanggal,
     required this.onTap,
     this.errorText,
+    this.enabled = true,
   });
 
   final DateTime tanggal;
   final VoidCallback onTap;
   final String? errorText;
+
+  /// False shows the tanggal as locked, like a disabled text field: greyed
+  /// out and with nothing to tap.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -66,16 +71,18 @@ class TanggalPencairanField extends StatelessWidget {
         const SizedBox(height: 8),
         InkWell(
           key: const Key('tanggal-field'),
-          onTap: onTap,
+          onTap: enabled ? onTap : null,
           child: InputDecorator(
             decoration: appInputDecoration(
               suffixIcon:
                   const Icon(Icons.calendar_month, color: AppColors.grey100),
               errorText: errorText,
-            ),
+            ).copyWith(enabled: enabled),
             child: Text(
               formatTanggalId(tanggal),
-              style: AppTextStyle.small.copyWith(color: AppColors.black),
+              style: AppTextStyle.small.copyWith(
+                color: enabled ? AppColors.black : AppColors.grey100,
+              ),
             ),
           ),
         ),

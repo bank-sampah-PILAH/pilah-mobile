@@ -423,6 +423,34 @@ void main() {
       expect(find.byType(DatePickerDialog), findsNothing);
     });
 
+    testWidgets('shows the tanggal as locked too, not as a field to tap',
+        (tester) async {
+      await pumpView(tester, pencairan: berpotongan);
+
+      final decorator = tester.widget<InputDecorator>(find.descendant(
+        of: find.byKey(const Key('tanggal-field')),
+        matching: find.byType(InputDecorator),
+      ));
+      expect(decorator.decoration.enabled, isFalse,
+          reason: 'it looks like the locked nominal');
+      expect(
+          tester.widget<InkWell>(find.byKey(const Key('tanggal-field'))).onTap,
+          isNull,
+          reason: 'no ripple promising a picker');
+    });
+
+    testWidgets('says the nominal and tanggal are the locked ones',
+        (tester) async {
+      await pumpView(tester, pencairan: berpotongan);
+
+      expect(
+        find.text('Pencairan ini memakai potongan, jadi nominal dan '
+            'tanggalnya dikunci; hanya metode dan keterangan yang bisa '
+            'diubah.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
         'still lets the metode be corrected, sending the values as recorded',
         (tester) async {
