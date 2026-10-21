@@ -555,6 +555,15 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
         icon: Icons.warning_amber_rounded,
         judul: 'Terapkan Nominal ${rupiah(jumlah.nilai.floor())}?',
         pesan: _pesanKurang(kurang, jumlah),
+        // One nasabah is clear from the line above; more are named.
+        isi: kurang > 1
+            ? _DaftarSaldoKurang(
+                items: [
+                  for (final item in _items)
+                    if (jumlah.melebihiSaldo(item.saldo)) item,
+                ],
+              )
+            : null,
         jawaban: const KonfirmasiJawaban('Ya, terapkan'),
         nada: KonfirmasiNada.peringatan,
       );
@@ -660,6 +669,52 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
             onPressed: _siap ? _terapkan : null,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Who a Nominal holds to their saldo, with that saldo: a short list that
+/// scrolls once it grows past a few names.
+class _DaftarSaldoKurang extends StatelessWidget {
+  final List<EditorItem> items;
+
+  const _DaftarSaldoKurang({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      key: const Key('daftar-saldo-kurang'),
+      constraints: const BoxConstraints(maxHeight: 220),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            for (final item in items)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.nasabahNama,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyle.small
+                            .copyWith(color: AppColors.inkSoft),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Saldo ${rupiah(item.saldo)}',
+                      style: AppTextStyle.small.copyWith(
+                        color: AppColors.inkSoft,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
