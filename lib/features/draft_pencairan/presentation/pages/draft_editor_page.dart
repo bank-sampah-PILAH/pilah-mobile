@@ -544,31 +544,34 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
 
   bool get _siap => _adaPerubahan && (!_jumlahBerubah || _jumlah!.valid);
 
+  /// A warning shown under the field is easy to miss, so a Nominal that holds
+  /// someone to their saldo is confirmed once more. It is never blocked: true
+  /// when there is nothing to confirm or the pengurus says yes.
+  Future<bool> _setujuSaldoKurang(JumlahUmum? jumlah) async {
+    final kurang = _jumlahKurang(jumlah);
+    if (jumlah == null || kurang == 0) return true;
+    return showPencairanKonfirmasi(
+      context,
+      icon: Icons.warning_amber_rounded,
+      judul: 'Terapkan Nominal ${rupiah(jumlah.nilai.floor())}?',
+      pesan: _pesanKurang(kurang, jumlah),
+      // One nasabah is clear from the line above; more are named.
+      isi: kurang > 1
+          ? _DaftarSaldoKurang(
+              items: [
+                for (final item in _items)
+                  if (jumlah.melebihiSaldo(item.saldo)) item,
+              ],
+            )
+          : null,
+      jawaban: const KonfirmasiJawaban('Ya, terapkan'),
+      nada: KonfirmasiNada.peringatan,
+    );
+  }
+
   Future<void> _terapkan() async {
     final jumlah = _jumlahBerubah ? _jumlah : null;
-    // A warning shown under the field is easy to miss, so a Nominal that holds
-    // someone to their saldo is confirmed once more. It is never blocked.
-    final kurang = _jumlahKurang(jumlah);
-    if (jumlah != null && kurang > 0) {
-      final ya = await showPencairanKonfirmasi(
-        context,
-        icon: Icons.warning_amber_rounded,
-        judul: 'Terapkan Nominal ${rupiah(jumlah.nilai.floor())}?',
-        pesan: _pesanKurang(kurang, jumlah),
-        // One nasabah is clear from the line above; more are named.
-        isi: kurang > 1
-            ? _DaftarSaldoKurang(
-                items: [
-                  for (final item in _items)
-                    if (jumlah.melebihiSaldo(item.saldo)) item,
-                ],
-              )
-            : null,
-        jawaban: const KonfirmasiJawaban('Ya, terapkan'),
-        nada: KonfirmasiNada.peringatan,
-      );
-      if (!ya || !mounted) return;
-    }
+    if (!await _setujuSaldoKurang(jumlah) || !mounted) return;
     context.read<DraftEditorCubit>().terapkanUmum(
           metode: _metodeBerubah ? _metode : null,
           jumlah: jumlah,
