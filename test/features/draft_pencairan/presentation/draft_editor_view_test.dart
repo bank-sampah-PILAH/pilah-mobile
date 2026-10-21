@@ -1847,6 +1847,48 @@ void main() {
     });
 
     testWidgets(
+        'Terapkan asks first when the Nominal holds someone to their saldo',
+        (tester) async {
+      await pumpNew(tester);
+      Future<void> tekanTerapkan() async {
+        await tester.pump();
+        await tester.ensureVisible(find.byKey(const Key('terapkan-umum')));
+        await tester.tap(find.byKey(const Key('terapkan-umum')));
+        await tester.pumpAndSettle();
+      }
+
+      await jumlah(tester, 'rupiah', '100000');
+      await tekanTerapkan();
+      expect(find.text('Terapkan Nominal Rp 100.000?'), findsOneWidget);
+      expect(
+        find.text('1 nasabah saldonya di bawah Rp 100.000. '
+            'Mereka dicairkan seluruh saldonya.'),
+        findsWidgets,
+      );
+
+      await tester.tap(find.byKey(const Key('konfirmasi-tidak')));
+      await tester.pumpAndSettle();
+      expect(cubit.state.items.map((i) => i.nominal), [465600, 50000, 250000],
+          reason: 'Batal applies nothing');
+
+      await tekanTerapkan();
+      await tester.tap(find.byKey(const Key('konfirmasi-ya')));
+      await tester.pumpAndSettle();
+      expect(cubit.state.items.map((i) => i.nominal), [100000, 50000, 100000]);
+    });
+
+    testWidgets('a Nominal every saldo covers applies without asking',
+        (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah', '40000');
+      await _terapkanUmum(tester);
+
+      expect(find.byKey(const Key('konfirmasi-ya')), findsNothing);
+      expect(cubit.state.items.map((i) => i.nominal), [40000, 40000, 40000]);
+    });
+
+    testWidgets(
         'after Terapkan each nasabah held to their saldo says so on their card',
         (tester) async {
       await pumpNew(tester);
