@@ -105,7 +105,16 @@ class RoleNavigationRail extends StatelessWidget {
               for (final destination in destinations)
                 NavigationRailDestination(
                   icon: Icon(destination.icon),
-                  label: Text(destination.label),
+                  label: destination.disabled
+                      ? Semantics(
+                          button: true,
+                          enabled: false,
+                          label: destination.label,
+                          excludeSemantics: true,
+                          child: Text(destination.label),
+                        )
+                      : Text(destination.label),
+                  disabled: destination.disabled,
                 ),
             ],
           ),

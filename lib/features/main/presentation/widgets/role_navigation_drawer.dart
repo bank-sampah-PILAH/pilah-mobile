@@ -75,10 +75,12 @@ class RoleNavigationDrawer extends StatelessWidget {
                       key: destinationKey(index),
                       destination: destinations[index],
                       selected: navigation.currentIndex == index,
-                      onTap: () {
-                        Navigator.maybeOf(context)?.maybePop();
-                        navigation.onSelected(index);
-                      },
+                      onTap: destinations[index].disabled
+                          ? null
+                          : () {
+                              Navigator.maybeOf(context)?.maybePop();
+                              navigation.onSelected(index);
+                            },
                     ),
                 ],
               ),
@@ -192,13 +194,14 @@ class _Destination extends StatelessWidget {
 
   final RoleDestination destination;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Semantics(
           button: true,
+          enabled: onTap != null,
           selected: selected,
           label: destination.label,
           excludeSemantics: true,
@@ -214,20 +217,32 @@ class _Destination extends StatelessWidget {
                     height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.greenLight : null,
+                      color: selected && onTap != null
+                          ? AppColors.greenLight
+                          : null,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Icon(
                       destination.icon,
-                      color: selected ? AppColors.greenDark : AppColors.inkSoft,
+                      color: onTap == null
+                          ? AppColors.grey100
+                          : selected
+                              ? AppColors.greenDark
+                              : AppColors.inkSoft,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     destination.label,
                     style: AppTextStyle.small.copyWith(
-                      color: selected ? AppColors.greenDark : AppColors.inkSoft,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: onTap == null
+                          ? AppColors.grey100
+                          : selected
+                              ? AppColors.greenDark
+                              : AppColors.inkSoft,
+                      fontWeight: selected && onTap != null
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
                 ],
