@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +12,7 @@ import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/providers/pilih_nasabah_provider.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
@@ -65,8 +65,12 @@ void main() {
         ),
         GoRoute(
           path: DraftListPage.routePilih,
-          builder: (_, __) => BlocProvider(
-            create: (_) => PilihNasabahCubit(repository)..load(),
+          builder: (_, __) => ProviderScope(
+            overrides: [
+              pilihNasabahProvider.overrideWith(
+                () => PilihNasabahNotifier(repository),
+              ),
+            ],
             child: const PilihNasabahView(),
           ),
         ),

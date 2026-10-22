@@ -50,8 +50,6 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pe
     show DraftPencairanRepository;
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart'
     show DraftEditorCubit;
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart'
-    show PilihNasabahCubit;
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source.dart'
     show HargaRemoteDataSource;
 import 'package:pilah_mobile/features/harga/domain/repositories/harga_repository.dart'
@@ -248,7 +246,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('NasabahRepository', null, () => di<NasabahRepository>()),
   ('StatementRepository', null, () => di<StatementRepository>()),
   ('DraftEditorCubit', null, () => di<DraftEditorCubit>()),
-  ('PilihNasabahCubit', null, () => di<PilihNasabahCubit>()),
   ('PencairanRepository', null, () => di<PencairanRepository>()),
   ('HargaRepository', null, () => di<HargaRepository>()),
   ('SuperadminRepository', null, () => di<SuperadminRepository>()),

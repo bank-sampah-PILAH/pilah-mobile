@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
@@ -14,11 +14,10 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/draft_pencairan.dart';
-import '../blocs/pilih_nasabah_cubit.dart';
 import '../blocs/pilih_nasabah_state.dart';
+import '../providers/pilih_nasabah_provider.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/pencairan_sort_button.dart';
 import '../widgets/saldo_min_sheet.dart';
@@ -33,15 +32,10 @@ class PilihNasabahPencairanPage extends StatelessWidget {
   const PilihNasabahPencairanPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<PilihNasabahCubit>()..load(),
-      child: const PilihNasabahView(),
-    );
-  }
+  Widget build(BuildContext context) => const PilihNasabahView();
 }
 
-class PilihNasabahView extends StatefulWidget {
+class PilihNasabahView extends ConsumerStatefulWidget {
   /// Pause after the last keystroke before the search is sent, so a word does
   /// not cost one request per letter.
   static const jedaCari = Duration(milliseconds: 300);
@@ -49,11 +43,19 @@ class PilihNasabahView extends StatefulWidget {
   const PilihNasabahView({super.key});
 
   @override
-  State<PilihNasabahView> createState() => _PilihNasabahViewState();
+  ConsumerState<PilihNasabahView> createState() => _PilihNasabahViewState();
 }
 
-class _PilihNasabahViewState extends State<PilihNasabahView> {
+class _PilihNasabahViewState extends ConsumerState<PilihNasabahView> {
   Timer? _jeda;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(pilihNasabahProvider.notifier).load();
+    });
+  }
 
   @override
   void dispose() {
@@ -64,23 +66,28 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
   void _onSearch(String text) {
     _jeda?.cancel();
     _jeda = Timer(PilihNasabahView.jedaCari, () {
-      if (mounted) context.read<PilihNasabahCubit>().setSearch(text.trim());
+      if (mounted) {
+        ref.read(pilihNasabahProvider.notifier).setSearch(text.trim());
+      }
     });
   }
 
   Future<void> _askSaldoMin() async {
-    final cubit = context.read<PilihNasabahCubit>();
+    final state = ref.read(pilihNasabahProvider);
     final saldoMin = await showSaldoMinSheet(
       context,
-      kandidat: cubit.state.kandidat,
-      awal: cubit.state.saldoMin,
+      kandidat: state.kandidat,
+      awal: state.saldoMin,
     );
-    if (saldoMin != null) cubit.setSaldoMin(saldoMin);
+    if (saldoMin != null && mounted) {
+      ref.read(pilihNasabahProvider.notifier).setSaldoMin(saldoMin);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<PilihNasabahCubit>();
+    final state = ref.watch(pilihNasabahProvider);
+    final notifier = ref.read(pilihNasabahProvider.notifier);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -89,51 +96,50 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
         // list itself scrolls across the body, so its scrollbar is at the edge.
         child: ContentFrame(
           maxWidth: LayoutBreakpoint.formMaxWidth,
-          child: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
-            builder: (context, state) => Column(
-              children: [
-                const ContentInset(
-                  child: AppBackHeader(
-                      backKey: Key('kembali'), title: 'Pilih Nasabah'),
-                ),
-                ContentInset(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: CustomSearchField(
-                            key: const Key('cari-kandidat'),
-                            hintText: 'Cari nama, kode, atau nomor HP',
-                            onChanged: _onSearch,
-                          ),
+          child: Column(
+            children: [
+              const ContentInset(
+                child: AppBackHeader(
+                    backKey: Key('kembali'), title: 'Pilih Nasabah'),
+              ),
+              ContentInset(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomSearchField(
+                          key: const Key('cari-kandidat'),
+                          hintText: 'Cari nama, kode, atau nomor HP',
+                          onChanged: _onSearch,
                         ),
-                        const SizedBox(width: 8),
-                        PencairanSortButton<KandidatSortField>(
-                          buttonKey: const Key('urutkan-kandidat'),
-                          itemKeyPrefix: 'urut-kandidat-',
-                          fields: KandidatSortField.values,
-                          labelOf: (field) => field.label,
-                          current: state.urutan.field,
-                          ascending: state.urutan.ascending,
-                          onSort: cubit.setSortField,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      PencairanSortButton<KandidatSortField>(
+                        buttonKey: const Key('urutkan-kandidat'),
+                        itemKeyPrefix: 'urut-kandidat-',
+                        fields: KandidatSortField.values,
+                        labelOf: (field) => field.label,
+                        current: state.urutan.field,
+                        ascending: state.urutan.ascending,
+                        onSort: notifier.setSortField,
+                      ),
+                    ],
                   ),
                 ),
-                ContentInset(
-                    child: _Filters(state: state, onSaldoMin: _askSaldoMin)),
-                ContentInset(child: _BulkRow(state: state)),
-                Expanded(child: _List(state: state)),
-              ],
-            ),
+              ),
+              ContentInset(
+                  child: _Filters(
+                      state: state,
+                      notifier: notifier,
+                      onSaldoMin: _askSaldoMin)),
+              ContentInset(child: _BulkRow(state: state, notifier: notifier)),
+              Expanded(child: _List(state: state, notifier: notifier)),
+            ],
           ),
         ),
       ),
-      bottomNavigationBar: BlocBuilder<PilihNasabahCubit, PilihNasabahState>(
-        builder: (context, state) => _Footer(state: state),
-      ),
+      bottomNavigationBar: _Footer(state: state),
     );
   }
 }
@@ -143,13 +149,17 @@ class _PilihNasabahViewState extends State<PilihNasabahView> {
 /// dialog and then reads like the rest, as "Saldo \u2265 Rp 200.000".
 class _Filters extends StatelessWidget {
   final PilihNasabahState state;
+  final PilihNasabahNotifier notifier;
   final VoidCallback onSaldoMin;
 
-  const _Filters({required this.state, required this.onSaldoMin});
+  const _Filters({
+    required this.state,
+    required this.notifier,
+    required this.onSaldoMin,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<PilihNasabahCubit>();
     Widget chip(Key key, PilihFilter filter) => Padding(
           padding: const EdgeInsets.only(right: 8),
           child: PencairanChip(
@@ -157,7 +167,7 @@ class _Filters extends StatelessWidget {
             label: filter.label,
             count: state.jumlah(filter),
             selected: state.filter == filter,
-            onTap: () => cubit.setFilter(filter),
+            onTap: () => notifier.setFilter(filter),
           ),
         );
     final aktif = state.saldoMin > 0;
@@ -176,7 +186,7 @@ class _Filters extends StatelessWidget {
                 ? 'Saldo \u2265 ${rupiah(state.saldoMin)}'
                 : 'Saldo minimal',
             selected: aktif,
-            onTap: aktif ? () => cubit.setSaldoMin(0) : onSaldoMin,
+            onTap: aktif ? () => notifier.setSaldoMin(0) : onSaldoMin,
           ),
         ],
       ),
@@ -189,12 +199,12 @@ class _Filters extends StatelessWidget {
 /// saldo.
 class _BulkRow extends StatelessWidget {
   final PilihNasabahState state;
+  final PilihNasabahNotifier notifier;
 
-  const _BulkRow({required this.state});
+  const _BulkRow({required this.state, required this.notifier});
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<PilihNasabahCubit>();
     final dapat = state.dapatDipilih.length;
     final nilai = switch (state.pilihanTampil) {
       PilihanTampil.tidakAda => false,
@@ -212,7 +222,7 @@ class _BulkRow extends StatelessWidget {
           Expanded(
             child: InkWell(
               key: const Key('pilih-tampil'),
-              onTap: dapat == 0 ? null : cubit.pilihTampil,
+              onTap: dapat == 0 ? null : notifier.pilihTampil,
               borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Row(
                 children: [
@@ -239,12 +249,12 @@ class _BulkRow extends StatelessWidget {
           ),
           TextButton(
             key: const Key('balikkan'),
-            onPressed: cubit.balikkan,
+            onPressed: notifier.balikkan,
             child: Text('Balikkan', style: teks),
           ),
           TextButton(
             key: const Key('kosongkan'),
-            onPressed: cubit.kosongkan,
+            onPressed: notifier.kosongkan,
             child: Text('Kosongkan', style: teks),
           ),
         ],
@@ -255,12 +265,12 @@ class _BulkRow extends StatelessWidget {
 
 class _List extends StatelessWidget {
   final PilihNasabahState state;
+  final PilihNasabahNotifier notifier;
 
-  const _List({required this.state});
+  const _List({required this.state, required this.notifier});
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<PilihNasabahCubit>();
     switch (state.status) {
       case PilihStatus.loading:
         return ListView(
@@ -275,17 +285,19 @@ class _List extends StatelessWidget {
             children: [
               Text(state.errorMessage ?? 'Gagal memuat nasabah',
                   style: AppTextStyle.small),
-              TextButton(onPressed: cubit.load, child: const Text('Coba lagi')),
+              TextButton(
+                  onPressed: notifier.load, child: const Text('Coba lagi')),
             ],
           ),
         );
       case PilihStatus.loaded:
-        return _kosongAtauDaftar(context, cubit);
+        return _kosongAtauDaftar(context, notifier);
     }
   }
 
   /// An explanation when there is nothing to pick, otherwise the rows.
-  Widget _kosongAtauDaftar(BuildContext context, PilihNasabahCubit cubit) {
+  Widget _kosongAtauDaftar(
+      BuildContext context, PilihNasabahNotifier notifier) {
     if (state.kandidat.isEmpty) {
       return EmptyView(
         title: state.search.isEmpty
@@ -312,7 +324,7 @@ class _List extends StatelessWidget {
         return _KandidatRow(
           kandidat: kandidat,
           dipilih: state.selectedIds.contains(kandidat.id),
-          onTap: () => cubit.toggle(kandidat.id),
+          onTap: () => notifier.toggle(kandidat.id),
         );
       },
     );
