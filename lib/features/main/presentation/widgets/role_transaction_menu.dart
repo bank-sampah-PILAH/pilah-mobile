@@ -36,10 +36,10 @@ class RoleTransactionMenu extends StatelessWidget {
           tooltip: 'Transaksi',
           icon: const Icon(Icons.receipt_long_outlined),
           itemBuilder: (context) => [
-            PopupMenuItem(
+            const PopupMenuItem(
               key: setoranKey,
               value: _TransactionAction.setoran,
-              child: const _PopupMenuLabel(
+              child: _PopupMenuLabel(
                 icon: Icons.add_circle_outline,
                 label: 'Setoran',
               ),

@@ -100,7 +100,7 @@ class _TransaksiChooserSheet extends StatelessWidget {
             onTap: () => Navigator.of(context).pop(_TransaksiChoice.setoran),
           ),
           const SizedBox(height: 8),
-          _ChoiceTile(
+          const _ChoiceTile(
             icon: Icons.payments_outlined,
             title: 'Pencairan',
             subtitle: 'Buat draft, potongan, dan pencairan banyak nasabah',
