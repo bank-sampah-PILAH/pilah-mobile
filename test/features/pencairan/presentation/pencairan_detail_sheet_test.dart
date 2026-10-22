@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
@@ -95,7 +95,9 @@ void main() {
       ],
     );
     addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
     await tester.tap(find.text('buka'));
     await tester.pumpAndSettle();
   }
@@ -184,9 +186,9 @@ void main() {
 
   testWidgets('on a wide window edit opens as a dialog, not a page',
       (tester) async {
-    di.registerFactory<EditPencairanCubit>(
-        () => EditPencairanCubit(_MockUseCases()));
-    addTearDown(() => di.unregister<EditPencairanCubit>());
+    final useCases = _MockUseCases();
+    di.registerFactory<PencairanUseCases>(() => useCases);
+    addTearDown(() => di.unregister<PencairanUseCases>());
     await openSheet(tester, _pencairan(),
         editResult: true, size: const Size(1200, 900));
 
@@ -263,8 +265,8 @@ void main() {
     final edited = _pencairan(diperbarui: true);
     when(() => useCases.editPencairan(any()))
         .thenAnswer((_) async => Right(edited));
-    di.registerFactory<EditPencairanCubit>(() => EditPencairanCubit(useCases));
-    addTearDown(() => di.unregister<EditPencairanCubit>());
+    di.registerFactory<PencairanUseCases>(() => useCases);
+    addTearDown(() => di.unregister<PencairanUseCases>());
     await openSheet(tester, _pencairan(), size: const Size(1200, 900));
     await tapKey(tester, 'edit-pencairan');
 

@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -14,7 +15,6 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
@@ -33,9 +33,6 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<EditPencairanCubit>()) {
-      di.unregister<EditPencairanCubit>();
-    }
     if (di.isRegistered<RevisiPencairanCubit>()) {
       di.unregister<RevisiPencairanCubit>();
     }
@@ -45,9 +42,6 @@ void main() {
   tearDown(() async {
     if (di.isRegistered<InviteTokenStore>()) {
       await di.unregister<InviteTokenStore>();
-    }
-    if (di.isRegistered<EditPencairanCubit>()) {
-      await di.unregister<EditPencairanCubit>();
     }
     if (di.isRegistered<RevisiPencairanCubit>()) {
       await di.unregister<RevisiPencairanCubit>();
@@ -67,9 +61,7 @@ void main() {
         ),
       ),
     );
-    di.registerFactory<EditPencairanCubit>(
-      () => EditPencairanCubit(useCases),
-    );
+    di.registerFactory<PencairanUseCases>(() => useCases);
     di.registerFactory<RevisiPencairanCubit>(
       () => RevisiPencairanCubit(useCases),
     );
@@ -84,9 +76,11 @@ void main() {
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      BlocProvider<AuthenticationBloc>.value(
-        value: authBloc,
-        child: MaterialApp.router(routerConfig: router),
+      ProviderScope(
+        child: BlocProvider<AuthenticationBloc>.value(
+          value: authBloc,
+          child: MaterialApp.router(routerConfig: router),
+        ),
       ),
     );
 
