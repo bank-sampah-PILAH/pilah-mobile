@@ -68,8 +68,6 @@ import '../features/draft_pencairan/domain/repository/draft_pencairan_repository
     as _i511;
 import '../features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart'
     as _i230;
-import '../features/draft_pencairan/presentation/blocs/draft_list_cubit.dart'
-    as _i673;
 import '../features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart'
     as _i795;
 import '../features/harga/data/datasources/harga_remote_data_source.dart'
@@ -328,8 +326,6 @@ extension GetItInjectableX on _i174.GetIt {
         _i322.StatementRepositoryImpl(gh<_i987.StatementRemoteDataSources>()));
     gh.factory<_i230.DraftEditorCubit>(
         () => _i230.DraftEditorCubit(gh<_i511.DraftPencairanRepository>()));
-    gh.factory<_i673.DraftListCubit>(
-        () => _i673.DraftListCubit(gh<_i511.DraftPencairanRepository>()));
     gh.factory<_i795.PilihNasabahCubit>(
         () => _i795.PilihNasabahCubit(gh<_i511.DraftPencairanRepository>()));
     gh.lazySingleton<_i449.PencairanRepository>(() =>

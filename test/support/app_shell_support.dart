@@ -15,7 +15,7 @@ import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_s
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/pilih_nasabah_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
@@ -135,7 +135,7 @@ class AppShell {
         GetRiwayatHargaUseCase(
             HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
     final draftRepository = buildDraftPencairanRepository(api);
-    di.registerFactory<DraftListCubit>(() => DraftListCubit(draftRepository));
+    di.registerSingleton<DraftPencairanRepository>(draftRepository);
     di.registerFactory<PilihNasabahCubit>(
         () => PilihNasabahCubit(draftRepository));
     di.registerFactory<DraftEditorCubit>(
@@ -158,7 +158,7 @@ class AppShell {
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();
     await di.unregister<RiwayatHargaCubit>();
-    await di.unregister<DraftListCubit>();
+    await di.unregister<DraftPencairanRepository>();
     await di.unregister<PilihNasabahCubit>();
     await di.unregister<DraftEditorCubit>();
     final approval = _approval;
