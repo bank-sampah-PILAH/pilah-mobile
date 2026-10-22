@@ -271,34 +271,7 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('tapping a row opens the detail and refreshes on return',
-        (tester) async {
-      final repository = _HomeRepository(null, const []);
-      await pumpHome(tester, repository, extraRoutes: {
-        '/pengumuman/detail': (_, __) =>
-            const Scaffold(body: Text('detail pengumuman')),
-      });
-
-      await tester.ensureVisible(find.text('Pengumuman lama'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Pengumuman lama'));
-      await tester.pumpAndSettle();
-      expect(find.text('detail pengumuman'), findsOneWidget);
-
-      final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
-      router.pop();
-      await tester.pumpAndSettle();
-
-      // Coming back re-fetches the section so a read dots gone.
-      expect(
-        api.requests
-            .where((call) => call.path.endsWith('/pengumuman/beranda'))
-            .length,
-        greaterThanOrEqualTo(2),
-      );
-    });
-
-    testWidgets('tapping an unread row fires the baca POST', (tester) async {
+    testWidgets('announcement rows stay visible but disabled', (tester) async {
       api.on('POST', '/api/v1/nasabah/me/pengumuman/p2/baca',
           json: {'id': 'p2', 'dibaca': true});
       await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
@@ -306,25 +279,36 @@ void main() {
             const Scaffold(body: Text('detail pengumuman')),
       });
 
-      await tester.ensureVisible(find.text('Pengumuman baru'));
+      final handle = tester.ensureSemantics();
+      final readRow = find.text('Pengumuman lama');
+      final unreadRow = find.text('Pengumuman baru');
+      await tester.ensureVisible(readRow);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Pengumuman baru'));
+      await tester.tap(readRow);
       await tester.pumpAndSettle();
-      expect(find.text('detail pengumuman'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('detail pengumuman'), findsNothing);
+      expect(readRow, findsOneWidget);
 
-      final baca = api.requests.lastWhere(
-        (call) => call.path == '/api/v1/nasabah/me/pengumuman/p2/baca',
-      );
-      expect(baca.query['keanggotaan_id'], 'membership-1');
-      // An already-read row does not post again.
+      await tester.ensureVisible(unreadRow);
+      await tester.pumpAndSettle();
+      await tester.tap(unreadRow);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('detail pengumuman'), findsNothing);
+      expect(unreadRow, findsOneWidget);
       expect(
-        api.requests
-            .where(
-                (call) => call.path == '/api/v1/nasabah/me/pengumuman/p1/baca')
-            .isEmpty,
+        api.requests.where((call) => call.path.endsWith('/baca')).isEmpty,
         isTrue,
       );
+
+      final semantics = tester
+          .getSemantics(find.bySemanticsLabel(RegExp('^Pengumuman baru')))
+          .getSemanticsData();
+      expect(semantics.label, startsWith('Pengumuman baru'));
+      expect(semantics.flagsCollection.isButton, isTrue);
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(semantics.hasAction(SemanticsAction.tap), isFalse);
+      handle.dispose();
     });
 
     testWidgets('an empty section shows the standalone card', (tester) async {
