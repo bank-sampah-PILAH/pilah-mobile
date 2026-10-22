@@ -78,7 +78,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                             // submitted nothing, and a reviewer has to be able
                             // to tell those apart.
                             errorBuilder: (context, error, stackTrace) {
-                              return _ProofPlaceholder(
+                              return const _ProofPlaceholder(
                                 icon: Icons.broken_image,
                                 title: 'Gagal memuat gambar',
                                 subtitle: 'Periksa koneksi lalu coba lagi.',
@@ -86,7 +86,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                             },
                           ),
                         )
-                      : _ProofPlaceholder(
+                      : const _ProofPlaceholder(
                           icon: Icons.image_not_supported_outlined,
                           title: 'Tidak ada foto kegiatan',
                           subtitle:

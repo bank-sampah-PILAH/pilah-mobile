@@ -471,7 +471,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
           value,
           isBold: true,
           valueColor: AppColors.statPurple,
-          icon: Icon(Icons.bar_chart, size: 16, color: AppColors.statPurple),
+          icon: const Icon(Icons.bar_chart,
+              size: 16, color: AppColors.statPurple),
         );
       },
     );

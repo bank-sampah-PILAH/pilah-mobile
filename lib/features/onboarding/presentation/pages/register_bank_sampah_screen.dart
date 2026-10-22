@@ -362,7 +362,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.image_outlined,
+                                              const Icon(Icons.image_outlined,
                                                   color: AppColors.greenDark,
                                                   size: 32),
                                               const SizedBox(height: 12),

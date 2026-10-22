@@ -131,7 +131,7 @@ class _DetailTransaksiBottomSheetState
         children: [
           const BottomSheetHeader(title: 'Detail Transaksi'),
           const SizedBox(height: 8),
-          CustomStatusBadge(
+          const CustomStatusBadge(
             statusText: 'Selesai',
             backgroundColor: mintTint,
             textColor: AppColors.greenDark,

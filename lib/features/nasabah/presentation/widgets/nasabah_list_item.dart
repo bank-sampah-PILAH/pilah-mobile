@@ -180,7 +180,7 @@ class NasabahListItem extends StatelessWidget {
                       _PendingBadge(),
                     ] else if (!isActive) ...[
                       const SizedBox(width: 8),
-                      CustomStatusBadge(isActive: false),
+                      const CustomStatusBadge(isActive: false),
                     ],
                   ],
                 ),
