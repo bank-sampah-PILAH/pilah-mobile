@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction, Tristate;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
@@ -244,20 +246,29 @@ void main() {
       );
     });
 
-    testWidgets('Semua opens the pengumuman list', (tester) async {
+    testWidgets('the Pengumuman Semua CTA stays visible but disabled',
+        (tester) async {
       await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
         '/pengumuman': (_, __) => const Scaffold(body: Text('daftar')),
       });
 
-      // Headings carry their own Semua (Jadwal, Pengumuman, Terbaru); the
-      // middle one is Pengumuman's.
-      final semuaButtons = find.widgetWithText(TextButton, 'Semua');
-      await tester.ensureVisible(semuaButtons.at(1));
-      await tester.pumpAndSettle();
-      await tester.tap(semuaButtons.at(1));
+      final handle = tester.ensureSemantics();
+      final button = find.widgetWithText(TextButton, 'Semua').at(1);
+      await tester.ensureVisible(button);
       await tester.pumpAndSettle();
 
-      expect(find.text('daftar'), findsOneWidget);
+      expect(button, findsOneWidget);
+      final semantics = tester.getSemantics(button).getSemanticsData();
+      expect(semantics.flagsCollection.isButton, isTrue);
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(semantics.hasAction(SemanticsAction.tap), isFalse);
+
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(find.text('daftar'), findsNothing);
+      expect(find.text('Pengumuman baru'), findsOneWidget);
+      handle.dispose();
     });
 
     testWidgets('tapping a row opens the detail and refreshes on return',
@@ -314,24 +325,6 @@ void main() {
             .isEmpty,
         isTrue,
       );
-    });
-
-    testWidgets('Semua opens the list scoped to the membership',
-        (tester) async {
-      await pumpHome(tester, _HomeRepository(null, const []), extraRoutes: {
-        '/pengumuman': (_, state) => Scaffold(
-            body:
-                Text('daftar ${state.uri.queryParameters['keanggotaan_id']}')),
-      });
-
-      // Headings carry their own Semua (Jadwal, Pengumuman, Terbaru); the
-      // middle one is Pengumuman's.
-      final semuaButtons = find.widgetWithText(TextButton, 'Semua');
-      await tester.ensureVisible(semuaButtons.at(1));
-      await tester.pumpAndSettle();
-      await tester.tap(semuaButtons.at(1));
-      await tester.pumpAndSettle();
-      expect(find.text('daftar membership-1'), findsOneWidget);
     });
 
     testWidgets('an empty section shows the standalone card', (tester) async {
