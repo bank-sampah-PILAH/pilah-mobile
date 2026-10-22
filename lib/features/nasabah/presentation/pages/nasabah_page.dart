@@ -250,9 +250,8 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                                         switchInCurve: Curves.easeOut,
                                         switchOutCurve: Curves.easeIn,
                                         child: state.isReloading
-                                            ? LinearProgressIndicator(
-                                                key:
-                                                    const ValueKey('reloading'),
+                                            ? const LinearProgressIndicator(
+                                                key: ValueKey('reloading'),
                                                 minHeight: 2,
                                                 color: AppColors.greenDark,
                                                 backgroundColor:
