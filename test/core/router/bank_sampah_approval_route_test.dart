@@ -3,6 +3,7 @@ import '../../support/stub_api.dart';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,8 +14,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
@@ -31,8 +31,8 @@ class _MockAuthenticationBloc
 class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
     implements NasabahApprovalCubit {}
 
-class _MockNasabahAppealCubit extends MockCubit<NasabahAppealState>
-    implements NasabahAppealCubit {}
+class _MockAppealMembershipUseCase extends Mock
+    implements AppealMembershipUseCase {}
 
 const _first = NasabahMembershipEntity(
   id: 'membership-1',
@@ -86,12 +86,11 @@ void main() {
         NasabahPengumumanRepository(pengumumanApi.network));
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
 
-    final appealCubit = _MockNasabahAppealCubit();
-    when(() => appealCubit.state).thenReturn(const NasabahAppealIdle());
-    if (di.isRegistered<NasabahAppealCubit>()) {
-      di.unregister<NasabahAppealCubit>();
+    final appealUseCase = _MockAppealMembershipUseCase();
+    if (di.isRegistered<AppealMembershipUseCase>()) {
+      di.unregister<AppealMembershipUseCase>();
     }
-    di.registerFactory<NasabahAppealCubit>(() => appealCubit);
+    di.registerFactory<AppealMembershipUseCase>(() => appealUseCase);
   });
 
   tearDown(() {
@@ -104,8 +103,8 @@ void main() {
     if (di.isRegistered<NasabahRepository>()) {
       di.unregister<NasabahRepository>();
     }
-    if (di.isRegistered<NasabahAppealCubit>()) {
-      di.unregister<NasabahAppealCubit>();
+    if (di.isRegistered<AppealMembershipUseCase>()) {
+      di.unregister<AppealMembershipUseCase>();
     }
   });
 
@@ -136,9 +135,11 @@ void main() {
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      BlocProvider<AuthenticationBloc>.value(
-        value: authenticationBloc,
-        child: MaterialApp.router(routerConfig: router),
+      ProviderScope(
+        child: BlocProvider<AuthenticationBloc>.value(
+          value: authenticationBloc,
+          child: MaterialApp.router(routerConfig: router),
+        ),
       ),
     );
     await tester.pump();

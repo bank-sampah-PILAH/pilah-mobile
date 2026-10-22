@@ -34,8 +34,6 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appe
     show AppealMembershipUseCase;
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart'
     show GetNasabahMembershipsUseCase;
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart'
-    show NasabahAppealCubit;
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart'
     show NasabahApprovalCubit;
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_remote_data_source.dart'
@@ -301,7 +299,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('GetTransaksiDetailUseCase', null, () => di<GetTransaksiDetailUseCase>()),
   ('GetTransaksiUseCase', null, () => di<GetTransaksiUseCase>()),
   ('ResendWaUseCase', null, () => di<ResendWaUseCase>()),
-  ('NasabahAppealCubit', null, () => di<NasabahAppealCubit>()),
   ('TransaksiCubit', null, () => di<TransaksiCubit>()),
   ('PencairanUseCases', null, () => di<PencairanUseCases>()),
   ('ActivateHargaUseCase', null, () => di<ActivateHargaUseCase>()),
