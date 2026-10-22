@@ -13,7 +13,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
@@ -45,11 +45,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     super.initState();
     // Provider state must not change during initState's build frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(dashboardProvider.notifier).loadStats();
+      if (!mounted) return;
+      ref.read(dashboardProvider.notifier).loadStats();
+      // Aktivitas Terbaru has its own notifier — see
+      // [RecentActivityNotifier] for why it is not Laporan's feed.
+      ref.read(recentActivityProvider.notifier).load();
     });
-    // Aktivitas Terbaru has its own cubit — see [RecentActivityCubit] for why
-    // it is not the one Laporan drives — so nothing else loads it.
-    context.read<RecentActivityCubit>().load();
   }
 
   /// Refetches everything the dashboard renders. The header's bank sampah name
@@ -60,7 +61,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     context.read<AuthenticationBloc>().add(RefreshUserRequested());
     await Future.wait([
       ref.read(dashboardProvider.notifier).loadStats(silent: true),
-      context.read<RecentActivityCubit>().load(silent: true),
+      ref.read(recentActivityProvider.notifier).load(silent: true),
     ]);
   }
 

@@ -10,7 +10,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
@@ -39,6 +38,7 @@ import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repo
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -66,10 +66,10 @@ class AppShell {
     harga = buildHargaCubit(api);
     profile = buildProfileCubit(api);
     transaksi = buildTransaksiCubit(api);
-    final pencairan = buildPencairanUseCases(api);
+    pencairan = buildPencairanUseCases(api);
     final repo =
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network));
-    recent = RecentActivityCubit(GetTransaksiUseCase(repo), pencairan);
+    getTransaksi = GetTransaksiUseCase(repo);
     riwayat = RiwayatAktivitasCubit(
         GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)),
         ExportTransaksiUseCase(repo));
@@ -90,7 +90,8 @@ class AppShell {
   late final HargaCubit harga;
   late final ProfileCubit profile;
   late final TransaksiCubit transaksi;
-  late final RecentActivityCubit recent;
+  late final GetTransaksiUseCase getTransaksi;
+  late final PencairanUseCases pencairan;
   late final RiwayatAktivitasCubit riwayat;
   late final NasabahCubit nasabah;
   late final OnboardingCubit onboarding;
@@ -111,6 +112,8 @@ class AppShell {
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
     di.registerSingleton<GetDashboardStatsUseCase>(
         buildDashboardStatsUseCase(api));
+    di.registerSingleton<GetTransaksiUseCase>(getTransaksi);
+    di.registerSingleton<PencairanUseCases>(pencairan);
     di.registerSingleton<NasabahPengumumanRepository>(
         NasabahPengumumanRepository(api.network));
     di.registerFactory<SuperadminCubit>(() => superadmin);
@@ -137,6 +140,8 @@ class AppShell {
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
     await di.unregister<GetDashboardStatsUseCase>();
+    await di.unregister<GetTransaksiUseCase>();
+    await di.unregister<PencairanUseCases>();
     await di.unregister<NasabahPengumumanRepository>();
     await di.unregister<SuperadminCubit>();
     await di.unregister<EditPencairanCubit>();
@@ -156,7 +161,7 @@ class AppShell {
       harga.close,
       profile.close,
       transaksi.close,
-      recent.close,
+
       riwayat.close,
       nasabah.close,
       onboarding.close,
@@ -202,7 +207,6 @@ class AppShell {
           BlocProvider<PengumumanCubit>.value(value: pengumuman),
           BlocProvider<NasabahPengumumanCubit>.value(value: nasabahPengumuman),
           BlocProvider<TransaksiCubit>.value(value: transaksi),
-          BlocProvider<RecentActivityCubit>.value(value: recent),
           BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
           BlocProvider<ProfileCubit>.value(value: profile),
           BlocProvider<AuthenticationBloc>.value(value: auth),

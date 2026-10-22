@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
@@ -97,7 +97,7 @@ void main() {
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network)));
     final export = ExportTransaksiUseCase(
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network)));
-    final recent = RecentActivityCubit(getTransaksi, pencairan);
+    final recent = RecentActivityNotifier(getTransaksi, pencairan);
     final riwayat = RiwayatAktivitasCubit(
         GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)), export);
     final nasabah = buildNasabahCubit(api);
@@ -105,7 +105,6 @@ void main() {
       await harga.close();
       await profile.close();
       await transaksi.close();
-      await recent.close();
       await riwayat.close();
       await nasabah.close();
     });
@@ -116,13 +115,15 @@ void main() {
       // ignore: prefer_const_constructors
       TransaksiBaruPage(),
       wrap: (app) => ProviderScope(
-        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        overrides: [
+          dashboardProvider.overrideWith(() => dashboard),
+          recentActivityProvider.overrideWith(() => recent),
+        ],
         child: MultiBlocProvider(
           providers: [
             BlocProvider<HargaCubit>.value(value: harga),
             BlocProvider<ProfileCubit>.value(value: profile),
             BlocProvider<TransaksiCubit>.value(value: transaksi),
-            BlocProvider<RecentActivityCubit>.value(value: recent),
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
             BlocProvider<NasabahCubit>.value(value: nasabah),
           ],

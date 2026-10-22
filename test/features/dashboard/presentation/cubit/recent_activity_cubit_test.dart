@@ -1,9 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
@@ -51,7 +52,8 @@ List<String> _titles(RecentActivityState state) =>
 void main() {
   late _MockGetTransaksi getTransaksi;
   late _MockPencairanUseCases pencairanUseCases;
-  late RecentActivityCubit cubit;
+  late RecentActivityNotifier cubit;
+  late ProviderContainer container;
 
   final oneGroup = [
     TransaksiGroupEntity(header: 'HARI INI', transactions: [_trx('Budi')]),
@@ -67,10 +69,14 @@ void main() {
     pencairanUseCases = _MockPencairanUseCases();
     when(() => pencairanUseCases.getRiwayat(any()))
         .thenAnswer((_) async => const Right([]));
-    cubit = RecentActivityCubit(getTransaksi, pencairanUseCases);
+    cubit = RecentActivityNotifier(getTransaksi, pencairanUseCases);
+    container = ProviderContainer(overrides: [
+      recentActivityProvider.overrideWith(() => cubit),
+    ]);
+    container.read(recentActivityProvider);
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => container.dispose());
 
   group('load()', () {
     test('asks for all time — no date filter of any kind', () async {
@@ -107,7 +113,7 @@ void main() {
       expect(filter.periode, RiwayatPeriode.semua);
       expect(
         filter.limit,
-        RecentActivityCubit.limit,
+        RecentActivityNotifier.limit,
         reason: 'a null limit makes the data source walk every page of the '
             'bank\'s lifetime pencairan history just to show 3 rows',
       );
@@ -123,7 +129,7 @@ void main() {
       final filter = verify(() => getTransaksi.execute(captureAny()))
           .captured
           .single as TransaksiFilter;
-      expect(filter.pageSize, RecentActivityCubit.limit);
+      expect(filter.pageSize, RecentActivityNotifier.limit);
     });
 
     test('merges setoran and pencairan, newest first, capped at the limit',
@@ -178,10 +184,12 @@ void main() {
           .thenAnswer((_) async => Right(oneGroup));
 
       final emitted = <RecentActivityState>[];
-      final sub = cubit.stream.listen(emitted.add);
+      final sub = container.listen(
+        recentActivityProvider,
+        (_, next) => emitted.add(next),
+      );
       await cubit.load(silent: true);
-      await pumpEventQueue();
-      await sub.cancel();
+      sub.close();
 
       expect(emitted.first, isA<RecentActivityLoading>());
       expect(emitted.last, isA<RecentActivityLoaded>());
@@ -195,10 +203,12 @@ void main() {
       expect(cubit.state, isA<RecentActivityLoaded>());
 
       final emitted = <RecentActivityState>[];
-      final sub = cubit.stream.listen(emitted.add);
+      final sub = container.listen(
+        recentActivityProvider,
+        (_, next) => emitted.add(next),
+      );
       await cubit.load(silent: true);
-      await pumpEventQueue();
-      await sub.cancel();
+      sub.close();
 
       expect(
         emitted.whereType<RecentActivityLoading>(),

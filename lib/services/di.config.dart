@@ -62,8 +62,6 @@ import '../features/dashboard/domain/repositories/dashboard_repository.dart'
     as _i602;
 import '../features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
     as _i137;
-import '../features/dashboard/presentation/cubit/recent_activity_cubit.dart'
-    as _i200;
 import '../features/draft_pencairan/data/draft_pencairan_repository_impl.dart'
     as _i363;
 import '../features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart'
@@ -469,10 +467,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i225.RiwayatHistoryCubit>(() => _i225.RiwayatHistoryCubit(
           gh<_i216.GetRiwayatHistoryUseCase>(),
           gh<_i216.GetRiwayatSetoranDetailUseCase>(),
-        ));
-    gh.lazySingleton<_i200.RecentActivityCubit>(() => _i200.RecentActivityCubit(
-          gh<_i383.GetTransaksiUseCase>(),
-          gh<_i686.PencairanUseCases>(),
         ));
     gh.factory<_i867.RiwayatHargaCubit>(
         () => _i867.RiwayatHargaCubit(gh<_i123.GetRiwayatHargaUseCase>()));

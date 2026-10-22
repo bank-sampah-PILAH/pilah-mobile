@@ -12,7 +12,7 @@ import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
@@ -244,7 +244,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     // nasabah list holds a separate balance snapshot, so reload it too.
     // Fire-and-forget, like loadStats, to keep the success modal responsive.
     ref.read(dashboardProvider.notifier).loadStats();
-    context.read<RecentActivityCubit>().load(silent: true);
+    ref.read(recentActivityProvider.notifier).load(silent: true);
     context.read<RiwayatAktivitasCubit>().load(silent: true);
     context.read<NasabahCubit>().loadNasabah(silent: true);
 

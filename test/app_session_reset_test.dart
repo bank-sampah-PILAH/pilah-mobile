@@ -17,8 +17,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
@@ -56,9 +54,6 @@ class _MockNasabahPengumumanCubit extends MockCubit<NasabahPengumumanState>
 class _MockTransaksiCubit extends MockCubit<TransaksiState>
     implements TransaksiCubit {}
 
-class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
-    implements RecentActivityCubit {}
-
 class _MockRiwayatAktivitasCubit extends MockCubit<RiwayatAktivitasState>
     implements RiwayatAktivitasCubit {}
 
@@ -84,7 +79,6 @@ void main() {
   late _MockPengumumanCubit pengumuman;
   late _MockNasabahPengumumanCubit nasabahPengumuman;
   late _MockTransaksiCubit transaksi;
-  late _MockRecentActivityCubit recentActivity;
   late _MockRiwayatAktivitasCubit riwayatAktivitas;
   late _MockProfileCubit profile;
   // Real, not mocked: the draft it holds is the thing under test, and a mock
@@ -99,7 +93,6 @@ void main() {
     pengumuman = _MockPengumumanCubit();
     nasabahPengumuman = _MockNasabahPengumumanCubit();
     transaksi = _MockTransaksiCubit();
-    recentActivity = _MockRecentActivityCubit();
     riwayatAktivitas = _MockRiwayatAktivitasCubit();
     profile = _MockProfileCubit();
     onboarding = OnboardingCubit(_MockOnboardingDataSource());
@@ -117,7 +110,6 @@ void main() {
     when(() => nasabahPengumuman.state)
         .thenReturn(const NasabahPengumumanState());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
-    when(() => recentActivity.state).thenReturn(RecentActivityInitial());
     when(() => riwayatAktivitas.state)
         .thenReturn(const RiwayatAktivitasState());
     when(() => profile.state).thenReturn(const ProfileState());
@@ -133,7 +125,6 @@ void main() {
     di.registerSingleton<PengumumanCubit>(pengumuman);
     di.registerSingleton<NasabahPengumumanCubit>(nasabahPengumuman);
     di.registerSingleton<TransaksiCubit>(transaksi);
-    di.registerSingleton<RecentActivityCubit>(recentActivity);
     di.registerSingleton<RiwayatAktivitasCubit>(riwayatAktivitas);
     di.registerSingleton<ProfileCubit>(profile);
     di.registerSingleton<OnboardingCubit>(onboarding);
@@ -172,7 +163,6 @@ void main() {
             BlocProvider<NasabahPengumumanCubit>.value(
                 value: nasabahPengumuman),
             BlocProvider<TransaksiCubit>.value(value: transaksi),
-            BlocProvider<RecentActivityCubit>.value(value: recentActivity),
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
             BlocProvider<ProfileCubit>.value(value: profile),
             BlocProvider<OnboardingCubit>.value(value: onboarding),
@@ -204,7 +194,6 @@ void main() {
     verify(() => harga.reset()).called(1);
     verify(() => jadwal.reset()).called(1);
     verify(() => transaksi.reset()).called(1);
-    verify(() => recentActivity.reset()).called(1);
     verify(() => riwayatAktivitas.reset()).called(1);
     verify(
       () => profile.reset(),

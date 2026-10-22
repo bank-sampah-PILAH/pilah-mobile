@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -12,7 +13,7 @@ import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -122,7 +123,9 @@ class _DraftEditorViewState extends State<DraftEditorView> {
   void _refreshRiwayat() {
     try {
       context.read<RiwayatAktivitasCubit>().load(silent: true);
-      context.read<RecentActivityCubit>().load(silent: true);
+      ProviderScope.containerOf(context, listen: false)
+          .read(recentActivityProvider.notifier)
+          .load(silent: true);
     } on Object {
       // Not provided: nothing to refresh.
     }

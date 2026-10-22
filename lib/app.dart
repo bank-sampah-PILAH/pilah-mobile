@@ -14,7 +14,7 @@ import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_peng
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -133,9 +133,6 @@ class App extends StatelessWidget {
           ),
           BlocProvider<TransaksiCubit>(
             create: (context) => di<TransaksiCubit>(),
-          ),
-          BlocProvider<RecentActivityCubit>(
-            create: (context) => di<RecentActivityCubit>(),
           ),
           BlocProvider<RiwayatAktivitasCubit>(
             create: (context) => di<RiwayatAktivitasCubit>(),
@@ -285,7 +282,8 @@ void resetSessionScopedState(BuildContext context) {
   context.read<TransaksiCubit>().reset();
   ProviderScope.containerOf(context, listen: false)
       .invalidate(dashboardProvider);
-  context.read<RecentActivityCubit>().reset();
+  ProviderScope.containerOf(context, listen: false)
+      .invalidate(recentActivityProvider);
   context.read<RiwayatAktivitasCubit>().reset();
   // Carries the previous bank sampah's WhatsApp template and, more sensitively,
   // any logo picked but not yet uploaded — a path into that user's gallery.

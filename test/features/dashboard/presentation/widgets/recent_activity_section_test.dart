@@ -1,29 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 
-/// Stands in for the real cubit so the widget can be driven through each state
-/// without touching the network or the DI graph.
-class _StubRecentActivityCubit extends Cubit<RecentActivityState>
-    implements RecentActivityCubit {
-  _StubRecentActivityCubit(super.initialState);
+class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
 
+class _UnusedPencairanUseCases extends Mock implements PencairanUseCases {}
+
+class _StubRecentActivityCubit extends RecentActivityNotifier {
+  _StubRecentActivityCubit(this.initialState)
+      : super(_UnusedGetTransaksi(), _UnusedPencairanUseCases());
+
+  final RecentActivityState initialState;
   var loadCalls = 0;
+
+  @override
+  RecentActivityState build() => initialState;
 
   @override
   Future<void> load({bool silent = false}) async {
     loadCalls++;
   }
 
-  @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<void> close() async {}
 }
 
 final _today = DateTime(2026, 9, 22, 12);
@@ -56,12 +64,12 @@ ActivitasEntity _pencairan(String name, DateTime tanggal) =>
       saldoSesudah: 50000,
     ));
 
-Widget _host(RecentActivityCubit cubit) {
-  return MaterialApp(
-    home: Scaffold(
-      body: BlocProvider<RecentActivityCubit>.value(
-        value: cubit,
-        child: SingleChildScrollView(
+Widget _host(_StubRecentActivityCubit cubit) {
+  return ProviderScope(
+    overrides: [recentActivityProvider.overrideWith(() => cubit)],
+    child: MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
           child: RecentActivitySection(now: () => _today),
         ),
       ),
@@ -158,8 +166,8 @@ void main() {
         GoRoute(
           path: '/',
           builder: (_, __) => Scaffold(
-            body: BlocProvider<RecentActivityCubit>.value(
-              value: cubit,
+            body: ProviderScope(
+              overrides: [recentActivityProvider.overrideWith(() => cubit)],
               child: RecentActivitySection(now: () => _today),
             ),
           ),

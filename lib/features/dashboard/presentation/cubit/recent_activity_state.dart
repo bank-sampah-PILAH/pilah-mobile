@@ -14,7 +14,7 @@ class RecentActivityLoading extends RecentActivityState {}
 
 class RecentActivityLoaded extends RecentActivityState {
   /// The latest activity — setoran and pencairan merged, newest first.
-  /// Already trimmed to at most `RecentActivityCubit.limit` entries (PIL-282).
+  /// Already trimmed to at most `RecentActivityNotifier.limit` entries (PIL-282).
   final List<ActivitasEntity> items;
 
   const RecentActivityLoaded(this.items);

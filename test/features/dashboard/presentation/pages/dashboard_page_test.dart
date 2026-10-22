@@ -1,4 +1,3 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -14,8 +13,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/r
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
@@ -33,8 +34,24 @@ import '../../../../support/dashboard_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
-class _ActivityCubit extends MockCubit<RecentActivityState>
-    implements RecentActivityCubit {}
+class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
+
+class _UnusedPencairanUseCases extends Mock implements PencairanUseCases {}
+
+class _ActivityNotifier extends RecentActivityNotifier {
+  _ActivityNotifier()
+      : super(_UnusedGetTransaksi(), _UnusedPencairanUseCases());
+
+  final loadCalls = <bool>[];
+
+  @override
+  RecentActivityState build() => RecentActivityLoaded(const []);
+
+  @override
+  Future<void> load({bool silent = false}) async {
+    loadCalls.add(silent);
+  }
+}
 
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
@@ -73,7 +90,7 @@ class _EmptyJadwalRepository implements JadwalRepository {
 void main() {
   late StubApi api;
   late DashboardNotifier dashboard;
-  late _ActivityCubit activity;
+  late _ActivityNotifier activity;
   late MockAuthBloc auth;
 
   setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
@@ -93,11 +110,7 @@ void main() {
     api = StubApi();
     api.on('GET', '/api/v1/dashboard/stats', json: stats);
     dashboard = dashboardNotifier ?? buildDashboardNotifier(api);
-    activity = _ActivityCubit();
-    whenListen(activity, const Stream<RecentActivityState>.empty(),
-        initialState: RecentActivityLoaded(const []));
-    when(() => activity.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
+    activity = _ActivityNotifier();
     auth = authBlocIn(session ?? Authenticated(authEntity: testAuth()));
   }
 
@@ -105,12 +118,12 @@ void main() {
     final router = await pumpRouted(
       tester,
       ProviderScope(
-        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        overrides: [
+          dashboardProvider.overrideWith(() => dashboard),
+          recentActivityProvider.overrideWith(() => activity),
+        ],
         child: MultiBlocProvider(
-          providers: [
-            BlocProvider<RecentActivityCubit>.value(value: activity),
-            BlocProvider<AuthenticationBloc>.value(value: auth),
-          ],
+          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
           child: Scaffold(body: SingleChildScrollView(child: child)),
         ),
       ),
@@ -128,12 +141,12 @@ void main() {
     final router = await pumpRouted(
       tester,
       ProviderScope(
-        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        overrides: [
+          dashboardProvider.overrideWith(() => dashboard),
+          recentActivityProvider.overrideWith(() => activity),
+        ],
         child: MultiBlocProvider(
-          providers: [
-            BlocProvider<RecentActivityCubit>.value(value: activity),
-            BlocProvider<AuthenticationBloc>.value(value: auth),
-          ],
+          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
           child: DashboardPage(isWeb: isWeb),
         ),
       ),
@@ -216,12 +229,12 @@ void main() {
     await pumpRouted(
       tester,
       ProviderScope(
-        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        overrides: [
+          dashboardProvider.overrideWith(() => dashboard),
+          recentActivityProvider.overrideWith(() => activity),
+        ],
         child: MultiBlocProvider(
-          providers: [
-            BlocProvider<RecentActivityCubit>.value(value: activity),
-            BlocProvider<AuthenticationBloc>.value(value: auth),
-          ],
+          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
           child: const DashboardPage(),
         ),
       ),
@@ -229,7 +242,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    verify(() => activity.load()).called(1);
+    expect(activity.loadCalls, [false]);
     expect(find.text('Rp 5.000'), findsOneWidget);
 
     await tester.fling(
@@ -238,7 +251,7 @@ void main() {
 
     verify(() => auth.add(any(that: isA<RefreshUserRequested>()))).called(1);
     expect(api.requests.where((r) => r.path.endsWith('/stats')), hasLength(2));
-    verify(() => activity.load(silent: true)).called(1);
+    expect(activity.loadCalls, [false, true]);
   });
 
   testWidgets('web dashboard shows reports to Pengurus', (tester) async {
