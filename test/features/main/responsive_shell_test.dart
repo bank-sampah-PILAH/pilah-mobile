@@ -407,17 +407,19 @@ void main() {
   });
 
   group('Pengumuman is a sidebar destination, not a sixth bottom tab', () {
-    testWidgets('the rail lists it and opens its branch', (tester) async {
+    testWidgets('the rail keeps Pengumuman visible but disabled',
+        (tester) async {
       final router = await mountShell(tester,
           role: 'pengelola', window: const Size(1280, 900), isWeb: true);
+      final announcement = find.text('Pengumuman');
 
-      await tester.tap(find.text('Pengumuman'));
+      expect(announcement, findsOneWidget);
+      await tester.tap(announcement);
       await tester.pumpAndSettle();
 
       expect(router.routerDelegate.currentConfiguration.last.matchedLocation,
-          '/pengumuman');
-      expect(find.byType(NavigationRail), findsOneWidget,
-          reason: 'the rail stays while the page is open');
+          '/home');
+      expect(find.byType(NavigationRail), findsOneWidget);
     });
 
     testWidgets('the app keeps five bottom tabs', (tester) async {
