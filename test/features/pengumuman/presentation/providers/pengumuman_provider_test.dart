@@ -1,6 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
 
 import '../../../../support/pengumuman_support.dart';
@@ -26,14 +27,25 @@ Map<String, dynamic> _row(String id, {String status = 'terbit'}) => {
 
 void main() {
   late StubApi api;
-  late PengumumanCubit cubit;
+  late ProviderContainer container;
+  late ProviderSubscription<PengumumanState> subscription;
+  late PengumumanNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildPengumumanCubit(api);
+    container = ProviderContainer(overrides: [
+      pengumumanProvider.overrideWith(() => PengumumanNotifier(
+            buildPengumumanRepository(api),
+          )),
+    ]);
+    subscription = container.listen(pengumumanProvider, (_, __) {});
+    notifier = container.read(pengumumanProvider.notifier);
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() {
+    subscription.close();
+    container.dispose();
+  });
 
   test('loads the first page and keeps the derived status', () async {
     api.on('GET', '/api/v1/pengumuman', json: {
@@ -42,9 +54,9 @@ void main() {
       'results': [_row('1'), _row('2', status: 'terjadwal')],
     });
 
-    await cubit.loadPengumuman();
+    await notifier.loadPengumuman();
 
-    final loaded = cubit.state as PengumumanLoaded;
+    final loaded = container.read(pengumumanProvider) as PengumumanLoaded;
     expect(loaded.items, hasLength(2));
     expect(loaded.items[0].status, 'terbit');
     expect(loaded.items[1].isTerjadwal, isTrue);
@@ -57,11 +69,12 @@ void main() {
     api.on('GET', '/api/v1/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
 
-    await cubit.loadPengumuman(status: 'draft');
+    await notifier.loadPengumuman(status: 'draft');
 
     expect(api.last.query['status'], 'draft');
-    expect(cubit.state, isA<PengumumanLoaded>());
-    expect((cubit.state as PengumumanLoaded).items, isEmpty);
+    expect(container.read(pengumumanProvider), isA<PengumumanLoaded>());
+    expect((container.read(pengumumanProvider) as PengumumanLoaded).items,
+        isEmpty);
   });
 
   test('paginates with the next-page sentinel', () async {
@@ -70,16 +83,16 @@ void main() {
       'next': 'http://api.test/api/v1/pengumuman?page=2',
       'results': [_row('1')],
     });
-    await cubit.loadPengumuman();
+    await notifier.loadPengumuman();
 
     api.on('GET', '/api/v1/pengumuman', json: {
       'count': 3,
       'next': null,
       'results': [_row('2')],
     });
-    await cubit.loadNextPage();
+    await notifier.loadNextPage();
 
-    final loaded = cubit.state as PengumumanLoaded;
+    final loaded = container.read(pengumumanProvider) as PengumumanLoaded;
     expect(loaded.items.map((item) => item.id), ['1', '2']);
     expect(loaded.hasMore, isFalse);
   });
@@ -90,16 +103,16 @@ void main() {
       'next': 'http://api.test/api/v1/pengumuman?page=2',
       'results': [_row('1')],
     });
-    await cubit.loadPengumuman();
+    await notifier.loadPengumuman();
 
     api.on('GET', '/api/v1/pengumuman', json: {
       'count': 2,
       'next': null,
       'results': [_row('1', status: 'draft'), _row('2')],
     });
-    await cubit.loadNextPage();
+    await notifier.loadNextPage();
 
-    final loaded = cubit.state as PengumumanLoaded;
+    final loaded = container.read(pengumumanProvider) as PengumumanLoaded;
     expect(loaded.items.map((item) => item.id), ['1', '2']);
     expect(loaded.items.first.status, 'terbit');
   });
@@ -110,10 +123,11 @@ void main() {
     api.on('GET', '/api/v1/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
 
-    final created = await cubit.savePengumuman(_entity('Kerja bakti'));
+    final created = await notifier.savePengumuman(_entity('Kerja bakti'));
     expect(created.fold((_) => null, (item) => item.id), '9');
 
-    final updated = await cubit.savePengumuman(_entity('Kerja bakti', id: '9'));
+    final updated =
+        await notifier.savePengumuman(_entity('Kerja bakti', id: '9'));
     expect(updated.fold((_) => null, (item) => item.id), '9');
     expect(api.requests.any((call) => call.method == 'PATCH'), isTrue);
   });
@@ -125,7 +139,7 @@ void main() {
     api.on('GET', '/api/v1/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
 
-    await cubit.terbitkan('9');
+    await notifier.terbitkan('9');
     expect(
       api.requests.any((call) =>
           call.method == 'POST' &&
@@ -133,7 +147,7 @@ void main() {
       isTrue,
     );
 
-    await cubit.tarik('9');
+    await notifier.tarik('9');
     expect(
       api.requests.any((call) =>
           call.method == 'POST' && call.path == '/api/v1/pengumuman/9/tarik'),
@@ -147,15 +161,15 @@ void main() {
       'next': null,
       'results': [_row('1')],
     });
-    await cubit.loadPengumuman();
+    await notifier.loadPengumuman();
 
     api.on('POST', '/api/v1/pengumuman/1/tarik',
         status: 400,
         json: {'error': 'Perubahan status pengumuman tidak diizinkan'});
-    final failure = await cubit.tarik('1');
+    final failure = await notifier.tarik('1');
 
     expect(failure, isNotNull);
-    final loaded = cubit.state as PengumumanLoaded;
+    final loaded = container.read(pengumumanProvider) as PengumumanLoaded;
     expect(loaded.items, hasLength(1));
   });
 
@@ -165,19 +179,19 @@ void main() {
       'next': null,
       'results': [_row('1', status: 'draft')],
     });
-    await cubit.loadPengumuman();
+    await notifier.loadPengumuman();
 
     api.on('DELETE', '/api/v1/pengumuman/1', json: null);
     api.on('GET', '/api/v1/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
-    final failure = await cubit.deletePengumuman('1');
+    final failure = await notifier.deletePengumuman('1');
 
     expect(failure, isNull);
     expect(
       api.requests.any((call) => call.method == 'DELETE'),
       isTrue,
     );
-    final loaded = cubit.state as PengumumanLoaded;
+    final loaded = container.read(pengumumanProvider) as PengumumanLoaded;
     expect(loaded.items, isEmpty);
   });
 
@@ -188,8 +202,9 @@ void main() {
         json: {'count': 0, 'next': null, 'results': []});
     // No POST route: the save fails with not-found, after the reset below.
 
-    final pending = cubit.savePengumuman(_entity('Nih'));
-    cubit.reset();
+    final pending = notifier.savePengumuman(_entity('Nih'));
+    notifier.reset();
+    container.invalidate(pengumumanProvider);
     final outcome = await pending;
 
     // The stale failure forwards unchanged instead of the session message.
@@ -205,12 +220,12 @@ void main() {
       'next': 'http://api.test/api/v1/pengumuman?page=2',
       'results': [_row('1')],
     });
-    await cubit.loadPengumuman();
+    await notifier.loadPengumuman();
 
     api.fail('GET', '/api/v1/pengumuman');
-    await cubit.loadNextPage();
+    await notifier.loadNextPage();
 
-    final loaded = cubit.state as PengumumanLoaded;
+    final loaded = container.read(pengumumanProvider) as PengumumanLoaded;
     expect(loaded.items, hasLength(1));
     expect(loaded.isLoadingMore, isFalse);
     expect(loaded.loadingMoreError, isNotEmpty);
@@ -221,8 +236,8 @@ void main() {
     api.on('GET', '/api/v1/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
 
-    final first = cubit.savePengumuman(_entity('Pertama'));
-    final second = await cubit.savePengumuman(_entity('Kedua'));
+    final first = notifier.savePengumuman(_entity('Pertama'));
+    final second = await notifier.savePengumuman(_entity('Kedua'));
     expect(second.fold((failure) => failure.displayMessage, (_) => null),
         'Tunggu proses pengumuman selesai sebelum menyimpan.');
     await first;
@@ -235,8 +250,9 @@ void main() {
         json: {'count': 0, 'next': null, 'results': []});
     api.on('POST', '/api/v1/pengumuman', json: _row('9', status: 'draft'));
 
-    final pending = cubit.savePengumuman(_entity('Terlambat'));
-    cubit.reset();
+    final pending = notifier.savePengumuman(_entity('Terlambat'));
+    notifier.reset();
+    container.invalidate(pengumumanProvider);
     final outcome = await pending;
     expect(outcome.fold((failure) => failure.displayMessage, (_) => null),
         'Sesi berubah, simpan ulang pengumuman.');
@@ -250,7 +266,7 @@ void main() {
       'next': null,
       'results': [_row('1')],
     });
-    await cubit.loadPengumuman();
+    await notifier.loadPengumuman();
     final getsBefore = api.requests
         .where(
             (call) => call.method == 'GET' && call.path == '/api/v1/pengumuman')
@@ -259,8 +275,9 @@ void main() {
     api.on('POST', '/api/v1/pengumuman/1/tarik',
         json: _row('1', status: 'ditarik'));
     api.latency = const Duration(seconds: 1);
-    final pending = cubit.tarik('1');
-    cubit.reset();
+    final pending = notifier.tarik('1');
+    notifier.reset();
+    container.invalidate(pengumumanProvider);
     final failure = await pending;
     api.latency = null;
 

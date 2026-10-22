@@ -142,8 +142,6 @@ import '../features/pengumuman/data/repositories/pengumuman_repository_impl.dart
     as _i11;
 import '../features/pengumuman/domain/repositories/pengumuman_repository.dart'
     as _i159;
-import '../features/pengumuman/presentation/cubit/pengumuman_cubit.dart'
-    as _i684;
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
     as _i1053;
 import '../features/profile/presentation/cubit/profile_cubit.dart' as _i300;
@@ -335,8 +333,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i753.GetNasabahMembershipsUseCase>(() =>
         _i753.GetNasabahMembershipsUseCase(
             gh<_i390.BankSampahApprovalRepository>()));
-    gh.lazySingleton<_i684.PengumumanCubit>(
-        () => _i684.PengumumanCubit(gh<_i159.PengumumanRepository>()));
     gh.lazySingleton<_i602.DashboardRepository>(() =>
         _i650.DashboardRepositoryImpl(gh<_i377.DashboardRemoteDataSource>()));
     gh.factory<_i359.NasabahApprovalCubit>(() =>

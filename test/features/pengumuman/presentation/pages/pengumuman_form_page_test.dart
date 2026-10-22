@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 
 import '../../../../support/pengumuman_support.dart';
@@ -46,8 +46,12 @@ void main() {
   Future<void> openForm(WidgetTester tester, {PengumumanEntity? existing}) =>
       pumpRouted(
         tester,
-        BlocProvider<PengumumanCubit>.value(
-          value: buildPengumumanCubit(api),
+        ProviderScope(
+          overrides: [
+            pengumumanProvider.overrideWith(() => PengumumanNotifier(
+                  buildPengumumanRepository(api),
+                )),
+          ],
           child: PengumumanFormPage(
               args: PengumumanFormArgs(pengumuman: existing)),
         ),
@@ -382,11 +386,16 @@ void main() {
   testWidgets('a failed reload on the shared cubit raises the error toast',
       (tester) async {
     api.fail('GET', '/api/v1/pengumuman');
-    final cubit = buildPengumumanCubit(api);
+    final container = ProviderContainer(overrides: [
+      pengumumanProvider.overrideWith(() => PengumumanNotifier(
+            buildPengumumanRepository(api),
+          )),
+    ]);
+    addTearDown(container.dispose);
     await pumpRouted(
       tester,
-      BlocProvider<PengumumanCubit>.value(
-        value: cubit,
+      UncontrolledProviderScope(
+        container: container,
         child: const PengumumanFormPage(),
       ),
       pushed: true,
@@ -394,7 +403,7 @@ void main() {
     );
 
     // No await: the load settles across the fake-async pumps instead.
-    unawaited(cubit.loadPengumuman());
+    unawaited(container.read(pengumumanProvider.notifier).loadPengumuman());
     await tester.pump();
     for (var i = 0; i < 12 && find.text('Gagal').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 50));

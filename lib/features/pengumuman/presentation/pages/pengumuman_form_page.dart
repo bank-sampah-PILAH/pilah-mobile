@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -9,8 +9,8 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 
 /// Arguments for the authoring form: a null pengumuman creates a new draft,
 /// a non-null one edits that draft or scheduled announcement.
@@ -34,28 +34,31 @@ class PengumumanFormPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final existing = args?.pengumuman;
-    return BlocListener<PengumumanCubit, PengumumanState>(
-      listener: (context, state) {
-        if (state is PengumumanError) {
-          AppNotification.showError(context,
-              title: 'Gagal', message: state.message);
-        }
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.listen(pengumumanProvider, (previous, state) {
+          if (state is PengumumanError) {
+            AppNotification.showError(context,
+                title: 'Gagal', message: state.message);
+          }
+        });
+        return _PengumumanFormBody(existing: existing);
       },
-      child: _PengumumanFormBody(existing: existing),
     );
   }
 }
 
-class _PengumumanFormBody extends StatefulWidget {
+class _PengumumanFormBody extends ConsumerStatefulWidget {
   const _PengumumanFormBody({this.existing});
 
   final PengumumanEntity? existing;
 
   @override
-  State<_PengumumanFormBody> createState() => _PengumumanFormBodyState();
+  ConsumerState<_PengumumanFormBody> createState() =>
+      _PengumumanFormBodyState();
 }
 
-class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
+class _PengumumanFormBodyState extends ConsumerState<_PengumumanFormBody> {
   late final TextEditingController _judul;
   late final TextEditingController _isi;
   DateTime? _terbitPada;
@@ -145,7 +148,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
 
   String? _savedId;
 
-  PengumumanCubit get _cubit => context.read<PengumumanCubit>();
+  PengumumanNotifier get _notifier => ref.read(pengumumanProvider.notifier);
 
   Future<bool> _simpanPerubahan() async {
     final error = _validate();
@@ -153,8 +156,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
       setState(() => _validationError = error);
       return false;
     }
-    final cubit = _cubit;
-    final result = await cubit.savePengumuman(_entity());
+    final result = await _notifier.savePengumuman(_entity());
     if (!mounted) return false;
     String? failureMessage;
     result.fold(
@@ -213,7 +215,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
     // else publishes through the terbitkan action (null terbit_pada = now).
     NetworkException? failure;
     if (!_isTerjadwal) {
-      failure = await _cubit.terbitkan(
+      failure = await _notifier.terbitkan(
         id,
         terbitPada: jadwalkan ? _terbitPada : null,
         masaBerlakuHingga: _masaBerlakuHingga,
@@ -242,26 +244,23 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(pengumumanProvider);
+    final busy =
+        state is PengumumanLoaded && (state.isSaving || state.isTransitioning);
     return Scaffold(
       backgroundColor: Colors.white,
-      body: BlocBuilder<PengumumanCubit, PengumumanState>(
-        builder: (context, state) {
-          final busy = state is PengumumanLoaded &&
-              (state.isSaving || state.isTransitioning);
-          return SafeArea(
-            child: Column(
-              children: [
-                AppBackHeader(
-                    title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman'),
-                Expanded(child: _bagianForm()),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _tombolAksi(busy),
-                ),
-              ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            AppBackHeader(
+                title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman'),
+            Expanded(child: _bagianForm()),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _tombolAksi(busy),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

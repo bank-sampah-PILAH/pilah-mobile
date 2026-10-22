@@ -26,8 +26,8 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.d
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_state.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -39,6 +39,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cub
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
+import 'support/pengumuman_support.dart';
 import 'support/stub_api.dart';
 
 class _MockNasabahCubit extends MockCubit<NasabahState>
@@ -47,9 +48,6 @@ class _MockNasabahCubit extends MockCubit<NasabahState>
 class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
 
 class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
-
-class _MockPengumumanCubit extends MockCubit<PengumumanState>
-    implements PengumumanCubit {}
 
 class _MockTransaksiCubit extends MockCubit<TransaksiState>
     implements TransaksiCubit {}
@@ -76,7 +74,6 @@ void main() {
   late _MockNasabahCubit nasabah;
   late _MockHargaCubit harga;
   late _MockJadwalCubit jadwal;
-  late _MockPengumumanCubit pengumuman;
   late _MockTransaksiCubit transaksi;
   late _MockRiwayatAktivitasCubit riwayatAktivitas;
   late _MockProfileCubit profile;
@@ -89,7 +86,6 @@ void main() {
     nasabah = _MockNasabahCubit();
     harga = _MockHargaCubit();
     jadwal = _MockJadwalCubit();
-    pengumuman = _MockPengumumanCubit();
     transaksi = _MockTransaksiCubit();
     riwayatAktivitas = _MockRiwayatAktivitasCubit();
     profile = _MockProfileCubit();
@@ -104,7 +100,6 @@ void main() {
     when(() => nasabah.state).thenReturn(NasabahInitial());
     when(() => harga.state).thenReturn(HargaInitial());
     when(() => jadwal.state).thenReturn(const JadwalInitial());
-    when(() => pengumuman.state).thenReturn(const PengumumanInitial());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => riwayatAktivitas.state)
         .thenReturn(const RiwayatAktivitasState());
@@ -118,7 +113,6 @@ void main() {
     di.registerSingleton<NasabahCubit>(nasabah);
     di.registerSingleton<HargaCubit>(harga);
     di.registerSingleton<JadwalCubit>(jadwal);
-    di.registerSingleton<PengumumanCubit>(pengumuman);
     di.registerSingleton<TransaksiCubit>(transaksi);
     di.registerSingleton<RiwayatAktivitasCubit>(riwayatAktivitas);
     di.registerSingleton<ProfileCubit>(profile);
@@ -150,22 +144,36 @@ void main() {
     final pengumumanApi = StubApi();
     pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
+    pengumumanApi.on('GET', '/api/v1/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
     final providerContainer = ProviderContainer(overrides: [
       nasabahPengumumanProvider.overrideWith(
         () => NasabahPengumumanNotifier(
           NasabahPengumumanRepository(pengumumanApi.network),
         ),
       ),
+      pengumumanProvider.overrideWith(
+        () => PengumumanNotifier(buildPengumumanRepository(pengumumanApi)),
+      ),
     ]);
     final providerSubscription = providerContainer.listen(
       nasabahPengumumanProvider,
       (_, __) {},
     );
-    addTearDown(providerSubscription.close);
-    addTearDown(providerContainer.dispose);
-    await tester.runAsync(
-      () => providerContainer.read(nasabahPengumumanProvider.notifier).load(),
+    final pengumumanSubscription = providerContainer.listen(
+      pengumumanProvider,
+      (_, __) {},
     );
+    addTearDown(providerSubscription.close);
+    addTearDown(pengumumanSubscription.close);
+    addTearDown(providerContainer.dispose);
+    await tester.runAsync(() async {
+      await providerContainer.read(nasabahPengumumanProvider.notifier).load();
+      await providerContainer
+          .read(pengumumanProvider.notifier)
+          .loadPengumuman();
+    });
+    expect(providerContainer.read(pengumumanProvider), isA<PengumumanLoaded>());
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -175,7 +183,6 @@ void main() {
             BlocProvider<NasabahCubit>.value(value: nasabah),
             BlocProvider<HargaCubit>.value(value: harga),
             BlocProvider<JadwalCubit>.value(value: jadwal),
-            BlocProvider<PengumumanCubit>.value(value: pengumuman),
             BlocProvider<TransaksiCubit>.value(value: transaksi),
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
             BlocProvider<ProfileCubit>.value(value: profile),
@@ -216,6 +223,8 @@ void main() {
     ).called(1);
     expect(providerContainer.read(nasabahPengumumanProvider).status,
         NasabahPengumumanStatus.initial);
+    expect(
+        providerContainer.read(pengumumanProvider), isA<PengumumanInitial>());
     expect(
       onboarding.hasProfileDraft,
       isFalse,

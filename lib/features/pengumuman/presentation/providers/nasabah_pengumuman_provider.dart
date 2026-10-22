@@ -84,6 +84,7 @@ class NasabahPengumumanNotifier extends Notifier<NasabahPengumumanState> {
   }
 
   Future<void> tandaiDibaca(String id) async {
+    final version = _loadVersion;
     try {
       await repository.tandaiDibaca(
         id,
@@ -92,7 +93,7 @@ class NasabahPengumumanNotifier extends Notifier<NasabahPengumumanState> {
     } on NasabahApiException {
       return;
     }
-    if (!ref.mounted) return;
+    if (!ref.mounted || version != _loadVersion) return;
     final current = state;
     if (current.status != NasabahPengumumanStatus.loaded) return;
     state = current.copyWith(items: [
@@ -113,5 +114,12 @@ class NasabahPengumumanNotifier extends Notifier<NasabahPengumumanState> {
         else
           item,
     ]);
+  }
+
+  void reset() {
+    _loadVersion++;
+    _isLoadingMore = false;
+    _membershipId = '';
+    state = const NasabahPengumumanState();
   }
 }
