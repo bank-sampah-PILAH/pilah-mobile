@@ -55,7 +55,8 @@ class _HomeSession extends StatefulWidget {
   State<_HomeSession> createState() => _HomeSessionState();
 }
 
-class _HomeSessionState extends State<_HomeSession> {
+class _HomeSessionState extends State<_HomeSession>
+    with WidgetsBindingObserver {
   String? _membershipId;
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
@@ -68,6 +69,25 @@ class _HomeSessionState extends State<_HomeSession> {
       _reloadSchedule?.call() ?? Future<void>.value(),
       _reloadPengumuman?.call() ?? Future<void>.value(),
     ]);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refresh().catchError((_) {}));
+    }
   }
 
   void _select(String? id) => setState(() {
