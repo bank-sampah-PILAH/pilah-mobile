@@ -101,6 +101,57 @@ void main() {
     );
   });
 
+  testWidgets('the web form panel closes without leaving the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+  });
+
+  testWidgets('saving in the web panel closes it and keeps the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    api.on('POST', '/api/v1/pengumuman', json: {
+      'id': '9',
+      'bank_sampah_id': 'bank-1',
+      'judul': 'Judul Uji',
+      'isi': 'Isi.',
+      'status': 'draft',
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Judul Uji');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Isi.');
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pumpAndSettle();
+    await drainToast(tester);
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+    expect(
+      api.requests.any(
+          (call) => call.method == 'POST' && call.path == '/api/v1/pengumuman'),
+      isTrue,
+    );
+  });
+
   testWidgets('a phone keeps the FAB and the back header', (tester) async {
     api.on('GET', '/api/v1/pengumuman', json: {
       'count': 0,
