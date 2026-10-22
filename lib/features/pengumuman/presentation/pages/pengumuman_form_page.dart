@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
@@ -304,7 +305,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Judul', style: AppTextStyle.regularSemiBold),
+        const AppFieldLabel('JUDUL'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _judul,
@@ -313,7 +314,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
               appInputDecoration(hintText: 'Contoh: Kerja bakti akhir bulan'),
         ),
         const SizedBox(height: 16),
-        Text('Isi Pengumuman', style: AppTextStyle.regularSemiBold),
+        const AppFieldLabel('ISI PENGUMUMAN'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _isi,
@@ -322,7 +323,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
         ),
         const SizedBox(height: 16),
         _WaktuField(
-          label: 'Waktu Terbit (untuk jadwal)',
+          label: 'WAKTU TERBIT (UNTUK JADWAL)',
           value: _terbitPada,
           onPick: () => _pilihWaktu(isMasaBerlaku: false),
           onClear: _terbitPada == null
@@ -334,7 +335,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
         ),
         const SizedBox(height: 12),
         _WaktuField(
-          label: 'Masa Berlaku Hingga (opsional)',
+          label: 'MASA BERLAKU HINGGA (OPSIONAL)',
           value: _masaBerlakuHingga,
           onPick: () => _pilihWaktu(isMasaBerlaku: true),
           onClear: _masaBerlakuHingga == null
@@ -411,7 +412,7 @@ class _WaktuField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyle.regularSemiBold),
+        AppFieldLabel(label),
         const SizedBox(height: 8),
         Row(
           children: [
