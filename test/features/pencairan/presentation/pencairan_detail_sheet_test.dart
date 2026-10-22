@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -212,9 +211,8 @@ void main() {
     final useCases = _MockUseCases();
     when(() => useCases.getRevisi('p-9')).thenAnswer((_) async =>
         Left(NotFoundException(message: 'Riwayat tidak ditemukan')));
-    di.registerFactory<RevisiPencairanCubit>(
-        () => RevisiPencairanCubit(useCases));
-    addTearDown(() => di.unregister<RevisiPencairanCubit>());
+    di.registerFactory<PencairanUseCases>(() => useCases);
+    addTearDown(() => di.unregister<PencairanUseCases>());
     await openSheet(tester, _pencairan(diperbarui: true),
         size: const Size(1200, 900));
 
@@ -245,9 +243,8 @@ void main() {
     final useCases = _MockUseCases();
     when(() => useCases.getRevisi('p-9')).thenAnswer((_) async =>
         Left(NotFoundException(message: 'Riwayat tidak ditemukan')));
-    di.registerFactory<RevisiPencairanCubit>(
-        () => RevisiPencairanCubit(useCases));
-    addTearDown(() => di.unregister<RevisiPencairanCubit>());
+    di.registerFactory<PencairanUseCases>(() => useCases);
+    addTearDown(() => di.unregister<PencairanUseCases>());
     await openSheet(tester, _pencairan(diperbarui: true),
         size: const Size(1200, 900));
     await tapKey(tester, 'riwayat-perubahan-pencairan');

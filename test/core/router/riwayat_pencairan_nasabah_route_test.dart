@@ -15,7 +15,6 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -33,18 +32,12 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<RevisiPencairanCubit>()) {
-      di.unregister<RevisiPencairanCubit>();
-    }
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
   });
 
   tearDown(() async {
     if (di.isRegistered<InviteTokenStore>()) {
       await di.unregister<InviteTokenStore>();
-    }
-    if (di.isRegistered<RevisiPencairanCubit>()) {
-      await di.unregister<RevisiPencairanCubit>();
     }
   });
 
@@ -62,9 +55,6 @@ void main() {
       ),
     );
     di.registerFactory<PencairanUseCases>(() => useCases);
-    di.registerFactory<RevisiPencairanCubit>(
-      () => RevisiPencairanCubit(useCases),
-    );
 
     final authBloc = _MockAuthenticationBloc();
     whenListen(

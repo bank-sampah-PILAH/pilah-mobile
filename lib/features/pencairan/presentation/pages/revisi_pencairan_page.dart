@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -11,11 +11,9 @@ import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/design/widgets/app_detail_row.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
-import 'package:pilah_mobile/services/di.dart';
-
 import '../../domain/model/pencairan.dart';
 import '../../domain/model/revisi_pencairan.dart';
-import '../blocs/revisi_pencairan_cubit.dart';
+import '../providers/revisi_pencairan_provider.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Pengurus-only change history of one pencairan (PIL-230): the current
@@ -28,15 +26,11 @@ class RevisiPencairanPage extends StatelessWidget {
   const RevisiPencairanPage({super.key, required this.pencairanId});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<RevisiPencairanCubit>(),
-      child: RevisiPencairanView(pencairanId: pencairanId),
-    );
-  }
+  Widget build(BuildContext context) =>
+      RevisiPencairanView(pencairanId: pencairanId);
 }
 
-class RevisiPencairanView extends StatefulWidget {
+class RevisiPencairanView extends ConsumerStatefulWidget {
   final String pencairanId;
 
   /// Inside a dialog on a wide window: no page scaffold or back header.
@@ -53,20 +47,26 @@ class RevisiPencairanView extends StatefulWidget {
   });
 
   @override
-  State<RevisiPencairanView> createState() => _RevisiPencairanViewState();
+  ConsumerState<RevisiPencairanView> createState() =>
+      _RevisiPencairanViewState();
 }
 
-class _RevisiPencairanViewState extends State<RevisiPencairanView> {
+class _RevisiPencairanViewState extends ConsumerState<RevisiPencairanView> {
   @override
   void initState() {
     super.initState();
-    context.read<RevisiPencairanCubit>().load(widget.pencairanId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(revisiPencairanProvider.notifier).load(widget.pencairanId);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final body = BlocBuilder<RevisiPencairanCubit, RevisiPencairanState>(
-      builder: (context, state) {
+    final body = Builder(
+      builder: (context) {
+        final state = ref.watch(revisiPencairanProvider);
         switch (state.status) {
           case RevisiStatus.loading:
             return const Center(
@@ -81,8 +81,8 @@ class _RevisiPencairanViewState extends State<RevisiPencairanView> {
                 children: [
                   Text(state.errorMessage ?? 'Gagal memuat riwayat'),
                   TextButton(
-                    onPressed: () => context
-                        .read<RevisiPencairanCubit>()
+                    onPressed: () => ref
+                        .read(revisiPencairanProvider.notifier)
                         .load(widget.pencairanId),
                     child: const Text('Coba lagi'),
                   ),
