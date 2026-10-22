@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction, Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
@@ -48,6 +50,21 @@ void main() {
         rail.destinations.map((d) => (d.label as Text).data),
         ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal', 'Pengumuman'],
       );
+    });
+
+    testWidgets('keeps Pengumuman visible but disabled', (tester) async {
+      final selected = await taps(tester, role: 'pengelola');
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.destinations.last.disabled, isTrue);
+
+      final semantics =
+          tester.getSemantics(find.text('Pengumuman')).getSemanticsData();
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(semantics.hasAction(SemanticsAction.tap), isFalse);
+
+      await tester.tap(find.text('Pengumuman'));
+      await tester.pumpAndSettle();
+      expect(selected, isEmpty);
     });
 
     testWidgets('marks the current destination as selected', (tester) async {

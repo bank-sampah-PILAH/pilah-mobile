@@ -1,4 +1,4 @@
-import 'dart:ui' show Tristate;
+import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -67,6 +67,21 @@ void main() {
       await tester.pumpAndSettle();
       expect(selected, [2],
           reason: 'the index is the menu position, not the branch index');
+    });
+
+    testWidgets('keeps Pengumuman visible but disabled', (tester) async {
+      final selected = await mountDrawer(tester);
+      final destination = tester
+          .getSemantics(find.byKey(RoleNavigationDrawer.destinationKey(5)))
+          .getSemanticsData();
+
+      expect(find.text('Pengumuman'), findsOneWidget);
+      expect(destination.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(destination.hasAction(SemanticsAction.tap), isFalse);
+
+      await tester.tap(find.text('Pengumuman'));
+      await tester.pumpAndSettle();
+      expect(selected, isEmpty);
     });
 
     testWidgets('marks the current destination as selected', (tester) async {
