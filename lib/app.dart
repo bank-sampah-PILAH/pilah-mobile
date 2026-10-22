@@ -17,7 +17,7 @@ import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
@@ -139,9 +139,6 @@ class App extends StatelessWidget {
           ),
           BlocProvider<AuthenticationBloc>(
             create: (context) => di<AuthenticationBloc>(),
-          ),
-          BlocProvider<OnboardingCubit>(
-            create: (context) => di<OnboardingCubit>(),
           ),
         ],
         // Session hygiene for the app-scoped (@lazySingleton) cubits. These
@@ -295,7 +292,9 @@ void resetSessionScopedState(BuildContext context) {
   // Left behind it would prefill the next account's form with a stranger's
   // details, and worse, `submitRegistration` would send them under that
   // account's credentials.
-  context.read<OnboardingCubit>().clearProfileDraft();
+  if (providers.exists(onboardingProvider)) {
+    providers.read(onboardingProvider.notifier).clearProfileDraft();
+  }
   // A pending invite token is deliberately NOT cleared here.
   //
   // Logging out is a step *inside* the invite flow, not an exit from it:

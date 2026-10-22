@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
@@ -10,7 +11,7 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
@@ -36,7 +37,6 @@ void main() {
     di.registerFactory<RiwayatAktivitasCubit>(() => shell.riwayat);
     di.registerFactory<ProfileCubit>(() => shell.profile);
     di.registerFactory<AuthenticationBloc>(() => shell.auth);
-    di.registerFactory<OnboardingCubit>(() => shell.onboarding);
   });
 
   tearDown(() async {
@@ -48,7 +48,6 @@ void main() {
     await di.unregister<RiwayatAktivitasCubit>();
     await di.unregister<ProfileCubit>();
     await di.unregister<AuthenticationBloc>();
-    await di.unregister<OnboardingCubit>();
     await shell.unregisterDi();
   });
 
@@ -134,22 +133,26 @@ void main() {
     expect(labels.last, 'PILAH | Login');
   });
 
-  testWidgets('a rejected session resets the cubits that outlive it',
-      (tester) async {
+  testWidgets('a rejected session clears the onboarding draft', (tester) async {
     shell.signedInAsRole('pengelola', bankStatus: 'active');
     await boot(tester);
-    shell.onboarding.saveProfileDraft(const CompleteProfileRequest(
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MaterialApp)),
+      listen: false,
+    );
+    final onboarding = container.read(onboardingProvider.notifier);
+    onboarding.saveProfileDraft(const CompleteProfileRequest(
       nama: 'Sari Dewi',
       jenisKelamin: 'perempuan',
       tanggalLahir: '1990-04-17',
       noHp: '81234567890',
     ));
-    expect(shell.onboarding.hasProfileDraft, isTrue);
+    expect(onboarding.hasProfileDraft, isTrue);
 
     shell.states.add(Unauthenticated());
     await tester.pumpAndSettle();
 
-    expect(shell.onboarding.hasProfileDraft, isFalse);
+    expect(onboarding.hasProfileDraft, isFalse);
   });
 
   group('coming back to the foreground', () {

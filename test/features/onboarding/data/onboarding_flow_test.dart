@@ -1,9 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_state.dart';
 
 import '../../../support/onboarding_support.dart';
@@ -23,16 +24,22 @@ const _draft = CompleteProfileRequest(
 
 void main() {
   late StubApi api;
-  late OnboardingCubit cubit;
+  late ProviderContainer container;
+  late OnboardingNotifier cubit;
   final photo = Uint8List.fromList([1, 2, 3]);
 
   setUp(() {
     api = StubApi();
-    cubit = buildOnboardingCubit(api);
+    container = ProviderContainer(overrides: [
+      onboardingProvider.overrideWith(
+        () => OnboardingNotifier(buildOnboardingDataSource(api)),
+      ),
+    ]);
+    cubit = container.read(onboardingProvider.notifier);
   });
 
-  tearDown(() async {
-    await cubit.close();
+  tearDown(() {
+    container.dispose();
   });
 
   RegisterBankSampahRequest bankRequest({String? kota = ' Depok '}) =>
@@ -53,7 +60,7 @@ void main() {
     expect(outcome.result!.nextStep, 'dashboard');
     expect(outcome.error, isNull);
     expect(api.last.json['alamat'], 'Jl. Melati');
-    expect(cubit.state, isA<OnboardingInitial>());
+    expect(container.read(onboardingProvider), isA<OnboardingInitial>());
   });
 
   test('a profile without an address omits it from the payload', () {

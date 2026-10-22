@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 
 class _MockDataSource extends Mock implements OnboardingRemoteDataSource {}
 
@@ -48,14 +49,18 @@ void main() {
   });
 
   late _MockDataSource dataSource;
-  late OnboardingCubit cubit;
+  late ProviderContainer container;
+  late OnboardingNotifier cubit;
 
   setUp(() {
     dataSource = _MockDataSource();
-    cubit = OnboardingCubit(dataSource);
+    container = ProviderContainer(overrides: [
+      onboardingProvider.overrideWith(() => OnboardingNotifier(dataSource)),
+    ]);
+    cubit = container.read(onboardingProvider.notifier);
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => container.dispose());
 
   group('loadBankSampahDirectory', () {
     test('returns the banks the data source lists', () async {

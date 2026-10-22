@@ -7,7 +7,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -53,18 +52,16 @@ void main() {
 
   Future<void> open(WidgetTester tester, AuthEntity user) async {
     auth = authBlocIn(Authenticated(authEntity: user));
-    final cubit = buildOnboardingCubit(api);
-    addTearDown(cubit.close);
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<OnboardingCubit>.value(value: cubit),
-        ],
-        // A non-const instance so the constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: InviteGatePage(),
+      withOnboarding(
+        MultiBlocProvider(
+          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+          // A non-const instance so the constructor itself runs.
+          // ignore: prefer_const_constructors
+          child: InviteGatePage(),
+        ),
+        buildOnboardingDataSource(api),
       ),
       extraRoutes: _routes,
     );
@@ -167,16 +164,14 @@ void main() {
   testWidgets('an unauthenticated visitor with no token still resolves',
       (tester) async {
     auth = authBlocIn(Unauthenticated());
-    final cubit = buildOnboardingCubit(api);
-    addTearDown(cubit.close);
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<OnboardingCubit>.value(value: cubit),
-        ],
-        child: const InviteGatePage(),
+      withOnboarding(
+        MultiBlocProvider(
+          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+          child: const InviteGatePage(),
+        ),
+        buildOnboardingDataSource(api),
       ),
       extraRoutes: _routes,
     );

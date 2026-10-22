@@ -110,8 +110,6 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.d
     show NasabahCubit;
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart'
     show OnboardingRemoteDataSource;
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart'
-    show OnboardingCubit;
 import 'package:pilah_mobile/features/pencairan/data/remote/pencairan_remote_data_sources.dart'
     show PencairanRemoteDataSources;
 import 'package:pilah_mobile/features/pencairan/domain/repository/pencairan_repository.dart'
@@ -236,7 +234,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ),
   ('DraftPencairanRepository', null, () => di<DraftPencairanRepository>()),
   ('TransaksiRepository', null, () => di<TransaksiRepository>()),
-  ('OnboardingCubit', null, () => di<OnboardingCubit>()),
   ('NasabahRepository', null, () => di<NasabahRepository>()),
   ('StatementRepository', null, () => di<StatementRepository>()),
   ('DraftEditorCubit', null, () => di<DraftEditorCubit>()),

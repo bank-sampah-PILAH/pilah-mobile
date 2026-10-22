@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -11,7 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
@@ -19,7 +20,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 
-class RegisterBankSampahScreen extends StatefulWidget {
+class RegisterBankSampahScreen extends ConsumerStatefulWidget {
   /// True when the user is re-applying after a previous registration was
   /// rejected. Swaps the onboarding stepper for a rejection notice; the form
   /// itself is identical to a first-time registration.
@@ -33,11 +34,12 @@ class RegisterBankSampahScreen extends StatefulWidget {
   static const route = '/register-bank-sampah';
 
   @override
-  State<RegisterBankSampahScreen> createState() =>
+  ConsumerState<RegisterBankSampahScreen> createState() =>
       _RegisterBankSampahScreenState();
 }
 
-class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
+class _RegisterBankSampahScreenState
+    extends ConsumerState<RegisterBankSampahScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _namaController = TextEditingController();
@@ -80,7 +82,7 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
     // only the registration otherwise. Either way a failure leaves them here
     // with the form intact, and the profile half is not re-sent on retry.
     final (:result, :error) =
-        await context.read<OnboardingCubit>().submitRegistration(request);
+        await ref.read(onboardingProvider.notifier).submitRegistration(request);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -184,7 +186,8 @@ class _RegisterBankSampahScreenState extends State<RegisterBankSampahScreen> {
   /// case where popping leads anywhere useful. Reached any other way — a
   /// redirect after login, a rejected re-application — there is no page behind
   /// this one and back has to keep meaning "leave onboarding".
-  bool get _isWizardStep => context.read<OnboardingCubit>().hasProfileDraft;
+  bool get _isWizardStep =>
+      ref.read(onboardingProvider.notifier).hasProfileDraft;
 
   /// Intercepts a back-navigation attempt.
   ///

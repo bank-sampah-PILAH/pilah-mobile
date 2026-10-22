@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -11,7 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -63,7 +64,7 @@ AuthEntity _account({
 
 void main() {
   late StubApi api;
-  late OnboardingCubit onboarding;
+  late ProviderContainer onboarding;
   late InviteTokenStore store;
   late MockAuthBloc auth;
 
@@ -71,13 +72,13 @@ void main() {
 
   setUp(() {
     api = StubApi();
-    onboarding = buildOnboardingCubit(api);
+    onboarding = buildOnboardingContainer(buildOnboardingDataSource(api));
     store = InviteTokenStore();
     di.registerSingleton<InviteTokenStore>(store);
   });
 
   tearDown(() async {
-    await onboarding.close();
+    onboarding.dispose();
     await di.unregister<InviteTokenStore>();
   });
 
@@ -90,14 +91,14 @@ void main() {
     auth = bloc ?? authBlocIn(Authenticated(authEntity: account));
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        // A non-const instance so the constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: CompleteProfileScreen(isInviteMode: inviteMode),
+      UncontrolledProviderScope(
+        container: onboarding,
+        child: MultiBlocProvider(
+          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+          // A non-const instance so the constructor itself runs.
+          // ignore: prefer_const_constructors
+          child: CompleteProfileScreen(isInviteMode: inviteMode),
+        ),
       ),
       extraRoutes: _routes,
       size: const Size(800, 2600),
@@ -165,7 +166,8 @@ void main() {
     await submit(tester);
 
     expect(find.text('route:/register-nasabah'), findsOneWidget);
-    expect(onboarding.profileDraft!.alamat, 'Jl. Melati 1');
+    expect(onboarding.read(onboardingProvider.notifier).profileDraft!.alamat,
+        'Jl. Melati 1');
     expect(api.requests, isEmpty);
     await settleToasts(tester);
   });
@@ -178,7 +180,9 @@ void main() {
     await submit(tester);
 
     expect(find.text('route:/register-bank-sampah'), findsOneWidget);
-    expect(onboarding.profileDraft!.jenisKelamin, 'perempuan');
+    expect(
+        onboarding.read(onboardingProvider.notifier).profileDraft!.jenisKelamin,
+        'perempuan');
     expect(api.requests, isEmpty);
     await settleToasts(tester);
   });
@@ -320,7 +324,9 @@ void main() {
 
   group('prefilling', () {
     testWidgets('restores a banked draft', (tester) async {
-      onboarding.saveProfileDraft(const CompleteProfileDraftForTest().request);
+      onboarding
+          .read(onboardingProvider.notifier)
+          .saveProfileDraft(const CompleteProfileDraftForTest().request);
       await open(tester, _account());
 
       expect(
@@ -331,7 +337,7 @@ void main() {
 
     testWidgets('an unparsable draft date leaves the date empty',
         (tester) async {
-      onboarding.saveProfileDraft(
+      onboarding.read(onboardingProvider.notifier).saveProfileDraft(
           const CompleteProfileDraftForTest(tanggal: 'bukan-tanggal').request);
       await open(tester, _account());
 

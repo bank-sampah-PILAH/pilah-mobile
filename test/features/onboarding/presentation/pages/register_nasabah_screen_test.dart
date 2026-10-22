@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,9 +13,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/events/l
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 
+import '../../../../support/onboarding_support.dart';
 import '../../../../support/pump_app.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -65,7 +67,8 @@ void main() {
 
   late _MockAuthBloc auth;
   late _MockOnboardingDataSource dataSource;
-  late OnboardingCubit onboarding;
+  late ProviderContainer container;
+  late OnboardingNotifier onboarding;
 
   setUp(() {
     auth = _MockAuthBloc();
@@ -75,13 +78,14 @@ void main() {
       initialState: AuthenticationInitial(),
     );
     dataSource = _MockOnboardingDataSource();
-    onboarding = OnboardingCubit(dataSource);
+    container = buildOnboardingContainer(dataSource);
+    onboarding = container.read(onboardingProvider.notifier);
     when(() => dataSource.listBankSampahDirectory())
         .thenAnswer((_) async => [_bank]);
     when(() => dataSource.listMyMemberships()).thenAnswer((_) async => []);
   });
 
-  tearDown(() => onboarding.close());
+  tearDown(() => container.dispose());
 
   Future<GoRouter> pump(WidgetTester tester,
       {bool pushed = false, List<String> extraRoutes = const []}) async {
@@ -117,12 +121,12 @@ void main() {
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        child: MaterialApp.router(routerConfig: router),
+      UncontrolledProviderScope(
+        container: container,
+        child: MultiBlocProvider(
+          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
       ),
     );
     await tester.pump();

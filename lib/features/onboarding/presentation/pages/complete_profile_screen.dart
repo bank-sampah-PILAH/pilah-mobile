@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,7 +14,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acceptance_notice.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -21,7 +22,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 
-class CompleteProfileScreen extends StatefulWidget {
+class CompleteProfileScreen extends ConsumerStatefulWidget {
   final bool isInviteMode;
 
   const CompleteProfileScreen({super.key, this.isInviteMode = false});
@@ -29,10 +30,11 @@ class CompleteProfileScreen extends StatefulWidget {
   static const route = '/complete-profile';
 
   @override
-  State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
+  ConsumerState<CompleteProfileScreen> createState() =>
+      _CompleteProfileScreenState();
 }
 
-class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
+class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   /// Invite mode is whatever the store says, with the constructor flag as a
   /// hint on top.
   ///
@@ -89,11 +91,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// would return to an empty form and have to retype everything, which is the
   /// whole reason the wizard defers the profile call.
   ///
-  /// Reads straight from the cubit rather than waiting for a state emission:
+  /// Reads straight from the provider rather than waiting for a state emission:
   /// the draft is not part of [OnboardingState], and the controllers have to be
   /// populated before the first build or the fields flash empty.
   void _restoreDraft() {
-    final draft = context.read<OnboardingCubit>().profileDraft;
+    final draft = ref.read(onboardingProvider.notifier).profileDraft;
     if (draft == null) {
       _prefillFromSavedProfile();
       return;
@@ -213,7 +215,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// (`AuthService._sync_nasabah_prefill`) while the profile is still
   /// incomplete, so `next_step` after submitting can already be
   /// `nasabah_dashboard`. That case is handled downstream in
-  /// `OnboardingCubit.submitNasabahRegistration`, which skips the
+  /// `OnboardingNotifier.submitNasabahRegistration`, which skips the
   /// registration call entirely when the profile step alone finishes
   /// onboarding — this getter only decides whether to defer to that wizard
   /// step at all.
@@ -240,7 +242,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       alamat: _isNasabah ? _alamatController.text.trim() : '',
     );
 
-    final cubit = context.read<OnboardingCubit>();
+    final notifier = ref.read(onboardingProvider.notifier);
 
     // Condition B — a new bank sampah is coming next, so nothing is sent yet.
     //
@@ -255,7 +257,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     // fires when an invite token is banked, and this branch is the one where
     // there is none.
     if (!isInvite && _startsNewRegistration) {
-      cubit.saveProfileDraft(request);
+      notifier.saveProfileDraft(request);
       context.push('/register-bank-sampah');
       return;
     }
@@ -265,14 +267,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     // come back and edit their profile (including the alamat just entered)
     // right up until that final submit.
     if (!isInvite && _startsNasabahRegistration) {
-      cubit.saveProfileDraft(request);
+      notifier.saveProfileDraft(request);
       context.push('/register-nasabah');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final (:result, :error) = await cubit.completeProfile(request);
+    final (:result, :error) = await notifier.completeProfile(request);
 
     if (!mounted) return;
 
@@ -314,8 +316,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         ? authState.authEntity.bankSampahStatus
         : null;
 
-    final (:result, :error) =
-        await context.read<OnboardingCubit>().acceptInvite(store.token ?? '');
+    final (:result, :error) = await ref
+        .read(onboardingProvider.notifier)
+        .acceptInvite(store.token ?? '');
     if (!mounted) return;
 
     final acceptance = classifyInviteAcceptance(result: result, error: error);

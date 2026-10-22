@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
@@ -9,7 +10,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 
 import '../../../../support/auth_support.dart';
@@ -29,31 +30,33 @@ const _draft = CompleteProfileRequest(
 
 void main() {
   late StubApi api;
-  late OnboardingCubit onboarding;
+  late ProviderContainer onboarding;
   late MockAuthBloc auth;
 
   setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
 
   setUp(() {
     api = StubApi();
-    onboarding = buildOnboardingCubit(api);
+    onboarding = buildOnboardingContainer(buildOnboardingDataSource(api));
     auth = authBlocIn(AuthenticationInitial());
   });
 
-  tearDown(() => onboarding.close());
+  tearDown(() => onboarding.dispose());
 
   Future<void> open(WidgetTester tester,
       {bool pushed = false, MockAuthBloc? bloc}) async {
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: bloc ?? auth),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        // A non-const instance so the constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: RegisterBankSampahScreen(),
+      UncontrolledProviderScope(
+        container: onboarding,
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthenticationBloc>.value(value: bloc ?? auth)
+          ],
+          // A non-const instance so the constructor itself runs.
+          // ignore: prefer_const_constructors
+          child: RegisterBankSampahScreen(),
+        ),
       ),
       extraRoutes: [
         '/login',
@@ -209,7 +212,7 @@ void main() {
   testWidgets('the banked profile is sent first when coming from step one',
       (tester) async {
     mockImagePicker(writeTinyPng('bank_e.png').path);
-    onboarding.saveProfileDraft(_draft);
+    onboarding.read(onboardingProvider.notifier).saveProfileDraft(_draft);
     api.on('PUT', '/api/v1/onboarding/profile', json: {});
     api.on('POST', '/api/v1/onboarding/bank-sampah',
         json: {'next_step': 'approval_pending'});
@@ -282,7 +285,7 @@ void main() {
 
   testWidgets('system back mid-wizard pops to the profile screen',
       (tester) async {
-    onboarding.saveProfileDraft(_draft);
+    onboarding.read(onboardingProvider.notifier).saveProfileDraft(_draft);
     await open(tester, pushed: true);
 
     await tester.binding.handlePopRoute();
@@ -294,7 +297,7 @@ void main() {
   testWidgets(
       'system back mid-wizard with nothing to pop goes to the profile form',
       (tester) async {
-    onboarding.saveProfileDraft(_draft);
+    onboarding.read(onboardingProvider.notifier).saveProfileDraft(_draft);
     await open(tester);
 
     await tester.binding.handlePopRoute();

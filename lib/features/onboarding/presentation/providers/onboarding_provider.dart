@@ -1,25 +1,29 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:pilah_mobile/services/di.dart';
 
-@lazySingleton
-class OnboardingCubit extends Cubit<OnboardingState> {
+final onboardingProvider = NotifierProvider<OnboardingNotifier, OnboardingState>(
+  () => OnboardingNotifier(di<OnboardingRemoteDataSource>()),
+);
+
+class OnboardingNotifier extends Notifier<OnboardingState> {
   final OnboardingRemoteDataSource _dataSource;
 
-  OnboardingCubit(this._dataSource) : super(const OnboardingInitial());
+  OnboardingNotifier(this._dataSource);
+
+  @override
+  OnboardingState build() => const OnboardingInitial();
 
   /// Profile input captured on step one of the registration wizard and not sent
   /// anywhere yet.
   ///
-  /// Held on the cubit rather than in [OnboardingState] on purpose. The states
-  /// are transient signals — every call here ends with `emit(OnboardingInitial())`
-  /// — so a draft carried in them would have to be threaded through each emit
-  /// by hand, and the one that forgot would silently empty the user's form.
-  /// This is a lazySingleton, so the field outlives both screens.
+  /// Held on the app-scoped notifier rather than in [OnboardingState] on
+  /// purpose: the states are transient signals, but the draft must survive
+  /// navigation between both wizard screens.
   CompleteProfileRequest? _profileDraft;
 
   /// Whether [_profileDraft] has already been accepted by the backend.
@@ -62,12 +66,12 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   Future<({OnboardingResult? result, NetworkException? error})> completeProfile(
     CompleteProfileRequest request,
   ) async {
-    emit(const OnboardingSubmitting());
+    state = const OnboardingSubmitting();
     final either = await apiCall<OnboardingResult>(
       func: _dataSource.completeProfile(request),
       mapper: (value) => value as OnboardingResult,
     );
-    emit(const OnboardingInitial());
+    state = const OnboardingInitial();
     return either.fold(
       (error) => (result: null, error: error),
       (result) => (result: result, error: null),
@@ -81,12 +85,12 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   Future<({OnboardingResult? result, NetworkException? error})> acceptInvite(
     String token,
   ) async {
-    emit(const OnboardingSubmitting());
+    state = const OnboardingSubmitting();
     final either = await apiCall<OnboardingResult>(
       func: _dataSource.acceptInvite(token),
       mapper: (value) => value as OnboardingResult,
     );
-    emit(const OnboardingInitial());
+    state = const OnboardingInitial();
     return either.fold(
       (error) => (result: null, error: error),
       (result) => (result: result, error: null),
@@ -96,12 +100,12 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   /// Submits the bank-sampah registration (multipart, with `foto_kegiatan`).
   Future<({OnboardingResult? result, NetworkException? error})>
       registerBankSampah(RegisterBankSampahRequest request) async {
-    emit(const OnboardingSubmitting());
+    state = const OnboardingSubmitting();
     final either = await apiCall<OnboardingResult>(
       func: _dataSource.registerBankSampah(request),
       mapper: (value) => value as OnboardingResult,
     );
-    emit(const OnboardingInitial());
+    state = const OnboardingInitial();
     return either.fold(
       (error) => (result: null, error: error),
       (result) => (result: result, error: null),
@@ -123,7 +127,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   /// the form directly, on an account whose profile was already complete.
   Future<({OnboardingResult? result, NetworkException? error})>
       submitRegistration(RegisterBankSampahRequest request) async {
-    emit(const OnboardingSubmitting());
+    state = const OnboardingSubmitting();
 
     final draft = _profileDraft;
     if (draft != null && !_profileSubmitted) {
@@ -140,7 +144,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       // in-memory flag. Treating it as a failure would strand the user on a
       // form they can never submit, so it counts as the success it describes.
       if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
-        emit(const OnboardingInitial());
+        state = const OnboardingInitial();
         return (result: null, error: profileError);
       }
 
@@ -151,7 +155,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       func: _dataSource.registerBankSampah(request),
       mapper: (value) => value as OnboardingResult,
     );
-    emit(const OnboardingInitial());
+    state = const OnboardingInitial();
 
     return either.fold(
       (error) => (result: null, error: error),
@@ -200,12 +204,12 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   /// backend's reason (bank sampah unavailable, already a member, ...).
   Future<({OnboardingResult? result, NetworkException? error})> registerNasabah(
       RegisterNasabahRequest request) async {
-    emit(const OnboardingSubmitting());
+    state = const OnboardingSubmitting();
     final either = await apiCall<OnboardingResult>(
       func: _dataSource.registerNasabah(request),
       mapper: (value) => value as OnboardingResult,
     );
-    emit(const OnboardingInitial());
+    state = const OnboardingInitial();
     return either.fold(
       (error) => (result: null, error: error),
       (result) => (result: result, error: null),
@@ -223,7 +227,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
   /// whose profile was already complete.
   Future<({OnboardingResult? result, NetworkException? error})>
       submitNasabahRegistration(RegisterNasabahRequest request) async {
-    emit(const OnboardingSubmitting());
+    state = const OnboardingSubmitting();
 
     final draft = _profileDraft;
     if (draft != null && !_profileSubmitted) {
@@ -236,7 +240,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
           profileEither.fold((error) => error, (_) => null);
 
       if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
-        emit(const OnboardingInitial());
+        state = const OnboardingInitial();
         return (result: null, error: profileError);
       }
 
@@ -249,7 +253,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       // registered" since the membership already exists.
       final profileResult = profileEither.fold((_) => null, (result) => result);
       if (profileResult?.nextStep == 'nasabah_dashboard') {
-        emit(const OnboardingInitial());
+        state = const OnboardingInitial();
         clearProfileDraft();
         return (result: profileResult, error: null);
       }
@@ -259,7 +263,7 @@ class OnboardingCubit extends Cubit<OnboardingState> {
       func: _dataSource.registerNasabah(request),
       mapper: (value) => value as OnboardingResult,
     );
-    emit(const OnboardingInitial());
+    state = const OnboardingInitial();
 
     return either.fold(
       (error) => (result: null, error: error),

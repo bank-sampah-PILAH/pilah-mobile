@@ -30,7 +30,7 @@ import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_s
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
@@ -80,7 +80,6 @@ void main() {
   // Real, not mocked: the draft it holds is the thing under test, and a mock
   // would only confirm that a method was called rather than that the data is
   // actually gone.
-  late OnboardingCubit onboarding;
 
   setUp(() {
     nasabah = _MockNasabahCubit();
@@ -89,7 +88,6 @@ void main() {
     transaksi = _MockTransaksiCubit();
     riwayatAktivitas = _MockRiwayatAktivitasCubit();
     profile = _MockProfileCubit();
-    onboarding = OnboardingCubit(_MockOnboardingDataSource());
     authenticationBloc = _MockAuthenticationBloc();
     authenticationStates = StreamController<AuthenticationStates>.broadcast();
     whenListen(
@@ -116,12 +114,10 @@ void main() {
     di.registerSingleton<TransaksiCubit>(transaksi);
     di.registerSingleton<RiwayatAktivitasCubit>(riwayatAktivitas);
     di.registerSingleton<ProfileCubit>(profile);
-    di.registerSingleton<OnboardingCubit>(onboarding);
   });
 
   tearDown(() async {
     await authenticationStates.close();
-    if (!onboarding.isClosed) await onboarding.close();
     await di.reset();
   });
 
@@ -134,13 +130,6 @@ void main() {
     expect(di<InviteTokenStore>().hasToken, isTrue);
 
     // Half-way through the registration wizard when they logged out.
-    onboarding.saveProfileDraft(const CompleteProfileRequest(
-      nama: 'Sari Dewi',
-      jenisKelamin: 'perempuan',
-      tanggalLahir: '1990-04-17',
-      noHp: '81234567890',
-    ));
-
     final pengumumanApi = StubApi();
     pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
@@ -155,7 +144,18 @@ void main() {
       pengumumanProvider.overrideWith(
         () => PengumumanNotifier(buildPengumumanRepository(pengumumanApi)),
       ),
+      onboardingProvider.overrideWith(
+        () => OnboardingNotifier(_MockOnboardingDataSource()),
+      ),
     ]);
+    providerContainer.read(onboardingProvider.notifier).saveProfileDraft(
+          const CompleteProfileRequest(
+            nama: 'Sari Dewi',
+            jenisKelamin: 'perempuan',
+            tanggalLahir: '1990-04-17',
+            noHp: '81234567890',
+          ),
+        );
     final providerSubscription = providerContainer.listen(
       nasabahPengumumanProvider,
       (_, __) {},
@@ -186,7 +186,6 @@ void main() {
             BlocProvider<TransaksiCubit>.value(value: transaksi),
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
             BlocProvider<ProfileCubit>.value(value: profile),
-            BlocProvider<OnboardingCubit>.value(value: onboarding),
           ],
           child: MaterialApp(
             home: Builder(
@@ -226,7 +225,7 @@ void main() {
     expect(
         providerContainer.read(pengumumanProvider), isA<PengumumanInitial>());
     expect(
-      onboarding.hasProfileDraft,
+      providerContainer.read(onboardingProvider.notifier).hasProfileDraft,
       isFalse,
       reason: 'the draft is one person’s name, phone and date of birth — left '
           'behind it would prefill the next account’s form with it, and be '

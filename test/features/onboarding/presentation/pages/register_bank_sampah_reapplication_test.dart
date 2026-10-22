@@ -7,8 +7,9 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
+
+import '../../../../support/onboarding_support.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -20,11 +21,10 @@ class _MockOnboardingDataSource extends Mock
 ///
 /// The screen listens to [AuthenticationBloc] to bounce a logged-out user to
 /// the login page, so without one it throws ProviderNotFoundException before
-/// rendering anything. [OnboardingCubit] backs the wizard's back button.
+/// rendering anything. The onboarding provider backs the wizard's back button.
 Future<void> _pumpScreen(
   WidgetTester tester, {
   bool isRejectedReapplication = false,
-  OnboardingCubit? onboarding,
 }) async {
   final auth = _MockAuthBloc();
   whenListen(
@@ -34,18 +34,16 @@ Future<void> _pumpScreen(
   );
 
   await tester.pumpWidget(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthenticationBloc>.value(value: auth),
-        BlocProvider<OnboardingCubit>.value(
-          value: onboarding ?? OnboardingCubit(_MockOnboardingDataSource()),
-        ),
-      ],
-      child: MaterialApp(
-        home: RegisterBankSampahScreen(
-          isRejectedReapplication: isRejectedReapplication,
+    withOnboarding(
+      MultiBlocProvider(
+        providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+        child: MaterialApp(
+          home: RegisterBankSampahScreen(
+            isRejectedReapplication: isRejectedReapplication,
+          ),
         ),
       ),
+      _MockOnboardingDataSource(),
     ),
   );
 }

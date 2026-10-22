@@ -122,8 +122,6 @@ import '../features/nasabah/domain/use_cases/update_nasabah_usecase.dart'
 import '../features/nasabah/presentation/cubit/nasabah_cubit.dart' as _i958;
 import '../features/onboarding/data/datasources/onboarding_remote_data_source.dart'
     as _i247;
-import '../features/onboarding/presentation/cubit/onboarding_cubit.dart'
-    as _i244;
 import '../features/pencairan/data/pencairan_repository_impl.dart' as _i913;
 import '../features/pencairan/data/remote/pencairan_remote_data_sources.dart'
     as _i1037;
@@ -307,8 +305,6 @@ extension GetItInjectableX on _i174.GetIt {
             gh<_i142.DraftPencairanRemoteDataSource>()));
     gh.lazySingleton<_i1031.TransaksiRepository>(() =>
         _i1041.TransaksiRepositoryImpl(gh<_i881.TransaksiRemoteDataSource>()));
-    gh.lazySingleton<_i244.OnboardingCubit>(
-        () => _i244.OnboardingCubit(gh<_i247.OnboardingRemoteDataSource>()));
     gh.lazySingleton<_i127.NasabahRepository>(() =>
         _i1026.NasabahRepositoryImpl(gh<_i307.NasabahRemoteDataSource>()));
     gh.lazySingleton<_i664.StatementRepository>(() =>

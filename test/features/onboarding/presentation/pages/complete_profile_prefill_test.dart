@@ -9,9 +9,10 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/services/di.dart';
+
+import '../../../../support/onboarding_support.dart';
 
 class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
     implements AuthenticationBloc {}
@@ -27,14 +28,12 @@ Future<void> _pumpScreen(WidgetTester tester, AuthEntity account) async {
   );
 
   await tester.pumpWidget(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthenticationBloc>.value(value: auth),
-        BlocProvider<OnboardingCubit>.value(
-          value: OnboardingCubit(_MockDataSource()),
-        ),
-      ],
-      child: const MaterialApp(home: CompleteProfileScreen()),
+    withOnboarding(
+      MultiBlocProvider(
+        providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+        child: const MaterialApp(home: CompleteProfileScreen()),
+      ),
+      _MockDataSource(),
     ),
   );
   await tester.pump();

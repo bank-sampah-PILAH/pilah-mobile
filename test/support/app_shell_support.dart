@@ -22,7 +22,7 @@ import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data
 import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository_impl.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart';
 import 'package:pilah_mobile/features/pengumuman/data/repositories/pengumuman_repository_impl.dart';
@@ -75,7 +75,7 @@ class AppShell {
         GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)),
         ExportTransaksiUseCase(repo));
     nasabah = buildNasabahCubit(api);
-    onboarding = buildOnboardingCubit(api);
+    onboardingDataSource = buildOnboardingDataSource(api);
     jadwal = JadwalCubit(
         JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network)));
     pengumumanRepository =
@@ -93,7 +93,7 @@ class AppShell {
   late final PencairanUseCases pencairan;
   late final RiwayatAktivitasCubit riwayat;
   late final NasabahCubit nasabah;
-  late final OnboardingCubit onboarding;
+  late final OnboardingRemoteDataSource onboardingDataSource;
   late final JadwalCubit jadwal;
   late final PengumumanRepository pengumumanRepository;
   late final SuperadminNotifier superadmin;
@@ -108,6 +108,7 @@ class AppShell {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<AppEnvironment>(StubEnvironment());
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    di.registerSingleton<OnboardingRemoteDataSource>(onboardingDataSource);
     di.registerSingleton<GetDashboardStatsUseCase>(
         buildDashboardStatsUseCase(api));
     di.registerSingleton<GetTransaksiUseCase>(getTransaksi);
@@ -138,6 +139,7 @@ class AppShell {
     await di.unregister<InviteTokenStore>();
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
+    await di.unregister<OnboardingRemoteDataSource>();
     await di.unregister<GetDashboardStatsUseCase>();
     await di.unregister<GetTransaksiUseCase>();
     await di.unregister<PencairanUseCases>();
@@ -164,7 +166,6 @@ class AppShell {
 
       riwayat.close,
       nasabah.close,
-      onboarding.close,
       jadwal.close,
       // The pencairan cubits are closed by the pages that own them.
     ]) {
@@ -206,7 +207,6 @@ class AppShell {
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
             BlocProvider<ProfileCubit>.value(value: profile),
             BlocProvider<AuthenticationBloc>.value(value: auth),
-            BlocProvider<OnboardingCubit>.value(value: onboarding),
           ],
           child: app,
         ),

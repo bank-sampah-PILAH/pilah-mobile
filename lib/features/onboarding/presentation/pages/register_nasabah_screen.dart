@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
@@ -11,7 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/pilih_bank_sampah_section.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
@@ -19,16 +20,17 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding
 /// The nasabah half of PIL-204: a calon nasabah, having already completed
 /// their profile (including address) on the shared complete_profile step,
 /// picks a bank sampah to apply to join.
-class RegisterNasabahScreen extends StatefulWidget {
+class RegisterNasabahScreen extends ConsumerStatefulWidget {
   const RegisterNasabahScreen({super.key});
 
   static const route = '/register-nasabah';
 
   @override
-  State<RegisterNasabahScreen> createState() => _RegisterNasabahScreenState();
+  ConsumerState<RegisterNasabahScreen> createState() =>
+      _RegisterNasabahScreenState();
 }
 
-class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
+class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
   final _formKey = GlobalKey<FormState>();
 
   BankSampahDirectoryEntity? _selectedBank;
@@ -53,7 +55,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
 
   Future<void> _loadMemberships() async {
     final (:result, :error) =
-        await context.read<OnboardingCubit>().loadMyMemberships();
+        await ref.read(onboardingProvider.notifier).loadMyMemberships();
     if (!mounted || error != null) return;
     setState(() => _memberships = result ?? const []);
   }
@@ -62,7 +64,7 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
     // Locked means a membership already exists — usually because the
     // pengurus-entered record auto-linked at login, before this draft was
     // ever sent. There's no new bank to register, but the profile itself
-    // still needs to land: OnboardingCubit.submitNasabahRegistration skips
+    // still needs to land: OnboardingNotifier.submitNasabahRegistration skips
     // its own registerNasabah call once completing the profile already
     // reaches nasabah_dashboard, so a placeholder bank id here is never
     // actually sent anywhere.
@@ -78,8 +80,8 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
       bankSampahId:
           _isLocked ? _memberships.first.bankSampahId : _selectedBank!.id,
     );
-    final (:result, :error) = await context
-        .read<OnboardingCubit>()
+    final (:result, :error) = await ref
+        .read(onboardingProvider.notifier)
         .submitNasabahRegistration(request);
 
     if (!mounted) return;
@@ -126,7 +128,8 @@ class _RegisterNasabahScreenState extends State<RegisterNasabahScreen> {
   /// case where popping leads anywhere useful. Reached any other way — a
   /// relogin whose profile was already complete — there is no page behind
   /// this one and back has to keep meaning "leave onboarding".
-  bool get _isWizardStep => context.read<OnboardingCubit>().hasProfileDraft;
+  bool get _isWizardStep =>
+      ref.read(onboardingProvider.notifier).hasProfileDraft;
 
   /// Intercepts a back-navigation attempt.
   ///
