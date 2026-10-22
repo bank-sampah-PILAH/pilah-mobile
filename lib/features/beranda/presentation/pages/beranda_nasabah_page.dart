@@ -23,7 +23,6 @@ import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 
@@ -276,14 +275,7 @@ class _HomeSessionState extends State<_HomeSession> {
                               const SizedBox(height: 24),
                               _SectionHeading(
                                 title: 'Pengumuman',
-                                // Same keanggotaan_id scoping as Terbaru: a
-                                // nasabah with two banks gets 422 without it.
-                                onAll: () => context.push(Uri(
-                                  path: PengumumanPage.route,
-                                  queryParameters: {
-                                    'keanggotaan_id': home.membershipId,
-                                  },
-                                ).toString()),
+                                showDisabledAll: true,
                               ),
                               const SizedBox(height: 8),
                               NasabahResource<PengumumanBeranda>(
@@ -656,16 +648,21 @@ class _PengumumanSection extends StatelessWidget {
 }
 
 class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.title, this.onAll});
+  const _SectionHeading({
+    required this.title,
+    this.onAll,
+    this.showDisabledAll = false,
+  });
   final String title;
   final VoidCallback? onAll;
+  final bool showDisabledAll;
 
   @override
   Widget build(BuildContext context) => Row(
         children: [
           Expanded(
               child: Text(title, style: _text(17, weight: FontWeight.w600))),
-          if (onAll != null)
+          if (onAll != null || showDisabledAll)
             TextButton(onPressed: onAll, child: const Text('Semua')),
         ],
       );
