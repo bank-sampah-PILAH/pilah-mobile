@@ -43,12 +43,17 @@ class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
 class _CountingNasabahRepository extends PreviewNasabahRepository {
   _CountingNasabahRepository({required super.bankName});
   int homeCalls = 0;
+  String balanceAmount = '12500.50';
 
   @override
   Future<NasabahHome> home({String? membershipId}) {
     homeCalls++;
     return super.home(membershipId: membershipId);
   }
+
+  @override
+  Future<NasabahBalance> balance(String membershipId) async =>
+      NasabahBalance(balanceAmount, null);
 }
 
 class _DashboardCubit extends MockCubit<DashboardState>
@@ -347,6 +352,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.homeCalls, 2);
+    });
+
+    testWidgets('resuming refreshes the latest saldo from the server', (
+      tester,
+    ) async {
+      final repository =
+          _CountingNasabahRepository(bankName: 'Bank Sampah Melati');
+      await loginAsNasabah(tester, repository: repository);
+      expect(repository.homeCalls, 1);
+      expect(find.text('Rp 12.500,50'), findsOneWidget);
+
+      repository.balanceAmount = '25000.00';
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(repository.homeCalls, 2);
+      expect(find.text('Rp 12.500,50'), findsNothing);
+      expect(find.text('Rp 25.000'), findsOneWidget);
     });
   });
 }
