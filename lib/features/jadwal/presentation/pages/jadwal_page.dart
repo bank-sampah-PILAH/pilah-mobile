@@ -6,7 +6,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -21,14 +21,14 @@ import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_months.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
-class JadwalPage extends StatefulWidget {
+class JadwalPage extends ConsumerStatefulWidget {
   static const route = '/jadwal';
   final bool customerMode;
   final DateTime? initialDate;
@@ -36,10 +36,10 @@ class JadwalPage extends StatefulWidget {
   const JadwalPage({super.key, this.customerMode = false, this.initialDate});
 
   @override
-  State<JadwalPage> createState() => _JadwalPageState();
+  ConsumerState<JadwalPage> createState() => _JadwalPageState();
 }
 
-class _JadwalPageState extends State<JadwalPage> {
+class _JadwalPageState extends ConsumerState<JadwalPage> {
   late DateTime _selectedDate;
   bool _isMonthExpanded = false;
   late final ScrollController _scrollController;
@@ -60,7 +60,7 @@ class _JadwalPageState extends State<JadwalPage> {
   /// Memuat agenda untuk [date] sesuai [_rangeMode]. Tanpa rentang, argumen
   /// `dateTo` tidak dikirim sama sekali.
   Future<void> _loadAgenda(DateTime date, {bool silent = false}) {
-    final cubit = context.read<JadwalCubit>();
+    final cubit = ref.read(jadwalProvider.notifier);
     final end = _rangeMode ? DateTime(date.year, date.month + 1, 0) : null;
     if (end == null) {
       return silent
@@ -82,9 +82,12 @@ class _JadwalPageState extends State<JadwalPage> {
     final width =
         context.getInheritedWidgetOfExactType<MediaQuery>()?.data.size.width;
     _rangeMode = _wantsRange(LayoutBreakpoint.fromWidth(width ?? 0));
-    _loadAgenda(_selectedDate);
-    context.read<JadwalCubit>().loadUpcomingDates();
-    _loadCalendarDatesFor(_selectedDate);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadAgenda(_selectedDate);
+      ref.read(jadwalProvider.notifier).loadUpcomingDates();
+      _loadCalendarDatesFor(_selectedDate);
+    });
   }
 
   /// Menutup panel ketika jendela berhenti menjadi expanded.
@@ -125,12 +128,12 @@ class _JadwalPageState extends State<JadwalPage> {
   @override
   void didUpdateWidget(covariant JadwalPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final requestedDate = widget.initialDate;
-    if (requestedDate != null) {
-      _selectDate(requestedDate);
-    } else if (oldWidget.initialDate != null) {
-      _selectDate(DateTime.now());
-    }
+    final requestedDate = widget.initialDate ??
+        (oldWidget.initialDate == null ? null : DateTime.now());
+    if (requestedDate == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _selectDate(requestedDate);
+    });
   }
 
   @override
@@ -146,7 +149,7 @@ class _JadwalPageState extends State<JadwalPage> {
         _scrollController.position.extentAfter > 320) {
       return;
     }
-    context.read<JadwalCubit>().loadNextPage();
+    ref.read(jadwalProvider.notifier).loadNextPage();
   }
 
   Future<void> _loadCalendarDatesFor(DateTime date) {
@@ -158,7 +161,7 @@ class _JadwalPageState extends State<JadwalPage> {
     final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
     final weekCount = (offset + daysInMonth + 6) ~/ 7;
     final lastVisible = firstVisible.add(Duration(days: weekCount * 7 - 1));
-    return context.read<JadwalCubit>().loadCalendarDates(
+    return ref.read(jadwalProvider.notifier).loadCalendarDates(
           startDate: firstVisible,
           endDate: lastVisible,
         );
@@ -208,10 +211,11 @@ class _JadwalPageState extends State<JadwalPage> {
       return;
     }
 
+    final container = ProviderScope.containerOf(context);
     showAdaptiveSurface<void>(
       context,
-      builder: (_) => BlocProvider.value(
-        value: context.read<JadwalCubit>(),
+      builder: (_) => UncontrolledProviderScope(
+        container: container,
         child: _JadwalForm(
           initial: initial,
           initialDate: initial == null ? _selectedDate : null,
@@ -242,7 +246,7 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   Future<void> _changeStatus(JadwalEntity item, JadwalAction action) async {
-    final failure = await context.read<JadwalCubit>().changeStatus(
+    final failure = await ref.read(jadwalProvider.notifier).changeStatus(
           item.id,
           action.wireValue,
         );
@@ -316,20 +320,24 @@ class _JadwalPageState extends State<JadwalPage> {
                 ),
       floatingActionButton: widget.customerMode || _createInHeader
           ? null
-          : BlocBuilder<JadwalCubit, JadwalState>(
-              builder: (context, state) => FloatingActionButton(
-                heroTag: 'jadwal_page_fab',
-                tooltip: 'Buat Jadwal',
-                onPressed: state is JadwalLoaded &&
-                        (state.isTransitioning || state.isSaving)
-                    ? null
-                    : () => _openForm(),
-                backgroundColor: AppColors.greenDark,
-                child: const Icon(Icons.add, color: Colors.white),
-              ),
+          : Builder(
+              builder: (context) {
+                final state = ref.watch(jadwalProvider);
+                return FloatingActionButton(
+                  heroTag: 'jadwal_page_fab',
+                  tooltip: 'Buat Jadwal',
+                  onPressed: state is JadwalLoaded &&
+                          (state.isTransitioning || state.isSaving)
+                      ? null
+                      : () => _openForm(),
+                  backgroundColor: AppColors.greenDark,
+                  child: const Icon(Icons.add, color: Colors.white),
+                );
+              },
             ),
-      body: BlocBuilder<JadwalCubit, JadwalState>(
-        builder: (context, state) {
+      body: Builder(
+        builder: (context) {
+          final state = ref.watch(jadwalProvider);
           if (state is JadwalInitial || state is JadwalLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -715,7 +723,7 @@ class _JadwalPageState extends State<JadwalPage> {
     if (loadedState.loadingMoreError != null) {
       return Center(
         child: TextButton.icon(
-          onPressed: context.read<JadwalCubit>().loadNextPage,
+          onPressed: ref.read(jadwalProvider.notifier).loadNextPage,
           icon: const Icon(Icons.refresh),
           label: const Text('Coba muat lagi'),
         ),
@@ -1085,7 +1093,7 @@ String _formatTime(DateTime value) {
   return '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
 
-class _JadwalForm extends StatefulWidget {
+class _JadwalForm extends ConsumerStatefulWidget {
   final JadwalEntity? initial;
   final DateTime? initialDate;
 
@@ -1105,10 +1113,10 @@ class _JadwalForm extends StatefulWidget {
   bool get isPanel => onClose != null;
 
   @override
-  State<_JadwalForm> createState() => _JadwalFormState();
+  ConsumerState<_JadwalForm> createState() => _JadwalFormState();
 }
 
-class _JadwalFormState extends State<_JadwalForm> {
+class _JadwalFormState extends ConsumerState<_JadwalForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _locationController;
   late final TextEditingController _descriptionController;
@@ -1227,7 +1235,7 @@ class _JadwalFormState extends State<_JadwalForm> {
       return;
     }
     final initial = widget.initial;
-    final failure = await context.read<JadwalCubit>().saveJadwal(
+    final failure = await ref.read(jadwalProvider.notifier).saveJadwal(
           JadwalEntity(
             id: initial?.id ?? '',
             bankSampahId: initial?.bankSampahId ?? '',
@@ -1357,8 +1365,9 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onChanged: (value) => setState(() => _audience = value!),
                 ),
                 const SizedBox(height: 24),
-                BlocBuilder<JadwalCubit, JadwalState>(
-                  builder: (context, state) {
+                Builder(
+                  builder: (context) {
+                    final state = ref.watch(jadwalProvider);
                     final isSaving = state is JadwalLoaded && state.isSaving;
                     return SizedBox(
                       width: double.infinity,

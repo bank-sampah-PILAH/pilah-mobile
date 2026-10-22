@@ -92,7 +92,6 @@ import '../features/jadwal/data/datasources/jadwal_remote_data_source.dart'
 import '../features/jadwal/data/repositories/jadwal_repository_impl.dart'
     as _i928;
 import '../features/jadwal/domain/repositories/jadwal_repository.dart' as _i73;
-import '../features/jadwal/presentation/cubit/jadwal_cubit.dart' as _i942;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source.dart'
     as _i307;
 import '../features/nasabah/data/datasources/nasabah_remote_data_source_impl.dart'
@@ -317,8 +316,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i24.AuthRemoteDataSources>(),
           gh<_i981.AuthLocalDataSources>(),
         ));
-    gh.lazySingleton<_i942.JadwalCubit>(
-        () => _i942.JadwalCubit(gh<_i73.JadwalRepository>()));
     gh.lazySingleton<_i782.AppealMembershipUseCase>(() =>
         _i782.AppealMembershipUseCase(
             gh<_i390.BankSampahApprovalRepository>()));

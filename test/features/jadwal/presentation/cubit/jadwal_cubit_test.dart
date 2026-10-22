@@ -1,20 +1,50 @@
 import 'dart:async';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart' show DateUtils;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart' as flutter_test;
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
 
+void providerTest(
+  String description, {
+  required JadwalNotifier Function() build,
+  required FutureOr<void> Function(JadwalNotifier) act,
+  List<JadwalState> Function()? expect,
+  FutureOr<void> Function(JadwalNotifier)? verify,
+}) {
+  test(description, () async {
+    final notifier = build();
+    final container = ProviderContainer(overrides: [
+      jadwalProvider.overrideWith(() => notifier),
+    ]);
+    final emitted = <JadwalState>[];
+    final subscription = container.listen(
+      jadwalProvider,
+      (_, next) => emitted.add(next),
+    );
+    try {
+      await act(notifier);
+      if (expect != null) flutter_test.expect(emitted, equals(expect()));
+      await verify?.call(notifier);
+    } finally {
+      subscription.close();
+      container.dispose();
+    }
+  });
+}
+
 void main() {
+  final containers = <ProviderContainer>[];
   final schedule = JadwalEntity(
     id: '',
     bankSampahId: 'bank-1',
@@ -26,6 +56,21 @@ void main() {
 
   late _MockJadwalRepository repository;
 
+  JadwalNotifier createNotifier(JadwalRepository repository) {
+    final container = ProviderContainer(overrides: [
+      jadwalProvider.overrideWith(() => JadwalNotifier(repository)),
+    ]);
+    containers.add(container);
+    return container.read(jadwalProvider.notifier);
+  }
+
+  tearDown(() {
+    for (final container in containers) {
+      container.dispose();
+    }
+    containers.clear();
+  });
+
   setUp(() {
     repository = _MockJadwalRepository();
     registerFallbackValue(schedule);
@@ -36,13 +81,13 @@ void main() {
         .thenAnswer((_) async => const Right({}));
   });
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'reset clears the current schedule list',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
         (_) async => Right(_page([schedule])),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -68,11 +113,11 @@ void main() {
           .thenAnswer((_) async => Right(schedule));
     }
 
-    blocTest<JadwalCubit, JadwalState>(
+    providerTest(
       'is requested from the start date to the end date',
       build: () {
         stubRange();
-        return JadwalCubit(repository);
+        return JadwalNotifier(repository);
       },
       act: (cubit) => cubit.loadJadwal(date: from, dateTo: to),
       verify: (cubit) {
@@ -82,11 +127,11 @@ void main() {
       },
     );
 
-    blocTest<JadwalCubit, JadwalState>(
+    providerTest(
       'keeps its end date when the next page is requested',
       build: () {
         stubRange(hasMore: true);
-        return JadwalCubit(repository);
+        return JadwalNotifier(repository);
       },
       act: (cubit) async {
         await cubit.loadJadwal(date: from, dateTo: to);
@@ -97,11 +142,11 @@ void main() {
       ).called(1),
     );
 
-    blocTest<JadwalCubit, JadwalState>(
+    providerTest(
       'is reloaded as a range after saving a schedule',
       build: () {
         stubRange();
-        return JadwalCubit(repository);
+        return JadwalNotifier(repository);
       },
       act: (cubit) async {
         await cubit.loadJadwal(date: from, dateTo: to);
@@ -112,7 +157,7 @@ void main() {
       ).called(2),
     );
 
-    blocTest<JadwalCubit, JadwalState>(
+    providerTest(
       'moving only the end date is a new list, shown as loading',
       build: () {
         stubRange();
@@ -121,7 +166,7 @@ void main() {
               date: from,
               dateTo: DateTime(2026, 10, 25),
             )).thenAnswer((_) async => Right(_page(const [])));
-        return JadwalCubit(repository);
+        return JadwalNotifier(repository);
       },
       act: (cubit) async {
         await cubit.loadJadwal(date: from, dateTo: to);
@@ -131,7 +176,7 @@ void main() {
     );
   });
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'upcoming dates cover 90 days in ranges the server accepts (max 62 days)',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null))
@@ -145,7 +190,7 @@ void main() {
           });
         },
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -179,7 +224,7 @@ void main() {
     },
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'upcoming dates fetched before the list loads are kept for it',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null))
@@ -187,7 +232,7 @@ void main() {
       when(() => repository.getCalendarDates(any(), any())).thenAnswer(
         (_) async => Right({DateTime(2026, 11, 3)}),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadUpcomingDates(today: DateTime(2026, 10, 19));
@@ -200,7 +245,7 @@ void main() {
   );
 
   var offline = false;
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'a failed upcoming request leaves the earlier dates alone',
     build: () {
       offline = false;
@@ -211,7 +256,7 @@ void main() {
             ? Left(GeneralException(message: 'offline'))
             : Right({DateTime(2026, 11, 3)}),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -225,7 +270,7 @@ void main() {
     ),
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'saving a schedule refreshes the upcoming dates too',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null))
@@ -234,7 +279,7 @@ void main() {
           .thenAnswer((_) async => const Right({}));
       when(() => repository.createJadwal(any()))
           .thenAnswer((_) async => Right(schedule));
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -262,19 +307,19 @@ void main() {
     },
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'emits an error when loading schedules fails',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
         (_) async => Left(GeneralException(message: 'offline')),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) => cubit.loadJadwal(),
     expect: () => [const JadwalLoading(), const JadwalError('offline')],
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'appends the next schedule page only when requested',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
@@ -284,7 +329,7 @@ void main() {
         (_) async =>
             Right(_page([_existingSchedule(id: 'schedule-2')], totalCount: 2)),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -310,14 +355,14 @@ void main() {
     },
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'uses the selected day when loading its agenda',
     build: () {
       final selectedDate = DateTime(2026, 10, 10);
       when(() => repository.getJadwal(page: 1, date: selectedDate)).thenAnswer(
         (_) async => Right(_page([schedule])),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) => cubit.loadJadwal(date: DateTime(2026, 10, 10, 14)),
     expect: () => [
@@ -329,7 +374,7 @@ void main() {
     ).called(1),
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'restores the loaded schedules and returns a failed save',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
@@ -338,7 +383,7 @@ void main() {
       when(() => repository.createJadwal(any())).thenAnswer(
         (_) async => Left(GeneralException(message: 'rejected')),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -354,7 +399,7 @@ void main() {
         verify(() => repository.getJadwal(page: 1, date: null)).called(1),
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'uses update for existing schedules',
     build: () {
       final existing = _existingSchedule();
@@ -363,7 +408,7 @@ void main() {
       );
       when(() => repository.updateJadwal(existing))
           .thenAnswer((_) async => Right(existing));
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -392,8 +437,7 @@ void main() {
         .thenAnswer((_) async => Right(_page([existing])));
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) => transitionResult.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final first = cubit.changeStatus('schedule-1', 'terbitkan');
@@ -414,8 +458,7 @@ void main() {
         .thenAnswer((_) async => Right(_page([existing])));
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) => transitionResult.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final first = cubit.changeStatus('schedule-1', 'terbitkan');
@@ -444,8 +487,7 @@ void main() {
         .thenAnswer((_) => saveResult.future);
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) async => Right(existing));
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final save = cubit.saveJadwal(existing);
@@ -478,8 +520,7 @@ void main() {
     });
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) => transitionResult.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final transition = cubit.changeStatus('schedule-1', 'terbitkan');
@@ -519,8 +560,7 @@ void main() {
         .thenAnswer((_) => transitionResult.future);
     when(() => repository.createJadwal(newSchedule))
         .thenAnswer((_) async => Right(newSchedule));
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final transition = cubit.changeStatus('schedule-1', 'terbitkan');
@@ -548,8 +588,7 @@ void main() {
       if (loadCount == 1) return previousResult.future;
       return Right(_page([current]));
     });
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     final previousLoad = cubit.loadJadwal();
     await Future<void>.delayed(Duration.zero);
@@ -577,8 +616,7 @@ void main() {
         .thenAnswer((_) => previousSaveResult.future);
     when(() => repository.updateJadwal(current))
         .thenAnswer((_) => currentSaveResult.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final previousSave = cubit.saveJadwal(previous);
@@ -616,8 +654,7 @@ void main() {
     });
     when(() => repository.transition('schedule-1', 'terbitkan'))
         .thenAnswer((_) async => Right(published));
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final oldRefresh = cubit.loadJadwal(silent: true);
@@ -643,8 +680,7 @@ void main() {
         .thenAnswer((_) => previousResult.future);
     when(() => repository.transition('schedule-2', 'terbitkan'))
         .thenAnswer((_) => currentResult.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     final previousTransition = cubit.changeStatus('schedule-1', 'terbitkan');
@@ -670,7 +706,7 @@ void main() {
     verify(() => repository.transition('schedule-2', 'terbitkan')).called(1);
   });
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'restores loaded schedules when a status transition fails',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
@@ -679,7 +715,7 @@ void main() {
       when(() => repository.transition('schedule-1', 'terbitkan')).thenAnswer(
         (_) async => Left(GeneralException(message: 'rejected')),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -701,7 +737,7 @@ void main() {
         verify(() => repository.getJadwal(page: 1, date: null)).called(1),
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'reloads after a successful status transition',
     build: () {
       when(() => repository.transition('schedule-1', 'terbitkan'))
@@ -709,7 +745,7 @@ void main() {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
         (_) async => Right(_page([schedule])),
       );
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) => cubit.changeStatus('schedule-1', 'terbitkan'),
     expect: () => [
@@ -721,7 +757,7 @@ void main() {
         verify(() => repository.getJadwal(page: 1, date: null)).called(1),
   );
 
-  blocTest<JadwalCubit, JadwalState>(
+  providerTest(
     'loads schedules and reloads after creating one',
     build: () {
       when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
@@ -729,7 +765,7 @@ void main() {
       );
       when(() => repository.createJadwal(any()))
           .thenAnswer((_) async => Right(schedule));
-      return JadwalCubit(repository);
+      return JadwalNotifier(repository);
     },
     act: (cubit) async {
       await cubit.loadJadwal();
@@ -755,8 +791,7 @@ void main() {
     when(() => repository.getJadwal(page: 2, date: null)).thenAnswer(
       (_) async => Left(GeneralException(message: 'offline')),
     );
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     await cubit.loadJadwal();
     await cubit.loadNextPage();
@@ -774,8 +809,7 @@ void main() {
     when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
       (_) async => Right(_page([schedule])),
     );
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = createNotifier(repository);
 
     final error = await cubit.saveJadwal(schedule);
 

@@ -1,37 +1,20 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_months.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
+import '../../../../support/jadwal_provider_support.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 
-class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
-
-void _stubManagerLoads(_MockJadwalCubit cubit) {
-  when(() => cubit.loadJadwal(date: any(named: 'date')))
-      .thenAnswer((_) async {});
-  when(() => cubit.loadJadwal(
-        date: any(named: 'date'),
-        dateTo: any(named: 'dateTo'),
-      )).thenAnswer((_) async {});
-  when(() => cubit.loadJadwal(
-        silent: any(named: 'silent'),
-        date: any(named: 'date'),
-        dateTo: any(named: 'dateTo'),
-      )).thenAnswer((_) async {});
-  when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
-  when(
-    () => cubit.loadCalendarDates(
-      startDate: any(named: 'startDate'),
-      endDate: any(named: 'endDate'),
-    ),
-  ).thenAnswer((_) async {});
+class _JadwalCalls {
+  final agendaLoads = <({bool silent, DateTime? date, DateTime? dateTo})>[];
+  final calendarLoads = <(DateTime, DateTime)>[];
+  final saves = <JadwalEntity>[];
+  int upcomingLoads = 0;
 }
 
 /// Opens the create form: the page action in an expanded window, the floating
@@ -43,7 +26,7 @@ Future<void> _tapCreate(WidgetTester tester) async {
       : find.widgetWithText(AppButton, 'Buat Jadwal'));
 }
 
-Future<_MockJadwalCubit> _pumpAt(
+Future<_JadwalCalls> _pumpAt(
   WidgetTester tester,
   Size size, {
   DateTime? initialDate,
@@ -54,18 +37,32 @@ Future<_MockJadwalCubit> _pumpAt(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  final cubit = _MockJadwalCubit();
-  when(() => cubit.state).thenReturn(state);
-  _stubManagerLoads(cubit);
+  final calls = _JadwalCalls();
+  final notifier = TestJadwalNotifier(
+    repository: UnusedJadwalRepository(),
+    initialState: state,
+    onLoadJadwal: (
+        {bool silent = false, DateTime? date, DateTime? dateTo}) async {
+      calls.agendaLoads.add((silent: silent, date: date, dateTo: dateTo));
+    },
+    onLoadCalendarDates: ({required startDate, required endDate}) async {
+      calls.calendarLoads.add((startDate, endDate));
+    },
+    onLoadUpcomingDates: ({today}) async => calls.upcomingLoads++,
+    onSaveJadwal: (schedule) async {
+      calls.saves.add(schedule);
+      return null;
+    },
+  );
 
   await tester.pumpWidget(
-    BlocProvider<JadwalCubit>.value(
-      value: cubit,
+    ProviderScope(
+      overrides: [jadwalProvider.overrideWith(() => notifier)],
       child: MaterialApp(home: JadwalPage(initialDate: initialDate)),
     ),
   );
   await tester.pump();
-  return cubit;
+  return calls;
 }
 
 /// The form is the same form on both platforms; only its container changes.
@@ -73,20 +70,6 @@ Future<_MockJadwalCubit> _pumpAt(
 /// window it becomes a panel beside the agenda, so the day being scheduled
 /// into stays visible while it is filled in.
 void main() {
-  setUpAll(() {
-    registerFallbackValue(DateTime(2000));
-    registerFallbackValue(
-      JadwalEntity(
-        id: '',
-        bankSampahId: '',
-        jenisKegiatan: 'penimbangan',
-        mulaiPada: DateTime(2000),
-        selesaiPada: DateTime(2000),
-        lokasi: '',
-      ),
-    );
-  });
-
   testWidgets('on a desktop window the title is a page header, not an AppBar',
       (tester) async {
     await _pumpAt(tester, const Size(1000, 900));
@@ -206,7 +189,7 @@ void main() {
       (tester) async {
     final today = DateUtils.dateOnly(DateTime.now());
     final later = DateTime(today.year, today.month + 1, 5);
-    final cubit = await _pumpAt(
+    final calls = await _pumpAt(
       tester,
       const Size(1440, 900),
       state: JadwalLoaded(const [], upcomingDates: {today, later}),
@@ -227,10 +210,12 @@ void main() {
         .last);
     await tester.pump();
 
-    verify(() => cubit.loadJadwal(
-          date: later,
-          dateTo: DateTime(later.year, later.month + 1, 0),
-        )).called(1);
+    expect(
+      calls.agendaLoads.where((call) =>
+          call.date == later &&
+          call.dateTo == DateTime(later.year, later.month + 1, 0)),
+      hasLength(1),
+    );
   });
 
   testWidgets('the month summary is as wide as the calendar above it',
@@ -259,28 +244,30 @@ void main() {
   });
 
   testWidgets('opening the page also loads the upcoming dates', (tester) async {
-    final cubit = await _pumpAt(tester, const Size(1440, 900));
+    final calls = await _pumpAt(tester, const Size(1440, 900));
 
-    verify(() => cubit.loadUpcomingDates()).called(1);
+    expect(calls.upcomingLoads, 1);
   });
 
   testWidgets('an expanded window loads the agenda to the end of the month',
       (tester) async {
-    final cubit = await _pumpAt(
+    final calls = await _pumpAt(
       tester,
       const Size(1440, 900),
       initialDate: DateTime(2026, 10, 19),
     );
 
-    verify(() => cubit.loadJadwal(
-          date: DateTime(2026, 10, 19),
-          dateTo: DateTime(2026, 10, 31),
-        )).called(1);
+    expect(
+      calls.agendaLoads.where((call) =>
+          call.date == DateTime(2026, 10, 19) &&
+          call.dateTo == DateTime(2026, 10, 31)),
+      hasLength(1),
+    );
   });
 
   testWidgets('pulling the agenda down reloads the range without clearing it',
       (tester) async {
-    final cubit = await _pumpAt(
+    final calls = await _pumpAt(
       tester,
       const Size(1440, 900),
       initialDate: DateTime(2026, 10, 19),
@@ -289,31 +276,34 @@ void main() {
     await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
 
-    verify(() => cubit.loadJadwal(
-          silent: true,
-          date: DateTime(2026, 10, 19),
-          dateTo: DateTime(2026, 10, 31),
-        )).called(1);
+    expect(
+      calls.agendaLoads.where((call) =>
+          call.silent &&
+          call.date == DateTime(2026, 10, 19) &&
+          call.dateTo == DateTime(2026, 10, 31)),
+      hasLength(1),
+    );
   });
 
   testWidgets('a medium window and a phone keep a one-day agenda',
       (tester) async {
-    final cubit = await _pumpAt(
+    final calls = await _pumpAt(
       tester,
       const Size(700, 900),
       initialDate: DateTime(2026, 10, 19),
     );
 
-    verify(() => cubit.loadJadwal(date: DateTime(2026, 10, 19))).called(1);
-    verifyNever(() => cubit.loadJadwal(
-          date: any(named: 'date'),
-          dateTo: any(named: 'dateTo'),
-        ));
+    expect(
+      calls.agendaLoads.where(
+          (call) => call.date == DateTime(2026, 10, 19) && call.dateTo == null),
+      hasLength(1),
+    );
+    expect(calls.agendaLoads.where((call) => call.dateTo != null), isEmpty);
   });
 
   testWidgets('widening to expanded reloads the agenda as a range',
       (tester) async {
-    final cubit = await _pumpAt(
+    final calls = await _pumpAt(
       tester,
       const Size(700, 900),
       initialDate: DateTime(2026, 10, 19),
@@ -322,10 +312,12 @@ void main() {
     tester.view.physicalSize = const Size(1440, 900);
     await tester.pump();
 
-    verify(() => cubit.loadJadwal(
-          date: DateTime(2026, 10, 19),
-          dateTo: DateTime(2026, 10, 31),
-        )).called(1);
+    expect(
+      calls.agendaLoads.where((call) =>
+          call.date == DateTime(2026, 10, 19) &&
+          call.dateTo == DateTime(2026, 10, 31)),
+      hasLength(1),
+    );
   });
 
   testWidgets('the agenda groups the rest of the month by day', (tester) async {
@@ -443,8 +435,7 @@ void main() {
   });
 
   testWidgets('saving from the panel closes it', (tester) async {
-    final cubit = await _pumpAt(tester, const Size(1440, 900));
-    when(() => cubit.saveJadwal(any())).thenAnswer((_) async => null);
+    final calls = await _pumpAt(tester, const Size(1440, 900));
 
     await _tapCreate(tester);
     await tester.pumpAndSettle();
@@ -456,7 +447,7 @@ void main() {
     await tester.tap(find.text('Simpan Jadwal'));
     await tester.pumpAndSettle();
 
-    verify(() => cubit.saveJadwal(any())).called(1);
+    expect(calls.saves, hasLength(1));
     expect(
       find.byKey(const ValueKey('jadwal-form')),
       findsNothing,

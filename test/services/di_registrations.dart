@@ -76,8 +76,6 @@ import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data
     show JadwalRemoteDataSource;
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart'
     show JadwalRepository;
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart'
-    show JadwalCubit;
 import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart'
     show PengumumanRemoteDataSource;
 import 'package:pilah_mobile/features/pengumuman/domain/repositories/pengumuman_repository.dart'
@@ -237,7 +235,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('HargaRepository', null, () => di<HargaRepository>()),
   ('SuperadminRepository', null, () => di<SuperadminRepository>()),
   ('AuthRepository', null, () => di<AuthRepository>()),
-  ('JadwalCubit', null, () => di<JadwalCubit>()),
   ('AppealMembershipUseCase', null, () => di<AppealMembershipUseCase>()),
   (
     'GetNasabahMembershipsUseCase',

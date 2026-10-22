@@ -27,7 +27,7 @@ class JadwalLoaded extends JadwalState {
   final int totalCount;
   final Set<DateTime> scheduledDates;
 
-  /// Tanggal berjadwal dari hari ini sampai [JadwalCubit.upcomingDays] hari
+  /// Tanggal berjadwal dari hari ini sampai 90 hari
   /// ke depan, terlepas dari bulan yang sedang tampil di kalender.
   final Set<DateTime> upcomingDates;
 

@@ -20,7 +20,8 @@ import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
 import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository_impl.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
@@ -74,8 +75,9 @@ class AppShell {
         ExportTransaksiUseCase(repo));
     nasabah = buildNasabahCubit(api);
     onboardingDataSource = buildOnboardingDataSource(api);
-    jadwal = JadwalCubit(
-        JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network)));
+    jadwalRepository =
+        JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network));
+    jadwal = JadwalNotifier(jadwalRepository);
     pengumumanRepository =
         PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network));
     superadmin = buildSuperadminNotifier(api);
@@ -92,7 +94,8 @@ class AppShell {
   late final RiwayatAktivitasCubit riwayat;
   late final NasabahCubit nasabah;
   late final OnboardingRemoteDataSource onboardingDataSource;
-  late final JadwalCubit jadwal;
+  late final JadwalNotifier jadwal;
+  late final JadwalRepository jadwalRepository;
   late final PengumumanRepository pengumumanRepository;
   late final SuperadminNotifier superadmin;
   late final StreamController<AuthenticationStates> states;
@@ -110,6 +113,7 @@ class AppShell {
     di.registerSingleton<GetDashboardStatsUseCase>(
         buildDashboardStatsUseCase(api));
     di.registerSingleton<GetTransaksiUseCase>(getTransaksi);
+    di.registerSingleton<JadwalRepository>(jadwalRepository);
     di.registerSingleton<PencairanUseCases>(pencairan);
     di.registerSingleton<NasabahPengumumanRepository>(
         NasabahPengumumanRepository(api.network));
@@ -136,6 +140,7 @@ class AppShell {
     await di.unregister<OnboardingRemoteDataSource>();
     await di.unregister<GetDashboardStatsUseCase>();
     await di.unregister<GetTransaksiUseCase>();
+    await di.unregister<JadwalRepository>();
     await di.unregister<PencairanUseCases>();
     await di.unregister<NasabahPengumumanRepository>();
     await di.unregister<PengumumanRepository>();
@@ -158,7 +163,6 @@ class AppShell {
 
       riwayat.close,
       nasabah.close,
-      jadwal.close,
       // The pencairan cubits are closed by the pages that own them.
     ]) {
       // Not awaited, for the same reason as [states]: a cubit the app's own
@@ -190,11 +194,11 @@ class AppShell {
   }
 
   Widget wrap(Widget app) => ProviderScope(
+        overrides: [jadwalProvider.overrideWith(() => jadwal)],
         child: MultiBlocProvider(
           providers: [
             BlocProvider<NasabahCubit>.value(value: nasabah),
             BlocProvider<HargaCubit>.value(value: harga),
-            BlocProvider<JadwalCubit>.value(value: jadwal),
             BlocProvider<TransaksiCubit>.value(value: transaksi),
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
             BlocProvider<ProfileCubit>.value(value: profile),

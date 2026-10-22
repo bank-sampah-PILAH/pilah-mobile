@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
@@ -113,7 +113,7 @@ class App extends StatelessWidget {
     return ProviderScope(
       child: MultiBlocProvider(
         providers: [
-          // Cubits load their data from each page's initState (post-login), so
+          // Remaining Cubits load their data from each page's initState (post-login), so
           // the requests carry the authenticated session instead of firing once
           // at cold start before a token exists.
           BlocProvider<NasabahCubit>(
@@ -121,9 +121,6 @@ class App extends StatelessWidget {
           ),
           BlocProvider<HargaCubit>(
             create: (context) => di<HargaCubit>(),
-          ),
-          BlocProvider<JadwalCubit>(
-            create: (context) => di<JadwalCubit>(),
           ),
           BlocProvider<TransaksiCubit>(
             create: (context) => di<TransaksiCubit>(),
@@ -267,7 +264,9 @@ class _PendingInviteResumeWatcherState
 void resetSessionScopedState(BuildContext context) {
   context.read<NasabahCubit>().reset();
   context.read<HargaCubit>().reset();
-  context.read<JadwalCubit>().reset();
+  ProviderScope.containerOf(context, listen: false)
+      .read(jadwalProvider.notifier)
+      .reset();
   final providers = ProviderScope.containerOf(context, listen: false);
   if (providers.exists(pengumumanProvider)) {
     providers.read(pengumumanProvider.notifier).reset();

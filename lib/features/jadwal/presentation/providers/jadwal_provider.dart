@@ -1,14 +1,17 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/services/di.dart';
 
-@lazySingleton
-class JadwalCubit extends Cubit<JadwalState> {
+final jadwalProvider = NotifierProvider<JadwalNotifier, JadwalState>(
+  () => JadwalNotifier(di<JadwalRepository>()),
+);
+
+class JadwalNotifier extends Notifier<JadwalState> {
   final JadwalRepository repository;
   bool _transitionInProgress = false;
   bool _saveInProgress = false;
@@ -33,7 +36,10 @@ class JadwalCubit extends Cubit<JadwalState> {
   /// Rentang terpanjang yang diterima `calendar-dates` (selisih hari).
   static const _maxCalendarRangeDays = 62;
 
-  JadwalCubit(this.repository) : super(const JadwalInitial());
+  JadwalNotifier(this.repository);
+
+  @override
+  JadwalState build() => const JadwalInitial();
 
   List<JadwalEntity> get _items =>
       state is JadwalLoaded ? (state as JadwalLoaded).items : const [];
@@ -59,28 +65,30 @@ class JadwalCubit extends Cubit<JadwalState> {
     final current = state;
 
     if (dateChanged) {
-      emit(JadwalLoaded(
+      state = JadwalLoaded(
         const [],
         isSaving: _saveInProgress,
         isTransitioning: _transitionInProgress,
         isLoading: true,
         scheduledDates: _scheduledDates,
         upcomingDates: _upcomingDates,
-      ));
+      );
     } else if (!silent || current is! JadwalLoaded) {
-      emit(const JadwalLoading());
+      state = const JadwalLoading();
     }
 
     final result = await _fetch(1);
-    if (version != _loadVersion || sessionGeneration != _sessionGeneration) {
+    if (!ref.mounted ||
+        version != _loadVersion ||
+        sessionGeneration != _sessionGeneration) {
       return;
     }
     result.fold(
-      (failure) => emit(JadwalError(failure.displayMessage)),
+      (failure) => state = JadwalError(failure.displayMessage),
       (page) {
         _page = 1;
         _hasMore = page.hasMore;
-        emit(JadwalLoaded(
+        state = JadwalLoaded(
           page.items,
           isSaving: _saveInProgress,
           isTransitioning: _transitionInProgress,
@@ -88,7 +96,7 @@ class JadwalCubit extends Cubit<JadwalState> {
           totalCount: page.totalCount,
           scheduledDates: _scheduledDates,
           upcomingDates: _upcomingDates,
-        ));
+        );
       },
     );
   }
@@ -111,21 +119,23 @@ class JadwalCubit extends Cubit<JadwalState> {
     }
     _isLoadingMore = true;
     final version = _loadVersion;
-    emit(current.copyWith(
+    state = current.copyWith(
       isLoadingMore: true,
       clearLoadingMoreError: true,
-    ));
+    );
 
     final result = await _fetch(_page + 1);
-    if (version != _loadVersion || state is! JadwalLoaded) return;
+    if (!ref.mounted || version != _loadVersion || state is! JadwalLoaded) {
+      return;
+    }
     _isLoadingMore = false;
     result.fold(
       (failure) {
         final loaded = state as JadwalLoaded;
-        emit(loaded.copyWith(
+        state = loaded.copyWith(
           isLoadingMore: false,
           loadingMoreError: failure.displayMessage,
-        ));
+        );
       },
       (page) {
         final loaded = state as JadwalLoaded;
@@ -136,13 +146,13 @@ class JadwalCubit extends Cubit<JadwalState> {
         ];
         _page++;
         _hasMore = page.hasMore;
-        emit(loaded.copyWith(
+        state = loaded.copyWith(
           items: items,
           hasMore: page.hasMore,
           isLoadingMore: false,
           totalCount: page.totalCount,
           clearLoadingMoreError: true,
-        ));
+        );
       },
     );
   }
@@ -160,19 +170,19 @@ class JadwalCubit extends Cubit<JadwalState> {
       _scheduledDates = {};
       final current = state;
       if (current is JadwalLoaded) {
-        emit(current.copyWith(scheduledDates: _scheduledDates));
+        state = current.copyWith(scheduledDates: _scheduledDates);
       }
     }
     final version = ++_calendarVersion;
     final result = await repository.getCalendarDates(start, end);
-    if (version != _calendarVersion) return;
+    if (!ref.mounted || version != _calendarVersion) return;
     result.fold(
       (_) {},
       (dates) {
         _scheduledDates = dates.map(_dateOnly).toSet();
         final current = state;
         if (current is JadwalLoaded) {
-          emit(current.copyWith(scheduledDates: _scheduledDates));
+          state = current.copyWith(scheduledDates: _scheduledDates);
         }
       },
     );
@@ -197,7 +207,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     final results = await Future.wait([
       for (final (from, to) in ranges) repository.getCalendarDates(from, to),
     ]);
-    if (version != _upcomingVersion) return;
+    if (!ref.mounted || version != _upcomingVersion) return;
     final dates = <DateTime>{};
     for (final result in results) {
       final failed = result.fold((_) => true, (found) {
@@ -209,7 +219,7 @@ class JadwalCubit extends Cubit<JadwalState> {
     _upcomingDates = dates;
     final current = state;
     if (current is JadwalLoaded) {
-      emit(current.copyWith(upcomingDates: _upcomingDates));
+      state = current.copyWith(upcomingDates: _upcomingDates);
     }
   }
 
@@ -224,11 +234,11 @@ class JadwalCubit extends Cubit<JadwalState> {
     final current = state is JadwalLoaded ? state as JadwalLoaded : null;
     _saveInProgress = true;
     try {
-      emit((current ?? JadwalLoaded(_items)).copyWith(isSaving: true));
+      state = (current ?? JadwalLoaded(_items)).copyWith(isSaving: true);
       final result = jadwal.id.isEmpty
           ? await repository.createJadwal(jadwal)
           : await repository.updateJadwal(jadwal);
-      if (generation != _sessionGeneration) {
+      if (!ref.mounted || generation != _sessionGeneration) {
         return result.fold((failure) => failure, (_) => null);
       }
       return await result.fold(
@@ -239,11 +249,11 @@ class JadwalCubit extends Cubit<JadwalState> {
         },
       );
     } finally {
-      if (generation == _sessionGeneration) {
+      if (ref.mounted && generation == _sessionGeneration) {
         _saveInProgress = false;
         final latest = state;
         if (latest is JadwalLoaded && latest.isSaving) {
-          emit(latest.copyWith(isSaving: false));
+          state = latest.copyWith(isSaving: false);
         }
       }
     }
@@ -255,12 +265,12 @@ class JadwalCubit extends Cubit<JadwalState> {
     final current = state;
     _transitionInProgress = true;
     if (current is JadwalLoaded) {
-      emit(current.copyWith(isTransitioning: true));
+      state = current.copyWith(isTransitioning: true);
     }
 
     try {
       final result = await repository.transition(id, action);
-      if (generation != _sessionGeneration) {
+      if (!ref.mounted || generation != _sessionGeneration) {
         return result.fold((failure) => failure, (_) => null);
       }
       return await result.fold(
@@ -271,11 +281,11 @@ class JadwalCubit extends Cubit<JadwalState> {
         },
       );
     } finally {
-      if (generation == _sessionGeneration) {
+      if (ref.mounted && generation == _sessionGeneration) {
         _transitionInProgress = false;
         final latest = state;
         if (latest is JadwalLoaded && latest.isTransitioning) {
-          emit(latest.copyWith(isTransitioning: false));
+          state = latest.copyWith(isTransitioning: false);
         }
       }
     }
@@ -314,6 +324,6 @@ class JadwalCubit extends Cubit<JadwalState> {
     _calendarStart = null;
     _calendarEnd = null;
     _scheduledDates = {};
-    emit(const JadwalInitial());
+    state = const JadwalInitial();
   }
 }

@@ -19,8 +19,9 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_p
 
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
@@ -39,6 +40,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cub
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
+import 'support/jadwal_provider_support.dart';
 import 'support/pengumuman_support.dart';
 import 'support/stub_api.dart';
 
@@ -47,7 +49,7 @@ class _MockNasabahCubit extends MockCubit<NasabahState>
 
 class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
 
-class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
+class _MockJadwalRepository extends Mock implements JadwalRepository {}
 
 class _MockTransaksiCubit extends MockCubit<TransaksiState>
     implements TransaksiCubit {}
@@ -73,7 +75,6 @@ void main() {
   late StreamController<AuthenticationStates> authenticationStates;
   late _MockNasabahCubit nasabah;
   late _MockHargaCubit harga;
-  late _MockJadwalCubit jadwal;
   late _MockTransaksiCubit transaksi;
   late _MockRiwayatAktivitasCubit riwayatAktivitas;
   late _MockProfileCubit profile;
@@ -84,7 +85,6 @@ void main() {
   setUp(() {
     nasabah = _MockNasabahCubit();
     harga = _MockHargaCubit();
-    jadwal = _MockJadwalCubit();
     transaksi = _MockTransaksiCubit();
     riwayatAktivitas = _MockRiwayatAktivitasCubit();
     profile = _MockProfileCubit();
@@ -97,7 +97,6 @@ void main() {
     );
     when(() => nasabah.state).thenReturn(NasabahInitial());
     when(() => harga.state).thenReturn(HargaInitial());
-    when(() => jadwal.state).thenReturn(const JadwalInitial());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => riwayatAktivitas.state)
         .thenReturn(const RiwayatAktivitasState());
@@ -108,9 +107,9 @@ void main() {
     }
     di.registerSingleton<AuthenticationBloc>(authenticationBloc);
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
+    di.registerSingleton<JadwalRepository>(_MockJadwalRepository());
     di.registerSingleton<NasabahCubit>(nasabah);
     di.registerSingleton<HargaCubit>(harga);
-    di.registerSingleton<JadwalCubit>(jadwal);
     di.registerSingleton<TransaksiCubit>(transaksi);
     di.registerSingleton<RiwayatAktivitasCubit>(riwayatAktivitas);
     di.registerSingleton<ProfileCubit>(profile);
@@ -147,6 +146,12 @@ void main() {
       onboardingProvider.overrideWith(
         () => OnboardingNotifier(_MockOnboardingDataSource()),
       ),
+      jadwalProvider.overrideWith(
+        () => TestJadwalNotifier(
+          repository: UnusedJadwalRepository(),
+          initialState: const JadwalLoaded([]),
+        ),
+      ),
     ]);
     providerContainer.read(onboardingProvider.notifier).saveProfileDraft(
           const CompleteProfileRequest(
@@ -182,7 +187,6 @@ void main() {
           providers: [
             BlocProvider<NasabahCubit>.value(value: nasabah),
             BlocProvider<HargaCubit>.value(value: harga),
-            BlocProvider<JadwalCubit>.value(value: jadwal),
             BlocProvider<TransaksiCubit>.value(value: transaksi),
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
             BlocProvider<ProfileCubit>.value(value: profile),
@@ -211,7 +215,7 @@ void main() {
     // Only the invite token is exempt; session state still resets.
     verify(() => nasabah.reset()).called(1);
     verify(() => harga.reset()).called(1);
-    verify(() => jadwal.reset()).called(1);
+    expect(providerContainer.read(jadwalProvider), isA<JadwalInitial>());
     verify(() => transaksi.reset()).called(1);
     verify(() => riwayatAktivitas.reset()).called(1);
     verify(
