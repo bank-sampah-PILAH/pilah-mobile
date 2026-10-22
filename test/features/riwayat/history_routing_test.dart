@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,7 +20,6 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_data_source.dart';
 import 'package:pilah_mobile/features/riwayat/data/repositories/riwayat_repository_impl.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
@@ -131,9 +131,7 @@ void main() {
     when(() => environment.supportsDemoLogin).thenReturn(false);
     di.registerSingleton<AppEnvironment>(environment);
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(payoutUseCases),
-    );
+    di.registerFactory<PencairanUseCases>(() => payoutUseCases);
     whenListen(auth, states.stream,
         initialState: Authenticated(
           authEntity: const AuthEntity(
@@ -152,7 +150,7 @@ void main() {
     await unregisterApprovedMembership(approval);
     di<InviteTokenStore>().dispose();
     await di.unregister<InviteTokenStore>();
-    await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<PencairanUseCases>();
     await di.unregister<RiwayatHistoryCubit>();
     await di.unregister<RiwayatRepository>();
     await di.unregister<RiwayatRemoteDataSource>();
@@ -161,9 +159,11 @@ void main() {
   });
   Future<void> open(WidgetTester tester, String path) async {
     router.go(path);
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-      value: auth,
-      child: MaterialApp.router(routerConfig: router),
+    await tester.pumpWidget(ProviderScope(
+      child: BlocProvider<AuthenticationBloc>.value(
+        value: auth,
+        child: MaterialApp.router(routerConfig: router),
+      ),
     ));
     await tester.pumpAndSettle();
   }

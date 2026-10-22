@@ -4,6 +4,7 @@ import '../../../support/stub_api.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -21,7 +22,6 @@ import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_reposito
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
@@ -104,13 +104,11 @@ void main() {
         NasabahPengumumanRepository(pengumumanApi.network));
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(payoutUseCases),
-    );
+    di.registerFactory<PencairanUseCases>(() => payoutUseCases);
     registerFakeRiwayat(riwayat);
   });
   tearDown(() async {
-    await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<PencairanUseCases>();
     await unregisterFakeRiwayat();
     await di.unregister<NasabahRepository>();
     await di.unregister<JadwalRepository>();
@@ -132,8 +130,12 @@ void main() {
               )),
     ]);
     addTearDown(router.dispose);
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: MaterialApp.router(routerConfig: router)));
+    await tester.pumpWidget(ProviderScope(
+      child: BlocProvider<AuthenticationBloc>.value(
+        value: auth,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    ));
     await tester.pump();
   }
 

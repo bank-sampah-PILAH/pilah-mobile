@@ -31,7 +31,6 @@ import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_peng
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/approve_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart';
@@ -129,8 +128,6 @@ class AppShell {
     di.registerFactory<EditPencairanCubit>(() => EditPencairanCubit(useCases));
     di.registerFactory<RevisiPencairanCubit>(
         () => RevisiPencairanCubit(useCases));
-    di.registerFactory<RiwayatPencairanCubit>(
-        () => RiwayatPencairanCubit(useCases));
     di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
         GetRiwayatHargaUseCase(
             HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
@@ -156,7 +153,6 @@ class AppShell {
     await di.unregister<RejectBankSampahUseCase>();
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
-    await di.unregister<RiwayatPencairanCubit>();
     await di.unregister<RiwayatHargaCubit>();
     await di.unregister<DraftPencairanRepository>();
     await di.unregister<PilihNasabahCubit>();

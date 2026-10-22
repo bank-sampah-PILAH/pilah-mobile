@@ -5,6 +5,7 @@ import '../../../support/stub_api.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -24,7 +25,6 @@ import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_reposito
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -145,9 +145,7 @@ void main() {
         NasabahPengumumanRepository(pengumumanApi.network));
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(payoutUseCases),
-    );
+    di.registerFactory<PencairanUseCases>(() => payoutUseCases);
     registerFakeRiwayat(riwayatFixture);
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
 
@@ -157,7 +155,7 @@ void main() {
       await unregisterApprovedMembership(approval);
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
-      await di.unregister<RiwayatPencairanCubit>();
+      await di.unregister<PencairanUseCases>();
       await unregisterFakeRiwayat();
       await di.unregister<NasabahRepository>();
       await di.unregister<JadwalRepository>();
@@ -166,11 +164,13 @@ void main() {
 
     router.go(LoginPage.route);
     await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-        ],
-        child: MaterialApp.router(routerConfig: router),
+      ProviderScope(
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthenticationBloc>.value(value: auth),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
       ),
     );
     await tester.pumpAndSettle();

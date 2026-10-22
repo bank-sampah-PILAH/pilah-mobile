@@ -138,8 +138,6 @@ import '../features/pencairan/presentation/blocs/edit_pencairan_cubit.dart'
     as _i41;
 import '../features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart'
     as _i700;
-import '../features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart'
-    as _i8;
 import '../features/pengumuman/data/datasources/pengumuman_remote_data_source.dart'
     as _i375;
 import '../features/pengumuman/data/nasabah_pengumuman_repository.dart' as _i84;
@@ -448,8 +446,6 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i41.EditPencairanCubit(gh<_i686.PencairanUseCases>()));
     gh.factory<_i700.RevisiPencairanCubit>(
         () => _i700.RevisiPencairanCubit(gh<_i686.PencairanUseCases>()));
-    gh.factory<_i8.RiwayatPencairanCubit>(
-        () => _i8.RiwayatPencairanCubit(gh<_i686.PencairanUseCases>()));
     gh.factory<_i225.RiwayatHistoryCubit>(() => _i225.RiwayatHistoryCubit(
           gh<_i216.GetRiwayatHistoryUseCase>(),
           gh<_i216.GetRiwayatSetoranDetailUseCase>(),

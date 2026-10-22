@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/providers/riwayat_pencairan_provider.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_history_tab.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
 
@@ -38,22 +38,22 @@ void main() {
 
   late _MockUseCases useCases;
 
-  setUp(() async {
-    if (di.isRegistered<RiwayatPencairanCubit>()) {
-      await di.unregister<RiwayatPencairanCubit>();
-    }
+  setUp(() {
     useCases = _MockUseCases();
     when(() => useCases.getRiwayat(any()))
         .thenAnswer((_) async => Right([_row()]));
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(useCases),
-    );
   });
-  tearDown(() => di.unregister<RiwayatPencairanCubit>());
 
   Future<void> pumpView(WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: PencairanHistoryTab())),
+      ProviderScope(
+        overrides: [
+          riwayatPencairanProvider.overrideWith(
+            () => RiwayatPencairanNotifier(useCases),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: PencairanHistoryTab())),
+      ),
     );
   }
 

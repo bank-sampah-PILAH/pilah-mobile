@@ -16,7 +16,6 @@ import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_f
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -34,9 +33,6 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<RiwayatPencairanCubit>()) {
-      di.unregister<RiwayatPencairanCubit>();
-    }
     if (di.isRegistered<EditPencairanCubit>()) {
       di.unregister<EditPencairanCubit>();
     }
@@ -49,9 +45,6 @@ void main() {
   tearDown(() async {
     if (di.isRegistered<InviteTokenStore>()) {
       await di.unregister<InviteTokenStore>();
-    }
-    if (di.isRegistered<RiwayatPencairanCubit>()) {
-      await di.unregister<RiwayatPencairanCubit>();
     }
     if (di.isRegistered<EditPencairanCubit>()) {
       await di.unregister<EditPencairanCubit>();
@@ -73,9 +66,6 @@ void main() {
           revisi: const [],
         ),
       ),
-    );
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(useCases),
     );
     di.registerFactory<EditPencairanCubit>(
       () => EditPencairanCubit(useCases),

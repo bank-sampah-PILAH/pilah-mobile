@@ -1,15 +1,16 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
@@ -81,18 +82,21 @@ void main() {
           GetRiwayatHistoryUseCase(riwayatRepository),
           GetRiwayatSetoranDetailUseCase(riwayatRepository),
         ));
-    di.registerFactory<RiwayatPencairanCubit>(
-        () => RiwayatPencairanCubit(buildPencairanUseCases(StubApi())));
+    di.registerFactory<PencairanUseCases>(
+        () => buildPencairanUseCases(StubApi()));
     addTearDown(() async {
       await di.unregister<NasabahRepository>();
       await di.unregister<RiwayatRepository>();
       await di.unregister<RiwayatHistoryCubit>();
-      await di.unregister<RiwayatPencairanCubit>();
+      await di.unregister<PencairanUseCases>();
     });
-    await tester.pumpWidget(MaterialApp(
-      home: BlocProvider<AuthenticationBloc>.value(
-        value: authBlocIn(Authenticated(authEntity: testAuth(role: 'nasabah'))),
-        child: const NasabahHistoryScreen(membershipId: 'm1'),
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: BlocProvider<AuthenticationBloc>.value(
+          value:
+              authBlocIn(Authenticated(authEntity: testAuth(role: 'nasabah'))),
+          child: const NasabahHistoryScreen(membershipId: 'm1'),
+        ),
       ),
     ));
     await tester.pumpAndSettle();
