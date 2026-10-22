@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -15,7 +16,7 @@ import 'package:pilah_mobile/features/statement/data/statement_repository_impl.d
 import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';
 import 'package:pilah_mobile/features/statement/domain/statement_interactor.dart';
 import 'package:pilah_mobile/features/statement/domain/use_cases/statement_use_cases.dart';
-import 'package:pilah_mobile/features/statement/presentation/blocs/statement_export_cubit.dart';
+import 'package:pilah_mobile/features/statement/presentation/providers/statement_export_provider.dart';
 import 'package:pilah_mobile/preview/preview_riwayat_repository.dart';
 
 import '../../support/stub_api.dart';
@@ -113,25 +114,32 @@ void main() {
       'content-disposition': ['attachment; filename=unquoted.pdf'],
     });
     final remote = StatementRemoteDataSourceImpl(api.network);
-    final cubit = StatementExportCubit(
+    final notifier = StatementExportNotifier(
         StatementInteractor(StatementRepositoryImpl(remote)));
-    addTearDown(cubit.close);
+    final container = ProviderContainer(overrides: [
+      statementExportProvider.overrideWith(() => notifier),
+    ]);
+    container.read(statementExportProvider);
     final states = <StatementExportStatus>[];
-    final subscription =
-        cubit.stream.listen((state) => states.add(state.status));
-    addTearDown(subscription.cancel);
-    final pdf = await cubit.export('member-1');
+    final subscription = container.listen(statementExportProvider, (_, state) {
+      states.add(state.status);
+    });
+    final pdf = await notifier.export('member-1');
+    addTearDown(container.dispose);
     expect(pdf!.filename, 'unquoted.pdf');
     expect(pdf.bytes, [1, 2]);
     expect(
-        cubit.state,
+        container.read(statementExportProvider),
         StatementExportState(
             status: StatementExportStatus.loaded, export: pdf));
-    expect(cubit.state.props, [StatementExportStatus.loaded, pdf, null]);
+    expect(container.read(statementExportProvider).props,
+        [StatementExportStatus.loaded, pdf, null]);
     api.fail('GET', '$path/export-pdf');
-    expect(await cubit.export('member-1'), isNull);
-    expect(cubit.state.status, StatementExportStatus.failure);
-    expect(cubit.state.error, isNotEmpty);
+    expect(await notifier.export('member-1'), isNull);
+    expect(container.read(statementExportProvider).status,
+        StatementExportStatus.failure);
+    expect(container.read(statementExportProvider).error, isNotEmpty);
+    subscription.close();
     await Future<void>.delayed(Duration.zero);
     expect(states, [
       StatementExportStatus.loading,
@@ -145,17 +153,20 @@ void main() {
         'Riwayat_Aktivitas.pdf');
   });
 
-  test('a disposed statement cubit ignores a pending export result', () async {
+  test('a disposed provider ignores a pending export result', () async {
     final useCases = _UseCases();
     final pending = Completer<Either<NetworkException, StatementExport>>();
     when(() => useCases.exportPdf('m')).thenAnswer((_) => pending.future);
-    final cubit = StatementExportCubit(useCases);
-    final result = cubit.export('m');
-    await cubit.close();
+    final notifier = StatementExportNotifier(useCases);
+    final container = ProviderContainer(overrides: [
+      statementExportProvider.overrideWith(() => notifier),
+    ]);
+    container.read(statementExportProvider);
+    final result = notifier.export('m');
+    container.dispose();
     pending
         .complete(const Right(StatementExport(bytes: [1], filename: 'a.pdf')));
     expect(await result, isNull);
-    expect(cubit.state.status, StatementExportStatus.loading);
   });
 
   test('offline history adapter returns empty history and a typed detail error',

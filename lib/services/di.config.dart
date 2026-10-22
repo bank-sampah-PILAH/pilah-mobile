@@ -175,8 +175,6 @@ import '../features/statement/domain/repository/statement_repository.dart'
 import '../features/statement/domain/statement_interactor.dart' as _i408;
 import '../features/statement/domain/use_cases/statement_use_cases.dart'
     as _i742;
-import '../features/statement/presentation/blocs/statement_export_cubit.dart'
-    as _i873;
 import '../features/superadmin/data/datasources/superadmin_remote_data_source.dart'
     as _i309;
 import '../features/superadmin/data/datasources/superadmin_remote_data_source_impl.dart'
@@ -396,8 +394,6 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i742.StatementUseCases>(
         () => _i408.StatementInteractor(gh<_i664.StatementRepository>()));
-    gh.factory<_i873.StatementExportCubit>(
-        () => _i873.StatementExportCubit(gh<_i742.StatementUseCases>()));
     gh.lazySingleton<_i958.ApproveBankSampahUseCase>(
         () => _i958.ApproveBankSampahUseCase(gh<_i260.SuperadminRepository>()));
     gh.lazySingleton<_i268.GetBankSampahUseCase>(

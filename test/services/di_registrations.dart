@@ -152,8 +152,6 @@ import 'package:pilah_mobile/features/statement/domain/repository/statement_repo
     show StatementRepository;
 import 'package:pilah_mobile/features/statement/domain/use_cases/statement_use_cases.dart'
     show StatementUseCases;
-import 'package:pilah_mobile/features/statement/presentation/blocs/statement_export_cubit.dart'
-    show StatementExportCubit;
 import 'package:pilah_mobile/features/superadmin/data/datasources/superadmin_remote_data_source.dart'
     show SuperadminRemoteDataSource;
 import 'package:pilah_mobile/features/superadmin/domain/repositories/superadmin_repository.dart'
@@ -297,7 +295,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('LoginWithGoogleUseCase', null, () => di<LoginWithGoogleUseCase>()),
   ('AuthenticationBloc', null, () => di<AuthenticationBloc>()),
   ('StatementUseCases', null, () => di<StatementUseCases>()),
-  ('StatementExportCubit', null, () => di<StatementExportCubit>()),
   ('ApproveBankSampahUseCase', null, () => di<ApproveBankSampahUseCase>()),
   ('GetBankSampahUseCase', null, () => di<GetBankSampahUseCase>()),
   ('RejectBankSampahUseCase', null, () => di<RejectBankSampahUseCase>()),
