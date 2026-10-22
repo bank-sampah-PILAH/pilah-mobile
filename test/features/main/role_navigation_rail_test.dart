@@ -46,10 +46,20 @@ void main() {
       await taps(tester, role: 'pengelola');
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.destinations.length, 6);
-      expect(
-        rail.destinations.map((d) => (d.label as Text).data),
-        ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal', 'Pengumuman'],
-      );
+      const expectedLabels = [
+        'Dashboard',
+        'Nasabah',
+        'Harga',
+        'Aktivitas',
+        'Jadwal',
+        'Pengumuman',
+      ];
+      final visibleLabels = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((label) => label.data)
+          .where(expectedLabels.contains)
+          .toList();
+      expect(visibleLabels, expectedLabels);
     });
 
     testWidgets('keeps Pengumuman visible but disabled', (tester) async {
