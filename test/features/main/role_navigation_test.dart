@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class MockAuth extends MockBloc<AuthenticationEvent, AuthenticationStates>
@@ -59,7 +60,8 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     Stream<NasabahApprovalState>? approvalStates,
     MockApproval? approvalCubit,
     String initialLocation = '/home',
-    bool settle = true}) async {
+    bool settle = true,
+    bool? isWebOverride}) async {
   final approval = approvalCubit ?? MockApproval();
   when(() => approval.load(silent: any(named: 'silent')))
       .thenAnswer((_) async {});
@@ -79,7 +81,10 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     initialLocation: initialLocation,
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (_, __, shell) => MainPage(navigationShell: shell),
+        builder: (_, __, shell) => MainPage(
+          navigationShell: shell,
+          isWebOverride: isWebOverride,
+        ),
         branches: [
           for (final path in [
             '/home',
@@ -100,6 +105,10 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
               ],
             ),
         ],
+      ),
+      GoRoute(
+        path: TransaksiBaruPage.route,
+        builder: (_, __) => const Scaffold(body: Text('Form Setoran')),
       ),
       GoRoute(
         path: '/approval-bank-sampah/detail',
@@ -177,6 +186,26 @@ void main() {
       ]);
     });
   }
+
+  testWidgets('Pengurus opens Setoran Baru from the web sidebar action',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await mount(
+      tester,
+      session('pengelola'),
+      isWebOverride: true,
+    );
+
+    expect(find.text('Tambah Transaksi'), findsOneWidget);
+    await tester.tap(find.text('Tambah Transaksi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Form Setoran'), findsOneWidget);
+  });
 
   testWidgets('pending membership shows status home with only Home and Profile',
       (tester) async {

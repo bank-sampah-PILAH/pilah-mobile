@@ -21,6 +21,7 @@ void main() {
     int currentIndex = 0,
     String? bankSampahNama = 'Bank Sampah Melati',
     bool limitedNasabah = false,
+    VoidCallback? onAddTransaction,
   }) async {
     final selected = <int>[];
     await pumpRouted(
@@ -33,6 +34,7 @@ void main() {
             bankSampahNama: bankSampahNama,
             limitedNasabah: limitedNasabah,
             onSelected: selected.add,
+            onAddTransaction: onAddTransaction,
           ),
         ),
       ),
@@ -59,6 +61,32 @@ void main() {
     testWidgets('names the bank sampah being managed', (tester) async {
       await mountDrawer(tester);
       expect(find.text('Bank Sampah Melati'), findsOneWidget);
+    });
+
+    testWidgets('shows the transaction action before destinations',
+        (tester) async {
+      var added = false;
+      await mountDrawer(tester, onAddTransaction: () => added = true);
+
+      expect(find.text('Tambah Transaksi'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Tambah Transaksi')).dy,
+        lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
+      );
+      await tester.tap(find.byKey(RoleNavigationDrawer.addTransactionKey));
+      await tester.pumpAndSettle();
+      expect(added, isTrue);
+    });
+
+    testWidgets('hides the transaction action from Pengelola Induk',
+        (tester) async {
+      await mountDrawer(
+        tester,
+        role: 'pengelola_induk',
+        onAddTransaction: () {},
+      );
+
+      expect(find.text('Tambah Transaksi'), findsNothing);
     });
 
     testWidgets('reports the menu index that was tapped', (tester) async {

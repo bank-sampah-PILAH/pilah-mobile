@@ -104,7 +104,7 @@ class _TransaksiChooserSheet extends StatelessWidget {
             icon: Icons.payments_outlined,
             title: 'Pencairan',
             subtitle: 'Buat draft, potongan, dan pencairan banyak nasabah',
-            onTap: () => Navigator.of(context).pop(_TransaksiChoice.pencairan),
+            onTap: null,
           ),
         ],
       ),
@@ -116,7 +116,7 @@ class _ChoiceTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ChoiceTile({
     required this.icon,
@@ -127,6 +127,7 @@ class _ChoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -141,10 +142,14 @@ class _ChoiceTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.greenLight,
+                color: enabled ? AppColors.greenLight : AppColors.fill,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: Icon(icon, color: AppColors.greenDark, size: 22),
+              child: Icon(
+                icon,
+                color: enabled ? AppColors.greenDark : AppColors.grey100,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -154,7 +159,7 @@ class _ChoiceTile extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
+                      color: enabled ? Colors.black87 : AppColors.grey100,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -166,7 +171,7 @@ class _ChoiceTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[400]),
+            if (enabled) Icon(Icons.chevron_right, color: Colors.grey[400]),
           ],
         ),
       ),

@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
@@ -243,6 +244,11 @@ class _ShellContent extends StatelessWidget {
       profileEmail: profileEmail,
       onProfile: () => navigationShell.goBranch(_profileBranch),
       onHome: () => navigationShell.goBranch(0, initialLocation: true),
+      onAddTransaction: role == 'pengelola'
+          ? () {
+              context.push(TransaksiBaruPage.route);
+            }
+          : null,
       profileSelected:
           GoRouterState.of(context).uri.path == AppLocations.profile,
       onSelected: select,

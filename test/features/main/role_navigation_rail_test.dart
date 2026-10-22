@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 
@@ -16,6 +17,7 @@ void main() {
     int currentIndex = 0,
     Size window = const Size(1440, 900),
     bool limitedNasabah = false,
+    VoidCallback? onAddTransaction,
   }) async {
     final tapped = <int>[];
     await pumpRouted(
@@ -28,6 +30,7 @@ void main() {
               currentIndex: currentIndex,
               limitedNasabah: limitedNasabah,
               onSelected: tapped.add,
+              onAddTransaction: onAddTransaction,
             ),
           ),
           const Expanded(child: SizedBox.shrink()),
@@ -48,6 +51,44 @@ void main() {
         rail.destinations.map((d) => (d.label as Text).data),
         ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal', 'Pengumuman'],
       );
+    });
+
+    testWidgets('shows the outlined transaction action before destinations',
+        (tester) async {
+      var added = false;
+      await taps(tester,
+          role: 'pengelola', onAddTransaction: () => added = true);
+
+      expect(find.text('Tambah Transaksi'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Tambah Transaksi')).dy,
+        lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
+      );
+      expect(
+        tester
+            .widget<AppButton>(find.byKey(RoleNavigationRail.addTransactionKey))
+            .variant,
+        AppButtonVariant.outlined,
+      );
+      await tester.tap(find.byKey(RoleNavigationRail.addTransactionKey));
+      await tester.pumpAndSettle();
+      expect(added, isTrue);
+    });
+
+    testWidgets('keeps the action accessible when the rail is collapsed',
+        (tester) async {
+      var added = false;
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(720, 900),
+        onAddTransaction: () => added = true,
+      );
+
+      expect(find.byTooltip('Tambah Transaksi'), findsOneWidget);
+      await tester.tap(find.byTooltip('Tambah Transaksi'));
+      await tester.pumpAndSettle();
+      expect(added, isTrue);
     });
 
     testWidgets('marks the current destination as selected', (tester) async {
