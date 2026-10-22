@@ -162,8 +162,6 @@ import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampa
     show GetBankSampahUseCase;
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart'
     show RejectBankSampahUseCase;
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart'
-    show SuperadminCubit;
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source.dart'
     show TransaksiRemoteDataSource;
 import 'package:pilah_mobile/features/transaksi/domain/repositories/aktivitas_repository.dart'
@@ -322,5 +320,4 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('RiwayatHistoryCubit', null, () => di<RiwayatHistoryCubit>()),
   ('RiwayatAktivitasCubit', null, () => di<RiwayatAktivitasCubit>()),
   ('HargaCubit', null, () => di<HargaCubit>()),
-  ('SuperadminCubit', null, () => di<SuperadminCubit>()),
 ];

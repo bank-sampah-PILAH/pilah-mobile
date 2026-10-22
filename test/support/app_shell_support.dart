@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -32,7 +33,10 @@ import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencaira
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
+import 'package:pilah_mobile/features/superadmin/domain/use_cases/approve_bank_sampah_usecase.dart';
+import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart';
+import 'package:pilah_mobile/features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repository_impl.dart';
@@ -81,7 +85,7 @@ class AppShell {
         PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network)));
     nasabahPengumuman =
         NasabahPengumumanCubit(NasabahPengumumanRepository(api.network));
-    superadmin = buildSuperadminCubit(api);
+    superadmin = buildSuperadminNotifier(api);
     states = StreamController<AuthenticationStates>.broadcast();
     auth = MockAuthBloc();
   }
@@ -98,7 +102,7 @@ class AppShell {
   late final JadwalCubit jadwal;
   late final PengumumanCubit pengumuman;
   late final NasabahPengumumanCubit nasabahPengumuman;
-  late final SuperadminCubit superadmin;
+  late final SuperadminNotifier superadmin;
   late final StreamController<AuthenticationStates> states;
   late final MockAuthBloc auth;
   late final InviteTokenStore invites;
@@ -116,7 +120,11 @@ class AppShell {
     di.registerSingleton<PencairanUseCases>(pencairan);
     di.registerSingleton<NasabahPengumumanRepository>(
         NasabahPengumumanRepository(api.network));
-    di.registerFactory<SuperadminCubit>(() => superadmin);
+    di.registerSingleton<GetBankSampahUseCase>(superadmin.getBankSampahUseCase);
+    di.registerSingleton<ApproveBankSampahUseCase>(
+        superadmin.approveBankSampahUseCase);
+    di.registerSingleton<RejectBankSampahUseCase>(
+        superadmin.rejectBankSampahUseCase);
     final useCases = buildPencairanUseCases(api);
     di.registerFactory<EditPencairanCubit>(() => EditPencairanCubit(useCases));
     di.registerFactory<RevisiPencairanCubit>(
@@ -143,7 +151,9 @@ class AppShell {
     await di.unregister<GetTransaksiUseCase>();
     await di.unregister<PencairanUseCases>();
     await di.unregister<NasabahPengumumanRepository>();
-    await di.unregister<SuperadminCubit>();
+    await di.unregister<GetBankSampahUseCase>();
+    await di.unregister<ApproveBankSampahUseCase>();
+    await di.unregister<RejectBankSampahUseCase>();
     await di.unregister<EditPencairanCubit>();
     await di.unregister<RevisiPencairanCubit>();
     await di.unregister<RiwayatPencairanCubit>();
@@ -168,8 +178,7 @@ class AppShell {
       jadwal.close,
       pengumuman.close,
       nasabahPengumuman.close,
-      // The pencairan and superadmin cubits are closed by the pages that own
-      // them (BlocProvider.create), and closing them again never completes.
+      // The pencairan cubits are closed by the pages that own them.
     ]) {
       // Not awaited, for the same reason as [states]: a cubit the app's own
       // BlocProvider is already closing only finishes once the torn-down tree
@@ -199,19 +208,22 @@ class AppShell {
     )));
   }
 
-  Widget wrap(Widget app) => MultiBlocProvider(
-        providers: [
-          BlocProvider<NasabahCubit>.value(value: nasabah),
-          BlocProvider<HargaCubit>.value(value: harga),
-          BlocProvider<JadwalCubit>.value(value: jadwal),
-          BlocProvider<PengumumanCubit>.value(value: pengumuman),
-          BlocProvider<NasabahPengumumanCubit>.value(value: nasabahPengumuman),
-          BlocProvider<TransaksiCubit>.value(value: transaksi),
-          BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
-          BlocProvider<ProfileCubit>.value(value: profile),
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        child: app,
+  Widget wrap(Widget app) => ProviderScope(
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<NasabahCubit>.value(value: nasabah),
+            BlocProvider<HargaCubit>.value(value: harga),
+            BlocProvider<JadwalCubit>.value(value: jadwal),
+            BlocProvider<PengumumanCubit>.value(value: pengumuman),
+            BlocProvider<NasabahPengumumanCubit>.value(
+                value: nasabahPengumuman),
+            BlocProvider<TransaksiCubit>.value(value: transaksi),
+            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
+            BlocProvider<ProfileCubit>.value(value: profile),
+            BlocProvider<AuthenticationBloc>.value(value: auth),
+            BlocProvider<OnboardingCubit>.value(value: onboarding),
+          ],
+          child: app,
+        ),
       );
 }

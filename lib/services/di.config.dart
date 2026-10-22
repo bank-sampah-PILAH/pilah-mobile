@@ -189,8 +189,6 @@ import '../features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart'
     as _i268;
 import '../features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart'
     as _i868;
-import '../features/superadmin/presentation/cubit/superadmin_cubit.dart'
-    as _i174;
 import '../features/transaksi/data/datasources/transaksi_remote_data_source.dart'
     as _i881;
 import '../features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart'
@@ -466,11 +464,6 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.factory<_i867.RiwayatHargaCubit>(
         () => _i867.RiwayatHargaCubit(gh<_i123.GetRiwayatHargaUseCase>()));
-    gh.factory<_i174.SuperadminCubit>(() => _i174.SuperadminCubit(
-          gh<_i268.GetBankSampahUseCase>(),
-          gh<_i958.ApproveBankSampahUseCase>(),
-          gh<_i868.RejectBankSampahUseCase>(),
-        ));
     gh.lazySingleton<_i815.HargaCubit>(() => _i815.HargaCubit(
           gh<_i1009.GetHargaUseCase>(),
           gh<_i948.AddHargaUseCase>(),

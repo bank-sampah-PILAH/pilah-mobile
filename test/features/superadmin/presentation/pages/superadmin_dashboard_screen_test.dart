@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,9 +9,8 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
@@ -29,20 +29,22 @@ void main() {
 
   setUp(() {
     api = StubApi();
-    di.registerFactory<SuperadminCubit>(() => buildSuperadminCubit(api));
     auth = authBlocIn(Authenticated(authEntity: testAuth(role: 'superadmin')));
   });
-
-  tearDown(() => di.unregister<SuperadminCubit>());
 
   Future<void> openScreen(WidgetTester tester) async {
     await pumpRouted(
       tester,
-      BlocProvider<AuthenticationBloc>.value(
-        value: auth,
-        // A non-const instance, so the widget's constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: SuperAdminDashboardScreen(),
+      ProviderScope(
+        overrides: [
+          superadminProvider.overrideWith(() => buildSuperadminNotifier(api)),
+        ],
+        child: BlocProvider<AuthenticationBloc>.value(
+          value: auth,
+          // A non-const instance, so the widget's constructor itself runs.
+          // ignore: prefer_const_constructors
+          child: SuperAdminDashboardScreen(),
+        ),
       ),
       extraRoutes: ['/login'],
       size: const Size(800, 1800),

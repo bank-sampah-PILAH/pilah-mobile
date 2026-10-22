@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
@@ -39,7 +40,7 @@ Future<GoRouter> pumpRouted(
     ],
   );
   addTearDown(router.dispose);
-  final app = MaterialApp.router(routerConfig: router);
+  final app = ProviderScope(child: MaterialApp.router(routerConfig: router));
   await tester.pumpWidget(wrap == null ? app : wrap(app));
   await tester.pump();
   if (pushed) {
