@@ -8,7 +8,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -35,7 +34,6 @@ void main() {
     di.registerFactory<HargaCubit>(() => shell.harga);
     di.registerFactory<JadwalCubit>(() => shell.jadwal);
     di.registerFactory<PengumumanCubit>(() => shell.pengumuman);
-    di.registerFactory<NasabahPengumumanCubit>(() => shell.nasabahPengumuman);
     di.registerFactory<TransaksiCubit>(() => shell.transaksi);
     di.registerFactory<RiwayatAktivitasCubit>(() => shell.riwayat);
     di.registerFactory<ProfileCubit>(() => shell.profile);
@@ -49,7 +47,6 @@ void main() {
     await di.unregister<HargaCubit>();
     await di.unregister<JadwalCubit>();
     await di.unregister<PengumumanCubit>();
-    await di.unregister<NasabahPengumumanCubit>();
     await di.unregister<TransaksiCubit>();
     await di.unregister<RiwayatAktivitasCubit>();
     await di.unregister<ProfileCubit>();

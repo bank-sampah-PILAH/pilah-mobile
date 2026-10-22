@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
-import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart'
     show nasabahDate;
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_state.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
 
 /// The nasabah's announcement list (PIL-244). Latest first, one card per
 /// announcement, unread rows carry a dot; tap marks it read and opens the
@@ -45,25 +46,30 @@ class PengumumanPage extends StatelessWidget {
       );
 }
 
-class _PengumumanListBody extends StatefulWidget {
+class _PengumumanListBody extends ConsumerStatefulWidget {
   const _PengumumanListBody({super.key, this.membershipId});
 
   final String? membershipId;
 
   @override
-  State<_PengumumanListBody> createState() => _PengumumanListBodyState();
+  ConsumerState<_PengumumanListBody> createState() =>
+      _PengumumanListBodyState();
 }
 
-class _PengumumanListBodyState extends State<_PengumumanListBody> {
+class _PengumumanListBodyState extends ConsumerState<_PengumumanListBody> {
   late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
-    context
-        .read<NasabahPengumumanCubit>()
-        .load(membershipId: widget.membershipId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(nasabahPengumumanProvider.notifier)
+            .load(membershipId: widget.membershipId);
+      }
+    });
   }
 
   @override
@@ -79,65 +85,63 @@ class _PengumumanListBodyState extends State<_PengumumanListBody> {
         _scrollController.position.extentAfter > 320) {
       return;
     }
-    context.read<NasabahPengumumanCubit>().loadNextPage();
+    ref.read(nasabahPengumumanProvider.notifier).loadNextPage();
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(nasabahPengumumanProvider);
+    final notifier = ref.read(nasabahPengumumanProvider.notifier);
     return Scaffold(
       backgroundColor: NasabahStyle.background,
       appBar: const NasabahPageAppBar(
         title: 'Pengumuman',
         showBack: true,
       ),
-      body: BlocBuilder<NasabahPengumumanCubit, NasabahPengumumanState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case NasabahPengumumanStatus.initial:
-            case NasabahPengumumanStatus.loading:
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    SkeletonListItem(),
-                    SizedBox(height: 12),
-                    SkeletonListItem(),
-                    SizedBox(height: 12),
-                    SkeletonListItem(),
-                  ],
+      body: switch (state.status) {
+        NasabahPengumumanStatus.initial ||
+        NasabahPengumumanStatus.loading =>
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: [
+                SkeletonListItem(),
+                SizedBox(height: 12),
+                SkeletonListItem(),
+                SizedBox(height: 12),
+                SkeletonListItem(),
+              ],
+            ),
+          ),
+        NasabahPengumumanStatus.failure => Column(
+            children: [
+              Expanded(
+                child: EmptyView(
+                  title: 'Gagal Memuat Data',
+                  subtitle: state.error,
+                  icon: Icons.error_outline,
                 ),
-              );
-            case NasabahPengumumanStatus.failure:
-              return Column(
-                children: [
-                  Expanded(
-                    child: EmptyView(
-                      title: 'Gagal Memuat Data',
-                      subtitle: state.error,
-                      icon: Icons.error_outline,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => context
-                        .read<NasabahPengumumanCubit>()
-                        .load(membershipId: widget.membershipId),
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
-              );
-            case NasabahPengumumanStatus.loaded:
-              if (state.items.isEmpty) {
-                return const EmptyView(
-                  title: 'Belum ada pengumuman',
-                  subtitle:
-                      'Pengumuman dari bank sampah Anda akan muncul di sini.',
-                  icon: Icons.campaign_outlined,
-                );
-              }
-              return AppRefreshIndicator(
-                onRefresh: () => context
-                    .read<NasabahPengumumanCubit>()
-                    .load(membershipId: widget.membershipId, silent: true),
+              ),
+              TextButton(
+                onPressed: () => notifier.load(
+                  membershipId: widget.membershipId,
+                ),
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        NasabahPengumumanStatus.loaded => state.items.isEmpty
+            ? const EmptyView(
+                title: 'Belum ada pengumuman',
+                subtitle:
+                    'Pengumuman dari bank sampah Anda akan muncul di sini.',
+                icon: Icons.campaign_outlined,
+              )
+            : AppRefreshIndicator(
+                onRefresh: () => notifier.load(
+                  membershipId: widget.membershipId,
+                  silent: true,
+                ),
                 child: ListView.builder(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -156,30 +160,29 @@ class _PengumumanListBodyState extends State<_PengumumanListBody> {
                     );
                   },
                 ),
-              );
-          }
-        },
-      ),
+              ),
+      },
     );
   }
 }
 
-class _PengumumanRow extends StatelessWidget {
+class _PengumumanRow extends ConsumerWidget {
   const _PengumumanRow({super.key, required this.pengumuman});
 
   final PengumumanEntity pengumuman;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: NasabahCard(
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap: () async {
-            final cubit = context.read<NasabahPengumumanCubit>();
             final router = GoRouter.of(context);
-            await cubit.tandaiDibaca(pengumuman.id);
+            await ref
+                .read(nasabahPengumumanProvider.notifier)
+                .tandaiDibaca(pengumuman.id);
             await router.push(
               '${PengumumanDetailPage.route}?id=${Uri.encodeComponent(pengumuman.id)}',
               extra: pengumuman,

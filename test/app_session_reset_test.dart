@@ -23,8 +23,9 @@ import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dar
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
@@ -38,6 +39,8 @@ import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cub
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
+import 'support/stub_api.dart';
+
 class _MockNasabahCubit extends MockCubit<NasabahState>
     implements NasabahCubit {}
 
@@ -47,9 +50,6 @@ class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
 
 class _MockPengumumanCubit extends MockCubit<PengumumanState>
     implements PengumumanCubit {}
-
-class _MockNasabahPengumumanCubit extends MockCubit<NasabahPengumumanState>
-    implements NasabahPengumumanCubit {}
 
 class _MockTransaksiCubit extends MockCubit<TransaksiState>
     implements TransaksiCubit {}
@@ -77,7 +77,6 @@ void main() {
   late _MockHargaCubit harga;
   late _MockJadwalCubit jadwal;
   late _MockPengumumanCubit pengumuman;
-  late _MockNasabahPengumumanCubit nasabahPengumuman;
   late _MockTransaksiCubit transaksi;
   late _MockRiwayatAktivitasCubit riwayatAktivitas;
   late _MockProfileCubit profile;
@@ -91,7 +90,6 @@ void main() {
     harga = _MockHargaCubit();
     jadwal = _MockJadwalCubit();
     pengumuman = _MockPengumumanCubit();
-    nasabahPengumuman = _MockNasabahPengumumanCubit();
     transaksi = _MockTransaksiCubit();
     riwayatAktivitas = _MockRiwayatAktivitasCubit();
     profile = _MockProfileCubit();
@@ -107,8 +105,6 @@ void main() {
     when(() => harga.state).thenReturn(HargaInitial());
     when(() => jadwal.state).thenReturn(const JadwalInitial());
     when(() => pengumuman.state).thenReturn(const PengumumanInitial());
-    when(() => nasabahPengumuman.state)
-        .thenReturn(const NasabahPengumumanState());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
     when(() => riwayatAktivitas.state)
         .thenReturn(const RiwayatAktivitasState());
@@ -123,7 +119,6 @@ void main() {
     di.registerSingleton<HargaCubit>(harga);
     di.registerSingleton<JadwalCubit>(jadwal);
     di.registerSingleton<PengumumanCubit>(pengumuman);
-    di.registerSingleton<NasabahPengumumanCubit>(nasabahPengumuman);
     di.registerSingleton<TransaksiCubit>(transaksi);
     di.registerSingleton<RiwayatAktivitasCubit>(riwayatAktivitas);
     di.registerSingleton<ProfileCubit>(profile);
@@ -152,16 +147,35 @@ void main() {
       noHp: '81234567890',
     ));
 
+    final pengumumanApi = StubApi();
+    pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
+    final providerContainer = ProviderContainer(overrides: [
+      nasabahPengumumanProvider.overrideWith(
+        () => NasabahPengumumanNotifier(
+          NasabahPengumumanRepository(pengumumanApi.network),
+        ),
+      ),
+    ]);
+    final providerSubscription = providerContainer.listen(
+      nasabahPengumumanProvider,
+      (_, __) {},
+    );
+    addTearDown(providerSubscription.close);
+    addTearDown(providerContainer.dispose);
+    await tester.runAsync(
+      () => providerContainer.read(nasabahPengumumanProvider.notifier).load(),
+    );
+
     await tester.pumpWidget(
-      ProviderScope(
+      UncontrolledProviderScope(
+        container: providerContainer,
         child: MultiBlocProvider(
           providers: [
             BlocProvider<NasabahCubit>.value(value: nasabah),
             BlocProvider<HargaCubit>.value(value: harga),
             BlocProvider<JadwalCubit>.value(value: jadwal),
             BlocProvider<PengumumanCubit>.value(value: pengumuman),
-            BlocProvider<NasabahPengumumanCubit>.value(
-                value: nasabahPengumuman),
             BlocProvider<TransaksiCubit>.value(value: transaksi),
             BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
             BlocProvider<ProfileCubit>.value(value: profile),
@@ -178,7 +192,6 @@ void main() {
         ),
       ),
     );
-
     await tester.tap(find.text('logout'));
     await tester.pump();
 
@@ -189,7 +202,7 @@ void main() {
           'switching accounts is a step inside the invite flow, not an exit '
           'from it — the token has to survive until it is redeemed or refused',
     );
-    // Only the invite token is exempt; the session cubits still reset.
+    // Only the invite token is exempt; session state still resets.
     verify(() => nasabah.reset()).called(1);
     verify(() => harga.reset()).called(1);
     verify(() => jadwal.reset()).called(1);
@@ -201,6 +214,8 @@ void main() {
       // logo picked but not yet uploaded — a path into the previous user's
       // gallery that would otherwise be sent as the next bank's logo.
     ).called(1);
+    expect(providerContainer.read(nasabahPengumumanProvider).status,
+        NasabahPengumumanStatus.initial);
     expect(
       onboarding.hasProfileDraft,
       isFalse,

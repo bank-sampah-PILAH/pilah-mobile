@@ -138,13 +138,10 @@ import '../features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart'
     as _i700;
 import '../features/pengumuman/data/datasources/pengumuman_remote_data_source.dart'
     as _i375;
-import '../features/pengumuman/data/nasabah_pengumuman_repository.dart' as _i84;
 import '../features/pengumuman/data/repositories/pengumuman_repository_impl.dart'
     as _i11;
 import '../features/pengumuman/domain/repositories/pengumuman_repository.dart'
     as _i159;
-import '../features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart'
-    as _i284;
 import '../features/pengumuman/presentation/cubit/pengumuman_cubit.dart'
     as _i684;
 import '../features/profile/data/datasources/profile_remote_data_source.dart'
@@ -235,8 +232,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => storageModule.flutterSecureStorage,
       instanceName: 'flutter_secure_storage',
     );
-    gh.lazySingleton<_i284.NasabahPengumumanCubit>(() =>
-        _i284.NasabahPengumumanCubit(gh<_i84.NasabahPengumumanRepository>()));
     gh.lazySingleton<_i812.AppStorage>(
       () => storageModule.sharedPreferences,
       instanceName: 'shared_preferences',

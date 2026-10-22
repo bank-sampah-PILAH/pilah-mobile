@@ -10,11 +10,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -127,9 +127,6 @@ class App extends StatelessWidget {
           ),
           BlocProvider<PengumumanCubit>(
             create: (context) => di<PengumumanCubit>(),
-          ),
-          BlocProvider<NasabahPengumumanCubit>(
-            create: (context) => di<NasabahPengumumanCubit>(),
           ),
           BlocProvider<TransaksiCubit>(
             create: (context) => di<TransaksiCubit>(),
@@ -278,7 +275,8 @@ void resetSessionScopedState(BuildContext context) {
   context.read<HargaCubit>().reset();
   context.read<JadwalCubit>().reset();
   context.read<PengumumanCubit>().reset();
-  context.read<NasabahPengumumanCubit>().reset();
+  ProviderScope.containerOf(context, listen: false)
+      .invalidate(nasabahPengumumanProvider);
   context.read<TransaksiCubit>().reset();
   ProviderScope.containerOf(context, listen: false)
       .invalidate(dashboardProvider);

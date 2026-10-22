@@ -1,6 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_state.dart';
 
 import '../../../../support/stub_api.dart';
@@ -16,14 +17,27 @@ Map<String, dynamic> _row(String id, {bool dibaca = false}) => {
 
 void main() {
   late StubApi api;
-  late NasabahPengumumanCubit cubit;
+  late ProviderContainer container;
+  late ProviderSubscription<NasabahPengumumanState> subscription;
+  late NasabahPengumumanNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = NasabahPengumumanCubit(NasabahPengumumanRepository(api.network));
+    container = ProviderContainer(overrides: [
+      nasabahPengumumanProvider.overrideWith(
+        () => NasabahPengumumanNotifier(
+          NasabahPengumumanRepository(api.network),
+        ),
+      ),
+    ]);
+    subscription = container.listen(
+      nasabahPengumumanProvider,
+      (_, __) {},
+    );
+    notifier = container.read(nasabahPengumumanProvider.notifier);
+    addTearDown(subscription.close);
+    addTearDown(container.dispose);
   });
-
-  tearDown(() => cubit.close());
 
   test('loads page one with read flags from the backend', () async {
     api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
@@ -32,9 +46,9 @@ void main() {
       'results': [_row('1'), _row('2', dibaca: true)],
     });
 
-    await cubit.load();
+    await notifier.load();
 
-    final state = cubit.state;
+    final state = container.read(nasabahPengumumanProvider);
     expect(state.status, NasabahPengumumanStatus.loaded);
     expect(state.items, hasLength(2));
     expect(state.items[0].dibaca, isFalse);
@@ -45,7 +59,7 @@ void main() {
     api.on('GET', '/api/v1/nasabah/me/pengumuman',
         json: {'count': 0, 'next': null, 'results': []});
 
-    await cubit.load(membershipId: 'm-1');
+    await notifier.load(membershipId: 'm-1');
 
     expect(api.last.query['keanggotaan_id'], 'm-1');
   });
@@ -56,16 +70,16 @@ void main() {
       'next': 'http://api.test/api/v1/nasabah/me/pengumuman?page=2',
       'results': [_row('1')],
     });
-    await cubit.load();
+    await notifier.load();
 
     api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
       'count': 2,
       'next': null,
       'results': [_row('1'), _row('2')],
     });
-    await cubit.loadNextPage();
+    await notifier.loadNextPage();
 
-    final state = cubit.state;
+    final state = container.read(nasabahPengumumanProvider);
     expect(state.items.map((item) => item.id), ['1', '2']);
     expect(state.hasNext, isFalse);
   });
@@ -76,30 +90,32 @@ void main() {
       'next': null,
       'results': [_row('1')],
     });
-    await cubit.load();
+    await notifier.load();
 
     api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca', json: {
       'id': '1',
       'dibaca': true,
       'dibaca_pada': '2026-10-15T06:00:00Z',
     });
-    await cubit.tandaiDibaca('1');
+    await notifier.tandaiDibaca('1');
 
     expect(
       api.requests
           .any((call) => call.path == '/api/v1/nasabah/me/pengumuman/1/baca'),
       isTrue,
     );
-    expect(cubit.state.items.single.dibaca, isTrue);
+    expect(
+        container.read(nasabahPengumumanProvider).items.single.dibaca, isTrue);
   });
 
   test('a list failure surfaces the Indonesian message', () async {
     api.fail('GET', '/api/v1/nasabah/me/pengumuman');
 
-    await cubit.load();
+    await notifier.load();
 
-    expect(cubit.state.status, NasabahPengumumanStatus.failure);
-    expect(cubit.state.error, isNotEmpty);
+    expect(container.read(nasabahPengumumanProvider).status,
+        NasabahPengumumanStatus.failure);
+    expect(container.read(nasabahPengumumanProvider).error, isNotEmpty);
   });
 
   test('a next-page failure surfaces its message and clears the spinner',
@@ -109,12 +125,12 @@ void main() {
       'next': 'http://api.test/api/v1/nasabah/me/pengumuman?page=2',
       'results': [_row('1')],
     });
-    await cubit.load();
+    await notifier.load();
 
     api.fail('GET', '/api/v1/nasabah/me/pengumuman');
-    await cubit.loadNextPage();
+    await notifier.loadNextPage();
 
-    final state = cubit.state;
+    final state = container.read(nasabahPengumumanProvider);
     expect(state.status, NasabahPengumumanStatus.loaded);
     expect(state.isLoadingMore, isFalse);
     expect(state.error, isNotEmpty);
@@ -127,12 +143,13 @@ void main() {
       'next': null,
       'results': [_row('1')],
     });
-    await cubit.load();
+    await notifier.load();
 
     api.fail('POST', '/api/v1/nasabah/me/pengumuman/1/baca');
-    await cubit.tandaiDibaca('1');
+    await notifier.tandaiDibaca('1');
 
-    expect(cubit.state.items.single.dibaca, isFalse);
+    expect(
+        container.read(nasabahPengumumanProvider).items.single.dibaca, isFalse);
   });
 
   test('marking one read leaves the other rows untouched', () async {
@@ -141,32 +158,32 @@ void main() {
       'next': null,
       'results': [_row('1'), _row('2')],
     });
-    await cubit.load();
-    final second = cubit.state.items[1];
+    await notifier.load();
+    final second = container.read(nasabahPengumumanProvider).items[1];
 
     api.on('POST', '/api/v1/nasabah/me/pengumuman/1/baca',
         json: {'id': '1', 'dibaca': true});
-    await cubit.tandaiDibaca('1');
+    await notifier.tandaiDibaca('1');
 
-    final items = cubit.state.items;
+    final items = container.read(nasabahPengumumanProvider).items;
     expect(items[0].dibaca, isTrue);
     // The untouched row keeps its identity, not a copy.
     expect(identical(items[1], second), isTrue);
   });
 
-  test('reset returns to the initial state', () async {
+  test('invalidation resets to the initial state', () async {
     api.on('GET', '/api/v1/nasabah/me/pengumuman', json: {
       'count': 1,
       'next': null,
       'results': [_row('1')],
     });
-    await cubit.load();
+    await notifier.load();
+    expect(container.read(nasabahPengumumanProvider).status,
+        NasabahPengumumanStatus.loaded);
 
-    cubit.reset();
-    await Future<void>.delayed(Duration.zero);
+    container.invalidate(nasabahPengumumanProvider);
 
-    final state = cubit.state;
-    expect(state.status, NasabahPengumumanStatus.initial);
-    expect(state.items, isEmpty);
+    expect(container.read(nasabahPengumumanProvider).status,
+        NasabahPengumumanStatus.initial);
   });
 }
