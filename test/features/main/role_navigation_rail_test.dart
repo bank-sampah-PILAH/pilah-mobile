@@ -63,6 +63,10 @@ void main() {
       expect(find.text('Setoran'), findsOneWidget);
       expect(find.text('Pencairan'), findsOneWidget);
       expect(find.text('Tambah Transaksi'), findsNothing);
+      final transactionMenu =
+          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
+      expect(transactionMenu.shape, const Border());
+      expect(transactionMenu.collapsedShape, const Border());
       expect(
         tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),

@@ -62,6 +62,8 @@ class RoleTransactionMenu extends StatelessWidget {
     return ExpansionTile(
       key: menuKey,
       initiallyExpanded: true,
+      shape: const Border(),
+      collapsedShape: const Border(),
       leading: const Icon(Icons.receipt_long_outlined),
       title: Text(
         'Transaksi',
