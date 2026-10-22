@@ -1,0 +1,52 @@
+{
+  "source": "Authenticated Linear MCP; selected fields from direct tool responses",
+  "collectedOn": "2026-10-22",
+  "queries": [
+    {
+      "tool": "linear_get_issue",
+      "args": {
+        "id": "PIL-378",
+        "fields": ["id", "uuid", "title", "url", "parentId", "team", "teamId", "cycleId", "project", "projectId", "assigneeId"]
+      },
+      "result": {
+        "id": "PIL-378",
+        "uuid": "3150f0d1-c151-44ec-9898-72a52185730a",
+        "title": "Perbaiki layout form authoring announcement di web",
+        "url": "https://linear.app/pilah-2/issue/PIL-378/perbaiki-layout-form-authoring-announcement-di-web",
+        "parentId": "PIL-143",
+        "team": "PILAH 2.0",
+        "teamId": "e4de3201-8bbc-4660-9e89-23a7dff19066",
+        "cycleId": "42eed940-98b2-455b-b1f3-9186141719a2",
+        "project": "EPIC07 — Communication & Notifications",
+        "projectId": "f701f421-435f-45d0-bb9f-2f478534a290",
+        "assigneeId": null
+      }
+    },
+    {
+      "tool": "linear_get_issue",
+      "args": {
+        "id": "PIL-143",
+        "fields": ["id", "uuid", "title", "url"]
+      },
+      "result": {
+        "id": "PIL-143",
+        "uuid": "a77125d4-5665-41fd-85af-f6edbe5a2072",
+        "title": "CPBI-15 — Siklus announcement: authoring, publikasi, dan pembacaan",
+        "url": "https://linear.app/pilah-2/issue/PIL-143/cpbi-15-siklus-announcement-authoring-publikasi-dan-pembacaan"
+      }
+    },
+    {
+      "tool": "linear_list_cycles",
+      "args": {
+        "teamId": "e4de3201-8bbc-4660-9e89-23a7dff19066",
+        "type": "current"
+      },
+      "matchedCycle": {
+        "id": "42eed940-98b2-455b-b1f3-9186141719a2",
+        "title": "Sprint 2",
+        "number": 2,
+        "isCurrent": true
+      }
+    }
+  ]
+}
