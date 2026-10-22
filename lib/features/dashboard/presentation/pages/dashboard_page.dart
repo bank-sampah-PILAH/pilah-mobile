@@ -2,6 +2,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surf
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
@@ -11,7 +12,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
@@ -25,7 +26,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_c
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class DashboardPage extends StatefulWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key, this.isWeb});
 
   // `kIsWeb` is compile-time constant, so VM tests need this branch override.
@@ -35,15 +36,17 @@ class DashboardPage extends StatefulWidget {
   static const route = AppLocations.dashboard;
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Load the current-month metrics from the backend when the dashboard opens.
-    context.read<DashboardCubit>().loadStats();
+    // Provider state must not change during initState's build frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(dashboardProvider.notifier).loadStats();
+    });
     // Aktivitas Terbaru has its own cubit — see [RecentActivityCubit] for why
     // it is not the one Laporan drives — so nothing else loads it.
     context.read<RecentActivityCubit>().load();
@@ -56,7 +59,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _onRefresh() async {
     context.read<AuthenticationBloc>().add(RefreshUserRequested());
     await Future.wait([
-      context.read<DashboardCubit>().loadStats(silent: true),
+      ref.read(dashboardProvider.notifier).loadStats(silent: true),
       context.read<RecentActivityCubit>().load(silent: true),
     ]);
   }

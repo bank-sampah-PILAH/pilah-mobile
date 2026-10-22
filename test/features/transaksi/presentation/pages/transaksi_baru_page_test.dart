@@ -3,9 +3,10 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_u
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
@@ -90,7 +91,7 @@ void main() {
     final harga = buildHargaCubit(api);
     final profile = buildProfileCubit(api);
     final transaksi = buildTransaksiCubit(api);
-    final dashboard = buildDashboardCubit(api);
+    final dashboard = buildDashboardNotifier(api);
     final pencairan = buildPencairanUseCases(api);
     final getTransaksi = GetTransaksiUseCase(
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network)));
@@ -104,7 +105,6 @@ void main() {
       await harga.close();
       await profile.close();
       await transaksi.close();
-      await dashboard.close();
       await recent.close();
       await riwayat.close();
       await nasabah.close();
@@ -115,17 +115,19 @@ void main() {
       // A non-const instance so the constructor itself runs.
       // ignore: prefer_const_constructors
       TransaksiBaruPage(),
-      wrap: (app) => MultiBlocProvider(
-        providers: [
-          BlocProvider<HargaCubit>.value(value: harga),
-          BlocProvider<ProfileCubit>.value(value: profile),
-          BlocProvider<TransaksiCubit>.value(value: transaksi),
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: recent),
-          BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
-          BlocProvider<NasabahCubit>.value(value: nasabah),
-        ],
-        child: app,
+      wrap: (app) => ProviderScope(
+        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<HargaCubit>.value(value: harga),
+            BlocProvider<ProfileCubit>.value(value: profile),
+            BlocProvider<TransaksiCubit>.value(value: transaksi),
+            BlocProvider<RecentActivityCubit>.value(value: recent),
+            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
+            BlocProvider<NasabahCubit>.value(value: nasabah),
+          ],
+          child: app,
+        ),
       ),
       pushed: true,
       size: window,

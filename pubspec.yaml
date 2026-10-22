@@ -81,6 +81,7 @@ dependencies:
   printing: ^5.14.3
   flutter_native_splash: ^2.4.7
   web: ^1.1.1
+  flutter_riverpod: ^3.3.2
 
 dev_dependencies:
   test: ^1.29.0

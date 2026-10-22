@@ -19,8 +19,6 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
@@ -55,9 +53,6 @@ class _CountingNasabahRepository extends PreviewNasabahRepository {
   Future<NasabahBalance> balance(String membershipId) async =>
       NasabahBalance(balanceAmount, null);
 }
-
-class _DashboardCubit extends MockCubit<DashboardState>
-    implements DashboardCubit {}
 
 class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
@@ -126,7 +121,6 @@ void main() {
   }) async {
     final auth = _AuthBloc();
     final sessions = StreamController<AuthenticationStates>();
-    final dashboard = _DashboardCubit();
     final activity = _ActivityCubit();
     final jadwalRepository = _JadwalRepository();
     final invites = InviteTokenStore();
@@ -163,22 +157,15 @@ void main() {
     registerFakeRiwayat(riwayatFixture);
     whenListen(auth, sessions.stream, initialState: Unauthenticated());
     whenListen(
-      dashboard,
-      const Stream<DashboardState>.empty(),
-      initialState: const DashboardState(status: DashboardStatus.loaded),
-    );
-    whenListen(
       activity,
       const Stream<RecentActivityState>.empty(),
       initialState: const RecentActivityLoaded([]),
     );
-    when(() => dashboard.loadStats()).thenAnswer((_) async {});
     when(() => activity.load()).thenAnswer((_) async {});
 
     addTearDown(() async {
       await sessions.close();
       await auth.close();
-      await dashboard.close();
       await activity.close();
       await unregisterApprovedMembership(approval);
       await di.unregister<AppEnvironment>();
@@ -195,7 +182,6 @@ void main() {
       MultiBlocProvider(
         providers: [
           BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: activity),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -209,7 +195,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.byType(LoginPage), findsNothing);
-    verifyNever(() => dashboard.loadStats());
     verifyNever(() => activity.load());
   }
 

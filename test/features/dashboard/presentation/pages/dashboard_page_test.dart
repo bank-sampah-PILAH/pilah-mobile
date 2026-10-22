@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -12,8 +13,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -35,9 +35,6 @@ import '../../../../support/stub_api.dart';
 
 class _ActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
-
-class _DashboardCubit extends MockCubit<DashboardState>
-    implements DashboardCubit {}
 
 class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
@@ -75,7 +72,7 @@ class _EmptyJadwalRepository implements JadwalRepository {
 
 void main() {
   late StubApi api;
-  late DashboardCubit dashboard;
+  late DashboardNotifier dashboard;
   late _ActivityCubit activity;
   late MockAuthBloc auth;
 
@@ -91,12 +88,11 @@ void main() {
   void arrange({
     Map<String, dynamic> stats = const {},
     AuthenticationStates? session,
-    DashboardCubit? dashboardCubit,
+    DashboardNotifier? dashboardNotifier,
   }) {
     api = StubApi();
     api.on('GET', '/api/v1/dashboard/stats', json: stats);
-    dashboard = dashboardCubit ?? buildDashboardCubit(api);
-    if (dashboardCubit == null) addTearDown(dashboard.close);
+    dashboard = dashboardNotifier ?? buildDashboardNotifier(api);
     activity = _ActivityCubit();
     whenListen(activity, const Stream<RecentActivityState>.empty(),
         initialState: RecentActivityLoaded(const []));
@@ -108,13 +104,15 @@ void main() {
   Future<void> pump(WidgetTester tester, Widget child) async {
     final router = await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-        ],
-        child: Scaffold(body: SingleChildScrollView(child: child)),
+      ProviderScope(
+        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<RecentActivityCubit>.value(value: activity),
+            BlocProvider<AuthenticationBloc>.value(value: auth),
+          ],
+          child: Scaffold(body: SingleChildScrollView(child: child)),
+        ),
       ),
       extraRoutes: ['/profile'],
       size: const Size(800, 1600),
@@ -129,30 +127,23 @@ void main() {
   }) async {
     final router = await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-        ],
-        child: DashboardPage(isWeb: isWeb),
+      ProviderScope(
+        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<RecentActivityCubit>.value(value: activity),
+            BlocProvider<AuthenticationBloc>.value(value: auth),
+          ],
+          child: DashboardPage(isWeb: isWeb),
+        ),
       ),
       size: size,
     );
     expect(router, isNotNull);
   }
 
-  _DashboardCubit emptyDashboardCubit() {
-    final cubit = _DashboardCubit();
-    whenListen(
-      cubit,
-      const Stream<DashboardState>.empty(),
-      initialState: const DashboardState(),
-    );
-    when(() => cubit.loadStats(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
-    return cubit;
-  }
+  DashboardNotifier emptyDashboardNotifier() =>
+      buildEmptyDashboardNotifier(api);
 
   testWidgets('header greets the pengelola and links to the profile',
       (tester) async {
@@ -224,13 +215,15 @@ void main() {
     arrange(stats: {'total_nilai_bulan_ini': '5000'});
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-        ],
-        child: const DashboardPage(),
+      ProviderScope(
+        overrides: [dashboardProvider.overrideWith(() => dashboard)],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<RecentActivityCubit>.value(value: activity),
+            BlocProvider<AuthenticationBloc>.value(value: auth),
+          ],
+          child: const DashboardPage(),
+        ),
       ),
       size: const Size(800, 1600),
     );
@@ -249,7 +242,7 @@ void main() {
   });
 
   testWidgets('web dashboard shows reports to Pengurus', (tester) async {
-    arrange(dashboardCubit: emptyDashboardCubit());
+    arrange(dashboardNotifier: emptyDashboardNotifier());
     await pumpDashboardPage(tester, isWeb: true);
     await tester.pumpAndSettle();
 
@@ -261,7 +254,7 @@ void main() {
 
   testWidgets('a wide web dashboard leaves the profile to the sidebar',
       (tester) async {
-    arrange(dashboardCubit: emptyDashboardCubit());
+    arrange(dashboardNotifier: emptyDashboardNotifier());
     await pumpDashboardPage(tester, isWeb: true, size: const Size(1440, 1800));
     await tester.pumpAndSettle();
 
@@ -271,7 +264,7 @@ void main() {
 
   testWidgets('a wide web dashboard keeps the web gutter and top space',
       (tester) async {
-    arrange(dashboardCubit: emptyDashboardCubit());
+    arrange(dashboardNotifier: emptyDashboardNotifier());
     await pumpDashboardPage(tester, isWeb: true, size: const Size(1000, 1800));
     await tester.pumpAndSettle();
 
@@ -282,7 +275,7 @@ void main() {
 
   testWidgets('a narrow web dashboard keeps the avatar, with no sidebar',
       (tester) async {
-    arrange(dashboardCubit: emptyDashboardCubit());
+    arrange(dashboardNotifier: emptyDashboardNotifier());
     await pumpDashboardPage(tester, isWeb: true, size: const Size(400, 1800));
     await tester.pumpAndSettle();
 
@@ -291,7 +284,7 @@ void main() {
 
   testWidgets('web details form a desktop grid and stack on narrow screens',
       (tester) async {
-    arrange(dashboardCubit: emptyDashboardCubit());
+    arrange(dashboardNotifier: emptyDashboardNotifier());
     await pumpDashboardPage(tester, isWeb: true, size: const Size(1440, 1800));
     await tester.pumpAndSettle();
 
@@ -315,7 +308,7 @@ void main() {
   testWidgets('web dashboard uses the web default for Pengurus',
       (tester) async {
     if (!kIsWeb) return;
-    arrange(dashboardCubit: emptyDashboardCubit());
+    arrange(dashboardNotifier: emptyDashboardNotifier());
     await pumpDashboardPage(tester);
     await tester.pumpAndSettle();
 
@@ -327,7 +320,7 @@ void main() {
       (tester) async {
     arrange(
       session: Authenticated(authEntity: testAuth(role: 'nasabah')),
-      dashboardCubit: emptyDashboardCubit(),
+      dashboardNotifier: emptyDashboardNotifier(),
     );
     await pumpDashboardPage(tester, isWeb: true);
     await tester.pumpAndSettle();
@@ -343,7 +336,7 @@ void main() {
       (tester) async {
     arrange(
       session: Unauthenticated(),
-      dashboardCubit: emptyDashboardCubit(),
+      dashboardNotifier: emptyDashboardNotifier(),
     );
     await pumpDashboardPage(tester, isWeb: true);
     await tester.pumpAndSettle();

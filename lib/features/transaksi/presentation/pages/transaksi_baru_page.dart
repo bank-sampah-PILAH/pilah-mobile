@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +11,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
@@ -56,16 +57,16 @@ String newTransaksiIdempotencyKey() {
       '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
-class TransaksiBaruPage extends StatefulWidget {
+class TransaksiBaruPage extends ConsumerStatefulWidget {
   const TransaksiBaruPage({super.key});
 
   static const route = '/transaksi-baru';
 
   @override
-  State<TransaksiBaruPage> createState() => _TransaksiBaruPageState();
+  ConsumerState<TransaksiBaruPage> createState() => _TransaksiBaruPageState();
 }
 
-class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
+class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
   NasabahEntity? selectedCustomer;
   List<Map<String, dynamic>> setoranItems = [];
   bool _hasSubmitted = false;
@@ -242,7 +243,7 @@ class _TransaksiBaruPageState extends State<TransaksiBaruPage> {
     // place rather than flashing skeletons behind the success sheet. The
     // nasabah list holds a separate balance snapshot, so reload it too.
     // Fire-and-forget, like loadStats, to keep the success modal responsive.
-    context.read<DashboardCubit>().loadStats();
+    ref.read(dashboardProvider.notifier).loadStats();
     context.read<RecentActivityCubit>().load(silent: true);
     context.read<RiwayatAktivitasCubit>().load(silent: true);
     context.read<NasabahCubit>().loadNasabah(silent: true);

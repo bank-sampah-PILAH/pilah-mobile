@@ -46,8 +46,6 @@ import 'package:pilah_mobile/features/dashboard/domain/repositories/dashboard_re
     show DashboardRepository;
 import 'package:pilah_mobile/features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
     show GetDashboardStatsUseCase;
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart'
-    show DashboardCubit;
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart'
     show RecentActivityCubit;
 import 'package:pilah_mobile/features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart'
@@ -331,5 +329,4 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('RecentActivityCubit', null, () => di<RecentActivityCubit>()),
   ('HargaCubit', null, () => di<HargaCubit>()),
   ('SuperadminCubit', null, () => di<SuperadminCubit>()),
-  ('DashboardCubit', null, () => di<DashboardCubit>()),
 ];

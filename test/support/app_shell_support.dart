@@ -9,7 +9,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
@@ -66,7 +66,6 @@ class AppShell {
     harga = buildHargaCubit(api);
     profile = buildProfileCubit(api);
     transaksi = buildTransaksiCubit(api);
-    dashboard = buildDashboardCubit(api);
     final pencairan = buildPencairanUseCases(api);
     final repo =
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network));
@@ -91,7 +90,6 @@ class AppShell {
   late final HargaCubit harga;
   late final ProfileCubit profile;
   late final TransaksiCubit transaksi;
-  late final DashboardCubit dashboard;
   late final RecentActivityCubit recent;
   late final RiwayatAktivitasCubit riwayat;
   late final NasabahCubit nasabah;
@@ -111,6 +109,8 @@ class AppShell {
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<AppEnvironment>(StubEnvironment());
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    di.registerSingleton<GetDashboardStatsUseCase>(
+        buildDashboardStatsUseCase(api));
     di.registerSingleton<NasabahPengumumanRepository>(
         NasabahPengumumanRepository(api.network));
     di.registerFactory<SuperadminCubit>(() => superadmin);
@@ -136,6 +136,7 @@ class AppShell {
     await di.unregister<InviteTokenStore>();
     await di.unregister<AppEnvironment>();
     await di.unregister<NasabahRepository>();
+    await di.unregister<GetDashboardStatsUseCase>();
     await di.unregister<NasabahPengumumanRepository>();
     await di.unregister<SuperadminCubit>();
     await di.unregister<EditPencairanCubit>();
@@ -155,7 +156,6 @@ class AppShell {
       harga.close,
       profile.close,
       transaksi.close,
-      dashboard.close,
       recent.close,
       riwayat.close,
       nasabah.close,
@@ -202,7 +202,6 @@ class AppShell {
           BlocProvider<PengumumanCubit>.value(value: pengumuman),
           BlocProvider<NasabahPengumumanCubit>.value(value: nasabahPengumuman),
           BlocProvider<TransaksiCubit>.value(value: transaksi),
-          BlocProvider<DashboardCubit>.value(value: dashboard),
           BlocProvider<RecentActivityCubit>.value(value: recent),
           BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
           BlocProvider<ProfileCubit>.value(value: profile),

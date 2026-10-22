@@ -62,7 +62,6 @@ import '../features/dashboard/domain/repositories/dashboard_repository.dart'
     as _i602;
 import '../features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart'
     as _i137;
-import '../features/dashboard/presentation/cubit/dashboard_cubit.dart' as _i932;
 import '../features/dashboard/presentation/cubit/recent_activity_cubit.dart'
     as _i200;
 import '../features/draft_pencairan/data/draft_pencairan_repository_impl.dart'
@@ -490,8 +489,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i520.ActivateHargaUseCase>(),
           gh<_i465.UbahHargaUseCase>(),
         ));
-    gh.lazySingleton<_i932.DashboardCubit>(
-        () => _i932.DashboardCubit(gh<_i137.GetDashboardStatsUseCase>()));
     return this;
   }
 }

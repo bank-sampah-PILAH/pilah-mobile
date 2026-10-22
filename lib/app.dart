@@ -6,13 +6,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
@@ -109,91 +110,90 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWeb = isWebOverride ?? kIsWeb;
     final router = AppRouterConfig.getRouter();
-    return MultiBlocProvider(
-      providers: [
-        // Cubits load their data from each page's initState (post-login), so
-        // the requests carry the authenticated session instead of firing once
-        // at cold start before a token exists.
-        BlocProvider<NasabahCubit>(
-          create: (context) => di<NasabahCubit>(),
-        ),
-        BlocProvider<HargaCubit>(
-          create: (context) => di<HargaCubit>(),
-        ),
-        BlocProvider<JadwalCubit>(
-          create: (context) => di<JadwalCubit>(),
-        ),
-        BlocProvider<PengumumanCubit>(
-          create: (context) => di<PengumumanCubit>(),
-        ),
-        BlocProvider<NasabahPengumumanCubit>(
-          create: (context) => di<NasabahPengumumanCubit>(),
-        ),
-        BlocProvider<TransaksiCubit>(
-          create: (context) => di<TransaksiCubit>(),
-        ),
-        BlocProvider<DashboardCubit>(
-          create: (context) => di<DashboardCubit>(),
-        ),
-        BlocProvider<RecentActivityCubit>(
-          create: (context) => di<RecentActivityCubit>(),
-        ),
-        BlocProvider<RiwayatAktivitasCubit>(
-          create: (context) => di<RiwayatAktivitasCubit>(),
-        ),
-        // Provided app-wide, not just under the Profile page: the transaksi
-        // success flow reads the saved WhatsApp template from here to build the
-        // wa.me notification.
-        BlocProvider<ProfileCubit>(
-          create: (context) => di<ProfileCubit>(),
-        ),
-        BlocProvider<AuthenticationBloc>(
-          create: (context) => di<AuthenticationBloc>(),
-        ),
-        BlocProvider<OnboardingCubit>(
-          create: (context) => di<OnboardingCubit>(),
-        ),
-      ],
-      // Session hygiene for the app-scoped (@lazySingleton) cubits. These
-      // outlive any one session, so without this the next user to log in
-      // inherits the previous one's cached lists and stats.
-      //
-      // It lives at the root, above the router, on purpose: `Unauthenticated`
-      // is emitted by an explicit logout *and* by a rejected/expired session on
-      // startup, from whichever screen happens to be on top. A listener tied to
-      // a single page only runs while that page is mounted, which silently
-      // misses every other exit path.
-      child: BlocListener<AuthenticationBloc, AuthenticationStates>(
-        listenWhen: (previous, current) => current is Unauthenticated,
-        listener: (context, state) => resetSessionScopedState(context),
+    return ProviderScope(
+      child: MultiBlocProvider(
+        providers: [
+          // Cubits load their data from each page's initState (post-login), so
+          // the requests carry the authenticated session instead of firing once
+          // at cold start before a token exists.
+          BlocProvider<NasabahCubit>(
+            create: (context) => di<NasabahCubit>(),
+          ),
+          BlocProvider<HargaCubit>(
+            create: (context) => di<HargaCubit>(),
+          ),
+          BlocProvider<JadwalCubit>(
+            create: (context) => di<JadwalCubit>(),
+          ),
+          BlocProvider<PengumumanCubit>(
+            create: (context) => di<PengumumanCubit>(),
+          ),
+          BlocProvider<NasabahPengumumanCubit>(
+            create: (context) => di<NasabahPengumumanCubit>(),
+          ),
+          BlocProvider<TransaksiCubit>(
+            create: (context) => di<TransaksiCubit>(),
+          ),
+          BlocProvider<RecentActivityCubit>(
+            create: (context) => di<RecentActivityCubit>(),
+          ),
+          BlocProvider<RiwayatAktivitasCubit>(
+            create: (context) => di<RiwayatAktivitasCubit>(),
+          ),
+          // Provided app-wide, not just under the Profile page: the transaksi
+          // success flow reads the saved WhatsApp template from here to build the
+          // wa.me notification.
+          BlocProvider<ProfileCubit>(
+            create: (context) => di<ProfileCubit>(),
+          ),
+          BlocProvider<AuthenticationBloc>(
+            create: (context) => di<AuthenticationBloc>(),
+          ),
+          BlocProvider<OnboardingCubit>(
+            create: (context) => di<OnboardingCubit>(),
+          ),
+        ],
+        // Session hygiene for the app-scoped (@lazySingleton) cubits. These
+        // outlive any one session, so without this the next user to log in
+        // inherits the previous one's cached lists and stats.
+        //
+        // It lives at the root, above the router, on purpose: `Unauthenticated`
+        // is emitted by an explicit logout *and* by a rejected/expired session on
+        // startup, from whichever screen happens to be on top. A listener tied to
+        // a single page only runs while that page is mounted, which silently
+        // misses every other exit path.
         child: BlocListener<AuthenticationBloc, AuthenticationStates>(
-          listenWhen: (previous, current) =>
-              (isWebOverride ?? kIsWeb) &&
-              current is Authenticated &&
-              !isSupportedWebRole(current.authEntity.role),
-          listener: (context, state) {
-            context.read<AuthenticationBloc>().add(LogoutRequested());
-            AppNotification.afterNavigation(
-              (context) => AppNotification.showWarning(
-                context,
-                title: 'Akses web tidak tersedia',
-                message:
-                    'Akun ini hanya dapat digunakan melalui aplikasi mobile.',
-              ),
-            );
-          },
-          child: _PendingInviteResumeWatcher(
-            child: _BrowserTitleUpdater(
-              router: router,
-              enabled: isWeb,
-              child: MaterialApp.router(
-                title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
-                theme: AppTheme.light,
-                // Material widgets (date pickers, dialog buttons) in Indonesian.
-                locale: const Locale('id'),
-                supportedLocales: const [Locale('id')],
-                localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                routerConfig: router,
+          listenWhen: (previous, current) => current is Unauthenticated,
+          listener: (context, state) => resetSessionScopedState(context),
+          child: BlocListener<AuthenticationBloc, AuthenticationStates>(
+            listenWhen: (previous, current) =>
+                (isWebOverride ?? kIsWeb) &&
+                current is Authenticated &&
+                !isSupportedWebRole(current.authEntity.role),
+            listener: (context, state) {
+              context.read<AuthenticationBloc>().add(LogoutRequested());
+              AppNotification.afterNavigation(
+                (context) => AppNotification.showWarning(
+                  context,
+                  title: 'Akses web tidak tersedia',
+                  message:
+                      'Akun ini hanya dapat digunakan melalui aplikasi mobile.',
+                ),
+              );
+            },
+            child: _PendingInviteResumeWatcher(
+              child: _BrowserTitleUpdater(
+                router: router,
+                enabled: isWeb,
+                child: MaterialApp.router(
+                  title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+                  theme: AppTheme.light,
+                  // Material widgets (date pickers, dialog buttons) in Indonesian.
+                  locale: const Locale('id'),
+                  supportedLocales: const [Locale('id')],
+                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                  routerConfig: router,
+                ),
               ),
             ),
           ),
@@ -283,7 +283,8 @@ void resetSessionScopedState(BuildContext context) {
   context.read<PengumumanCubit>().reset();
   context.read<NasabahPengumumanCubit>().reset();
   context.read<TransaksiCubit>().reset();
-  context.read<DashboardCubit>().reset();
+  ProviderScope.containerOf(context, listen: false)
+      .invalidate(dashboardProvider);
   context.read<RecentActivityCubit>().reset();
   context.read<RiwayatAktivitasCubit>().reset();
   // Carries the previous bank sampah's WhatsApp template and, more sensitively,

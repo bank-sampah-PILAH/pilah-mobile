@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/app.dart';
@@ -15,8 +16,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
+
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
@@ -56,9 +56,6 @@ class _MockNasabahPengumumanCubit extends MockCubit<NasabahPengumumanState>
 class _MockTransaksiCubit extends MockCubit<TransaksiState>
     implements TransaksiCubit {}
 
-class _MockDashboardCubit extends MockCubit<DashboardState>
-    implements DashboardCubit {}
-
 class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
     implements RecentActivityCubit {}
 
@@ -87,7 +84,6 @@ void main() {
   late _MockPengumumanCubit pengumuman;
   late _MockNasabahPengumumanCubit nasabahPengumuman;
   late _MockTransaksiCubit transaksi;
-  late _MockDashboardCubit dashboard;
   late _MockRecentActivityCubit recentActivity;
   late _MockRiwayatAktivitasCubit riwayatAktivitas;
   late _MockProfileCubit profile;
@@ -103,7 +99,6 @@ void main() {
     pengumuman = _MockPengumumanCubit();
     nasabahPengumuman = _MockNasabahPengumumanCubit();
     transaksi = _MockTransaksiCubit();
-    dashboard = _MockDashboardCubit();
     recentActivity = _MockRecentActivityCubit();
     riwayatAktivitas = _MockRiwayatAktivitasCubit();
     profile = _MockProfileCubit();
@@ -122,7 +117,6 @@ void main() {
     when(() => nasabahPengumuman.state)
         .thenReturn(const NasabahPengumumanState());
     when(() => transaksi.state).thenReturn(TransaksiInitial());
-    when(() => dashboard.state).thenReturn(const DashboardState());
     when(() => recentActivity.state).thenReturn(RecentActivityInitial());
     when(() => riwayatAktivitas.state)
         .thenReturn(const RiwayatAktivitasState());
@@ -139,7 +133,6 @@ void main() {
     di.registerSingleton<PengumumanCubit>(pengumuman);
     di.registerSingleton<NasabahPengumumanCubit>(nasabahPengumuman);
     di.registerSingleton<TransaksiCubit>(transaksi);
-    di.registerSingleton<DashboardCubit>(dashboard);
     di.registerSingleton<RecentActivityCubit>(recentActivity);
     di.registerSingleton<RiwayatAktivitasCubit>(riwayatAktivitas);
     di.registerSingleton<ProfileCubit>(profile);
@@ -169,25 +162,27 @@ void main() {
     ));
 
     await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<NasabahCubit>.value(value: nasabah),
-          BlocProvider<HargaCubit>.value(value: harga),
-          BlocProvider<JadwalCubit>.value(value: jadwal),
-          BlocProvider<PengumumanCubit>.value(value: pengumuman),
-          BlocProvider<NasabahPengumumanCubit>.value(value: nasabahPengumuman),
-          BlocProvider<TransaksiCubit>.value(value: transaksi),
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: recentActivity),
-          BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
-          BlocProvider<ProfileCubit>.value(value: profile),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => resetSessionScopedState(context),
-              child: const Text('logout'),
+      ProviderScope(
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<NasabahCubit>.value(value: nasabah),
+            BlocProvider<HargaCubit>.value(value: harga),
+            BlocProvider<JadwalCubit>.value(value: jadwal),
+            BlocProvider<PengumumanCubit>.value(value: pengumuman),
+            BlocProvider<NasabahPengumumanCubit>.value(
+                value: nasabahPengumuman),
+            BlocProvider<TransaksiCubit>.value(value: transaksi),
+            BlocProvider<RecentActivityCubit>.value(value: recentActivity),
+            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
+            BlocProvider<ProfileCubit>.value(value: profile),
+            BlocProvider<OnboardingCubit>.value(value: onboarding),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => resetSessionScopedState(context),
+                child: const Text('logout'),
+              ),
             ),
           ),
         ),
@@ -209,7 +204,6 @@ void main() {
     verify(() => harga.reset()).called(1);
     verify(() => jadwal.reset()).called(1);
     verify(() => transaksi.reset()).called(1);
-    verify(() => dashboard.reset()).called(1);
     verify(() => recentActivity.reset()).called(1);
     verify(() => riwayatAktivitas.reset()).called(1);
     verify(
