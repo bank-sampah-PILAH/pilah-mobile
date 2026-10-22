@@ -13,6 +13,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasab
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -176,7 +177,9 @@ void main() {
 
   for (final role in ['pengelola', 'pengelola_induk']) {
     testWidgets('$role retains the staff navigation', (tester) async {
-      await mount(tester, session(role));
+      await mount(tester, session(role), isWebOverride: false);
+      expect(find.text('Transaksi'), findsNothing,
+          reason: 'the menu change applies to the web shell only');
       expect(labels(tester), [
         'Dashboard',
         'Nasabah',
@@ -187,7 +190,7 @@ void main() {
     });
   }
 
-  testWidgets('Pengurus opens Setoran Baru from the web sidebar action',
+  testWidgets('Pengurus opens Setoran from the first web sidebar menu',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -200,8 +203,9 @@ void main() {
       isWebOverride: true,
     );
 
-    expect(find.text('Tambah Transaksi'), findsOneWidget);
-    await tester.tap(find.text('Tambah Transaksi'));
+    expect(find.text('Transaksi'), findsOneWidget);
+    expect(find.text('Setoran'), findsOneWidget);
+    await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
     await tester.pumpAndSettle();
 
     expect(find.text('Form Setoran'), findsOneWidget);

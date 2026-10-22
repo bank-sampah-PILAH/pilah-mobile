@@ -4,10 +4,11 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
-import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 /// Bentuk navigasi untuk layar lebar.
 ///
@@ -33,7 +34,6 @@ class RoleNavigationRail extends StatelessWidget {
   static const logoKey = ValueKey('rail-logo');
   static const brandKey = ValueKey('rail-brand');
   static const headerDividerKey = ValueKey('rail-header-divider');
-  static const addTransactionKey = ValueKey('rail-add-transaction');
   static const profileKey = ValueKey('rail-profile');
   static const profileCardKey = ValueKey('rail-profile-card');
 
@@ -203,8 +203,7 @@ class _RailHeader extends StatelessWidget {
 
     // Brand dan pembatas selebar header, supaya area hover logo sepanjang
     // sidebar. Pada rail sempit hanya selebar logo.
-    final headerWidth =
-        extended ? _leadingMaxWidth : (onAddTransaction == null ? 48.0 : 64.0);
+    final headerWidth = extended ? _leadingMaxWidth : 48.0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -249,33 +248,6 @@ class _RailHeader extends StatelessWidget {
             ),
           ),
           bank,
-          if (onAddTransaction != null) ...[
-            const SizedBox(height: 16),
-            if (extended)
-              SizedBox(
-                width: headerWidth,
-                child: AppButton(
-                  key: RoleNavigationRail.addTransactionKey,
-                  label: 'Tambah Transaksi',
-                  variant: AppButtonVariant.outlined,
-                  icon: Icons.add,
-                  onPressed: onAddTransaction,
-                ),
-              )
-            else
-              Tooltip(
-                message: 'Tambah Transaksi',
-                child: SizedBox(
-                  width: headerWidth,
-                  height: AppButton.height,
-                  child: OutlinedButton(
-                    key: RoleNavigationRail.addTransactionKey,
-                    onPressed: onAddTransaction,
-                    child: const Icon(Icons.add),
-                  ),
-                ),
-              ),
-          ],
           if (extended) ...[
             const SizedBox(height: 24),
             Text('MENU',
@@ -284,6 +256,16 @@ class _RailHeader extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.8,
                 )),
+          ],
+          if (onAddTransaction != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: headerWidth,
+              child: RoleTransactionMenu(
+                onSetoran: onAddTransaction!,
+                compact: !extended,
+              ),
+            ),
           ],
         ],
       ),

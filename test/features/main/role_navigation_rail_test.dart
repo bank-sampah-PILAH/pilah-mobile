@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 import '../../support/pump_app.dart';
 
@@ -53,29 +53,31 @@ void main() {
       );
     });
 
-    testWidgets('shows the outlined transaction action before destinations',
+    testWidgets('shows the Transaksi accordion before destinations',
         (tester) async {
       var added = false;
       await taps(tester,
           role: 'pengelola', onAddTransaction: () => added = true);
 
-      expect(find.text('Tambah Transaksi'), findsOneWidget);
+      expect(find.text('Transaksi'), findsOneWidget);
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      expect(find.text('Tambah Transaksi'), findsNothing);
       expect(
-        tester.getTopLeft(find.text('Tambah Transaksi')).dy,
+        tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
-      expect(
-        tester
-            .widget<AppButton>(find.byKey(RoleNavigationRail.addTransactionKey))
-            .variant,
-        AppButtonVariant.outlined,
-      );
-      await tester.tap(find.byKey(RoleNavigationRail.addTransactionKey));
+      final pencairan =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.pencairanKey));
+      expect(pencairan.enabled, isFalse);
+      expect(pencairan.onTap, isNull);
+
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
       expect(added, isTrue);
     });
 
-    testWidgets('keeps the action accessible when the rail is collapsed',
+    testWidgets('collapsed rail opens both transaction actions',
         (tester) async {
       var added = false;
       await taps(
@@ -85,8 +87,14 @@ void main() {
         onAddTransaction: () => added = true,
       );
 
-      expect(find.byTooltip('Tambah Transaksi'), findsOneWidget);
-      await tester.tap(find.byTooltip('Tambah Transaksi'));
+      await tester.tap(find.byTooltip('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      final pencairan = tester.widget<PopupMenuItem<dynamic>>(
+          find.byKey(RoleTransactionMenu.pencairanKey));
+      expect(pencairan.enabled, isFalse);
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
       expect(added, isTrue);
     });
@@ -137,6 +145,16 @@ void main() {
           tester.widget<NavigationRail>(find.byType(NavigationRail)).labelType,
           NavigationRailLabelType.none,
           reason: 'Material asserts on any other value while extended');
+    });
+
+    testWidgets('hides the transaction menu from Pengelola Induk',
+        (tester) async {
+      await taps(
+        tester,
+        role: 'pengelola_induk',
+        onAddTransaction: () {},
+      );
+      expect(find.text('Transaksi'), findsNothing);
     });
 
     testWidgets('renders nothing at all for a role without navigation',

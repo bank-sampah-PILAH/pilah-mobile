@@ -3,10 +3,10 @@ import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/bank_sampah_label.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 /// Bentuk navigasi untuk browser yang terlalu sempit untuk rail.
 ///
@@ -27,7 +27,6 @@ class RoleNavigationDrawer extends StatelessWidget {
   final RoleNavigationConfig navigation;
 
   static const brandKey = ValueKey('drawer-brand');
-  static const addTransactionKey = ValueKey('drawer-add-transaction');
   static const profileKey = ValueKey('drawer-profile');
   static const profileCardKey = ValueKey('drawer-profile-card');
   static ValueKey<String> destinationKey(int index) =>
@@ -57,21 +56,6 @@ class RoleNavigationDrawer extends StatelessWidget {
               label: BankSampahLabel.of(navigation.bankSampahNama),
               initials: BankSampahLabel.initialsOf(navigation.bankSampahNama),
             ),
-            if (navigation.role == 'pengelola' &&
-                navigation.onAddTransaction != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                child: AppButton(
-                  key: addTransactionKey,
-                  label: 'Tambah Transaksi',
-                  variant: AppButtonVariant.outlined,
-                  icon: Icons.add,
-                  onPressed: () {
-                    Navigator.maybeOf(context)?.maybePop();
-                    navigation.onAddTransaction?.call();
-                  },
-                ),
-              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
               child: Text(
@@ -87,6 +71,12 @@ class RoleNavigationDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
+                  if (navigation.role == 'pengelola' &&
+                      navigation.onAddTransaction != null)
+                    RoleTransactionMenu(
+                      onSetoran: navigation.onAddTransaction!,
+                      onClose: () => Navigator.maybeOf(context)?.maybePop(),
+                    ),
                   for (var index = 0; index < destinations.length; index++)
                     _Destination(
                       key: destinationKey(index),

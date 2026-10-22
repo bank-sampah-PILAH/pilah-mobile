@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 import '../../support/pump_app.dart';
 
@@ -63,22 +64,30 @@ void main() {
       expect(find.text('Bank Sampah Melati'), findsOneWidget);
     });
 
-    testWidgets('shows the transaction action before destinations',
+    testWidgets('shows the expanded Transaksi menu before destinations',
         (tester) async {
       var added = false;
       await mountDrawer(tester, onAddTransaction: () => added = true);
 
-      expect(find.text('Tambah Transaksi'), findsOneWidget);
+      expect(find.text('Transaksi'), findsOneWidget);
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      expect(find.text('Tambah Transaksi'), findsNothing);
       expect(
-        tester.getTopLeft(find.text('Tambah Transaksi')).dy,
+        tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
-      await tester.tap(find.byKey(RoleNavigationDrawer.addTransactionKey));
+      final pencairan =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.pencairanKey));
+      expect(pencairan.enabled, isFalse);
+      expect(pencairan.onTap, isNull);
+
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
       expect(added, isTrue);
     });
 
-    testWidgets('hides the transaction action from Pengelola Induk',
+    testWidgets('hides the transaction menu from Pengelola Induk',
         (tester) async {
       await mountDrawer(
         tester,
@@ -86,7 +95,7 @@ void main() {
         onAddTransaction: () {},
       );
 
-      expect(find.text('Tambah Transaksi'), findsNothing);
+      expect(find.text('Transaksi'), findsNothing);
     });
 
     testWidgets('reports the menu index that was tapped', (tester) async {
@@ -130,6 +139,40 @@ void main() {
   });
 
   group('RoleNavigationDrawer inside a Scaffold', () {
+    testWidgets('choosing Setoran closes the drawer and opens the form',
+        (tester) async {
+      var added = false;
+      await pumpRouted(
+        tester,
+        Scaffold(
+          drawer: RoleNavigationDrawer(
+            navigation: RoleNavigationConfig(
+              role: 'pengelola',
+              currentIndex: 0,
+              bankSampahNama: 'Bank Sampah Melati',
+              onSelected: (_) {},
+              onAddTransaction: () => added = true,
+            ),
+          ),
+          body: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: Scaffold.of(context).openDrawer,
+            ),
+          ),
+        ),
+        size: const Size(390, 844),
+      );
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
+      await tester.pumpAndSettle();
+
+      expect(added, isTrue);
+      expect(find.text('Transaksi'), findsNothing);
+    });
+
     testWidgets('choosing a destination closes the drawer', (tester) async {
       final selected = <int>[];
       await pumpRouted(
