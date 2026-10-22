@@ -75,6 +75,32 @@ void main() {
         reason: 'a sidebar destination has nowhere to go back to');
   });
 
+  testWidgets('a wide web window opens the create form beside the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+
+    await openPage(
+      tester,
+      extraRoutes: const ['/pengumuman/kelola/ubah'],
+      isWeb: true,
+      size: const Size(1440, 900),
+    );
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+    expect(find.text('Buat Pengumuman'), findsOneWidget);
+    expect(find.text('route:/pengumuman/kelola/ubah'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text('Buat Pengumuman')).dx,
+      greaterThan(tester.getTopLeft(find.text('Kelola Pengumuman')).dx),
+    );
+  });
+
   testWidgets('a phone keeps the FAB and the back header', (tester) async {
     api.on('GET', '/api/v1/pengumuman', json: {
       'count': 0,
