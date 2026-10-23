@@ -21,23 +21,20 @@ import '../../domain/model/draft_pencairan.dart';
 import '../blocs/draft_editor_cubit.dart';
 import '../blocs/draft_editor_state.dart';
 import '../blocs/editor_item_view.dart';
-import '../widgets/draft_file_actions.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/editor_item_card.dart';
 import '../widgets/editor_item_controls.dart';
 import '../widgets/editor_summary_panel.dart';
-import '../widgets/export_menu_button.dart';
 import '../widgets/jumlah_control.dart';
 import '../widgets/pencairan_konfirmasi_sheet.dart';
 import '../widgets/pencairan_ui.dart';
 import '../widgets/potongan_control.dart';
 import 'draft_editor_args.dart';
-import 'draft_pdf_preview_page.dart';
 import 'draft_list_page.dart';
 
 /// Shapes a pencairan: name, general potongan and method, then each nasabah.
-/// A saved draft can be resumed, paid (confirmed), cancelled or exported.
+/// A saved draft can be resumed, paid (confirmed) or cancelled.
 class DraftEditorPage extends StatelessWidget {
   static const route = DraftListPage.routeEditor;
 
@@ -101,20 +98,6 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       jawaban: const KonfirmasiJawaban('Ya, sudah dibayar', 'Belum'),
     );
     if (ok && mounted) await cubit.confirm();
-  }
-
-  Future<void> _export(ExportBerkas berkas) async {
-    final cubit = context.read<DraftEditorCubit>();
-    final file = await cubit.export(berkas);
-    if (file == null || !mounted) return;
-
-    if (berkas == ExportBerkas.pdf) {
-      await Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => DraftPdfPreviewPage(file: file),
-      ));
-      return;
-    }
-    await simpanBerkasDraft(context, file);
   }
 
   /// A paid pencairan changes saldo and riwayat, so the screens that show
@@ -197,13 +180,6 @@ class _DraftEditorViewState extends State<DraftEditorView> {
     final header = AppBackHeader(
       backKey: const Key('kembali'),
       title: state.draftId == null ? 'Pencairan Baru' : 'Pencairan',
-      actions: [
-        ExportMenuButton(
-          enabled: state.canExport,
-          busy: state.phase == EditorPhase.exporting,
-          onSelected: _export,
-        ),
-      ],
     );
     // On a desktop window the totals and the buttons that act on them sit in
     // a panel beside the nasabah list, not in a bar across the whole width.
