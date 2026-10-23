@@ -32,13 +32,18 @@ void main() {
     expect(find.text('Belum ada jadwal mendatang.'), findsOneWidget);
   });
 
-  testWidgets('paginates and lists the three nearest published future events',
+  testWidgets('paginates and lists ongoing then future published events',
       (tester) async {
     final repository = _JadwalRepository();
     final past = _schedule(
       id: 'past',
       title: 'Jadwal Lampau',
       start: DateTime(2026, 5, 31, 10),
+    );
+    final ongoing = _schedule(
+      id: 'ongoing',
+      title: 'Sedang berlangsung',
+      start: DateTime(2026, 6, 1, 8, 30),
     );
     final draft = _schedule(
       id: 'draft',
@@ -67,7 +72,7 @@ void main() {
       start: DateTime(2026, 6, 20, 10),
     );
     when(() => repository.getJadwal(page: 1, date: null)).thenAnswer(
-      (_) async => Right(_page([past, draft, far], hasMore: true)),
+      (_) async => Right(_page([past, ongoing, draft, far], hasMore: true)),
     );
     when(() => repository.getJadwal(page: 2, date: null)).thenAnswer(
       (_) async => Right(_page([later, nearest, farthest])),
@@ -76,18 +81,26 @@ void main() {
     await _pumpSection(tester, repository);
     await tester.pumpAndSettle();
 
-    // The three nearest, soonest first: not just the single nearest.
+    // Ongoing schedules appear before the three nearest future events.
+    expect(find.text('Sedang berlangsung'), findsOneWidget);
     expect(find.text('Penimbangan'), findsOneWidget);
     expect(find.text('Balai Warga'), findsNWidgets(3));
     expect(find.text('Pengumpulan'), findsOneWidget);
-    expect(find.text('Jadwal Jauh'), findsOneWidget);
+    expect(find.text('Jadwal Jauh'), findsNothing);
+    expect(tester.getTopLeft(find.text('Sedang berlangsung')).dy,
+        lessThan(tester.getTopLeft(find.text('Penimbangan')).dy));
     expect(tester.getTopLeft(find.text('Penimbangan')).dy,
         lessThan(tester.getTopLeft(find.text('Pengumpulan')).dy));
-    expect(tester.getTopLeft(find.text('Pengumpulan')).dy,
-        lessThan(tester.getTopLeft(find.text('Jadwal Jauh')).dy));
     expect(find.text('Jadwal Terjauh'), findsNothing, reason: 'only three');
     expect(find.text('Jadwal Lampau'), findsNothing);
     expect(find.text('Jadwal Draft'), findsNothing);
+    final scheduleCard = find.byType(Card);
+    final cardMaterial = find.descendant(
+      of: scheduleCard,
+      matching: find.byType(Material),
+    );
+    expect(tester.widget<Material>(cardMaterial).color, Colors.transparent);
+    expect(find.byType(Divider), findsNWidgets(2));
     verify(() => repository.getJadwal(page: 1, date: null)).called(1);
     verify(() => repository.getJadwal(page: 2, date: null)).called(1);
 

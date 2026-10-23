@@ -50,7 +50,7 @@ class _DashboardUpcomingScheduleSectionState
       final page = result.fold((failure) => throw failure, (page) => page);
       for (final schedule in page.items) {
         if (schedule.isPublished &&
-            !schedule.mulaiPada.toLocal().isBefore(now)) {
+            !schedule.selesaiPada.toLocal().isBefore(now)) {
           upcoming.add(schedule);
         }
       }
@@ -72,7 +72,7 @@ class _DashboardUpcomingScheduleSectionState
   Widget build(BuildContext context) => Theme(
         data: Theme.of(context).copyWith(
           cardTheme: CardThemeData(
-            color: AppColors.cardOffWhite,
+            color: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             margin: EdgeInsets.zero,
