@@ -89,6 +89,8 @@ void main() {
       isWeb: true,
       size: const Size(1440, 900),
     );
+    expect(find.text('Buat Pengumuman'), findsNothing);
+
     await tester.tap(find.widgetWithText(AppButton, 'Buat'));
     await tester.pumpAndSettle();
 
