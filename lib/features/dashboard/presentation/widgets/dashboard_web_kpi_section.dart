@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_balance_display.dart';
 
 class DashboardWebKpiSection extends StatelessWidget {
   const DashboardWebKpiSection({super.key});
@@ -83,16 +84,3 @@ List<DashboardKpiCard> _dashboardKpiCards(DashboardState state) {
     ),
   ];
 }
-
-String dashboardSavingsDisplay(DashboardState state) {
-  if (state.status == DashboardStatus.initial ||
-      state.status == DashboardStatus.loading) {
-    return 'Memuat...';
-  }
-  final savings = state.totalSaldoNasabah;
-  if (!state.isLoaded || savings == null) return 'Rp —';
-  return CurrencyFormatter.formatRupiah(savings);
-}
-
-// No cash ledger exists yet. Never infer cash from customer savings or deposits.
-const dashboardOperationalCashDisplay = 'Belum tersedia';

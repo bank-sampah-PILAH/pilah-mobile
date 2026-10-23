@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_balance_display.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
 
 class TotalKasCard extends StatelessWidget {
@@ -75,16 +76,3 @@ class TotalKasCard extends StatelessWidget {
     );
   }
 }
-
-String dashboardSavingsDisplay(DashboardState state) {
-  if (state.status == DashboardStatus.initial ||
-      state.status == DashboardStatus.loading) {
-    return 'Memuat...';
-  }
-  final savings = state.totalSaldoNasabah;
-  if (!state.isLoaded || savings == null) return 'Rp —';
-  return CurrencyFormatter.formatRupiah(savings);
-}
-
-// No cash ledger exists yet. Never infer cash from customer savings or deposits.
-const dashboardOperationalCashDisplay = 'Belum tersedia';
