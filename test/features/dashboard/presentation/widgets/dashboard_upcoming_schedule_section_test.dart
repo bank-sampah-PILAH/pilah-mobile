@@ -94,6 +94,13 @@ void main() {
     expect(find.text('Jadwal Terjauh'), findsNothing, reason: 'only three');
     expect(find.text('Jadwal Lampau'), findsNothing);
     expect(find.text('Jadwal Draft'), findsNothing);
+    final scheduleCard = find.byType(Card);
+    final cardMaterial = find.descendant(
+      of: scheduleCard,
+      matching: find.byType(Material),
+    );
+    expect(tester.widget<Material>(cardMaterial).color, Colors.white);
+    expect(find.byType(Divider), findsNWidgets(2));
     verify(() => repository.getJadwal(page: 1, date: null)).called(1);
     verify(() => repository.getJadwal(page: 2, date: null)).called(1);
 

@@ -72,7 +72,7 @@ class _DashboardUpcomingScheduleSectionState
   Widget build(BuildContext context) => Theme(
         data: Theme.of(context).copyWith(
           cardTheme: CardThemeData(
-            color: AppColors.cardOffWhite,
+            color: Colors.white,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             margin: EdgeInsets.zero,
