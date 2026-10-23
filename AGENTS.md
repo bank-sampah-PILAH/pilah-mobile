@@ -31,6 +31,12 @@
   `test/services/di_registrations.dart`. `di_graph_test` resolves each one in
   dev and prod, and fails when the list and the generated file disagree.
 
+- For quick iteration, run the affected test file with
+  `flutter test test/path/to/feature_test.dart`, or one named test with
+  `flutter test test/path/to/feature_test.dart --plain-name "test description"`.
+  Before shipping, run the full `flutter test`; PR CI still runs every test across
+  coverage shards.
+
 ## Validation
 
 - For Flutter code or behavior changes, run `flutter analyze` and `flutter test`.
