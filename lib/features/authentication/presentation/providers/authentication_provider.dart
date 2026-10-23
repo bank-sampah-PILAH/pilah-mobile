@@ -4,8 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/states/post_login_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 final authenticationProvider =
@@ -46,7 +45,7 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
   }
 
   void refreshLogin() {
-    if (state is PostLoginErrorState || state is AuthenticationFailure) {
+    if (state is AuthenticationFailure) {
       state = AuthenticationInitial();
     }
   }

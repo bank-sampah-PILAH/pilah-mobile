@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_approval_screen.dart';
 
 import '../../../../support/auth_support.dart';
@@ -33,14 +33,15 @@ void main() {
     expect(find.text('Ditinjau Admin (Tahap Saat Ini)'), findsOneWidget);
   });
 
-  testWidgets('going back to login asks the bloc to log out', (tester) async {
-    final bloc = authNotifierIn(Authenticated(authEntity: testAuth()));
-    await open(tester, bloc);
+  testWidgets('going back to login asks the auth provider to log out',
+      (tester) async {
+    final notifier = authNotifierIn(Authenticated(authEntity: testAuth()));
+    await open(tester, notifier);
 
     await tester.tap(find.text('Kembali ke Halaman Login'));
     await tester.pump();
 
-    expect(bloc.calls, contains('logout'));
+    expect(notifier.calls, contains('logout'));
   });
 
   testWidgets('routes to login once the session is gone', (tester) async {

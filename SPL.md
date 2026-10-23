@@ -20,8 +20,6 @@ dart run codegen/spl_manager.dart storage add <provider>
 dart run codegen/spl_manager.dart storage remove <provider>
 dart run codegen/spl_manager.dart storage default <provider>
 dart run codegen/spl_manager.dart storage list
-dart run codegen/spl_manager.dart state set riverpod
-dart run codegen/spl_manager.dart state list
 dart run codegen/spl_manager.dart fix
 ```
 
@@ -29,15 +27,15 @@ dart run codegen/spl_manager.dart fix
 
 ## Source of Truth: `spl.yaml`
 
-`spl.yaml` is the single source of truth for the product configuration. It tracks the active storage backends, the default state management solution, and all features.
+`spl.yaml` is the single source of truth for the product configuration. It tracks the active storage backends and all features.
 
 Do not edit `spl.yaml` by hand — use the CLI. The CLI updates this file, generates/deletes code, and re-wires DI automatically.
 
 ---
 
-## Variability Points
+## Variability
 
-This project has two variability points. Both use OR semantics.
+Storage is the only variability point and uses OR semantics.
 
 ### 1. Storage — OR (multiple backends can coexist)
 
@@ -61,28 +59,9 @@ dart run codegen/spl_manager.dart storage list
 
 When a feature is added with `--storage sqflite` (or `,storage=sqflite` inline), the CLI auto-registers `sqflite` if not already active, generates the impl file, and wires `@Named('sqflite')` into the feature's local data source.
 
-### 2. State Management — OR (global default + per-feature override)
+## State Management — Riverpod only
 
-Controls the presentation layer pattern for features. Different features in the same app can use different solutions.
-
-| Solution | Package | Files generated | Use when |
-|---|---|---|---|
-| `riverpod` (default) | `flutter_riverpod` (included) | `_state.dart`, `_notifier.dart` | Riverpod-native UIs; bridges to get_it DI via `di<T>()` |
-| `bloc` | `flutter_bloc` (optional) | `_event.dart`, `_state.dart`, `_bloc.dart` | Complex flows with explicit event streams |
-| `cubit` | `flutter_bloc` (optional) | `_state.dart`, `_cubit.dart` | Simpler flows, fewer files, methods called directly |
-
-Change the global default (affects all future `add` commands):
-```
-dart run codegen/spl_manager.dart state set riverpod
-```
-
-Override per feature at creation time:
-```
-dart run codegen/spl_manager.dart add orders --state riverpod
-dart run codegen/spl_manager.dart add orders,state=riverpod     # inline equivalent
-```
-
-This app defaults to Riverpod and already includes `flutter_riverpod` with a root `ProviderScope`. Bloc and Cubit remain optional generator outputs; add `flutter_bloc` to `pubspec.yaml` before generating or building those variants. No Bloc/Cubit dependency is included by default.
+All production and generated features use Riverpod. The SPL CLI and Mason feature brick generate Riverpod state models and notifiers; `--with-test` generates Riverpod tests. There are no Bloc or Cubit generation variants. `flutter_riverpod` is included in the app, which provides a root `ProviderScope`.
 
 ---
 
@@ -157,7 +136,7 @@ Features have three states:
 Each argument to `add` is a **feature spec**: a feature name optionally followed by comma-separated inline options.
 
 ```
-<name>[,storage=<provider>][,state=<solution>][,test][,shell]
+<name>[,storage=<provider>][,test][,shell]
 ```
 
 Examples:
@@ -166,16 +145,16 @@ Examples:
 dart run codegen/spl_manager.dart add orders
 
 # Single feature with options inline
-dart run codegen/spl_manager.dart add orders,storage=sqflite,state=cubit,test
+dart run codegen/spl_manager.dart add orders,storage=sqflite,test
 
 # Multiple features, each with their own config
-dart run codegen/spl_manager.dart add orders,storage=sqflite,state=cubit feed,test settings,shell
+dart run codegen/spl_manager.dart add orders,storage=sqflite feed,test settings,shell
 
 # Global flags apply to all features that don't override them inline
-dart run codegen/spl_manager.dart add orders inventory,storage=hive settings --state bloc --with-test
-# → orders:    bloc + test  (from global flags)
+dart run codegen/spl_manager.dart add orders inventory,storage=hive settings --with-test
+# → orders:    test  (from global flags)
 # → inventory: hive + test  (storage from inline, test from global)
-# → settings:  bloc + test  (from global flags)
+# → settings:  test  (from global flags)
 ```
 
 **Available inline keys:**
@@ -184,7 +163,6 @@ dart run codegen/spl_manager.dart add orders inventory,storage=hive settings --s
 |---|---|---|
 | `storage=<provider>` | `--storage <provider>` | Use a specific backend |
 | `with-storage` or `ws` | `--with-storage` | Use the default backend |
-| `state=<solution>` | `--state <solution>` | State management override |
 | `test` | `--with-test` | Generate tests |
 | `shell` | `--shell-route` | Register as shell (bottom nav) route |
 
@@ -194,7 +172,6 @@ dart run codegen/spl_manager.dart add orders inventory,storage=hive settings --s
 |---|---|
 | `--with-storage` | Use default storage backend for all |
 | `--storage <provider>` | Use specific backend for all |
-| `--state <solution>` | State management for all |
 | `--with-test` | Generate tests for all |
 | `--shell-route` | Shell route for all |
 
@@ -216,17 +193,13 @@ lib/features/<name>/
     <name>_interactor.dart
   presentation/
     pages/<name>_page.dart
-    blocs/                                      (bloc or cubit)
-      <name>_event.dart                         (bloc only)
-      <name>_state.dart
-      <name>_bloc.dart | <name>_cubit.dart
-    providers/                                  (riverpod only)
+    providers/
       <name>_state.dart
       <name>_notifier.dart
 
 test/features/<name>/                           (only with test option)
   domain/<name>_interactor_test.dart
-  presentation/<name>_bloc_test.dart | <name>_cubit_test.dart | <name>_notifier_test.dart
+  presentation/<name>_notifier_test.dart
 ```
 
 The route is injected automatically into `lib/core/router/app_router_config.dart`. Use `shell` (inline) or `--shell-route` (global) to register inside the `ShellRoute` (bottom nav); omit for a top-level route.
@@ -305,12 +278,12 @@ The CLI is split across multiple files using Dart's `part`/`part of` directives.
 codegen/
 ├── spl_manager.dart        entry point — library declaration, import 'dart:io', main(), part directives
 └── src/
-    ├── commands.dart        _cmdList, _cmdAdd, _cmdDisable, _cmdEnable, _cmdRemove, _cmdStorage*, _cmdState*, _cmdFix
-    ├── generators.dart      _generateFeatureFiles, _stateFiles, _injectRoute, _removeRoute, _removeTests, _generateTestFiles, _checkCrossFeatureDeps
+    ├── commands.dart        _cmdList, _cmdAdd, _cmdDisable, _cmdEnable, _cmdRemove, _cmdStorage*, _cmdFix
+    ├── generators.dart      _generateFeatureFiles, _injectRoute, _removeRoute, _removeTests, _generateTestFiles, _checkCrossFeatureDeps
     ├── storage_manager.dart _getDefaultProviderName, _getActiveProviders, _ensureStorageActive, _rewriteStorageModule, _implFileName, _deleteStorageImpl, _generateStorageImpl
-    ├── templates.dart       all _tpl* functions — state mgmt, storage providers, data/domain layer, tests
+    ├── templates.dart       Riverpod, storage-provider, data/domain, and test templates
     ├── spl_config.dart      spl.yaml read/write helpers, Mason integration (_checkMason, _tryMason*)
-    └── utils.dart           _parseFeatureSpec, _validateStateChoice, _printNotes, _runBuildRunner, _toPascalCase, _printHelp, _die
+    └── utils.dart           _parseFeatureSpec, _printStorageNotes, _runBuildRunner, _toPascalCase, _printHelp, _die
 ```
 
 To extend the CLI — add a command, add a template — edit only the relevant part file.

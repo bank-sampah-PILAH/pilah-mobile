@@ -9,7 +9,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';

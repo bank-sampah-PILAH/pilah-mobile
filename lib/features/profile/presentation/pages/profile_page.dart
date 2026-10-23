@@ -23,7 +23,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';

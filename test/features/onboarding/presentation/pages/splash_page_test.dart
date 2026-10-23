@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -45,10 +45,11 @@ void main() {
     return auth;
   }
 
-  testWidgets('asks the bloc to restore the session on start', (tester) async {
-    final bloc = await open(tester, initial: AuthenticationInitial());
+  testWidgets('asks the auth provider to restore the session on start',
+      (tester) async {
+    final notifier = await open(tester, initial: AuthenticationInitial());
 
-    expect(bloc.calls, contains('checkSession'));
+    expect(notifier.calls, contains('checkSession'));
     expect(find.text('PILAH'), findsOneWidget);
     expect(find.text('Sistem Manajemen Bank Sampah'), findsOneWidget);
   });

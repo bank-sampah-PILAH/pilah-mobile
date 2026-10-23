@@ -9,13 +9,10 @@ Future<void> _cmdList() async {
 
   final storageDefault = _getDefaultProviderName();
   final storageActive = _getActiveProviders();
-  final stateDefault = config['state_management']?['default'] ?? 'riverpod';
-
   print('  App              : ${config['app']?['name'] ?? 'unknown'}');
   print(
       '  Storage [OR]     : ${storageActive.join(', ')} (default: $storageDefault)');
-  print(
-      '  State Mgmt [OR]  : $stateDefault (default, per-feature override allowed)');
+  print('  State Mgmt       : Riverpod (fixed)');
   print('');
 
   final features = config['features'] as List<Map<String, String>>? ?? [];
@@ -37,10 +34,9 @@ Future<void> _cmdList() async {
     for (final f in active) {
       final name = f['name'] ?? '?';
       final storage = f['storage'] ?? 'none';
-      final state = f['state'] ?? stateDefault;
       final desc = f['description'] ?? '';
       final storageTag = storage == 'none' ? '' : '  storage:$storage';
-      print('  ✓  $name  state:$state$storageTag');
+      print('  ✓  $name$storageTag');
       if (desc.isNotEmpty && desc != '""') print('      $desc');
     }
   }
@@ -51,17 +47,15 @@ Future<void> _cmdList() async {
     for (final f in inactive) {
       final name = f['name'] ?? '?';
       final storage = f['storage'] ?? 'none';
-      final state = f['state'] ?? stateDefault;
       final desc = f['description'] ?? '';
       final storageTag = storage == 'none' ? '' : '  storage:$storage';
-      print('  ○  $name  state:$state$storageTag');
+      print('  ○  $name$storageTag');
       if (desc.isNotEmpty && desc != '""') print('      $desc');
     }
   }
 
   print('');
   print('  Tip: dart run codegen/spl_manager.dart storage list');
-  print('       dart run codegen/spl_manager.dart state list');
 }
 
 Future<void> _cmdAdd(
@@ -70,7 +64,6 @@ Future<void> _cmdAdd(
   String? storageOverride,
   bool withTest = false,
   bool shellRoute = false,
-  String? stateOverride,
   bool runDi = true,
 }) async {
   final module = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
@@ -86,11 +79,7 @@ Future<void> _cmdAdd(
         '  To delete it:  dart run codegen/spl_manager.dart remove $module');
   }
 
-  final config = _readSplConfig();
-  final globalStateDefault =
-      config['state_management']?['default'] ?? 'riverpod';
-  final stateChoice = stateOverride ?? globalStateDefault;
-  _validateStateChoice(stateChoice);
+  _readSplConfig();
 
   // Resolve effective storage provider
   String? storageProvider;
@@ -109,31 +98,26 @@ Future<void> _cmdAdd(
   _printHeader('Adding feature: $module');
   print('  Class   : $className');
   print('  Storage : ${storageProvider ?? 'none'}');
-  print(
-      '  State   : $stateChoice${stateOverride != null ? ' (override)' : ' (default)'}');
+  print('  State   : Riverpod');
   print('  Route   : ${shellRoute ? 'shell (bottom nav)' : 'top-level'}');
   print('  Tests   : ${withTest ? 'yes (--with-test)' : 'no'}');
   print('  DI      : auto-wired via build_runner (@injectable)');
   print('');
 
-  final usedMason = await _tryMasonFeature(module,
-      withStorage: storageProvider != null, state: stateChoice);
+  final usedMason =
+      await _tryMasonFeature(module, withStorage: storageProvider != null);
   if (!usedMason) {
-    _generateFeatureFiles(module, className,
-        storageProvider: storageProvider, state: stateChoice);
+    _generateFeatureFiles(module, className, storageProvider: storageProvider);
   }
 
   _addFeatureToConfig(
     module,
     storage: storageProvider ?? 'none',
-    state: stateChoice,
   );
 
   _injectRoute(module, className, shellRoute: shellRoute);
 
-  if (withTest) _generateTestFiles(module, className, state: stateChoice);
-
-  _printStateNotes(stateChoice);
+  if (withTest) _generateTestFiles(module, className);
 
   if (runDi) {
     print('\n  Wiring DI (build_runner)...');
@@ -405,58 +389,6 @@ void _cmdStorageList() {
   print('  dart run codegen/spl_manager.dart storage add <provider>');
   print('  dart run codegen/spl_manager.dart storage remove <provider>');
   print('  dart run codegen/spl_manager.dart storage default <provider>');
-}
-
-// ─── State commands ───────────────────────────────────────────────────────────
-
-void _cmdStateSet(String solution) {
-  _validateStateChoice(solution);
-  _updateStateDefaultInConfig(solution);
-  _printHeader('State Management Default → $solution');
-  print('  Updated spl.yaml default.');
-  print('  Existing features are unchanged.');
-  print('  New features will use: $solution');
-  _printStateNotes(solution);
-}
-
-void _cmdStateList() {
-  _printHeader(
-      'State Management  [OR — global default + per-feature override]');
-  final config = _readSplConfig();
-  final current = config['state_management']?['default'] ?? 'riverpod';
-
-  final solutions = {
-    'bloc': [
-      'requires flutter_bloc in pubspec.yaml',
-      'Event + State + Bloc. Explicit event stream. Best for complex flows.',
-      'Files: <name>_event.dart  <name>_state.dart  <name>_bloc.dart',
-    ],
-    'cubit': [
-      'requires flutter_bloc in pubspec.yaml (same as bloc)',
-      'State + Cubit only. No event classes. Simpler, fewer files.',
-      'Files: <name>_state.dart  <name>_cubit.dart',
-    ],
-    'riverpod': [
-      'flutter_riverpod (included in this app)',
-      'Notifier + Provider. Different DI model. Bridges to get_it via di<T>().',
-      'Files: <name>_state.dart  <name>_notifier.dart',
-    ],
-  };
-
-  for (final e in solutions.entries) {
-    final active = e.key == current ? '  ◀ default' : '';
-    print('  ${e.key}$active');
-    for (final line in e.value) print('      $line');
-    print('');
-  }
-
-  print(
-      '  Change default : dart run codegen/spl_manager.dart state set <solution>');
-  print(
-      '  Per-feature    : dart run codegen/spl_manager.dart add <name> --state <solution>');
-  print('');
-  print('  Note: bloc and cubit require the optional flutter_bloc package.');
-  print('        Riverpod is the default and included in this app.');
 }
 
 Future<void> _cmdFix() async {

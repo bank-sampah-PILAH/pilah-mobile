@@ -16,8 +16,8 @@ class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
 
 class _UnusedPencairanUseCases extends Mock implements PencairanUseCases {}
 
-class _StubRecentActivityCubit extends RecentActivityNotifier {
-  _StubRecentActivityCubit(this.initialState)
+class _StubRecentActivityNotifier extends RecentActivityNotifier {
+  _StubRecentActivityNotifier(this.initialState)
       : super(_UnusedGetTransaksi(), _UnusedPencairanUseCases());
 
   final RecentActivityState initialState;
@@ -64,7 +64,7 @@ ActivitasEntity _pencairan(String name, DateTime tanggal) =>
       saldoSesudah: 50000,
     ));
 
-Widget _host(_StubRecentActivityCubit cubit) {
+Widget _host(_StubRecentActivityNotifier cubit) {
   return ProviderScope(
     overrides: [recentActivityProvider.overrideWith(() => cubit)],
     child: MaterialApp(
@@ -81,7 +81,7 @@ void main() {
   group('RecentActivitySection', () {
     testWidgets('a failed fetch is not disguised as "no transactions yet"',
         (tester) async {
-      final cubit = _StubRecentActivityCubit(
+      final cubit = _StubRecentActivityNotifier(
           const RecentActivityError('Koneksi terputus'));
       addTearDown(cubit.close);
 
@@ -98,7 +98,7 @@ void main() {
     });
 
     testWidgets('the error state offers a working retry', (tester) async {
-      final cubit = _StubRecentActivityCubit(
+      final cubit = _StubRecentActivityNotifier(
           const RecentActivityError('Koneksi terputus'));
       addTearDown(cubit.close);
 
@@ -110,7 +110,7 @@ void main() {
     });
 
     testWidgets('a genuinely empty list still says so', (tester) async {
-      final cubit = _StubRecentActivityCubit(const RecentActivityLoaded([]));
+      final cubit = _StubRecentActivityNotifier(const RecentActivityLoaded([]));
       addTearDown(cubit.close);
 
       await tester.pumpWidget(_host(cubit));
@@ -121,7 +121,7 @@ void main() {
 
     testWidgets('renders every activity with its full date and time',
         (tester) async {
-      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
         _trx('Sari', tanggal: DateTime(2026, 9, 10, 9)),
         _trx('Andi', tanggal: DateTime(2026, 9, 10, 8)),
@@ -145,7 +145,7 @@ void main() {
     });
 
     testWidgets('renders a pencairan row alongside setoran', (tester) async {
-      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
         _pencairan('Ani Wijaya', DateTime(2026, 9, 22, 10)),
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
       ]));
@@ -158,7 +158,7 @@ void main() {
     });
 
     testWidgets('Lihat Semua opens the laporan tab', (tester) async {
-      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
       ]));
       addTearDown(cubit.close);
@@ -188,7 +188,7 @@ void main() {
   });
   testWidgets('legacy activity without captions uses its day label',
       (tester) async {
-    final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+    final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
       ActivitasEntity(
           tipe: ActivitasTipe.setoran,
           tanggal: _today,

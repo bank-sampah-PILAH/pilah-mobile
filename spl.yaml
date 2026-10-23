@@ -5,18 +5,17 @@
 #   dart run codegen/spl_manager.dart <command>
 #
 # Commands:
-#   list                              Show all features + active variants
-#   add <name> [opts]                 Scaffold a new feature
+#   list                              Show features + active storage providers
+#   add <name> [opts]                 Scaffold a Riverpod feature
 #     --with-storage                  Include AppStorage-backed local cache (uses default)
 #     --storage <provider>            Use a specific storage backend
-#     --state bloc|cubit|riverpod     Override state management for this feature
+#     --with-test                     Generate tests
+#     --shell-route                   Register as a shell route
 #   remove <name> [--yes|-y]          Delete a feature and rebuild DI
 #   storage add <provider>            Register a storage backend
 #   storage remove <provider>         Unregister a storage backend
 #   storage default <provider>        Set default for --with-storage
 #   storage list                      Show active storage providers
-#   state set <bloc|cubit|riverpod>   Change global state management default
-#   state list                        Show state management options
 #   fix                               Run build_runner
 # ============================================================
 
@@ -33,46 +32,27 @@ storage:
 
   # Always flutter_secure_storage — NOT a variability point
 
-# ── State management variability (OR — global default + per-feature override) ─
-state_management:
-  # Default for new features. Each feature can override with --state flag.
-  # Options: bloc | cubit | riverpod
-  # riverpod — flutter_riverpod (Notifier + Provider); included in this app.
-  # bloc/cubit — optional generator outputs; require adding flutter_bloc to pubspec.
-  default: riverpod
-
-  # Note on exclusivity:
-  # Storage is XOR: one backend for the whole app.
-  # State management is NOT XOR: different features can use different solutions.
-  # Riverpod is the app's default. Bloc and Cubit are optional generator variants
-  # and require the flutter_bloc package, which is not included in this app.
-
 features:
   - name: authentication
     status: active
     storage: flutter_secure_storage
-    state: riverpod
     description: Login/logout and token management (template example)
 
   - name: onboarding
     status: active
     storage: none
-    state: riverpod
     description: Splash and onboarding flow (template example)
 
   - name: product
     status: active
     storage: none
-    state: riverpod
     description: Product listing and search (template example)
 
   - name: profile
     status: active
     storage: flutter_secure_storage
-    state: riverpod
     description: User profile management (template example)
 
   - name: pencairan
     status: active
     storage: none
-    state: riverpod

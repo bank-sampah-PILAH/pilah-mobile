@@ -7,7 +7,6 @@ void _generateFeatureFiles(
   String module,
   String className, {
   String? storageProvider,
-  String state = 'riverpod',
 }) {
   final dirs = [
     'lib/features/$module/data/local',
@@ -17,10 +16,7 @@ void _generateFeatureFiles(
     'lib/features/$module/domain/model',
     'lib/features/$module/domain/repository',
     'lib/features/$module/domain/use_cases',
-    if (state == 'riverpod')
-      'lib/features/$module/presentation/providers'
-    else
-      'lib/features/$module/presentation/blocs',
+    'lib/features/$module/presentation/providers',
     'lib/features/$module/presentation/pages',
     'lib/features/$module/presentation/widgets',
   ];
@@ -47,45 +43,18 @@ void _generateFeatureFiles(
         _tplUseCases(module, className),
     'lib/features/$module/domain/${module}_interactor.dart':
         _tplInteractor(module, className),
-    // Presentation — page (always the same)
+    // Presentation — Riverpod
+    'lib/features/$module/presentation/providers/${module}_state.dart':
+        _tplState(className),
+    'lib/features/$module/presentation/providers/${module}_notifier.dart':
+        _tplRiverpodNotifier(module, className),
     'lib/features/$module/presentation/pages/${module}_page.dart':
         _tplPage(module, className),
   };
 
-  // Presentation — state management varies
-  files.addAll(_stateFiles(module, className, state));
-
   for (final e in files.entries) {
     File(e.key).writeAsStringSync(e.value);
     print('  +  ${e.key}');
-  }
-}
-
-Map<String, String> _stateFiles(String module, String className, String state) {
-  switch (state) {
-    case 'cubit':
-      return {
-        'lib/features/$module/presentation/blocs/${module}_state.dart':
-            _tplState(className),
-        'lib/features/$module/presentation/blocs/${module}_cubit.dart':
-            _tplCubit(module, className),
-      };
-    case 'riverpod':
-      return {
-        'lib/features/$module/presentation/providers/${module}_state.dart':
-            _tplState(className),
-        'lib/features/$module/presentation/providers/${module}_notifier.dart':
-            _tplRiverpodNotifier(module, className),
-      };
-    default: // bloc
-      return {
-        'lib/features/$module/presentation/blocs/${module}_event.dart':
-            _tplEvent(className),
-        'lib/features/$module/presentation/blocs/${module}_state.dart':
-            _tplState(className),
-        'lib/features/$module/presentation/blocs/${module}_bloc.dart':
-            _tplBloc(module, className),
-      };
   }
 }
 
@@ -216,8 +185,7 @@ void _removeTests(String module) {
 
 // ─── Test file generation ─────────────────────────────────────────────────────
 
-void _generateTestFiles(String module, String className,
-    {String state = 'riverpod'}) {
+void _generateTestFiles(String module, String className) {
   final testDir = 'test/features/$module';
   Directory('$testDir/domain').createSync(recursive: true);
   Directory('$testDir/presentation').createSync(recursive: true);
@@ -225,19 +193,9 @@ void _generateTestFiles(String module, String className,
   final files = <String, String>{
     '$testDir/domain/${module}_interactor_test.dart':
         _tplInteractorTest(module, className),
+    '$testDir/presentation/${module}_notifier_test.dart':
+        _tplRiverpodTest(module, className),
   };
-
-  switch (state) {
-    case 'cubit':
-      files['$testDir/presentation/${module}_cubit_test.dart'] =
-          _tplCubitTest(module, className);
-    case 'riverpod':
-      files['$testDir/presentation/${module}_notifier_test.dart'] =
-          _tplRiverpodTest(module, className);
-    default: // bloc
-      files['$testDir/presentation/${module}_bloc_test.dart'] =
-          _tplBlocTest(module, className);
-  }
 
   for (final e in files.entries) {
     File(e.key).writeAsStringSync(e.value);

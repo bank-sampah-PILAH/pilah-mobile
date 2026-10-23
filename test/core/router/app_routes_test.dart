@@ -26,7 +26,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_destination
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';

@@ -4,7 +4,7 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/repository/auth_repository.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
 /// Supplies an explicitly offline authenticated session to the preview app.
