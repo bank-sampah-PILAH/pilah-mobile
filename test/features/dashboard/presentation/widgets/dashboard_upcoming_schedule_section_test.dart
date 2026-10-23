@@ -99,7 +99,7 @@ void main() {
       of: scheduleCard,
       matching: find.byType(Material),
     );
-    expect(tester.widget<Material>(cardMaterial).color, Colors.white);
+    expect(tester.widget<Material>(cardMaterial).color, Colors.transparent);
     expect(find.byType(Divider), findsNWidgets(2));
     verify(() => repository.getJadwal(page: 1, date: null)).called(1);
     verify(() => repository.getJadwal(page: 2, date: null)).called(1);
