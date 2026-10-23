@@ -6,7 +6,8 @@ import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_enti
 import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-final onboardingProvider = NotifierProvider<OnboardingNotifier, OnboardingState>(
+final onboardingProvider =
+    NotifierProvider<OnboardingNotifier, OnboardingState>(
   () => OnboardingNotifier(di<OnboardingRemoteDataSource>()),
 );
 

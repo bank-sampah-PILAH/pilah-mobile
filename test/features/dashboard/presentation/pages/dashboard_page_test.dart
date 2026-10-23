@@ -145,7 +145,7 @@ void main() {
   }
 
   DashboardNotifier emptyDashboardNotifier() =>
-      buildEmptyDashboardNotifier(api);
+      buildEmptyDashboardNotifier(StubApi());
 
   testWidgets('header greets the pengelola and links to the profile',
       (tester) async {

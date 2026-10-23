@@ -5,8 +5,8 @@ import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_c
 import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-final editPencairanProvider = NotifierProvider.autoDispose<
-    EditPencairanNotifier, EditPencairanState>(
+final editPencairanProvider =
+    NotifierProvider.autoDispose<EditPencairanNotifier, EditPencairanState>(
   () => EditPencairanNotifier(di<PencairanUseCases>()),
 );
 
