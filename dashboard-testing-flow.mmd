@@ -1,0 +1,12 @@
+flowchart TD
+    A[Open dashboard] --> B{Authorized Pengurus?}
+    B -->|Negative: no| C[401/403; hide amounts]
+    B -->|Positive: yes| D[Sum current savings for own bank]
+    D --> E{Balance data}
+    E -->|Empty: edge| F[Show Rp 0]
+    E -->|Present| G[Show savings; retain negative values]
+    E -->|Missing or invalid: edge| H[Show Rp —]
+    A -->|Network failure| H
+    F --> I[Kas Operasional: Belum tersedia]
+    G --> I
+    H --> I
