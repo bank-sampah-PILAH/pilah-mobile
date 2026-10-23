@@ -29,13 +29,13 @@ void main() {
   testWidgets('shows an ongoing schedule and opens its date', (tester) async {
     final auth = _Auth();
     final jadwalRepository = _JadwalRepository();
-    final now = DateTime(2026, 6, 1, 9);
+    final now = DateTime(2026, 10, 23, 9, 30);
     final today = DateUtils.dateOnly(now);
     final ongoing = JadwalEntity(
       id: 'ongoing',
       bankSampahId: 'bank-1',
       jenisKegiatan: 'Sedang berlangsung',
-      mulaiPada: DateTime(today.year, today.month, today.day, 8),
+      mulaiPada: DateTime(today.year, today.month, today.day, 9),
       selesaiPada: DateTime(today.year, today.month, today.day, 10),
       lokasi: 'Balai Warga',
       status: 'diterbitkan',
@@ -149,6 +149,7 @@ void main() {
     expect(find.text('Pengumpulan'), findsNothing);
     expect(find.text('Jadwal Jauh'), findsNothing);
     expect(find.text('Balai Warga'), findsOneWidget);
+    expect(find.text('23/10/2026 · 09.00'), findsOneWidget);
     await tester.tap(find.text('Sedang berlangsung'));
     await tester.pumpAndSettle();
 
