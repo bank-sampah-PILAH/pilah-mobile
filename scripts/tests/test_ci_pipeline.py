@@ -47,6 +47,7 @@ class CiPipelineTest(unittest.TestCase):
         self.assertNotIn("dart run test", sonar_commands)
         self.assertIn("coverage/lcov.info", sonar_commands)
         self.assertIn("coverage/browser.lcov.info", sonar_commands)
+        self.assertIn("main_beranda_preview.dart", sonar_commands)
         self.assertFalse((ROOT / ".github/workflows/sonar.yml").exists())
 
 
