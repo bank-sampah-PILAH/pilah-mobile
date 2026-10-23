@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -96,6 +97,22 @@ void main() {
 
     expect(find.text('Kelola Pengumuman'), findsOneWidget);
     expect(find.text('Buat Pengumuman'), findsOneWidget);
+    expect(
+      tester
+          .widget<MasterDetailLayout>(find.byType(MasterDetailLayout))
+          .masterScrolls,
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<Padding>(find.ancestor(
+            of: find.text('Buat Pengumuman'),
+            matching: find.byType(Padding),
+          ))
+          .any((padding) =>
+              padding.padding == const EdgeInsets.symmetric(horizontal: 16)),
+      isTrue,
+    );
     expect(find.text('route:/pengumuman/kelola/ubah'), findsNothing);
     expect(
       tester.getTopLeft(find.text('Buat Pengumuman')).dx,
