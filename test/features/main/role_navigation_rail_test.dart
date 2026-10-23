@@ -72,6 +72,17 @@ void main() {
       expect(semantics.flagsCollection.isButton, isTrue);
       expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
       expect(semantics.hasAction(SemanticsAction.tap), isFalse);
+      final disabledLabel = tester.widget<Semantics>(find
+          .ancestor(
+            of: find.text('Pengumuman'),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'Pengumuman',
+            ),
+          )
+          .first);
+      expect(disabledLabel.excludeSemantics, isTrue);
 
       await tester.tap(find.text('Pengumuman'));
       await tester.pumpAndSettle();
