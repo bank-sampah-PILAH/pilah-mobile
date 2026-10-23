@@ -12,6 +12,7 @@ import 'package:pilah_mobile/features/authentication/presentation/blocs/authenti
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
@@ -197,7 +198,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await mount(
+    final router = await mount(
       tester,
       session('pengelola'),
       isWebOverride: true,
@@ -209,6 +210,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Form Setoran'), findsOneWidget);
+    final transactionMenu = tester.widget<ExpansionTile>(find.byKey(
+      RoleTransactionMenu.menuKey,
+      skipOffstage: false,
+    ));
+    expect(transactionMenu.textColor, AppColors.greenDark);
+    final setoran = tester.widget<ListTile>(find.byKey(
+      RoleTransactionMenu.setoranKey,
+      skipOffstage: false,
+    ));
+    expect(setoran.selected, isTrue);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    final inactiveMenu =
+        tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
+    expect(inactiveMenu.textColor, AppColors.inkSoft);
+    expect(
+      tester
+          .widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey))
+          .selected,
+      isFalse,
+    );
   });
 
   testWidgets('pending membership shows status home with only Home and Profile',

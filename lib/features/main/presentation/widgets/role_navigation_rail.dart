@@ -70,6 +70,7 @@ class RoleNavigationRail extends StatelessWidget {
               onAddTransaction: navigation.role == 'pengelola'
                   ? navigation.onAddTransaction
                   : null,
+              transactionSelected: navigation.transactionSelected,
             ),
             backgroundColor: Colors.white,
             indicatorColor: AppColors.greenLight,
@@ -138,10 +139,12 @@ class _RailHeader extends StatelessWidget {
     required this.extended,
     this.onHome,
     this.onAddTransaction,
+    this.transactionSelected = false,
   });
 
   final VoidCallback? onHome;
   final VoidCallback? onAddTransaction;
+  final bool transactionSelected;
   final String label;
   final String initials;
   final bool extended;
@@ -264,6 +267,7 @@ class _RailHeader extends StatelessWidget {
               child: RoleTransactionMenu(
                 onSetoran: onAddTransaction!,
                 compact: !extended,
+                selected: transactionSelected,
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
@@ -22,6 +23,7 @@ void main() {
     int currentIndex = 0,
     String? bankSampahNama = 'Bank Sampah Melati',
     bool limitedNasabah = false,
+    bool transactionSelected = false,
     VoidCallback? onAddTransaction,
   }) async {
     final selected = <int>[];
@@ -34,6 +36,7 @@ void main() {
             currentIndex: currentIndex,
             bankSampahNama: bankSampahNama,
             limitedNasabah: limitedNasabah,
+            transactionSelected: transactionSelected,
             onSelected: selected.add,
             onAddTransaction: onAddTransaction,
           ),
@@ -85,6 +88,24 @@ void main() {
       await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
       await tester.pumpAndSettle();
       expect(added, isTrue);
+    });
+
+    testWidgets('highlights Transaksi and Setoran on the Setoran page',
+        (tester) async {
+      await mountDrawer(tester,
+          transactionSelected: true, onAddTransaction: () {});
+
+      final transactionMenu =
+          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
+      expect(transactionMenu.iconColor, AppColors.greenDark);
+      expect(transactionMenu.collapsedIconColor, AppColors.greenDark);
+      final setoran =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      expect(setoran.selected, isTrue);
+      expect(
+        tester.widget<Text>(find.text('Setoran')).style?.color,
+        AppColors.greenDark,
+      );
     });
 
     testWidgets('hides the transaction menu from Pengelola Induk',

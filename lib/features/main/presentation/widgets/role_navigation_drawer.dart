@@ -76,6 +76,7 @@ class RoleNavigationDrawer extends StatelessWidget {
                     RoleTransactionMenu(
                       onSetoran: navigation.onAddTransaction!,
                       onClose: () => Navigator.maybeOf(context)?.maybePop(),
+                      selected: navigation.transactionSelected,
                     ),
                   for (var index = 0; index < destinations.length; index++)
                     _Destination(

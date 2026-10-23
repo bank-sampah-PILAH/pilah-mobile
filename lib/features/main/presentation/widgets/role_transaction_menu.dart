@@ -10,6 +10,7 @@ class RoleTransactionMenu extends StatelessWidget {
     required this.onSetoran,
     this.onClose,
     this.compact = false,
+    this.selected = false,
   });
 
   static const menuKey = ValueKey('transaction-menu');
@@ -19,6 +20,7 @@ class RoleTransactionMenu extends StatelessWidget {
   final VoidCallback onSetoran;
   final VoidCallback? onClose;
   final bool compact;
+  final bool selected;
 
   void _openSetoran() {
     onClose?.call();
@@ -27,6 +29,7 @@ class RoleTransactionMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectionColor = selected ? AppColors.greenDark : AppColors.inkSoft;
     if (compact) {
       return SizedBox(
         width: 48,
@@ -34,14 +37,15 @@ class RoleTransactionMenu extends StatelessWidget {
         child: PopupMenuButton<_TransactionAction>(
           key: menuKey,
           tooltip: 'Transaksi',
-          icon: const Icon(Icons.receipt_long_outlined),
+          icon: Icon(Icons.receipt_long_outlined, color: selectionColor),
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               key: setoranKey,
               value: _TransactionAction.setoran,
               child: _PopupMenuLabel(
                 icon: Icons.add_circle_outline,
                 label: 'Setoran',
+                selected: selected,
               ),
             ),
             const PopupMenuItem(
@@ -64,11 +68,15 @@ class RoleTransactionMenu extends StatelessWidget {
       initiallyExpanded: true,
       shape: const Border(),
       collapsedShape: const Border(),
-      leading: const Icon(Icons.receipt_long_outlined),
+      iconColor: selectionColor,
+      collapsedIconColor: selectionColor,
+      textColor: selectionColor,
+      collapsedTextColor: selectionColor,
+      leading: Icon(Icons.receipt_long_outlined, color: selectionColor),
       title: Text(
         'Transaksi',
         style: AppTextStyle.small.copyWith(
-          color: AppColors.inkSoft,
+          color: selectionColor,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -78,10 +86,13 @@ class RoleTransactionMenu extends StatelessWidget {
         ListTile(
           key: setoranKey,
           dense: true,
-          leading: const Icon(Icons.add_circle_outline),
+          selected: selected,
+          selectedColor: selectionColor,
+          selectedTileColor: Colors.transparent,
+          leading: Icon(Icons.add_circle_outline, color: selectionColor),
           title: Text(
             'Setoran',
-            style: AppTextStyle.small.copyWith(color: AppColors.inkSoft),
+            style: AppTextStyle.small.copyWith(color: selectionColor),
           ),
           onTap: _openSetoran,
         ),
@@ -107,23 +118,30 @@ class _PopupMenuLabel extends StatelessWidget {
     required this.icon,
     required this.label,
     this.enabled = true,
+    this.selected = false,
   });
 
   final IconData icon;
   final String label;
   final bool enabled;
+  final bool selected;
 
   @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          Icon(icon, color: enabled ? AppColors.inkSoft : AppColors.grey100),
-          const SizedBox(width: AppSpacing.md),
-          Text(
-            label,
-            style: AppTextStyle.small.copyWith(
-              color: enabled ? AppColors.inkSoft : AppColors.grey100,
-            ),
-          ),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final color = !enabled
+        ? AppColors.grey100
+        : selected
+            ? AppColors.greenDark
+            : AppColors.inkSoft;
+    return Row(
+      children: [
+        Icon(icon, color: color),
+        const SizedBox(width: AppSpacing.md),
+        Text(
+          label,
+          style: AppTextStyle.small.copyWith(color: color),
+        ),
+      ],
+    );
+  }
 }
