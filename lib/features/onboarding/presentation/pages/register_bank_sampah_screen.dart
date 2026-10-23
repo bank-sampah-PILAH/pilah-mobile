@@ -6,7 +6,6 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -17,6 +16,7 @@ import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 
 class RegisterBankSampahScreen extends ConsumerStatefulWidget {
   /// True when the user is re-applying after a previous registration was
@@ -176,241 +176,204 @@ class _RegisterBankSampahScreenState
     );
   }
 
-  void _onPopInvoked(bool didPop) => handleOnboardingStepPop(
-        context,
-        didPop: didPop,
-        isWizardStep: ref.read(onboardingProvider.notifier).hasProfileDraft,
-      );
-
   @override
   Widget build(BuildContext context) {
-    ref.listen(authenticationProvider, (previous, current) {
-      if (current is Unauthenticated) context.go(LoginPage.route);
-    });
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
-      child: Scaffold(
-        backgroundColor: AppColors.surface,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              // 1. Header Section
-              OnboardingHeader(
-                title: 'Daftarkan Bank Sampah',
-                subtitle: 'Lengkapi data institusi bank sampah Anda.',
-                onExit: () => confirmExitOnboarding(context),
-              ),
+    return OnboardingStepScaffold(
+      title: 'Daftarkan Bank Sampah',
+      subtitle: 'Lengkapi data institusi bank sampah Anda.',
+      onExit: () => confirmExitOnboarding(context),
+      onUnauthenticated: () => context.go(LoginPage.route),
+      progress: widget.isRejectedReapplication
+          ? _buildRejectionBanner()
+          : const OnboardingStepper(
+              currentStep: 2,
+              secondStepLabel: 'Data Bank Sampah',
+            ),
+      formKey: _formKey,
+      formFields: [
+        OnboardingNameField(
+          controller: _namaController,
+          label: 'NAMA BANK SAMPAH',
+          hintText: 'Contoh: Bank Sampah Mekar Jaya',
+        ),
 
-              // Rejection notice — shown in place of the onboarding stepper when
-              // the user is re-applying after a rejected registration.
-              if (widget.isRejectedReapplication)
-                _buildRejectionBanner()
-              else
-                const OnboardingStepper(
-                  currentStep: 2,
-                  secondStepLabel: 'Data Bank Sampah',
-                ),
+        OnboardingAddressField(controller: _alamatController),
 
-              const SizedBox(height: 24),
-              OnboardingFormCard(
-                formKey: _formKey,
+        OnboardingPhoneField(
+          controller: _phoneController,
+          label: 'NOMOR TELEPON PENANGGUNG JAWAB',
+          requiredMessage: 'Nomor Telepon wajib diisi',
+        ),
+
+        // Field 4: Foto Kegiatan
+        //
+        // A FormField rather than a bare picker so the photo is
+        // validated by _formKey.currentState.validate() alongside
+        // the text fields. Submitting an empty form therefore
+        // turns this box red and prints its own inline error, the
+        // same as every other required field, instead of the
+        // photo alone failing via a separate notification.
+        OnboardingFormField(
+          label: 'FOTO KEGIATAN',
+          description: 'Upload foto kegiatan penimbangan sampah yang valid',
+          child: FormField<XFile>(
+            initialValue: _selectedImage,
+            // Without this the validator only re-runs on the next
+            // submit, so the box would stay red even after the
+            // user picked a photo. onUserInteraction keeps it
+            // quiet until they touch the field, then clears the
+            // error the moment they fix it.
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (file) =>
+                file == null ? 'Foto kegiatan wajib diunggah' : null,
+            builder: (field) {
+              // The same colour Material gives a TextFormField's
+              // error, so the two read as one form.
+              final errorColor = Theme.of(field.context).colorScheme.error;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  OnboardingNameField(
-                    controller: _namaController,
-                    label: 'NAMA BANK SAMPAH',
-                    hintText: 'Contoh: Bank Sampah Mekar Jaya',
-                  ),
-
-                  OnboardingAddressField(controller: _alamatController),
-
-                  OnboardingPhoneField(
-                    controller: _phoneController,
-                    label: 'NOMOR TELEPON PENANGGUNG JAWAB',
-                    requiredMessage: 'Nomor Telepon wajib diisi',
-                  ),
-
-                  // Field 4: Foto Kegiatan
-                  //
-                  // A FormField rather than a bare picker so the photo is
-                  // validated by _formKey.currentState.validate() alongside
-                  // the text fields. Submitting an empty form therefore
-                  // turns this box red and prints its own inline error, the
-                  // same as every other required field, instead of the
-                  // photo alone failing via a separate notification.
-                  OnboardingFormField(
-                    label: 'FOTO KEGIATAN',
-                    description:
-                        'Upload foto kegiatan penimbangan sampah yang valid',
-                    child: FormField<XFile>(
-                      initialValue: _selectedImage,
-                      // Without this the validator only re-runs on the next
-                      // submit, so the box would stay red even after the
-                      // user picked a photo. onUserInteraction keeps it
-                      // quiet until they touch the field, then clears the
-                      // error the moment they fix it.
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      validator: (file) =>
-                          file == null ? 'Foto kegiatan wajib diunggah' : null,
-                      builder: (field) {
-                        // The same colour Material gives a TextFormField's
-                        // error, so the two read as one form.
-                        final errorColor =
-                            Theme.of(field.context).colorScheme.error;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InkWell(
-                              onTap: () => _pickImage(field),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              child: _selectedImage != null
-                                  ? ClipRRect(
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.md),
-                                      child: Stack(
-                                        children: [
-                                          Image.memory(
-                                            _selectedImageBytes!,
-                                            width: double.infinity,
-                                            height: 150,
-                                            fit: BoxFit.cover,
-                                          ),
-                                          Positioned(
-                                            top: 0,
-                                            right: 0,
-                                            child: AppTapTarget(
-                                              label: 'Hapus foto',
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      AppRadius.xl),
-                                              onTap: () {
-                                                setState(() {
-                                                  _selectedImage = null;
-                                                  _selectedImageBytes = null;
-                                                });
-                                                field.didChange(null);
-                                              },
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(4),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.black54,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.close,
-                                                  color: Colors.white,
-                                                  size: 16,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                  InkWell(
+                    onTap: () => _pickImage(field),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: _selectedImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            child: Stack(
+                              children: [
+                                Image.memory(
+                                  _selectedImageBytes!,
+                                  width: double.infinity,
+                                  height: 150,
+                                  fit: BoxFit.cover,
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: AppTapTarget(
+                                    label: 'Hapus foto',
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.xl),
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedImage = null;
+                                        _selectedImageBytes = null;
+                                      });
+                                      field.didChange(null);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
                                       ),
-                                    )
-                                  : CustomPaint(
-                                      painter: _DashedRectPainter(
-                                          color: field.hasError
-                                              ? errorColor
-                                              : Colors.grey.shade400,
-                                          strokeWidth: 1.5,
-                                          gap: 5.0,
-                                          radius: 12.0),
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 32),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(Icons.image_outlined,
-                                                color: AppColors.greenDark,
-                                                size: 32),
-                                            const SizedBox(height: 12),
-                                            const Text(
-                                              'Pilih foto',
-                                              style: TextStyle(
-                                                color: Colors.black87,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'JPG / PNG · Maks. 5 MB',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade500,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
                                       ),
                                     ),
-                            ),
-                            if (field.hasError) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                field.errorText!,
-                                style: TextStyle(
-                                  color: errorColor,
-                                  fontSize: 12,
+                                  ),
                                 ),
+                              ],
+                            ),
+                          )
+                        : CustomPaint(
+                            painter: _DashedRectPainter(
+                                color: field.hasError
+                                    ? errorColor
+                                    : Colors.grey.shade400,
+                                strokeWidth: 1.5,
+                                gap: 5.0,
+                                radius: 12.0),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.image_outlined,
+                                      color: AppColors.greenDark, size: 32),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Pilih foto',
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'JPG / PNG · Maks. 5 MB',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ],
-                        );
-                      },
-                    ),
+                            ),
+                          ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // 4. Action Buttons
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    AppButton(
-                      label: 'Ajukan Pendaftaran',
-                      trailingIcon: Icons.arrow_forward,
-                      isLoading: _isLoading,
-                      onPressed: _onSubmit,
-                    ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      label: 'Kembali',
-                      variant: AppButtonVariant.neutral,
-                      onPressed: () => handleOnboardingStepPop(
-                        context,
-                        didPop: false,
-                        isWizardStep: true,
+                  if (field.hasError) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      field.errorText!,
+                      style: TextStyle(
+                        color: errorColor,
+                        fontSize: 12,
                       ),
                     ),
                   ],
-                ),
-              ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+      footer: [
+        const SizedBox(height: 24),
 
-              // 5. Footer Text
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  'Pengajuan akan ditinjau oleh Admin PILAH.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade400,
-                  ),
+        // 4. Action Buttons
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            children: [
+              AppButton(
+                label: 'Ajukan Pendaftaran',
+                trailingIcon: Icons.arrow_forward,
+                isLoading: _isLoading,
+                onPressed: _onSubmit,
+              ),
+              const SizedBox(height: 12),
+              AppButton(
+                label: 'Kembali',
+                variant: AppButtonVariant.neutral,
+                onPressed: () => handleOnboardingStepPop(
+                  context,
+                  didPop: false,
+                  isWizardStep: true,
                 ),
               ),
-              const SizedBox(height: 20),
             ],
           ),
         ),
-      ),
+
+        // 5. Footer Text
+        Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text(
+            'Pengajuan akan ditinjau oleh Admin PILAH.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 }
