@@ -401,9 +401,9 @@ jobs:
           fi
 
   sonar:
-    if: github.event_name != 'workflow_dispatch'
+    if: ${{ always() && needs.changes.result == 'success' && needs.coverage.result == 'success' && needs.verify.result == 'success' && github.event_name != 'workflow_dispatch' }}
     name: SonarCloud analysis
-    needs: [changes, coverage]
+    needs: [changes, coverage, verify]
     runs-on: ubuntu-latest
     permissions:
       contents: read

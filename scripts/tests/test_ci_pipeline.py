@@ -91,7 +91,9 @@ class CiPipelineTest(unittest.TestCase):
     def test_sonar_consumes_same_run_coverage_without_rerunning_tests(self):
         ci = workflow("ci.yml")
         sonar = ci["jobs"]["sonar"]
-        self.assertEqual(sonar["needs"], ["changes", "coverage"])
+        self.assertEqual(sonar["needs"], ["changes", "coverage", "verify"])
+        self.assertIn("always()", sonar["if"])
+        self.assertIn("needs.verify.result == 'success'", sonar["if"])
         download = next(step for step in sonar["steps"] if step.get("uses") == "actions/download-artifact@v4")
         self.assertEqual(download["with"]["name"], "sonar-coverage")
         self.assertEqual(download["if"], "needs.coverage.outputs.has_coverage == 'true'")
