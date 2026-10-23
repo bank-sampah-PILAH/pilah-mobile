@@ -12,8 +12,10 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringk
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+import '../../../../support/notifier_harness.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -60,28 +62,35 @@ HalamanNasabah _page(List<NasabahEntity> items) =>
     HalamanNasabah(items: items, totalCount: items.length, hasMore: false);
 
 void main() {
-  late NasabahCubit cubit;
+  late NasabahNotifier cubit;
+  late NotifierHarness<NasabahNotifier, NasabahState> harness;
   late _MockGetNasabahUseCase getUseCase;
 
   setUp(() {
     getUseCase = _MockGetNasabahUseCase();
-    cubit = NasabahCubit(
-      getUseCase,
-      _MockGetActiveNasabahUseCase(),
-      _MockGetNasabahRingkasanUseCase(),
-      _MockAddNasabahUseCase(),
-      _MockUpdateNasabahUseCase(),
-      _MockActivateNasabahUseCase(),
-      _MockDeactivateNasabahUseCase(),
-      _MockApproveNasabahUseCase(),
-      _MockRejectNasabahUseCase(),
-      MockSinkronProfilNasabahUseCase(),
+    harness = NotifierHarness(
+      nasabahProvider,
+      () => NasabahNotifier(
+        getUseCase,
+        _MockGetActiveNasabahUseCase(),
+        _MockGetNasabahRingkasanUseCase(),
+        _MockAddNasabahUseCase(),
+        _MockUpdateNasabahUseCase(),
+        _MockActivateNasabahUseCase(),
+        _MockDeactivateNasabahUseCase(),
+        _MockApproveNasabahUseCase(),
+        _MockRejectNasabahUseCase(),
+        MockSinkronProfilNasabahUseCase(),
+      ),
     );
+    cubit = harness.notifier;
     when(() => getUseCase.execute(any())).thenAnswer(
       (_) async => Right(
           _page([_nasabah('Budi Santoso', 'budi@example.com', '81234567890')])),
     );
   });
+
+  tearDown(() => harness.dispose());
 
   // Pencarian dijalankan server (PIL-214) supaya seluruh nasabah ikut dicari,
   // bukan hanya halaman yang kebetulan sudah dimuat. Backend mencocokkan nama,
@@ -91,7 +100,7 @@ void main() {
     await cubit.loadNasabah();
 
     cubit.searchNasabah('budi@example.com');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
 
     final params = verify(() => getUseCase.execute(captureAny()))
         .captured
@@ -105,7 +114,7 @@ void main() {
     await cubit.loadNasabah();
 
     cubit.searchNasabah('b');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
 
     final params = verify(() => getUseCase.execute(captureAny()))
         .captured
@@ -121,7 +130,7 @@ void main() {
     cubit.searchNasabah('bu');
     cubit.searchNasabah('bud');
     cubit.searchNasabah('budi');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
 
     verify(() => getUseCase.execute(any())).called(1);
   });
@@ -132,7 +141,7 @@ void main() {
 
     // Batas persis: satu huruf diabaikan server, dua huruf sudah dilayani.
     cubit.searchNasabah('bu');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
 
     final params = verify(() => getUseCase.execute(captureAny()))
         .captured
@@ -144,9 +153,9 @@ void main() {
     await cubit.loadNasabah();
 
     cubit.searchNasabah('budi');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
     cubit.searchNasabah('');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
 
     final params = verify(() => getUseCase.execute(captureAny()))
         .captured

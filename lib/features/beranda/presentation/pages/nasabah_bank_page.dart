@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_membership_content.dart';
@@ -12,41 +12,38 @@ import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resou
 import 'package:pilah_mobile/services/di.dart';
 
 /// Navigation destination reusing the existing public bank-details API.
-class NasabahBankPage extends StatelessWidget {
+class NasabahBankPage extends ConsumerWidget {
   const NasabahBankPage({super.key});
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-        builder: (context, state) {
-          final auth = state is Authenticated ? state.authEntity : null;
-          return Scaffold(
-            backgroundColor: NasabahStyle.background,
-            appBar: const NasabahPageAppBar(
-              title: 'Detail Bank Sampah',
-              showBack: true,
-            ),
-            body: SafeArea(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints:
-                      const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
-                  child: auth?.role != 'nasabah'
-                      ? Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text('Silakan masuk sebagai nasabah.',
-                              style: NasabahStyle.text(15)),
-                        )
-                      : NasabahMembershipContent(
-                          key: ValueKey((auth!.id, auth.email, auth.token)),
-                          builder: (id) => _NasabahBankBody(membershipId: id),
-                        ),
-                ),
-              ),
-            ),
-          );
-        },
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    final auth = state is Authenticated ? state.authEntity : null;
+    return Scaffold(
+      backgroundColor: NasabahStyle.background,
+      appBar: const NasabahPageAppBar(
+        title: 'Detail Bank Sampah',
+        showBack: true,
+      ),
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
+            child: auth?.role != 'nasabah'
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Silakan masuk sebagai nasabah.',
+                        style: NasabahStyle.text(15)),
+                  )
+                : NasabahMembershipContent(
+                    key: ValueKey((auth!.id, auth.email, auth.token)),
+                    builder: (id) => _NasabahBankBody(membershipId: id),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Owns the reload handle across rebuilds so a pull can reach the

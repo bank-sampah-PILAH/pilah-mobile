@@ -1,4 +1,3 @@
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,9 +18,6 @@ void main() {
     if (di.isRegistered<RiwayatRepository>()) {
       await di.unregister<RiwayatRepository>();
     }
-    if (di.isRegistered<RiwayatHistoryCubit>()) {
-      await di.unregister<RiwayatHistoryCubit>();
-    }
     if (di.isRegistered<NasabahRepository>()) {
       await di.unregister<NasabahRepository>();
     }
@@ -29,8 +25,9 @@ void main() {
 
   testWidgets('preview entrypoint shows the offline Beranda for Siti',
       (tester) async {
-    preview.main();
-    await tester.pump();
+    await tester.pumpWidget(preview.buildPreviewApp());
+    final router = GoRouter.of(tester.element(find.byType(BerandaNasabahPage)));
+    addTearDown(router.dispose);
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(MaterialApp), findsOneWidget);
@@ -53,8 +50,9 @@ void main() {
     di.registerSingleton<NasabahPengumumanRepository>(
         NasabahPengumumanRepository(pengumumanApi.network));
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
-    preview.main();
-    await tester.pump();
+    await tester.pumpWidget(preview.buildPreviewApp());
+    final router = GoRouter.of(tester.element(find.byType(BerandaNasabahPage)));
+    addTearDown(router.dispose);
     await tester.pump(const Duration(seconds: 1));
     // Drain the beranda's pengumuman request so no timer outlives the test.
     await tester.pumpAndSettle();
@@ -63,10 +61,10 @@ void main() {
 
   testWidgets('the preview router also serves history and profile',
       (tester) async {
-    preview.main();
-    await tester.pump();
+    await tester.pumpWidget(preview.buildPreviewApp());
     await tester.pump(const Duration(seconds: 1));
     final router = GoRouter.of(tester.element(find.byType(BerandaNasabahPage)));
+    addTearDown(router.dispose);
 
     router.go('${AppLocations.history}?keanggotaan_id=m1');
     await tester.pump();

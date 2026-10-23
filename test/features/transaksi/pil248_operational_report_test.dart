@@ -4,7 +4,6 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -15,10 +14,12 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_summary.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../support/notifier_harness.dart';
 
 class _Network extends Mock implements NetworkService {}
 
@@ -139,8 +140,12 @@ void main() {
       () async {
     final feed = _Feed();
     final export = _Export();
-    final cubit = RiwayatAktivitasCubit(feed, export);
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, export),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_zero)));
     when(() => export.execute(any())).thenAnswer((_) async => Right(
@@ -166,8 +171,12 @@ void main() {
     final export = _Export();
     when(() => export.execute(any())).thenAnswer(
         (_) async => Left(NetworkException(message: 'Tidak diizinkan')));
-    final cubit = RiwayatAktivitasCubit(_Feed(), export);
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(_Feed(), export),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     final result = await cubit.exportTransaksi();
     expect(result.export, isNull);
     expect(result.error, 'Tidak diizinkan');
@@ -177,8 +186,12 @@ void main() {
       'edge: refresh clears stale totals, rejects old request and resets on logout',
       () async {
     final feed = _Feed();
-    final cubit = RiwayatAktivitasCubit(feed, _Export());
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, _Export()),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_totals)));
     await cubit.load();
@@ -204,8 +217,12 @@ void main() {
   test('edge: pagination keeps whole-filter summary without summing pages',
       () async {
     final feed = _Feed();
-    final cubit = RiwayatAktivitasCubit(feed, _Export());
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, _Export()),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     when(() => feed.execute(any())).thenAnswer((invocation) async {
       final filter = invocation.positionalArguments.first as TransaksiFilter;
       return Right(await _page(filter.page == 1 ? _totals : _zero,
@@ -222,8 +239,12 @@ void main() {
   test('negative: refresh failure clears totals; retry restores zero summary',
       () async {
     final feed = _Feed();
-    final cubit = RiwayatAktivitasCubit(feed, _Export());
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, _Export()),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_totals)));
     await cubit.load();
@@ -244,8 +265,12 @@ void main() {
     final feed = _Feed();
     final pending = Completer<Either<NetworkException, AktivitasPage>>();
     when(() => feed.execute(any())).thenAnswer((_) => pending.future);
-    final cubit = RiwayatAktivitasCubit(feed, _Export());
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, _Export()),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     // Phone: the summary card sits in the page header; wide windows show it as
     // a strip inside the table card instead.
     tester.view.physicalSize = const Size(400, 900);
@@ -253,7 +278,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const LaporanPage())));
+        home: UncontrolledProviderScope(
+      container: harness.container,
+      child: const LaporanPage(),
+    )));
     await tester.pump();
     expect(find.bySemanticsLabel('Memuat ringkasan laporan'), findsOneWidget);
     expect(find.text('Saldo Periode'), findsNothing);
@@ -289,10 +317,16 @@ void main() {
     final feed = _Feed();
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_totals)));
-    final cubit = RiwayatAktivitasCubit(feed, _Export());
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, _Export()),
+    );
+    addTearDown(harness.dispose);
     await tester.pumpWidget(MaterialApp(
-        home: BlocProvider.value(value: cubit, child: const LaporanPage())));
+        home: UncontrolledProviderScope(
+      container: harness.container,
+      child: const LaporanPage(),
+    )));
     await tester.pumpAndSettle();
     for (final label in [
       'Total Nilai Setoran',
@@ -337,8 +371,12 @@ void main() {
                 'total_pencairan': 3000000000000,
                 'saldo': -1000000000000,
               })));
-      final cubit = RiwayatAktivitasCubit(feed, _Export());
-      addTearDown(cubit.close);
+      final harness = NotifierHarness(
+        riwayatAktivitasProvider,
+        () => RiwayatAktivitasNotifier(feed, _Export()),
+      );
+      final cubit = harness.notifier;
+      addTearDown(harness.dispose);
       await cubit.load();
       await tester.pumpWidget(MaterialApp(
           builder: (context, child) => MediaQuery(
@@ -349,8 +387,8 @@ void main() {
               body: SingleChildScrollView(
                   child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: BlocProvider.value(
-                          value: cubit,
+                      child: UncontrolledProviderScope(
+                          container: harness.container,
                           child: const AktivitasSummaryView()))))));
       await tester.pumpAndSettle();
       final wide = width >= 720;
@@ -385,13 +423,18 @@ void main() {
     final feed = _Feed();
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_totals)));
-    final cubit = RiwayatAktivitasCubit(feed, _Export());
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, _Export()),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     await cubit.load();
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-            body: BlocProvider.value(
-                value: cubit, child: const AktivitasSummaryStrip()))));
+            body: UncontrolledProviderScope(
+                container: harness.container,
+                child: const AktivitasSummaryStrip()))));
     await tester.pumpAndSettle();
 
     expect(
@@ -417,12 +460,17 @@ void main() {
     final feed = _Feed();
     when(() => feed.execute(any()))
         .thenAnswer((_) async => Right(await _page(_zero)));
-    final cubit = RiwayatAktivitasCubit(feed, _Export());
-    addTearDown(cubit.close);
+    final harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, _Export()),
+    );
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(
-            body: BlocProvider.value(
-                value: cubit, child: const AktivitasSummaryStrip()))));
+            body: UncontrolledProviderScope(
+                container: harness.container,
+                child: const AktivitasSummaryStrip()))));
     expect(tester.getSize(find.byType(AktivitasSummaryStrip)).height, 0);
     await cubit.load();
     await tester.pumpAndSettle();

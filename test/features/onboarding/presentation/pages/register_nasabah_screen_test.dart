@@ -1,34 +1,24 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 
 import '../../../../support/onboarding_support.dart';
+import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
-
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
 
 class _FakeRegisterNasabahRequest extends Fake
     implements RegisterNasabahRequest {}
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 class _FakeCompleteProfileRequest extends Fake
     implements CompleteProfileRequest {}
@@ -61,22 +51,16 @@ const _draft = CompleteProfileRequest(
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeRegisterNasabahRequest());
-    registerFallbackValue(_FakeAuthEvent());
     registerFallbackValue(_FakeCompleteProfileRequest());
   });
 
-  late _MockAuthBloc auth;
+  late TestAuthenticationNotifier auth;
   late _MockOnboardingDataSource dataSource;
   late ProviderContainer container;
   late OnboardingNotifier onboarding;
 
   setUp(() {
-    auth = _MockAuthBloc();
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
-      initialState: AuthenticationInitial(),
-    );
+    auth = authNotifierIn(AuthenticationInitial());
     dataSource = _MockOnboardingDataSource();
     container = buildOnboardingContainer(dataSource);
     onboarding = container.read(onboardingProvider.notifier);
@@ -123,9 +107,9 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MultiBlocProvider(
-          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-          child: MaterialApp.router(routerConfig: router),
+        child: withAuthenticationProvider(
+          auth,
+          MaterialApp.router(routerConfig: router),
         ),
       ),
     );
@@ -165,9 +149,7 @@ void main() {
 
     verify(() => dataSource.registerNasabah(
         const RegisterNasabahRequest(bankSampahId: 'bank-1'))).called(1);
-    verify(() => auth.add(
-          any<AuthenticationEvent>(that: isA<RefreshUserRequested>()),
-        )).called(1);
+    expect(auth.calls, contains('refreshUser'));
     expect(find.text('NASABAH DASHBOARD'), findsOneWidget);
   });
 
@@ -399,13 +381,13 @@ void main() {
 
       await tester.tap(find.text('Batal'));
       await tester.pumpAndSettle();
-      verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+      expect(auth.calls, isNot(contains('logout')));
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ya, Keluar'));
       await tester.pumpAndSettle();
-      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+      expect(auth.calls, contains('logout'));
     });
 
     testWidgets('the logout button in the header asks before logging out',
@@ -418,16 +400,12 @@ void main() {
 
       await tester.tap(find.text('Ya, Keluar'));
       await tester.pumpAndSettle();
-      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+      expect(auth.calls, contains('logout'));
     });
 
     testWidgets('signing out routes to the login page', (tester) async {
-      whenListen(
-        auth,
-        Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
-        initialState: AuthenticationInitial(),
-      );
       await pump(tester, extraRoutes: ['/login']);
+      auth.setStateForTest(Unauthenticated());
       await tester.pumpAndSettle();
 
       expect(find.text('route:/login'), findsOneWidget);

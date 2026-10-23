@@ -1,16 +1,13 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
@@ -19,9 +16,7 @@ import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencaira
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockAuthenticationBloc
-    extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../support/auth_support.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
 
@@ -56,10 +51,7 @@ void main() {
     );
     di.registerFactory<PencairanUseCases>(() => useCases);
 
-    final authBloc = _MockAuthenticationBloc();
-    whenListen(
-      authBloc,
-      const Stream<AuthenticationStates>.empty(),
+    final auth = TestAuthenticationNotifier(
       initialState: AuthenticationLoading(),
     );
     final router = AppRouterConfig.getRouter();
@@ -67,10 +59,8 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        child: BlocProvider<AuthenticationBloc>.value(
-          value: authBloc,
-          child: MaterialApp.router(routerConfig: router),
-        ),
+        overrides: [authenticationProvider.overrideWith(() => auth)],
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
 

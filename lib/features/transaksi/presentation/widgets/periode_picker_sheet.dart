@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/filter_tanggal_bottom_sheet.dart';
 
@@ -47,11 +47,11 @@ String _tanggal(DateTime d) =>
 
 /// Membuka pemilih periode: bottom sheet di telepon, dialog di layar lebar.
 Future<void> showPeriodePicker(BuildContext context) {
-  final cubit = context.read<RiwayatAktivitasCubit>();
+  final container = ProviderScope.containerOf(context, listen: false);
   return showAdaptiveSurface<void>(
     context,
-    builder: (_) => BlocProvider.value(
-      value: cubit,
+    builder: (_) => UncontrolledProviderScope(
+      container: container,
       child: const PeriodePickerSheet(),
     ),
   );
@@ -59,12 +59,12 @@ Future<void> showPeriodePicker(BuildContext context) {
 
 /// Semua pilihan periode dalam satu daftar, ditambah rentang tanggal sendiri.
 /// Menggantikan sembilan chip periode dan tombol rentang tanggal.
-class PeriodePickerSheet extends StatelessWidget {
+class PeriodePickerSheet extends ConsumerWidget {
   const PeriodePickerSheet({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final state = context.watch<RiwayatAktivitasCubit>().state;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(riwayatAktivitasProvider);
     return AppSheetContainer(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -77,7 +77,7 @@ class PeriodePickerSheet extends StatelessWidget {
               label: label,
               selected: !state.isCustomPeriode && state.periode == value,
               onTap: () {
-                context.read<RiwayatAktivitasCubit>().setPeriode(value);
+                ref.read(riwayatAktivitasProvider.notifier).setPeriode(value);
                 Navigator.of(context).pop();
               },
             ),
@@ -87,13 +87,14 @@ class PeriodePickerSheet extends StatelessWidget {
             icon: Icons.calendar_today_outlined,
             selected: state.isCustomPeriode,
             onTap: () {
-              final cubit = context.read<RiwayatAktivitasCubit>();
+              final container =
+                  ProviderScope.containerOf(context, listen: false);
               final host = Navigator.of(context, rootNavigator: true).context;
               Navigator.of(context).pop();
               showAdaptiveSurface<void>(
                 host,
-                builder: (_) => BlocProvider.value(
-                  value: cubit,
+                builder: (_) => UncontrolledProviderScope(
+                  container: container,
                   child: const FilterTanggalBottomSheet(),
                 ),
               );

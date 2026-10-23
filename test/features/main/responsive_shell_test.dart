@@ -1,26 +1,18 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
-import 'package:pilah_mobile/services/di.dart';
-
-class _MockAuth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _MockApproval extends MockCubit<NasabahApprovalState>
-    implements NasabahApprovalCubit {}
+import '../../support/auth_support.dart';
+import '../../support/nasabah_approval_support.dart';
 
 const _approved = NasabahMembershipEntity(
   id: 'application-1',
@@ -53,18 +45,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final approval = _MockApproval();
-    when(() => approval.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
-    whenListen(approval, const Stream<NasabahApprovalState>.empty(),
+    final approval = TestNasabahApprovalNotifier(
         initialState: const NasabahApprovalLoaded([_approved]));
-    di.registerFactory<NasabahApprovalCubit>(() => approval);
-    addTearDown(() async {
-      await di.unregister<NasabahApprovalCubit>();
-      await approval.close();
-    });
 
-    final auth = _MockAuth();
     final state = Authenticated(
       authEntity: AuthEntity(
         name: 'Sari',
@@ -75,9 +58,7 @@ void main() {
         nextStep: 'dashboard',
       ),
     );
-    when(() => auth.state).thenReturn(state);
-    when(() => auth.stream).thenAnswer((_) => const Stream.empty());
-    addTearDown(auth.close);
+    final auth = authNotifierIn(state);
 
     final router = GoRouter(
       initialLocation: initialLocation,
@@ -108,8 +89,11 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-      value: auth,
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        nasabahApprovalProvider.overrideWith(() => approval),
+        authenticationProvider.overrideWith(() => auth),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();

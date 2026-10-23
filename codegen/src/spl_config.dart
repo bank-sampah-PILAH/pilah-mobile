@@ -171,7 +171,7 @@ Future<bool> _checkMason() async {
 }
 
 Future<bool> _tryMasonFeature(String module,
-    {bool withStorage = false, String state = 'bloc'}) async {
+    {bool withStorage = false, String state = 'riverpod'}) async {
   if (!await _checkMason()) return false;
   print('  Using Mason brick: feature');
   final r = await Process.run(

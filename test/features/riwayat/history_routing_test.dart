@@ -1,9 +1,6 @@
-import 'dart:async';
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
@@ -11,11 +8,10 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
@@ -25,15 +21,14 @@ import 'package:pilah_mobile/features/riwayat/data/repositories/riwayat_reposito
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../support/approved_membership.dart';
+import '../../support/auth_support.dart';
+import '../../support/nasabah_approval_support.dart';
 import '../../support/stub_api.dart';
-
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
 
 class _Environment extends Mock implements AppEnvironment {}
 
@@ -81,19 +76,30 @@ void main() {
   setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
   late _Repository repository;
   late _RiwayatRemoteSource riwayatSource;
-  late _Auth auth;
+  late TestAuthenticationNotifier auth;
   late _PayoutUseCases payoutUseCases;
-  late StreamController<AuthenticationStates> states;
-  late NasabahApprovalCubit approval;
+
+  late TestNasabahApprovalNotifier approval;
   setUp(() {
     repository = _Repository();
-    approval = registerApprovedMembership();
-    auth = _Auth();
+    approval = buildApprovedMembershipNotifier();
+    auth = authNotifierIn(
+      Authenticated(
+        authEntity: const AuthEntity(
+          id: 'siti',
+          name: 'Siti',
+          email: 'siti@example.test',
+          photoUrl: '',
+          token: 'test',
+          role: 'nasabah',
+          nextStep: 'nasabah_dashboard',
+        ),
+      ),
+    );
     payoutUseCases = _PayoutUseCases();
     when(() => payoutUseCases.getRiwayat(any())).thenAnswer(
       (_) async => const Right<NetworkException, List<Pencairan>>([]),
     );
-    states = StreamController<AuthenticationStates>.broadcast();
     di.registerSingleton<NasabahRepository>(repository);
     // The beranda page resolves the pengumuman section from the service
     // locator, so the stub API behind it needs the same registration.
@@ -103,8 +109,7 @@ void main() {
     di.registerSingleton<NasabahPengumumanRepository>(
         NasabahPengumumanRepository(pengumumanApi.network));
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
-    // The history screen now loads setoran rows through RiwayatHistoryCubit;
-    // back it with the same preview-backed repository so the rows render.
+    // Back the history provider with the preview repository so rows render.
     riwayatSource = _RiwayatRemoteSource(
       repository,
       pages: [
@@ -121,37 +126,16 @@ void main() {
     di.registerLazySingleton<RiwayatRepository>(
       () => RiwayatRepositoryImpl(di<RiwayatRemoteDataSource>()),
     );
-    di.registerFactory<RiwayatHistoryCubit>(
-      () => RiwayatHistoryCubit(
-        GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
-        GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
-      ),
-    );
     final environment = _Environment();
     when(() => environment.supportsDemoLogin).thenReturn(false);
     di.registerSingleton<AppEnvironment>(environment);
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
     di.registerFactory<PencairanUseCases>(() => payoutUseCases);
-    whenListen(auth, states.stream,
-        initialState: Authenticated(
-          authEntity: const AuthEntity(
-              id: 'siti',
-              name: 'Siti',
-              email: 'siti@example.test',
-              photoUrl: '',
-              token: 'test',
-              role: 'nasabah',
-              nextStep: 'nasabah_dashboard'),
-        ));
   });
   tearDown(() async {
-    await states.close();
-    await auth.close();
-    await unregisterApprovedMembership(approval);
     di<InviteTokenStore>().dispose();
     await di.unregister<InviteTokenStore>();
     await di.unregister<PencairanUseCases>();
-    await di.unregister<RiwayatHistoryCubit>();
     await di.unregister<RiwayatRepository>();
     await di.unregister<RiwayatRemoteDataSource>();
     await di.unregister<AppEnvironment>();
@@ -160,10 +144,17 @@ void main() {
   Future<void> open(WidgetTester tester, String path) async {
     router.go(path);
     await tester.pumpWidget(ProviderScope(
-      child: BlocProvider<AuthenticationBloc>.value(
-        value: auth,
-        child: MaterialApp.router(routerConfig: router),
-      ),
+      overrides: [
+        nasabahApprovalProvider.overrideWith(() => approval),
+        authenticationProvider.overrideWith(() => auth),
+        riwayatHistoryProvider.overrideWith(
+          () => RiwayatHistoryNotifier(
+            GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
+            GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
+          ),
+        ),
+      ],
+      child: MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
   }
@@ -187,7 +178,7 @@ void main() {
     expect(riwayatSource.requests, [('member-b', 1), ('member-b', 2)]);
     expect(find.text('+ Rp 1'), findsOneWidget);
     expect(find.text('+ Rp 2'), findsOneWidget);
-    states.add(Unauthenticated());
+    auth.setStateForTest(Unauthenticated());
     await tester.pumpAndSettle();
     expect(find.text('+ Rp 1'), findsNothing);
     expect(find.text('+ Rp 2'), findsNothing);

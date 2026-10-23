@@ -1,21 +1,17 @@
-import 'dart:async';
 import '../../support/stub_api.dart';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -23,13 +19,8 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
-
-class _MockAuthenticationBloc
-    extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _MockNasabahApprovalCubit extends MockCubit<NasabahApprovalState>
-    implements NasabahApprovalCubit {}
+import '../../support/auth_support.dart';
+import '../../support/nasabah_approval_support.dart';
 
 class _MockAppealMembershipUseCase extends Mock
     implements AppealMembershipUseCase {}
@@ -55,7 +46,7 @@ const _second = NasabahMembershipEntity(
 );
 
 void main() {
-  late _MockNasabahApprovalCubit approvalCubit;
+  late TestNasabahApprovalNotifier approvalNotifier;
 
   setUp(() {
     if (di.isRegistered<InviteTokenStore>()) {
@@ -63,15 +54,9 @@ void main() {
     }
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
 
-    approvalCubit = _MockNasabahApprovalCubit();
-    when(() => approvalCubit.state)
-        .thenReturn(const NasabahApprovalLoaded([_first, _second]));
-    when(() => approvalCubit.load(silent: any(named: 'silent')))
-        .thenAnswer((_) async {});
-    if (di.isRegistered<NasabahApprovalCubit>()) {
-      di.unregister<NasabahApprovalCubit>();
-    }
-    di.registerFactory<NasabahApprovalCubit>(() => approvalCubit);
+    approvalNotifier = TestNasabahApprovalNotifier(
+      initialState: const NasabahApprovalLoaded([_first, _second]),
+    );
 
     if (di.isRegistered<NasabahRepository>()) {
       di.unregister<NasabahRepository>();
@@ -97,9 +82,6 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<NasabahApprovalCubit>()) {
-      di.unregister<NasabahApprovalCubit>();
-    }
     if (di.isRegistered<NasabahRepository>()) {
       di.unregister<NasabahRepository>();
     }
@@ -111,13 +93,7 @@ void main() {
   testWidgets(
       'nasabah dashboard entry point reaches the approval list and detail routes',
       (tester) async {
-    final authenticationBloc = _MockAuthenticationBloc();
-    final authenticationStates = StreamController<AuthenticationStates>();
-    addTearDown(authenticationStates.close);
-    addTearDown(authenticationBloc.close);
-    whenListen(
-      authenticationBloc,
-      authenticationStates.stream,
+    final auth = TestAuthenticationNotifier(
       initialState: Authenticated(
         authEntity: const AuthEntity(
           id: 'nasabah-1',
@@ -136,10 +112,11 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        child: BlocProvider<AuthenticationBloc>.value(
-          value: authenticationBloc,
-          child: MaterialApp.router(routerConfig: router),
-        ),
+        overrides: [
+          nasabahApprovalProvider.overrideWith(() => approvalNotifier),
+          authenticationProvider.overrideWith(() => auth),
+        ],
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pump();

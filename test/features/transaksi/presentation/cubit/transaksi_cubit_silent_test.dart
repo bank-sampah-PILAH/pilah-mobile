@@ -10,7 +10,9 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaks
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
+
+import '../../../../support/notifier_harness.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
 class _MockGetTransaksi extends Mock implements GetTransaksiUseCase {}
@@ -25,27 +27,19 @@ class _MockResendWa extends Mock implements ResendWaUseCase {}
 
 class _FakeFilter extends Fake implements TransaksiFilter {}
 
-/// Records every state [cubit] emits while [action] runs.
-///
-/// Cubit delivers states to listeners asynchronously, so awaiting [action]
-/// alone is not enough — the event queue has to drain first or the final
-/// emission is missed (which would let "no Loading was emitted" assertions
-/// pass vacuously).
 Future<List<TransaksiState>> _capture(
-  TransaksiCubit cubit,
+  NotifierHarness<TransaksiNotifier, TransaksiState> harness,
   Future<void> Function() action,
 ) async {
-  final emitted = <TransaksiState>[];
-  final sub = cubit.stream.listen(emitted.add);
+  final firstEmission = harness.states.length;
   await action();
-  await pumpEventQueue();
-  await sub.cancel();
-  return emitted;
+  return harness.states.skip(firstEmission).toList();
 }
 
 void main() {
   late _MockGetTransaksi getTransaksi;
-  late TransaksiCubit cubit;
+  late TransaksiNotifier cubit;
+  late NotifierHarness<TransaksiNotifier, TransaksiState> harness;
 
   final transaksiGroup = TransaksiGroupEntity(
     header: 'HARI INI',
@@ -69,16 +63,20 @@ void main() {
 
   setUp(() {
     getTransaksi = _MockGetTransaksi();
-    cubit = TransaksiCubit(
-      getTransaksi,
-      _MockGetDetail(),
-      _MockAdd(),
-      _MockExport(),
-      _MockResendWa(),
+    harness = NotifierHarness(
+      transaksiProvider,
+      () => TransaksiNotifier(
+        getTransaksi,
+        _MockGetDetail(),
+        _MockAdd(),
+        _MockExport(),
+        _MockResendWa(),
+      ),
     );
+    cubit = harness.notifier;
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   group('loadTransaksi(silent:)', () {
     test('silent from Initial still emits Loading — the UI has nothing to show',
@@ -88,7 +86,7 @@ void main() {
 
       expect(cubit.state, isA<TransaksiInitial>());
       final emitted =
-          await _capture(cubit, () => cubit.loadTransaksi(silent: true));
+          await _capture(harness, () => cubit.loadTransaksi(silent: true));
 
       expect(
         emitted.first,
@@ -109,7 +107,7 @@ void main() {
           .thenAnswer((_) async => Right([transaksiGroup]));
 
       final emitted =
-          await _capture(cubit, () => cubit.loadTransaksi(silent: true));
+          await _capture(harness, () => cubit.loadTransaksi(silent: true));
 
       expect(
         emitted.first,
@@ -127,7 +125,7 @@ void main() {
       expect(cubit.state, isA<TransaksiLoaded>());
 
       final emitted =
-          await _capture(cubit, () => cubit.loadTransaksi(silent: true));
+          await _capture(harness, () => cubit.loadTransaksi(silent: true));
 
       expect(
         emitted.whereType<TransaksiLoading>(),

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
@@ -14,12 +13,13 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/model/draft_pencairan.dart';
-import '../blocs/draft_editor_cubit.dart';
+import '../../domain/repository/draft_pencairan_repository.dart';
+import '../providers/draft_editor_provider.dart';
 import '../blocs/draft_editor_state.dart';
 import '../blocs/editor_item_view.dart';
 import '../widgets/draft_file_actions.dart';
@@ -48,37 +48,62 @@ class DraftEditorPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) {
-        final cubit = di<DraftEditorCubit>();
-        final id = args.draftId;
-        if (id != null) {
-          cubit.load(id);
-        } else {
-          cubit.startNew(args.kandidat);
-        }
-        return cubit;
-      },
-      child: const DraftEditorView(),
+    return ProviderScope(
+      overrides: [
+        draftEditorProvider.overrideWith(
+          () => DraftEditorNotifier(di<DraftPencairanRepository>()),
+        ),
+      ],
+      child: _DraftEditorInitializer(args: args),
     );
   }
 }
 
-class DraftEditorView extends StatefulWidget {
+class _DraftEditorInitializer extends ConsumerStatefulWidget {
+  const _DraftEditorInitializer({required this.args});
+
+  final DraftEditorArgs args;
+
+  @override
+  ConsumerState<_DraftEditorInitializer> createState() =>
+      _DraftEditorInitializerState();
+}
+
+class _DraftEditorInitializerState
+    extends ConsumerState<_DraftEditorInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = ref.read(draftEditorProvider.notifier);
+      final id = widget.args.draftId;
+      if (id != null) {
+        notifier.load(id);
+      } else {
+        notifier.startNew(widget.args.kandidat);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const DraftEditorView();
+}
+
+class DraftEditorView extends ConsumerStatefulWidget {
   const DraftEditorView({super.key});
 
   @override
-  State<DraftEditorView> createState() => _DraftEditorViewState();
+  ConsumerState<DraftEditorView> createState() => _DraftEditorViewState();
 }
 
-class _DraftEditorViewState extends State<DraftEditorView> {
+class _DraftEditorViewState extends ConsumerState<DraftEditorView> {
   late final TextEditingController _nama;
 
   @override
   void initState() {
     super.initState();
-    _nama = TextEditingController(
-        text: context.read<DraftEditorCubit>().state.nama);
+    _nama = TextEditingController(text: ref.read(draftEditorProvider).nama);
   }
 
   @override
@@ -88,8 +113,8 @@ class _DraftEditorViewState extends State<DraftEditorView> {
   }
 
   Future<void> _confirmPayment() async {
-    final cubit = context.read<DraftEditorCubit>();
-    final state = cubit.state;
+    final notifier = ref.read(draftEditorProvider.notifier);
+    final state = ref.read(draftEditorProvider);
     final ok = await showPencairanKonfirmasi(
       context,
       icon: Icons.payments_outlined,
@@ -101,12 +126,12 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       ),
       jawaban: const KonfirmasiJawaban('Ya, sudah dibayar', 'Belum'),
     );
-    if (ok && mounted) await cubit.confirm();
+    if (ok && mounted) await notifier.confirm();
   }
 
   Future<void> _export(ExportBerkas berkas) async {
-    final cubit = context.read<DraftEditorCubit>();
-    final file = await cubit.export(berkas);
+    final notifier = ref.read(draftEditorProvider.notifier);
+    final file = await notifier.export(berkas);
     if (file == null || !mounted) return;
 
     if (berkas == ExportBerkas.pdf) {
@@ -121,13 +146,12 @@ class _DraftEditorViewState extends State<DraftEditorView> {
   /// A paid pencairan changes saldo and riwayat, so the screens that show
   /// them reload. Absent in a bare test tree, hence the guard.
   void _refreshRiwayat() {
-    try {
-      context.read<RiwayatAktivitasCubit>().load(silent: true);
-      ProviderScope.containerOf(context, listen: false)
-          .read(recentActivityProvider.notifier)
-          .load(silent: true);
-    } on Object {
-      // Not provided: nothing to refresh.
+    final providers = ProviderScope.containerOf(context, listen: false);
+    if (providers.exists(riwayatAktivitasProvider)) {
+      providers.read(riwayatAktivitasProvider.notifier).load(silent: true);
+    }
+    if (providers.exists(recentActivityProvider)) {
+      providers.read(recentActivityProvider.notifier).load(silent: true);
     }
   }
 
@@ -195,7 +219,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
       _Form(key: _formKey, state: state, nama: _nama, leftInset: leftInset);
 
   Widget _scaffold(BuildContext context, DraftEditorState state) {
-    final cubit = context.read<DraftEditorCubit>();
+    final notifier = ref.read(draftEditorProvider.notifier);
     final loading = state.phase == EditorPhase.loading;
     final header = AppBackHeader(
       backKey: const Key('kembali'),
@@ -244,7 +268,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                                   ? null
                                   : _BottomBar(
                                       state: state,
-                                      onSave: cubit.save,
+                                      onSave: notifier.save,
                                       onConfirm: _confirmPayment,
                                       tumpuk: true,
                                     ),
@@ -283,7 +307,7 @@ class _DraftEditorViewState extends State<DraftEditorView> {
                   ? null
                   : _BottomBar(
                       state: state,
-                      onSave: cubit.save,
+                      onSave: notifier.save,
                       onConfirm: _confirmPayment,
                     ),
             ),
@@ -292,40 +316,32 @@ class _DraftEditorViewState extends State<DraftEditorView> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<DraftEditorCubit, DraftEditorState>(listener: _onState),
-        BlocListener<DraftEditorCubit, DraftEditorState>(
-          listenWhen: _newError,
-          listener: (context, state) => AppNotification.showError(
-            context,
-            title: 'Gagal',
-            message: state.errorMessage!,
-          ),
-        ),
-        BlocListener<DraftEditorCubit, DraftEditorState>(
-          listenWhen: _finishedHere,
-          listener: _onFinished,
-        ),
-        BlocListener<DraftEditorCubit, DraftEditorState>(
-          listenWhen: _savedCleanly,
-          listener: (context, _) =>
-              _toast(context, 'Berhasil', 'Draft disimpan.'),
-        ),
-      ],
-      child: BlocBuilder<DraftEditorCubit, DraftEditorState>(
-        builder: (context, state) => PopScope(
-          // A draft that was never saved is all unsaved work, edited or not.
-          canPop: state.draftId != null && !state.dirty,
-          onPopInvokedWithResult: (didPop, _) => _onPopBlocked(context, didPop),
-          child: _scaffold(context, state),
-        ),
-      ),
+    ref.listen(draftEditorProvider, (previous, state) {
+      if (previous == null) return;
+      _onState(context, state);
+      if (_newError(previous, state)) {
+        AppNotification.showError(
+          context,
+          title: 'Gagal',
+          message: state.errorMessage!,
+        );
+      }
+      if (_finishedHere(previous, state)) _onFinished(context, state);
+      if (_savedCleanly(previous, state)) {
+        _toast(context, 'Berhasil', 'Draft disimpan.');
+      }
+    });
+    final state = ref.watch(draftEditorProvider);
+    return PopScope(
+      // A draft that was never saved is all unsaved work, edited or not.
+      canPop: state.draftId != null && !state.dirty,
+      onPopInvokedWithResult: (didPop, _) => _onPopBlocked(context, didPop),
+      child: _scaffold(context, state),
     );
   }
 }
 
-class _Form extends StatefulWidget {
+class _Form extends ConsumerStatefulWidget {
   final DraftEditorState state;
   final TextEditingController nama;
 
@@ -341,10 +357,10 @@ class _Form extends StatefulWidget {
   });
 
   @override
-  State<_Form> createState() => _FormState();
+  ConsumerState<_Form> createState() => _FormState();
 }
 
-class _FormState extends State<_Form> {
+class _FormState extends ConsumerState<_Form> {
   // What the list shows. The draft itself is untouched by any of it.
   final _cari = TextEditingController();
   ItemFilter _filter = ItemFilter.semua;
@@ -379,7 +395,7 @@ class _FormState extends State<_Form> {
   Widget build(BuildContext context) {
     final state = widget.state;
     final nama = widget.nama;
-    final cubit = context.read<DraftEditorCubit>();
+    final notifier = ref.read(draftEditorProvider.notifier);
     final locked = state.status.terkunci;
     final tampil = EditorItemView.tampilkan(
       state,
@@ -410,7 +426,7 @@ class _FormState extends State<_Form> {
                   key: const Key('nama-draft'),
                   controller: nama,
                   readOnly: locked,
-                  onChanged: cubit.setNama,
+                  onChanged: notifier.setNama,
                   style: appInputStyle,
                   decoration: appInputDecoration(
                     hintText: 'Kosongkan untuk nama otomatis',
@@ -480,12 +496,12 @@ class _FormState extends State<_Form> {
                       state: state,
                       readOnly: locked,
                       onNominal: (nominal) =>
-                          cubit.setItemNominal(item.nasabahId, nominal),
+                          notifier.setItemNominal(item.nasabahId, nominal),
                       onMetode: (metode) =>
-                          cubit.setItemMetode(item.nasabahId, metode),
+                          notifier.setItemMetode(item.nasabahId, metode),
                       onPotongan: (potongan) =>
-                          cubit.setItemPotongan(item.nasabahId, potongan),
-                      onRemove: () => cubit.removeItem(item.nasabahId),
+                          notifier.setItemPotongan(item.nasabahId, potongan),
+                      onRemove: () => notifier.removeItem(item.nasabahId),
                     );
                   },
                 ),
@@ -573,7 +589,9 @@ class _GeneralOptionsState extends State<_GeneralOptions> {
   Future<void> _terapkan() async {
     final jumlah = _jumlahBerubah ? _jumlah : null;
     if (!await _setujuSaldoKurang(jumlah) || !mounted) return;
-    context.read<DraftEditorCubit>().terapkanUmum(
+    ProviderScope.containerOf(context, listen: false)
+        .read(draftEditorProvider.notifier)
+        .terapkanUmum(
           metode: _metodeBerubah ? _metode : null,
           jumlah: jumlah,
           potongan: _potonganBerubah ? _potongan : null,

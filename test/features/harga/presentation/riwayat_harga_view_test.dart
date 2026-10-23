@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/riwayat_harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 
+import '../../../support/harga_support.dart';
 import '../../../support/stub_api.dart';
 
 const _path = '/api/v1/jenis-sampah/j-1/harga';
@@ -36,10 +36,10 @@ void main() {
     final repository =
         HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network));
     await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider(
-          create: (_) => RiwayatHargaCubit(GetRiwayatHargaUseCase(repository)),
-          child: const RiwayatHargaView(jenisId: 'j-1', namaJenis: 'Botol PET'),
+      withRiwayatHargaProvider(
+        RiwayatHargaNotifier(GetRiwayatHargaUseCase(repository)),
+        const MaterialApp(
+          home: RiwayatHargaView(jenisId: 'j-1', namaJenis: 'Botol PET'),
         ),
       ),
     );

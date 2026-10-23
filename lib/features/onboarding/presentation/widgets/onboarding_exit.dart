@@ -1,8 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
 /// Asks whether to leave onboarding. On confirm it runs the standard logout,
 /// which clears the session; the screen's own listener then sends the user to
@@ -23,6 +22,8 @@ Future<void> confirmExitOnboarding(
     destructive: true,
   );
   if (shouldLogout && context.mounted) {
-    context.read<AuthenticationBloc>().add(LogoutRequested());
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .logout();
   }
 }

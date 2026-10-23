@@ -1,17 +1,20 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
 
 class _Repository extends Mock implements RiwayatRepository {}
 
 void main() {
   late _Repository repo;
-  late RiwayatHistoryCubit cubit;
+  late RiwayatHistoryNotifier cubit;
+  late ProviderContainer container;
+  late ProviderSubscription<RiwayatHistoryState> subscription;
   late GetRiwayatHistoryUseCase historyUseCase;
   late GetRiwayatSetoranDetailUseCase detailUseCase;
 
@@ -22,7 +25,18 @@ void main() {
     repo = _Repository();
     historyUseCase = GetRiwayatHistoryUseCase(repo);
     detailUseCase = GetRiwayatSetoranDetailUseCase(repo);
-    cubit = RiwayatHistoryCubit(historyUseCase, detailUseCase);
+    container = ProviderContainer(overrides: [
+      riwayatHistoryProvider.overrideWith(
+        () => RiwayatHistoryNotifier(historyUseCase, detailUseCase),
+      ),
+    ]);
+    subscription = container.listen(riwayatHistoryProvider, (_, __) {});
+    cubit = container.read(riwayatHistoryProvider.notifier);
+  });
+
+  tearDown(() {
+    subscription.close();
+    container.dispose();
   });
 
   NasabahActivity activity(String id) => NasabahActivity.fromJson({

@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 
@@ -19,34 +14,30 @@ import '../../../../support/superadmin_support.dart';
 
 const _path = '/api/v1/superadmin/bank-sampah';
 
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
-
 void main() {
   late StubApi api;
-  late MockAuthBloc auth;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
     api = StubApi();
-    auth = authBlocIn(Authenticated(authEntity: testAuth(role: 'superadmin')));
+    auth =
+        authNotifierIn(Authenticated(authEntity: testAuth(role: 'superadmin')));
   });
 
   Future<void> openScreen(WidgetTester tester) async {
     await pumpRouted(
       tester,
-      ProviderScope(
+      // A non-const instance, so the widget's constructor itself runs.
+      // ignore: prefer_const_constructors
+      SuperAdminDashboardScreen(),
+      extraRoutes: ['/login'],
+      providerScopeBuilder: (app) => ProviderScope(
         overrides: [
           superadminProvider.overrideWith(() => buildSuperadminNotifier(api)),
+          authenticationProvider.overrideWith(() => auth),
         ],
-        child: BlocProvider<AuthenticationBloc>.value(
-          value: auth,
-          // A non-const instance, so the widget's constructor itself runs.
-          // ignore: prefer_const_constructors
-          child: SuperAdminDashboardScreen(),
-        ),
+        child: app,
       ),
-      extraRoutes: ['/login'],
       size: const Size(800, 1800),
     );
     await tester.pumpAndSettle();
@@ -255,19 +246,15 @@ void main() {
     await tester.tap(find.byIcon(Icons.logout));
     await tester.pump();
 
-    verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+    expect(auth.calls, contains('logout'));
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {
     stubTabs();
-    final bloc = MockAuthBloc();
-    final states =
-        Stream<AuthenticationStates>.fromIterable([Unauthenticated()]);
-    whenListen(bloc, states,
-        initialState: Authenticated(authEntity: testAuth()));
-    auth = bloc;
-
     await openScreen(tester);
+
+    auth.setStateForTest(Unauthenticated());
+    await tester.pumpAndSettle();
 
     expect(find.text('route:/login'), findsOneWidget);
   });

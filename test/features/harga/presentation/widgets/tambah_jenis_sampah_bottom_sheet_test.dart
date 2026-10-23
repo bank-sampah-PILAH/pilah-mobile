@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
@@ -27,11 +27,11 @@ HargaEntity _existing({bool active = true, String category = 'plastik'}) =>
 
 void main() {
   late StubApi api;
-  late HargaCubit cubit;
+  late HargaNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildHargaCubit(api);
+    notifier = buildHargaNotifier(api);
     api.on('GET', '/api/v1/jenis-sampah', json: {
       'results': [
         {
@@ -47,8 +47,6 @@ void main() {
     });
   });
 
-  tearDown(() => cubit.close());
-
   /// Opens the sheet from a launcher button so `context.pop()` has a route to
   /// close, like the real page.
   Future<void> openSheet(WidgetTester tester, {HargaEntity? initial}) async {
@@ -62,12 +60,9 @@ void main() {
                 context: context,
                 useRootNavigator: true,
                 isScrollControlled: true,
-                builder: (_) => BlocProvider<HargaCubit>.value(
-                  value: cubit,
-                  child: TambahJenisSampahBottomSheet(
-                    initialData: initial,
-                    hargaCubit: cubit,
-                  ),
+                builder: (_) => withHargaProvider(
+                  notifier,
+                  TambahJenisSampahBottomSheet(initialData: initial),
                 ),
               ),
               child: const Text('open'),
@@ -151,8 +146,13 @@ void main() {
 
   testWidgets('a code that is already in the list is rejected locally',
       (tester) async {
-    await tester.runAsync(cubit.loadHarga);
     await openSheet(tester);
+    final scopedNotifier = ProviderScope.containerOf(
+      tester.element(find.byType(TambahJenisSampahBottomSheet)),
+      listen: false,
+    ).read(hargaProvider.notifier);
+    await tester.runAsync(scopedNotifier.loadHarga);
+    await tester.pumpAndSettle();
 
     await fillForm(tester, kode: ' pls-001 ');
     await tester.tap(find.text('Simpan Jenis Sampah'));

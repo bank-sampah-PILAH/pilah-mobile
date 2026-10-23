@@ -1,25 +1,16 @@
-import 'package:bloc_test/bloc_test.dart';
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
-import 'package:pilah_mobile/services/di.dart';
-
-class MockAuth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class MockApproval extends MockCubit<NasabahApprovalState>
-    implements NasabahApprovalCubit {}
+import '../../support/auth_support.dart';
+import '../../support/nasabah_approval_support.dart';
 
 const pending = NasabahMembershipEntity(
   id: 'application-1',
@@ -53,28 +44,15 @@ Authenticated session(String role) => Authenticated(
     );
 
 Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
-    {Stream<AuthenticationStates>? states,
+    {TestAuthenticationNotifier? authNotifier,
     NasabahApprovalState approvalState =
         const NasabahApprovalLoaded([approved]),
-    Stream<NasabahApprovalState>? approvalStates,
-    MockApproval? approvalCubit,
+    TestNasabahApprovalNotifier? approvalNotifier,
     String initialLocation = '/home',
     bool settle = true}) async {
-  final approval = approvalCubit ?? MockApproval();
-  when(() => approval.load(silent: any(named: 'silent')))
-      .thenAnswer((_) async {});
-  whenListen(
-      approval, approvalStates ?? const Stream<NasabahApprovalState>.empty(),
-      initialState: approvalState);
-  di.registerFactory<NasabahApprovalCubit>(() => approval);
-  addTearDown(() async {
-    await di.unregister<NasabahApprovalCubit>();
-    await approval.close();
-  });
-  final auth = MockAuth();
-  when(() => auth.state).thenReturn(state);
-  when(() => auth.stream).thenAnswer((_) => const Stream.empty());
-  if (states != null) whenListen(auth, states, initialState: state);
+  final approval = approvalNotifier ??
+      TestNasabahApprovalNotifier(initialState: approvalState);
+  final auth = authNotifier ?? authNotifierIn(state);
   final router = GoRouter(
     initialLocation: initialLocation,
     routes: [
@@ -112,13 +90,13 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     ],
   );
   addTearDown(router.dispose);
-  addTearDown(auth.close);
-  await tester.pumpWidget(
-    BlocProvider<AuthenticationBloc>.value(
-      value: auth,
-      child: MaterialApp.router(routerConfig: router),
-    ),
-  );
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      nasabahApprovalProvider.overrideWith(() => approval),
+      authenticationProvider.overrideWith(() => auth),
+    ],
+    child: MaterialApp.router(routerConfig: router),
+  ));
   if (settle) {
     await tester.pumpAndSettle();
   } else {
@@ -137,13 +115,11 @@ List<String?> labels(WidgetTester tester) => tester
 void main() {
   testWidgets('changing roles resets an incompatible selected branch',
       (tester) async {
-    final states = StreamController<AuthenticationStates>.broadcast();
-    addTearDown(states.close);
-    final router =
-        await mount(tester, session('nasabah'), states: states.stream);
+    final auth = authNotifierIn(session('nasabah'));
+    final router = await mount(tester, session('nasabah'), authNotifier: auth);
     await tester.tap(find.text('Tabungan'));
     await tester.pumpAndSettle();
-    states.add(session('pengelola'));
+    auth.setStateForTest(session('pengelola'));
     await tester.pumpAndSettle();
     expect(labels(tester), [
       'Dashboard',
@@ -180,10 +156,9 @@ void main() {
 
   testWidgets('pending membership shows status home with only Home and Profile',
       (tester) async {
-    final approval = MockApproval();
-    await mount(tester, session('nasabah'),
-        approvalState: const NasabahApprovalLoaded([pending]),
-        approvalCubit: approval);
+    final approval = TestNasabahApprovalNotifier(
+        initialState: const NasabahApprovalLoaded([pending]));
+    await mount(tester, session('nasabah'), approvalNotifier: approval);
     expect(labels(tester), ['Beranda', 'Profil']);
     expect(find.text('Bank Sampah Melati'), findsWidgets);
     expect(find.text('Pengajuan dikirim'), findsOneWidget);
@@ -194,7 +169,7 @@ void main() {
     expect(find.text('body:/profile'), findsOneWidget);
     await tester.tap(find.text('Beranda'));
     await tester.pumpAndSettle();
-    verify(() => approval.load(silent: true)).called(1);
+    expect(approval.loadCalls, [true]);
     await tester.tap(find.text('Lihat detail pengajuan'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
@@ -241,12 +216,10 @@ void main() {
 
   testWidgets('approval restores full navigation after refreshing the status',
       (tester) async {
-    final updates = StreamController<NasabahApprovalState>.broadcast();
-    addTearDown(updates.close);
-    await mount(tester, session('nasabah'),
-        approvalState: const NasabahApprovalLoaded([pending]),
-        approvalStates: updates.stream);
-    updates.add(const NasabahApprovalLoaded([approved]));
+    final approval = TestNasabahApprovalNotifier(
+        initialState: const NasabahApprovalLoaded([pending]));
+    await mount(tester, session('nasabah'), approvalNotifier: approval);
+    approval.setStateForTest(const NasabahApprovalLoaded([approved]));
     await tester.pumpAndSettle();
     expect(labels(tester), ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
     expect(find.text('body:/home'), findsOneWidget);
@@ -255,14 +228,11 @@ void main() {
   testWidgets(
       'a deep link opened while approval status is still loading is not '
       'discarded once membership turns out to be active', (tester) async {
-    final approvalStates = StreamController<NasabahApprovalState>.broadcast();
-    addTearDown(approvalStates.close);
+    final approval = TestNasabahApprovalNotifier(
+        initialState: const NasabahApprovalLoading());
     final router = await mount(tester, session('nasabah'),
-        initialLocation: '/history',
-        approvalState: const NasabahApprovalLoading(),
-        approvalStates: approvalStates.stream,
-        settle: false);
-    approvalStates.add(const NasabahApprovalLoaded([approved]));
+        initialLocation: '/history', approvalNotifier: approval, settle: false);
+    approval.setStateForTest(const NasabahApprovalLoaded([approved]));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/history');
     expect(find.text('body:/history'), findsOneWidget);
@@ -297,14 +267,13 @@ void main() {
   testWidgets('staff logout returns to login instead of the signed-out shell', (
     tester,
   ) async {
-    final states = StreamController<AuthenticationStates>.broadcast();
-    addTearDown(states.close);
+    final auth = authNotifierIn(session('pengelola'));
     final router =
-        await mount(tester, session('pengelola'), states: states.stream);
+        await mount(tester, session('pengelola'), authNotifier: auth);
 
-    states.add(AuthenticationLoading());
+    auth.setStateForTest(AuthenticationLoading());
     await tester.pump();
-    states.add(Unauthenticated());
+    auth.setStateForTest(Unauthenticated());
     await tester.pumpAndSettle();
 
     expect(router.routeInformationProvider.value.uri.path, '/login');

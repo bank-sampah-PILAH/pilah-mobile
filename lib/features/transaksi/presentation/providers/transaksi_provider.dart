@@ -1,5 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
@@ -10,8 +10,17 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_u
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
-@lazySingleton
-class TransaksiCubit extends Cubit<TransaksiState> {
+final transaksiProvider = NotifierProvider<TransaksiNotifier, TransaksiState>(
+  () => TransaksiNotifier(
+    di<GetTransaksiUseCase>(),
+    di<GetTransaksiDetailUseCase>(),
+    di<AddTransaksiUseCase>(),
+    di<ExportTransaksiUseCase>(),
+    di<ResendWaUseCase>(),
+  ),
+);
+
+class TransaksiNotifier extends Notifier<TransaksiState> {
   final GetTransaksiUseCase getTransaksiUseCase;
   final GetTransaksiDetailUseCase getTransaksiDetailUseCase;
   final AddTransaksiUseCase addTransaksiUseCase;
@@ -24,13 +33,16 @@ class TransaksiCubit extends Cubit<TransaksiState> {
   DateTime? _sampaiTanggal;
   String _searchQuery = '';
 
-  TransaksiCubit(
+  TransaksiNotifier(
     this.getTransaksiUseCase,
     this.getTransaksiDetailUseCase,
     this.addTransaksiUseCase,
     this.exportTransaksiUseCase,
     this.resendWaUseCase,
-  ) : super(TransaksiInitial());
+  );
+
+  @override
+  TransaksiState build() => TransaksiInitial();
 
   String get periode => _periode;
   String get searchQuery => _searchQuery;
@@ -49,10 +61,10 @@ class TransaksiCubit extends Cubit<TransaksiState> {
   /// keep: from [TransaksiInitial] or [TransaksiError] there is nothing on
   /// screen, so a real loading state is emitted regardless.
   Future<void> loadTransaksi({bool silent = false}) async {
-    if (!silent || state is! TransaksiLoaded) emit(TransaksiLoading());
+    if (!silent || state is! TransaksiLoaded) state = TransaksiLoading();
     final result = await getTransaksiUseCase.execute(_currentFilter());
     result.fold(
-      (failure) => emit(TransaksiError(failure.displayMessage)),
+      (failure) => state = TransaksiError(failure.displayMessage),
       (data) {
         _allTransaksi = data;
         _emitFiltered();
@@ -157,7 +169,7 @@ class TransaksiCubit extends Cubit<TransaksiState> {
     _dariTanggal = null;
     _sampaiTanggal = null;
     _searchQuery = '';
-    emit(TransaksiInitial());
+    state = TransaksiInitial();
   }
 
   /// Period filtering is applied server-side; here we only narrow the already
@@ -182,12 +194,12 @@ class TransaksiCubit extends Cubit<TransaksiState> {
       }
     }
 
-    emit(TransaksiLoaded(
+    state = TransaksiLoaded(
       transaksiList: filteredGroups,
       periode: _periode,
       dariTanggal: _dariTanggal,
       sampaiTanggal: _sampaiTanggal,
       searchQuery: _searchQuery,
-    ));
+    );
   }
 }

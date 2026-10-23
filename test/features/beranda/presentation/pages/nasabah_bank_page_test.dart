@@ -1,14 +1,11 @@
 import 'dart:async';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
@@ -18,15 +15,13 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../support/fake_image_download.dart';
+import '../../../../support/auth_support.dart';
 
 class _MockUrlLauncher extends Mock
     with MockPlatformInterfaceMixin
     implements UrlLauncherPlatform {}
 
 class _FakeLaunchOptions extends Fake implements LaunchOptions {}
-
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
 
 class _Repository extends PreviewNasabahRepository {
   _Repository(this.fixture);
@@ -68,23 +63,20 @@ Authenticated _session() => Authenticated(
     ));
 
 void main() {
-  late _Auth auth;
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
-    auth = _Auth();
-    whenListen(auth, const Stream<AuthenticationStates>.empty(),
-        initialState: _session());
+    auth = authNotifierIn(_session());
   });
 
   tearDown(() async {
-    await auth.close();
     await di.unregister<NasabahRepository>();
   });
 
   Future<void> open(WidgetTester tester, NasabahBank fixture) async {
     di.registerSingleton<NasabahRepository>(_Repository(fixture));
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: const MaterialApp(home: NasabahBankPage())));
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, const MaterialApp(home: NasabahBankPage())));
     await tester.pumpAndSettle();
   }
 
@@ -136,8 +128,8 @@ void main() {
       (tester) async {
     final repository = _CountingNasabahRepository();
     di.registerSingleton<NasabahRepository>(repository);
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: const MaterialApp(home: NasabahBankPage())));
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, const MaterialApp(home: NasabahBankPage())));
     await tester.pumpAndSettle();
 
     // PreviewNasabahRepository.home() (membership resolution) itself calls
@@ -157,16 +149,15 @@ void main() {
 
   testWidgets('a signed-in staff member is told to sign in as a nasabah',
       (tester) async {
-    whenListen(auth, const Stream<AuthenticationStates>.empty(),
-        initialState: Authenticated(
-            authEntity: const AuthEntity(
-          id: 'p',
-          name: 'Pengurus',
-          email: 'p@example.test',
-          photoUrl: '',
-          token: 'token',
-          role: 'pengelola',
-        )));
+    auth.setStateForTest(Authenticated(
+        authEntity: const AuthEntity(
+      id: 'p',
+      name: 'Pengurus',
+      email: 'p@example.test',
+      photoUrl: '',
+      token: 'token',
+      role: 'pengelola',
+    )));
     await open(tester, _melati);
 
     expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);
@@ -217,8 +208,8 @@ void main() {
       (tester) async {
     final download = FakeImageDownload.install();
     di.registerSingleton<NasabahRepository>(_Repository(_melati));
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: const MaterialApp(home: NasabahBankPage())));
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, const MaterialApp(home: NasabahBankPage())));
     await tester.pumpAndSettle();
     await tester
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/activate_nasabah_usecase.dart';
@@ -20,8 +20,22 @@ import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.d
 /// submissions (PIL-188); rejected rows appear in no tab (audit only).
 enum NasabahTab { aktif, tidakAktif, menunggu }
 
-@lazySingleton
-class NasabahCubit extends Cubit<NasabahState> {
+final nasabahProvider = NotifierProvider<NasabahNotifier, NasabahState>(
+  () => NasabahNotifier(
+    di<GetNasabahUseCase>(),
+    di<GetActiveNasabahUseCase>(),
+    di<GetNasabahRingkasanUseCase>(),
+    di<AddNasabahUseCase>(),
+    di<UpdateNasabahUseCase>(),
+    di<ActivateNasabahUseCase>(),
+    di<DeactivateNasabahUseCase>(),
+    di<ApproveNasabahUseCase>(),
+    di<RejectNasabahUseCase>(),
+    di<SinkronProfilNasabahUseCase>(),
+  ),
+);
+
+class NasabahNotifier extends Notifier<NasabahState> {
   final GetNasabahUseCase getNasabahUseCase;
   final GetActiveNasabahUseCase getActiveNasabahUseCase;
   final GetNasabahRingkasanUseCase getNasabahRingkasanUseCase;
@@ -57,7 +71,7 @@ class NasabahCubit extends Cubit<NasabahState> {
   /// satu panggilan API per huruf.
   static const Duration jedaPencarian = Duration(milliseconds: 300);
 
-  NasabahCubit(
+  NasabahNotifier(
     this.getNasabahUseCase,
     this.getActiveNasabahUseCase,
     this.getNasabahRingkasanUseCase,
@@ -68,7 +82,13 @@ class NasabahCubit extends Cubit<NasabahState> {
     this.approveNasabahUseCase,
     this.rejectNasabahUseCase,
     this.sinkronProfilNasabahUseCase,
-  ) : super(NasabahInitial());
+  );
+
+  @override
+  NasabahState build() {
+    ref.onDispose(() => _jedaCari?.cancel());
+    return NasabahInitial();
+  }
 
   /// `true` = aktif, `false` = tidak aktif, `null` = menunggu.
   bool? get isActiveTab => _isActiveTab;
@@ -102,7 +122,7 @@ class NasabahCubit extends Cubit<NasabahState> {
       if (hasLoadedList) {
         _emitLoaded(isReloading: true);
       } else {
-        emit(NasabahLoading(isActiveTab: _isActiveTab));
+        state = NasabahLoading(isActiveTab: _isActiveTab);
       }
     }
     final activeCountRequestGeneration =
@@ -110,9 +130,9 @@ class NasabahCubit extends Cubit<NasabahState> {
             ? ++_activeCountRequestGeneration
             : null;
     final result = await getNasabahUseCase.execute(_params(1));
-    if (isClosed || requestGeneration != _listRequestGeneration) return;
+    if (!ref.mounted || requestGeneration != _listRequestGeneration) return;
     result.fold(
-      (failure) => emit(NasabahError(failure.displayMessage)),
+      (failure) => state = NasabahError(failure.displayMessage),
       (data) {
         _items = data.items;
         _hasMore = data.hasMore;
@@ -128,7 +148,9 @@ class NasabahCubit extends Cubit<NasabahState> {
 
   /// Replaces the visible rows with one server page, for numbered web controls.
   Future<void> loadPage(int page) async {
-    if (_listNeedsReload || page < 1 || state is! NasabahLoaded) return;
+    if (_listNeedsReload || page < 1 || state is! NasabahLoaded) {
+      return;
+    }
     final loaded = state as NasabahLoaded;
     final pageCount = (_totalCount + loaded.pageSize - 1) ~/ loaded.pageSize;
     if (loaded.isReloading ||
@@ -141,7 +163,7 @@ class NasabahCubit extends Cubit<NasabahState> {
     final requestGeneration = ++_listRequestGeneration;
     _emitLoaded(isReloading: true);
     final result = await getNasabahUseCase.execute(_params(page));
-    if (isClosed || requestGeneration != _listRequestGeneration) return;
+    if (!ref.mounted || requestGeneration != _listRequestGeneration) return;
     result.fold(
       // Keep the current page visible if the selected page fails to load.
       (_) => _emitLoaded(),
@@ -175,7 +197,7 @@ class NasabahCubit extends Cubit<NasabahState> {
 
     final berikutnya = _halaman + 1;
     final result = await getNasabahUseCase.execute(_params(berikutnya));
-    if (isClosed || requestGeneration != _listRequestGeneration) return;
+    if (!ref.mounted || requestGeneration != _listRequestGeneration) return;
     _isLoadingMore = false;
     result.fold(
       // Halaman yang sudah tampil dipertahankan; kegagalan menyambung tidak
@@ -221,7 +243,9 @@ class NasabahCubit extends Cubit<NasabahState> {
     final result = await getNasabahUseCase.execute(
       const GetNasabahParams(status: 'aktif'),
     );
-    if (isClosed || requestGeneration != _activeCountRequestGeneration) return;
+    if (!ref.mounted || requestGeneration != _activeCountRequestGeneration) {
+      return;
+    }
     result.fold((_) {}, (data) {
       _totalAktif = data.totalCount;
       if (state is NasabahLoaded) _emitLoaded();
@@ -253,12 +277,6 @@ class NasabahCubit extends Cubit<NasabahState> {
     _isLoadingMore = false;
     _jedaCari?.cancel();
     _jedaCari = Timer(jedaPencarian, loadNasabah);
-  }
-
-  @override
-  Future<void> close() {
-    _jedaCari?.cancel();
-    return super.close();
   }
 
   /// Creates a nasabah. Returns `null` on success (list reloaded), otherwise the
@@ -343,11 +361,11 @@ class NasabahCubit extends Cubit<NasabahState> {
     _totalAktif = 0;
     _isActiveTab = true;
     _searchQuery = '';
-    emit(NasabahInitial());
+    state = NasabahInitial();
   }
 
   void _emitLoaded({bool isReloading = false}) {
-    emit(NasabahLoaded(
+    state = NasabahLoaded(
       nasabahList: _items,
       isActiveTab: _isActiveTab,
       searchQuery: _searchQuery,
@@ -357,6 +375,6 @@ class NasabahCubit extends Cubit<NasabahState> {
       totalCount: _totalCount,
       currentPage: _halaman,
       pageSize: _pageSize ?? 20,
-    ));
+    );
   }
 }

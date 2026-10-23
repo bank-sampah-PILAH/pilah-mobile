@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
 
@@ -36,13 +34,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.light,
-      home: BlocProvider<AuthenticationBloc>.value(
-        value: authBlocIn(
-          Authenticated(authEntity: testAuth(name: 'Pengurus PILAH E2E')),
-        ),
-        child: const Scaffold(
+    await tester.pumpWidget(withAuthenticationProvider(
+      authNotifierIn(
+        Authenticated(authEntity: testAuth(name: 'Pengurus PILAH E2E')),
+      ),
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
           body: Padding(padding: EdgeInsets.all(16), child: DashboardHeader()),
         ),
       ),
@@ -59,13 +57,13 @@ void main() {
   testWidgets('the avatar is announced as a button that opens the profile',
       (tester) async {
     final handle = tester.ensureSemantics();
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.light,
-      home: BlocProvider<AuthenticationBloc>.value(
-        value: authBlocIn(
-          Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
-        ),
-        child: const Scaffold(
+    await tester.pumpWidget(withAuthenticationProvider(
+      authNotifierIn(
+        Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
+      ),
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
           body: Padding(padding: EdgeInsets.all(16), child: DashboardHeader()),
         ),
       ),
@@ -88,15 +86,10 @@ void main() {
       final router = GoRouter(routes: [
         GoRoute(
           path: '/',
-          builder: (_, __) => BlocProvider<AuthenticationBloc>.value(
-            value: authBlocIn(
-              Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
-            ),
-            child: Scaffold(
-              body: Padding(
-                padding: const EdgeInsets.all(16),
-                child: DashboardHeader(showProfile: showProfile),
-              ),
+          builder: (_, __) => Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: DashboardHeader(showProfile: showProfile),
             ),
           ),
         ),
@@ -106,8 +99,12 @@ void main() {
         ),
       ]);
       addTearDown(router.dispose);
-      await tester.pumpWidget(
-          MaterialApp.router(theme: AppTheme.light, routerConfig: router));
+      await tester.pumpWidget(withAuthenticationProvider(
+        authNotifierIn(
+          Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
+        ),
+        MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+      ));
       await tester.pump();
       return router;
     }

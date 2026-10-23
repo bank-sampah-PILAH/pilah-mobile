@@ -4,9 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
 
+import '../../../../support/notifier_harness.dart';
 import '../../../../support/stub_api.dart';
 import '../../../../support/transaksi_support.dart';
 
@@ -32,15 +33,20 @@ Map<String, dynamic> _row(String id, String nama,
 
 void main() {
   late StubApi api;
-  late TransaksiCubit cubit;
+  late TransaksiNotifier cubit;
+  late NotifierHarness<TransaksiNotifier, TransaksiState> harness;
   final now = DateTime.now();
 
   setUp(() {
     api = StubApi();
-    cubit = buildTransaksiCubit(api);
+    harness = NotifierHarness(
+      transaksiProvider,
+      () => buildTransaksiNotifier(api),
+    );
+    cubit = harness.notifier;
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   test('groups the list into day buckets with display fields', () async {
     api.on('GET', _path, json: {
@@ -289,13 +295,10 @@ void main() {
     expect(api.requests.where((r) => r.method == 'GET').length, getCalls);
 
     // Already sent: nothing changes, nothing re-emitted.
-    final states = <TransaksiState>[];
-    final sub = cubit.stream.listen(states.add);
+    final firstEmission = harness.states.length;
     await cubit.resendWa('1');
     await cubit.resendWa('unknown');
-    await pumpEventQueue();
-    await sub.cancel();
-    expect(states, isEmpty);
+    expect(harness.states.skip(firstEmission), isEmpty);
   });
 
   test('resending WA reports the backend message on failure', () async {

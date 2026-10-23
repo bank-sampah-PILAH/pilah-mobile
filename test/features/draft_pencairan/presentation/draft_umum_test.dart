@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
+import '../../../support/draft_pencairan_support.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}
@@ -14,10 +14,10 @@ const _budi =
 const _citra =
     Kandidat(id: 'n-3', kode: 'NAS-0003', nama: 'Citra Dewi', saldo: 250000);
 
-DraftEditorCubit _editor() => DraftEditorCubit(_MockRepository())
+TestDraftEditorNotifier _editor() => TestDraftEditorNotifier(_MockRepository())
   ..startNew(const [_ahmad, _budi, _citra]);
 
-List<int> _nominal(DraftEditorCubit editor) =>
+List<int> _nominal(TestDraftEditorNotifier editor) =>
     editor.state.items.map((i) => i.nominal).toList();
 
 void main() {
@@ -179,7 +179,7 @@ void main() {
     });
 
     test('a tiny saldo can end at zero, which the editor then flags', () {
-      final editor = DraftEditorCubit(_MockRepository())
+      final editor = TestDraftEditorNotifier(_MockRepository())
         ..startNew(const [
           Kandidat(id: 'n-9', kode: 'NAS-0009', nama: 'Receh', saldo: 1),
         ]);

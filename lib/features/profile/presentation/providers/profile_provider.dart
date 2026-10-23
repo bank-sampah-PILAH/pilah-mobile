@@ -1,31 +1,37 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/services/di.dart';
 
-/// App-scoped rather than page-scoped: the WhatsApp template it loads is also
-/// read by the transaksi success flow, which builds the wa.me notification from
-/// it. A per-page factory would leave that flow with nothing to read.
-@lazySingleton
-class ProfileCubit extends Cubit<ProfileState> {
+/// App-scoped because the transaksi success flow also reads the WA template.
+final profileProvider = NotifierProvider<ProfileNotifier, ProfileState>(
+  () => ProfileNotifier(
+    di<ProfileRemoteDataSource>(),
+    di<ImagePicker>(),
+    di<ImageCropper>(),
+  ),
+);
+
+class ProfileNotifier extends Notifier<ProfileState> {
   final ProfileRemoteDataSource _dataSource;
   final ImagePicker _picker;
   final ImageCropper _cropper;
 
-  ProfileCubit(this._dataSource, this._picker, this._cropper,
-      {@ignoreParam bool? isWeb})
-      : _isWeb = isWeb ?? kIsWeb,
-        super(const ProfileState());
+  ProfileNotifier(this._dataSource, this._picker, this._cropper, {bool? isWeb})
+      : _isWeb = isWeb ?? kIsWeb;
 
   final bool _isWeb;
+
+  @override
+  ProfileState build() => const ProfileState();
 
   /// Loads the bank sampah profile, WhatsApp template and team roster. The bank
   /// profile is essential (a failure shows the error screen); the template and
@@ -38,7 +44,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// the page has nothing to render, so a real loading state is emitted.
   Future<void> load({bool silent = false}) async {
     if (!silent || state.status != ProfileStatus.loaded) {
-      emit(const ProfileState(status: ProfileStatus.loading));
+      state = const ProfileState(status: ProfileStatus.loading);
     }
 
     final bankEither = await apiCall<BankSampahProfile>(
@@ -46,9 +52,10 @@ class ProfileCubit extends Cubit<ProfileState> {
       mapper: (value) => value as BankSampahProfile,
     );
 
+    if (!ref.mounted) return;
     await bankEither.fold(
-      (error) async => emit(ProfileState(
-          status: ProfileStatus.error, error: error.displayMessage)),
+      (error) async => state = ProfileState(
+          status: ProfileStatus.error, error: error.displayMessage),
       (bank) async {
         final waEither = await apiCall<WaTemplate>(
           func: _dataSource.getWaTemplate(),
@@ -58,12 +65,13 @@ class ProfileCubit extends Cubit<ProfileState> {
           func: _dataSource.getTeam(),
           mapper: (value) => value as List<TeamMember>,
         );
-        emit(ProfileState(
+        if (!ref.mounted) return;
+        state = ProfileState(
           status: ProfileStatus.loaded,
           bankSampah: bank,
           waTemplate: waEither.fold((_) => null, (value) => value),
           team: teamEither.fold((_) => const <TeamMember>[], (value) => value),
-        ));
+        );
       },
     );
   }
@@ -71,17 +79,19 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Persists the WhatsApp template. Returns `null` on success, otherwise the
   /// [NetworkException] so the page can show the error.
   Future<NetworkException?> saveWaTemplate(String template) async {
-    emit(state.copyWith(isSavingTemplate: true));
+    state = state.copyWith(isSavingTemplate: true);
     try {
       await _dataSource.updateWaTemplate(template);
-      emit(state.copyWith(
+      if (!ref.mounted) return null;
+      state = state.copyWith(
         isSavingTemplate: false,
         waTemplate: (state.waTemplate ?? const WaTemplate(template: ''))
             .copyWith(template: template),
-      ));
+      );
       return null;
     } on Exception catch (e) {
-      emit(state.copyWith(isSavingTemplate: false));
+      if (!ref.mounted) return NetworkException.handleException(e);
+      state = state.copyWith(isSavingTemplate: false);
       return NetworkException.handleException(e);
     }
   }
@@ -98,15 +108,15 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// error. The state stays as it was, including any logo picked earlier.
   Future<void> pickLogo() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image == null || isClosed) return;
+    if (image == null || !ref.mounted) return;
 
     if (_isWeb) {
       final bytes = await image.readAsBytes();
-      if (isClosed) return;
-      emit(state.copyWith(
+      if (!ref.mounted) return;
+      state = state.copyWith(
         selectedLogoBytes: bytes,
         selectedLogoFilename: image.name,
-      ));
+      );
       return;
     }
 
@@ -146,14 +156,14 @@ class ProfileCubit extends Cubit<ProfileState> {
         ),
       ],
     );
-    if (cropped == null || isClosed) return;
+    if (cropped == null || !ref.mounted) return;
     final bytes = await cropped.readAsBytes();
-    if (isClosed) return;
+    if (!ref.mounted) return;
 
-    emit(state.copyWith(
+    state = state.copyWith(
       selectedLogoBytes: bytes,
       selectedLogoFilename: XFile(cropped.path).name,
-    ));
+    );
   }
 
   /// Persists the editable bank sampah fields via `PUT /bank-sampah/me`.
@@ -178,7 +188,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         fotoLogoBytes: state.selectedLogoBytes,
         fotoLogoFilename: state.selectedLogoFilename,
       );
-      emit(state.copyWith(bankSampah: updated, clearSelectedLogo: true));
+      if (!ref.mounted) return null;
+      state = state.copyWith(bankSampah: updated, clearSelectedLogo: true);
       return null;
     } on Exception catch (e) {
       return NetworkException.handleException(e);
@@ -189,7 +200,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// this cubit is an app-scoped singleton that outlives a session).
   ///
   /// Pending logo bytes must not be uploaded by the next signed-in user.
-  void reset() => emit(const ProfileState());
+  void reset() => state = const ProfileState();
 
   /// Generates a team invite link. Returns the URL on success, otherwise the
   /// [NetworkException] (e.g. 403 when the current user is not the primary

@@ -8,7 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
+import '../../../support/draft_pencairan_support.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
@@ -21,8 +21,9 @@ const _budi =
 const _citra =
     Kandidat(id: 'n-3', kode: 'NAS-0003', nama: 'Citra Dewi', saldo: 250000);
 
-DraftEditorCubit _newEditor() => DraftEditorCubit(_MockRepository())
-  ..startNew(const [_ahmad, _budi, _citra]);
+TestDraftEditorNotifier _newEditor() =>
+    TestDraftEditorNotifier(_MockRepository())
+      ..startNew(const [_ahmad, _budi, _citra]);
 
 void main() {
   persistenceTests();
@@ -175,7 +176,8 @@ void main() {
     });
 
     test('a draft with no items cannot be saved', () {
-      final editor = DraftEditorCubit(_MockRepository())..startNew(const []);
+      final editor = TestDraftEditorNotifier(_MockRepository())
+        ..startNew(const []);
 
       expect(editor.state.canSave, isFalse);
     });
@@ -240,7 +242,7 @@ UnprocessableEntityException _unprocessable(Map<String, List<String>> errors) =>
 
 void persistenceTests() {
   late _MockRepository repository;
-  late DraftEditorCubit editor;
+  late TestDraftEditorNotifier editor;
 
   setUpAll(() {
     registerFallbackValue(
@@ -250,7 +252,7 @@ void persistenceTests() {
 
   setUp(() {
     repository = _MockRepository();
-    editor = DraftEditorCubit(repository)
+    editor = TestDraftEditorNotifier(repository)
       ..startNew(const [_ahmad, _budi])
       ..setNama('Cair Oktober')
       ..setPotonganDefault(const Potongan(PotonganJenis.persen, 10))
@@ -262,7 +264,7 @@ void persistenceTests() {
   test(
       'a new draft is named by the pengurus\' WIB clock, wherever the phone is',
       () {
-    final editor = DraftEditorCubit(_MockRepository())
+    final editor = TestDraftEditorNotifier(_MockRepository())
       ..startNew(const [_ahmad], sekarang: DateTime.utc(2026, 10, 8, 23, 30));
 
     expect(editor.state.nama, 'Pencairan 9 Okt 2026, 06:30');
@@ -428,7 +430,7 @@ void persistenceTests() {
     test('shows the saved state with the live saldo as the ceiling', () async {
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_serverDraft()));
-      final fresh = DraftEditorCubit(repository);
+      final fresh = TestDraftEditorNotifier(repository);
 
       await fresh.load('d-1');
 
@@ -463,7 +465,7 @@ void persistenceTests() {
                   saldoSaatIni: 80000,
                 ),
               ])));
-      final fresh = DraftEditorCubit(repository);
+      final fresh = TestDraftEditorNotifier(repository);
 
       await fresh.load('d-1');
 
@@ -489,7 +491,7 @@ void persistenceTests() {
                 item('n-2', MetodePencairan.transfer),
                 item('n-3', MetodePencairan.tunai),
               ])));
-      final fresh = DraftEditorCubit(repository);
+      final fresh = TestDraftEditorNotifier(repository);
 
       await fresh.load('d-1');
 
@@ -500,7 +502,7 @@ void persistenceTests() {
     test('a load that fails says so', () async {
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Left(ConnectionTimeOutException()));
-      final fresh = DraftEditorCubit(repository);
+      final fresh = TestDraftEditorNotifier(repository);
 
       await fresh.load('d-1');
 
@@ -513,13 +515,13 @@ void persistenceTests() {
 
 void lifecycleTests() {
   late _MockRepository repository;
-  late DraftEditorCubit editor;
+  late TestDraftEditorNotifier editor;
 
   setUp(() async {
     repository = _MockRepository();
     when(() => repository.getDraft('d-1'))
         .thenAnswer((_) async => Right(_serverDraft()));
-    editor = DraftEditorCubit(repository);
+    editor = TestDraftEditorNotifier(repository);
     await editor.load('d-1');
   });
 
@@ -574,7 +576,8 @@ void lifecycleTests() {
           .thenAnswer((_) async => Right(_serverDraft()));
       when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_serverDraft(status: DraftStatus.dikonfirmasi)));
-      final unsaved = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+      final unsaved = TestDraftEditorNotifier(repository)
+        ..startNew(const [_ahmad]);
       expect(unsaved.state.canConfirm, isTrue);
 
       await unsaved.confirm();
@@ -754,8 +757,9 @@ void lifecycleTests() {
       expect(await editor.export(ExportBerkas.xlsx), isNotNull);
     });
 
-    DraftEditorCubit baruDenganMock() =>
-        DraftEditorCubit(repository)..startNew(const [_ahmad, _budi, _citra]);
+    TestDraftEditorNotifier baruDenganMock() =>
+        TestDraftEditorNotifier(repository)
+          ..startNew(const [_ahmad, _budi, _citra]);
 
     test('unsaved edits are exported as they stand, and stay unsaved',
         () async {
@@ -834,7 +838,7 @@ void lifecycleTests() {
 
   group('naming and the jumlah applied to everyone', () {
     test('a new draft is named at once with the date and time', () {
-      final editor = DraftEditorCubit(repository)
+      final editor = TestDraftEditorNotifier(repository)
         ..startNew(const [
           Kandidat(id: 'n-1', kode: 'K1', nama: 'Ahmad', saldo: 1000),
         ], sekarang: DateTime.utc(2026, 10, 7, 23, 4));
@@ -844,7 +848,7 @@ void lifecycleTests() {
     });
 
     test('the name can still be changed', () {
-      final editor = DraftEditorCubit(repository)
+      final editor = TestDraftEditorNotifier(repository)
         ..startNew(const [_ahmad, _budi, _citra])
         ..setNama('Cair Lebaran');
 
@@ -855,7 +859,7 @@ void lifecycleTests() {
         () async {
       when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_serverDraft()));
-      final editor = DraftEditorCubit(repository)
+      final editor = TestDraftEditorNotifier(repository)
         ..startNew(const [_ahmad, _budi, _citra])
         ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.persen, 50));
 
@@ -872,7 +876,7 @@ void lifecycleTests() {
         () async {
       when(() => repository.createDraft(any()))
           .thenAnswer((_) async => Right(_serverDraft()));
-      final editor = DraftEditorCubit(repository)
+      final editor = TestDraftEditorNotifier(repository)
         ..startNew(const [_ahmad, _budi, _citra])
         ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.persen, 50))
         ..setItemNominal('n-2', 1000);
@@ -901,7 +905,7 @@ void lifecycleTests() {
           _serverDraft(
               jumlah: const JumlahUmum(JumlahJenis.persen, 50),
               items: [item('n-1', 500), item('n-2', 500), item('n-3', 900)])));
-      final editor = DraftEditorCubit(repository);
+      final editor = TestDraftEditorNotifier(repository);
 
       await editor.load('d-1');
 
@@ -910,7 +914,7 @@ void lifecycleTests() {
     });
 
     test('applying only a method or potongan leaves the jumlah alone', () {
-      final editor = DraftEditorCubit(repository)
+      final editor = TestDraftEditorNotifier(repository)
         ..startNew(const [_ahmad, _budi, _citra])
         ..terapkanUmum(jumlah: const JumlahUmum(JumlahJenis.rupiah, 75000))
         ..terapkanUmum(metode: MetodePencairan.transfer);
@@ -922,7 +926,7 @@ void lifecycleTests() {
     test('a loaded draft brings its jumlah back', () async {
       when(() => repository.getDraft('d-1')).thenAnswer((_) async => Right(
           _serverDraft(jumlah: const JumlahUmum(JumlahJenis.persen, 25))));
-      final editor = DraftEditorCubit(repository);
+      final editor = TestDraftEditorNotifier(repository);
 
       await editor.load('d-1');
 

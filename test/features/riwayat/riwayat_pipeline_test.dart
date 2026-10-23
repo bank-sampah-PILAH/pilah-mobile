@@ -10,7 +10,7 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_data_source.dart';
 import 'package:pilah_mobile/features/riwayat/data/repositories/riwayat_repository_impl.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
 import 'package:pilah_mobile/features/statement/data/remote/statement_remote_data_sources.dart';
 import 'package:pilah_mobile/features/statement/data/statement_repository_impl.dart';
 import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';

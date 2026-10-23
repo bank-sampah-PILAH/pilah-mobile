@@ -6,12 +6,23 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+
+import '../../../../support/notifier_harness.dart';
 
 class Feed extends Mock implements GetAktivitasUseCase {}
 
 class Export extends Mock implements ExportTransaksiUseCase {}
+
+NotifierHarness<RiwayatAktivitasNotifier, RiwayatAktivitasState> _harness(
+  GetAktivitasUseCase feed,
+  ExportTransaksiUseCase export,
+) =>
+    NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, export),
+    );
 
 void main() {
   setUpAll(() => registerFallbackValue(const TransaksiFilter()));
@@ -19,8 +30,9 @@ void main() {
       () async {
     final feed = Feed();
     final export = Export();
-    final cubit = RiwayatAktivitasCubit(feed, export);
-    addTearDown(cubit.close);
+    final harness = _harness(feed, export);
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     when(() => feed.execute(any()))
         .thenAnswer((_) async => const Right(AktivitasPage([], false)));
     final expected =
@@ -40,8 +52,9 @@ void main() {
   test('resetFilters returns to the default view and reloads the feed',
       () async {
     final feed = Feed();
-    final cubit = RiwayatAktivitasCubit(feed, Export());
-    addTearDown(cubit.close);
+    final harness = _harness(feed, Export());
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     when(() => feed.execute(any()))
         .thenAnswer((_) async => const Right(AktivitasPage([], false)));
     cubit.setTipeFilter(AktivitasTipeFilter.pencairan);
@@ -63,8 +76,9 @@ void main() {
   test('filtered feeds invoke the unified XLSX export', () async {
     final feed = Feed();
     final export = Export();
-    final cubit = RiwayatAktivitasCubit(feed, export);
-    addTearDown(cubit.close);
+    final harness = _harness(feed, export);
+    final cubit = harness.notifier;
+    addTearDown(harness.dispose);
     when(() => feed.execute(any()))
         .thenAnswer((_) async => const Right(AktivitasPage([], false)));
     when(() => export.execute(any())).thenAnswer((_) async =>
@@ -93,17 +107,18 @@ void main() {
   group('server feed lifecycle', () {
     late Feed feed;
     late Export export;
-    late RiwayatAktivitasCubit cubit;
+    late RiwayatAktivitasNotifier cubit;
+    late NotifierHarness<RiwayatAktivitasNotifier, RiwayatAktivitasState>
+        harness;
     setUp(() {
       feed = Feed();
       export = Export();
-      cubit = RiwayatAktivitasCubit(feed, export);
+      harness = _harness(feed, export);
+      cubit = harness.notifier;
       when(() => feed.execute(any()))
           .thenAnswer((_) async => const Right(AktivitasPage([], false)));
     });
-    tearDown(() async {
-      if (!cubit.isClosed) await cubit.close();
-    });
+    tearDown(() => harness.dispose());
     test('last month is sent to the unified API', () async {
       cubit.setPeriode('bulan_lalu');
       await pumpEventQueue();
@@ -118,7 +133,7 @@ void main() {
     });
     test('closing mid-load never emits a late response', () async {
       final pending = cubit.load();
-      await cubit.close();
+      harness.dispose();
       await pending;
     });
     test('export failure keeps its message', () async {

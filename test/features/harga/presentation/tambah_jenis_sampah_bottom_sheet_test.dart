@@ -1,19 +1,15 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_terjadwal.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
 
+import '../../../support/harga_support.dart';
 import '../../../support/pump_app.dart';
-
-class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
+import '../../../support/stub_api.dart';
 
 HargaEntity _jenis({HargaTerjadwal? terjadwal, bool tanpaMulai = false}) =>
     HargaEntity(
@@ -33,21 +29,11 @@ HargaEntity _jenis({HargaTerjadwal? terjadwal, bool tanpaMulai = false}) =>
     );
 
 void main() {
-  late _MockHargaCubit cubit;
-
-  setUpAll(() {
-    registerFallbackValue(_jenis());
-    registerFallbackValue(const UbahHarga(id: '', harga: 0));
-  });
+  late TestHargaNotifier notifier;
 
   setUp(() {
-    cubit = _MockHargaCubit();
-    when(() => cubit.state).thenReturn(HargaInitial());
-    when(() => cubit.updateHarga(any())).thenAnswer((_) async => null);
-    when(() => cubit.ubahHarga(any())).thenAnswer((_) async => null);
+    notifier = TestHargaNotifier(buildHargaNotifier(StubApi()));
   });
-
-  tearDown(() => cubit.close());
 
   /// Opens the sheet on top of a home route, the way the app shows it, so
   /// `context.pop()` after saving has somewhere to go back to.
@@ -63,14 +49,15 @@ void main() {
           builder: (_, __) => Scaffold(
             body: TambahJenisSampahBottomSheet(
               initialData: jenis,
-              hargaCubit: cubit,
               now: () => DateTime(2026, 10, 7, 10),
             ),
           ),
         ),
       ],
     );
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+      withHargaProvider(notifier, MaterialApp.router(routerConfig: router)),
+    );
     router.push('/edit');
     await tester.pumpAndSettle();
   }
@@ -125,10 +112,8 @@ void main() {
       await isiHarga(tester, '4000');
       await simpan(tester);
 
-      verify(() => cubit.updateHarga(any())).called(1);
-      verify(
-        () => cubit.ubahHarga(const UbahHarga(id: 'j-1', harga: 4000)),
-      ).called(1);
+      expect(notifier.calls, contains('update'));
+      expect(notifier.changed.single, const UbahHarga(id: 'j-1', harga: 4000));
     });
 
     testWidgets('schedules it from local midnight of the chosen date',
@@ -144,12 +129,10 @@ void main() {
       await tester.pumpAndSettle();
       await simpan(tester);
 
-      verify(
-        () => cubit.ubahHarga(
-          UbahHarga(
-              id: 'j-1', harga: 4000, berlakuMulai: DateTime(2026, 10, 8)),
-        ),
-      ).called(1);
+      expect(
+        notifier.changed.single,
+        UbahHarga(id: 'j-1', harga: 4000, berlakuMulai: DateTime(2026, 10, 8)),
+      );
     });
 
     testWidgets(
@@ -157,8 +140,7 @@ void main() {
         'and keeps the sheet open to retry', (tester) async {
       // The PUT has already stored the other fields; reporting a plain
       // failure would hide that, and a retry only needs the price again.
-      when(() => cubit.ubahHarga(any()))
-          .thenAnswer((_) async => NetworkException(message: 'Server sibuk'));
+      notifier.priceChangeError = NetworkException(message: 'Server sibuk');
       await bukaSheet(tester, _jenis());
 
       await isiHarga(tester, '4000');
@@ -183,8 +165,8 @@ void main() {
 
       await simpan(tester);
 
-      verify(() => cubit.updateHarga(any())).called(1);
-      verifyNever(() => cubit.ubahHarga(any()));
+      expect(notifier.calls, contains('update'));
+      expect(notifier.changed, isEmpty);
     });
 
     testWidgets('going back to Sekarang after picking a date applies it now',
@@ -202,9 +184,7 @@ void main() {
       await tester.pumpAndSettle();
       await simpan(tester);
 
-      verify(
-        () => cubit.ubahHarga(const UbahHarga(id: 'j-1', harga: 4000)),
-      ).called(1);
+      expect(notifier.changed.single, const UbahHarga(id: 'j-1', harga: 4000));
     });
   });
 }

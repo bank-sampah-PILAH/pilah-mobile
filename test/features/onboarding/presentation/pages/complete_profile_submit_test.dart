@@ -1,16 +1,9 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
@@ -20,8 +13,6 @@ import '../../../../support/auth_support.dart';
 import '../../../../support/onboarding_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 const _profile = '/api/v1/onboarding/profile';
 const _accept = '/api/v1/invites/accept';
@@ -66,9 +57,7 @@ void main() {
   late StubApi api;
   late ProviderContainer onboarding;
   late InviteTokenStore store;
-  late MockAuthBloc auth;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
     api = StubApi();
@@ -86,18 +75,18 @@ void main() {
     WidgetTester tester,
     AuthEntity account, {
     bool inviteMode = false,
-    MockAuthBloc? bloc,
+    TestAuthenticationNotifier? authNotifier,
   }) async {
-    auth = bloc ?? authBlocIn(Authenticated(authEntity: account));
+    auth = authNotifier ?? authNotifierIn(Authenticated(authEntity: account));
     await pumpRouted(
       tester,
       UncontrolledProviderScope(
         container: onboarding,
-        child: MultiBlocProvider(
-          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+        child: withAuthenticationProvider(
+          auth,
           // A non-const instance so the constructor itself runs.
           // ignore: prefer_const_constructors
-          child: CompleteProfileScreen(isInviteMode: inviteMode),
+          CompleteProfileScreen(isInviteMode: inviteMode),
         ),
       ),
       extraRoutes: _routes,
@@ -208,8 +197,7 @@ void main() {
         await submit(tester);
 
         expect(find.text(entry.value), findsOneWidget);
-        verify(() => auth.add(any(that: isA<RefreshUserRequested>())))
-            .called(1);
+        expect(auth.calls, contains('refreshUser'));
         await settleToasts(tester);
       });
     }
@@ -381,13 +369,13 @@ void main() {
       expect(find.text('Batal Lengkapi Profil?'), findsOneWidget);
       await tester.tap(find.text('Batal'));
       await tester.pumpAndSettle();
-      verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+      expect(auth.calls, isNot(contains('logout')));
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ya, Keluar'));
       await tester.pumpAndSettle();
-      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+      expect(auth.calls, contains('logout'));
     });
 
     testWidgets('the logout button in the header asks before logging out',
@@ -400,16 +388,15 @@ void main() {
 
       await tester.tap(find.text('Ya, Keluar'));
       await tester.pumpAndSettle();
-      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+      expect(auth.calls, contains('logout'));
     });
 
     testWidgets('signing out routes to the login page', (tester) async {
-      final bloc = MockAuthBloc();
-      whenListen(
-          bloc, Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
-          initialState: Authenticated(authEntity: _account()));
+      final signedOut = authNotifierIn(Authenticated(authEntity: _account()));
 
-      await open(tester, _account(), bloc: bloc);
+      await open(tester, _account(), authNotifier: signedOut);
+      signedOut.setStateForTest(Unauthenticated());
+      await tester.pumpAndSettle();
 
       expect(find.text('route:/login'), findsOneWidget);
     });

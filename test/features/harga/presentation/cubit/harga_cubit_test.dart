@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 
 import '../../../../support/harga_support.dart';
+import '../../../../support/notifier_harness.dart';
 import '../../../../support/stub_api.dart';
 
 Map<String, dynamic> _row(String id, String kategori,
@@ -37,11 +38,13 @@ HargaEntity _entity() => HargaEntity(
 
 void main() {
   late StubApi api;
-  late HargaCubit cubit;
+  late HargaNotifier cubit;
+  late NotifierHarness<HargaNotifier, HargaState> harness;
 
   setUp(() {
     api = StubApi();
-    cubit = buildHargaCubit(api);
+    harness = NotifierHarness(hargaProvider, () => buildHargaNotifier(api));
+    cubit = harness.notifier;
     api.on('GET', '/api/v1/jenis-sampah', json: {
       'results': [
         _row('1', 'Kertas'),
@@ -54,7 +57,7 @@ void main() {
     });
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   test('loads every status and shows the active tab first', () async {
     await cubit.loadHarga();
@@ -105,15 +108,12 @@ void main() {
 
   test('a silent reload keeps the list on screen', () async {
     await cubit.loadHarga();
-    final states = <HargaState>[];
-    final sub = cubit.stream.listen(states.add);
-
+    final firstEmission = harness.states.length;
     await cubit.loadHarga(silent: true);
-    await Future<void>.delayed(Duration.zero);
-    await sub.cancel();
+    final emitted = harness.states.skip(firstEmission);
 
-    expect(states.whereType<HargaLoading>(), isEmpty);
-    expect(states.last, isA<HargaLoaded>());
+    expect(emitted.whereType<HargaLoading>(), isEmpty);
+    expect(emitted.last, isA<HargaLoaded>());
   });
 
   test('a failed load emits the backend message', () async {

@@ -1,17 +1,11 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
-
-class MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
+import '../../../../support/nasabah_support.dart';
 
 /// Urutan field pada form, dipakai untuk membaca status aktifnya.
 const _nama = 0;
@@ -65,10 +59,11 @@ NasabahEntity _nasabah({bool punyaAkun = false, String status = 'approved'}) =>
       punyaAkun: punyaAkun,
     );
 
-Widget _host(NasabahCubit cubit, NasabahEntity nasabah) => MaterialApp(
-      home: BlocProvider<NasabahCubit>.value(
-        value: cubit,
-        child: Scaffold(body: EditNasabahBottomSheet(nasabah: nasabah)),
+Widget _host(TestNasabahNotifier notifier, NasabahEntity nasabah) =>
+    withNasabahProvider(
+      notifier,
+      MaterialApp(
+        home: Scaffold(body: EditNasabahBottomSheet(nasabah: nasabah)),
       ),
     );
 
@@ -82,29 +77,10 @@ bool _aktif(WidgetTester tester, int urutan) =>
     true;
 
 void main() {
-  late MockNasabahCubit cubit;
-
-  setUpAll(() {
-    registerFallbackValue(NasabahRequest(
-      kode: '',
-      nama: '',
-      email: '',
-      jenisKelamin: '',
-      tanggalLahir: '',
-      noHp: '',
-      alamat: '',
-    ));
-  });
+  late TestNasabahNotifier notifier;
 
   setUp(() {
-    cubit = MockNasabahCubit();
-    // Form membaca cubit lewat `context.read` di dalam validator, dan
-    // BlocProvider ikut berlangganan streamnya.
-    whenListen(
-      cubit,
-      const Stream<NasabahState>.empty(),
-      initialState: const NasabahLoaded(nasabahList: []),
-    );
+    notifier = TestNasabahNotifier();
   });
 
   Future<void> pump(WidgetTester tester, NasabahEntity nasabah) async {
@@ -112,7 +88,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(_host(cubit, nasabah));
+    await tester.pumpWidget(_host(notifier, nasabah));
   }
 
   group('Form ubah nasabah menghormati profil milik pemilik akun (PIL-206)',
@@ -196,7 +172,8 @@ void main() {
       (tester) async {
     // Nomor anggota tetap milik pengurus, jadi validasi duplikatnya harus
     // tetap berjalan dan tidak boleh menganggap nasabah ini duplikat dirinya.
-    when(() => cubit.state).thenReturn(NasabahLoaded(nasabahList: [
+    notifier = TestNasabahNotifier(
+        initialState: NasabahLoaded(nasabahList: [
       _nasabah(),
       NasabahEntity(
         id: 'nasabah-2',
@@ -221,7 +198,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('ID Nasabah ini sudah digunakan.'), findsOneWidget);
-    verifyNever(() => cubit.updateNasabah(any(), any()));
+    expect(notifier.updatedRequests, isEmpty);
   });
 
   group('Penanda penautan yang sudah basi (PIL-206)', () {
@@ -231,8 +208,7 @@ void main() {
       // di klien sudah basi dan form terbuka. Begitu server menolak, form harus
       // ikut terkunci; membiarkannya terbuka mengundang pengurus mengetik ulang
       // hasil yang sama.
-      when(() => cubit.updateNasabah(any(), any()))
-          .thenAnswer((_) async => _tolak403());
+      notifier.update = (_, __) async => _tolak403();
 
       await pump(tester, _nasabah(punyaAkun: false));
       expect(_aktif(tester, _email), isTrue);
@@ -253,8 +229,7 @@ void main() {
       // dan memakai 403 untuk keduanya. Nasabah nonaktif tanpa akun bukan
       // profil berakun; menyamakan keduanya lewat status code saja salah
       // mengunci field dan salah menjelaskan alasannya ke pengurus.
-      when(() => cubit.updateNasabah(any(), any()))
-          .thenAnswer((_) async => _tolak403NonAktif());
+      notifier.update = (_, __) async => _tolak403NonAktif();
 
       await pump(tester, _nasabah(punyaAkun: false));
       await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));
@@ -267,8 +242,8 @@ void main() {
     testWidgets('kegagalan lain tidak ikut mengunci form', (tester) async {
       // Hanya 403 profil yang berarti profilnya bukan milik pengurus. Galat
       // lain, misalnya jaringan, harus tetap membolehkan perbaikan.
-      when(() => cubit.updateNasabah(any(), any()))
-          .thenAnswer((_) async => NetworkException(message: 'jaringan putus'));
+      notifier.update =
+          (_, __) async => NetworkException(message: 'jaringan putus');
 
       await pump(tester, _nasabah(punyaAkun: false));
       await tester.tap(find.widgetWithText(ElevatedButton, 'Simpan Perubahan'));

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
@@ -13,9 +13,8 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
 import 'package:pilah_mobile/services/di.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_background_wrapper.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_button.dart';
@@ -24,7 +23,7 @@ import 'package:pilah_mobile/features/authentication/presentation/widgets/login_
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_header.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   @visibleForTesting
   final bool? debugShowDemoLogin;
 
@@ -33,21 +32,21 @@ class LoginPage extends StatefulWidget {
   static const route = '/login';
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authenticationProvider, (previous, state) {
+      _handleAuthenticationState(context, state);
+    });
     return Scaffold(
       backgroundColor: Colors.white,
-      body: BlocConsumer<AuthenticationBloc, AuthenticationStates>(
-        listener: _handleAuthenticationState,
-        builder: (context, state) => _buildLoginBody(state),
-      ),
+      body: _buildLoginBody(ref.watch(authenticationProvider)),
     );
   }
 
@@ -278,9 +277,9 @@ class _EmailPasswordLoginFormState extends State<_EmailPasswordLoginForm> {
   void _submit() {
     if (!_canSubmit) return;
     FocusScope.of(context).unfocus();
-    context.read<AuthenticationBloc>().add(
-          PostLoginEvent(email: _email.trim(), password: _password),
-        );
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .postLogin(_email.trim(), _password);
   }
 
   void _updateInput(String _) => setState(() {});

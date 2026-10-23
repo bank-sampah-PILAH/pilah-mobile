@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
 
 class DemoLoginButton extends StatelessWidget {
@@ -49,14 +48,9 @@ class DemoLoginButton extends StatelessWidget {
 
     if (profile == null || !context.mounted) return;
 
-    context.read<AuthenticationBloc>().add(
-          LoginWithGoogleRequested(
-            name: profile.name,
-            email: profile.email,
-            photoUrl: '',
-            idToken: profile.idToken,
-          ),
-        );
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .loginWithGoogle(profile.idToken);
   }
 
   @override

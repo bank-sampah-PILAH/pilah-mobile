@@ -24,8 +24,6 @@ import 'package:pilah_mobile/features/authentication/domain/use_cases/authentica
     show AuthenticationUseCases;
 import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart'
     show LoginWithGoogleUseCase;
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart'
-    show AuthenticationBloc;
 import 'package:pilah_mobile/features/bank_sampah_approval/data/datasources/bank_sampah_approval_remote_data_source.dart'
     show BankSampahApprovalRemoteDataSource;
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/repositories/bank_sampah_approval_repository.dart'
@@ -34,8 +32,6 @@ import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appe
     show AppealMembershipUseCase;
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart'
     show GetNasabahMembershipsUseCase;
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart'
-    show NasabahApprovalCubit;
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_remote_data_source.dart'
     show DashboardRemoteDataSource;
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart'
@@ -48,8 +44,6 @@ import 'package:pilah_mobile/features/draft_pencairan/data/remote/draft_pencaira
     show DraftPencairanRemoteDataSource;
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart'
     show DraftPencairanRepository;
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart'
-    show DraftEditorCubit;
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source.dart'
     show HargaRemoteDataSource;
 import 'package:pilah_mobile/features/harga/domain/repositories/harga_repository.dart'
@@ -68,10 +62,6 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_u
     show GetRiwayatHargaUseCase;
 import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.dart'
     show UbahHargaUseCase;
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart'
-    show RiwayatHargaCubit;
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart'
-    show HargaCubit;
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart'
     show JadwalRemoteDataSource;
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart'
@@ -104,8 +94,6 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/sinkron_profil_na
     show SinkronProfilNasabahUseCase;
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart'
     show UpdateNasabahUseCase;
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart'
-    show NasabahCubit;
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart'
     show OnboardingRemoteDataSource;
 import 'package:pilah_mobile/features/pencairan/data/remote/pencairan_remote_data_sources.dart'
@@ -116,16 +104,12 @@ import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_c
     show PencairanUseCases;
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart'
     show ProfileRemoteDataSource;
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart'
-    show ProfileCubit;
 import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_data_source.dart'
     show RiwayatRemoteDataSource;
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart'
     show RiwayatRepository;
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart'
     show GetRiwayatHistoryUseCase, GetRiwayatSetoranDetailUseCase;
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart'
-    show RiwayatHistoryCubit;
 import 'package:pilah_mobile/features/statement/data/remote/statement_remote_data_sources.dart'
     show StatementRemoteDataSources;
 import 'package:pilah_mobile/features/statement/domain/repository/statement_repository.dart'
@@ -160,10 +144,6 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_u
     show GetTransaksiUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_usecase.dart'
     show ResendWaUseCase;
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart'
-    show RiwayatAktivitasCubit;
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart'
-    show TransaksiCubit;
 
 /// Every registration in the generated `di.config.dart`: a label, the only
 /// environment it is registered for (`null` for all), and how to resolve it.
@@ -220,7 +200,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('NasabahRemoteDataSource', null, () => di<NasabahRemoteDataSource>()),
   ('RiwayatRemoteDataSource', null, () => di<RiwayatRemoteDataSource>()),
   ('RiwayatRepository', null, () => di<RiwayatRepository>()),
-  ('ProfileCubit', null, () => di<ProfileCubit>()),
   (
     'BankSampahApprovalRepository',
     null,
@@ -230,7 +209,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('TransaksiRepository', null, () => di<TransaksiRepository>()),
   ('NasabahRepository', null, () => di<NasabahRepository>()),
   ('StatementRepository', null, () => di<StatementRepository>()),
-  ('DraftEditorCubit', null, () => di<DraftEditorCubit>()),
   ('PencairanRepository', null, () => di<PencairanRepository>()),
   ('HargaRepository', null, () => di<HargaRepository>()),
   ('SuperadminRepository', null, () => di<SuperadminRepository>()),
@@ -242,7 +220,6 @@ final diRegistrations = <(String, String?, Object Function())>[
     () => di<GetNasabahMembershipsUseCase>()
   ),
   ('DashboardRepository', null, () => di<DashboardRepository>()),
-  ('NasabahApprovalCubit', null, () => di<NasabahApprovalCubit>()),
   ('ActivateNasabahUseCase', null, () => di<ActivateNasabahUseCase>()),
   ('AddNasabahUseCase', null, () => di<AddNasabahUseCase>()),
   ('ApproveNasabahUseCase', null, () => di<ApproveNasabahUseCase>()),
@@ -265,7 +242,6 @@ final diRegistrations = <(String, String?, Object Function())>[
     () => di<GetRiwayatSetoranDetailUseCase>()
   ),
   ('LoginWithGoogleUseCase', null, () => di<LoginWithGoogleUseCase>()),
-  ('AuthenticationBloc', null, () => di<AuthenticationBloc>()),
   ('StatementUseCases', null, () => di<StatementUseCases>()),
   ('ApproveBankSampahUseCase', null, () => di<ApproveBankSampahUseCase>()),
   ('GetBankSampahUseCase', null, () => di<GetBankSampahUseCase>()),
@@ -275,7 +251,6 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('GetTransaksiDetailUseCase', null, () => di<GetTransaksiDetailUseCase>()),
   ('GetTransaksiUseCase', null, () => di<GetTransaksiUseCase>()),
   ('ResendWaUseCase', null, () => di<ResendWaUseCase>()),
-  ('TransaksiCubit', null, () => di<TransaksiCubit>()),
   ('PencairanUseCases', null, () => di<PencairanUseCases>()),
   ('ActivateHargaUseCase', null, () => di<ActivateHargaUseCase>()),
   ('AddHargaUseCase', null, () => di<AddHargaUseCase>()),
@@ -284,10 +259,5 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('UpdateHargaUseCase', null, () => di<UpdateHargaUseCase>()),
   ('UbahHargaUseCase', null, () => di<UbahHargaUseCase>()),
   ('GetRiwayatHargaUseCase', null, () => di<GetRiwayatHargaUseCase>()),
-  ('RiwayatHargaCubit', null, () => di<RiwayatHargaCubit>()),
   ('GetDashboardStatsUseCase', null, () => di<GetDashboardStatsUseCase>()),
-  ('NasabahCubit', null, () => di<NasabahCubit>()),
-  ('RiwayatHistoryCubit', null, () => di<RiwayatHistoryCubit>()),
-  ('RiwayatAktivitasCubit', null, () => di<RiwayatAktivitasCubit>()),
-  ('HargaCubit', null, () => di<HargaCubit>()),
 ];

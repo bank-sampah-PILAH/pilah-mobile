@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
@@ -14,14 +14,14 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nas
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Replaces unavailable savings content while a membership needs a decision.
-class NasabahVerificationHome extends StatelessWidget {
+class NasabahVerificationHome extends ConsumerWidget {
   const NasabahVerificationHome({super.key, required this.name});
 
   final String name;
 
   @override
-  Widget build(BuildContext context) {
-    final state = context.watch<NasabahApprovalCubit>().state;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(nasabahApprovalProvider);
     final memberships = state is NasabahApprovalLoaded
         ? state.memberships
         : const <NasabahMembershipEntity>[];
@@ -40,7 +40,7 @@ class NasabahVerificationHome extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
           child: AppRefreshIndicator(
             onRefresh: () =>
-                context.read<NasabahApprovalCubit>().load(silent: true),
+                ref.read(nasabahApprovalProvider.notifier).load(silent: true),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -70,7 +70,7 @@ class NasabahVerificationHome extends StatelessWidget {
                     message: state.message,
                     action: 'Coba lagi',
                     onPressed: () =>
-                        context.read<NasabahApprovalCubit>().load(),
+                        ref.read(nasabahApprovalProvider.notifier).load(),
                   )
                 else if (membership == null)
                   _Notice(
@@ -93,7 +93,9 @@ class NasabahVerificationHome extends StatelessWidget {
                     )
                         .then((_) {
                       if (context.mounted) {
-                        context.read<NasabahApprovalCubit>().load(silent: true);
+                        ref
+                            .read(nasabahApprovalProvider.notifier)
+                            .load(silent: true);
                       }
                     }),
                   ),

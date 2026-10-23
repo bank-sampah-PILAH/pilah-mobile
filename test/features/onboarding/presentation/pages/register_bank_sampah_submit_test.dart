@@ -1,14 +1,7 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
@@ -18,8 +11,6 @@ import '../../../../support/image_picker_channel.dart';
 import '../../../../support/onboarding_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 const _draft = CompleteProfileRequest(
   nama: 'Siti',
@@ -31,31 +22,27 @@ const _draft = CompleteProfileRequest(
 void main() {
   late StubApi api;
   late ProviderContainer onboarding;
-  late MockAuthBloc auth;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
     api = StubApi();
     onboarding = buildOnboardingContainer(buildOnboardingDataSource(api));
-    auth = authBlocIn(AuthenticationInitial());
+    auth = authNotifierIn(AuthenticationInitial());
   });
 
   tearDown(() => onboarding.dispose());
 
   Future<void> open(WidgetTester tester,
-      {bool pushed = false, MockAuthBloc? bloc}) async {
+      {bool pushed = false, TestAuthenticationNotifier? authNotifier}) async {
     await pumpRouted(
       tester,
       UncontrolledProviderScope(
         container: onboarding,
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider<AuthenticationBloc>.value(value: bloc ?? auth)
-          ],
+        child: withAuthenticationProvider(
+          authNotifier ?? auth,
           // A non-const instance so the constructor itself runs.
           // ignore: prefer_const_constructors
-          child: RegisterBankSampahScreen(),
+          RegisterBankSampahScreen(),
         ),
       ),
       extraRoutes: [
@@ -132,7 +119,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.last.path, '/api/v1/onboarding/bank-sampah');
-    verify(() => auth.add(any(that: isA<RefreshUserRequested>()))).called(1);
+    expect(auth.calls, contains('refreshUser'));
     expect(find.text('route:/pending-approval'), findsOneWidget);
   });
 
@@ -264,13 +251,13 @@ void main() {
     expect(find.text('Keluar dari Pendaftaran?'), findsOneWidget);
     await tester.tap(find.text('Batal'));
     await tester.pumpAndSettle();
-    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+    expect(auth.calls, isNot(contains('logout')));
 
     await tester.tap(find.byTooltip('Keluar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ya, Keluar'));
     await tester.pumpAndSettle();
-    verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+    expect(auth.calls, contains('logout'));
   });
 
   testWidgets('system back when reached directly asks before leaving',
@@ -307,12 +294,11 @@ void main() {
   });
 
   testWidgets('signing out routes to the login page', (tester) async {
-    final bloc = MockAuthBloc();
-    whenListen(
-        bloc, Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
-        initialState: AuthenticationInitial());
+    final signedOut = authNotifierIn(AuthenticationInitial());
 
-    await open(tester, bloc: bloc);
+    await open(tester, authNotifier: signedOut);
+    signedOut.setStateForTest(Unauthenticated());
+    await tester.pumpAndSettle();
 
     expect(find.text('route:/login'), findsOneWidget);
   });

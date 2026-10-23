@@ -1,34 +1,34 @@
-import 'dart:async';
-
-import 'package:bloc_test/bloc_test.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/domain/repository/auth_repository.dart';
+import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
+import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/riwayat_harga_provider.dart';
 import 'package:pilah_mobile/features/jadwal/data/datasources/jadwal_remote_data_source.dart';
 import 'package:pilah_mobile/features/jadwal/data/repositories/jadwal_repository_impl.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart';
 import 'package:pilah_mobile/features/pengumuman/data/repositories/pengumuman_repository_impl.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/repositories/pengumuman_repository.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/approve_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart';
@@ -40,8 +40,8 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaks
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -63,17 +63,17 @@ import 'transaksi_support.dart';
 /// the real router and its pages can run in a widget test.
 class AppShell {
   AppShell(this.api) {
-    harga = buildHargaCubit(api);
-    profile = buildProfileCubit(api);
-    transaksi = buildTransaksiCubit(api);
+    harga = buildHargaNotifier(api);
+    profile = buildProfileNotifier(api);
+    transaksi = buildTransaksiNotifier(api);
     pencairan = buildPencairanUseCases(api);
     final repo =
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network));
     getTransaksi = GetTransaksiUseCase(repo);
-    riwayat = RiwayatAktivitasCubit(
+    riwayat = RiwayatAktivitasNotifier(
         GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)),
         ExportTransaksiUseCase(repo));
-    nasabah = buildNasabahCubit(api);
+    nasabah = buildNasabahNotifier(api);
     onboardingDataSource = buildOnboardingDataSource(api);
     jadwalRepository =
         JadwalRepositoryImpl(JadwalRemoteDataSourceImpl(api.network));
@@ -81,33 +81,37 @@ class AppShell {
     pengumumanRepository =
         PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network));
     superadmin = buildSuperadminNotifier(api);
-    states = StreamController<AuthenticationStates>.broadcast();
-    auth = MockAuthBloc();
+    approval = buildApprovedMembershipNotifier();
+    auth = TestAuthenticationNotifier();
+    authSession = TestAuthenticationSession();
   }
 
   final StubApi api;
-  late final HargaCubit harga;
-  late final ProfileCubit profile;
-  late final TransaksiCubit transaksi;
+  late final NasabahApprovalNotifier approval;
+  late final HargaNotifier harga;
+  late final TestProfileNotifier profile;
+  late final TransaksiNotifier transaksi;
   late final GetTransaksiUseCase getTransaksi;
   late final PencairanUseCases pencairan;
-  late final RiwayatAktivitasCubit riwayat;
-  late final NasabahCubit nasabah;
+  late final RiwayatAktivitasNotifier riwayat;
+  late final NasabahNotifier nasabah;
   late final OnboardingRemoteDataSource onboardingDataSource;
   late final JadwalNotifier jadwal;
   late final JadwalRepository jadwalRepository;
   late final PengumumanRepository pengumumanRepository;
   late final SuperadminNotifier superadmin;
-  late final StreamController<AuthenticationStates> states;
-  late final MockAuthBloc auth;
+  late final TestAuthenticationNotifier auth;
+  late final TestAuthenticationSession authSession;
   late final InviteTokenStore invites;
-  NasabahApprovalCubit? _approval;
 
   /// Registers the service-locator entries the pages resolve at build time.
   Future<void> registerDi() async {
     invites = InviteTokenStore();
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<AppEnvironment>(StubEnvironment());
+    di.registerSingleton<AuthenticationUseCases>(authSession);
+    di.registerSingleton<LoginWithGoogleUseCase>(
+        LoginWithGoogleUseCase(authSession));
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
     di.registerSingleton<OnboardingRemoteDataSource>(onboardingDataSource);
     di.registerSingleton<GetDashboardStatsUseCase>(
@@ -123,19 +127,20 @@ class AppShell {
         superadmin.approveBankSampahUseCase);
     di.registerSingleton<RejectBankSampahUseCase>(
         superadmin.rejectBankSampahUseCase);
-    di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
-        GetRiwayatHargaUseCase(
-            HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
+    di.registerFactory<GetRiwayatHargaUseCase>(
+      () => GetRiwayatHargaUseCase(
+        HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)),
+      ),
+    );
     final draftRepository = buildDraftPencairanRepository(api);
     di.registerSingleton<DraftPencairanRepository>(draftRepository);
-    di.registerFactory<DraftEditorCubit>(
-        () => DraftEditorCubit(draftRepository));
-    _approval = registerApprovedMembership();
   }
 
   Future<void> unregisterDi() async {
     await di.unregister<InviteTokenStore>();
     await di.unregister<AppEnvironment>();
+    await di.unregister<AuthenticationUseCases>();
+    await di.unregister<LoginWithGoogleUseCase>();
     await di.unregister<NasabahRepository>();
     await di.unregister<OnboardingRemoteDataSource>();
     await di.unregister<GetDashboardStatsUseCase>();
@@ -147,34 +152,14 @@ class AppShell {
     await di.unregister<GetBankSampahUseCase>();
     await di.unregister<ApproveBankSampahUseCase>();
     await di.unregister<RejectBankSampahUseCase>();
-    await di.unregister<RiwayatHargaCubit>();
+    await di.unregister<GetRiwayatHargaUseCase>();
     await di.unregister<DraftPencairanRepository>();
-    await di.unregister<DraftEditorCubit>();
-    final approval = _approval;
-    if (approval != null) await unregisterApprovedMembership(approval);
-    // Not awaited: with listeners attached a broadcast controller's close()
-    // only completes once they have all gone, which the torn-down tree never
-    // does.
-    unawaited(states.close());
-    for (final close in [
-      harga.close,
-      profile.close,
-      transaksi.close,
-
-      riwayat.close,
-      nasabah.close,
-      // The pencairan cubits are closed by the pages that own them.
-    ]) {
-      // Not awaited, for the same reason as [states]: a cubit the app's own
-      // BlocProvider is already closing only finishes once the torn-down tree
-      // has released its listeners.
-      unawaited(close());
-    }
   }
 
-  /// Puts the (mock) auth bloc in [state] and keeps it listening to [states].
+  /// Seeds both the widget-test notifier and the fake session used by App.
   void signedInAs(AuthenticationStates state) {
-    whenListen(auth, states.stream, initialState: state);
+    auth.setStateForTest(state);
+    authSession.state = state;
   }
 
   void signedInAsRole(String role,
@@ -194,17 +179,75 @@ class AppShell {
   }
 
   Widget wrap(Widget app) => ProviderScope(
-        overrides: [jadwalProvider.overrideWith(() => jadwal)],
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider<NasabahCubit>.value(value: nasabah),
-            BlocProvider<HargaCubit>.value(value: harga),
-            BlocProvider<TransaksiCubit>.value(value: transaksi),
-            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
-            BlocProvider<ProfileCubit>.value(value: profile),
-            BlocProvider<AuthenticationBloc>.value(value: auth),
-          ],
-          child: app,
-        ),
+        overrides: [
+          authenticationProvider.overrideWith(() => auth),
+          jadwalProvider.overrideWith(() => jadwal),
+          profileProvider.overrideWith(() => profile),
+          nasabahApprovalProvider.overrideWith(() => approval),
+          hargaProvider.overrideWith(() => harga),
+          nasabahProvider.overrideWith(() => nasabah),
+          transaksiProvider.overrideWith(() => transaksi),
+          riwayatAktivitasProvider.overrideWith(() => riwayat),
+          riwayatHargaProvider.overrideWith(
+            () => RiwayatHargaNotifier(di<GetRiwayatHargaUseCase>()),
+          ),
+        ],
+        child: app,
       );
+}
+
+class TestAuthenticationSession
+    implements AuthenticationUseCases, AuthRepository {
+  AuthenticationStates state = AuthenticationInitial();
+
+  AuthEntity? get _user =>
+      state is Authenticated ? (state as Authenticated).authEntity : null;
+
+  @override
+  Future<bool> hasSession() async => _user != null;
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> getMe() async {
+    final user = _user;
+    return user == null
+        ? Left(GeneralException(message: 'No test session'))
+        : Right(user);
+  }
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> postLogin(
+      String email, String password) async {
+    final user = _user ?? testAuth();
+    state = Authenticated(authEntity: user);
+    return Right(user);
+  }
+
+  @override
+  Future<Either<NetworkException, GoogleAuthOutcome>> loginWithGoogle(
+      String idToken) async {
+    final user = _user ?? testAuth();
+    state = Authenticated(authEntity: user);
+    return Right(GoogleSession(user));
+  }
+
+  @override
+  Future<Either<NetworkException, AuthEntity>> registerGoogleUser({
+    required String registrationToken,
+    required GoogleRegistrationRole role,
+  }) async {
+    final user = _user ?? testAuth();
+    state = Authenticated(authEntity: user);
+    return Right(user);
+  }
+
+  @override
+  Future<Either<Exception, void>> saveToken(
+          String accessToken, String refreshToken) async =>
+      const Right(null);
+
+  @override
+  Future<Either<NetworkException, void>> logout() async {
+    state = Unauthenticated();
+    return const Right(null);
+  }
 }

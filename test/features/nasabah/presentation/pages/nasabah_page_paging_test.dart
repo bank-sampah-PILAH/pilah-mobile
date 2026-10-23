@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:dartz/dartz.dart' show Either, Right;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -17,12 +16,13 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringk
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+import '../../../../support/nasabah_support.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -65,11 +65,11 @@ NasabahEntity _nasabah(int nomor) => NasabahEntity(
 
 void main() {
   late _MockGetNasabahUseCase getUseCase;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
 
   setUp(() {
     getUseCase = _MockGetNasabahUseCase();
-    cubit = NasabahCubit(
+    notifier = NasabahNotifier(
       getUseCase,
       _MockGetActiveNasabahUseCase(),
       _MockGetNasabahRingkasanUseCase(),
@@ -83,8 +83,6 @@ void main() {
     );
   });
 
-  tearDown(() => cubit.close());
-
   // Below the medium breakpoint, so the page keeps its phone list.
   void usePhone(WidgetTester tester) {
     tester.view.physicalSize = const Size(590, 800);
@@ -93,10 +91,7 @@ void main() {
   }
 
   Widget host({bool isWeb = kIsWeb}) => MaterialApp(
-        home: BlocProvider<NasabahCubit>.value(
-          value: cubit,
-          child: NasabahPage(isWeb: isWeb),
-        ),
+        home: withNasabahProvider(notifier, NasabahPage(isWeb: isWeb)),
       );
 
   if (!kIsWeb) {

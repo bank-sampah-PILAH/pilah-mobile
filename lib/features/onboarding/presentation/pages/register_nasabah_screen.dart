@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -7,9 +6,8 @@ import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
@@ -94,7 +92,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
 
     // Membership now linked to the account; refresh the cached session so a
     // relaunch mid-flow lands on the right step.
-    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    ref.read(authenticationProvider.notifier).refreshUser();
     context.go(locationForAuthStep(result?.nextStep));
   }
 
@@ -158,133 +156,132 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthenticationBloc, AuthenticationStates>(
-      listenWhen: (previous, current) => current is Unauthenticated,
-      listener: (context, state) => context.go(LoginPage.route),
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
-        child: Scaffold(
-          backgroundColor: AppColors.surface,
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                OnboardingHeader(
-                  title: 'Daftar Sebagai Nasabah',
-                  subtitle: 'Pilih bank sampah untuk mengajukan keanggotaan.',
-                  onExit: () => confirmExitOnboarding(context),
-                ),
-                const OnboardingStepper(
-                  currentStep: 2,
-                  secondStepLabel: 'Pilih Bank Sampah',
-                ),
-                const SizedBox(height: 24),
-                OnboardingFormCard(
-                  formKey: _formKey,
-                  children: [
-                    if (_isLocked) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.warningLight,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: Text(
-                          'Saat ini Anda hanya dapat terdaftar di 1 '
-                          'bank sampah.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.brown[700],
-                          ),
-                        ),
+    ref.listen(authenticationProvider, (previous, current) {
+      if (current is Unauthenticated) context.go(LoginPage.route);
+    });
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              OnboardingHeader(
+                title: 'Daftar Sebagai Nasabah',
+                subtitle: 'Pilih bank sampah untuk mengajukan keanggotaan.',
+                onExit: () => confirmExitOnboarding(context),
+              ),
+              const OnboardingStepper(
+                currentStep: 2,
+                secondStepLabel: 'Pilih Bank Sampah',
+              ),
+              const SizedBox(height: 24),
+              OnboardingFormCard(
+                formKey: _formKey,
+                children: [
+                  if (_isLocked) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningLight,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
-                      const SizedBox(height: 16),
-                    ],
-                    OnboardingFormField(
-                      label: 'BANK SAMPAH',
-                      description: 'Bank sampah yang akan menjadi tempat Anda '
-                          'menabung sampah',
-                      child: PilihBankSampahSection(
-                        selectedBank: _selectedBank,
-                        onBankSelected: _onBankSelected,
-                        hasError: _showBankError,
-                        errorText: 'Bank sampah wajib dipilih',
-                        enabled: !_isLocked,
-                        excludedBankIds: _memberships
-                            .map((membership) => membership.bankSampahId)
-                            .toSet(),
-                      ),
-                    ),
-                    if (_memberships.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      Text(
-                        'BANK SAMPAH YANG SUDAH TERGABUNG',
+                      child: Text(
+                        'Saat ini Anda hanya dapat terdaftar di 1 '
+                        'bank sampah.',
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
+                          color: Colors.brown[700],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      for (final membership in _memberships)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  membership.bankSampahNama,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  OnboardingFormField(
+                    label: 'BANK SAMPAH',
+                    description: 'Bank sampah yang akan menjadi tempat Anda '
+                        'menabung sampah',
+                    child: PilihBankSampahSection(
+                      selectedBank: _selectedBank,
+                      onBankSelected: _onBankSelected,
+                      hasError: _showBankError,
+                      errorText: 'Bank sampah wajib dipilih',
+                      enabled: !_isLocked,
+                      excludedBankIds: _memberships
+                          .map((membership) => membership.bankSampahId)
+                          .toSet(),
+                    ),
+                  ),
+                  if (_memberships.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      'BANK SAMPAH YANG SUDAH TERGABUNG',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final membership in _memberships)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                membership.bankSampahNama,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Text(
-                                _membershipStatusLabel(membership),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
+                            ),
+                            Text(
+                              _membershipStatusLabel(membership),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
+                      ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    AppButton(
+                      label: _isLocked ? 'Lanjutkan' : 'Ajukan Pendaftaran',
+                      trailingIcon: Icons.arrow_forward,
+                      isLoading: _isLoading,
+                      onPressed: _onSubmit,
+                    ),
+                    if (_isWizardStep) ...[
+                      const SizedBox(height: 12),
+                      AppButton(
+                        label: 'Kembali',
+                        variant: AppButtonVariant.neutral,
+                        onPressed: _backToProfile,
+                      ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      AppButton(
-                        label: _isLocked ? 'Lanjutkan' : 'Ajukan Pendaftaran',
-                        trailingIcon: Icons.arrow_forward,
-                        isLoading: _isLoading,
-                        onPressed: _onSubmit,
-                      ),
-                      if (_isWizardStep) ...[
-                        const SizedBox(height: 12),
-                        AppButton(
-                          label: 'Kembali',
-                          variant: AppButtonVariant.neutral,
-                          onPressed: _backToProfile,
-                        ),
-                      ],
-                    ],
-                  ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  'Pengajuan akan ditinjau oleh pengurus bank sampah.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Text(
-                    'Pengajuan akan ditinjau oleh pengurus bank sampah.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),

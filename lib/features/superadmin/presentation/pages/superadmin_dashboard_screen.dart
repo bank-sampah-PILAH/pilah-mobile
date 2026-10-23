@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -11,9 +10,8 @@ import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
@@ -123,27 +121,23 @@ class _SuperAdminDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthenticationBloc, AuthenticationStates>(
-      listener: (context, state) {
-        if (state is Unauthenticated) {
-          context.go('/login');
-        }
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.fill,
-        body: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: AppRefreshIndicator(
-                onRefresh: () => ref
-                    .read(superadminProvider.notifier)
-                    .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
-                child: _buildContentArea(),
-              ),
+    ref.listen(authenticationProvider, (previous, state) {
+      if (state is Unauthenticated) context.go('/login');
+    });
+    return Scaffold(
+      backgroundColor: AppColors.fill,
+      body: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: AppRefreshIndicator(
+              onRefresh: () => ref
+                  .read(superadminProvider.notifier)
+                  .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
+              child: _buildContentArea(),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -185,8 +179,9 @@ class _SuperAdminDashboardScreenState
                 ],
               ),
               InkWell(
-                onTap: () =>
-                    context.read<AuthenticationBloc>().add(LogoutRequested()),
+                onTap: () => ProviderScope.containerOf(context, listen: false)
+                    .read(authenticationProvider.notifier)
+                    .logout(),
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(

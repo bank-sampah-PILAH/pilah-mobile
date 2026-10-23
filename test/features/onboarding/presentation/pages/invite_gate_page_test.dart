@@ -1,12 +1,7 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -14,8 +9,6 @@ import '../../../../support/auth_support.dart';
 import '../../../../support/onboarding_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 const _routes = [
   '/dashboard',
@@ -38,9 +31,7 @@ AuthEntity _user({String? step, String? bankStatus}) => AuthEntity(
 void main() {
   late StubApi api;
   late InviteTokenStore store;
-  late MockAuthBloc auth;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
     api = StubApi();
@@ -51,15 +42,15 @@ void main() {
   tearDown(() => di.unregister<InviteTokenStore>());
 
   Future<void> open(WidgetTester tester, AuthEntity user) async {
-    auth = authBlocIn(Authenticated(authEntity: user));
+    auth = authNotifierIn(Authenticated(authEntity: user));
     await pumpRouted(
       tester,
       withOnboarding(
-        MultiBlocProvider(
-          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
+        withAuthenticationProvider(
+          auth,
           // A non-const instance so the constructor itself runs.
           // ignore: prefer_const_constructors
-          child: InviteGatePage(),
+          InviteGatePage(),
         ),
         buildOnboardingDataSource(api),
       ),
@@ -89,7 +80,7 @@ void main() {
     expect(find.text('route:/dashboard'), findsOneWidget);
     expect(find.text('Berhasil bergabung ke Bank Sampah Bank Melati'),
         findsOneWidget);
-    verify(() => auth.add(any(that: isA<RefreshUserRequested>()))).called(1);
+    expect(auth.calls, contains('refreshUser'));
     expect(store.hasToken, isFalse);
     await settleToasts(tester);
   });
@@ -105,7 +96,7 @@ void main() {
     expect(find.text('route:/dashboard'), findsOneWidget);
     expect(
         find.text('Anda sudah terdaftar pada bank sampah ini'), findsOneWidget);
-    verifyNever(() => auth.add(any(that: isA<RefreshUserRequested>())));
+    expect(auth.calls, isNot(contains('refreshUser')));
     await settleToasts(tester);
   });
 
@@ -163,14 +154,11 @@ void main() {
 
   testWidgets('an unauthenticated visitor with no token still resolves',
       (tester) async {
-    auth = authBlocIn(Unauthenticated());
+    auth = authNotifierIn(Unauthenticated());
     await pumpRouted(
       tester,
       withOnboarding(
-        MultiBlocProvider(
-          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-          child: const InviteGatePage(),
-        ),
+        withAuthenticationProvider(auth, const InviteGatePage()),
         buildOnboardingDataSource(api),
       ),
       extraRoutes: _routes,

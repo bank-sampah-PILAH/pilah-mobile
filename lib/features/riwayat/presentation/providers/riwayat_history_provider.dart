@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 import '../../domain/entities/riwayat_entities.dart';
 import '../../domain/use_cases/riwayat_use_cases.dart';
@@ -47,10 +47,19 @@ class RiwayatHistoryState extends Equatable {
 
 const _sentinel = Object();
 
-@Injectable()
-class RiwayatHistoryCubit extends Cubit<RiwayatHistoryState> {
-  RiwayatHistoryCubit(this._historyUseCase, this._detailUseCase)
-      : super(const RiwayatHistoryState());
+final riwayatHistoryProvider =
+    NotifierProvider.autoDispose<RiwayatHistoryNotifier, RiwayatHistoryState>(
+  () => RiwayatHistoryNotifier(
+    di<GetRiwayatHistoryUseCase>(),
+    di<GetRiwayatSetoranDetailUseCase>(),
+  ),
+);
+
+class RiwayatHistoryNotifier extends Notifier<RiwayatHistoryState> {
+  RiwayatHistoryNotifier(this._historyUseCase, this._detailUseCase);
+
+  @override
+  RiwayatHistoryState build() => const RiwayatHistoryState();
 
   final GetRiwayatHistoryUseCase _historyUseCase;
   final GetRiwayatSetoranDetailUseCase _detailUseCase;
@@ -70,21 +79,21 @@ class RiwayatHistoryCubit extends Cubit<RiwayatHistoryState> {
     this.membershipId = membershipId;
     final requestedPage = reset ? 1 : state.page + 1;
     if (state.status == RiwayatHistoryStatus.loading) return;
-    emit(state.copyWith(
+    state = state.copyWith(
       status: RiwayatHistoryStatus.loading,
       activities: reset ? [] : state.activities,
       error: null,
-    ));
+    );
     final result = await _historyUseCase.execute(
       RiwayatHistoryParams(membershipId, page: requestedPage),
     );
-    if (isClosed) return;
+    if (!ref.mounted) return;
     result.fold(
-      (failure) => emit(state.copyWith(
+      (failure) => state = state.copyWith(
         status: RiwayatHistoryStatus.failure,
         error: failure.displayMessage,
-      )),
-      (history) => emit(state.copyWith(
+      ),
+      (history) => state = state.copyWith(
         status: RiwayatHistoryStatus.loaded,
         activities: [
           ...state.activities
@@ -93,7 +102,7 @@ class RiwayatHistoryCubit extends Cubit<RiwayatHistoryState> {
         ],
         hasNext: history.hasNext,
         page: requestedPage,
-      )),
+      ),
     );
   }
 

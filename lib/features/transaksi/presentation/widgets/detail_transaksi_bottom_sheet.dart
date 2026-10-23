@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -9,7 +9,7 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 class DetailTransaksiBottomSheet extends StatefulWidget {
@@ -47,8 +47,9 @@ class _DetailTransaksiBottomSheetState
     final id = widget.transactionData['id']?.toString();
     if (id == null || id.isEmpty) return;
     setState(() => _isLoadingDetail = true);
-    final detail =
-        await context.read<TransaksiCubit>().fetchTransaksiDetail(id);
+    final detail = await ProviderScope.containerOf(context, listen: false)
+        .read(transaksiProvider.notifier)
+        .fetchTransaksiDetail(id);
     if (!mounted) return;
     setState(() {
       _detail = detail;
@@ -68,7 +69,9 @@ class _DetailTransaksiBottomSheetState
       isLoadingWa = true;
     });
 
-    final result = await context.read<TransaksiCubit>().resendWa(id);
+    final result = await ProviderScope.containerOf(context, listen: false)
+        .read(transaksiProvider.notifier)
+        .resendWa(id);
     if (!mounted) return;
 
     setState(() {

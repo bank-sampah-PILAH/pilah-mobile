@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_table.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
@@ -25,8 +25,8 @@ import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/tambah_jenis_sampah_bottom_sheet.dart';
@@ -43,15 +43,15 @@ class HargaPage extends StatelessWidget {
   }
 }
 
-class _HargaPageBody extends StatefulWidget {
+class _HargaPageBody extends ConsumerStatefulWidget {
   const _HargaPageBody({required this.isWeb});
   final bool isWeb;
 
   @override
-  State<_HargaPageBody> createState() => _HargaPageBodyState();
+  ConsumerState<_HargaPageBody> createState() => _HargaPageBodyState();
 }
 
-class _HargaPageBodyState extends State<_HargaPageBody> {
+class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
   /// Jenis sampah yang sedang dibuka di panel, atau null bila tidak ada.
   HargaEntity? _editing;
 
@@ -80,7 +80,9 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
   @override
   void initState() {
     super.initState();
-    context.read<HargaCubit>().loadHarga();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(hargaProvider.notifier).loadHarga();
+    });
   }
 
   /// Menutup panel ketika jendela berhenti menjadi expanded.
@@ -123,13 +125,9 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
       return;
     }
 
-    final hargaCubit = context.read<HargaCubit>();
     showAdaptiveSurface<void>(
       context,
-      builder: (_) => TambahJenisSampahBottomSheet(
-        hargaCubit: hargaCubit,
-        initialData: item,
-      ),
+      builder: (_) => TambahJenisSampahBottomSheet(initialData: item),
     );
   }
 
@@ -168,50 +166,51 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<HargaCubit, HargaState>(
-      listenWhen: (previous, current) =>
-          widget.isWeb &&
+    ref.listen(hargaProvider, (previous, current) {
+      if (widget.isWeb &&
           current is HargaLoaded &&
           (previous is! HargaLoaded ||
-              !identical(previous.jenisSampahList, current.jenisSampahList)),
-      listener: (context, state) {
-        if (_currentPage != 1) setState(() => _currentPage = 1);
-      },
-      child: Scaffold(
-        // Mengikuti warna permukaan shell web (6d094ba8); di telepon tetap
-        // putih karena di sana halaman ini bukan isi sebuah shell.
-        backgroundColor:
-            WebContentSurface.pageColor(context, phone: Colors.white),
-        // Hanya di telepon. Di layar lebar tombol tambah ada di kepala halaman,
-        // seperti tabel nasabah, sehingga tidak ada yang melayang di atas
-        // tombol "Simpan Perubahan" milik panel.
-        floatingActionButton:
-            context.layoutBreakpoint != LayoutBreakpoint.compact || widget.isWeb
-                ? null
-                : FloatingActionButton(
-                    heroTag: 'harga_page_fab',
-                    tooltip: _addLabel,
-                    onPressed: () => _openForm(),
-                    backgroundColor: AppColors.greenDark,
-                    elevation: 4,
-                    child: const Icon(Icons.add, color: Colors.white),
-                  ),
-        body: SafeArea(
-          child: MasterDetailLayout(
-            master: _buildList(),
-            detail: _isPanelOpen ? _buildPanel() : null,
-          ),
+              !identical(previous.jenisSampahList, current.jenisSampahList)) &&
+          _currentPage != 1) {
+        setState(() => _currentPage = 1);
+      }
+    });
+    return Scaffold(
+      // Mengikuti warna permukaan shell web (6d094ba8); di telepon tetap
+      // putih karena di sana halaman ini bukan isi sebuah shell.
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
+      // Hanya di telepon. Di layar lebar tombol tambah ada di kepala halaman,
+      // seperti tabel nasabah, sehingga tidak ada yang melayang di atas
+      // tombol "Simpan Perubahan" milik panel.
+      floatingActionButton:
+          context.layoutBreakpoint != LayoutBreakpoint.compact || widget.isWeb
+              ? null
+              : FloatingActionButton(
+                  heroTag: 'harga_page_fab',
+                  tooltip: _addLabel,
+                  onPressed: () => _openForm(),
+                  backgroundColor: AppColors.greenDark,
+                  elevation: 4,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+      body: SafeArea(
+        child: MasterDetailLayout(
+          master: _buildList(),
+          detail: _isPanelOpen ? _buildPanel() : null,
         ),
       ),
     );
   }
 
   Widget _buildList() {
+    final state = ref.watch(hargaProvider);
+    final isActiveTab = state is HargaLoaded ? state.isActiveTab : true;
     final web = context.layoutBreakpoint != LayoutBreakpoint.compact;
     final search = CustomSearchField(
       hintText: 'Cari jenis sampah...',
       onChanged: (value) {
-        context.read<HargaCubit>().searchHarga(value);
+        ref.read(hargaProvider.notifier).searchHarga(value);
       },
     );
     return Padding(
@@ -260,41 +259,29 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
             search,
           ],
           const SizedBox(height: 16),
-          BlocBuilder<HargaCubit, HargaState>(
-            buildWhen: (previous, current) {
-              if (previous is HargaLoaded && current is HargaLoaded) {
-                return previous.isActiveTab != current.isActiveTab;
-              }
-              return true;
-            },
-            builder: (context, state) {
-              final isActiveTab =
-                  state is HargaLoaded ? state.isActiveTab : true;
-              return Row(
-                children: [
-                  AppChip(
-                    label: 'Aktif',
-                    selected: isActiveTab,
-                    onTap: () => context.read<HargaCubit>().setActiveTab(true),
-                  ),
-                  const SizedBox(width: 8),
-                  AppChip(
-                    label: 'Tidak Aktif',
-                    selected: !isActiveTab,
-                    onTap: () => context.read<HargaCubit>().setActiveTab(false),
-                  ),
-                ],
-              );
-            },
+          Row(
+            children: [
+              AppChip(
+                label: 'Aktif',
+                selected: isActiveTab,
+                onTap: () =>
+                    ref.read(hargaProvider.notifier).setActiveTab(true),
+              ),
+              const SizedBox(width: 8),
+              AppChip(
+                label: 'Tidak Aktif',
+                selected: !isActiveTab,
+                onTap: () =>
+                    ref.read(hargaProvider.notifier).setActiveTab(false),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
             child: AppRefreshIndicator(
               onRefresh: () =>
-                  context.read<HargaCubit>().loadHarga(silent: true),
-              child: BlocBuilder<HargaCubit, HargaState>(
-                builder: (context, state) => _buildStateView(state),
-              ),
+                  ref.read(hargaProvider.notifier).loadHarga(silent: true),
+              child: _buildStateView(state),
             ),
           ),
         ],
@@ -364,7 +351,7 @@ class _HargaPageBodyState extends State<_HargaPageBody> {
 
     return PageStateView(
       state: pageState,
-      onRetry: () => context.read<HargaCubit>().loadHarga(),
+      onRetry: () => ref.read(hargaProvider.notifier).loadHarga(),
       errorMessage: state is HargaError ? state.message : null,
       emptyTitle: empty.title,
       emptySubtitle: empty.subtitle,

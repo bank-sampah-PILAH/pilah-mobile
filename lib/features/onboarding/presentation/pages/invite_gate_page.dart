@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
@@ -62,7 +60,7 @@ class _InviteGatePageState extends ConsumerState<InviteGatePage> {
     final store = di<InviteTokenStore>();
     final token = store.token ?? '';
 
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     final user = authState is Authenticated ? authState.authEntity : null;
     final step = user?.nextStep;
 
@@ -88,7 +86,7 @@ class _InviteGatePageState extends ConsumerState<InviteGatePage> {
 
     if (acceptance == InviteAcceptance.joined) {
       // Refresh the cached user so the dashboard reflects the new association.
-      context.read<AuthenticationBloc>().add(RefreshUserRequested());
+      ref.read(authenticationProvider.notifier).refreshUser();
     }
 
     // Navigate first, then notify: the toast is a pushed route, and raising it

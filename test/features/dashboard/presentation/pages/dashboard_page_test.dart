@@ -1,15 +1,12 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
@@ -53,8 +50,6 @@ class _ActivityNotifier extends RecentActivityNotifier {
   }
 }
 
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
-
 class _EmptyReportingDataSource implements DashboardReportingDataSource {
   @override
   Future<List<OperationalTrendBucket>> getOperationalTrends({
@@ -91,9 +86,7 @@ void main() {
   late StubApi api;
   late DashboardNotifier dashboard;
   late _ActivityNotifier activity;
-  late MockAuthBloc auth;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  late TestAuthenticationNotifier auth;
   setUp(() async {
     await di.reset();
     di.registerSingleton<DashboardReportingDataSource>(
@@ -111,7 +104,7 @@ void main() {
     api.on('GET', '/api/v1/dashboard/stats', json: stats);
     dashboard = dashboardNotifier ?? buildDashboardNotifier(api);
     activity = _ActivityNotifier();
-    auth = authBlocIn(session ?? Authenticated(authEntity: testAuth()));
+    auth = authNotifierIn(session ?? Authenticated(authEntity: testAuth()));
   }
 
   Future<void> pump(WidgetTester tester, Widget child) async {
@@ -121,11 +114,9 @@ void main() {
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => activity),
+          authenticationProvider.overrideWith(() => auth),
         ],
-        child: MultiBlocProvider(
-          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-          child: Scaffold(body: SingleChildScrollView(child: child)),
-        ),
+        child: Scaffold(body: SingleChildScrollView(child: child)),
       ),
       extraRoutes: ['/profile'],
       size: const Size(800, 1600),
@@ -144,11 +135,9 @@ void main() {
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => activity),
+          authenticationProvider.overrideWith(() => auth),
         ],
-        child: MultiBlocProvider(
-          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-          child: DashboardPage(isWeb: isWeb),
-        ),
+        child: DashboardPage(isWeb: isWeb),
       ),
       size: size,
     );
@@ -232,11 +221,9 @@ void main() {
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => activity),
+          authenticationProvider.overrideWith(() => auth),
         ],
-        child: MultiBlocProvider(
-          providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-          child: const DashboardPage(),
-        ),
+        child: const DashboardPage(),
       ),
       size: const Size(800, 1600),
     );
@@ -249,7 +236,7 @@ void main() {
         find.byType(SingleChildScrollView).first, const Offset(0, 500), 1000);
     await tester.pumpAndSettle();
 
-    verify(() => auth.add(any(that: isA<RefreshUserRequested>()))).called(1);
+    expect(auth.calls, contains('refreshUser'));
     expect(api.requests.where((r) => r.path.endsWith('/stats')), hasLength(2));
     expect(activity.loadCalls, [false, true]);
   });

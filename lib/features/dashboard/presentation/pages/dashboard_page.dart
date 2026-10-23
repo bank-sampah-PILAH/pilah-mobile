@@ -6,12 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
@@ -58,7 +57,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   /// dispatched alongside — it's fire-and-forget, so only the two cubit loads
   /// hold the spinner open.
   Future<void> _onRefresh() async {
-    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    ref.read(authenticationProvider.notifier).refreshUser();
     await Future.wait([
       ref.read(dashboardProvider.notifier).loadStats(silent: true),
       ref.read(recentActivityProvider.notifier).load(silent: true),
@@ -68,16 +67,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   /// Kunci halaman pengurus di web (akun dan bank sampahnya), atau null bila
   /// ini bukan pengurus di web. Berubah saat akun berganti, supaya laporan
   /// dimuat ulang.
-  String? _webPengurusKey(BuildContext context) {
+  String? _webPengurusKey(WidgetRef ref) {
     if (!(widget.isWeb ?? kIsWeb)) return null;
-    return context.select<AuthenticationBloc, String?>((bloc) {
-      final state = bloc.state;
-      if (state is! Authenticated || state.authEntity.role != 'pengelola') {
-        return null;
-      }
-      return '${state.authEntity.id ?? state.authEntity.email}:'
-          '${state.authEntity.bankSampahNama ?? ''}';
-    });
+    final state = ref.watch(authenticationProvider);
+    if (state is! Authenticated || state.authEntity.role != 'pengelola') {
+      return null;
+    }
+    return '${state.authEntity.id ?? state.authEntity.email}:'
+        '${state.authEntity.bankSampahNama ?? ''}';
   }
 
   /// Padding area gulir: gutter web di layar lebar, 16 di telepon, ditambah
@@ -98,7 +95,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final webPengurusKey = _webPengurusKey(context);
+    final webPengurusKey = _webPengurusKey(ref);
     final isPengurusWeb = webPengurusKey != null;
 
     return Scaffold(

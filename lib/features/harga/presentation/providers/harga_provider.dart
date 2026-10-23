@@ -1,5 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
@@ -11,8 +11,18 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
 
-@lazySingleton
-class HargaCubit extends Cubit<HargaState> {
+final hargaProvider = NotifierProvider<HargaNotifier, HargaState>(
+  () => HargaNotifier(
+    di<GetHargaUseCase>(),
+    di<AddHargaUseCase>(),
+    di<UpdateHargaUseCase>(),
+    di<DeactivateHargaUseCase>(),
+    di<ActivateHargaUseCase>(),
+    di<UbahHargaUseCase>(),
+  ),
+);
+
+class HargaNotifier extends Notifier<HargaState> {
   final GetHargaUseCase getHargaUseCase;
   final AddHargaUseCase addHargaUseCase;
   final UpdateHargaUseCase updateHargaUseCase;
@@ -25,14 +35,17 @@ class HargaCubit extends Cubit<HargaState> {
   bool _isActiveTab = true;
   String _searchQuery = '';
 
-  HargaCubit(
+  HargaNotifier(
     this.getHargaUseCase,
     this.addHargaUseCase,
     this.updateHargaUseCase,
     this.deactivateHargaUseCase,
     this.activateHargaUseCase,
     this.ubahHargaUseCase,
-  ) : super(HargaInitial());
+  );
+
+  @override
+  HargaState build() => HargaInitial();
 
   bool get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
@@ -52,12 +65,12 @@ class HargaCubit extends Cubit<HargaState> {
   /// real loading state is emitted regardless.
   Future<void> loadHarga({bool silent = false}) async {
     final permintaan = ++_permintaanTerakhir;
-    if (!silent || state is! HargaLoaded) emit(HargaLoading());
+    if (!silent || state is! HargaLoaded) state = HargaLoading();
     final result = await getHargaUseCase.execute();
     // Reload yang lebih baru sudah berjalan: jawaban ini sudah usang.
-    if (permintaan != _permintaanTerakhir) return;
+    if (!ref.mounted || permintaan != _permintaanTerakhir) return;
     result.fold(
-      (failure) => emit(HargaError(failure.displayMessage)),
+      (failure) => state = HargaError(failure.displayMessage),
       (data) {
         _allHarga = data;
         _emitFiltered();
@@ -141,7 +154,7 @@ class HargaCubit extends Cubit<HargaState> {
     _allHarga = [];
     _isActiveTab = true;
     _searchQuery = '';
-    emit(HargaInitial());
+    state = HargaInitial();
   }
 
   void _emitFiltered() {
@@ -155,10 +168,10 @@ class HargaCubit extends Cubit<HargaState> {
       return matchesTab && (name.contains(query) || category.contains(query));
     }).toList();
 
-    emit(HargaLoaded(
+    state = HargaLoaded(
       jenisSampahList: filtered,
       isActiveTab: _isActiveTab,
       searchQuery: _searchQuery,
-    ));
+    );
   }
 }

@@ -13,8 +13,10 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/deactivate_harga_us
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+
+import '../../../support/notifier_harness.dart';
 
 class _MockGet extends Mock implements GetHargaUseCase {}
 
@@ -31,7 +33,8 @@ class _MockUbah extends Mock implements UbahHargaUseCase {}
 void main() {
   late _MockGet getHarga;
   late _MockUbah ubahHarga;
-  late HargaCubit cubit;
+  late HargaNotifier cubit;
+  late NotifierHarness<HargaNotifier, HargaState> harness;
   final perubahan = UbahHarga(
     id: 'j-1',
     harga: 5000,
@@ -43,19 +46,23 @@ void main() {
   setUp(() {
     getHarga = _MockGet();
     ubahHarga = _MockUbah();
-    cubit = HargaCubit(
-      getHarga,
-      _MockAdd(),
-      _MockUpdate(),
-      _MockDeactivate(),
-      _MockActivate(),
-      ubahHarga,
+    harness = NotifierHarness(
+      hargaProvider,
+      () => HargaNotifier(
+        getHarga,
+        _MockAdd(),
+        _MockUpdate(),
+        _MockDeactivate(),
+        _MockActivate(),
+        ubahHarga,
+      ),
     );
+    cubit = harness.notifier;
     when(() => getHarga.execute())
         .thenAnswer((_) async => const Right(<HargaEntity>[]));
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   test('changes the price and reloads the list', () async {
     when(() => ubahHarga.execute(any()))

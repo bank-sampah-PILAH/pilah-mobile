@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 
 import '../../../../support/nasabah_support.dart';
+import '../../../../support/notifier_harness.dart';
 import '../../../../support/stub_api.dart';
 
 const _path = '/api/v1/nasabah';
@@ -21,14 +22,19 @@ NasabahRequest _request() => NasabahRequest(
 
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier cubit;
+  late NotifierHarness<NasabahNotifier, NasabahState> harness;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    harness = NotifierHarness(
+      nasabahProvider,
+      () => buildNasabahNotifier(api),
+    );
+    cubit = harness.notifier;
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   test('loads the first page of active nasabah with the server count',
       () async {
@@ -154,12 +160,12 @@ void main() {
 
     cubit.searchNasabah('b');
     cubit.searchNasabah('b');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
     expect(api.requests.length, calls + 1);
     expect(api.last.query.containsKey('search'), isFalse);
 
     cubit.searchNasabah('bu');
-    await Future<void>.delayed(NasabahCubit.jedaPencarian * 2);
+    await Future<void>.delayed(NasabahNotifier.jedaPencarian * 2);
     expect(api.last.query['search'], 'bu');
     expect(cubit.searchQuery, 'bu');
   });
@@ -342,12 +348,11 @@ void main() {
   test('a silent reload keeps the list without a spinner', () async {
     api.on('GET', _path, json: nasabahPage([nasabahRow('1')]));
     await cubit.loadNasabah();
-    final states = <NasabahState>[];
-    final sub = cubit.stream.listen(states.add);
+    final firstEmission = harness.states.length;
 
     await cubit.loadNasabah(silent: true);
     await pumpEventQueue();
-    await sub.cancel();
+    final states = harness.states.skip(firstEmission).toList();
 
     expect(states.whereType<NasabahLoading>(), isEmpty);
     expect(
@@ -357,12 +362,11 @@ void main() {
   test('a normal reload over a loaded list flags it as reloading', () async {
     api.on('GET', _path, json: nasabahPage([nasabahRow('1')]));
     await cubit.loadNasabah();
-    final states = <NasabahState>[];
-    final sub = cubit.stream.listen(states.add);
+    final firstEmission = harness.states.length;
 
     await cubit.loadNasabah();
     await pumpEventQueue();
-    await sub.cancel();
+    final states = harness.states.skip(firstEmission).toList();
 
     expect(states.whereType<NasabahLoaded>().first.isReloading, isTrue);
   });

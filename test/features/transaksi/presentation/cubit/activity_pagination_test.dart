@@ -9,8 +9,10 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+
+import '../../../../support/notifier_harness.dart';
 
 class Feed extends Mock implements GetAktivitasUseCase {}
 
@@ -34,14 +36,19 @@ ActivitasEntity item(String id) =>
 void main() {
   setUpAll(() => registerFallbackValue(const TransaksiFilter()));
   late Feed feed;
-  late RiwayatAktivitasCubit cubit;
+  late RiwayatAktivitasNotifier cubit;
+  late NotifierHarness<RiwayatAktivitasNotifier, RiwayatAktivitasState> harness;
   setUp(() {
     feed = Feed();
-    cubit = RiwayatAktivitasCubit(feed, Export());
+    harness = NotifierHarness(
+      riwayatAktivitasProvider,
+      () => RiwayatAktivitasNotifier(feed, Export()),
+    );
+    cubit = harness.notifier;
     when(() => feed.execute(any()))
         .thenAnswer((_) async => const Right(AktivitasPage([], false)));
   });
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   test('appends pages and deduplicates overlapping rows', () async {
     when(() => feed.execute(any())).thenAnswer((invocation) async {

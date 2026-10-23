@@ -2,18 +2,14 @@ import 'package:pilah_mobile/features/transaksi/data/repositories/aktivitas_repo
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/transaksi/data/repositories/transaksi_repository_impl.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
@@ -85,12 +81,12 @@ void main() {
     api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
   });
 
-  /// Opens the real page with the real cubits it reads, over the stubbed API.
+  /// Opens the real page with its controllers, over the stubbed API.
   Future<void> open(WidgetTester tester,
       {Size window = const Size(800, 2600)}) async {
-    final harga = buildHargaCubit(api);
-    final profile = buildProfileCubit(api);
-    final transaksi = buildTransaksiCubit(api);
+    final harga = buildHargaNotifier(api);
+    final profile = buildProfileNotifier(api);
+    final transaksi = buildTransaksiNotifier(api);
     final dashboard = buildDashboardNotifier(api);
     final pencairan = buildPencairanUseCases(api);
     final getTransaksi = GetTransaksiUseCase(
@@ -98,16 +94,9 @@ void main() {
     final export = ExportTransaksiUseCase(
         TransaksiRepositoryImpl(TransaksiRemoteDataSourceImpl(api.network)));
     final recent = RecentActivityNotifier(getTransaksi, pencairan);
-    final riwayat = RiwayatAktivitasCubit(
+    final riwayat = RiwayatAktivitasNotifier(
         GetAktivitasUseCase(AktivitasRepositoryImpl(api.network)), export);
-    final nasabah = buildNasabahCubit(api);
-    addTearDown(() async {
-      await harga.close();
-      await profile.close();
-      await transaksi.close();
-      await riwayat.close();
-      await nasabah.close();
-    });
+    final nasabah = buildNasabahNotifier(api);
 
     await pumpRouted(
       tester,
@@ -118,16 +107,14 @@ void main() {
         overrides: [
           dashboardProvider.overrideWith(() => dashboard),
           recentActivityProvider.overrideWith(() => recent),
+          profileProvider.overrideWith(() => profile),
         ],
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider<HargaCubit>.value(value: harga),
-            BlocProvider<ProfileCubit>.value(value: profile),
-            BlocProvider<TransaksiCubit>.value(value: transaksi),
-            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
-            BlocProvider<NasabahCubit>.value(value: nasabah),
-          ],
+        child: withTransaksiProviders(
           child: app,
+          harga: harga,
+          transaksi: transaksi,
+          riwayat: riwayat,
+          nasabah: nasabah,
         ),
       ),
       pushed: true,

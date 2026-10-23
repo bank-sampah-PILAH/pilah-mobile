@@ -15,9 +15,10 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringk
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+import '../../../../support/notifier_harness.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -72,26 +73,31 @@ HalamanNasabah _page(
 void main() {
   late _MockGetNasabahUseCase getUseCase;
   late _MockGetActiveNasabahUseCase getActiveUseCase;
-  late NasabahCubit cubit;
+  late NasabahNotifier cubit;
+  late NotifierHarness<NasabahNotifier, NasabahState> harness;
 
   setUp(() {
     getUseCase = _MockGetNasabahUseCase();
     getActiveUseCase = _MockGetActiveNasabahUseCase();
-    cubit = NasabahCubit(
-      getUseCase,
-      getActiveUseCase,
-      _MockGetNasabahRingkasanUseCase(),
-      _MockAddNasabahUseCase(),
-      _MockUpdateNasabahUseCase(),
-      _MockActivateNasabahUseCase(),
-      _MockDeactivateNasabahUseCase(),
-      _MockApproveNasabahUseCase(),
-      _MockRejectNasabahUseCase(),
-      MockSinkronProfilNasabahUseCase(),
+    harness = NotifierHarness(
+      nasabahProvider,
+      () => NasabahNotifier(
+        getUseCase,
+        getActiveUseCase,
+        _MockGetNasabahRingkasanUseCase(),
+        _MockAddNasabahUseCase(),
+        _MockUpdateNasabahUseCase(),
+        _MockActivateNasabahUseCase(),
+        _MockDeactivateNasabahUseCase(),
+        _MockApproveNasabahUseCase(),
+        _MockRejectNasabahUseCase(),
+        MockSinkronProfilNasabahUseCase(),
+      ),
     );
+    cubit = harness.notifier;
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   test('picker fetch leaves the nasabah page state intact', () async {
     when(() => getUseCase.execute(any())).thenAnswer(
@@ -268,7 +274,7 @@ void main() {
     final nextPageLoad = cubit.loadMoreNasabah();
     cubit.searchNasabah('Bu');
     await Future<void>.delayed(
-        NasabahCubit.jedaPencarian + const Duration(milliseconds: 50));
+        NasabahNotifier.jedaPencarian + const Duration(milliseconds: 50));
     nextPageResponse.complete(Right(_page([_nasabah('NAS-ACTIVE-2')])));
     await nextPageLoad;
 

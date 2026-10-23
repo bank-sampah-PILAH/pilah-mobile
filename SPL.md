@@ -20,7 +20,7 @@ dart run codegen/spl_manager.dart storage add <provider>
 dart run codegen/spl_manager.dart storage remove <provider>
 dart run codegen/spl_manager.dart storage default <provider>
 dart run codegen/spl_manager.dart storage list
-dart run codegen/spl_manager.dart state set <bloc|cubit|riverpod>
+dart run codegen/spl_manager.dart state set riverpod
 dart run codegen/spl_manager.dart state list
 dart run codegen/spl_manager.dart fix
 ```
@@ -67,13 +67,13 @@ Controls the presentation layer pattern for features. Different features in the 
 
 | Solution | Package | Files generated | Use when |
 |---|---|---|---|
-| `bloc` | `flutter_bloc` | `_event.dart`, `_state.dart`, `_bloc.dart` | Complex flows with explicit event streams |
-| `cubit` | `flutter_bloc` (same package) | `_state.dart`, `_cubit.dart` | Simpler flows, fewer files, methods called directly |
-| `riverpod` | `flutter_riverpod` | `_state.dart`, `_notifier.dart` | Riverpod-native UIs; bridges to get_it DI via `di<T>()` |
+| `riverpod` (default) | `flutter_riverpod` (included) | `_state.dart`, `_notifier.dart` | Riverpod-native UIs; bridges to get_it DI via `di<T>()` |
+| `bloc` | `flutter_bloc` (optional) | `_event.dart`, `_state.dart`, `_bloc.dart` | Complex flows with explicit event streams |
+| `cubit` | `flutter_bloc` (optional) | `_state.dart`, `_cubit.dart` | Simpler flows, fewer files, methods called directly |
 
 Change the global default (affects all future `add` commands):
 ```
-dart run codegen/spl_manager.dart state set cubit
+dart run codegen/spl_manager.dart state set riverpod
 ```
 
 Override per feature at creation time:
@@ -82,9 +82,7 @@ dart run codegen/spl_manager.dart add orders --state riverpod
 dart run codegen/spl_manager.dart add orders,state=riverpod     # inline equivalent
 ```
 
-Bloc and cubit coexist with zero config (same `flutter_bloc` package). Riverpod requires:
-1. `flutter_riverpod` in `pubspec.yaml`
-2. `ProviderScope` wrapping your root widget in `main.dart`
+This app defaults to Riverpod and already includes `flutter_riverpod` with a root `ProviderScope`. Bloc and Cubit remain optional generator outputs; add `flutter_bloc` to `pubspec.yaml` before generating or building those variants. No Bloc/Cubit dependency is included by default.
 
 ---
 

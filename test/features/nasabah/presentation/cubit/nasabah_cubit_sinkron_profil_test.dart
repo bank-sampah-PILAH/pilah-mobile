@@ -12,8 +12,10 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringk
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+import '../../../../support/notifier_harness.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -39,28 +41,33 @@ HalamanNasabah _kosong() =>
 void main() {
   late _MockGetNasabahUseCase getUseCase;
   late MockSinkronProfilNasabahUseCase sinkronUseCase;
-  late NasabahCubit cubit;
+  late NasabahNotifier cubit;
+  late NotifierHarness<NasabahNotifier, NasabahState> harness;
 
   setUp(() {
     getUseCase = _MockGetNasabahUseCase();
     sinkronUseCase = MockSinkronProfilNasabahUseCase();
     when(() => getUseCase.execute(any()))
         .thenAnswer((_) async => Right(_kosong()));
-    cubit = NasabahCubit(
-      getUseCase,
-      _MockGetActive(),
-      _MockRingkasan(),
-      _MockAdd(),
-      _MockUpdate(),
-      _MockActivate(),
-      _MockDeactivate(),
-      _MockApprove(),
-      _MockReject(),
-      sinkronUseCase,
+    harness = NotifierHarness(
+      nasabahProvider,
+      () => NasabahNotifier(
+        getUseCase,
+        _MockGetActive(),
+        _MockRingkasan(),
+        _MockAdd(),
+        _MockUpdate(),
+        _MockActivate(),
+        _MockDeactivate(),
+        _MockApprove(),
+        _MockReject(),
+        sinkronUseCase,
+      ),
     );
+    cubit = harness.notifier;
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() => harness.dispose());
 
   group('sinkronProfil', () {
     test('mengembalikan null dan memuat ulang daftar saat berhasil', () async {

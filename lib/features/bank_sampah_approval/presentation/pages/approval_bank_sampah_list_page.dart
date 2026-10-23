@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_list_item.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 /// Nasabah-facing list of the caller's own bank sampah memberships and their
 /// approval status (PIL-232).
@@ -22,25 +21,25 @@ class ApprovalBankSampahListPage extends StatelessWidget {
   static const route = '/approval-bank-sampah';
 
   @override
-  Widget build(BuildContext context) {
-    // A new instance per visit: membership data is per-user and this cubit is
-    // not app-scoped (see NasabahApprovalCubit's doc comment), so it is
-    // created and loaded here rather than provided once at the app root.
-    return BlocProvider<NasabahApprovalCubit>(
-      create: (_) => di<NasabahApprovalCubit>()..load(),
-      child: const ApprovalBankSampahListView(),
-    );
-  }
+  Widget build(BuildContext context) => const ApprovalBankSampahListView();
 }
 
 /// The list body, split out from [ApprovalBankSampahListPage] so widget tests
-/// can inject a cubit directly with `BlocProvider.value` instead of going
-/// through the DI container.
-class ApprovalBankSampahListView extends StatelessWidget {
+/// can exercise the provider-backed list body directly.
+class ApprovalBankSampahListView extends ConsumerWidget {
   const ApprovalBankSampahListView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(nasabahApprovalProvider);
+    if (state is NasabahApprovalInitial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted &&
+            ref.read(nasabahApprovalProvider) is NasabahApprovalInitial) {
+          ref.read(nasabahApprovalProvider.notifier).load();
+        }
+      });
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const NasabahPageAppBar(
@@ -52,9 +51,9 @@ class ApprovalBankSampahListView extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: AppRefreshIndicator(
             onRefresh: () =>
-                context.read<NasabahApprovalCubit>().load(silent: true),
-            child: BlocBuilder<NasabahApprovalCubit, NasabahApprovalState>(
-              builder: (context, state) {
+                ref.read(nasabahApprovalProvider.notifier).load(silent: true),
+            child: Builder(
+              builder: (context) {
                 if (state is NasabahApprovalLoading ||
                     state is NasabahApprovalInitial) {
                   return ListView.separated(
@@ -100,8 +99,8 @@ class ApprovalBankSampahListView extends StatelessWidget {
                             // just moved back to pending, so the list needs
                             // to reflect that instead of showing stale data.
                             if (changed == true && context.mounted) {
-                              context
-                                  .read<NasabahApprovalCubit>()
+                              ref
+                                  .read(nasabahApprovalProvider.notifier)
                                   .load(silent: true);
                             }
                           });

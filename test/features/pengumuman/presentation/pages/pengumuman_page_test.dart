@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
@@ -34,14 +32,9 @@ void main() {
       {Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(
-            value: authBlocIn(
-                Authenticated(authEntity: testAuth(role: 'nasabah'))),
-          ),
-        ],
-        child: PengumumanPage(membershipId: 'm-1'),
+      withAuthenticationProvider(
+        authNotifierIn(Authenticated(authEntity: testAuth(role: 'nasabah'))),
+        PengumumanPage(membershipId: 'm-1'),
       ),
       extraRoutes: ['/pengumuman/detail'],
       pushed: true,
@@ -129,13 +122,9 @@ void main() {
       (tester) async {
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(
-            value: authBlocIn(Unauthenticated()),
-          ),
-        ],
-        child: const PengumumanPage(),
+      withAuthenticationProvider(
+        authNotifierIn(Unauthenticated()),
+        const PengumumanPage(),
       ),
       pushed: true,
       size: const Size(800, 2000),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -9,8 +9,9 @@ import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart'
     show nasabahDate;
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
@@ -21,7 +22,7 @@ import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_
 /// The nasabah's announcement list (PIL-244). Latest first, one card per
 /// announcement, unread rows carry a dot; tap marks it read and opens the
 /// detail.
-class PengumumanPage extends StatelessWidget {
+class PengumumanPage extends ConsumerWidget {
   const PengumumanPage({super.key, this.membershipId});
 
   static const route = '/pengumuman';
@@ -29,21 +30,19 @@ class PengumumanPage extends StatelessWidget {
   final String? membershipId;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-        builder: (context, state) {
-          final auth = state is Authenticated ? state.authEntity : null;
-          if (auth?.role != 'nasabah') {
-            return const Scaffold(
-              body: Center(child: Text('Silakan masuk sebagai nasabah.')),
-            );
-          }
-          return _PengumumanListBody(
-            key: ValueKey((auth!.id, auth.email, membershipId)),
-            membershipId: membershipId,
-          );
-        },
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    final auth = state is Authenticated ? state.authEntity : null;
+    if (auth?.role != 'nasabah') {
+      return const Scaffold(
+        body: Center(child: Text('Silakan masuk sebagai nasabah.')),
       );
+    }
+    return _PengumumanListBody(
+      key: ValueKey((auth!.id, auth.email, membershipId)),
+      membershipId: membershipId,
+    );
+  }
 }
 
 class _PengumumanListBody extends ConsumerStatefulWidget {

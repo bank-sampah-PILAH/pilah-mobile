@@ -1,18 +1,12 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 
 import '../../../../support/onboarding_support.dart';
-
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/auth_support.dart';
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
@@ -26,18 +20,13 @@ Future<void> _pumpScreen(
   WidgetTester tester, {
   bool isRejectedReapplication = false,
 }) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: AuthenticationInitial(),
-  );
+  final auth = authNotifierIn(AuthenticationInitial());
 
   await tester.pumpWidget(
     withOnboarding(
-      MultiBlocProvider(
-        providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-        child: MaterialApp(
+      withAuthenticationProvider(
+        auth,
+        MaterialApp(
           home: RegisterBankSampahScreen(
             isRejectedReapplication: isRejectedReapplication,
           ),

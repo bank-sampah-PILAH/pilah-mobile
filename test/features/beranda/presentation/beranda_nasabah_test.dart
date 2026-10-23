@@ -2,11 +2,9 @@ import 'dart:async';
 import 'dart:ui' show SemanticsAction;
 import '../../../support/stub_api.dart';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
@@ -14,11 +12,11 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
+
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
@@ -29,10 +27,8 @@ import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../support/approved_membership.dart';
+import '../../../support/auth_support.dart';
 import '../../../support/fake_riwayat.dart';
-
-class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
 
 /// Counts calls to [home] so a pull-to-refresh test can assert the load ran
 /// again, without caring how many times the widget tree rebuilds.
@@ -114,8 +110,7 @@ void main() {
     String bankName = 'Bank Sampah Melati',
     NasabahRepository? repository,
   }) async {
-    final auth = _AuthBloc();
-    final sessions = StreamController<AuthenticationStates>();
+    final auth = authNotifierIn(Unauthenticated());
     final jadwalRepository = _JadwalRepository();
     final invites = InviteTokenStore();
     final payoutUseCases = _PayoutUseCases();
@@ -131,7 +126,7 @@ void main() {
       )),
     );
 
-    final approval = registerApprovedMembership();
+    final approval = buildApprovedMembershipNotifier();
     di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
@@ -147,12 +142,7 @@ void main() {
     di.registerSingleton<JadwalRepository>(jadwalRepository);
     di.registerFactory<PencairanUseCases>(() => payoutUseCases);
     registerFakeRiwayat(riwayatFixture);
-    whenListen(auth, sessions.stream, initialState: Unauthenticated());
-
     addTearDown(() async {
-      await sessions.close();
-      await auth.close();
-      await unregisterApprovedMembership(approval);
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       await di.unregister<PencairanUseCases>();
@@ -165,11 +155,10 @@ void main() {
     router.go(LoginPage.route);
     await tester.pumpWidget(
       ProviderScope(
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider<AuthenticationBloc>.value(value: auth),
-          ],
-          child: MaterialApp.router(routerConfig: router),
+        overrides: [nasabahApprovalProvider.overrideWith(() => approval)],
+        child: withAuthenticationProvider(
+          auth,
+          MaterialApp.router(routerConfig: router),
         ),
       ),
     );
@@ -177,7 +166,7 @@ void main() {
     expect(find.byType(LoginPage), findsOneWidget);
 
     // Exercise the production login listener and router, not a test-only route.
-    sessions.add(Authenticated(authEntity: _nasabah(bankName)));
+    auth.setStateForTest(Authenticated(authEntity: _nasabah(bankName)));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.byType(LoginPage), findsNothing);

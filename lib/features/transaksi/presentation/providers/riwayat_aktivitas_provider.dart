@@ -1,16 +1,25 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/services/di.dart';
 import '../../domain/entities/aktivitas_entity.dart';
 import '../../domain/entities/transaksi_filter.dart';
 import '../../domain/use_cases/export_transaksi_usecase.dart';
 import '../../domain/use_cases/get_aktivitas_usecase.dart';
-import 'riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 
 /// One server-paginated feed, scoped by period, type and search.
-@lazySingleton
-class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
-  RiwayatAktivitasCubit(this._getAktivitas, this._export)
-      : super(const RiwayatAktivitasState());
+final riwayatAktivitasProvider =
+    NotifierProvider<RiwayatAktivitasNotifier, RiwayatAktivitasState>(
+  () => RiwayatAktivitasNotifier(
+    di<GetAktivitasUseCase>(),
+    di<ExportTransaksiUseCase>(),
+  ),
+);
+
+class RiwayatAktivitasNotifier extends Notifier<RiwayatAktivitasState> {
+  RiwayatAktivitasNotifier(this._getAktivitas, this._export);
+
+  @override
+  RiwayatAktivitasState build() => const RiwayatAktivitasState();
   final GetAktivitasUseCase _getAktivitas;
   final ExportTransaksiUseCase _export;
   int _generation = 0;
@@ -31,7 +40,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
     _pageSize = pageSize ?? _pageSize;
     final generation = ++_generation;
     _page = 0;
-    emit(state.copyWith(
+    state = state.copyWith(
         status: silent && state.items.isNotEmpty
             ? AktivitasStatus.loaded
             : AktivitasStatus.loading,
@@ -41,26 +50,26 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
         totalCount: silent ? state.totalCount : 0,
         clearSummary: true,
         clearRetryPage: true,
-        loadingMore: false));
+        loadingMore: false);
     final result = await _getAktivitas.execute(_filter(1));
-    if (isClosed || generation != _generation) return;
+    if (!ref.mounted || generation != _generation) return;
     result.fold(
-      (failure) => emit(state.copyWith(
+      (failure) => state = state.copyWith(
           status: AktivitasStatus.failure,
           items: [],
           totalCount: 0,
           clearSummary: true,
-          errorMessage: failure.displayMessage)),
+          errorMessage: failure.displayMessage),
       (page) {
         _page = 1;
-        emit(state.copyWith(
+        state = state.copyWith(
             status: AktivitasStatus.loaded,
             items: page.items,
             summary: page.summary,
             currentPage: 1,
             pageSize: _pageSize ?? 20,
             totalCount: page.totalCount,
-            hasNext: page.hasNext));
+            hasNext: page.hasNext);
       },
     );
   }
@@ -75,17 +84,17 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
       return;
     }
     final generation = ++_generation;
-    emit(state.copyWith(loadingMore: true, clearRetryPage: true));
+    state = state.copyWith(loadingMore: true, clearRetryPage: true);
     final result = await _getAktivitas.execute(_filter(page));
-    if (isClosed || generation != _generation) return;
+    if (!ref.mounted || generation != _generation) return;
     result.fold(
-      (failure) => emit(state.copyWith(
+      (failure) => state = state.copyWith(
           loadingMore: false,
           retryPage: page,
-          errorMessage: failure.displayMessage)),
+          errorMessage: failure.displayMessage),
       (data) {
         _page = page;
-        emit(state.copyWith(
+        state = state.copyWith(
             status: AktivitasStatus.loaded,
             items: data.items,
             summary: data.summary,
@@ -93,7 +102,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
             totalCount: data.totalCount,
             hasNext: data.hasNext,
             loadingMore: false,
-            clearRetryPage: true));
+            clearRetryPage: true);
       },
     );
   }
@@ -105,18 +114,18 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
       return;
     }
     final generation = _generation;
-    emit(state.copyWith(loadingMore: true));
+    state = state.copyWith(loadingMore: true);
     final result = await _getAktivitas.execute(_filter(_page + 1));
-    if (isClosed || generation != _generation) return;
+    if (!ref.mounted || generation != _generation) return;
     result.fold(
-      (failure) => emit(state.copyWith(
+      (failure) => state = state.copyWith(
           loadingMore: false,
           clearRetryPage: true,
-          errorMessage: failure.displayMessage)),
+          errorMessage: failure.displayMessage),
       (page) {
         _page++;
         final ids = state.items.map(_key).whereType<String>().toSet();
-        emit(state.copyWith(
+        state = state.copyWith(
             items: [
               ...state.items,
               ...page.items.where((item) {
@@ -128,7 +137,7 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
             currentPage: _page,
             totalCount: page.totalCount,
             loadingMore: false,
-            clearRetryPage: true));
+            clearRetryPage: true);
       },
     );
   }
@@ -141,36 +150,36 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
 
   void setPeriode(String periode) {
     if (state.periode == periode && state.dariTanggal == null) return;
-    emit(RiwayatAktivitasState(
-        periode: periode, tipeFilter: state.tipeFilter, search: state.search));
+    state = RiwayatAktivitasState(
+        periode: periode, tipeFilter: state.tipeFilter, search: state.search);
     load();
   }
 
   void applyCustomRange(DateTime start, DateTime end) {
-    emit(RiwayatAktivitasState(
+    state = RiwayatAktivitasState(
         periode: 'custom',
         dariTanggal: start,
         sampaiTanggal: end,
         tipeFilter: state.tipeFilter,
-        search: state.search));
+        search: state.search);
     load();
   }
 
   void setTipeFilter(AktivitasTipeFilter tipe) {
     if (state.tipeFilter == tipe) return;
-    emit(state.copyWith(tipeFilter: tipe, items: []));
+    state = state.copyWith(tipeFilter: tipe, items: []);
     load();
   }
 
   void search(String query) {
     if (state.search == query.trim()) return;
-    emit(state.copyWith(search: query.trim(), items: []));
+    state = state.copyWith(search: query.trim(), items: []);
     load();
   }
 
   /// Kembali ke periode, tipe, dan pencarian bawaan, lalu memuat ulang.
   void resetFilters() {
-    emit(const RiwayatAktivitasState());
+    state = const RiwayatAktivitasState();
     load();
   }
 
@@ -186,6 +195,6 @@ class RiwayatAktivitasCubit extends Cubit<RiwayatAktivitasState> {
     _generation++;
     _page = 0;
     _pageSize = null;
-    emit(const RiwayatAktivitasState());
+    state = const RiwayatAktivitasState();
   }
 }

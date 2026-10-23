@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_icon_button.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_export_action.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/periode_picker_sheet.dart';
@@ -15,7 +15,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/periode_pic
 /// Semua penyaring Riwayat Aktivitas dalam satu baris: tipe, periode, dan
 /// ekspor. Menggantikan tiga chip tipe, sembilan chip periode, tombol rentang
 /// tanggal, dan tombol XLSX yang dulu memenuhi tiga baris.
-class AktivitasFilterBar extends StatelessWidget {
+class AktivitasFilterBar extends ConsumerWidget {
   const AktivitasFilterBar({super.key});
 
   static const tipeLabels = {
@@ -30,91 +30,83 @@ class AktivitasFilterBar extends StatelessWidget {
       s.search.isNotEmpty;
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
-      buildWhen: (a, b) =>
-          a.tipeFilter != b.tipeFilter ||
-          a.periode != b.periode ||
-          a.dariTanggal != b.dariTanggal ||
-          a.sampaiTanggal != b.sampaiTanggal ||
-          a.search != b.search,
-      builder: (context, state) {
-        final tipe = _TipeSegments(state: state);
-        final periode = _PeriodeButton(state: state);
-        final reset = _bukanBawaan(state)
-            ? AppButton(
-                label: 'Reset',
-                variant: AppButtonVariant.text,
-                size: AppButtonSize.compact,
-                expand: false,
-                onPressed: () =>
-                    context.read<RiwayatAktivitasCubit>().resetFilters(),
-              )
-            : null;
-        return LayoutBuilder(builder: (context, constraints) {
-          if (LayoutBreakpoint.fromWidth(constraints.maxWidth) !=
-              LayoutBreakpoint.compact) {
-            return Row(
-              children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: AppSpacing.md,
-                    runSpacing: AppSpacing.sm,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [tipe, periode, if (reset != null) reset],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                AppButton(
-                  label: 'Ekspor XLSX',
-                  icon: Icons.download_rounded,
-                  variant: AppButtonVariant.outlined,
-                  expand: false,
-                  onPressed: () => exportAktivitasReport(context),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(riwayatAktivitasProvider);
+    final tipe = _TipeSegments(state: state);
+    final periode = _PeriodeButton(state: state);
+    final reset = _bukanBawaan(state)
+        ? AppButton(
+            label: 'Reset',
+            variant: AppButtonVariant.text,
+            size: AppButtonSize.compact,
+            expand: false,
+            onPressed: () =>
+                ref.read(riwayatAktivitasProvider.notifier).resetFilters(),
+          )
+        : null;
+    return LayoutBuilder(builder: (context, constraints) {
+      if (LayoutBreakpoint.fromWidth(constraints.maxWidth) !=
+          LayoutBreakpoint.compact) {
+        return Row(
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [tipe, periode, if (reset != null) reset],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            AppButton(
+              label: 'Ekspor XLSX',
+              icon: Icons.download_rounded,
+              variant: AppButtonVariant.outlined,
+              expand: false,
+              onPressed: () => exportAktivitasReport(context),
+            ),
+          ],
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          tipe,
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(child: _PeriodeField(state: state)),
+              if (_bukanBawaan(state)) ...[
+                const SizedBox(width: AppSpacing.sm),
+                AppIconButton(
+                  icon: Icons.restart_alt,
+                  tooltip: 'Reset filter',
+                  onPressed: () => ref
+                      .read(riwayatAktivitasProvider.notifier)
+                      .resetFilters(),
                 ),
               ],
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              tipe,
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(child: _PeriodeField(state: state)),
-                  if (_bukanBawaan(state)) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    AppIconButton(
-                      icon: Icons.restart_alt,
-                      tooltip: 'Reset filter',
-                      onPressed: () =>
-                          context.read<RiwayatAktivitasCubit>().resetFilters(),
-                    ),
-                  ],
-                  const SizedBox(width: AppSpacing.sm),
-                  AppIconButton(
-                    icon: Icons.download_rounded,
-                    tooltip: 'Ekspor XLSX',
-                    onPressed: () => exportAktivitasReport(context),
-                  ),
-                ],
+              const SizedBox(width: AppSpacing.sm),
+              AppIconButton(
+                icon: Icons.download_rounded,
+                tooltip: 'Ekspor XLSX',
+                onPressed: () => exportAktivitasReport(context),
               ),
             ],
-          );
-        });
-      },
-    );
+          ),
+        ],
+      );
+    });
   }
 }
 
-class _TipeSegments extends StatelessWidget {
+class _TipeSegments extends ConsumerWidget {
   const _TipeSegments({required this.state});
 
   final RiwayatAktivitasState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SegmentedButton<AktivitasTipeFilter>(
       showSelectedIcon: false,
       segments: [
@@ -122,8 +114,9 @@ class _TipeSegments extends StatelessWidget {
           ButtonSegment(value: entry.key, label: Text(entry.value)),
       ],
       selected: {state.tipeFilter},
-      onSelectionChanged: (selection) =>
-          context.read<RiwayatAktivitasCubit>().setTipeFilter(selection.first),
+      onSelectionChanged: (selection) => ref
+          .read(riwayatAktivitasProvider.notifier)
+          .setTipeFilter(selection.first),
     );
   }
 }

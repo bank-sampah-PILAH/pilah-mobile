@@ -9,7 +9,7 @@ Future<void> _cmdList() async {
 
   final storageDefault = _getDefaultProviderName();
   final storageActive = _getActiveProviders();
-  final stateDefault = config['state_management']?['default'] ?? 'bloc';
+  final stateDefault = config['state_management']?['default'] ?? 'riverpod';
 
   print('  App              : ${config['app']?['name'] ?? 'unknown'}');
   print(
@@ -87,7 +87,8 @@ Future<void> _cmdAdd(
   }
 
   final config = _readSplConfig();
-  final globalStateDefault = config['state_management']?['default'] ?? 'bloc';
+  final globalStateDefault =
+      config['state_management']?['default'] ?? 'riverpod';
   final stateChoice = stateOverride ?? globalStateDefault;
   _validateStateChoice(stateChoice);
 
@@ -422,21 +423,21 @@ void _cmdStateList() {
   _printHeader(
       'State Management  [OR — global default + per-feature override]');
   final config = _readSplConfig();
-  final current = config['state_management']?['default'] ?? 'bloc';
+  final current = config['state_management']?['default'] ?? 'riverpod';
 
   final solutions = {
     'bloc': [
-      'flutter_bloc (already in pubspec)',
+      'requires flutter_bloc in pubspec.yaml',
       'Event + State + Bloc. Explicit event stream. Best for complex flows.',
       'Files: <name>_event.dart  <name>_state.dart  <name>_bloc.dart',
     ],
     'cubit': [
-      'flutter_bloc (already in pubspec, same package as bloc)',
+      'requires flutter_bloc in pubspec.yaml (same as bloc)',
       'State + Cubit only. No event classes. Simpler, fewer files.',
       'Files: <name>_state.dart  <name>_cubit.dart',
     ],
     'riverpod': [
-      'flutter_riverpod (add to pubspec if not present)',
+      'flutter_riverpod (included in this app)',
       'Notifier + Provider. Different DI model. Bridges to get_it via di<T>().',
       'Files: <name>_state.dart  <name>_notifier.dart',
     ],
@@ -454,8 +455,8 @@ void _cmdStateList() {
   print(
       '  Per-feature    : dart run codegen/spl_manager.dart add <name> --state <solution>');
   print('');
-  print('  Note: bloc and cubit coexist freely (same package).');
-  print('        riverpod requires flutter_riverpod in pubspec.yaml.');
+  print('  Note: bloc and cubit require the optional flutter_bloc package.');
+  print('        Riverpod is the default and included in this app.');
 }
 
 Future<void> _cmdFix() async {

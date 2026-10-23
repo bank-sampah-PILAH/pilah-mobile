@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/versi_harga.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
 
@@ -21,25 +21,32 @@ class RiwayatHargaState extends Equatable {
   List<Object?> get props => [status, riwayat, errorMessage];
 }
 
-@injectable
-class RiwayatHargaCubit extends Cubit<RiwayatHargaState> {
+final riwayatHargaProvider =
+    NotifierProvider.autoDispose<RiwayatHargaNotifier, RiwayatHargaState>(
+  () => RiwayatHargaNotifier(di<GetRiwayatHargaUseCase>()),
+);
+
+class RiwayatHargaNotifier extends Notifier<RiwayatHargaState> {
   final GetRiwayatHargaUseCase _getRiwayat;
 
-  RiwayatHargaCubit(this._getRiwayat) : super(const RiwayatHargaState());
+  RiwayatHargaNotifier(this._getRiwayat);
+
+  @override
+  RiwayatHargaState build() => const RiwayatHargaState();
 
   Future<void> load(String jenisId) async {
-    emit(const RiwayatHargaState());
+    state = const RiwayatHargaState();
     final result = await _getRiwayat.execute(jenisId);
-    if (isClosed) return;
+    if (!ref.mounted) return;
     result.fold(
-      (failure) => emit(RiwayatHargaState(
+      (failure) => state = RiwayatHargaState(
         status: RiwayatHargaStatus.failure,
         errorMessage: failure.displayMessage,
-      )),
-      (riwayat) => emit(RiwayatHargaState(
+      ),
+      (riwayat) => state = RiwayatHargaState(
         status: RiwayatHargaStatus.loaded,
         riwayat: riwayat,
-      )),
+      ),
     );
   }
 }

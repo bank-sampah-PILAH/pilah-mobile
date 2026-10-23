@@ -1,12 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/core/constants/app_key.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/riwayat_harga_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 void main() {
@@ -28,21 +30,37 @@ void main() {
     expect(repository.network, same(di<NetworkService>()));
   });
 
-  test('gives each price history screen its own cubit', () {
-    final cubit = di<RiwayatHargaCubit>();
-    addTearDown(cubit.close);
+  test('gives each price history screen its own Riverpod notifier', () {
+    final first = ProviderContainer();
+    final second = ProviderContainer();
+    addTearDown(first.dispose);
+    addTearDown(second.dispose);
+    final firstSubscription = first.listen(riwayatHargaProvider, (_, __) {});
+    final secondSubscription = second.listen(riwayatHargaProvider, (_, __) {});
+    addTearDown(firstSubscription.close);
+    addTearDown(secondSubscription.close);
 
-    expect(di<RiwayatHargaCubit>(), isNot(same(cubit)));
+    expect(
+      first.read(riwayatHargaProvider.notifier),
+      isNot(same(second.read(riwayatHargaProvider.notifier))),
+    );
   });
 
-  test('builds the harga cubit, with the price-change use case, from the graph',
-      () {
-    expect(di<HargaCubit>(), same(di<HargaCubit>()));
+  test('builds the harga notifier from the graph', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(hargaProvider.notifier),
+      same(container.read(hargaProvider.notifier)),
+    );
   });
 
-  test('builds the authentication bloc the app creates at start-up', () {
-    // app.dart resolves it before the first frame; a dependency the graph
-    // can't provide crashes the app on launch.
-    expect(di<AuthenticationBloc>(), isA<AuthenticationBloc>());
+  test('builds the authentication provider used at app start-up', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(
+        container.read(authenticationProvider), isA<AuthenticationInitial>());
   });
 }

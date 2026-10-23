@@ -13,9 +13,10 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringk
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+import '../../../../support/notifier_harness.dart';
 
 class MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -78,7 +79,8 @@ void main() {
   late MockDeactivateNasabahUseCase deactivateUseCase;
   late MockApproveNasabahUseCase approveUseCase;
   late MockRejectNasabahUseCase rejectUseCase;
-  late NasabahCubit cubit;
+  late NasabahNotifier cubit;
+  late NotifierHarness<NasabahNotifier, NasabahState> harness;
 
   setUpAll(() {
     registerFallbackValue(NasabahRequest(
@@ -116,19 +118,25 @@ void main() {
     rejectUseCase = MockRejectNasabahUseCase();
     when(() => getUseCase.execute(any()))
         .thenAnswer((_) async => Right(_page(const [])));
-    cubit = NasabahCubit(
-      getUseCase,
-      MockGetActiveNasabahUseCase(),
-      ringkasanUseCase,
-      addUseCase,
-      updateUseCase,
-      activateUseCase,
-      deactivateUseCase,
-      approveUseCase,
-      rejectUseCase,
-      MockSinkronProfilNasabahUseCase(),
+    harness = NotifierHarness(
+      nasabahProvider,
+      () => NasabahNotifier(
+        getUseCase,
+        MockGetActiveNasabahUseCase(),
+        ringkasanUseCase,
+        addUseCase,
+        updateUseCase,
+        activateUseCase,
+        deactivateUseCase,
+        approveUseCase,
+        rejectUseCase,
+        MockSinkronProfilNasabahUseCase(),
+      ),
     );
+    cubit = harness.notifier;
   });
+
+  tearDown(() => harness.dispose());
 
   group('tab filtering', () {
     // Penyaringan tab dilakukan server (PIL-214): menyaring di aplikasi hanya

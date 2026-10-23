@@ -1,24 +1,13 @@
-import 'dart:async';
-
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
+import '../../../../support/auth_support.dart';
 
 Authenticated _session() => Authenticated(
         authEntity: const AuthEntity(
@@ -32,29 +21,22 @@ Authenticated _session() => Authenticated(
     ));
 
 void main() {
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
-
-  late _MockAuthBloc auth;
-  late StreamController<AuthenticationStates> states;
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
-    auth = _MockAuthBloc();
-    states = StreamController<AuthenticationStates>();
-    whenListen(auth, states.stream, initialState: _session());
+    auth = authNotifierIn(_session());
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository(
         name: 'Siti Aminah', email: 'siti@example.test'));
   });
 
   tearDown(() async {
-    await states.close();
-    await auth.close();
     await di.unregister<NasabahRepository>();
   });
 
   testWidgets('logging out asks first, then dispatches LogoutRequested',
       (tester) async {
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: const MaterialApp(home: ProfilNasabahPage())));
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, const MaterialApp(home: ProfilNasabahPage())));
     await tester.pumpAndSettle();
 
     final logoutButton = find.text('Keluar');
@@ -64,20 +46,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Keluar dari akun?'), findsOneWidget);
-    verifyNever(
-        () => auth.add(any<AuthenticationEvent>(that: isA<LogoutRequested>())));
+    expect(auth.calls, isNot(contains('logout')));
 
     await tester.tap(find.text('Ya, Keluar'));
     await tester.pumpAndSettle();
 
-    verify(() =>
-            auth.add(any<AuthenticationEvent>(that: isA<LogoutRequested>())))
-        .called(1);
+    expect(auth.calls, contains('logout'));
   });
 
   testWidgets('cancelling the logout keeps the session', (tester) async {
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: const MaterialApp(home: ProfilNasabahPage())));
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, const MaterialApp(home: ProfilNasabahPage())));
     await tester.pumpAndSettle();
 
     final logoutButton = find.text('Keluar');
@@ -88,8 +67,7 @@ void main() {
     await tester.tap(find.text('Batal'));
     await tester.pumpAndSettle();
 
-    verifyNever(
-        () => auth.add(any<AuthenticationEvent>(that: isA<LogoutRequested>())));
+    expect(auth.calls, isNot(contains('logout')));
   });
 
   // Post-logout navigation to LoginPage is MainPage's shell listener's job

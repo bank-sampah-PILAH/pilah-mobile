@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
@@ -17,13 +17,12 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 /// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
 const _profileBranch = 7;
 const _pengumumanBranch = 8;
 
-class MainPage extends StatelessWidget {
+class MainPage extends ConsumerWidget {
   const MainPage({
     super.key,
     required this.navigationShell,
@@ -37,36 +36,34 @@ class MainPage extends StatelessWidget {
   final bool? isWebOverride;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocListener<AuthenticationBloc, AuthenticationStates>(
-        listenWhen: (previous, current) {
-          if (current is Unauthenticated) return true;
-          final oldRole =
-              previous is Authenticated ? previous.authEntity.role : null;
-          final newRole =
-              current is Authenticated ? current.authEntity.role : null;
-          return oldRole != newRole && RoleNavigationBar.supports(newRole);
-        },
-        listener: (context, state) {
-          if (state is Unauthenticated) {
-            context.go(LoginPage.route);
-            return;
-          }
-          navigationShell.goBranch(0, initialLocation: true);
-        },
-        child: _RoleShell(
-            navigationShell: navigationShell, isWebOverride: isWebOverride),
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(authenticationProvider, (previous, current) {
+      if (current is Unauthenticated) {
+        context.go(LoginPage.route);
+        return;
+      }
+      final oldRole =
+          previous is Authenticated ? previous.authEntity.role : null;
+      final newRole = current is Authenticated ? current.authEntity.role : null;
+      if (oldRole != newRole && RoleNavigationBar.supports(newRole)) {
+        navigationShell.goBranch(0, initialLocation: true);
+      }
+    });
+    return _RoleShell(
+      navigationShell: navigationShell,
+      isWebOverride: isWebOverride,
+    );
+  }
 }
 
-class _RoleShell extends StatelessWidget {
+class _RoleShell extends ConsumerWidget {
   const _RoleShell({required this.navigationShell, this.isWebOverride});
   final StatefulNavigationShell navigationShell;
   final bool? isWebOverride;
 
   @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthenticationBloc>().state;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authenticationProvider);
     final role = auth is Authenticated ? auth.authEntity.role : null;
     if (!RoleNavigationBar.supports(role)) {
       // Fail closed either way. The message is for a signed-in account whose
@@ -79,20 +76,12 @@ class _RoleShell extends StatelessWidget {
     }
     if (role == 'nasabah') {
       final session = auth as Authenticated;
-      return BlocProvider<NasabahApprovalCubit>(
-        key: ValueKey((
-          session.authEntity.id,
-          session.authEntity.email,
-          session.authEntity.token
-        )),
-        create: (_) => di<NasabahApprovalCubit>()..load(),
-        child: _ShellContent(
-          role: role!,
-          name: session.authEntity.name,
-          bankSampahNama: session.authEntity.bankSampahNama,
-          navigationShell: navigationShell,
-          isWebOverride: isWebOverride,
-        ),
+      return _ShellContent(
+        role: role!,
+        name: session.authEntity.name,
+        bankSampahNama: session.authEntity.bankSampahNama,
+        navigationShell: navigationShell,
+        isWebOverride: isWebOverride,
       );
     }
     return _ShellContent(
@@ -105,7 +94,7 @@ class _RoleShell extends StatelessWidget {
   }
 }
 
-class _ShellContent extends StatelessWidget {
+class _ShellContent extends ConsumerWidget {
   const _ShellContent({
     required this.role,
     required this.navigationShell,
@@ -126,9 +115,17 @@ class _ShellContent extends StatelessWidget {
   final bool? isWebOverride;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final approval =
-        role == 'nasabah' ? context.watch<NasabahApprovalCubit>().state : null;
+        role == 'nasabah' ? ref.watch(nasabahApprovalProvider) : null;
+    if (approval is NasabahApprovalInitial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted &&
+            ref.read(nasabahApprovalProvider) is NasabahApprovalInitial) {
+          ref.read(nasabahApprovalProvider.notifier).load();
+        }
+      });
+    }
     final limitedNasabah = role == 'nasabah' &&
         !(approval is NasabahApprovalLoaded &&
             approval.memberships.any((membership) =>
@@ -203,7 +200,7 @@ class _ShellContent extends StatelessWidget {
     // menu, jadi penerjemahan ke branch hanya ditulis sekali.
     void select(int index) {
       if (role == 'nasabah' && branches[index] == 0) {
-        context.read<NasabahApprovalCubit>().load(silent: true);
+        ref.read(nasabahApprovalProvider.notifier).load(silent: true);
       }
       navigationShell.goBranch(branches[index],
           initialLocation: index == selected);
@@ -229,7 +226,7 @@ class _ShellContent extends StatelessWidget {
       );
     }
 
-    final account = context.watch<AuthenticationBloc>().state;
+    final account = ref.watch(authenticationProvider);
     final profileName =
         account is Authenticated ? account.authEntity.name : null;
     final profileEmail =

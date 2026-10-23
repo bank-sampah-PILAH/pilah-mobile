@@ -1,14 +1,10 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -17,9 +13,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_pro
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/onboarding_support.dart';
-
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/auth_support.dart';
 
 class _MockDataSource extends Mock implements OnboardingRemoteDataSource {}
 
@@ -57,21 +51,16 @@ Future<void> _pumpScreen(
   String? bankSampahStatus,
   String role = 'pengelola',
 }) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: Authenticated(
-      authEntity: _account(bankSampahStatus: bankSampahStatus, role: role),
-    ),
-  );
+  final auth = authNotifierIn(Authenticated(
+    authEntity: _account(bankSampahStatus: bankSampahStatus, role: role),
+  ));
 
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: onboarding,
-      child: MultiBlocProvider(
-        providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-        child: const MaterialApp(home: CompleteProfileScreen()),
+      child: withAuthenticationProvider(
+        auth,
+        const MaterialApp(home: CompleteProfileScreen()),
       ),
     ),
   );
@@ -88,14 +77,9 @@ Future<GoRouter> _pumpRouter(
   required ProviderContainer onboarding,
   String? bankSampahStatus,
 }) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: Authenticated(
-      authEntity: _account(bankSampahStatus: bankSampahStatus),
-    ),
-  );
+  final auth = authNotifierIn(Authenticated(
+    authEntity: _account(bankSampahStatus: bankSampahStatus),
+  ));
 
   final router = GoRouter(
     initialLocation: CompleteProfileScreen.route,
@@ -115,9 +99,9 @@ Future<GoRouter> _pumpRouter(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: onboarding,
-      child: MultiBlocProvider(
-        providers: [BlocProvider<AuthenticationBloc>.value(value: auth)],
-        child: MaterialApp.router(routerConfig: router),
+      child: withAuthenticationProvider(
+        auth,
+        MaterialApp.router(routerConfig: router),
       ),
     ),
   );

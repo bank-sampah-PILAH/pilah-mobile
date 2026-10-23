@@ -2,13 +2,16 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import '../../../../support/profile_support.dart';
 
 class _MockDataSource extends Mock implements ProfileRemoteDataSource {}
 
@@ -39,7 +42,9 @@ void main() {
   late _MockDataSource dataSource;
   late _MockPicker picker;
   late _MockCropper cropper;
-  late ProfileCubit cubit;
+  late TestProfileNotifier notifier;
+  late ProviderContainer container;
+  late ProviderSubscription<ProfileState> subscription;
   final croppedBytes = Uint8List.fromList([4, 5, 6]);
   Map<Symbol, dynamic> cropArgs = const {};
 
@@ -92,9 +97,16 @@ void main() {
     dataSource = _MockDataSource();
     picker = _MockPicker();
     cropper = _MockCropper();
-    cubit = ProfileCubit(dataSource, picker, cropper);
+    notifier = TestProfileNotifier(dataSource, picker, cropper);
+    container = ProviderContainer(
+      overrides: [profileProvider.overrideWith(() => notifier)],
+    );
+    subscription = container.listen(profileProvider, (_, __) {});
   });
-  tearDown(() => cubit.close());
+  tearDown(() {
+    subscription.close();
+    container.dispose();
+  });
 
   group('pickLogo', () {
     test('uses browser bytes without launching the native cropper', () async {
@@ -105,13 +117,21 @@ void main() {
             name: 'bank-logo.png',
             mimeType: 'image/png'),
       );
-      final webCubit = ProfileCubit(dataSource, picker, cropper, isWeb: true);
-      addTearDown(webCubit.close);
+      final webNotifier =
+          TestProfileNotifier(dataSource, picker, cropper, isWeb: true);
+      final webContainer = ProviderContainer(
+        overrides: [profileProvider.overrideWith(() => webNotifier)],
+      );
+      final webSubscription = webContainer.listen(profileProvider, (_, __) {});
+      addTearDown(() {
+        webSubscription.close();
+        webContainer.dispose();
+      });
 
-      await webCubit.pickLogo();
+      await webNotifier.pickLogo();
 
-      expect(webCubit.state.selectedLogoBytes, bytes);
-      expect(webCubit.state.selectedLogoFilename, 'bank-logo.png');
+      expect(webNotifier.state.selectedLogoBytes, bytes);
+      expect(webNotifier.state.selectedLogoFilename, 'bank-logo.png');
       verifyZeroInteractions(cropper);
     });
 
@@ -123,10 +143,16 @@ void main() {
       when(() => image.readAsBytes()).thenAnswer((_) => read.future);
       when(() => picker.pickImage(source: any(named: 'source')))
           .thenAnswer((_) async => image);
-      final webCubit = ProfileCubit(dataSource, picker, cropper, isWeb: true);
-      final picking = webCubit.pickLogo();
+      final webNotifier =
+          TestProfileNotifier(dataSource, picker, cropper, isWeb: true);
+      final webContainer = ProviderContainer(
+        overrides: [profileProvider.overrideWith(() => webNotifier)],
+      );
+      final webSubscription = webContainer.listen(profileProvider, (_, __) {});
+      final picking = webNotifier.pickLogo();
       await Future<void>.delayed(Duration.zero);
-      await webCubit.close();
+      webSubscription.close();
+      webContainer.dispose();
       read.complete(Uint8List.fromList([1, 2, 3]));
 
       await expectLater(picking, completes);
@@ -136,16 +162,16 @@ void main() {
         () async {
       stubPickAndCrop('/tmp/picked.heic', '/tmp/image_cropper_1.jpg');
 
-      await cubit.pickLogo();
+      await notifier.pickLogo();
 
-      expect(cubit.state.selectedLogoBytes, [4, 5, 6]);
-      expect(cubit.state.selectedLogoFilename, 'image_cropper_1.jpg');
+      expect(notifier.state.selectedLogoBytes, [4, 5, 6]);
+      expect(notifier.state.selectedLogoFilename, 'image_cropper_1.jpg');
     });
 
     test('reads from the gallery, not the camera', () async {
       stubPickAndCrop('/tmp/picked.jpg', '/tmp/cropped.jpg');
 
-      await cubit.pickLogo();
+      await notifier.pickLogo();
 
       expect(
           verify(() => picker.pickImage(source: captureAny(named: 'source')))
@@ -157,7 +183,7 @@ void main() {
     test('crops square and bounded with the native JPEG conversion', () async {
       stubPickAndCrop('/tmp/picked.heic', '/tmp/cropped.jpg');
 
-      await cubit.pickLogo();
+      await notifier.pickLogo();
 
       expect(cropArgs[#sourcePath], '/tmp/picked.heic');
       expect([cropArgs[#maxWidth], cropArgs[#maxHeight]], [1024, 1024]);
@@ -170,45 +196,45 @@ void main() {
     test('does not open the cropper when the gallery is cancelled', () async {
       stubPick(null);
 
-      await cubit.pickLogo();
+      await notifier.pickLogo();
 
       verifyZeroInteractions(cropper);
-      expect(cubit.state.selectedLogoBytes, isNull);
+      expect(notifier.state.selectedLogoBytes, isNull);
     });
 
     test('a cancelled pick keeps the logo already chosen', () async {
       stubPickAndCrop('/tmp/first.jpg', '/tmp/first-cropped.jpg');
-      await cubit.pickLogo();
+      await notifier.pickLogo();
       stubPick(null);
 
-      await cubit.pickLogo();
+      await notifier.pickLogo();
 
-      expect(cubit.state.selectedLogoBytes, croppedBytes);
-      expect(cubit.state.selectedLogoFilename, 'first-cropped.jpg');
+      expect(notifier.state.selectedLogoBytes, croppedBytes);
+      expect(notifier.state.selectedLogoFilename, 'first-cropped.jpg');
     });
 
     test('a cancelled crop keeps the logo already chosen', () async {
       stubPickAndCrop('/tmp/first.jpg', '/tmp/first-cropped.jpg');
-      await cubit.pickLogo();
+      await notifier.pickLogo();
       stubPick('/tmp/second.jpg');
       stubCrop(null);
 
-      await cubit.pickLogo();
+      await notifier.pickLogo();
 
-      expect(cubit.state.selectedLogoBytes, croppedBytes);
-      expect(cubit.state.selectedLogoFilename, 'first-cropped.jpg');
+      expect(notifier.state.selectedLogoBytes, croppedBytes);
+      expect(notifier.state.selectedLogoFilename, 'first-cropped.jpg');
     });
   });
 
   group('updateBankSampah', () {
     test('sends browser bytes and clears the selection on success', () async {
       final bytes = Uint8List.fromList([1, 2, 3]);
-      cubit.emit(cubit.state.copyWith(
+      notifier.setStateForTest(notifier.state.copyWith(
           selectedLogoBytes: bytes, selectedLogoFilename: 'bank-logo.png'));
       stubUpdate();
 
       expect(
-          await cubit.updateBankSampah(
+          await notifier.updateBankSampah(
               nama: 'Bank Sampah BTH',
               alamat: 'Kel. Kukusan',
               noHpPic: '081234567890'),
@@ -221,17 +247,17 @@ void main() {
           noHpPic: '081234567890',
           fotoLogoBytes: bytes,
           fotoLogoFilename: 'bank-logo.png')).called(1);
-      expect(cubit.state.selectedLogoBytes, isNull);
-      expect(cubit.state.selectedLogoFilename, isNull);
+      expect(notifier.state.selectedLogoBytes, isNull);
+      expect(notifier.state.selectedLogoFilename, isNull);
     });
 
     test('sends native cropped bytes along with the text fields', () async {
-      cubit.emit(cubit.state.copyWith(bankSampah: _stored));
+      notifier.setStateForTest(notifier.state.copyWith(bankSampah: _stored));
       stubPickAndCrop('/tmp/picked.heic', '/tmp/cropped.jpg');
-      await cubit.pickLogo();
+      await notifier.pickLogo();
       stubUpdate();
 
-      await cubit.updateBankSampah(
+      await notifier.updateBankSampah(
           nama: 'Bank Sampah BTH',
           alamat: 'Kel. Kukusan',
           noHpPic: '081234567890');
@@ -243,13 +269,13 @@ void main() {
           noHpPic: '081234567890',
           fotoLogoBytes: croppedBytes,
           fotoLogoFilename: 'cropped.jpg')).called(1);
-      expect(cubit.state.selectedLogoBytes, isNull);
-      expect(cubit.state.selectedLogoFilename, isNull);
+      expect(notifier.state.selectedLogoBytes, isNull);
+      expect(notifier.state.selectedLogoFilename, isNull);
     });
 
     test('a failed save keeps the photo and can retry without re-picking',
         () async {
-      cubit.emit(cubit.state.copyWith(
+      notifier.setStateForTest(notifier.state.copyWith(
           bankSampah: _stored,
           selectedLogoBytes: croppedBytes,
           selectedLogoFilename: 'cropped.jpg'));
@@ -268,16 +294,17 @@ void main() {
       ));
 
       final error =
-          await cubit.updateBankSampah(nama: 'n', alamat: 'a', noHpPic: 'p');
+          await notifier.updateBankSampah(nama: 'n', alamat: 'a', noHpPic: 'p');
 
       expect(error?.displayMessage,
           'Foto logo harus berformat JPG, JPEG, atau PNG');
-      expect(cubit.state.selectedLogoBytes, croppedBytes);
-      expect(cubit.state.selectedLogoFilename, 'cropped.jpg');
+      expect(notifier.state.selectedLogoBytes, croppedBytes);
+      expect(notifier.state.selectedLogoFilename, 'cropped.jpg');
       stubUpdate();
-      expect(await cubit.updateBankSampah(nama: 'n', alamat: 'a', noHpPic: 'p'),
+      expect(
+          await notifier.updateBankSampah(nama: 'n', alamat: 'a', noHpPic: 'p'),
           isNull);
-      expect(cubit.state.selectedLogoBytes, isNull);
+      expect(notifier.state.selectedLogoBytes, isNull);
     });
   });
 }

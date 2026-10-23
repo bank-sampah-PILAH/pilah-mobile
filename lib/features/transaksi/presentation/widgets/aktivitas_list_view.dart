@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
@@ -16,7 +16,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_s
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 
@@ -42,8 +42,9 @@ class AktivitasListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(riwayatAktivitasProvider);
         if (state.status == AktivitasStatus.initial ||
             state.status == AktivitasStatus.loading) {
           return ListView.separated(
@@ -63,7 +64,10 @@ class AktivitasListView extends StatelessWidget {
                     subtitle: state.errorMessage ?? 'Terjadi kesalahan',
                     icon: Icons.error_outline)),
             TextButton(
-                onPressed: () => context.read<RiwayatAktivitasCubit>().load(),
+                onPressed: () =>
+                    ProviderScope.containerOf(context, listen: false)
+                        .read(riwayatAktivitasProvider.notifier)
+                        .load(),
                 child: const Text('Coba Lagi')),
           ]);
         }
@@ -89,7 +93,9 @@ class AktivitasListView extends StatelessWidget {
                     notification.metrics.axis == Axis.vertical &&
                     notification.metrics.extentAfter < 200 &&
                     state.errorMessage == null) {
-                  context.read<RiwayatAktivitasCubit>().loadMore();
+                  ProviderScope.containerOf(context, listen: false)
+                      .read(riwayatAktivitasProvider.notifier)
+                      .loadMore();
                 }
                 return false;
               },
@@ -116,7 +122,9 @@ class AktivitasListView extends StatelessWidget {
                         pageSize: state.pageSize,
                         itemLabel: 'transaksi',
                         onPageChanged:
-                            context.read<RiwayatAktivitasCubit>().loadPage,
+                            ProviderScope.containerOf(context, listen: false)
+                                .read(riwayatAktivitasProvider.notifier)
+                                .loadPage,
                       )
                     : null,
               ),
@@ -142,7 +150,9 @@ class AktivitasListView extends StatelessWidget {
                 totalItems: state.totalCount,
                 pageSize: state.pageSize,
                 itemLabel: 'transaksi',
-                onPageChanged: context.read<RiwayatAktivitasCubit>().loadPage,
+                onPageChanged: ProviderScope.containerOf(context, listen: false)
+                    .read(riwayatAktivitasProvider.notifier)
+                    .loadPage,
               ),
             ),
           ],
@@ -200,7 +210,8 @@ class AktivitasListView extends StatelessWidget {
     return [
       TextButton(
         onPressed: () {
-          final cubit = context.read<RiwayatAktivitasCubit>();
+          final cubit = ProviderScope.containerOf(context, listen: false)
+              .read(riwayatAktivitasProvider.notifier);
           final retryPage = state.retryPage;
           if (retryPage == null) {
             cubit.loadMore();
@@ -258,7 +269,9 @@ void _openDetail(BuildContext context, ActivitasEntity item) {
     showPencairanDetailSheet(
       context,
       item.pencairan!,
-      onChanged: () => context.read<RiwayatAktivitasCubit>().load(silent: true),
+      onChanged: () => ProviderScope.containerOf(context, listen: false)
+          .read(riwayatAktivitasProvider.notifier)
+          .load(silent: true),
     );
   }
 }

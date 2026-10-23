@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
@@ -9,11 +9,11 @@ import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_reposit
 import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
 import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
 import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
-import 'package:pilah_mobile/features/riwayat/presentation/cubit/riwayat_history_cubit.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/preview/preview_authentication.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
@@ -21,7 +21,9 @@ import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Visual preview only. The normal app entrypoint still performs real login.
-void main() {
+void main() => runApp(buildPreviewApp());
+
+Widget buildPreviewApp() {
   if (!di.isRegistered<NasabahRepository>()) {
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
   }
@@ -29,16 +31,9 @@ void main() {
     di.registerSingleton<NasabahPengumumanRepository>(
         const _PreviewPengumumanRepository());
   }
-  // The history screen's setoran tab resolves the cubit from GetIt; preview
-  // runs offline without configureDependencies, so wire offline stubs.
+  // The history screen runs offline without configureDependencies, so wire its repository stub.
   if (!di.isRegistered<RiwayatRepository>()) {
     di.registerFactory<RiwayatRepository>(() => _PreviewRiwayatRepository());
-    di.registerFactory<RiwayatHistoryCubit>(
-      () => RiwayatHistoryCubit(
-        GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
-        GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
-      ),
-    );
   }
   final router = GoRouter(initialLocation: AppLocations.dashboard, routes: [
     GoRoute(
@@ -53,18 +48,24 @@ void main() {
         path: AppLocations.profile,
         builder: (_, __) => const ProfilNasabahPage()),
   ]);
-  runApp(
-    BlocProvider<AuthenticationBloc>(
-      create: (_) => createPreviewAuthenticationBloc(),
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'PILAH - Preview Beranda',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.greenDark),
+  return ProviderScope(
+    overrides: [
+      authenticationProvider.overrideWith(createPreviewAuthenticationNotifier),
+      riwayatHistoryProvider.overrideWith(
+        () => RiwayatHistoryNotifier(
+          GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
+          GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
         ),
-        routerConfig: router,
       ),
+    ],
+    child: MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      title: 'PILAH - Preview Beranda',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.greenDark),
+      ),
+      routerConfig: router,
     ),
   );
 }

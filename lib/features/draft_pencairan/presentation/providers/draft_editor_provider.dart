@@ -1,13 +1,13 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:injectable/injectable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import '../../domain/repository/draft_pencairan_repository.dart';
 import '../widgets/draft_format.dart';
-import 'draft_editor_state.dart';
+import '../blocs/draft_editor_state.dart';
+import 'package:pilah_mobile/services/di.dart';
 
 const _tidakMemenuhiSyarat =
     'Nasabah ini sudah tidak memenuhi syarat. Hapus dari draft untuk melanjutkan.';
@@ -15,11 +15,18 @@ const _tidakMemenuhiSyarat =
 /// Holds a draft pencairan while the pengurus shapes it: who is paid, how
 /// much, how, and what potongan comes off. Nothing reaches the server until
 /// it is saved, and the saldo never moves until the payment is confirmed.
-@injectable
-class DraftEditorCubit extends Cubit<DraftEditorState> {
+final draftEditorProvider =
+    NotifierProvider<DraftEditorNotifier, DraftEditorState>(
+  () => DraftEditorNotifier(di<DraftPencairanRepository>()),
+);
+
+class DraftEditorNotifier extends Notifier<DraftEditorState> {
   final DraftPencairanRepository _repository;
 
-  DraftEditorCubit(this._repository) : super(const DraftEditorState());
+  DraftEditorNotifier(this._repository);
+
+  @override
+  DraftEditorState build() => const DraftEditorState();
 
   /// Starts a draft for [kandidat]: each is paid their whole saldo, in cash. It
   /// is named at once ("Pencairan 8 Okt 2026, 06:04"), so even an export of it
@@ -28,7 +35,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   void startNew(List<Kandidat> kandidat, {DateTime? sekarang}) {
     final wib =
         (sekarang ?? DateTime.now()).toUtc().add(const Duration(hours: 7));
-    emit(DraftEditorState(
+    state = DraftEditorState(
       nama: 'Pencairan ${waktu(wib)}',
       items: [
         for (final k in kandidat)
@@ -39,7 +46,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
             nominal: k.saldo,
           ),
       ],
-    ));
+    );
   }
 
   void setNama(String nama) => _change(state.copyWith(nama: nama));
@@ -119,14 +126,16 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   /// saldo now, so a nominal the saldo no longer covers shows up as an error.
   Future<void> load(String id) async {
     if (state.isBusy) return;
-    emit(state.copyWith(phase: EditorPhase.loading, errorMessage: () => null));
+    state =
+        state.copyWith(phase: EditorPhase.loading, errorMessage: () => null);
     final result = await _repository.getDraft(id);
+    if (!ref.mounted) return;
     result.fold(
-      (failure) => emit(state.copyWith(
+      (failure) => state = state.copyWith(
         phase: EditorPhase.idle,
         errorMessage: () => failure.displayMessage,
-      )),
-      (draft) => emit(_fromServer(draft)),
+      ),
+      (draft) => state = _fromServer(draft),
     );
   }
 
@@ -134,7 +143,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   /// the calculated draft, which replaces what the editor held.
   Future<void> save() async {
     if (state.isBusy || !state.canSave) return;
-    emit(state.copyWith(phase: EditorPhase.saving, errorMessage: () => null));
+    state = state.copyWith(phase: EditorPhase.saving, errorMessage: () => null);
     final input = _input();
     final id = state.draftId;
     final result = id == null
@@ -152,6 +161,7 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     if (!state.canConfirm) return;
     if (state.draftId == null || state.dirty) {
       await save();
+      if (!ref.mounted) return;
       final saved = state;
       if (saved.draftId == null ||
           saved.dirty ||
@@ -180,18 +190,19 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   Future<DraftExport?> export(ExportBerkas berkas) async {
     if (!state.canExport) return null;
     final id = state.draftId;
-    emit(
-        state.copyWith(phase: EditorPhase.exporting, errorMessage: () => null));
+    state =
+        state.copyWith(phase: EditorPhase.exporting, errorMessage: () => null);
     final result = id != null && !state.dirty
         ? await _repository.exportDraft(id, berkas)
         : await _repository.exportPratinjau(_input(), berkas);
+    if (!ref.mounted) return null;
     return result.fold(
       (failure) {
-        emit(_rejected(failure));
+        state = _rejected(failure);
         return null;
       },
       (file) {
-        emit(state.copyWith(phase: EditorPhase.idle));
+        state = state.copyWith(phase: EditorPhase.idle);
         return file;
       },
     );
@@ -201,28 +212,33 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
     EditorPhase phase,
     Future<Either<NetworkException, DraftPencairan>> call,
   ) async {
-    emit(state.copyWith(phase: phase, errorMessage: () => null));
+    state = state.copyWith(phase: phase, errorMessage: () => null);
     await _apply(await call);
   }
 
-  Future<void> _apply(Either<NetworkException, DraftPencairan> result) =>
-      result.fold(
-        (failure) async {
-          emit(_rejected(failure));
-          // A 409 means the draft is final on the server; show it as it is there.
-          if (failure is ConflictException) await _resync();
-        },
-        (draft) async => emit(_fromServer(draft)),
-      );
+  Future<void> _apply(Either<NetworkException, DraftPencairan> result) async {
+    if (!ref.mounted) return;
+    await result.fold(
+      (failure) async {
+        state = _rejected(failure);
+        // A 409 means the draft is final on the server; show it as it is there.
+        if (failure is ConflictException) await _resync();
+      },
+      (draft) async => state = _fromServer(draft),
+    );
+  }
 
   /// Reloads the draft but keeps the message that explains why.
   Future<void> _resync() async {
     final id = state.draftId;
     if (id == null) return;
     final message = state.errorMessage;
-    (await _repository.getDraft(id)).fold(
+    final result = await _repository.getDraft(id);
+    if (!ref.mounted) return;
+    result.fold(
       (_) {},
-      (draft) => emit(_fromServer(draft).copyWith(errorMessage: () => message)),
+      (draft) =>
+          state = _fromServer(draft).copyWith(errorMessage: () => message),
     );
   }
 
@@ -298,13 +314,13 @@ class DraftEditorCubit extends Cubit<DraftEditorState> {
   /// carries the server's complaint about its old values.
   void _change(DraftEditorState next, {Set<String> touched = const {}}) {
     if (state.status.terkunci || state.isBusy) return;
-    emit(next.copyWith(
+    state = next.copyWith(
       dirty: true,
       itemErrors: {
         for (final entry in next.itemErrors.entries)
           if (!touched.contains(entry.key)) entry.key: entry.value,
       },
-    ));
+    );
   }
 
   void _editItem(String nasabahId, EditorItem Function(EditorItem) change) =>

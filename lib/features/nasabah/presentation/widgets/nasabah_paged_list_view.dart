@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
 
 /// Daftar nasabah berpaginasi (PIL-214).
@@ -12,7 +11,6 @@ class NasabahPagedListView extends StatelessWidget {
   final bool hasMore;
   final bool isLoadingMore;
   final VoidCallback onLoadMore;
-  final NasabahCubit? nasabahCubit;
 
   /// Jarak dari dasar daftar saat halaman berikutnya mulai diambil, dipilih
   /// agar datanya sudah siap sebelum pengurus benar-benar sampai ke ujung.
@@ -24,7 +22,6 @@ class NasabahPagedListView extends StatelessWidget {
     required this.hasMore,
     required this.isLoadingMore,
     required this.onLoadMore,
-    this.nasabahCubit,
   });
 
   bool _hampirUjung(ScrollNotification notification) {
@@ -37,7 +34,7 @@ class NasabahPagedListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
-        // Cubit sendiri yang menolak permintaan ganda dan permintaan setelah
+        // Notifier itself rejects duplicate requests and requests after
         // halaman terakhir, jadi di sini cukup memberi tahu.
         if (hasMore && !isLoadingMore && _hampirUjung(notification)) {
           onLoadMore();
@@ -77,7 +74,6 @@ class NasabahPagedListView extends StatelessWidget {
           final customer = items[index];
           return NasabahListItem(
             nasabah: customer,
-            nasabahCubit: nasabahCubit,
           );
         },
       ),

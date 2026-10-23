@@ -33,8 +33,7 @@ class ApprovalBankSampahDetailPage extends StatelessWidget {
 }
 
 /// The detail body, split out from [ApprovalBankSampahDetailPage] so widget
-/// tests can inject a cubit directly with `BlocProvider.value` instead of
-/// going through the DI container — mirrors the list page's own split.
+/// tests can override its provider without going through the DI container.
 class ApprovalBankSampahDetailView extends ConsumerWidget {
   final NasabahMembershipEntity membership;
 

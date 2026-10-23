@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -13,11 +12,11 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaksi_berhasil_panel.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_summary_section.dart';
@@ -80,17 +79,21 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     // populated by the Harga page. Load it here so the dropdown has options
     // even when arriving straight from the dashboard. The nasabah picker
     // fetches its own list when it opens, so it needs no preload.
-    context.read<HargaCubit>().loadHarga();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(hargaProvider.notifier).loadHarga();
+    });
 
-    // The WhatsApp draft built on success renders the pengelola's saved
-    // template, which lives in the app-scoped ProfileCubit and is otherwise only
-    // populated by the Profile page. Fetched here — once per session, since a
+    // The WhatsApp draft built on success renders the app-scoped saved template,
+    // otherwise populated by the Profile page. Fetch here once per session: a
     // template already in hand needs no refresh — so someone who goes straight
     // from the dashboard to a transaksi still gets their own wording instead of
     // silently falling back to the default.
-    final profileCubit = context.read<ProfileCubit>();
-    if (profileCubit.state.waTemplate == null) {
-      profileCubit.load(silent: true);
+    if (ref.read(profileProvider).waTemplate == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(profileProvider.notifier).load(silent: true);
+        }
+      });
     }
   }
 
@@ -198,10 +201,10 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
           .toList(),
     );
 
-    final cubit = context.read<TransaksiCubit>();
+    final notifier = ref.read(transaksiProvider.notifier);
     // Resolved before the await, so the WhatsApp template is read without
     // reaching back through a BuildContext across an async gap.
-    final waTemplate = context.read<ProfileCubit>().state.waTemplate?.template;
+    final waTemplate = ref.read(profileProvider).waTemplate?.template;
 
     // Diambil di sini, sebelum await, bukan sesudahnya. Draft WhatsApp harus
     // menggambarkan setoran yang dikirim, dan satu-satunya cara memastikannya
@@ -223,7 +226,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     FocusManager.instance.primaryFocus?.unfocus();
 
     setState(() => _isSaving = true);
-    final result = await cubit.addTransaksi(request);
+    final result = await notifier.addTransaksi(request);
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -245,8 +248,8 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     // Fire-and-forget, like loadStats, to keep the success modal responsive.
     ref.read(dashboardProvider.notifier).loadStats();
     ref.read(recentActivityProvider.notifier).load(silent: true);
-    context.read<RiwayatAktivitasCubit>().load(silent: true);
-    context.read<NasabahCubit>().loadNasabah(silent: true);
+    ref.read(riwayatAktivitasProvider.notifier).load(silent: true);
+    ref.read(nasabahProvider.notifier).loadNasabah(silent: true);
 
     final created = result.created!;
     _idempotencyKey = null;

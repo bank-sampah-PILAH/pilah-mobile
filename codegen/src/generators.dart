@@ -7,7 +7,7 @@ void _generateFeatureFiles(
   String module,
   String className, {
   String? storageProvider,
-  String state = 'bloc',
+  String state = 'riverpod',
 }) {
   final dirs = [
     'lib/features/$module/data/local',
@@ -217,7 +217,7 @@ void _removeTests(String module) {
 // ─── Test file generation ─────────────────────────────────────────────────────
 
 void _generateTestFiles(String module, String className,
-    {String state = 'bloc'}) {
+    {String state = 'riverpod'}) {
   final testDir = 'test/features/$module';
   Directory('$testDir/domain').createSync(recursive: true);
   Directory('$testDir/presentation').createSync(recursive: true);

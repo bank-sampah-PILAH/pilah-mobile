@@ -1,27 +1,35 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/check_session_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/preview/preview_authentication.dart';
 
 void main() {
-  test('preview handles restore, refresh and logout using real bloc events',
+  test('preview restores, refreshes and logs out the offline session',
       () async {
-    final bloc = createPreviewAuthenticationBloc();
-    addTearDown(bloc.close);
-    final restored = await bloc.stream.firstWhere((s) => s is Authenticated);
-    expect((restored as Authenticated).authEntity,
+    final container = ProviderContainer(
+      overrides: [
+        authenticationProvider
+            .overrideWith(createPreviewAuthenticationNotifier),
+      ],
+    );
+    addTearDown(container.dispose);
+    final states = <AuthenticationStates>[];
+    final subscription = container.listen(authenticationProvider, (_, next) {
+      states.add(next);
+    });
+    addTearDown(subscription.close);
+
+    expect(container.read(authenticationProvider), isA<Authenticated>());
+    expect((container.read(authenticationProvider) as Authenticated).authEntity,
         PreviewAuthenticationSession.auth);
 
-    bloc.add(RefreshUserRequested());
-    // Refresh can retain the same state; logout must still be handled normally.
-    final loggedOut = bloc.stream.firstWhere((s) => s is Unauthenticated);
-    bloc.add(LogoutRequested());
-    await loggedOut;
-    final checked = bloc.stream.firstWhere((s) => s is Unauthenticated);
-    bloc.add(CheckSessionRequested());
-    await checked;
-    expect(bloc.state, isA<Unauthenticated>());
+    await container.read(authenticationProvider.notifier).refreshUser();
+    await container.read(authenticationProvider.notifier).logout();
+    expect(container.read(authenticationProvider), isA<Unauthenticated>());
+
+    await container.read(authenticationProvider.notifier).checkSession();
+    expect(container.read(authenticationProvider), isA<Unauthenticated>());
+    expect(states, contains(isA<Unauthenticated>()));
   });
 }

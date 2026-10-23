@@ -74,7 +74,7 @@ void _validateStateChoice(String state) {
 void _printStateNotes(String state) {
   if (state == 'riverpod') {
     print('');
-    print('  ⚠  Riverpod requires: flutter_riverpod in pubspec.yaml');
+    print('  ✓  This app already includes flutter_riverpod.');
     print('  ⚠  Add ProviderScope at the root of your widget tree in main()');
   }
 }

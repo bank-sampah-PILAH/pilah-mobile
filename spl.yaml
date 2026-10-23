@@ -37,43 +37,42 @@ storage:
 state_management:
   # Default for new features. Each feature can override with --state flag.
   # Options: bloc | cubit | riverpod
-  # bloc    — flutter_bloc (Events + States + Bloc). Explicit, verbose, traceable.
-  # cubit   — flutter_bloc (States + Cubit). Simpler, fewer files, same package.
-  # riverpod — flutter_riverpod (Notifier + Provider). Different DI model.
-  default: bloc
+  # riverpod — flutter_riverpod (Notifier + Provider); included in this app.
+  # bloc/cubit — optional generator outputs; require adding flutter_bloc to pubspec.
+  default: riverpod
 
   # Note on exclusivity:
   # Storage is XOR: one backend for the whole app.
   # State management is NOT XOR: different features can use different solutions.
-  # Bloc and Cubit coexist freely (same package). Riverpod can coexist too
-  # but requires flutter_riverpod in pubspec.yaml.
+  # Riverpod is the app's default. Bloc and Cubit are optional generator variants
+  # and require the flutter_bloc package, which is not included in this app.
 
 features:
   - name: authentication
     status: active
     storage: flutter_secure_storage
-    state: bloc
+    state: riverpod
     description: Login/logout and token management (template example)
 
   - name: onboarding
     status: active
     storage: none
-    state: bloc
+    state: riverpod
     description: Splash and onboarding flow (template example)
 
   - name: product
     status: active
     storage: none
-    state: bloc
+    state: riverpod
     description: Product listing and search (template example)
 
   - name: profile
     status: active
     storage: flutter_secure_storage
-    state: bloc
+    state: riverpod
     description: User profile management (template example)
 
   - name: pencairan
     status: active
     storage: none
-    state: cubit
+    state: riverpod

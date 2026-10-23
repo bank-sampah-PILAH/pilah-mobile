@@ -1,12 +1,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
@@ -20,21 +19,19 @@ const _path = '/api/v1/nasabah';
 
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    notifier = buildNasabahNotifier(api);
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester,
       {Size size = const Size(1280, 900)}) async {
     await pumpRouted(
       tester,
       NasabahPage(),
-      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
+      wrap: (app) => withNasabahProvider(notifier, app),
       size: size,
     );
     await tester.pumpAndSettle();
@@ -60,7 +57,7 @@ void main() {
     await pumpRouted(
       tester,
       WebContentSurface(child: NasabahPage()),
-      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
+      wrap: (app) => withNasabahProvider(notifier, app),
       size: const Size(1280, 900),
     );
     await tester.pumpAndSettle();
@@ -133,7 +130,7 @@ void main() {
 
     listAs([]);
     await tester.enterText(find.byType(TextField).first, 'zzz');
-    await tester.pump(NasabahCubit.jedaPencarian * 2);
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
     await tester.pumpAndSettle();
 
     expect(api.last.query['search'], 'zzz');

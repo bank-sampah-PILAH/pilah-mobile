@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -7,17 +7,18 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_calendar_range_picker.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 
-class FilterTanggalBottomSheet extends StatefulWidget {
+class FilterTanggalBottomSheet extends ConsumerStatefulWidget {
   const FilterTanggalBottomSheet({super.key});
 
   @override
-  State<FilterTanggalBottomSheet> createState() =>
+  ConsumerState<FilterTanggalBottomSheet> createState() =>
       _FilterTanggalBottomSheetState();
 }
 
-class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
+class _FilterTanggalBottomSheetState
+    extends ConsumerState<FilterTanggalBottomSheet> {
   static const Color mintTint = AppColors.greenLight;
 
   late DateTimeRange _initialRange;
@@ -26,7 +27,7 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    final state = context.read<RiwayatAktivitasCubit>().state;
+    final state = ref.read(riwayatAktivitasProvider);
     final start = state.dariTanggal ?? DateTime(now.year, now.month, 1);
     final end = state.sampaiTanggal ?? DateTime(now.year, now.month + 1, 0);
     _initialRange = start.isAfter(end)
@@ -56,8 +57,8 @@ class _FilterTanggalBottomSheetState extends State<FilterTanggalBottomSheet> {
                 applyLabel: 'Terapkan Filter',
                 width: 336,
                 onApply: (range) {
-                  context
-                      .read<RiwayatAktivitasCubit>()
+                  ref
+                      .read(riwayatAktivitasProvider.notifier)
                       .applyCustomRange(range.start, range.end);
                   context.pop();
                 },

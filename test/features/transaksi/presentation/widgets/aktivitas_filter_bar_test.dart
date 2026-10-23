@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -10,18 +9,19 @@ import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_export_action.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/periode_picker_sheet.dart';
+import '../../../../support/transaksi_support.dart';
 
 class _Feed extends Mock implements GetAktivitasUseCase {}
 
 class _Export extends Mock implements ExportTransaksiUseCase {}
 
 void main() {
-  late RiwayatAktivitasCubit cubit;
+  late RiwayatAktivitasNotifier notifier;
   late _Export export;
 
   setUpAll(() => registerFallbackValue(const TransaksiFilter()));
@@ -31,10 +31,8 @@ void main() {
     when(() => feed.execute(any()))
         .thenAnswer((_) async => const Right(AktivitasPage([], false)));
     export = _Export();
-    cubit = RiwayatAktivitasCubit(feed, export);
+    notifier = RiwayatAktivitasNotifier(feed, export);
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> pumpBar(WidgetTester tester, {required double width}) async {
     tester.view.physicalSize = Size(width, 900);
@@ -43,10 +41,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(MaterialApp(
       navigatorKey: rootNavigatorKey,
-      home: Scaffold(
-        body: BlocProvider.value(
-          value: cubit,
-          child: const Padding(
+      home: withTransaksiProviders(
+        riwayat: notifier,
+        child: const Scaffold(
+          body: Padding(
             padding: EdgeInsets.all(16),
             child: AktivitasFilterBar(),
           ),
@@ -82,7 +80,7 @@ void main() {
     await tester.tap(find.text('Pencairan'));
     await tester.pump();
 
-    expect(cubit.state.tipeFilter, AktivitasTipeFilter.pencairan);
+    expect(notifier.state.tipeFilter, AktivitasTipeFilter.pencairan);
     expect(find.text('Reset'), findsOneWidget);
   });
 
@@ -101,14 +99,15 @@ void main() {
     await tester.tap(find.text('Semua Waktu'));
     await tester.pumpAndSettle();
 
-    expect(cubit.state.periode, 'semua');
+    expect(notifier.state.periode, 'semua');
     expect(find.text('Pilih Periode'), findsNothing);
     expect(find.text('Semua Waktu'), findsOneWidget);
   });
 
   testWidgets('a custom range shows its dates on the button', (tester) async {
-    cubit.applyCustomRange(DateTime(2026, 9, 1), DateTime(2026, 9, 30));
     await pumpBar(tester, width: 1200);
+    notifier.applyCustomRange(DateTime(2026, 9, 1), DateTime(2026, 9, 30));
+    await tester.pump();
 
     expect(find.text('01/09/2026 – 30/09/2026'), findsOneWidget);
   });
@@ -129,27 +128,27 @@ void main() {
   testWidgets('phone: the reset icon restores the defaults and disappears',
       (tester) async {
     await pumpBar(tester, width: 360);
-    cubit.setPeriode('12_bulan');
+    notifier.setPeriode('12_bulan');
     await tester.pumpAndSettle();
     expect(find.text('12 Bulan'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Reset filter'));
     await tester.pumpAndSettle();
 
-    expect(cubit.state.periode, 'bulan_ini');
+    expect(notifier.state.periode, 'bulan_ini');
     expect(find.byTooltip('Reset filter'), findsNothing);
     expect(find.text('Bulan Ini'), findsOneWidget);
   });
 
   testWidgets('wide: Reset restores the defaults', (tester) async {
     await pumpBar(tester, width: 1200);
-    cubit.setPeriode('12_bulan');
+    notifier.setPeriode('12_bulan');
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Reset'));
     await tester.pumpAndSettle();
 
-    expect(cubit.state.periode, 'bulan_ini');
+    expect(notifier.state.periode, 'bulan_ini');
     expect(find.text('Reset'), findsNothing);
   });
 
@@ -206,8 +205,9 @@ void main() {
   });
 
   testWidgets('an unknown period still shows a readable label', (tester) async {
-    cubit.setPeriode('tidak-dikenal');
     await pumpBar(tester, width: 1200);
+    notifier.setPeriode('tidak-dikenal');
+    await tester.pump();
 
     expect(find.text(periodePresets[2].$2), findsOneWidget);
   });
