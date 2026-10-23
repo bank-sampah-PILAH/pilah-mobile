@@ -11,7 +11,7 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';

@@ -290,7 +290,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
           final router = GoRouter.of(context);
 
           // TEMP (Twilio outage): the backend no longer dispatches this message,
-          // so instead of asking it to (`cubit.resendWa`) we open WhatsApp with
+          // so instead of requesting a resend, we open WhatsApp with
           // the same text pre-filled and let the pengelola press send.
           // externalApplication hands the link to the installed WhatsApp rather
           // than an in-app webview.

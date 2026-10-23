@@ -5,7 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/providers/draft_list_provider.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_list_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/draft_format.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}

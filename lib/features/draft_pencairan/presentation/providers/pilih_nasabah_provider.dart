@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import '../../domain/repository/draft_pencairan_repository.dart';
-import '../blocs/pilih_nasabah_state.dart';
+import '../states/pilih_nasabah_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 final pilihNasabahProvider =

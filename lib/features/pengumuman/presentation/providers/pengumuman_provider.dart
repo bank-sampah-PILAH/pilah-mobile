@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/repositories/pengumuman_repository.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/pengumuman_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 final pengumumanProvider =

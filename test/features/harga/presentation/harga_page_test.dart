@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_terjadwal.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 
 import '../../../support/harga_support.dart';

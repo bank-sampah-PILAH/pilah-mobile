@@ -9,7 +9,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import '../../../support/draft_pencairan_support.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_editor_state.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}

@@ -3,7 +3,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/approve_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 final superadminProvider =

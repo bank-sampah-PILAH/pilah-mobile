@@ -14,7 +14,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 const List<String> _monthsId = [

@@ -6,8 +6,8 @@ import '../../domain/entities/riwayat_entities.dart';
 import '../../domain/use_cases/riwayat_use_cases.dart';
 
 /// Paginated setoran riwayat for the Tabungan screen (PIL-315 UI refactor).
-/// The page widget used to hold this state internally; the cubit moves it
-/// out so the state machine is testable and the next feature (period
+/// The page widget used to hold this state internally; the notifier keeps it
+/// separate so the state machine is testable and the next feature (period
 /// filters, PIL-246) extends it instead of the widget.
 enum RiwayatHistoryStatus { initial, loading, loaded, failure }
 
@@ -64,7 +64,7 @@ class RiwayatHistoryNotifier extends Notifier<RiwayatHistoryState> {
   final GetRiwayatHistoryUseCase _historyUseCase;
   final GetRiwayatSetoranDetailUseCase _detailUseCase;
 
-  /// The membership this cubit's pages belong to (set by [loadHistory]);
+  /// The membership this notifier's pages belong to (set by [loadHistory]);
   /// detail loads address the same membership.
   String? membershipId;
 
@@ -107,7 +107,7 @@ class RiwayatHistoryNotifier extends Notifier<RiwayatHistoryState> {
   }
 
   /// Refresh/retry/next-page entry from the UI: reloads the membership the
-  /// cubit was loaded for (page +1 when not a reset).
+  /// notifier was loaded for (page +1 when not a reset).
   Future<void> loadHistoryCurrent({bool reset = false}) {
     final membership = membershipId ?? '';
     return loadHistory(membership, reset: reset);

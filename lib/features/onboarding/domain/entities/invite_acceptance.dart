@@ -40,7 +40,7 @@ enum InviteAcceptance {
   bool get isTerminal => this != InviteAcceptance.failed;
 }
 
-/// Classifies one `acceptInvite` call from the cubit's `(result, error)` pair.
+/// Classifies one `acceptInvite` call from the caller's `(result, error)` pair.
 InviteAcceptance classifyInviteAcceptance({
   required OnboardingResult? result,
   required NetworkException? error,

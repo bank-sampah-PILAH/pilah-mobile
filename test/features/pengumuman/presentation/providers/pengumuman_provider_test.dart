@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/pengumuman_state.dart';
 
 import '../../../../support/pengumuman_support.dart';
 import '../../../../support/stub_api.dart';

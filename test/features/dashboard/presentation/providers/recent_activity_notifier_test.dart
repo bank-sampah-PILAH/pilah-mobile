@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
@@ -45,7 +45,7 @@ Pencairan _pencairan(String name, DateTime tanggal) => Pencairan(
       saldoSesudah: 50000,
     );
 
-/// Titles, in order, of whatever the cubit is currently holding.
+/// Titles, in order, of whatever the notifier is currently holding.
 List<String> _titles(RecentActivityState state) =>
     (state as RecentActivityLoaded).items.map((e) => e.title).toList();
 

@@ -8,7 +8,7 @@ import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 /// App-scoped because the transaksi success flow also reads the WA template.
@@ -197,7 +197,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
   }
 
   /// Clears cached data and returns to the initial state (used on logout, since
-  /// this cubit is an app-scoped singleton that outlives a session).
+  /// this notifier is an app-scoped singleton that outlives a session).
   ///
   /// Pending logo bytes must not be uploaded by the next signed-in user.
   void reset() => state = const ProfileState();

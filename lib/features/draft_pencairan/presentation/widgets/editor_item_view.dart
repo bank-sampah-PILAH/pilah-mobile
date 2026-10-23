@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
-import 'draft_editor_state.dart';
+import '../states/draft_editor_state.dart';
 
 /// Which nasabah the editor list shows. Only the view: the draft itself, and
 /// what is saved, always holds everyone.

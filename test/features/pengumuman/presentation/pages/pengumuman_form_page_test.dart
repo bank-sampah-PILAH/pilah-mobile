@@ -383,7 +383,7 @@ void main() {
     await settleToasts(tester);
   });
 
-  testWidgets('a failed reload on the shared cubit raises the error toast',
+  testWidgets('a failed reload on the shared provider raises the error toast',
       (tester) async {
     api.fail('GET', '/api/v1/pengumuman');
     final container = ProviderContainer(overrides: [

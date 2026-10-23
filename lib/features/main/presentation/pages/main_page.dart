@@ -8,7 +8,7 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/nasabah_verification_home.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
@@ -132,7 +132,7 @@ class _ShellContent extends ConsumerWidget {
             approval.memberships.any((membership) =>
                 membership.status == MembershipStatus.approved &&
                 membership.isActive));
-    // Whether the cubit has actually confirmed limited access, as opposed to
+    // Whether the approval provider has confirmed limited access, as opposed to
     // `limitedNasabah` defaulting true while the initial load is still
     // pending. Only a confirmed status may discard the current route.
     final confirmedLimitedNasabah = role == 'nasabah' &&

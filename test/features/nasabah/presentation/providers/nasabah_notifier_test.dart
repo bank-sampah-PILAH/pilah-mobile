@@ -14,7 +14,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_useca
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
 import '../../../../support/notifier_harness.dart';
 

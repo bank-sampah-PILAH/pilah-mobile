@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/draft_pencairan/data/draft_pencairan_repository_impl.dart';
 import 'package:pilah_mobile/features/draft_pencairan/data/remote/draft_pencairan_remote_data_source.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_editor_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/providers/draft_editor_provider.dart';
 
 import 'stub_api.dart';

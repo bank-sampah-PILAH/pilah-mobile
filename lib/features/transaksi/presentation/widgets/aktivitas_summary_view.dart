@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import '../../domain/entities/aktivitas_summary.dart';
 import '../providers/riwayat_aktivitas_provider.dart';
-import '../cubit/riwayat_aktivitas_state.dart';
+import '../states/riwayat_aktivitas_state.dart';
 
 /// Displays authoritative totals for the selected period and filters.
 class AktivitasSummaryView extends StatelessWidget {

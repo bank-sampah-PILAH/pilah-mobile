@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/transaksi_state.dart';
 
 import '../../../../support/notifier_harness.dart';
 import '../../../../support/stub_api.dart';

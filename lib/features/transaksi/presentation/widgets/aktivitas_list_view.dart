@@ -17,7 +17,7 @@ import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_t
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 
 /// Renders the merged setoran + pencairan feed (PIL-282), grouped by day.

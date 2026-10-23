@@ -14,7 +14,7 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_useca
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/sinkron_profil_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 
 /// Filter tab on the nasabah page. `menunggu` shows pending membership
 /// submissions (PIL-188); rejected rows appear in no tab (audit only).
@@ -345,7 +345,7 @@ class NasabahNotifier extends Notifier<NasabahState> {
   }
 
   /// Clears cached data and resets to the initial state (used on logout, since
-  /// this cubit is an app-scoped singleton that outlives a session).
+  /// this notifier is an app-scoped singleton that outlives a session).
   void reset() {
     _jedaCari?.cancel();
     _listRequestGeneration++;

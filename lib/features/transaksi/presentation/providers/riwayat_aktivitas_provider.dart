@@ -4,7 +4,7 @@ import '../../domain/entities/aktivitas_entity.dart';
 import '../../domain/entities/transaksi_filter.dart';
 import '../../domain/use_cases/export_transaksi_usecase.dart';
 import '../../domain/use_cases/get_aktivitas_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 
 /// One server-paginated feed, scoped by period, type and search.
 final riwayatAktivitasProvider =

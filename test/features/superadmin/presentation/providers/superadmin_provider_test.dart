@@ -5,7 +5,7 @@ import 'package:pilah_mobile/features/superadmin/domain/use_cases/approve_bank_s
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/stub_api.dart';

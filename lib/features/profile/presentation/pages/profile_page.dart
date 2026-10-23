@@ -30,7 +30,7 @@ import 'package:pilah_mobile/features/authentication/presentation/pages/login_pa
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
 import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
 
 class ProfilePage extends ConsumerWidget {

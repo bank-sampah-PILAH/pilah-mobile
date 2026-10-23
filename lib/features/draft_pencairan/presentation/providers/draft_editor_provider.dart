@@ -6,7 +6,7 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import '../../domain/model/draft_pencairan.dart';
 import '../../domain/repository/draft_pencairan_repository.dart';
 import '../widgets/draft_format.dart';
-import '../blocs/draft_editor_state.dart';
+import '../states/draft_editor_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 const _tidakMemenuhiSyarat =

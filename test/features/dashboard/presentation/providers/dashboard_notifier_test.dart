@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 
 import '../../../../support/dashboard_support.dart';

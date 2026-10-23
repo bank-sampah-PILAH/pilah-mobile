@@ -4,7 +4,7 @@ import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/dashboard_state.dart';
 
 class TotalKasCard extends ConsumerWidget {
   const TotalKasCard({super.key});

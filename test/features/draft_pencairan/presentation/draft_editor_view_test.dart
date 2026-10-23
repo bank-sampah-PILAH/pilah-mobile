@@ -11,12 +11,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import '../../../support/draft_pencairan_support.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_editor_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
@@ -1205,7 +1205,7 @@ void main() {
     });
 
     testWidgets('export asks the server for the chosen format', (tester) async {
-      // Never answers: the download itself is covered at the cubit level, and
+      // Never answers: the download itself is covered at the notifier level, and
       // an answer would bring the save-and-share toasts into a layout test.
       when(() => repository.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftExport>>().future);
@@ -2731,7 +2731,7 @@ Future<void> _pump(
   bool pushed = false,
   Size size = const Size(420, 2600),
 }) async {
-  // The cubit is created by each test; find it through the provider.
+  // The notifier is created by each test; find it through the provider.
   await pumpRouted(
     tester,
     Builder(builder: (context) {

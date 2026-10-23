@@ -91,7 +91,7 @@ void main() {
     expect(find.text('Daftar dengan email'), findsNothing);
   });
 
-  testWidgets('submits email credentials through the auth bloc',
+  testWidgets('submits email credentials through the auth provider',
       (tester) async {
     await pumpPage(tester);
     await enterCredentials(tester);

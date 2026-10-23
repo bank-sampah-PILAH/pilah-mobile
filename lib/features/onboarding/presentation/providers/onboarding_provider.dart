@@ -3,7 +3,7 @@ import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/states/onboarding_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 final onboardingProvider =

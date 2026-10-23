@@ -9,7 +9,7 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/deactivate_harga_us
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 
 final hargaProvider = NotifierProvider<HargaNotifier, HargaState>(
   () => HargaNotifier(
@@ -149,7 +149,7 @@ class HargaNotifier extends Notifier<HargaState> {
   }
 
   /// Clears cached data and resets to the initial state (used on logout, since
-  /// this cubit is an app-scoped singleton that outlives a session).
+  /// this notifier is an app-scoped singleton that outlives a session).
   void reset() {
     _allHarga = [];
     _isActiveTab = true;

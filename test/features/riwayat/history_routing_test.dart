@@ -41,7 +41,7 @@ class _Repository extends PreviewNasabahRepository {
 }
 
 /// Serves the routed history screen: the same fixture rows the old
-/// repository override held, now one layer down, behind the cubit.
+/// repository override held, now one layer down, behind the provider.
 class _RiwayatRemoteSource implements RiwayatRemoteDataSource {
   _RiwayatRemoteSource(
     Object _, {

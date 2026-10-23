@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/states/onboarding_state.dart';
 
 import '../../../support/onboarding_support.dart';
 import '../../../support/stub_api.dart';

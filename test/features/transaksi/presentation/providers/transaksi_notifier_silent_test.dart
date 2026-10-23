@@ -13,7 +13,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_useca
 import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 
 import '../../../../support/notifier_harness.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/transaksi_state.dart';
 
 class _MockGetTransaksi extends Mock implements GetTransaksiUseCase {}
 

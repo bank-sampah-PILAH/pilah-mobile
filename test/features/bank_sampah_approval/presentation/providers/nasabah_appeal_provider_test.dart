@@ -7,13 +7,17 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_appeal_provider.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_appeal_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 class _MockAppealMembershipUseCase extends Mock
     implements AppealMembershipUseCase {}
 
 void main() {
+  test('idle states have value equality', () {
+    expect(NasabahAppealIdle(), NasabahAppealIdle());
+  });
+
   late _MockAppealMembershipUseCase useCase;
   late ProviderContainer container;
   late ProviderSubscription<NasabahAppealState> keepAlive;

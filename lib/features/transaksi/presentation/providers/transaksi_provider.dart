@@ -8,7 +8,7 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaks
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/resend_wa_usecase.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/transaksi_state.dart';
 
 final transaksiProvider = NotifierProvider<TransaksiNotifier, TransaksiState>(
   () => TransaksiNotifier(
@@ -162,7 +162,7 @@ class TransaksiNotifier extends Notifier<TransaksiState> {
   }
 
   /// Clears cached data and resets to the initial state (used on logout, since
-  /// this cubit is an app-scoped singleton that outlives a session).
+  /// this notifier is an app-scoped singleton that outlives a session).
   void reset() {
     _allTransaksi = [];
     _periode = 'bulan_ini';

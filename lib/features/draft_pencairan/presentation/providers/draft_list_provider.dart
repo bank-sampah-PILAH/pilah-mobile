@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_list_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 final draftListProvider =

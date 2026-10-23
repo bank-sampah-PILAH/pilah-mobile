@@ -11,7 +11,7 @@ import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart'
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
 
@@ -44,6 +44,10 @@ void providerTest(
 }
 
 void main() {
+  test('initial state has value equality', () {
+    expect(JadwalInitial(), JadwalInitial());
+  });
+
   final containers = <ProviderContainer>[];
   final schedule = JadwalEntity(
     id: '',

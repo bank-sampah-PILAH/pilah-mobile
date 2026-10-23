@@ -14,9 +14,9 @@ import 'package:pilah_mobile/features/harga/domain/use_cases/get_harga_usecase.d
 import 'package:pilah_mobile/features/harga/domain/use_cases/ubah_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/update_harga_usecase.dart';
 import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
 
-import '../../../support/notifier_harness.dart';
+import '../../../../support/notifier_harness.dart';
 
 class _MockGet extends Mock implements GetHargaUseCase {}
 

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/nasabah_pengumuman_state.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 final nasabahPengumumanProvider = NotifierProvider.autoDispose<

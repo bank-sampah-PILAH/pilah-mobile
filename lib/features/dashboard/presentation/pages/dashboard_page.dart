@@ -53,9 +53,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   /// Refetches everything the dashboard renders. The header's bank sampah name
-  /// comes from the cached session rather than a cubit, so the auth refresh is
-  /// dispatched alongside — it's fire-and-forget, so only the two cubit loads
-  /// hold the spinner open.
+  /// comes from the cached session rather than provider state, so auth refresh
+  /// is dispatched alongside — it's fire-and-forget, so only the dashboard and
+  /// activity loads hold the spinner open.
   Future<void> _onRefresh() async {
     ref.read(authenticationProvider.notifier).refreshUser();
     await Future.wait([

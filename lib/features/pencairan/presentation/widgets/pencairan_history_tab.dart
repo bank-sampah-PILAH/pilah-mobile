@@ -6,7 +6,7 @@ import 'package:pilah_mobile/design/widgets/nasabah_activity_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/providers/riwayat_pencairan_provider.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_state.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/states/riwayat_pencairan_state.dart';
 
 import '../../domain/model/riwayat_pencairan_filter.dart';
 import 'pencairan_detail_sheet.dart';

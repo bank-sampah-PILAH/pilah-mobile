@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 
 class _MockGetNasabahMembershipsUseCase extends Mock
@@ -24,6 +24,10 @@ const _membership = NasabahMembershipEntity(
 );
 
 void main() {
+  test('initial state has value equality', () {
+    expect(NasabahApprovalInitial(), NasabahApprovalInitial());
+  });
+
   late _MockGetNasabahMembershipsUseCase useCase;
   late NasabahApprovalNotifier notifier;
   late ProviderContainer container;

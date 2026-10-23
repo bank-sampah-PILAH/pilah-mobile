@@ -38,8 +38,8 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
   @override
   void initState() {
     super.initState();
-    // Selalu ambil sendiri, bukan menumpang state cubit. Halaman nasabah bisa
-    // meninggalkan cubit dalam keadaan Loaded dengan daftar berpaginasi
+    // Selalu ambil sendiri, bukan menumpang state provider. Halaman nasabah bisa
+    // meninggalkan provider dalam keadaan Loaded dengan daftar berpaginasi
     // sementara daftar picker masih kosong, dan mengambil ulang di sini juga
     // membuat saldo yang tampil selalu yang terbaru setelah ada setoran.
     _nasabahFuture = ref.read(nasabahProvider.notifier).loadActiveNasabah();

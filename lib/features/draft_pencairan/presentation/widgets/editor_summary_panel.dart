@@ -3,7 +3,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
-import '../blocs/draft_editor_state.dart';
+import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
 
 /// The totals of a draft, pinned above the action buttons so they stay in view

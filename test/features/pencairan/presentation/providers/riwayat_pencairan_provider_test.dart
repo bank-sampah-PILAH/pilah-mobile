@@ -8,7 +8,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_state.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/states/riwayat_pencairan_state.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/providers/riwayat_pencairan_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 

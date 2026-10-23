@@ -18,7 +18,7 @@ import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_form_fields.dart';
 import '../../domain/model/pencairan.dart';
 import '../../domain/pencairan_validator.dart';
-import '../blocs/edit_pencairan_state.dart';
+import '../states/edit_pencairan_state.dart';
 import '../providers/edit_pencairan_provider.dart';
 
 /// Pengurus correct a recorded pencairan (PIL-230). Pops `true` once saved so

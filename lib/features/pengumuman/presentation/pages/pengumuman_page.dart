@@ -15,7 +15,7 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart'
     show nasabahDate;
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/nasabah_pengumuman_state.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
 
