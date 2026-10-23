@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_balance_display.dart';
 
 class DashboardWebKpiSection extends StatelessWidget {
   const DashboardWebKpiSection({super.key});
@@ -20,7 +21,7 @@ class DashboardWebKpiSection extends StatelessWidget {
           return LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth >= 1100
-                  ? 4
+                  ? 3
                   : constraints.maxWidth >= 640
                       ? 2
                       : 1;
@@ -44,7 +45,17 @@ List<DashboardKpiCard> _dashboardKpiCards(DashboardState state) {
   final loaded = state.status == DashboardStatus.loaded;
   return [
     DashboardKpiCard(
-      label: 'Total Kas Bulan Ini',
+      label: 'Saldo Tabungan Nasabah',
+      value: dashboardSavingsDisplay(state),
+      icon: Icons.savings_outlined,
+    ),
+    const DashboardKpiCard(
+      label: 'Kas Operasional',
+      value: dashboardOperationalCashDisplay,
+      icon: Icons.account_balance_wallet_outlined,
+    ),
+    DashboardKpiCard(
+      label: 'Nilai Setoran Bulan Ini',
       value: loaded
           ? CurrencyFormatter.formatRupiah(state.totalKasBulanIni)
           : 'Rp —',

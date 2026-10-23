@@ -1,7 +1,10 @@
-/// Current-month dashboard metrics from `GET /api/v1/dashboard/stats`.
+/// Current savings and current-month activity from `GET /api/v1/dashboard/stats`.
 class DashboardStats {
-  /// Total transaction value this month (`total_nilai_bulan_ini`) — "Total Kas".
+  /// Monthly deposit value; retained property name for existing callers.
   final int totalKasBulanIni;
+
+  /// Current customer savings, independent of the month. Null means unavailable.
+  final int? totalSaldoNasabah;
 
   /// Active nasabah count (`nasabah_aktif`).
   final int nasabahAktif;
@@ -13,6 +16,7 @@ class DashboardStats {
   final int transaksiBulanIni;
 
   const DashboardStats({
+    this.totalSaldoNasabah,
     required this.totalKasBulanIni,
     required this.nasabahAktif,
     required this.totalSampahKg,
