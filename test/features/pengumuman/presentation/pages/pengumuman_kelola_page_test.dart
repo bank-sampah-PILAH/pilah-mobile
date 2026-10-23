@@ -119,6 +119,26 @@ void main() {
     expect(find.text('Kelola Pengumuman'), findsOneWidget);
   });
 
+  testWidgets('a web form panel closes when the window leaves expanded layout',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Buat Pengumuman'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(800, 900);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+  });
+
   testWidgets('saving in the web panel closes it and keeps the list',
       (tester) async {
     api.on('GET', '/api/v1/pengumuman', json: {
