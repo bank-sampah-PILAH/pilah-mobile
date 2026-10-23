@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,18 +26,17 @@ class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
 void main() {
-  testWidgets('shows the nearest schedule and opens its date', (tester) async {
+  testWidgets('shows an ongoing schedule and opens its date', (tester) async {
     final auth = _Auth();
     final jadwalRepository = _JadwalRepository();
-    final today = DateUtils.dateOnly(DateTime.now());
-    final ongoingDate = today.subtract(const Duration(days: 1));
+    final now = DateTime(2026, 6, 1, 9);
+    final today = DateUtils.dateOnly(now);
     final ongoing = JadwalEntity(
       id: 'ongoing',
       bankSampahId: 'bank-1',
       jenisKegiatan: 'Sedang berlangsung',
-      mulaiPada:
-          DateTime(ongoingDate.year, ongoingDate.month, ongoingDate.day, 10),
-      selesaiPada: today.add(const Duration(days: 1)),
+      mulaiPada: DateTime(today.year, today.month, today.day, 8),
+      selesaiPada: DateTime(today.year, today.month, today.day, 10),
       lokasi: 'Balai Warga',
       status: 'diterbitkan',
     );
@@ -133,25 +133,28 @@ void main() {
       await di.unregister<JadwalRepository>();
     });
 
-    await tester.pumpWidget(
-      BlocProvider<AuthenticationBloc>.value(
-        value: auth,
-        child: MaterialApp.router(routerConfig: router),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        BlocProvider<AuthenticationBloc>.value(
+          value: auth,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
 
-    await tester.scrollUntilVisible(find.text('Penimbangan'), 240);
-    expect(find.text('Penimbangan'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Sedang berlangsung'), 240);
+    expect(find.text('Sedang berlangsung'), findsOneWidget);
+    expect(find.text('Penimbangan'), findsNothing);
     expect(find.text('Pengumpulan'), findsNothing);
     expect(find.text('Jadwal Jauh'), findsNothing);
     expect(find.text('Balai Warga'), findsOneWidget);
-    await tester.tap(find.text('Penimbangan'));
+    await tester.tap(find.text('Sedang berlangsung'));
     await tester.pumpAndSettle();
 
-    final expectedDate = '${nearestDate.year.toString().padLeft(4, '0')}-'
-        '${nearestDate.month.toString().padLeft(2, '0')}-'
-        '${nearestDate.day.toString().padLeft(2, '0')}';
+    final expectedDate = '${today.year.toString().padLeft(4, '0')}-'
+        '${today.month.toString().padLeft(2, '0')}-'
+        '${today.day.toString().padLeft(2, '0')}';
     expect(find.text('Tanggal: $expectedDate'), findsOneWidget);
   });
 }
