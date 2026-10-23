@@ -118,41 +118,11 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
     });
   }
 
-  /// Whether this form is step two of the wizard rather than a destination in
-  /// its own right.
-  ///
-  /// A banked draft is the evidence: it exists only when the profile screen
-  /// pushed this route and is still sitting underneath, which is also the only
-  /// case where popping leads anywhere useful. Reached any other way — a
-  /// relogin whose profile was already complete — there is no page behind
-  /// this one and back has to keep meaning "leave onboarding".
-  bool get _isWizardStep =>
-      ref.read(onboardingProvider.notifier).hasProfileDraft;
-
-  /// Intercepts a back-navigation attempt.
-  ///
-  /// Mid-wizard the pop is allowed through to the profile screen, which
-  /// refills itself from the draft — so anything picked here, and the
-  /// profile fields, both stay editable until the final submit.
-  void _onPopInvoked(bool didPop) {
-    if (didPop) return;
-    if (_isWizardStep) {
-      _backToProfile();
-      return;
-    }
-    confirmExitOnboarding(context);
-  }
-
-  /// Returns to step one, preferring a pop so the profile screen underneath is
-  /// revealed rather than rebuilt over the top of this one.
-  void _backToProfile() {
-    final router = GoRouter.of(context);
-    if (router.canPop()) {
-      router.pop();
-    } else {
-      context.go('/complete-profile');
-    }
-  }
+  void _onPopInvoked(bool didPop) => handleOnboardingStepPop(
+        context,
+        didPop: didPop,
+        isWizardStep: ref.read(onboardingProvider.notifier).hasProfileDraft,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -261,12 +231,18 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
                       isLoading: _isLoading,
                       onPressed: _onSubmit,
                     ),
-                    if (_isWizardStep) ...[
+                    if (ref
+                        .read(onboardingProvider.notifier)
+                        .hasProfileDraft) ...[
                       const SizedBox(height: 12),
                       AppButton(
                         label: 'Kembali',
                         variant: AppButtonVariant.neutral,
-                        onPressed: _backToProfile,
+                        onPressed: () => handleOnboardingStepPop(
+                          context,
+                          didPop: false,
+                          isWizardStep: true,
+                        ),
                       ),
                     ],
                   ],

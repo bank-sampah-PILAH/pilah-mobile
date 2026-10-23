@@ -345,14 +345,32 @@ void main() {
 
   testWidgets('pulling down reloads the feed without clearing it',
       (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester);
     clearInteractions(getTransaksi);
 
-    await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
+    await tester.drag(find.byType(NestedScrollView), const Offset(0, 400));
     await tester.pumpAndSettle();
 
     verify(() => getTransaksi.execute(any())).called(1);
     expect(find.text('Budi Santoso'), findsOneWidget);
+  });
+
+  testWidgets('wide web table can refresh the report', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester, isWeb: true);
+    clearInteractions(getTransaksi);
+
+    await tester.drag(find.byType(ListView).last, const Offset(0, 400));
+    await tester.pumpAndSettle();
+
+    verify(() => getTransaksi.execute(any())).called(1);
   });
 
   testWidgets('resetting the filters also clears the search box',

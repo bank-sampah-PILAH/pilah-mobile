@@ -130,26 +130,10 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       submitRegistration(RegisterBankSampahRequest request) async {
     state = const OnboardingSubmitting();
 
-    final draft = _profileDraft;
-    if (draft != null && !_profileSubmitted) {
-      final profileEither = await apiCall<OnboardingResult>(
-        func: _dataSource.completeProfile(draft),
-        mapper: (value) => value as OnboardingResult,
-      );
-
-      final NetworkException? profileError =
-          profileEither.fold((error) => error, (_) => null);
-
-      // "Profil sudah lengkap" is a refusal that means step one is already done
-      // — the account completed it in an earlier session, or a retry lost the
-      // in-memory flag. Treating it as a failure would strand the user on a
-      // form they can never submit, so it counts as the success it describes.
-      if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
-        state = const OnboardingInitial();
-        return (result: null, error: profileError);
-      }
-
-      _profileSubmitted = true;
+    final profile = await _submitProfileDraft();
+    if (profile.error != null) {
+      state = const OnboardingInitial();
+      return (result: null, error: profile.error);
     }
 
     final either = await apiCall<OnboardingResult>(
@@ -165,6 +149,29 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
         clearProfileDraft();
         return (result: result, error: null);
       },
+    );
+  }
+
+  Future<({OnboardingResult? result, NetworkException? error})>
+      _submitProfileDraft() async {
+    final draft = _profileDraft;
+    if (draft == null || _profileSubmitted) {
+      return (result: null, error: null);
+    }
+
+    final profileEither = await apiCall<OnboardingResult>(
+      func: _dataSource.completeProfile(draft),
+      mapper: (value) => value as OnboardingResult,
+    );
+    final profileError = profileEither.fold((error) => error, (_) => null);
+    if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
+      return (result: null, error: profileError);
+    }
+
+    _profileSubmitted = true;
+    return (
+      result: profileEither.fold((_) => null, (result) => result),
+      error: null,
     );
   }
 
@@ -232,31 +239,21 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
 
     final draft = _profileDraft;
     if (draft != null && !_profileSubmitted) {
-      final profileEither = await apiCall<OnboardingResult>(
-        func: _dataSource.completeProfile(draft),
-        mapper: (value) => value as OnboardingResult,
-      );
-
-      final NetworkException? profileError =
-          profileEither.fold((error) => error, (_) => null);
-
-      if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
+      final profile = await _submitProfileDraft();
+      if (profile.error != null) {
         state = const OnboardingInitial();
-        return (result: null, error: profileError);
+        return (result: null, error: profile.error);
       }
-
-      _profileSubmitted = true;
 
       // A pengurus-entered record matching this account's verified email
       // auto-links on login (AuthService._sync_nasabah_prefill), so
       // completing the profile can already finish onboarding on its own.
       // Calling registerNasabah in that case would fail with "already
       // registered" since the membership already exists.
-      final profileResult = profileEither.fold((_) => null, (result) => result);
-      if (profileResult?.nextStep == 'nasabah_dashboard') {
+      if (profile.result?.nextStep == 'nasabah_dashboard') {
         state = const OnboardingInitial();
         clearProfileDraft();
-        return (result: profileResult, error: null);
+        return (result: profile.result, error: null);
       }
     }
 

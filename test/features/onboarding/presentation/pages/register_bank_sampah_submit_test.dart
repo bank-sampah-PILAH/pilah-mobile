@@ -270,6 +270,18 @@ void main() {
     expect(find.text('Keluar dari Pendaftaran?'), findsOneWidget);
   });
 
+  testWidgets('Kembali mid-wizard returns to the profile screen',
+      (tester) async {
+    onboarding.read(onboardingProvider.notifier).saveProfileDraft(_draft);
+    await open(tester, pushed: true);
+
+    await tester.ensureVisible(find.text('Kembali'));
+    await tester.tap(find.text('Kembali'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:/'), findsOneWidget);
+  });
+
   testWidgets('system back mid-wizard pops to the profile screen',
       (tester) async {
     onboarding.read(onboardingProvider.notifier).saveProfileDraft(_draft);

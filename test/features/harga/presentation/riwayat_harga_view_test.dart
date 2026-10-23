@@ -32,14 +32,17 @@ void main() {
 
   setUp(() => api = StubApi());
 
-  Future<void> pumpView(WidgetTester tester) async {
+  Future<void> pumpView(
+    WidgetTester tester, {
+    String jenisId = 'j-1',
+  }) async {
     final repository =
         HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network));
     await tester.pumpWidget(
       withRiwayatHargaProvider(
         RiwayatHargaNotifier(GetRiwayatHargaUseCase(repository)),
-        const MaterialApp(
-          home: RiwayatHargaView(jenisId: 'j-1', namaJenis: 'Botol PET'),
+        MaterialApp(
+          home: RiwayatHargaView(jenisId: jenisId, namaJenis: 'Botol PET'),
         ),
       ),
     );
@@ -97,6 +100,19 @@ void main() {
     expect(find.textContaining('▲'), findsNWidgets(2));
     expect(find.textContaining('▼'), findsOneWidget,
         reason: 'the replaced version and the very first one have no change');
+  });
+
+  testWidgets('reloads history when the selected jenis changes',
+      (tester) async {
+    api.on('GET', _path, json: {'results': <Object>[]});
+    api.on('GET', '/api/v1/jenis-sampah/j-2/harga', json: {
+      'results': [_versi('3000.00', '2026-10-01T02:30:00Z', 'berlaku')],
+    });
+
+    await pumpView(tester);
+    await pumpView(tester, jenisId: 'j-2');
+
+    expect(find.text('Rp 3.000 / kg'), findsOneWidget);
   });
 
   testWidgets('says so when the jenis has no price history yet',

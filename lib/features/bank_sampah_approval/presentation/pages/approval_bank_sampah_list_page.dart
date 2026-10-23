@@ -32,14 +32,7 @@ class ApprovalBankSampahListView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(nasabahApprovalProvider);
-    if (state is NasabahApprovalInitial) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted &&
-            ref.read(nasabahApprovalProvider) is NasabahApprovalInitial) {
-          ref.read(nasabahApprovalProvider.notifier).load();
-        }
-      });
-    }
+    _loadInitialState(context, ref, state);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const NasabahPageAppBar(
@@ -52,80 +45,93 @@ class ApprovalBankSampahListView extends ConsumerWidget {
           child: AppRefreshIndicator(
             onRefresh: () =>
                 ref.read(nasabahApprovalProvider.notifier).load(silent: true),
-            child: Builder(
-              builder: (context) {
-                if (state is NasabahApprovalLoading ||
-                    state is NasabahApprovalInitial) {
-                  return ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    itemCount: 5,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) => const SkeletonListItem(),
-                  );
-                }
-
-                if (state is NasabahApprovalLoaded) {
-                  final memberships = state.memberships;
-                  if (memberships.isEmpty) {
-                    return const EmptyView(
-                      title: 'Belum Ada Pengajuan',
-                      subtitle:
-                          'Anda belum mengajukan keanggotaan ke bank sampah manapun.',
-                      icon: Icons.hourglass_empty,
-                    );
-                  }
-
-                  return ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
-                    itemCount: memberships.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final membership = memberships[index];
-                      return MembershipListItem(
-                        membership: membership,
-                        onTap: () {
-                          context
-                              .push<bool>(
-                            ApprovalBankSampahDetailPage.route,
-                            extra: membership,
-                          )
-                              .then((changed) {
-                            // A successful appeal pops `true` (see
-                            // ApprovalBankSampahDetailView) — the membership
-                            // just moved back to pending, so the list needs
-                            // to reflect that instead of showing stale data.
-                            if (changed == true && context.mounted) {
-                              ref
-                                  .read(nasabahApprovalProvider.notifier)
-                                  .load(silent: true);
-                            }
-                          });
-                        },
-                      );
-                    },
-                  );
-                }
-
-                // Rendered as a scrollable EmptyView rather than a blank box
-                // so a failed load can be retried by pulling down.
-                if (state is NasabahApprovalError) {
-                  return EmptyView(
-                    title: 'Gagal Memuat Data',
-                    subtitle: state.message,
-                    icon: Icons.error_outline,
-                  );
-                }
-
-                return const SizedBox.shrink();
-              },
-            ),
+            child: _buildList(context, ref, state),
           ),
         ),
       ),
+    );
+  }
+
+  void _loadInitialState(
+    BuildContext context,
+    WidgetRef ref,
+    NasabahApprovalState state,
+  ) {
+    if (state is NasabahApprovalInitial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted &&
+            ref.read(nasabahApprovalProvider) is NasabahApprovalInitial) {
+          ref.read(nasabahApprovalProvider.notifier).load();
+        }
+      });
+    }
+  }
+
+  Widget _buildList(
+    BuildContext context,
+    WidgetRef ref,
+    NasabahApprovalState state,
+  ) {
+    if (state is NasabahApprovalLoading || state is NasabahApprovalInitial) {
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 24),
+        itemCount: 5,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => const SkeletonListItem(),
+      );
+    }
+    if (state is NasabahApprovalLoaded) {
+      return _loadedList(context, ref, state);
+    }
+    if (state is NasabahApprovalError) {
+      return EmptyView(
+        title: 'Gagal Memuat Data',
+        subtitle: state.message,
+        icon: Icons.error_outline,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _loadedList(
+    BuildContext context,
+    WidgetRef ref,
+    NasabahApprovalLoaded state,
+  ) {
+    final memberships = state.memberships;
+    if (memberships.isEmpty) {
+      return const EmptyView(
+        title: 'Belum Ada Pengajuan',
+        subtitle: 'Anda belum mengajukan keanggotaan ke bank sampah manapun.',
+        icon: Icons.hourglass_empty,
+      );
+    }
+    return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 24),
+      itemCount: memberships.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final membership = memberships[index];
+        return MembershipListItem(
+          membership: membership,
+          onTap: () {
+            context
+                .push<bool>(
+              ApprovalBankSampahDetailPage.route,
+              extra: membership,
+            )
+                .then((changed) {
+              // A successful appeal pops `true` and returns the membership to
+              // pending, so refresh the stale list.
+              if (changed == true && context.mounted) {
+                ref.read(nasabahApprovalProvider.notifier).load(silent: true);
+              }
+            });
+          },
+        );
+      },
     );
   }
 }

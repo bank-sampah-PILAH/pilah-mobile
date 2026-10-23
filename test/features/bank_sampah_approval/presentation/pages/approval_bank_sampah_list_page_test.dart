@@ -53,6 +53,15 @@ void main() {
     expect(find.byIcon(Icons.recycling), findsNWidgets(2));
   });
 
+  testWidgets('loads memberships when the provider starts initial',
+      (tester) async {
+    final notifier = _notifier(const NasabahApprovalInitial());
+    await tester.pumpWidget(_wrap(notifier));
+    await tester.pumpAndSettle();
+
+    expect(notifier.loadCalls, [false]);
+  });
+
   testWidgets('pulling to refresh reloads silently', (tester) async {
     final notifier =
         _notifier(const NasabahApprovalLoaded([_pending, _approved]));

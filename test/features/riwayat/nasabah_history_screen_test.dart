@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,16 +40,20 @@ class _Repository extends PreviewNasabahRepository {
 /// The setoran tab loads through the same repository-backed provider as the
 /// production screen.
 class _RiwayatRepository implements RiwayatRepository {
+  _RiwayatRepository({this.pendingHistory});
+
+  final Completer<Either<NetworkException, RiwayatHistory>>? pendingHistory;
   final detailRequests = <(String, String)>[];
 
   @override
   Future<Either<NetworkException, RiwayatHistory>> history(
     String membershipId, {
     int page = 1,
-  }) async =>
-      Right(NasabahHistory([
+  }) =>
+      pendingHistory?.future ??
+      Future.value(Right(NasabahHistory([
         NasabahActivity('t1', DateTime(2026, 9, 23), 'setoran', '5000.00'),
-      ], false));
+      ], false)));
 
   @override
   Future<Either<NetworkException, RiwayatSetoranDetail>> setoranDetail(
@@ -77,8 +83,13 @@ class _RiwayatRepository implements RiwayatRepository {
 void main() {
   late _RiwayatRepository riwayatRepository;
 
-  Future<void> pumpScreen(WidgetTester tester, _Repository repo) async {
-    riwayatRepository = _RiwayatRepository();
+  Future<void> pumpScreen(
+    WidgetTester tester,
+    _Repository repo, {
+    _RiwayatRepository? historyRepository,
+    bool settle = true,
+  }) async {
+    riwayatRepository = historyRepository ?? _RiwayatRepository();
     di.registerSingleton<NasabahRepository>(repo);
     di.registerFactory<RiwayatRepository>(() => riwayatRepository);
     di.registerFactory<PencairanUseCases>(
@@ -105,13 +116,32 @@ void main() {
         home: NasabahHistoryScreen(membershipId: 'm1'),
       ),
     ));
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
   }
 
   testWidgets('shows when the balance was last updated', (tester) async {
     await pumpScreen(tester, _Repository(updatedAt: DateTime(2026, 9, 20, 9)));
 
     expect(find.text('Diperbarui 20/09/2026'), findsOneWidget);
+  });
+
+  testWidgets('shows a loading indicator while history is pending',
+      (tester) async {
+    final pending = Completer<Either<NetworkException, RiwayatHistory>>();
+    await pumpScreen(
+      tester,
+      _Repository(),
+      historyRepository: _RiwayatRepository(pendingHistory: pending),
+      settle: false,
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    pending.complete(Right(NasabahHistory([], false)));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('says "Saldo saat ini" when no update time is known',

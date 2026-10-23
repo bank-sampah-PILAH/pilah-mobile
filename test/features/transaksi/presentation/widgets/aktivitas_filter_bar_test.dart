@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
@@ -34,23 +35,32 @@ void main() {
     notifier = RiwayatAktivitasNotifier(feed, export);
   });
 
-  Future<void> pumpBar(WidgetTester tester, {required double width}) async {
+  Future<void> pumpBar(
+    WidgetTester tester, {
+    required double width,
+    bool withRouter = false,
+  }) async {
     tester.view.physicalSize = Size(width, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(MaterialApp(
-      navigatorKey: rootNavigatorKey,
-      home: withTransaksiProviders(
-        riwayat: notifier,
-        child: const Scaffold(
-          body: Padding(
-            padding: EdgeInsets.all(16),
-            child: AktivitasFilterBar(),
-          ),
+    final child = withTransaksiProviders(
+      riwayat: notifier,
+      child: const Scaffold(
+        body: Padding(
+          padding: EdgeInsets.all(16),
+          child: AktivitasFilterBar(),
         ),
       ),
-    ));
+    );
+    await tester.pumpWidget(withRouter
+        ? MaterialApp.router(
+            routerConfig: GoRouter(
+              navigatorKey: rootNavigatorKey,
+              routes: [GoRoute(path: '/', builder: (_, __) => child)],
+            ),
+          )
+        : MaterialApp(navigatorKey: rootNavigatorKey, home: child));
     await tester.pump();
   }
 
@@ -114,7 +124,7 @@ void main() {
 
   testWidgets('"Rentang tanggal…" hands over to the date range sheet',
       (tester) async {
-    await pumpBar(tester, width: 1200);
+    await pumpBar(tester, width: 1200, withRouter: true);
 
     await tester.tap(find.text('Bulan Ini'));
     await tester.pumpAndSettle();
@@ -123,6 +133,12 @@ void main() {
 
     expect(find.text('Pilih Periode'), findsNothing);
     expect(find.text('Terapkan Filter'), findsOneWidget);
+
+    await tester.tap(find.text('Terapkan Filter'));
+    await tester.pumpAndSettle();
+
+    expect(notifier.state.dariTanggal, isNotNull);
+    expect(notifier.state.sampaiTanggal, isNotNull);
   });
 
   testWidgets('phone: the reset icon restores the defaults and disappears',

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
@@ -25,5 +26,23 @@ Future<void> confirmExitOnboarding(
     ProviderScope.containerOf(context, listen: false)
         .read(authenticationProvider.notifier)
         .logout();
+  }
+}
+
+void handleOnboardingStepPop(
+  BuildContext context, {
+  required bool didPop,
+  required bool isWizardStep,
+}) {
+  if (didPop) return;
+  if (!isWizardStep) {
+    confirmExitOnboarding(context);
+    return;
+  }
+  final router = GoRouter.of(context);
+  if (router.canPop()) {
+    router.pop();
+  } else {
+    context.go('/complete-profile');
   }
 }

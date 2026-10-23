@@ -176,47 +176,11 @@ class _RegisterBankSampahScreenState
     );
   }
 
-  /// Whether this form is step two of the wizard rather than a destination in
-  /// its own right.
-  ///
-  /// A banked draft is the evidence: it exists only when the profile screen
-  /// pushed this route and is still sitting underneath, which is also the only
-  /// case where popping leads anywhere useful. Reached any other way — a
-  /// redirect after login, a rejected re-application — there is no page behind
-  /// this one and back has to keep meaning "leave onboarding".
-  bool get _isWizardStep =>
-      ref.read(onboardingProvider.notifier).hasProfileDraft;
-
-  /// Intercepts a back-navigation attempt.
-  ///
-  /// Mid-wizard the pop is allowed through to the profile screen, which refills
-  /// itself from the draft. Offering to log them out instead — which is what
-  /// this did unconditionally — would throw away a completed form to answer a
-  /// request to edit it.
-  void _onPopInvoked(bool didPop) {
-    if (didPop) return;
-    if (_isWizardStep) {
-      _backToProfile();
-      return;
-    }
-    confirmExitOnboarding(context);
-  }
-
-  /// Returns to step one, preferring a pop so the profile screen underneath is
-  /// revealed rather than rebuilt over the top of this one.
-  ///
-  /// Falls back to `go` for the case the draft outlived the stack — a warm
-  /// start that restored straight onto this route, say — where there is nothing
-  /// to pop and the profile screen has to be navigated to outright. It refills
-  /// from the draft either way.
-  void _backToProfile() {
-    final router = GoRouter.of(context);
-    if (router.canPop()) {
-      router.pop();
-    } else {
-      context.go('/complete-profile');
-    }
-  }
+  void _onPopInvoked(bool didPop) => handleOnboardingStepPop(
+        context,
+        didPop: didPop,
+        isWizardStep: ref.read(onboardingProvider.notifier).hasProfileDraft,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +384,11 @@ class _RegisterBankSampahScreenState
                     AppButton(
                       label: 'Kembali',
                       variant: AppButtonVariant.neutral,
-                      onPressed: _backToProfile,
+                      onPressed: () => handleOnboardingStepPop(
+                        context,
+                        didPop: false,
+                        isWizardStep: true,
+                      ),
                     ),
                   ],
                 ),

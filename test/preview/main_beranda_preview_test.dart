@@ -23,6 +23,13 @@ void main() {
     }
   });
 
+  testWidgets('preview executable entrypoint starts the app', (tester) async {
+    preview.main();
+    await tester.pump();
+
+    expect(find.byType(MaterialApp), findsOneWidget);
+  });
+
   testWidgets('preview entrypoint shows the offline Beranda for Siti',
       (tester) async {
     await tester.pumpWidget(preview.buildPreviewApp());
