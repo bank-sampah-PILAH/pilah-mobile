@@ -8,7 +8,10 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 import '../../support/auth_support.dart';
 import '../../support/nasabah_approval_support.dart';
 
@@ -49,7 +52,8 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
         const NasabahApprovalLoaded([approved]),
     TestNasabahApprovalNotifier? approvalNotifier,
     String initialLocation = '/home',
-    bool settle = true}) async {
+    bool settle = true,
+    bool? isWebOverride}) async {
   final approval = approvalNotifier ??
       TestNasabahApprovalNotifier(initialState: approvalState);
   final auth = authNotifier ?? authNotifierIn(state);
@@ -57,7 +61,10 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
     initialLocation: initialLocation,
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (_, __, shell) => MainPage(navigationShell: shell),
+        builder: (_, __, shell) => MainPage(
+          navigationShell: shell,
+          isWebOverride: isWebOverride,
+        ),
         branches: [
           for (final path in [
             '/home',
@@ -78,6 +85,10 @@ Future<GoRouter> mount(WidgetTester tester, AuthenticationStates state,
               ],
             ),
         ],
+      ),
+      GoRoute(
+        path: TransaksiBaruPage.route,
+        builder: (_, __) => const Scaffold(body: Text('Form Setoran')),
       ),
       GoRoute(
         path: '/approval-bank-sampah/detail',
@@ -143,7 +154,9 @@ void main() {
 
   for (final role in ['pengelola', 'pengelola_induk']) {
     testWidgets('$role retains the staff navigation', (tester) async {
-      await mount(tester, session(role));
+      await mount(tester, session(role), isWebOverride: false);
+      expect(find.text('Transaksi'), findsNothing,
+          reason: 'the menu change applies to the web shell only');
       expect(labels(tester), [
         'Dashboard',
         'Nasabah',
@@ -153,6 +166,60 @@ void main() {
       ]);
     });
   }
+
+  testWidgets('Pengurus opens Setoran from the first web sidebar menu',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final router = await mount(
+      tester,
+      session('pengelola'),
+      isWebOverride: true,
+    );
+
+    expect(find.text('Transaksi'), findsOneWidget);
+    expect(find.text('Setoran'), findsOneWidget);
+    await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Form Setoran'), findsOneWidget);
+    final transactionMenu = tester.widget<ExpansionTile>(find.byKey(
+      RoleTransactionMenu.menuKey,
+      skipOffstage: false,
+    ));
+    expect(transactionMenu.textColor, AppColors.greenDark);
+    final setoran = tester.widget<ListTile>(find.byKey(
+      RoleTransactionMenu.setoranKey,
+      skipOffstage: false,
+    ));
+    expect(setoran.selected, isTrue);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    final inactiveMenu =
+        tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
+    expect(inactiveMenu.textColor, AppColors.inkSoft);
+    expect(
+      tester
+          .widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey))
+          .selected,
+      isFalse,
+    );
+  });
+
+  testWidgets('loads membership status after an initial shell state',
+      (tester) async {
+    final approval = TestNasabahApprovalNotifier(
+      initialState: const NasabahApprovalInitial(),
+    );
+
+    await mount(tester, session('nasabah'), approvalNotifier: approval);
+
+    expect(approval.loadCalls, [false]);
+  });
 
   testWidgets('pending membership shows status home with only Home and Profile',
       (tester) async {

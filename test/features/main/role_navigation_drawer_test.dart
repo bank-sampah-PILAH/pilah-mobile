@@ -2,8 +2,10 @@ import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 import '../../support/pump_app.dart';
 
@@ -21,6 +23,8 @@ void main() {
     int currentIndex = 0,
     String? bankSampahNama = 'Bank Sampah Melati',
     bool limitedNasabah = false,
+    bool transactionSelected = false,
+    VoidCallback? onAddTransaction,
   }) async {
     final selected = <int>[];
     await pumpRouted(
@@ -32,7 +36,9 @@ void main() {
             currentIndex: currentIndex,
             bankSampahNama: bankSampahNama,
             limitedNasabah: limitedNasabah,
+            transactionSelected: transactionSelected,
             onSelected: selected.add,
+            onAddTransaction: onAddTransaction,
           ),
         ),
       ),
@@ -59,6 +65,58 @@ void main() {
     testWidgets('names the bank sampah being managed', (tester) async {
       await mountDrawer(tester);
       expect(find.text('Bank Sampah Melati'), findsOneWidget);
+    });
+
+    testWidgets('shows the expanded Transaksi menu before destinations',
+        (tester) async {
+      var added = false;
+      await mountDrawer(tester, onAddTransaction: () => added = true);
+
+      expect(find.text('Transaksi'), findsOneWidget);
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      expect(find.text('Tambah Transaksi'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('Transaksi')).dy,
+        lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
+      );
+      final pencairan =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.pencairanKey));
+      expect(pencairan.enabled, isFalse);
+      expect(pencairan.onTap, isNull);
+
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
+      await tester.pumpAndSettle();
+      expect(added, isTrue);
+    });
+
+    testWidgets('highlights Transaksi and Setoran on the Setoran page',
+        (tester) async {
+      await mountDrawer(tester,
+          transactionSelected: true, onAddTransaction: () {});
+
+      final transactionMenu =
+          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
+      expect(transactionMenu.iconColor, AppColors.greenDark);
+      expect(transactionMenu.collapsedIconColor, AppColors.greenDark);
+      final setoran =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      expect(setoran.selected, isTrue);
+      expect(
+        tester.widget<Text>(find.text('Setoran')).style?.color,
+        AppColors.greenDark,
+      );
+    });
+
+    testWidgets('hides the transaction menu from Pengelola Induk',
+        (tester) async {
+      await mountDrawer(
+        tester,
+        role: 'pengelola_induk',
+        onAddTransaction: () {},
+      );
+
+      expect(find.text('Transaksi'), findsNothing);
     });
 
     testWidgets('reports the menu index that was tapped', (tester) async {
@@ -102,6 +160,40 @@ void main() {
   });
 
   group('RoleNavigationDrawer inside a Scaffold', () {
+    testWidgets('choosing Setoran closes the drawer and opens the form',
+        (tester) async {
+      var added = false;
+      await pumpRouted(
+        tester,
+        Scaffold(
+          drawer: RoleNavigationDrawer(
+            navigation: RoleNavigationConfig(
+              role: 'pengelola',
+              currentIndex: 0,
+              bankSampahNama: 'Bank Sampah Melati',
+              onSelected: (_) {},
+              onAddTransaction: () => added = true,
+            ),
+          ),
+          body: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: Scaffold.of(context).openDrawer,
+            ),
+          ),
+        ),
+        size: const Size(390, 844),
+      );
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
+      await tester.pumpAndSettle();
+
+      expect(added, isTrue);
+      expect(find.text('Transaksi'), findsNothing);
+    });
+
     testWidgets('choosing a destination closes the drawer', (tester) async {
       final selected = <int>[];
       await pumpRouted(

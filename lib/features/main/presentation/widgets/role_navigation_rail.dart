@@ -4,9 +4,11 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 /// Bentuk navigasi untuk layar lebar.
 ///
@@ -65,6 +67,10 @@ class RoleNavigationRail extends StatelessWidget {
               initials: BankSampahLabel.initialsOf(navigation.bankSampahNama),
               extended: extended,
               onHome: navigation.onHome,
+              onAddTransaction: navigation.role == 'pengelola'
+                  ? navigation.onAddTransaction
+                  : null,
+              transactionSelected: navigation.transactionSelected,
             ),
             backgroundColor: Colors.white,
             indicatorColor: AppColors.greenLight,
@@ -132,9 +138,13 @@ class _RailHeader extends StatelessWidget {
     required this.initials,
     required this.extended,
     this.onHome,
+    this.onAddTransaction,
+    this.transactionSelected = false,
   });
 
   final VoidCallback? onHome;
+  final VoidCallback? onAddTransaction;
+  final bool transactionSelected;
   final String label;
   final String initials;
   final bool extended;
@@ -249,6 +259,17 @@ class _RailHeader extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.8,
                 )),
+          ],
+          if (onAddTransaction != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: headerWidth,
+              child: RoleTransactionMenu(
+                onSetoran: onAddTransaction!,
+                compact: !extended,
+                selected: transactionSelected,
+              ),
+            ),
           ],
         ],
       ),

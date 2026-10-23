@@ -17,6 +17,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 /// Indeks branch profil staff di `StatefulShellRoute`, di luar lima destinasi.
 const _profileBranch = 7;
@@ -231,46 +232,59 @@ class _ShellContent extends ConsumerWidget {
         account is Authenticated ? account.authEntity.name : null;
     final profileEmail =
         account is Authenticated ? account.authEntity.email : null;
-    final navigation = RoleNavigationConfig(
-      role: role,
-      limitedNasabah: limitedNasabah,
-      currentIndex: railSelected,
-      bankSampahNama: bankSampahNama,
-      profileName: profileName,
-      profileEmail: profileEmail,
-      onProfile: () => navigationShell.goBranch(_profileBranch),
-      onHome: () => navigationShell.goBranch(0, initialLocation: true),
-      profileSelected:
-          GoRouterState.of(context).uri.path == AppLocations.profile,
-      onSelected: select,
-    );
+    final routeInformationProvider =
+        GoRouter.of(context).routeInformationProvider;
+    return AnimatedBuilder(
+      animation: routeInformationProvider,
+      builder: (context, _) {
+        final currentPath = routeInformationProvider.value.uri.path;
+        final navigation = RoleNavigationConfig(
+          role: role,
+          limitedNasabah: limitedNasabah,
+          currentIndex: railSelected,
+          bankSampahNama: bankSampahNama,
+          profileName: profileName,
+          profileEmail: profileEmail,
+          onProfile: () => navigationShell.goBranch(_profileBranch),
+          onHome: () => navigationShell.goBranch(0, initialLocation: true),
+          onAddTransaction: role == 'pengelola'
+              ? () {
+                  context.push(TransaksiBaruPage.route);
+                }
+              : null,
+          transactionSelected: currentPath == TransaksiBaruPage.route,
+          profileSelected: currentPath == AppLocations.profile,
+          onSelected: select,
+        );
 
-    // Browser sempit: destinasi pindah ke balik tombol menu. Kepala tipis
-    // dipakai alih-alih AppBar milik Scaffold karena sebagian halaman membawa
-    // AppBar sendiri, dan dua AppBar bertumpuk akan terlihat.
-    if (form.isOverlay) {
-      return Scaffold(
-        drawer: RoleNavigationDrawer(navigation: navigation),
-        body: Column(
-          children: [
-            const _MenuButtonHeader(),
-            Expanded(child: body),
-          ],
-        ),
-      );
-    }
+        // Browser sempit: destinasi pindah ke balik tombol menu. Kepala tipis
+        // dipakai alih-alih AppBar milik Scaffold karena sebagian halaman membawa
+        // AppBar sendiri, dan dua AppBar bertumpuk akan terlihat.
+        if (form.isOverlay) {
+          return Scaffold(
+            drawer: RoleNavigationDrawer(navigation: navigation),
+            body: Column(
+              children: [
+                const _MenuButtonHeader(),
+                Expanded(child: body),
+              ],
+            ),
+          );
+        }
 
-    // Rail menggantikan bottom bar, tidak menemaninya: menampilkan keduanya
-    // berarti menawarkan menu yang sama dua kali.
-    return Scaffold(
-      body: Row(
-        children: [
-          RoleNavigationRail(navigation: navigation),
-          Expanded(
-            child: WebContentSurface(child: body),
+        // Rail menggantikan bottom bar, tidak menemaninya: menampilkan keduanya
+        // berarti menawarkan menu yang sama dua kali.
+        return Scaffold(
+          body: Row(
+            children: [
+              RoleNavigationRail(navigation: navigation),
+              Expanded(
+                child: WebContentSurface(child: body),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

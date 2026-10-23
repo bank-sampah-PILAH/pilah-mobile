@@ -12,6 +12,8 @@ class RoleNavigationConfig {
     this.profileEmail,
     this.onProfile,
     this.onHome,
+    this.onAddTransaction,
+    this.transactionSelected = false,
     this.profileSelected = false,
     this.limitedNasabah = false,
   });
@@ -24,6 +26,8 @@ class RoleNavigationConfig {
   final String? profileEmail;
   final VoidCallback? onProfile;
   final VoidCallback? onHome;
+  final VoidCallback? onAddTransaction;
+  final bool transactionSelected;
   final bool profileSelected;
   final bool limitedNasabah;
 }
