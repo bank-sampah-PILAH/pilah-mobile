@@ -1,5 +1,5 @@
-# CI — full-suite PR gate for pilah-mobile. VM tests run in parallel shards;
-# their LCOV is merged before the existing coverage gates, then reused by Sonar.
+# CI — changed-test feedback on PRs/feature pushes; full sharded suite on staging.
+# Same-run LCOV is merged for Sonar, with the existing coverage gates on staging only.
 name: CI
 
 on:
@@ -18,6 +18,31 @@ env:
   FLUTTER_VERSION: "3.41.3"
 
 jobs:
+  changes:
+    if: github.event_name != 'workflow_dispatch'
+    name: Select changed tests
+    runs-on: ubuntu-latest
+    outputs:
+      base_sha: ${{ steps.select.outputs.base_sha }}
+      browser_test_files: ${{ steps.select.outputs.browser_test_files }}
+      coverage_gates: ${{ steps.select.outputs.coverage_gates }}
+      full_suite: ${{ steps.select.outputs.full_suite }}
+      has_vm_tests: ${{ steps.select.outputs.has_vm_tests }}
+      test_files: ${{ steps.select.outputs.test_files }}
+      web_changed: ${{ steps.select.outputs.web_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select changed tests and web paths
+        id: select
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: python3 scripts/select_ci_changes.py
+
   quality:
     if: github.event_name != 'workflow_dispatch'
     name: Format, analyze & workflow checks
@@ -63,7 +88,8 @@ jobs:
         run: docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color
 
   test_shards:
-    if: github.event_name != 'workflow_dispatch'
+    if: needs.changes.outputs.full_suite == 'true'
+    needs: changes
     name: Test shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
     strategy:
@@ -105,8 +131,56 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  changed_tests:
+    if: needs.changes.outputs.full_suite != 'true' && needs.changes.outputs.has_vm_tests == 'true'
+    needs: changes
+    name: Changed test files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Measure coverage of the generated DI graph
+        run: sed -i '/^\/\/ coverage:ignore-file$/d' lib/services/di.config.dart
+
+      - name: Run changed test files with coverage
+        env:
+          TEST_FILES: ${{ needs.changes.outputs.test_files }}
+        run: |
+          mapfile -t test_files < <(python3 -c 'import json,os; [print(path) for path in json.loads(os.environ["TEST_FILES"])]')
+          if ((${#test_files[@]} == 0)); then
+            echo "::error::No changed test files were provided to the selected-test job."
+            exit 1
+          fi
+          flutter test --coverage "${test_files[@]}"
+
+      - name: Name selected-test coverage file
+        run: mv coverage/lcov.info coverage/lcov-selected.info
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage-selected
+          path: coverage/lcov-selected.info
+          if-no-files-found: error
+          retention-days: 1
+
   browser_tests:
-    if: github.event_name != 'workflow_dispatch'
+    if: needs.changes.outputs.full_suite == 'true' || needs.changes.outputs.web_changed == 'true'
+    needs: changes
     name: Browser tests
     runs-on: ubuntu-latest
     steps:
@@ -146,18 +220,38 @@ jobs:
           --plain-name "web dashboard uses the web default for Pengurus"
           test/features/dashboard/presentation/pages/dashboard_page_test.dart
 
+      - name: Run changed browser test files outside the fixed browser suite
+        if: needs.changes.outputs.browser_test_files != '[]'
+        env:
+          BROWSER_TEST_FILES: ${{ needs.changes.outputs.browser_test_files }}
+        run: |
+          mapfile -t browser_test_files < <(python3 -c 'import json,os; [print(path) for path in json.loads(os.environ["BROWSER_TEST_FILES"])]')
+          for index in "${!browser_test_files[@]}"; do
+            test_file="${browser_test_files[$index]}"
+            if [[ "$test_file" == test/browser/* ]]; then
+              dart run test --platform chrome --dart2js-args=-O0 \
+                --coverage-path="coverage/browser-selected-${index}.info" "$test_file"
+            else
+              flutter test --platform chrome --coverage \
+                --coverage-path="coverage/browser-selected-${index}.info" "$test_file"
+            fi
+          done
+
       - uses: actions/upload-artifact@v4
         with:
           name: browser-coverage
-          path: coverage/browser.lcov.info
+          path: coverage/browser*.info
           if-no-files-found: error
           retention-days: 1
 
   coverage:
-    if: github.event_name != 'workflow_dispatch'
+    if: ${{ always() && github.event_name != 'workflow_dispatch' }}
     name: Coverage gates
-    needs: [test_shards, browser_tests]
+    needs: [changes, test_shards, changed_tests, browser_tests]
     runs-on: ubuntu-latest
+    outputs:
+      has_coverage: ${{ steps.merge.outputs.has_coverage }}
+      sonar_reports: ${{ steps.merge.outputs.sonar_reports }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -173,31 +267,70 @@ jobs:
       - name: Install lcov
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y lcov
 
-      - uses: actions/download-artifact@v4
+      - name: Download unit coverage
+        if: needs.test_shards.result == 'success' || needs.changed_tests.result == 'success'
+        uses: actions/download-artifact@v4
         with:
           pattern: unit-coverage-*
-          path: coverage/shards
+          path: coverage/units
+          merge-multiple: false
 
-      - uses: actions/download-artifact@v4
+      - name: Download browser coverage
+        if: needs.browser_tests.result == 'success'
+        uses: actions/download-artifact@v4
         with:
           name: browser-coverage
-          path: coverage
+          path: coverage/browser
 
-      - name: Merge test coverage shards
+      - name: Merge LCOV for Sonar and staging gates
+        id: merge
+        env:
+          FULL_SUITE: ${{ needs.changes.outputs.full_suite }}
+          COVERAGE_GATES: ${{ needs.changes.outputs.coverage_gates }}
         run: |
-          tracefiles=(coverage/shards/*/lcov-*.info)
-          if [[ ! -e "${tracefiles[0]}" || "${#tracefiles[@]}" -ne 4 ]]; then
-            echo "::error::Expected 4 coverage shards, found ${#tracefiles[@]}."
+          mkdir -p coverage/units coverage/browser
+          mapfile -t unit_tracefiles < <(find coverage/units -type f -name '*.info' -print | sort)
+          if [[ "$FULL_SUITE" == 'true' && "${#unit_tracefiles[@]}" -ne 4 ]]; then
+            echo "::error::Expected 4 coverage shards, found ${#unit_tracefiles[@]}."
             exit 1
           fi
-          lcov_args=()
-          for tracefile in "${tracefiles[@]}"; do
-            lcov_args+=(--add-tracefile "$tracefile")
-          done
-          lcov "${lcov_args[@]}" --output-file coverage/lcov.info
+          if ((${#unit_tracefiles[@]})); then
+            lcov_args=()
+            for tracefile in "${unit_tracefiles[@]}"; do
+              lcov_args+=(--add-tracefile "$tracefile")
+            done
+            lcov "${lcov_args[@]}" --output-file coverage/lcov.info
+          fi
 
-      # Keep the existing 25% floor; evaluate it against the merged VM coverage.
+          mapfile -t browser_tracefiles < <(find coverage/browser -type f -name '*.info' -print | sort)
+          if ((${#browser_tracefiles[@]})); then
+            lcov_args=()
+            for tracefile in "${browser_tracefiles[@]}"; do
+              lcov_args+=(--add-tracefile "$tracefile")
+            done
+            lcov "${lcov_args[@]}" --output-file coverage/browser.lcov.info
+          fi
+
+          if [[ "$COVERAGE_GATES" == 'true' && ( ! -f coverage/lcov.info || ! -f coverage/browser.lcov.info ) ]]; then
+            echo "::error::The staging coverage gates require merged VM and browser LCOV."
+            exit 1
+          fi
+
+          reports=()
+          [[ -f coverage/lcov.info ]] && reports+=(coverage/lcov.info)
+          [[ -f coverage/browser.lcov.info ]] && reports+=(coverage/browser.lcov.info)
+          if ((${#reports[@]})); then
+            report_list=$(IFS=,; printf '%s' "${reports[*]}")
+            echo "has_coverage=true" >> "$GITHUB_OUTPUT"
+            echo "sonar_reports=$report_list" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_coverage=false" >> "$GITHUB_OUTPUT"
+            echo "sonar_reports=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Keep the existing 25% floor; staging evaluates it against the full merged VM coverage.
       - name: Coverage report (fail under 25%)
+        if: needs.changes.outputs.coverage_gates == 'true'
         run: |
           # shellcheck disable=SC2016  # the awk program is intentionally single-quoted
           pct="$(awk '
@@ -208,47 +341,69 @@ jobs:
           awk -v p="$pct" 'BEGIN { exit (p+0 >= 25 ? 0 : 1) }' \
             || { echo "::error::line coverage ${pct}% is below the 25% gate"; exit 1; }
 
-      - name: PR diff coverage (fail under 25%)
-        if: github.event_name == 'pull_request'
+      - name: Staging diff coverage (fail under 25%)
+        if: needs.changes.outputs.coverage_gates == 'true'
+        env:
+          BASE_SHA: ${{ needs.changes.outputs.base_sha }}
         run: >-
           diff-cover coverage/lcov.info
-          --compare-branch=origin/${{ github.base_ref }}
+          --compare-branch="$BASE_SHA"
           --fail-under=25
           --total-percent-float
           --show-uncovered
 
       - uses: actions/upload-artifact@v4
+        if: steps.merge.outputs.has_coverage == 'true'
         with:
           name: sonar-coverage
-          path: |
-            coverage/lcov.info
-            coverage/browser.lcov.info
+          path: coverage/*.info
           if-no-files-found: error
           retention-days: 1
 
   verify:
     if: ${{ always() && github.event_name != 'workflow_dispatch' }}
     name: Format, analyze, tests & build
-    needs: [quality, test_shards, browser_tests, coverage]
+    needs: [changes, quality, test_shards, changed_tests, browser_tests, coverage]
     runs-on: ubuntu-latest
     steps:
-      - name: Require all verification jobs to pass
+      - name: Require applicable checks to pass
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
           QUALITY_RESULT: ${{ needs.quality.result }}
-          TEST_RESULT: ${{ needs.test_shards.result }}
+          TEST_SHARDS_RESULT: ${{ needs.test_shards.result }}
+          CHANGED_TESTS_RESULT: ${{ needs.changed_tests.result }}
           BROWSER_RESULT: ${{ needs.browser_tests.result }}
           COVERAGE_RESULT: ${{ needs.coverage.result }}
+          FULL_SUITE: ${{ needs.changes.outputs.full_suite }}
+          HAS_VM_TESTS: ${{ needs.changes.outputs.has_vm_tests }}
+          WEB_CHANGED: ${{ needs.changes.outputs.web_changed }}
         run: |
-          if [[ "$QUALITY_RESULT" != success || "$TEST_RESULT" != success || \
-                "$BROWSER_RESULT" != success || "$COVERAGE_RESULT" != success ]]; then
-            echo "::error::Quality, test, browser, or coverage validation failed."
+          if [[ "$CHANGES_RESULT" != success || "$QUALITY_RESULT" != success || "$COVERAGE_RESULT" != success ]]; then
+            echo "::error::Changed-file selection, quality, or coverage validation failed."
             exit 1
+          fi
+          if [[ "$FULL_SUITE" == 'true' ]]; then
+            if [[ "$TEST_SHARDS_RESULT" != success || "$BROWSER_RESULT" != success ]]; then
+              echo "::error::The full Flutter and browser suites must pass."
+              exit 1
+            fi
+          else
+            if [[ "$HAS_VM_TESTS" == 'true' && "$CHANGED_TESTS_RESULT" != success ]] || \
+               [[ "$HAS_VM_TESTS" != 'true' && "$CHANGED_TESTS_RESULT" != skipped ]]; then
+              echo "::error::Changed VM tests did not match the selected-test policy."
+              exit 1
+            fi
+            if [[ "$WEB_CHANGED" == 'true' && "$BROWSER_RESULT" != success ]] || \
+               [[ "$WEB_CHANGED" != 'true' && "$BROWSER_RESULT" != skipped ]]; then
+              echo "::error::Browser tests did not match the web-diff policy."
+              exit 1
+            fi
           fi
 
   sonar:
     if: github.event_name != 'workflow_dispatch'
     name: SonarCloud analysis
-    needs: coverage
+    needs: [changes, coverage]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -258,9 +413,33 @@ jobs:
           fetch-depth: 0
 
       - uses: actions/download-artifact@v4
+        if: needs.coverage.outputs.has_coverage == 'true'
         with:
           name: sonar-coverage
           path: coverage
+
+      - name: Prepare Sonar arguments
+        id: sonar_args
+        env:
+          SONAR_COVERAGE_REPORTS: ${{ needs.coverage.outputs.sonar_reports }}
+        run: |
+          args=$(cat <<'ARGS'
+          -Dsonar.organization=bank-sampah-pilah
+          -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
+          -Dsonar.sources=lib
+          -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart,lib/main_beranda_preview.dart
+          -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+          -Dsonar.scanner.skipJreProvisioning=true
+          ARGS
+          )
+          if [[ -n "$SONAR_COVERAGE_REPORTS" ]]; then
+            args+=$'\n-Dsonar.dart.lcov.reportPaths='"$SONAR_COVERAGE_REPORTS"
+          fi
+          {
+            echo 'args<<EOF'
+            printf '%s\n' "$args"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Java 21 (scanner engine)
         uses: actions/setup-java@v4
@@ -276,14 +455,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          args: >
-            -Dsonar.organization=bank-sampah-pilah
-            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
-            -Dsonar.sources=lib
-            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info,coverage/browser.lcov.info
-            -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart,lib/main_beranda_preview.dart
-            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
-            -Dsonar.scanner.skipJreProvisioning=true
+          args: ${{ steps.sonar_args.outputs.args }}
 
       - name: SonarCloud Scan (retry)
         if: steps.sonar_scan.outcome == 'failure'
@@ -291,14 +463,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          args: >
-            -Dsonar.organization=bank-sampah-pilah
-            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
-            -Dsonar.sources=lib
-            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info,coverage/browser.lcov.info
-            -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart,lib/main_beranda_preview.dart
-            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
-            -Dsonar.scanner.skipJreProvisioning=true
+          args: ${{ steps.sonar_args.outputs.args }}
 
   deploy_web_staging:
     needs: verify
