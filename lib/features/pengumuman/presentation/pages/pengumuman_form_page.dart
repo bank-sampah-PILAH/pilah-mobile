@@ -7,7 +7,9 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
@@ -25,11 +27,12 @@ class PengumumanFormArgs {
 /// target selector. Simpan Draft keeps a draft; Terbitkan publishes now or
 /// schedules a future publish time.
 class PengumumanFormPage extends StatelessWidget {
-  const PengumumanFormPage({super.key, this.args});
+  const PengumumanFormPage({super.key, this.args, this.onClose});
 
   static const route = '/pengumuman/kelola/ubah';
 
   final PengumumanFormArgs? args;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -41,15 +44,16 @@ class PengumumanFormPage extends StatelessWidget {
               title: 'Gagal', message: state.message);
         }
       },
-      child: _PengumumanFormBody(existing: existing),
+      child: _PengumumanFormBody(existing: existing, onClose: onClose),
     );
   }
 }
 
 class _PengumumanFormBody extends StatefulWidget {
-  const _PengumumanFormBody({this.existing});
+  const _PengumumanFormBody({this.existing, this.onClose});
 
   final PengumumanEntity? existing;
+  final VoidCallback? onClose;
 
   @override
   State<_PengumumanFormBody> createState() => _PengumumanFormBodyState();
@@ -169,13 +173,22 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
     return true;
   }
 
+  void _closeForm() {
+    final onClose = widget.onClose;
+    if (onClose != null) {
+      onClose();
+    } else {
+      Navigator.of(context).pop(true);
+    }
+  }
+
   Future<void> _simpanDraft() async {
     if (!await _simpanPerubahan()) return;
     if (!mounted) return;
     // Pop first: the toast belongs to the screen we return to, and popping
     // under an open toast trips the navigator in tests and in production.
     final editing = _isEditing;
-    Navigator.of(context).pop(true);
+    _closeForm();
     AppNotification.afterNavigation(
         (toastContext) => AppNotification.showSuccess(
               toastContext,
@@ -229,7 +242,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
       return;
     }
     final scheduled = jadwalkan;
-    Navigator.of(context).pop(true);
+    _closeForm();
     AppNotification.afterNavigation(
         (toastContext) => AppNotification.showSuccess(
               toastContext,
@@ -251,8 +264,18 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
           return SafeArea(
             child: Column(
               children: [
-                AppBackHeader(
-                    title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman'),
+                if (widget.onClose == null)
+                  AppBackHeader(
+                    title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman',
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: AppPanelHeader(
+                      title: _isEditing ? 'Ubah Pengumuman' : 'Buat Pengumuman',
+                      onClose: widget.onClose,
+                    ),
+                  ),
                 Expanded(child: _bagianForm()),
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -282,7 +305,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Judul', style: AppTextStyle.regularSemiBold),
+        const AppFieldLabel('JUDUL'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _judul,
@@ -291,7 +314,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
               appInputDecoration(hintText: 'Contoh: Kerja bakti akhir bulan'),
         ),
         const SizedBox(height: 16),
-        Text('Isi Pengumuman', style: AppTextStyle.regularSemiBold),
+        const AppFieldLabel('ISI PENGUMUMAN'),
         const SizedBox(height: 8),
         TextFormField(
           controller: _isi,
@@ -300,7 +323,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
         ),
         const SizedBox(height: 16),
         _WaktuField(
-          label: 'Waktu Terbit (untuk jadwal)',
+          label: 'WAKTU TERBIT (UNTUK JADWAL)',
           value: _terbitPada,
           onPick: () => _pilihWaktu(isMasaBerlaku: false),
           onClear: _terbitPada == null
@@ -312,7 +335,7 @@ class _PengumumanFormBodyState extends State<_PengumumanFormBody> {
         ),
         const SizedBox(height: 12),
         _WaktuField(
-          label: 'Masa Berlaku Hingga (opsional)',
+          label: 'MASA BERLAKU HINGGA (OPSIONAL)',
           value: _masaBerlakuHingga,
           onPick: () => _pilihWaktu(isMasaBerlaku: true),
           onClear: _masaBerlakuHingga == null
@@ -389,7 +412,7 @@ class _WaktuField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyle.regularSemiBold),
+        AppFieldLabel(label),
         const SizedBox(height: 8),
         Row(
           children: [
