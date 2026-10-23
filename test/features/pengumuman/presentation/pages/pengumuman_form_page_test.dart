@@ -66,6 +66,20 @@ void main() {
     await tester.pump();
   }
 
+  testWidgets('shows visible field labels like the Jadwal form',
+      (tester) async {
+    await openForm(tester);
+
+    for (final label in const [
+      'JUDUL',
+      'ISI PENGUMUMAN',
+      'WAKTU TERBIT (UNTUK JADWAL)',
+      'MASA BERLAKU HINGGA (OPSIONAL)',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: '$label is visible');
+    }
+  });
+
   testWidgets('empty fields show the validation message and send nothing',
       (tester) async {
     await openForm(tester);

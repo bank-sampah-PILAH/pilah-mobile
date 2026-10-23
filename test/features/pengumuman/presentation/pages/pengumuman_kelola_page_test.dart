@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,6 +74,121 @@ void main() {
         reason: 'the title starts at the content column plus the gutter');
     expect(find.byIcon(Icons.arrow_back), findsNothing,
         reason: 'a sidebar destination has nowhere to go back to');
+  });
+
+  testWidgets('a wide web window opens the create form beside the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+
+    await openPage(
+      tester,
+      extraRoutes: const ['/pengumuman/kelola/ubah'],
+      isWeb: true,
+      size: const Size(1440, 900),
+    );
+    expect(find.text('Buat Pengumuman'), findsNothing);
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+    expect(find.text('Buat Pengumuman'), findsOneWidget);
+    expect(
+      tester
+          .widget<MasterDetailLayout>(find.byType(MasterDetailLayout))
+          .masterScrolls,
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<Padding>(find.ancestor(
+            of: find.text('Buat Pengumuman'),
+            matching: find.byType(Padding),
+          ))
+          .any((padding) =>
+              padding.padding == const EdgeInsets.symmetric(horizontal: 16)),
+      isTrue,
+    );
+    expect(find.text('route:/pengumuman/kelola/ubah'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text('Buat Pengumuman')).dx,
+      greaterThan(tester.getTopLeft(find.text('Kelola Pengumuman')).dx),
+    );
+  });
+
+  testWidgets('the web form panel closes without leaving the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+  });
+
+  testWidgets('a web form panel closes when the window leaves expanded layout',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Buat Pengumuman'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(800, 900);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+  });
+
+  testWidgets('saving in the web panel closes it and keeps the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    api.on('POST', '/api/v1/pengumuman', json: {
+      'id': '9',
+      'bank_sampah_id': 'bank-1',
+      'judul': 'Judul Uji',
+      'isi': 'Isi.',
+      'status': 'draft',
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Judul Uji');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Isi.');
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pumpAndSettle();
+    await drainToast(tester);
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+    expect(
+      api.requests.any(
+          (call) => call.method == 'POST' && call.path == '/api/v1/pengumuman'),
+      isTrue,
+    );
   });
 
   testWidgets('a phone keeps the FAB and the back header', (tester) async {

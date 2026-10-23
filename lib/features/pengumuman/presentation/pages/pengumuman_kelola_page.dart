@@ -16,6 +16,7 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
@@ -69,6 +70,8 @@ class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
   /// Ia tidak dibangun ulang saat dibuka lagi, jadi daftarnya dimuat ulang
   /// ketika cabangnya kembali aktif.
   bool _active = true;
+  bool _panelOpen = false;
+  PengumumanEntity? _panelInitial;
 
   @override
   void initState() {
@@ -82,6 +85,12 @@ class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_panelOpen &&
+        (!widget.isWeb ||
+            context.layoutBreakpoint != LayoutBreakpoint.expanded)) {
+      _panelOpen = false;
+      _panelInitial = null;
+    }
     final active = TickerMode.valuesOf(context).enabled;
     if (active && !_active) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -112,6 +121,14 @@ class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
   PengumumanNotifier get _notifier => ref.read(pengumumanProvider.notifier);
 
   Future<void> _bukaForm([PengumumanEntity? pengumuman]) async {
+    if (widget.isWeb && context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      setState(() {
+        _panelOpen = true;
+        _panelInitial = pengumuman;
+      });
+      return;
+    }
+
     final router = GoRouter.of(context);
     await router.push(
       PengumumanFormPage.route,
@@ -119,6 +136,22 @@ class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
     );
     // The form reloads the list after a successful save; tapping out without
     // saving leaves the list as it is.
+  }
+
+  void _tutupPanel() {
+    setState(() {
+      _panelOpen = false;
+      _panelInitial = null;
+    });
+  }
+
+  Widget? _buildFormPanel() {
+    if (!_panelOpen) return null;
+    return PengumumanFormPage(
+      key: ValueKey('pengumuman-panel-${_panelInitial?.id ?? 'baru'}'),
+      args: PengumumanFormArgs(pengumuman: _panelInitial),
+      onClose: _tutupPanel,
+    );
   }
 
   Future<bool> _konfirmasi({
@@ -231,8 +264,9 @@ class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
                       color: Colors.white, fontWeight: FontWeight.w600)),
             ),
       body: SafeArea(
-        child: ContentFrame(
-          child: Column(
+        child: MasterDetailLayout(
+          masterScrolls: true,
+          master: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ContentInset(
@@ -261,6 +295,7 @@ class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
               ),
             ],
           ),
+          detail: _buildFormPanel(),
         ),
       ),
     );

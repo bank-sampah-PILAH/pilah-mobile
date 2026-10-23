@@ -7,7 +7,6 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 
 class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key, this.showProfile = true});
@@ -71,17 +70,17 @@ class DashboardHeader extends ConsumerWidget {
           AppTapTarget(
             label: 'Kelola pengumuman',
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            onTap: () => context.push(PengumumanKelolaPage.route),
+            onTap: null,
             child: Container(
               width: 48,
               height: 48,
               decoration: const BoxDecoration(
-                color: AppColors.greenLight,
+                color: AppColors.fill,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.campaign_outlined,
-                color: AppColors.greenDark,
+                color: AppColors.grey100,
               ),
             ),
           ),

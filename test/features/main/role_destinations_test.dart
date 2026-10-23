@@ -23,6 +23,10 @@ void main() {
         'Pengumuman',
       ]);
       expect(staff.map((d) => d.branchIndex), [0, 1, 2, 3, 4, 8]);
+      expect(staff.take(5).every((d) => !d.disabled), isTrue);
+      expect(staff.last.icon, Icons.campaign_outlined);
+      expect(staff.last.inBottomBar, isFalse);
+      expect(staff.last.disabled, isTrue);
     });
 
     test('the bottom bar keeps the first five; Pengumuman is rail-only', () {
