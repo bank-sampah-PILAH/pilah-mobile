@@ -5,65 +5,86 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_report_widgets.dart';
 
 class TotalKasCard extends StatelessWidget {
   const TotalKasCard({super.key});
-
-  String _display(DashboardState state) {
-    switch (state.status) {
-      case DashboardStatus.loading:
-      case DashboardStatus.initial:
-        return 'Memuat...';
-      case DashboardStatus.error:
-        return 'Rp —';
-      case DashboardStatus.loaded:
-        return CurrencyFormatter.formatRupiah(state.totalKasBulanIni);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (context, state) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.greenDark,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'TOTAL KAS BULAN INI',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: AppColors.greenLight,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.0,
-                ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.greenDark,
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 8),
-              Text(
-                _display(state),
-                style: AppTextStyle.headline1.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 28,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Saldo Tabungan Nasabah',
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: AppColors.greenLight,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    dashboardSavingsDisplay(state),
+                    style: AppTextStyle.headline1.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Total saldo nasabah saat ini',
+                    style: AppTextStyle.small.copyWith(
+                      color: AppColors.greenLight,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Total nilai transaksi bulan ini',
-                style: AppTextStyle.small.copyWith(
-                  color: AppColors.greenLight,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            const DashboardKpiCard(
+              label: 'Kas Operasional',
+              value: dashboardOperationalCashDisplay,
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+            const SizedBox(height: 16),
+            DashboardKpiCard(
+              label: 'Nilai Setoran Bulan Ini',
+              value: state.isLoaded
+                  ? CurrencyFormatter.formatRupiah(state.totalKasBulanIni)
+                  : 'Rp —',
+              icon: Icons.receipt_long_outlined,
+            ),
+          ],
         );
       },
     );
   }
 }
+
+String dashboardSavingsDisplay(DashboardState state) {
+  if (state.status == DashboardStatus.initial ||
+      state.status == DashboardStatus.loading) {
+    return 'Memuat...';
+  }
+  final savings = state.totalSaldoNasabah;
+  if (!state.isLoaded || savings == null) return 'Rp —';
+  return CurrencyFormatter.formatRupiah(savings);
+}
+
+// No cash ledger exists yet. Never infer cash from customer savings or deposits.
+const dashboardOperationalCashDisplay = 'Belum tersedia';

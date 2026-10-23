@@ -9,6 +9,34 @@ import '../../../../support/stub_api.dart';
 const _path = '/api/v1/dashboard/stats';
 
 void main() {
+  test('savings use the new aggregate and never monthly deposits as fallback',
+      () async {
+    final api = StubApi();
+    final dashboard = buildDashboardCubit(api);
+    addTearDown(dashboard.close);
+    for (final sample in <Object?>[
+      '12345',
+      '0',
+      '-100',
+      null,
+      'invalid',
+      'NaN',
+      '12.99',
+      '9007199254740992'
+    ]) {
+      api.on('GET', _path, json: {
+        'total_nilai_bulan_ini': '999999',
+        'total_saldo_nasabah': sample,
+      });
+      await dashboard.loadStats();
+      final expected =
+          <String, int>{'12345': 12345, '0': 0, '-100': -100}[sample];
+      expect(dashboard.state.totalSaldoNasabah, expected, reason: '$sample');
+    }
+    dashboard.reset();
+    expect(dashboard.state.totalSaldoNasabah, isNull);
+  });
+
   late StubApi api;
   late DashboardCubit cubit;
 

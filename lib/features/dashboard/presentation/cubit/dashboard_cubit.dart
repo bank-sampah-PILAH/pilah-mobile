@@ -10,8 +10,8 @@ class DashboardCubit extends Cubit<DashboardState> {
   DashboardCubit(this.getDashboardStatsUseCase) : super(const DashboardState());
 
   /// Loads the current-month metrics from `GET /dashboard/stats`. The backend
-  /// computes these authoritatively, so figures like Total Kas / Total Sampah
-  /// are correct instead of being (mis)derived from the paginated list.
+  /// computes these authoritatively, including savings and monthly deposits,
+  /// rather than deriving them from a paginated transaction list.
   ///
   /// Pass [silent] to skip the loading emit — pull-to-refresh already shows a
   /// spinner, so the stat cards should keep their figures instead of collapsing
@@ -31,6 +31,7 @@ class DashboardCubit extends Cubit<DashboardState> {
       (stats) => emit(DashboardState(
         status: DashboardStatus.loaded,
         totalKasBulanIni: stats.totalKasBulanIni,
+        totalSaldoNasabah: stats.totalSaldoNasabah,
         totalNasabahAktif: stats.nasabahAktif,
         totalSampahKg: stats.totalSampahKg,
         totalTransaksi: stats.transaksiBulanIni,

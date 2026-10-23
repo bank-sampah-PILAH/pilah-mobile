@@ -185,19 +185,25 @@ void main() {
     expect(find.textContaining('Selamat datang, Pengurus'), findsOneWidget);
   });
 
-  testWidgets('total kas shows each loading state', (tester) async {
-    arrange(stats: {'total_nilai_bulan_ini': '1234567'});
+  testWidgets('savings and monthly deposits show loading and error states',
+      (tester) async {
+    arrange(stats: {
+      'total_nilai_bulan_ini': '1234567',
+      'total_saldo_nasabah': '9876543'
+    });
     await pump(tester, const TotalKasCard());
     expect(find.text('Memuat...'), findsOneWidget);
 
     await tester.runAsync(dashboard.loadStats);
     await tester.pump();
     expect(find.text('Rp 1.234.567'), findsOneWidget);
+    expect(find.text('Rp 9.876.543'), findsOneWidget);
+    expect(find.text('Belum tersedia'), findsOneWidget);
 
     api.on('GET', '/api/v1/dashboard/stats', status: 500, json: {});
     await tester.runAsync(dashboard.loadStats);
     await tester.pump();
-    expect(find.text('Rp —'), findsOneWidget);
+    expect(find.text('Rp —'), findsNWidgets(2));
   });
 
   testWidgets('statistics show dashes until loaded, then the figures',

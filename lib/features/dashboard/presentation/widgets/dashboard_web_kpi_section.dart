@@ -20,7 +20,7 @@ class DashboardWebKpiSection extends StatelessWidget {
           return LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth >= 1100
-                  ? 4
+                  ? 3
                   : constraints.maxWidth >= 640
                       ? 2
                       : 1;
@@ -44,7 +44,17 @@ List<DashboardKpiCard> _dashboardKpiCards(DashboardState state) {
   final loaded = state.status == DashboardStatus.loaded;
   return [
     DashboardKpiCard(
-      label: 'Total Kas Bulan Ini',
+      label: 'Saldo Tabungan Nasabah',
+      value: dashboardSavingsDisplay(state),
+      icon: Icons.savings_outlined,
+    ),
+    const DashboardKpiCard(
+      label: 'Kas Operasional',
+      value: dashboardOperationalCashDisplay,
+      icon: Icons.account_balance_wallet_outlined,
+    ),
+    DashboardKpiCard(
+      label: 'Nilai Setoran Bulan Ini',
       value: loaded
           ? CurrencyFormatter.formatRupiah(state.totalKasBulanIni)
           : 'Rp —',
@@ -73,3 +83,16 @@ List<DashboardKpiCard> _dashboardKpiCards(DashboardState state) {
     ),
   ];
 }
+
+String dashboardSavingsDisplay(DashboardState state) {
+  if (state.status == DashboardStatus.initial ||
+      state.status == DashboardStatus.loading) {
+    return 'Memuat...';
+  }
+  final savings = state.totalSaldoNasabah;
+  if (!state.isLoaded || savings == null) return 'Rp —';
+  return CurrencyFormatter.formatRupiah(savings);
+}
+
+// No cash ledger exists yet. Never infer cash from customer savings or deposits.
+const dashboardOperationalCashDisplay = 'Belum tersedia';
