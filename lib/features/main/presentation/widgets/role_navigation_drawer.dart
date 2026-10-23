@@ -6,6 +6,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/bank_sampah_label.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 /// Bentuk navigasi untuk browser yang terlalu sempit untuk rail.
 ///
@@ -70,6 +71,13 @@ class RoleNavigationDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
+                  if (navigation.role == 'pengelola' &&
+                      navigation.onAddTransaction != null)
+                    RoleTransactionMenu(
+                      onSetoran: navigation.onAddTransaction!,
+                      onClose: () => Navigator.maybeOf(context)?.maybePop(),
+                      selected: navigation.transactionSelected,
+                    ),
                   for (var index = 0; index < destinations.length; index++)
                     _Destination(
                       key: destinationKey(index),

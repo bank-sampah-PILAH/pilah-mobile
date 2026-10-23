@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_transaction_menu.dart';
 
 import '../../support/pump_app.dart';
 
@@ -16,6 +18,8 @@ void main() {
     int currentIndex = 0,
     Size window = const Size(1440, 900),
     bool limitedNasabah = false,
+    bool transactionSelected = false,
+    VoidCallback? onAddTransaction,
   }) async {
     final tapped = <int>[];
     await pumpRouted(
@@ -27,7 +31,9 @@ void main() {
               role: role,
               currentIndex: currentIndex,
               limitedNasabah: limitedNasabah,
+              transactionSelected: transactionSelected,
               onSelected: tapped.add,
+              onAddTransaction: onAddTransaction,
             ),
           ),
           const Expanded(child: SizedBox.shrink()),
@@ -48,6 +54,128 @@ void main() {
         rail.destinations.map((d) => (d.label as Text).data),
         ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal', 'Pengumuman'],
       );
+    });
+
+    testWidgets('shows the Transaksi accordion before destinations',
+        (tester) async {
+      var added = false;
+      await taps(tester,
+          role: 'pengelola', onAddTransaction: () => added = true);
+
+      expect(find.text('Transaksi'), findsOneWidget);
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      expect(find.text('Tambah Transaksi'), findsNothing);
+      final transactionMenu =
+          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
+      expect(transactionMenu.shape, const Border());
+      expect(transactionMenu.collapsedShape, const Border());
+      expect(transactionMenu.iconColor, AppColors.inkSoft);
+      expect(transactionMenu.collapsedIconColor, AppColors.inkSoft);
+      expect(transactionMenu.textColor, AppColors.inkSoft);
+      expect(transactionMenu.collapsedTextColor, AppColors.inkSoft);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.receipt_long_outlined)).color,
+        AppColors.inkSoft,
+      );
+      expect(
+        tester.getTopLeft(find.text('Transaksi')).dy,
+        lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
+      );
+      final setoran =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      expect(setoran.selected, isFalse);
+      expect(
+        tester.widget<Text>(find.text('Setoran')).style?.color,
+        AppColors.inkSoft,
+      );
+      final pencairan =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.pencairanKey));
+      expect(pencairan.enabled, isFalse);
+      expect(pencairan.onTap, isNull);
+
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
+      await tester.pumpAndSettle();
+      expect(added, isTrue);
+    });
+
+    testWidgets('highlights both transaction entries only on Setoran',
+        (tester) async {
+      await taps(
+        tester,
+        role: 'pengelola',
+        transactionSelected: true,
+        onAddTransaction: () {},
+      );
+
+      final transactionMenu =
+          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
+      expect(transactionMenu.iconColor, AppColors.greenDark);
+      expect(transactionMenu.collapsedIconColor, AppColors.greenDark);
+      expect(transactionMenu.textColor, AppColors.greenDark);
+      expect(transactionMenu.collapsedTextColor, AppColors.greenDark);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.receipt_long_outlined)).color,
+        AppColors.greenDark,
+      );
+      expect(
+        tester.widget<Text>(find.text('Transaksi')).style?.color,
+        AppColors.greenDark,
+      );
+      final setoran =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      expect(setoran.selected, isTrue);
+      expect(
+        tester.widget<Text>(find.text('Setoran')).style?.color,
+        AppColors.greenDark,
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.add_circle_outline)).color,
+        AppColors.greenDark,
+      );
+    });
+
+    testWidgets('marks the collapsed transaction shortcut selected on Setoran',
+        (tester) async {
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(720, 900),
+        transactionSelected: true,
+        onAddTransaction: () {},
+      );
+
+      final menu = tester.widget<PopupMenuButton<dynamic>>(
+          find.byKey(RoleTransactionMenu.menuKey));
+      expect((menu.icon! as Icon).color, AppColors.greenDark);
+      await tester.tap(find.byTooltip('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.text('Setoran')).style?.color,
+        AppColors.greenDark,
+      );
+    });
+
+    testWidgets('collapsed rail opens both transaction actions',
+        (tester) async {
+      var added = false;
+      await taps(
+        tester,
+        role: 'pengelola',
+        window: const Size(720, 900),
+        onAddTransaction: () => added = true,
+      );
+
+      await tester.tap(find.byTooltip('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Setoran'), findsOneWidget);
+      expect(find.text('Pencairan'), findsOneWidget);
+      final pencairan = tester.widget<PopupMenuItem<dynamic>>(
+          find.byKey(RoleTransactionMenu.pencairanKey));
+      expect(pencairan.enabled, isFalse);
+      await tester.tap(find.byKey(RoleTransactionMenu.setoranKey));
+      await tester.pumpAndSettle();
+      expect(added, isTrue);
     });
 
     testWidgets('marks the current destination as selected', (tester) async {
@@ -96,6 +224,16 @@ void main() {
           tester.widget<NavigationRail>(find.byType(NavigationRail)).labelType,
           NavigationRailLabelType.none,
           reason: 'Material asserts on any other value while extended');
+    });
+
+    testWidgets('hides the transaction menu from Pengelola Induk',
+        (tester) async {
+      await taps(
+        tester,
+        role: 'pengelola_induk',
+        onAddTransaction: () {},
+      );
+      expect(find.text('Transaksi'), findsNothing);
     });
 
     testWidgets('renders nothing at all for a role without navigation',

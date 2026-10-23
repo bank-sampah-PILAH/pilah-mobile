@@ -75,7 +75,7 @@ void main() {
     return router;
   }
 
-  testWidgets('offers a choice between Catat Setoran and Pencairan',
+  testWidgets('offers Catat Setoran and a disabled Pencairan choice',
       (tester) async {
     await pumpChooser(tester);
 
@@ -89,6 +89,13 @@ void main() {
         ),
         findsOneWidget);
     expect(find.byType(BottomSheet), findsNothing);
+    final payoutChoice = find
+        .ancestor(
+          of: find.text('Pencairan'),
+          matching: find.byType(InkWell),
+        )
+        .first;
+    expect(tester.widget<InkWell>(payoutChoice).onTap, isNull);
   });
 
   testWidgets('on a phone the choice is still a bottom sheet', (tester) async {
@@ -112,16 +119,18 @@ void main() {
     expect(find.text('Form Setoran'), findsOneWidget);
   });
 
-  testWidgets('opens the pencairan list when Pencairan is chosen',
+  testWidgets('cannot navigate from the disabled Pencairan choice',
       (tester) async {
     await pumpChooser(tester);
 
-    await tester.tap(find.descendant(
+    final payoutChoice = find.descendant(
       of: find.byType(Dialog),
       matching: find.text('Pencairan'),
-    ));
+    );
+    await tester.tap(payoutChoice);
     await tester.pumpAndSettle();
 
-    expect(find.text('Daftar Pencairan'), findsOneWidget);
+    expect(find.text('Daftar Pencairan'), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget);
   });
 }
