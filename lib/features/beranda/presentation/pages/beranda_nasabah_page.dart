@@ -328,7 +328,7 @@ class _HomeSessionState extends State<_HomeSession> {
 
 Future<JadwalEntity?> _loadNearestSchedule() async {
   final repository = di<JadwalRepository>();
-  final now = DateTime.now();
+  final now = clock.now();
   JadwalEntity? nearest;
   var pageNumber = 1;
   // ponytail: scans every upcoming page; add a server-side nearest query if
@@ -341,8 +341,9 @@ Future<JadwalEntity?> _loadNearestSchedule() async {
     );
     for (final schedule in page.items) {
       final start = schedule.mulaiPada.toLocal();
+      final end = schedule.selesaiPada.toLocal();
       if (schedule.isPublished &&
-          !start.isBefore(now) &&
+          !end.isBefore(now) &&
           (nearest == null || start.isBefore(nearest.mulaiPada.toLocal()))) {
         nearest = schedule;
       }
