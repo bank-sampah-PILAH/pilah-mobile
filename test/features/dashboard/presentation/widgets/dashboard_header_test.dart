@@ -136,6 +136,13 @@ void main() {
         of: find.byIcon(Icons.campaign_outlined),
         matching: find.byType(AppTapTarget),
       );
+      final iconContainer = tester.widget<Container>(
+        find.descendant(of: door, matching: find.byType(Container)),
+      );
+      expect(
+        (iconContainer.decoration as BoxDecoration).color,
+        AppColors.fill,
+      );
       final semantics = tester.getSemantics(door).getSemanticsData();
       expect(semantics.label, 'Kelola pengumuman');
       expect(semantics.flagsCollection.isButton, isTrue);

@@ -69,6 +69,7 @@ void main() {
 
       final semantics =
           tester.getSemantics(find.text('Pengumuman')).getSemanticsData();
+      expect(semantics.flagsCollection.isButton, isTrue);
       expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
       expect(semantics.hasAction(SemanticsAction.tap), isFalse);
 

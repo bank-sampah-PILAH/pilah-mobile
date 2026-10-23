@@ -2,6 +2,7 @@ import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_drawer.dart';
 
@@ -71,13 +72,32 @@ void main() {
 
     testWidgets('keeps Pengumuman visible but disabled', (tester) async {
       final selected = await mountDrawer(tester);
-      final destination = tester
-          .getSemantics(find.byKey(RoleNavigationDrawer.destinationKey(5)))
-          .getSemanticsData();
+      final destinationFinder =
+          find.byKey(RoleNavigationDrawer.destinationKey(5));
+      final destination =
+          tester.getSemantics(destinationFinder).getSemanticsData();
 
       expect(find.text('Pengumuman'), findsOneWidget);
       expect(destination.flagsCollection.isEnabled, Tristate.isFalse);
       expect(destination.hasAction(SemanticsAction.tap), isFalse);
+      final disabledIcon = tester.widget<Icon>(find.descendant(
+        of: destinationFinder,
+        matching: find.byType(Icon),
+      ));
+      final disabledLabel = tester.widget<Text>(find.descendant(
+        of: destinationFinder,
+        matching: find.text('Pengumuman'),
+      ));
+      final disabledIconContainer = tester.widget<Container>(find.descendant(
+        of: destinationFinder,
+        matching: find.byType(Container),
+      ));
+      expect(disabledIcon.color, AppColors.grey100);
+      expect(disabledLabel.style?.color, AppColors.grey100);
+      expect(
+        (disabledIconContainer.decoration as BoxDecoration).color,
+        isNull,
+      );
 
       await tester.tap(find.text('Pengumuman'));
       await tester.pumpAndSettle();
@@ -92,6 +112,40 @@ void main() {
           .flagsCollection
           .isSelected;
       expect(selected, Tristate.isTrue);
+
+      final selectedFinder = find.byKey(RoleNavigationDrawer.destinationKey(3));
+      final selectedIcon = tester.widget<Icon>(find.descendant(
+        of: selectedFinder,
+        matching: find.byType(Icon),
+      ));
+      final selectedLabel = tester.widget<Text>(find.descendant(
+        of: selectedFinder,
+        matching: find.text('Aktivitas'),
+      ));
+      final selectedIconContainer = tester.widget<Container>(find.descendant(
+        of: selectedFinder,
+        matching: find.byType(Container),
+      ));
+      expect(selectedIcon.color, AppColors.greenDark);
+      expect(selectedLabel.style?.color, AppColors.greenDark);
+      expect(selectedLabel.style?.fontWeight, FontWeight.w600);
+      expect(
+        (selectedIconContainer.decoration as BoxDecoration).color,
+        AppColors.greenLight,
+      );
+
+      final idleFinder = find.byKey(RoleNavigationDrawer.destinationKey(0));
+      final idleIcon = tester.widget<Icon>(find.descendant(
+        of: idleFinder,
+        matching: find.byType(Icon),
+      ));
+      final idleLabel = tester.widget<Text>(find.descendant(
+        of: idleFinder,
+        matching: find.text('Dashboard'),
+      ));
+      expect(idleIcon.color, AppColors.inkSoft);
+      expect(idleLabel.style?.color, AppColors.inkSoft);
+      expect(idleLabel.style?.fontWeight, FontWeight.w500);
     });
 
     testWidgets('an unapproved nasabah only sees their two destinations',
