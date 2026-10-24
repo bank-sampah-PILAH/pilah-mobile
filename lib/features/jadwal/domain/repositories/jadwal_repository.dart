@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';

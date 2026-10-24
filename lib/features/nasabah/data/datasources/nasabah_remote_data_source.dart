@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/features/nasabah/data/models/nasabah_model.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 
 abstract class NasabahRemoteDataSource {

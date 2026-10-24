@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/features/dashboard/domain/use_cases/get_dashboard_stats_usecase.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/states/dashboard_state.dart';
 import 'package:pilah_mobile/services/di.dart';

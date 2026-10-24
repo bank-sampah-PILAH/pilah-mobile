@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
 

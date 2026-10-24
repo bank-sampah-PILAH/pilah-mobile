@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 
 class NasabahEntity {
   final String id;

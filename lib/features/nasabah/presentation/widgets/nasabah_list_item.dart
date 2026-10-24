@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';

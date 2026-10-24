@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 
 class JadwalPageResult extends Equatable {

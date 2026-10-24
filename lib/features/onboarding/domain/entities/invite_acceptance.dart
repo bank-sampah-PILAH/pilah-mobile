@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/core/client/network_exception.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 
 /// What `POST /invites/accept` actually said, normalised across the two shapes

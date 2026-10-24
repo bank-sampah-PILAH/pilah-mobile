@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+// CI benchmark scratch: documentation comment only, no behavior change.
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';

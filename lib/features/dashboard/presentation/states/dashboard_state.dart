@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 
 enum DashboardStatus { initial, loading, loaded, error }
 

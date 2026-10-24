@@ -1,4 +1,5 @@
 import 'package:injectable/injectable.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/core/client/network_service.dart';
 import 'package:pilah_mobile/features/nasabah/data/datasources/nasabah_remote_data_source.dart';
 import 'package:pilah_mobile/features/nasabah/data/models/nasabah_model.dart';

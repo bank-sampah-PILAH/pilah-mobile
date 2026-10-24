@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';

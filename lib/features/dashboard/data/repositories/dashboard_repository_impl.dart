@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/api_call.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';

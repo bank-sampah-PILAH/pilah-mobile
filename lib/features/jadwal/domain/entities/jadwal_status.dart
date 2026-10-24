@@ -1,4 +1,5 @@
 /// Aksi yang dapat mengubah status sebuah jadwal.
+// CI benchmark scratch: documentation comment only, no behavior change.
 enum JadwalAction {
   batalkan('batalkan', 'Batalkan'),
   terbitkan('terbitkan', 'Terbitkan'),

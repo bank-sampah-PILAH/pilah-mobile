@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';

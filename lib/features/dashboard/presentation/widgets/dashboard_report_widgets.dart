@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';

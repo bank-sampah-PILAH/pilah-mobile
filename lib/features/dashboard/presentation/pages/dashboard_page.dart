@@ -1,4 +1,5 @@
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';

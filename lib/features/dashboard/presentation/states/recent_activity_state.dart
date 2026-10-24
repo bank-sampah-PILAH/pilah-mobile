@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 
 abstract class RecentActivityState extends Equatable {

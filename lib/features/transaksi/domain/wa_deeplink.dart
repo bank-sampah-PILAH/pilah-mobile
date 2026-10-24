@@ -1,4 +1,5 @@
 /// Builds the `wa.me` deep link opened by "Kirim Notif WhatsApp & Selesai" on
+// CI benchmark scratch: documentation comment only, no behavior change.
 /// the transaction success sheet.
 ///
 /// TEMP (Twilio outage): the notification is normally rendered and dispatched

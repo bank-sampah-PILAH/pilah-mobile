@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+// CI benchmark scratch: documentation comment only, no behavior change.
 
 // Request/result models for the real onboarding endpoints
 // (PUT /onboarding/profile, POST /onboarding/bank-sampah).

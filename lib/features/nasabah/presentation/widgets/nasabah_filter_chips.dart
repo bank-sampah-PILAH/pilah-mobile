@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// CI benchmark scratch: documentation comment only, no behavior change.
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// `true` = Aktif, `false` = Tidak Aktif, `null` = Menunggu (PIL-188).
