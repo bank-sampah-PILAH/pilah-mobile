@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 
 import '../../../../support/pump_app.dart';
@@ -27,35 +26,31 @@ Map<String, dynamic> _row({String wa = 'terkirim'}) => {
 
 void main() {
   late StubApi api;
-  late TransaksiCubit cubit;
+  late TransaksiNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildTransaksiCubit(api);
+    notifier = buildTransaksiNotifier(api);
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester, Map<String, dynamic> data) async {
     await pumpRouted(
       tester,
-      BlocProvider<TransaksiCubit>.value(
-        value: cubit,
-        child: Builder(
-          builder: (context) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => BlocProvider<TransaksiCubit>.value(
-                  value: cubit,
-                  child: DetailTransaksiBottomSheet(transactionData: data),
-                ),
-              ),
-              child: const Text('open'),
+      Builder(
+        builder: (context) => Scaffold(
+          body: ElevatedButton(
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              builder: (_) => DetailTransaksiBottomSheet(transactionData: data),
             ),
+            child: const Text('open'),
           ),
         ),
+      ),
+      wrap: (app) => withTransaksiProviders(
+        transaksi: notifier,
+        child: app,
       ),
       size: const Size(800, 2000),
     );

@@ -1,15 +1,11 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_list_item.dart';
+import '../../../../support/nasabah_support.dart';
 
 NasabahEntity _nasabah({bool punyaAkun = false, String status = 'approved'}) =>
     NasabahEntity(
@@ -31,47 +27,46 @@ NasabahEntity _nasabah({bool punyaAkun = false, String status = 'approved'}) =>
       punyaAkun: punyaAkun,
     );
 
-class _MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
-
 /// Membuka sheet lewat `showModalBottomSheet` di dalam GoRouter, seperti pada
 /// aplikasi: tombol Edit memanggil `context.pop()` untuk menutup sheet ini
 /// sebelum membuka form, dan itu memerlukan router di atasnya.
-Widget _hostRute(NasabahEntity nasabah, NasabahCubit cubit) {
+Widget _hostRute(NasabahEntity nasabah, TestNasabahNotifier notifier) {
   final router = GoRouter(
     initialLocation: '/',
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => BlocProvider<NasabahCubit>.value(
-          value: cubit,
-          child: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => DetailNasabahBottomSheet(
-                    nasabah: nasabah,
-                    nasabahCubit: cubit,
-                  ),
+        builder: (context, state) => Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => DetailNasabahBottomSheet(
+                  nasabah: nasabah,
                 ),
-                child: const Text('Buka detail'),
               ),
+              child: const Text('Buka detail'),
             ),
           ),
         ),
       ),
     ],
   );
-  return MaterialApp.router(routerConfig: router);
+  return withNasabahProvider(
+    notifier,
+    MaterialApp.router(routerConfig: router),
+  );
 }
 
 void main() {
-  Widget host(NasabahEntity nasabah) => MaterialApp(
-        home: Scaffold(
-          body: DetailNasabahBottomSheet(nasabah: nasabah),
+  Widget host(NasabahEntity nasabah) => withNasabahProvider(
+        TestNasabahNotifier(),
+        MaterialApp(
+          home: Scaffold(
+            body: DetailNasabahBottomSheet(nasabah: nasabah),
+          ),
         ),
       );
 
@@ -121,9 +116,12 @@ void main() {
       (tester) async {
     // Penandanya berjalan dari daftar ke item lalu ke sheet; kalau sambungan
     // itu putus, layar detail kembali tampak dapat disunting sepenuhnya.
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: NasabahListItem(nasabah: _nasabah(punyaAkun: true)),
+    await tester.pumpWidget(withNasabahProvider(
+      TestNasabahNotifier(),
+      MaterialApp(
+        home: Scaffold(
+          body: NasabahListItem(nasabah: _nasabah(punyaAkun: true)),
+        ),
       ),
     ));
 
@@ -134,16 +132,10 @@ void main() {
   });
 
   group('Aksi pada sheet detail membawa entity yang sama (PIL-206)', () {
-    late _MockNasabahCubit cubit;
+    late TestNasabahNotifier notifier;
 
     setUp(() {
-      cubit = _MockNasabahCubit();
-      whenListen(
-        cubit,
-        const Stream<NasabahState>.empty(),
-        initialState: const NasabahLoaded(nasabahList: []),
-      );
-      when(() => cubit.fetchRingkasan(any())).thenAnswer((_) async => null);
+      notifier = TestNasabahNotifier()..fetchSummary = (_) async => null;
     });
 
     Future<void> bukaDetail(WidgetTester tester, NasabahEntity nasabah) async {
@@ -151,7 +143,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(_hostRute(nasabah, cubit));
+      await tester.pumpWidget(_hostRute(nasabah, notifier));
       await tester.tap(find.text('Buka detail'));
       await tester.pumpAndSettle();
     }

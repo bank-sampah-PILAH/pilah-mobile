@@ -2,17 +2,17 @@ import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surf
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
 import 'package:pilah_mobile/features/dashboard/data/datasources/dashboard_reporting_data_source.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_action_buttons.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
@@ -25,7 +25,7 @@ import 'package:pilah_mobile/features/dashboard/presentation/widgets/total_kas_c
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class DashboardPage extends StatefulWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key, this.isWeb});
 
   // `kIsWeb` is compile-time constant, so VM tests need this branch override.
@@ -35,45 +35,46 @@ class DashboardPage extends StatefulWidget {
   static const route = AppLocations.dashboard;
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Load the current-month metrics from the backend when the dashboard opens.
-    context.read<DashboardCubit>().loadStats();
-    // Aktivitas Terbaru has its own cubit — see [RecentActivityCubit] for why
-    // it is not the one Laporan drives — so nothing else loads it.
-    context.read<RecentActivityCubit>().load();
+    // Provider state must not change during initState's build frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(dashboardProvider.notifier).loadStats();
+      // Aktivitas Terbaru has its own notifier — see
+      // [RecentActivityNotifier] for why it is not Laporan's feed.
+      ref.read(recentActivityProvider.notifier).load();
+    });
   }
 
   /// Refetches everything the dashboard renders. The header's bank sampah name
-  /// comes from the cached session rather than a cubit, so the auth refresh is
-  /// dispatched alongside — it's fire-and-forget, so only the two cubit loads
-  /// hold the spinner open.
+  /// comes from the cached session rather than provider state, so auth refresh
+  /// is dispatched alongside — it's fire-and-forget, so only the dashboard and
+  /// activity loads hold the spinner open.
   Future<void> _onRefresh() async {
-    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    ref.read(authenticationProvider.notifier).refreshUser();
     await Future.wait([
-      context.read<DashboardCubit>().loadStats(silent: true),
-      context.read<RecentActivityCubit>().load(silent: true),
+      ref.read(dashboardProvider.notifier).loadStats(silent: true),
+      ref.read(recentActivityProvider.notifier).load(silent: true),
     ]);
   }
 
   /// Kunci halaman pengurus di web (akun dan bank sampahnya), atau null bila
   /// ini bukan pengurus di web. Berubah saat akun berganti, supaya laporan
   /// dimuat ulang.
-  String? _webPengurusKey(BuildContext context) {
+  String? _webPengurusKey(WidgetRef ref) {
     if (!(widget.isWeb ?? kIsWeb)) return null;
-    return context.select<AuthenticationBloc, String?>((bloc) {
-      final state = bloc.state;
-      if (state is! Authenticated || state.authEntity.role != 'pengelola') {
-        return null;
-      }
-      return '${state.authEntity.id ?? state.authEntity.email}:'
-          '${state.authEntity.bankSampahNama ?? ''}';
-    });
+    final state = ref.watch(authenticationProvider);
+    if (state is! Authenticated || state.authEntity.role != 'pengelola') {
+      return null;
+    }
+    return '${state.authEntity.id ?? state.authEntity.email}:'
+        '${state.authEntity.bankSampahNama ?? ''}';
   }
 
   /// Padding area gulir: gutter web di layar lebar, 16 di telepon, ditambah
@@ -94,7 +95,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final webPengurusKey = _webPengurusKey(context);
+    final webPengurusKey = _webPengurusKey(ref);
     final isPengurusWeb = webPengurusKey != null;
 
     return Scaffold(

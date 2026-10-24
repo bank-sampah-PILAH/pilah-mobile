@@ -1,0 +1,286 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/core/client/api_call.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/states/onboarding_state.dart';
+import 'package:pilah_mobile/services/di.dart';
+
+final onboardingProvider =
+    NotifierProvider<OnboardingNotifier, OnboardingState>(
+  () => OnboardingNotifier(di<OnboardingRemoteDataSource>()),
+);
+
+class OnboardingNotifier extends Notifier<OnboardingState> {
+  final OnboardingRemoteDataSource _dataSource;
+
+  OnboardingNotifier(this._dataSource);
+
+  @override
+  OnboardingState build() => const OnboardingInitial();
+
+  /// Profile input captured on step one of the registration wizard and not sent
+  /// anywhere yet.
+  ///
+  /// Held on the app-scoped notifier rather than in [OnboardingState] on
+  /// purpose: the states are transient signals, but the draft must survive
+  /// navigation between both wizard screens.
+  CompleteProfileRequest? _profileDraft;
+
+  /// Whether [_profileDraft] has already been accepted by the backend.
+  ///
+  /// `PUT /onboarding/profile` refuses a second call outright — services.py
+  /// raises "Profil sudah lengkap" once `is_profile_complete` is set — so when
+  /// the profile lands and the bank sampah registration behind it fails, the
+  /// retry must not replay step one. Without this the first failure would be
+  /// permanent: every retry would die on the profile call the user already
+  /// succeeded at.
+  bool _profileSubmitted = false;
+
+  /// The draft to prefill step one with, or null when there is nothing pending.
+  CompleteProfileRequest? get profileDraft => _profileDraft;
+
+  /// Whether the wizard is mid-flight, i.e. the user reached the registration
+  /// form through step one rather than landing on it directly.
+  bool get hasProfileDraft => _profileDraft != null;
+
+  /// Banks step one's input and moves on without touching the network.
+  ///
+  /// Resets [_profileSubmitted]: a freshly banked draft is always unsent,
+  /// even after an earlier one already landed — otherwise a post-failure
+  /// edit would silently skip resending and register stale data.
+  void saveProfileDraft(CompleteProfileRequest request) {
+    _profileDraft = request;
+    _profileSubmitted = false;
+  }
+
+  /// Forgets the pending draft. Called once the whole wizard has landed, and on
+  /// logout, so a later session never resubmits a stranger's half-filled form.
+  void clearProfileDraft() {
+    _profileDraft = null;
+    _profileSubmitted = false;
+  }
+
+  /// Submits the profile-completion form. On success returns the backend
+  /// [OnboardingResult] (with the next routing step); otherwise the
+  /// [NetworkException] so the screen can surface validation errors.
+  Future<({OnboardingResult? result, NetworkException? error})> completeProfile(
+    CompleteProfileRequest request,
+  ) async {
+    state = const OnboardingSubmitting();
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.completeProfile(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    state = const OnboardingInitial();
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Joins an existing bank sampah with an invite [token]. Returns the backend
+  /// [OnboardingResult] (with the next routing step) on success; otherwise the
+  /// [NetworkException] carrying the backend's reason (invalid/expired token,
+  /// or a bank sampah that is not approved yet).
+  Future<({OnboardingResult? result, NetworkException? error})> acceptInvite(
+    String token,
+  ) async {
+    state = const OnboardingSubmitting();
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.acceptInvite(token),
+      mapper: (value) => value as OnboardingResult,
+    );
+    state = const OnboardingInitial();
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Submits the bank-sampah registration (multipart, with `foto_kegiatan`).
+  Future<({OnboardingResult? result, NetworkException? error})>
+      registerBankSampah(RegisterBankSampahRequest request) async {
+    state = const OnboardingSubmitting();
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerBankSampah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    state = const OnboardingInitial();
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Sends the whole wizard: the banked profile draft first, then the bank
+  /// sampah registration, and reports the step that failed.
+  ///
+  /// The two calls are ordered, not atomic — there is no endpoint that takes
+  /// both, and the backend derives `next_step` from the profile being complete,
+  /// so the profile has to land first for the registration's answer to be
+  /// accurate. What that costs is a window where step one has committed and step
+  /// two has not, which is exactly the state [_profileSubmitted] exists to
+  /// survive: the user retries, only the registration is re-sent, and the
+  /// profile call that would now fail is never made.
+  ///
+  /// With no draft banked this is just [registerBankSampah] — the user reached
+  /// the form directly, on an account whose profile was already complete.
+  Future<({OnboardingResult? result, NetworkException? error})>
+      submitRegistration(RegisterBankSampahRequest request) async {
+    state = const OnboardingSubmitting();
+
+    final profile = await _submitProfileDraft();
+    if (profile.error != null) {
+      state = const OnboardingInitial();
+      return (result: null, error: profile.error);
+    }
+
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerBankSampah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    state = const OnboardingInitial();
+
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) {
+        // Both steps are in. Nothing left to resubmit or prefill.
+        clearProfileDraft();
+        return (result: result, error: null);
+      },
+    );
+  }
+
+  Future<({OnboardingResult? result, NetworkException? error})>
+      _submitProfileDraft() async {
+    final draft = _profileDraft;
+    if (draft == null || _profileSubmitted) {
+      return (result: null, error: null);
+    }
+
+    final profileEither = await apiCall<OnboardingResult>(
+      func: _dataSource.completeProfile(draft),
+      mapper: (value) => value as OnboardingResult,
+    );
+    final profileError = profileEither.fold((error) => error, (_) => null);
+    if (profileError != null && !_isProfileAlreadyComplete(profileError)) {
+      return (result: null, error: profileError);
+    }
+
+    _profileSubmitted = true;
+    return (
+      result: profileEither.fold((_) => null, (result) => result),
+      error: null,
+    );
+  }
+
+  /// Lists the bank sampah a calon nasabah can apply to join (PIL-204's
+  /// picker). Returns the backend list on success; otherwise the
+  /// [NetworkException] so the picker can surface a retry.
+  Future<({List<BankSampahDirectoryEntity>? result, NetworkException? error})>
+      loadBankSampahDirectory() async {
+    final either = await apiCall<List<BankSampahDirectoryEntity>>(
+      func: _dataSource.listBankSampahDirectory(),
+      mapper: (value) => value as List<BankSampahDirectoryEntity>,
+    );
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Lists the calling nasabah's own memberships (`GET /nasabah/me`), used
+  /// to show what's already joined and lock the picker under the current
+  /// one-membership-per-nasabah scope. Returns the backend list on success;
+  /// otherwise the [NetworkException].
+  Future<({List<NasabahMembershipEntity>? result, NetworkException? error})>
+      loadMyMemberships() async {
+    final either = await apiCall<List<NasabahMembershipEntity>>(
+      func: _dataSource.listMyMemberships(),
+      mapper: (value) => value as List<NasabahMembershipEntity>,
+    );
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Submits a calon nasabah's membership application. Returns the backend
+  /// [OnboardingResult] (with the next routing step, `nasabah_dashboard` on
+  /// success) on success; otherwise the [NetworkException] carrying the
+  /// backend's reason (bank sampah unavailable, already a member, ...).
+  Future<({OnboardingResult? result, NetworkException? error})> registerNasabah(
+      RegisterNasabahRequest request) async {
+    state = const OnboardingSubmitting();
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerNasabah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    state = const OnboardingInitial();
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) => (result: result, error: null),
+    );
+  }
+
+  /// Sends the whole nasabah wizard: the banked profile draft (with alamat)
+  /// first, then the bank-sampah membership application, and reports the
+  /// step that failed.
+  ///
+  /// Mirrors [submitRegistration]'s ordering and the same
+  /// [_profileSubmitted] survival trick: see that method's doc for why the
+  /// two calls aren't atomic. With no draft banked this is just
+  /// [registerNasabah] — the user reached the form directly, on an account
+  /// whose profile was already complete.
+  Future<({OnboardingResult? result, NetworkException? error})>
+      submitNasabahRegistration(RegisterNasabahRequest request) async {
+    state = const OnboardingSubmitting();
+
+    final draft = _profileDraft;
+    if (draft != null && !_profileSubmitted) {
+      final profile = await _submitProfileDraft();
+      if (profile.error != null) {
+        state = const OnboardingInitial();
+        return (result: null, error: profile.error);
+      }
+
+      // A pengurus-entered record matching this account's verified email
+      // auto-links on login (AuthService._sync_nasabah_prefill), so
+      // completing the profile can already finish onboarding on its own.
+      // Calling registerNasabah in that case would fail with "already
+      // registered" since the membership already exists.
+      if (profile.result?.nextStep == 'nasabah_dashboard') {
+        state = const OnboardingInitial();
+        clearProfileDraft();
+        return (result: profile.result, error: null);
+      }
+    }
+
+    final either = await apiCall<OnboardingResult>(
+      func: _dataSource.registerNasabah(request),
+      mapper: (value) => value as OnboardingResult,
+    );
+    state = const OnboardingInitial();
+
+    return either.fold(
+      (error) => (result: null, error: error),
+      (result) {
+        clearProfileDraft();
+        return (result: result, error: null);
+      },
+    );
+  }
+
+  /// Whether [error] is the backend declining to complete an already-complete
+  /// profile.
+  ///
+  /// Matched on wording because that is all there is: services.py raises a bare
+  /// `ValueError("Profil sudah lengkap")` and the view returns it as
+  /// `{"error": …}` with no code to key on. The same constraint drives
+  /// `classifyInviteAcceptance`.
+  bool _isProfileAlreadyComplete(NetworkException error) {
+    final message = error.displayMessage.toLowerCase();
+    return message.contains('profil') && message.contains('sudah lengkap');
+  }
+}

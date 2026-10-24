@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
@@ -20,8 +20,8 @@ import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
 
 /// The filter chips of the manage screen: derived statuses come straight from
@@ -50,29 +50,20 @@ class PengumumanKelolaPage extends StatelessWidget {
   static const route = '/pengumuman/kelola';
 
   @override
-  Widget build(BuildContext context) {
-    return BlocListener<PengumumanCubit, PengumumanState>(
-      listener: (context, state) {
-        if (state is PengumumanError) {
-          AppNotification.showError(context,
-              title: 'Gagal', message: state.message);
-        }
-      },
-      child: _PengumumanKelolaBody(isWeb: isWeb),
-    );
-  }
+  Widget build(BuildContext context) => _PengumumanKelolaBody(isWeb: isWeb);
 }
 
-class _PengumumanKelolaBody extends StatefulWidget {
+class _PengumumanKelolaBody extends ConsumerStatefulWidget {
   const _PengumumanKelolaBody({required this.isWeb});
 
   final bool isWeb;
 
   @override
-  State<_PengumumanKelolaBody> createState() => _PengumumanKelolaBodyState();
+  ConsumerState<_PengumumanKelolaBody> createState() =>
+      _PengumumanKelolaBodyState();
 }
 
-class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
+class _PengumumanKelolaBodyState extends ConsumerState<_PengumumanKelolaBody> {
   late final ScrollController _scrollController;
 
   /// Halaman ini adalah cabang shell yang tetap hidup saat tab lain dibuka.
@@ -86,7 +77,9 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
-    context.read<PengumumanCubit>().loadPengumuman();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(pengumumanProvider.notifier).loadPengumuman();
+    });
   }
 
   @override
@@ -100,7 +93,11 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
     }
     final active = TickerMode.valuesOf(context).enabled;
     if (active && !_active) {
-      context.read<PengumumanCubit>().loadPengumuman(silent: true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(pengumumanProvider.notifier).loadPengumuman(silent: true);
+        }
+      });
     }
     _active = active;
   }
@@ -118,10 +115,10 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
         _scrollController.position.extentAfter > 320) {
       return;
     }
-    context.read<PengumumanCubit>().loadNextPage();
+    ref.read(pengumumanProvider.notifier).loadNextPage();
   }
 
-  PengumumanCubit get _cubit => context.read<PengumumanCubit>();
+  PengumumanNotifier get _notifier => ref.read(pengumumanProvider.notifier);
 
   Future<void> _bukaForm([PengumumanEntity? pengumuman]) async {
     if (widget.isWeb && context.layoutBreakpoint == LayoutBreakpoint.expanded) {
@@ -196,7 +193,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
     }
     // The form does the update; a null terbit_pada is the backend's
     // cancel-schedule PATCH (PIL-332).
-    final result = await _cubit.savePengumuman(PengumumanEntity(
+    final result = await _notifier.savePengumuman(PengumumanEntity(
       id: pengumuman.id,
       bankSampahId: pengumuman.bankSampahId,
       judul: pengumuman.judul,
@@ -220,7 +217,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
     )) {
       return;
     }
-    final failure = await _cubit.tarik(pengumuman.id);
+    final failure = await _notifier.tarik(pengumuman.id);
     _laporkan(
         'Ditarik', 'Pengumuman berhenti tampil.', failure?.displayMessage);
   }
@@ -234,74 +231,71 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
     )) {
       return;
     }
-    final failure = await _cubit.deletePengumuman(pengumuman.id);
+    final failure = await _notifier.deletePengumuman(pengumuman.id);
     _laporkan('Terhapus', 'Draft pengumuman dihapus.', failure?.displayMessage);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(pengumumanProvider, (previous, state) {
+      if (state is PengumumanError) {
+        AppNotification.showError(context,
+            title: 'Gagal', message: state.message);
+      }
+    });
+    final state = ref.watch(pengumumanProvider);
     final webHeader =
         widget.isWeb && context.layoutBreakpoint != LayoutBreakpoint.compact;
     // Same page shape as the Riwayat Aktivitas (Laporan) screen: white page,
     // fixed header + filter block, scrollable feed under it (no AppBar, the
     // header row carries the back button like aktivitas'.
-    return BlocListener<PengumumanCubit, PengumumanState>(
-      listener: (context, state) {
-        if (state is PengumumanError) {
-          AppNotification.showError(context,
-              title: 'Gagal', message: state.message);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        // Di web lebar tombol "Buat" ada di header halaman, seperti Nasabah dan
-        // Harga; FAB hanya untuk layar sempit dan aplikasi.
-        floatingActionButton: webHeader
-            ? null
-            : FloatingActionButton.extended(
-                onPressed: _bukaForm,
-                backgroundColor: AppColors.greenDark,
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text('Buat',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w600)),
-              ),
-        body: SafeArea(
-          child: MasterDetailLayout(
-            masterScrolls: true,
-            master: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ContentInset(
-                  child: Padding(
-                    padding: webHeader
-                        ? const EdgeInsets.fromLTRB(AppSpacing.webGutter,
-                            AppSpacing.webTop, AppSpacing.webGutter, 0)
-                        : const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: _header(webHeader: webHeader),
-                  ),
-                ),
-                SizedBox(height: webHeader ? AppSpacing.lg : 16),
-                ContentInset(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: webHeader ? AppSpacing.webGutter : 16),
-                    child: const Align(
-                      alignment: Alignment.centerLeft,
-                      child: _FilterChips(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: BlocBuilder<PengumumanCubit, PengumumanState>(
-                    builder: (context, state) => _feed(context, state),
-                  ),
-                ),
-              ],
+    return Scaffold(
+      backgroundColor: Colors.white,
+      // Di web lebar tombol "Buat" ada di header halaman, seperti Nasabah dan
+      // Harga; FAB hanya untuk layar sempit dan aplikasi.
+      floatingActionButton: webHeader
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _bukaForm,
+              backgroundColor: AppColors.greenDark,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Buat',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w600)),
             ),
-            detail: _buildFormPanel(),
+      body: SafeArea(
+        child: MasterDetailLayout(
+          masterScrolls: true,
+          master: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ContentInset(
+                child: Padding(
+                  padding: webHeader
+                      ? const EdgeInsets.fromLTRB(AppSpacing.webGutter,
+                          AppSpacing.webTop, AppSpacing.webGutter, 0)
+                      : const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _header(webHeader: webHeader),
+                ),
+              ),
+              SizedBox(height: webHeader ? AppSpacing.lg : 16),
+              ContentInset(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: webHeader ? AppSpacing.webGutter : 16),
+                  child: const Align(
+                    alignment: Alignment.centerLeft,
+                    child: _FilterChips(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: _feed(context, state),
+              ),
+            ],
           ),
+          detail: _buildFormPanel(),
         ),
       ),
     );
@@ -358,7 +352,7 @@ class _PengumumanKelolaBodyState extends State<_PengumumanKelolaBody> {
               ),
             ),
             TextButton(
-              onPressed: () => _cubit.loadPengumuman(),
+              onPressed: () => _notifier.loadPengumuman(),
               child: const Text('Coba Lagi'),
             ),
           ],
@@ -561,15 +555,13 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _FilterChips extends StatelessWidget {
+class _FilterChips extends ConsumerWidget {
   const _FilterChips();
 
   @override
-  Widget build(BuildContext context) {
-    final selected = context.select<PengumumanCubit, String>((cubit) =>
-        cubit.state is PengumumanLoaded
-            ? (cubit.state as PengumumanLoaded).statusFilter
-            : '');
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(pengumumanProvider);
+    final selected = state is PengumumanLoaded ? state.statusFilter : '';
     return Wrap(
       spacing: 6,
       runSpacing: 6,
@@ -578,8 +570,8 @@ class _FilterChips extends StatelessWidget {
           AppChip(
             label: entry.key,
             selected: selected == entry.value,
-            onTap: () => context
-                .read<PengumumanCubit>()
+            onTap: () => ref
+                .read(pengumumanProvider.notifier)
                 .loadPengumuman(status: entry.value),
 // '' is the no-filter bucket; null keeps the current filter.
           ),

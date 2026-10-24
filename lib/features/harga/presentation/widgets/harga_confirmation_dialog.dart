@@ -6,7 +6,7 @@ import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 ///
 /// Pops `true` to confirm and `false` to cancel; a barrier dismiss pops `null`,
 /// so callers must treat a null result as a cancel. The dialog deliberately owns
-/// no cubit and performs no API call — the caller keeps that, along with the
+/// no state and performs no API call — the caller keeps that, along with the
 /// error handling and the success notification, so a failed request cannot be
 /// reported as a success.
 class HargaConfirmationDialog extends StatelessWidget {

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_form.dart';
 
 /// Wadah bottom sheet untuk [JenisSampahForm].
@@ -14,7 +13,6 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/jenis_sampah_fo
 /// samping daftar pada jendela expanded.
 class TambahJenisSampahBottomSheet extends StatelessWidget {
   final HargaEntity? initialData;
-  final HargaCubit? hargaCubit;
 
   /// Sumber waktu "sekarang", dapat diganti di test.
   final DateTime Function() now;
@@ -22,7 +20,6 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
   const TambahJenisSampahBottomSheet({
     super.key,
     this.initialData,
-    this.hargaCubit,
     this.now = DateTime.now,
   });
 
@@ -37,7 +34,6 @@ class TambahJenisSampahBottomSheet extends StatelessWidget {
           const SizedBox(height: 24),
           JenisSampahForm(
             initialData: initialData,
-            hargaCubit: hargaCubit,
             now: now,
             onSaved: () => context.pop(),
           ),

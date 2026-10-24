@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_detail_sheet.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 enum _Tampilan { detail, edit, riwayat }
 
@@ -23,16 +19,10 @@ class PencairanDetailFlow extends StatefulWidget {
     super.key,
     required this.item,
     required this.onChanged,
-    this.createEditCubit,
-    this.createRevisiCubit,
   });
 
   final Pencairan item;
   final VoidCallback onChanged;
-
-  /// Pembuat cubit; bawaannya dari `di`. Dapat diganti di test.
-  final EditPencairanCubit Function()? createEditCubit;
-  final RevisiPencairanCubit Function()? createRevisiCubit;
 
   @override
   State<PencairanDetailFlow> createState() => _PencairanDetailFlowState();
@@ -78,29 +68,21 @@ class _PencairanDetailFlowState extends State<PencairanDetailFlow> {
           ),
         ),
       _Tampilan.edit => Flexible(
-          child: BlocProvider(
-            create: (_) =>
-                (widget.createEditCubit ?? () => di<EditPencairanCubit>())(),
-            child: EditPencairanView(
-              pencairan: item,
-              embedded: true,
-              showHeader: false,
-              onSaved: () {
-                widget.onChanged();
-                _tutup();
-              },
-            ),
+          child: EditPencairanView(
+            pencairan: item,
+            embedded: true,
+            showHeader: false,
+            onSaved: () {
+              widget.onChanged();
+              _tutup();
+            },
           ),
         ),
       _Tampilan.riwayat => Flexible(
-          child: BlocProvider(
-            create: (_) => (widget.createRevisiCubit ??
-                () => di<RevisiPencairanCubit>())(),
-            child: RevisiPencairanView(
-              pencairanId: item.id,
-              embedded: true,
-              showHeader: false,
-            ),
+          child: RevisiPencairanView(
+            pencairanId: item.id,
+            embedded: true,
+            showHeader: false,
           ),
         ),
     };

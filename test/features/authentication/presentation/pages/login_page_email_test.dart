@@ -1,39 +1,26 @@
-import 'dart:async';
-
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/post_login_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
 
 void main() {
-  late MockAuthBloc auth;
-  late StreamController<AuthenticationStates> states;
-
-  setUpAll(() {
-    registerFallbackValue(const PostLoginEvent(email: '', password: ''));
-  });
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
-    states = StreamController<AuthenticationStates>.broadcast();
-    auth = MockAuthBloc();
-    whenListen(auth, states.stream, initialState: AuthenticationInitial());
+    auth = TestAuthenticationNotifier();
   });
 
   tearDown(() async {
     await di.unregister<InviteTokenStore>();
-    unawaited(states.close());
   });
 
   Future<void> pumpPage(
@@ -48,8 +35,10 @@ void main() {
           '/superadmin-dashboard',
           '/pengelola-induk-dashboard',
         ],
-        wrap: (app) =>
-            BlocProvider<AuthenticationBloc>.value(value: auth, child: app),
+        wrap: (app) => ProviderScope(
+          overrides: [authenticationProvider.overrideWith(() => auth)],
+          child: app,
+        ),
         size: size,
       );
 
@@ -102,16 +91,14 @@ void main() {
     expect(find.text('Daftar dengan email'), findsNothing);
   });
 
-  testWidgets('submits email credentials through the auth bloc',
+  testWidgets('submits email credentials through the auth provider',
       (tester) async {
     await pumpPage(tester);
     await enterCredentials(tester);
     await tapEmailSignIn(tester);
 
-    final event =
-        verify(() => auth.add(captureAny())).captured.single as PostLoginEvent;
-    expect(event.email, 'ayu@example.com');
-    expect(event.password, 'correct horse');
+    expect(auth.lastEmail, 'ayu@example.com');
+    expect(auth.lastPassword, 'correct horse');
   });
 
   testWidgets('submits credentials when Done is pressed in the password field',
@@ -121,17 +108,15 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
 
-    final event =
-        verify(() => auth.add(captureAny())).captured.single as PostLoginEvent;
-    expect(event.email, 'ayu@example.com');
-    expect(event.password, 'correct horse');
+    expect(auth.lastEmail, 'ayu@example.com');
+    expect(auth.lastPassword, 'correct horse');
   });
 
   testWidgets('shows the shared loading state on the email action',
       (tester) async {
     await pumpPage(tester);
     await enterCredentials(tester);
-    states.add(AuthenticationLoading());
+    auth.setStateForTest(AuthenticationLoading());
     await tester.pump();
 
     expect(find.text('Masuk dengan Email'), findsNothing);
@@ -177,9 +162,9 @@ void main() {
     await pumpPage(tester);
     await enterCredentials(tester);
     await tapEmailSignIn(tester);
-    verify(() => auth.add(any())).called(1);
+    expect(auth.calls, contains('postLogin'));
 
-    states.add(Authenticated(
+    auth.setStateForTest(Authenticated(
       authEntity: AuthEntity(
         id: 'u1',
         name: 'Ayu',
@@ -201,7 +186,9 @@ void main() {
     await enterCredentials(tester);
     await tapEmailSignIn(tester);
 
-    states.add(AuthenticationFailure(message: 'Email atau kata sandi salah'));
+    auth.setStateForTest(
+      AuthenticationFailure(message: 'Email atau kata sandi salah'),
+    );
     await pumpToast(tester);
 
     expect(find.text('Login Gagal'), findsOneWidget);

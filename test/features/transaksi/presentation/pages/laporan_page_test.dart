@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
@@ -11,8 +11,8 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 
@@ -81,18 +81,22 @@ void main() {
       bool inWebShell = false,
       bool isWeb = kIsWeb}) async {
     await tester.pumpWidget(
-      MaterialApp(
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context)
-              .copyWith(textScaler: TextScaler.linear(textScale)),
-          child: child!,
-        ),
-        home: BlocProvider(
-          create: (_) => RiwayatAktivitasCubit(
-            getTransaksi,
-            _MockExportTransaksiUseCase(),
+      ProviderScope(
+        overrides: [
+          riwayatAktivitasProvider.overrideWith(
+            () => RiwayatAktivitasNotifier(
+              getTransaksi,
+              _MockExportTransaksiUseCase(),
+            ),
           ),
-          child: inWebShell
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: inWebShell
               ? WebContentSurface(child: LaporanPage(isWeb: isWeb))
               : LaporanPage(isWeb: isWeb),
         ),
@@ -341,14 +345,32 @@ void main() {
 
   testWidgets('pulling down reloads the feed without clearing it',
       (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await pumpPage(tester);
     clearInteractions(getTransaksi);
 
-    await tester.fling(find.byType(ListView).last, const Offset(0, 400), 1000);
+    await tester.drag(find.byType(NestedScrollView), const Offset(0, 400));
     await tester.pumpAndSettle();
 
     verify(() => getTransaksi.execute(any())).called(1);
     expect(find.text('Budi Santoso'), findsOneWidget);
+  });
+
+  testWidgets('wide web table can refresh the report', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpPage(tester, isWeb: true);
+    clearInteractions(getTransaksi);
+
+    await tester.drag(find.byType(ListView).last, const Offset(0, 400));
+    await tester.pumpAndSettle();
+
+    verify(() => getTransaksi.execute(any())).called(1);
   });
 
   testWidgets('resetting the filters also clears the search box',
@@ -361,10 +383,10 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Ani');
     await tester.pumpAndSettle();
 
-    tester
-        .element(find.byType(LaporanPage))
-        .read<RiwayatAktivitasCubit>()
-        .resetFilters();
+    ProviderScope.containerOf(
+      tester.element(find.byType(LaporanPage)),
+      listen: false,
+    ).read(riwayatAktivitasProvider.notifier).resetFilters();
     await tester.pumpAndSettle();
 
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,

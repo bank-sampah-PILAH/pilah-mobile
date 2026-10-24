@@ -1,45 +1,29 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
-
-class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
+import '../../../../support/jadwal_provider_support.dart';
 
 void main() {
   testWidgets('selecting a marked date shows its agenda and prefills creation',
-      (
-    tester,
-  ) async {
-    final cubit = _MockJadwalCubit();
+      (tester) async {
     final now = DateTime.now();
     // Never today: today is selected already, which is not what is under test.
     final scheduledDate =
         DateTime(now.year, now.month, now.day == 10 ? 11 : 10);
     final schedule = _schedule(scheduledDate);
-    when(() => cubit.state).thenReturn(JadwalLoaded(
-      [schedule],
-      totalCount: 1,
-      scheduledDates: {scheduledDate},
-    ));
-    when(() => cubit.loadJadwal(
-          silent: false,
-          date: any(named: 'date'),
-        )).thenAnswer((_) async {});
-    when(() => cubit.loadCalendarDates(
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        )).thenAnswer((_) async {});
-    when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
 
     await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
+      _provideJadwal(
+        JadwalLoaded(
+          [schedule],
+          totalCount: 1,
+          scheduledDates: {scheduledDate},
+        ),
+        const MaterialApp(home: JadwalPage()),
       ),
     );
     await tester.pump();
@@ -88,22 +72,10 @@ void main() {
   });
 
   testWidgets('empty selected date offers a create action', (tester) async {
-    final cubit = _MockJadwalCubit();
-    when(() => cubit.state).thenReturn(const JadwalLoaded([]));
-    when(() => cubit.loadJadwal(
-          silent: false,
-          date: any(named: 'date'),
-        )).thenAnswer((_) async {});
-    when(() => cubit.loadCalendarDates(
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        )).thenAnswer((_) async {});
-    when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
-
     await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
+      _provideJadwal(
+        const JadwalLoaded([]),
+        const MaterialApp(home: JadwalPage()),
       ),
     );
     await tester.pump();
@@ -122,6 +94,18 @@ void main() {
     );
   });
 }
+
+Widget _provideJadwal(JadwalState state, Widget child) => ProviderScope(
+      overrides: [
+        jadwalProvider.overrideWith(
+          () => TestJadwalNotifier(
+            repository: UnusedJadwalRepository(),
+            initialState: state,
+          ),
+        ),
+      ],
+      child: child,
+    );
 
 JadwalEntity _schedule(DateTime date) => JadwalEntity(
       id: 'schedule-1',

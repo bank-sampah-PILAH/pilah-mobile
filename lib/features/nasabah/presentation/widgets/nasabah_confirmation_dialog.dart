@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 class NasabahConfirmationDialog extends StatefulWidget {
   final bool isActivating;
   final String customerName;
   final String customerId;
-  final NasabahCubit nasabahCubit;
+  final NasabahNotifier nasabahNotifier;
 
   const NasabahConfirmationDialog({
     super.key,
     required this.isActivating,
     required this.customerName,
     required this.customerId,
-    required this.nasabahCubit,
+    required this.nasabahNotifier,
   });
 
   static const Color errorColor = AppColors.danger;
@@ -36,7 +36,7 @@ class _NasabahConfirmationDialogState extends State<NasabahConfirmationDialog> {
     final dialogContext = context;
 
     setState(() => _isProcessing = true);
-    final error = await widget.nasabahCubit
+    final error = await widget.nasabahNotifier
         .setNasabahStatus(widget.customerId, widget.isActivating);
     if (!mounted || !dialogContext.mounted) return;
     setState(() => _isProcessing = false);

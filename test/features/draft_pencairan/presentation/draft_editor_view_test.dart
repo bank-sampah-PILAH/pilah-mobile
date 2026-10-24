@@ -2,41 +2,71 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
+import '../../../support/draft_pencairan_support.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_editor_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_controls.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 
 import '../../../support/platform_fakes.dart';
 import '../../../support/pump_app.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}
 
-class _MockRiwayat extends MockCubit<RiwayatAktivitasState>
-    implements RiwayatAktivitasCubit {}
+class _UnusedGetAktivitas extends Mock implements GetAktivitasUseCase {}
 
-class _MockRecent extends MockCubit<RecentActivityState>
-    implements RecentActivityCubit {}
+class _UnusedExportTransaksi extends Mock implements ExportTransaksiUseCase {}
+
+class _TestRiwayat extends RiwayatAktivitasNotifier {
+  _TestRiwayat() : super(_UnusedGetAktivitas(), _UnusedExportTransaksi());
+
+  final silentLoads = <bool>[];
+
+  @override
+  Future<void> load({bool silent = false, int? pageSize}) async {
+    silentLoads.add(silent);
+  }
+}
+
+class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
+
+class _UnusedPencairanUseCases extends Mock implements PencairanUseCases {}
+
+class _TestRecentActivityNotifier extends RecentActivityNotifier {
+  _TestRecentActivityNotifier()
+      : super(_UnusedGetTransaksi(), _UnusedPencairanUseCases());
+
+  int silentLoads = 0;
+
+  @override
+  RecentActivityState build() => RecentActivityInitial();
+
+  @override
+  Future<void> load({bool silent = false}) async {
+    if (silent) silentLoads++;
+  }
+}
 
 const _ahmad =
     Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 465600);
@@ -84,7 +114,7 @@ DraftPencairan _saved({DraftStatus status = DraftStatus.draft}) =>
 
 void main() {
   late _MockRepository repository;
-  late DraftEditorCubit cubit;
+  late TestDraftEditorNotifier cubit;
 
   setUpAll(() {
     registerFallbackValue(
@@ -98,7 +128,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(420, 2600),
   }) async {
-    cubit = DraftEditorCubit(repository)
+    cubit = TestDraftEditorNotifier(repository)
       ..startNew(const [_ahmad, _budi, _citra]);
     _current = cubit;
     await _pump(tester, size: size);
@@ -110,7 +140,7 @@ void main() {
   }) async {
     when(() => repository.getDraft('d-1'))
         .thenAnswer((_) async => Right(_saved(status: status)));
-    cubit = DraftEditorCubit(repository);
+    cubit = TestDraftEditorNotifier(repository);
     _current = cubit;
     await cubit.load('d-1');
     await _pump(tester);
@@ -395,7 +425,7 @@ void main() {
 
     testWidgets('the cards fit a narrow phone, even with big amounts',
         (tester) async {
-      cubit = DraftEditorCubit(repository)
+      cubit = TestDraftEditorNotifier(repository)
         ..startNew(const [
           Kandidat(
               id: 'n-9',
@@ -852,7 +882,7 @@ void main() {
     });
 
     testWidgets('both labels still fit on a narrow phone', (tester) async {
-      cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+      cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
       _current = cubit;
       await _pump(tester, size: const Size(320, 1800));
 
@@ -929,7 +959,7 @@ void main() {
         (tester) async {
       when(() => repository.getDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       await _pump(tester);
 
@@ -943,28 +973,27 @@ void main() {
 
     testWidgets('a paid draft reloads the riwayat and the dashboard activity',
         (tester) async {
-      final riwayat = _MockRiwayat();
-      final recent = _MockRecent();
-      when(() => riwayat.load(silent: true)).thenAnswer((_) async {});
-      when(() => recent.load(silent: true)).thenAnswer((_) async {});
+      final riwayat = _TestRiwayat();
+      final recent = _TestRecentActivityNotifier();
       when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_saved()));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(
+        repository,
+        overrides: [
+          recentActivityProvider.overrideWith(() => recent),
+          riwayatAktivitasProvider.overrideWith(() => riwayat),
+        ],
+      );
       _current = cubit;
+      cubit.container.read(riwayatAktivitasProvider);
+      cubit.container.read(recentActivityProvider);
       await cubit.load('d-1');
       await pumpRouted(
         tester,
         const _Host(),
         size: const Size(420, 2600),
-        wrap: (app) => MultiBlocProvider(
-          providers: [
-            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
-            BlocProvider<RecentActivityCubit>.value(value: recent),
-          ],
-          child: app,
-        ),
       );
       await tester.pumpAndSettle();
 
@@ -973,8 +1002,8 @@ void main() {
       await tester.tap(find.text('Ya, sudah dibayar'));
       await tester.pumpAndSettle();
 
-      verify(() => riwayat.load(silent: true)).called(1);
-      verify(() => recent.load(silent: true)).called(1);
+      expect(riwayat.silentLoads, [true]);
+      expect(recent.silentLoads, 1);
     });
 
     testWidgets('after paying, the toast offers to open the riwayat',
@@ -983,7 +1012,7 @@ void main() {
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_saved()));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       await cubit.load('d-1');
       await pumpRouted(
@@ -1176,7 +1205,7 @@ void main() {
     });
 
     testWidgets('export asks the server for the chosen format', (tester) async {
-      // Never answers: the download itself is covered at the cubit level, and
+      // Never answers: the download itself is covered at the notifier level, and
       // an answer would bring the save-and-share toasts into a layout test.
       when(() => repository.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftExport>>().future);
@@ -1536,7 +1565,7 @@ void main() {
     testWidgets('there is no panel while the draft is loading', (tester) async {
       when(() => repository.getDraft('d-1')).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       unawaited(cubit.load('d-1'));
       await pumpRouted(tester, const _Host());
@@ -1551,7 +1580,7 @@ void main() {
         (tester) async {
       when(() => repository.getDraft('d-1')).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       unawaited(cubit.load('d-1'));
       await pumpRouted(tester, const _Host(), size: const Size(1440, 900));
@@ -1639,7 +1668,7 @@ void main() {
         WidgetTester tester, DraftPencairan draft) async {
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(draft));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       await cubit.load('d-1');
       await _pump(tester);
@@ -2228,7 +2257,7 @@ void main() {
     }
 
     Future<void> pumpBanyak(WidgetTester tester) async {
-      cubit = DraftEditorCubit(repository)..startNew(banyak);
+      cubit = TestDraftEditorNotifier(repository)..startNew(banyak);
       _current = cubit;
       await _pump(tester);
     }
@@ -2295,7 +2324,7 @@ void main() {
     ];
 
     Future<void> pumpBanyak(WidgetTester tester) async {
-      cubit = DraftEditorCubit(repository)..startNew(banyak);
+      cubit = TestDraftEditorNotifier(repository)..startNew(banyak);
       _current = cubit;
       await _pump(tester);
     }
@@ -2612,7 +2641,7 @@ void main() {
 
   testWidgets('a new draft that was never saved asks before it is thrown away',
       (tester) async {
-    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
     _current = cubit;
     await _pump(tester, pushed: true);
 
@@ -2630,7 +2659,7 @@ void main() {
       (tester) async {
     when(() => repository.createDraft(any()))
         .thenAnswer((_) async => Right(_saved()));
-    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
     _current = cubit;
     await _pump(tester, pushed: true);
     await cubit.save();
@@ -2645,7 +2674,7 @@ void main() {
 
   testWidgets('leaving with unsaved edits asks before throwing them away',
       (tester) async {
-    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
     _current = cubit;
     await _pump(tester, pushed: true);
     cubit.setNama('Belum disimpan');
@@ -2670,7 +2699,7 @@ void main() {
   });
 }
 
-DraftEditorCubit? _current;
+TestDraftEditorNotifier? _current;
 
 /// Opens the summary panel above the buttons, if it is closed.
 Future<void> _bukaRingkasan(WidgetTester tester) async {
@@ -2702,7 +2731,7 @@ Future<void> _pump(
   bool pushed = false,
   Size size = const Size(420, 2600),
 }) async {
-  // The cubit is created by each test; find it through the provider.
+  // The notifier is created by each test; find it through the provider.
   await pumpRouted(
     tester,
     Builder(builder: (context) {
@@ -2718,8 +2747,8 @@ class _Host extends StatelessWidget {
   const _Host();
 
   @override
-  Widget build(BuildContext context) => BlocProvider<DraftEditorCubit>.value(
-        value: _current!,
+  Widget build(BuildContext context) => UncontrolledProviderScope(
+        container: _current!.container,
         child: const DraftEditorView(),
       );
 }

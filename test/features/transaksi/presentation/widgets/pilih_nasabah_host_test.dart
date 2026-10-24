@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 
@@ -23,16 +22,14 @@ import '../../../../support/stub_api.dart';
 /// through it.
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
   NasabahEntity? chosen;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    notifier = buildNasabahNotifier(api);
     chosen = null;
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester, Size window) async {
     await pumpRouted(
@@ -43,7 +40,7 @@ void main() {
           onCustomerSelected: (n) => chosen = n,
         ),
       ),
-      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
+      wrap: (app) => withNasabahProvider(notifier, app),
       size: window,
     );
     await tester.tap(find.text('Tap untuk pilih nasabah'));

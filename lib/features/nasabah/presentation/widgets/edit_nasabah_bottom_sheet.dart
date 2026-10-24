@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -7,8 +7,8 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_fields.dart';
 
 /// Pesan 403 yang berarti profilnya milik pemilik akun (PIL-223). Endpoint
@@ -16,7 +16,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_
 /// status code sendirian tidak cukup untuk mengunci form.
 const _pesanEmailTerkunci = 'Email nasabah dengan akun tidak dapat diubah';
 
-class EditNasabahBottomSheet extends StatefulWidget {
+class EditNasabahBottomSheet extends ConsumerStatefulWidget {
   /// Nasabah yang disunting, memakai entity domain apa adanya.
   final NasabahEntity nasabah;
 
@@ -26,10 +26,12 @@ class EditNasabahBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<EditNasabahBottomSheet> createState() => _EditNasabahBottomSheetState();
+  ConsumerState<EditNasabahBottomSheet> createState() =>
+      _EditNasabahBottomSheetState();
 }
 
-class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
+class _EditNasabahBottomSheetState
+    extends ConsumerState<EditNasabahBottomSheet> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _namaController;
@@ -123,9 +125,9 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
               if (value == null || value.trim().isEmpty) {
                 return 'Bagian ini wajib diisi.';
               }
-              final cubit = context.read<NasabahCubit>();
-              if (cubit.state is NasabahLoaded) {
-                final list = (cubit.state as NasabahLoaded).nasabahList;
+              final state = ref.read(nasabahProvider);
+              if (state is NasabahLoaded) {
+                final list = state.nasabahList;
                 final isDuplicate = list.any((e) =>
                     e.idNasabah.trim().toLowerCase() ==
                         value.trim().toLowerCase() &&
@@ -178,7 +180,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
     if (id.isEmpty) return;
 
     setState(() => _isSaving = true);
-    final cubit = context.read<NasabahCubit>();
+    final notifier = ref.read(nasabahProvider.notifier);
     final request = NasabahRequest(
       kode: _idNasabahController.text.trim(),
       nama: _namaController.text.trim(),
@@ -189,7 +191,7 @@ class _EditNasabahBottomSheetState extends State<EditNasabahBottomSheet> {
       alamat: _alamatController.text.trim(),
     );
 
-    final error = await cubit.updateNasabah(id, request);
+    final error = await notifier.updateNasabah(id, request);
     if (!mounted) return;
     setState(() => _isSaving = false);
 

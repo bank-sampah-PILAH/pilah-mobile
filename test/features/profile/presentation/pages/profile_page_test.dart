@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,11 +11,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 import '../../../../support/auth_support.dart';
@@ -25,17 +22,14 @@ import '../../../../support/profile_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
-
 void main() {
   late StubApi api;
-  late ProfileCubit cubit;
+  late TestProfileNotifier notifier;
   late MockImagePicker picker;
   late MockImageCropper cropper;
-  late MockAuthBloc auth;
+  late TestAuthenticationNotifier auth;
 
   setUpAll(() {
-    registerFallbackValue(_FakeAuthEvent());
     registerFallbackValue(ImageSource.gallery);
     registerFallbackValue(ImageCompressFormat.jpg);
     registerFallbackValue(const CropAspectRatio(ratioX: 1, ratioY: 1));
@@ -46,15 +40,13 @@ void main() {
     stubProfile(api);
     picker = MockImagePicker();
     cropper = MockImageCropper();
-    cubit = buildProfileCubit(api, picker: picker, cropper: cropper);
-    auth = authBlocIn(Authenticated(authEntity: testAuth()));
+    notifier = buildProfileNotifier(api, picker: picker, cropper: cropper);
+    auth = authNotifierIn(Authenticated(authEntity: testAuth()));
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> openPage(
     WidgetTester tester, {
-    MockAuthBloc? bloc,
+    TestAuthenticationNotifier? authNotifier,
     Size size = const Size(800, 2400),
     bool? isWeb,
     bool pushed = true,
@@ -62,16 +54,17 @@ void main() {
   }) async {
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: bloc ?? auth),
-          BlocProvider<ProfileCubit>.value(value: cubit),
-        ],
-        // A non-const instance so the constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: ProfilePage(isWeb: isWeb),
-      ),
+      // A non-const instance so the constructor itself runs.
+      // ignore: prefer_const_constructors
+      ProfilePage(isWeb: isWeb),
       extraRoutes: ['/login', ...extraRoutes],
+      providerScopeBuilder: (app) => ProviderScope(
+        overrides: [
+          profileProvider.overrideWith(() => notifier),
+          authenticationProvider.overrideWith(() => authNotifier ?? auth),
+        ],
+        child: app,
+      ),
       size: size,
       pushed: pushed,
     );
@@ -146,7 +139,7 @@ void main() {
 
       await tester.tap(find.text('Ya, Keluar'));
       await tester.pumpAndSettle();
-      verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+      expect(auth.calls, contains('logout'));
     });
 
     testWidgets('Simpan is hidden until something changes, then right aligned',
@@ -197,7 +190,7 @@ void main() {
   });
 
   testWidgets('a signed-out visitor is asked to sign in', (tester) async {
-    await openPage(tester, bloc: authBlocIn(Unauthenticated()));
+    await openPage(tester, authNotifier: authNotifierIn(Unauthenticated()));
 
     expect(
         find.text('Silakan masuk untuk melihat profil Anda.'), findsOneWidget);
@@ -433,8 +426,8 @@ void main() {
     await pumpReal(tester);
     await tester.pumpAndSettle();
 
-    expect(cubit.state.selectedLogoBytes, tinyPng);
-    expect(cubit.state.selectedLogoFilename, 'profile_page_logo.jpg');
+    expect(notifier.state.selectedLogoBytes, tinyPng);
+    expect(notifier.state.selectedLogoFilename, 'profile_page_logo.jpg');
     expect(find.byType(Image), findsWidgets);
   });
 
@@ -460,7 +453,7 @@ void main() {
     expect(find.text('Foto tidak dapat dibaca. Silakan coba lagi.'),
         findsOneWidget);
     expect(find.byIcon(Icons.home_outlined), findsOneWidget);
-    expect(cubit.state.selectedLogoBytes, isNull);
+    expect(notifier.state.selectedLogoBytes, isNull);
     await settleToasts(tester);
   });
 
@@ -468,7 +461,7 @@ void main() {
       (tester) async {
     await openPage(tester);
     final bytes = Uint8List.fromList(tinyPng);
-    cubit.emit(cubit.state.copyWith(
+    notifier.setStateForTest(notifier.state.copyWith(
         selectedLogoBytes: bytes, selectedLogoFilename: 'previous.png'));
     await tester.pumpAndSettle();
     when(() => picker.pickImage(source: any(named: 'source')))
@@ -479,8 +472,8 @@ void main() {
 
     expect(find.text('Foto tidak dapat dibaca. Silakan coba lagi.'),
         findsOneWidget);
-    expect(cubit.state.selectedLogoBytes, bytes);
-    expect(cubit.state.selectedLogoFilename, 'previous.png');
+    expect(notifier.state.selectedLogoBytes, bytes);
+    expect(notifier.state.selectedLogoFilename, 'previous.png');
     final preview =
         tester.widget<ClipOval>(find.byType(ClipOval)).child as Image;
     expect((preview.image as MemoryImage).bytes, bytes);
@@ -490,16 +483,16 @@ void main() {
   testWidgets('previews a browser-selected logo from its bytes',
       (tester) async {
     await openPage(tester);
-    expect(cubit.state.status.toString(), 'ProfileStatus.loaded');
-    cubit.emit(cubit.state.copyWith(
+    expect(notifier.state.status.toString(), 'ProfileStatus.loaded');
+    notifier.setStateForTest(notifier.state.copyWith(
       selectedLogoBytes: Uint8List.fromList(base64Decode(
           'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
       selectedLogoFilename: 'bank-logo.png',
     ));
-    expect(cubit.state.selectedLogoBytes, isNotNull);
+    expect(notifier.state.selectedLogoBytes, isNotNull);
     await tester.pumpAndSettle();
 
-    expect(cubit.state.selectedLogoBytes, isNotNull);
+    expect(notifier.state.selectedLogoBytes, isNotNull);
     expect(
       tester.widget<ClipOval>(find.byType(ClipOval)).child,
       isA<Image>(),
@@ -509,12 +502,12 @@ void main() {
   testWidgets('a browser logo decode error uses the placeholder',
       (tester) async {
     await openPage(tester);
-    cubit.emit(cubit.state.copyWith(
+    notifier.setStateForTest(notifier.state.copyWith(
       selectedLogoBytes: Uint8List.fromList(base64Decode(
           'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
       selectedLogoFilename: 'bank-logo.png',
     ));
-    expect(cubit.state.selectedLogoBytes, isNotNull);
+    expect(notifier.state.selectedLogoBytes, isNotNull);
     await tester.pumpAndSettle();
 
     final logo = tester.widget<ClipOval>(find.byType(ClipOval)).child as Image;
@@ -638,12 +631,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Keluar dari akun?'), findsOneWidget);
-    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+    expect(auth.calls, isNot(contains('logout')));
 
     await tester.tap(find.text('Ya, Keluar'));
     await tester.pumpAndSettle();
 
-    verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+    expect(auth.calls, contains('logout'));
   });
 
   testWidgets('cancelling the logout keeps the session', (tester) async {
@@ -654,16 +647,13 @@ void main() {
     await tester.tap(find.text('Batal'));
     await tester.pumpAndSettle();
 
-    verifyNever(() => auth.add(any(that: isA<LogoutRequested>())));
+    expect(auth.calls, isNot(contains('logout')));
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {
-    final bloc = MockAuthBloc();
-    whenListen(
-        bloc, Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
-        initialState: Authenticated(authEntity: testAuth()));
+    await openPage(tester);
 
-    await openPage(tester, bloc: bloc);
+    auth.setStateForTest(Unauthenticated());
     await tester.pumpAndSettle();
 
     expect(find.text('route:/login'), findsOneWidget);

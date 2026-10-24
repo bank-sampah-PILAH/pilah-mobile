@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/riwayat_harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 
+import '../../../support/harga_support.dart';
 import '../../../support/stub_api.dart';
 
 const _path = '/api/v1/jenis-sampah/j-1/harga';
@@ -32,14 +32,17 @@ void main() {
 
   setUp(() => api = StubApi());
 
-  Future<void> pumpView(WidgetTester tester) async {
+  Future<void> pumpView(
+    WidgetTester tester, {
+    String jenisId = 'j-1',
+  }) async {
     final repository =
         HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network));
     await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider(
-          create: (_) => RiwayatHargaCubit(GetRiwayatHargaUseCase(repository)),
-          child: const RiwayatHargaView(jenisId: 'j-1', namaJenis: 'Botol PET'),
+      withRiwayatHargaProvider(
+        RiwayatHargaNotifier(GetRiwayatHargaUseCase(repository)),
+        MaterialApp(
+          home: RiwayatHargaView(jenisId: jenisId, namaJenis: 'Botol PET'),
         ),
       ),
     );
@@ -97,6 +100,19 @@ void main() {
     expect(find.textContaining('▲'), findsNWidgets(2));
     expect(find.textContaining('▼'), findsOneWidget,
         reason: 'the replaced version and the very first one have no change');
+  });
+
+  testWidgets('reloads history when the selected jenis changes',
+      (tester) async {
+    api.on('GET', _path, json: {'results': <Object>[]});
+    api.on('GET', '/api/v1/jenis-sampah/j-2/harga', json: {
+      'results': [_versi('3000.00', '2026-10-01T02:30:00Z', 'berlaku')],
+    });
+
+    await pumpView(tester);
+    await pumpView(tester, jenisId: 'j-2');
+
+    expect(find.text('Rp 3.000 / kg'), findsOneWidget);
   });
 
   testWidgets('says so when the jenis has no price history yet',

@@ -4,9 +4,8 @@ import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
@@ -68,14 +67,15 @@ class ItemSetoranCard extends StatelessWidget {
                     border: Border.all(
                         color: hasError ? errorColor : Colors.grey[200]!),
                   ),
-                  child: BlocBuilder<HargaCubit, HargaState>(
-                    builder: (context, state) {
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      ref.watch(hargaProvider);
                       // Source the options from the full active list rather than
                       // the price-list page's tab/search-filtered state, so the
                       // dropdown always offers every active jenis sampah. The
-                      // BlocBuilder still rebuilds this once loadHarga() completes.
+                      // provider watch rebuilds this when loadHarga() completes.
                       final List<HargaEntity> activeList =
-                          context.read<HargaCubit>().activeJenisSampah;
+                          ref.read(hargaProvider.notifier).activeJenisSampah;
                       // Guard against a stale selection no longer in the list
                       // (e.g. a jenis that was deactivated): DropdownButton
                       // asserts if its value has no matching item.

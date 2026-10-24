@@ -1,15 +1,12 @@
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/widgets/app_panel_header.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/riwayat_harga_content.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 /// Detail satu jenis sampah dan riwayat harganya dalam satu tempat: detail
 /// lebih dulu, lalu "Riwayat harga" menggantinya dengan linimasa dan tombol
@@ -24,7 +21,6 @@ class HargaDetailFlow extends StatefulWidget {
     required this.onEdit,
     this.embedded = false,
     this.onClose,
-    this.createRiwayatCubit,
   });
 
   final HargaEntity item;
@@ -34,9 +30,6 @@ class HargaDetailFlow extends StatefulWidget {
   /// Menutup seluruh panel. Null di bottom sheet, yang ditutup dengan
   /// menggesernya.
   final VoidCallback? onClose;
-
-  /// Pembuat cubit riwayat; bawaannya dari `di`. Dapat diganti di test.
-  final RiwayatHargaCubit Function()? createRiwayatCubit;
 
   @override
   State<HargaDetailFlow> createState() => _HargaDetailFlowState();
@@ -99,12 +92,8 @@ class _HargaDetailFlowState extends State<HargaDetailFlow> {
     return widget.embedded ? column : AppSheetContainer(child: column);
   }
 
-  Widget _content() => BlocProvider(
-        // Baris lain, riwayat lain: cubit baru, bukan yang lama dengan data
-        // jenis sebelumnya.
+  Widget _content() => RiwayatHargaContent(
         key: ValueKey(widget.item.id),
-        create: (_) =>
-            (widget.createRiwayatCubit ?? () => di<RiwayatHargaCubit>())(),
-        child: RiwayatHargaContent(jenisId: widget.item.id),
+        jenisId: widget.item.id,
       );
 }

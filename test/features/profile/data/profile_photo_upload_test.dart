@@ -1,12 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 
 import '../../../support/profile_support.dart';
 import '../../../support/stub_api.dart';
@@ -28,27 +29,34 @@ void main() {
           name: 'logo.png',
           mimeType: 'image/png'),
     );
-    final cubit = ProfileCubit(
+    final notifier = TestProfileNotifier(
         ProfileRemoteDataSourceImpl(api.network), picker, cropper,
         isWeb: true);
-    addTearDown(cubit.close);
+    final container = ProviderContainer(
+      overrides: [profileProvider.overrideWith(() => notifier)],
+    );
+    final subscription = container.listen(profileProvider, (_, __) {});
+    addTearDown(() {
+      subscription.close();
+      container.dispose();
+    });
     api.on('PUT', '/api/v1/bank-sampah/me',
         status: 413, json: {'error': 'Foto terlalu besar'});
 
-    await cubit.pickLogo();
-    expect(cubit.state.selectedLogoBytes, bytes);
-    expect(cubit.state.selectedLogoFilename, 'logo.png');
-    final error = await cubit.updateBankSampah(
+    await notifier.pickLogo();
+    expect(notifier.state.selectedLogoBytes, bytes);
+    expect(notifier.state.selectedLogoFilename, 'logo.png');
+    final error = await notifier.updateBankSampah(
         nama: 'Bank Sampah BTH',
         alamat: 'Kel. Kukusan',
         noHpPic: '81234567890');
     expect(error?.displayMessage, 'Foto terlalu besar');
-    expect(cubit.state.selectedLogoBytes, bytes);
+    expect(notifier.state.selectedLogoBytes, bytes);
 
     api.on('PUT', '/api/v1/bank-sampah/me',
         json: bankJson(logo: '/media/logo.png'));
     expect(
-        await cubit.updateBankSampah(
+        await notifier.updateBankSampah(
             nama: 'Bank Sampah BTH',
             alamat: 'Kel. Kukusan',
             noHpPic: '81234567890'),
@@ -71,11 +79,12 @@ void main() {
     }
     verify(() => picker.pickImage(source: ImageSource.gallery)).called(1);
     verifyZeroInteractions(cropper);
-    expect(cubit.state.selectedLogoBytes, isNull);
-    expect(cubit.state.selectedLogoFilename, isNull);
-    expect(cubit.state.bankSampah?.fotoLogo, 'http://api.test/media/logo.png');
+    expect(notifier.state.selectedLogoBytes, isNull);
+    expect(notifier.state.selectedLogoFilename, isNull);
+    expect(
+        notifier.state.bankSampah?.fotoLogo, 'http://api.test/media/logo.png');
 
-    await cubit.updateBankSampah(
+    await notifier.updateBankSampah(
         nama: 'Bank Sampah BTH',
         alamat: 'Kel. Kukusan',
         noHpPic: '81234567890');

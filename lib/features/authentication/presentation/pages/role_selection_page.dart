@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -11,22 +11,21 @@ import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class RoleSelectionPage extends StatefulWidget {
+class RoleSelectionPage extends ConsumerStatefulWidget {
   const RoleSelectionPage({super.key});
 
   static const route = '/choose-role';
 
   @override
-  State<RoleSelectionPage> createState() => _RoleSelectionPageState();
+  ConsumerState<RoleSelectionPage> createState() => _RoleSelectionPageState();
 }
 
-class _RoleSelectionPageState extends State<RoleSelectionPage> {
+class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
   GoogleRegistrationRole? _selectedRole;
   GoogleRegistrationRequired? _registration;
   bool _isChangingAccount = false;
@@ -34,7 +33,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
   @override
   void initState() {
     super.initState();
-    _registration = _registrationFrom(context.read<AuthenticationBloc>().state);
+    _registration = _registrationFrom(ref.read(authenticationProvider));
   }
 
   GoogleRegistrationRequired? _registrationFrom(AuthenticationStates state) {
@@ -92,14 +91,16 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     }
 
     if (!mounted) return;
-    context
-        .read<AuthenticationBloc>()
-        .add(const ChangeGoogleAccountRequested());
+    ref.read(authenticationProvider.notifier).changeGoogleAccount();
     context.go(LoginPage.route);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authenticationProvider, (previous, state) {
+      _listen(context, state);
+    });
+    final state = ref.watch(authenticationProvider);
     final registration = _registration;
     if (registration == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -108,100 +109,93 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    return BlocConsumer<AuthenticationBloc, AuthenticationStates>(
-      listener: _listen,
-      builder: (context, state) {
-        final isLoading = state is GoogleRegistrationSubmitting;
-        final roleOptions = _roleOptions
-            .where((option) => isRoleSupportedOnPlatform(
-                  option.value.wireValue,
-                  isWeb: kIsWeb,
-                ))
-            .toList();
-        return Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Langkah 1',
-                            style: AppTextStyle.small.copyWith(
-                              color: AppColors.greenDark,
-                              fontWeight: FontWeight.w600,
-                            )),
-                        const SizedBox(height: 4),
-                        Text('Daftar Akun', style: AppTextStyle.headline1),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
-                          style: AppTextStyle.small.copyWith(
-                            color: AppColors.grey100,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        _VerifiedIdentity(
-                          name: registration.name,
-                          email: registration.email,
-                          onChangeAccount: isLoading || _isChangingAccount
-                              ? null
-                              : _changeAccount,
-                        ),
-                        const SizedBox(height: 32),
-                        Text('Saya ingin mendaftar sebagai',
-                            style: AppTextStyle.title1),
-                        const SizedBox(height: 16),
-                        for (var index = 0;
-                            index < roleOptions.length;
-                            index++) ...[
-                          _RoleCard(
-                            option: roleOptions[index],
-                            selected: _selectedRole == roleOptions[index].value,
-                            enabled: !isLoading,
-                            onTap: () => setState(
-                                () => _selectedRole = roleOptions[index].value),
-                          ),
-                          if (index < roleOptions.length - 1)
-                            const SizedBox(height: 12),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.greenDark.withValues(alpha: 0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, -4),
+    final isLoading = state is GoogleRegistrationSubmitting;
+    final roleOptions = _roleOptions
+        .where((option) => isRoleSupportedOnPlatform(
+              option.value.wireValue,
+              isWeb: kIsWeb,
+            ))
+        .toList();
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Langkah 1',
+                        style: AppTextStyle.small.copyWith(
+                          color: AppColors.greenDark,
+                          fontWeight: FontWeight.w600,
+                        )),
+                    const SizedBox(height: 4),
+                    Text('Daftar Akun', style: AppTextStyle.headline1),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Pilih peran yang sesuai untuk melanjutkan pendaftaran.',
+                      style: AppTextStyle.small.copyWith(
+                        color: AppColors.grey100,
+                        fontSize: 14,
                       ),
+                    ),
+                    const SizedBox(height: 24),
+                    _VerifiedIdentity(
+                      name: registration.name,
+                      email: registration.email,
+                      onChangeAccount: isLoading || _isChangingAccount
+                          ? null
+                          : _changeAccount,
+                    ),
+                    const SizedBox(height: 32),
+                    Text('Saya ingin mendaftar sebagai',
+                        style: AppTextStyle.title1),
+                    const SizedBox(height: 16),
+                    for (var index = 0;
+                        index < roleOptions.length;
+                        index++) ...[
+                      _RoleCard(
+                        option: roleOptions[index],
+                        selected: _selectedRole == roleOptions[index].value,
+                        enabled: !isLoading,
+                        onTap: () => setState(
+                            () => _selectedRole = roleOptions[index].value),
+                      ),
+                      if (index < roleOptions.length - 1)
+                        const SizedBox(height: 12),
                     ],
-                  ),
-                  child: AppButton(
-                    label: 'Lanjutkan',
-                    isLoading: isLoading,
-                    onPressed: _selectedRole == null
-                        ? null
-                        : () => context.read<AuthenticationBloc>().add(
-                              RegisterGoogleRoleRequested(
-                                role: _selectedRole!,
-                              ),
-                            ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.greenDark.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: AppButton(
+                label: 'Lanjutkan',
+                isLoading: isLoading,
+                onPressed: _selectedRole == null
+                    ? null
+                    : () => ref
+                        .read(authenticationProvider.notifier)
+                        .registerGoogleRole(_selectedRole!),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

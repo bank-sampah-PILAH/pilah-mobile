@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
@@ -11,11 +11,10 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_dialog.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_appeal_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_appeal_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_status_badge.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 /// Detail view for one membership, pushed from [ApprovalBankSampahListView]
 /// with the tapped [NasabahMembershipEntity] passed directly via GoRouter's
@@ -29,80 +28,72 @@ class ApprovalBankSampahDetailPage extends StatelessWidget {
   static const route = '/approval-bank-sampah/detail';
 
   @override
-  Widget build(BuildContext context) {
-    // A new instance per visit, like NasabahApprovalCubit: an appeal is
-    // scoped to this one detail-page visit, not app-wide state.
-    return BlocProvider<NasabahAppealCubit>(
-      create: (_) => di<NasabahAppealCubit>(),
-      child: ApprovalBankSampahDetailView(membership: membership),
-    );
-  }
+  Widget build(BuildContext context) =>
+      ApprovalBankSampahDetailView(membership: membership);
 }
 
 /// The detail body, split out from [ApprovalBankSampahDetailPage] so widget
-/// tests can inject a cubit directly with `BlocProvider.value` instead of
-/// going through the DI container — mirrors the list page's own split.
-class ApprovalBankSampahDetailView extends StatelessWidget {
+/// tests can override its provider without going through the DI container.
+class ApprovalBankSampahDetailView extends ConsumerWidget {
   final NasabahMembershipEntity membership;
 
   const ApprovalBankSampahDetailView({super.key, required this.membership});
 
-  Future<void> _appeal(BuildContext context) async {
-    final cubit = context.read<NasabahAppealCubit>();
+  Future<void> _appeal(BuildContext context, WidgetRef ref) async {
     final pesan = await showDialog<String>(
       context: context,
       builder: (dialogContext) => _AppealMessageDialog(),
     );
     if (pesan == null) return;
-    cubit.submit(membership.bankSampahId, pesan: pesan);
+    ref
+        .read(nasabahAppealProvider.notifier)
+        .submit(membership.bankSampahId, pesan: pesan);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocListener<NasabahAppealCubit, NasabahAppealState>(
-      listener: (context, state) {
-        if (state is NasabahAppealSuccess) {
-          context.pop(true);
-          AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
-                ctx,
-                title: 'Banding Diajukan',
-                message:
-                    'Pengajuan Anda telah dikirim ulang untuk ditinjau pengurus.',
-              ));
-        } else if (state is NasabahAppealFailure) {
-          AppNotification.showError(
-            context,
-            title: 'Gagal Mengajukan Banding',
-            message: state.message,
-          );
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: NasabahPageAppBar(
-          title: membership.bankSampahNama,
-          showBack: true,
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStatusCard(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<NasabahAppealState>(nasabahAppealProvider, (previous, state) {
+      if (state is NasabahAppealSuccess) {
+        context.pop(true);
+        AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
+              ctx,
+              title: 'Banding Diajukan',
+              message:
+                  'Pengajuan Anda telah dikirim ulang untuk ditinjau pengurus.',
+            ));
+      } else if (state is NasabahAppealFailure) {
+        AppNotification.showError(
+          context,
+          title: 'Gagal Mengajukan Banding',
+          message: state.message,
+        );
+      }
+    });
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: NasabahPageAppBar(
+        title: membership.bankSampahNama,
+        showBack: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatusCard(),
+              const SizedBox(height: 24),
+              if (membership.status == MembershipStatus.rejected) ...[
+                _buildAppealButton(context, ref),
                 const SizedBox(height: 24),
-                if (membership.status == MembershipStatus.rejected) ...[
-                  _buildAppealButton(context),
-                  const SizedBox(height: 24),
-                ],
-                Text(
-                  'Riwayat Persetujuan',
-                  style: AppTextStyle.title1.copyWith(fontSize: 16),
-                ),
-                const SizedBox(height: 16),
-                MembershipApprovalTimeline(membership: membership),
               ],
-            ),
+              Text(
+                'Riwayat Persetujuan',
+                style: AppTextStyle.title1.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              MembershipApprovalTimeline(membership: membership),
+            ],
           ),
         ),
       ),
@@ -199,16 +190,12 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildAppealButton(BuildContext context) {
-    return BlocBuilder<NasabahAppealCubit, NasabahAppealState>(
-      builder: (context, state) {
-        final submitting = state is NasabahAppealSubmitting;
-        return AppButton(
-          label: 'Ajukan Banding',
-          isLoading: submitting,
-          onPressed: () => _appeal(context),
-        );
-      },
+  Widget _buildAppealButton(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(nasabahAppealProvider);
+    return AppButton(
+      label: 'Ajukan Banding',
+      isLoading: state is NasabahAppealSubmitting,
+      onPressed: () => _appeal(context, ref),
     );
   }
 }

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart';
-import 'package:pilah_mobile/features/pengumuman/data/repositories/pengumuman_repository_impl.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 
+import '../../../../support/pengumuman_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
@@ -32,15 +31,19 @@ void main() {
   }
 
   late StubApi api;
-  late PengumumanCubit cubit;
 
   setUp(() {
     api = StubApi();
-    cubit = PengumumanCubit(
-        PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network)));
   });
 
-  tearDown(() => cubit.close());
+  Widget withProvider(Widget child) => ProviderScope(
+        overrides: [
+          pengumumanProvider.overrideWith(() => PengumumanNotifier(
+                buildPengumumanRepository(api),
+              )),
+        ],
+        child: child,
+      );
 
   Future<void> openPage(WidgetTester tester,
       {List<String> extraRoutes = const [],
@@ -48,10 +51,7 @@ void main() {
       Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
-      BlocProvider<PengumumanCubit>.value(
-        value: cubit,
-        child: PengumumanKelolaPage(isWeb: isWeb),
-      ),
+      withProvider(PengumumanKelolaPage(isWeb: isWeb)),
       extraRoutes: extraRoutes,
       size: size,
     );
@@ -594,10 +594,7 @@ void main() {
       await stubEmpty();
       await pumpRouted(
         tester,
-        BlocProvider<PengumumanCubit>.value(
-          value: cubit,
-          child: const PengumumanKelolaPage(isWeb: false),
-        ),
+        withProvider(const PengumumanKelolaPage(isWeb: false)),
         size: const Size(390, 844),
         pushed: true,
       );
@@ -619,16 +616,13 @@ void main() {
     late StateSetter flip;
     await pumpRouted(
       tester,
-      BlocProvider<PengumumanCubit>.value(
-        value: cubit,
-        child: StatefulBuilder(builder: (context, setState) {
-          flip = setState;
-          return TickerMode(
-            enabled: active,
-            child: const PengumumanKelolaPage(isWeb: false),
-          );
-        }),
-      ),
+      withProvider(StatefulBuilder(builder: (context, setState) {
+        flip = setState;
+        return TickerMode(
+          enabled: active,
+          child: const PengumumanKelolaPage(isWeb: false),
+        );
+      })),
       size: const Size(390, 844),
     );
     await tester.pumpAndSettle();

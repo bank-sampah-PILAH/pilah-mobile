@@ -1,8 +1,7 @@
-import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/app.dart';
@@ -10,226 +9,167 @@ import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_state.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_state.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_state.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/nasabah_pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/states/pengumuman_state.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/transaksi_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
-
-class _MockHargaCubit extends MockCubit<HargaState> implements HargaCubit {}
-
-class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
-
-class _MockPengumumanCubit extends MockCubit<PengumumanState>
-    implements PengumumanCubit {}
-
-class _MockNasabahPengumumanCubit extends MockCubit<NasabahPengumumanState>
-    implements NasabahPengumumanCubit {}
-
-class _MockTransaksiCubit extends MockCubit<TransaksiState>
-    implements TransaksiCubit {}
-
-class _MockDashboardCubit extends MockCubit<DashboardState>
-    implements DashboardCubit {}
-
-class _MockRecentActivityCubit extends MockCubit<RecentActivityState>
-    implements RecentActivityCubit {}
-
-class _MockRiwayatAktivitasCubit extends MockCubit<RiwayatAktivitasState>
-    implements RiwayatAktivitasCubit {}
-
-class _MockProfileCubit extends MockCubit<ProfileState>
-    implements ProfileCubit {}
+import 'support/auth_support.dart';
+import 'support/harga_support.dart';
+import 'support/jadwal_provider_support.dart';
+import 'support/nasabah_support.dart';
+import 'support/pengumuman_support.dart';
+import 'support/profile_support.dart';
+import 'support/stub_api.dart';
+import 'support/transaksi_support.dart';
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
 
-class _MockAuthenticationBloc
-    extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _FakeAuthenticationEvent extends Fake implements AuthenticationEvent {}
-
 void main() {
-  setUpAll(() => registerFallbackValue(_FakeAuthenticationEvent()));
-  late _MockAuthenticationBloc authenticationBloc;
-  late StreamController<AuthenticationStates> authenticationStates;
-  late _MockNasabahCubit nasabah;
-  late _MockHargaCubit harga;
-  late _MockJadwalCubit jadwal;
-  late _MockPengumumanCubit pengumuman;
-  late _MockNasabahPengumumanCubit nasabahPengumuman;
-  late _MockTransaksiCubit transaksi;
-  late _MockDashboardCubit dashboard;
-  late _MockRecentActivityCubit recentActivity;
-  late _MockRiwayatAktivitasCubit riwayatAktivitas;
-  late _MockProfileCubit profile;
-  // Real, not mocked: the draft it holds is the thing under test, and a mock
-  // would only confirm that a method was called rather than that the data is
-  // actually gone.
-  late OnboardingCubit onboarding;
+  late InviteTokenStore invites;
 
   setUp(() {
-    nasabah = _MockNasabahCubit();
-    harga = _MockHargaCubit();
-    jadwal = _MockJadwalCubit();
-    pengumuman = _MockPengumumanCubit();
-    nasabahPengumuman = _MockNasabahPengumumanCubit();
-    transaksi = _MockTransaksiCubit();
-    dashboard = _MockDashboardCubit();
-    recentActivity = _MockRecentActivityCubit();
-    riwayatAktivitas = _MockRiwayatAktivitasCubit();
-    profile = _MockProfileCubit();
-    onboarding = OnboardingCubit(_MockOnboardingDataSource());
-    authenticationBloc = _MockAuthenticationBloc();
-    authenticationStates = StreamController<AuthenticationStates>.broadcast();
-    whenListen(
-      authenticationBloc,
-      authenticationStates.stream,
-      initialState: AuthenticationInitial(),
-    );
-    when(() => nasabah.state).thenReturn(NasabahInitial());
-    when(() => harga.state).thenReturn(HargaInitial());
-    when(() => jadwal.state).thenReturn(const JadwalInitial());
-    when(() => pengumuman.state).thenReturn(const PengumumanInitial());
-    when(() => nasabahPengumuman.state)
-        .thenReturn(const NasabahPengumumanState());
-    when(() => transaksi.state).thenReturn(TransaksiInitial());
-    when(() => dashboard.state).thenReturn(const DashboardState());
-    when(() => recentActivity.state).thenReturn(RecentActivityInitial());
-    when(() => riwayatAktivitas.state)
-        .thenReturn(const RiwayatAktivitasState());
-    when(() => profile.state).thenReturn(const ProfileState());
-
+    invites = InviteTokenStore();
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
-    di.registerSingleton<AuthenticationBloc>(authenticationBloc);
-    di.registerSingleton<InviteTokenStore>(InviteTokenStore());
-    di.registerSingleton<NasabahCubit>(nasabah);
-    di.registerSingleton<HargaCubit>(harga);
-    di.registerSingleton<JadwalCubit>(jadwal);
-    di.registerSingleton<PengumumanCubit>(pengumuman);
-    di.registerSingleton<NasabahPengumumanCubit>(nasabahPengumuman);
-    di.registerSingleton<TransaksiCubit>(transaksi);
-    di.registerSingleton<DashboardCubit>(dashboard);
-    di.registerSingleton<RecentActivityCubit>(recentActivity);
-    di.registerSingleton<RiwayatAktivitasCubit>(riwayatAktivitas);
-    di.registerSingleton<ProfileCubit>(profile);
-    di.registerSingleton<OnboardingCubit>(onboarding);
+    di.registerSingleton<InviteTokenStore>(invites);
   });
 
-  tearDown(() async {
-    await authenticationStates.close();
-    if (!onboarding.isClosed) await onboarding.close();
-    await di.reset();
-  });
+  tearDown(() async => di.reset());
 
   testWidgets(
       'resetSessionScopedState keeps a pending invite token across logout',
       (tester) async {
-    // A user tapped an invite link while signed in as the wrong account and is
-    // logging out to sign in as the invited one.
-    di<InviteTokenStore>().save('invite-token-abc');
-    expect(di<InviteTokenStore>().hasToken, isTrue);
+    invites.save('invite-token-abc');
+    final api = StubApi();
+    api.on('GET', '/api/v1/nasabah/me/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
+    api.on('GET', '/api/v1/pengumuman',
+        json: {'count': 0, 'next': null, 'results': []});
+    final repository = buildPengumumanRepository(api);
+    final profile = buildProfileNotifier(StubApi());
+    final container = ProviderContainer(overrides: [
+      nasabahProvider.overrideWith(() => buildNasabahNotifier(api)),
+      hargaProvider.overrideWith(() => buildHargaNotifier(api)),
+      transaksiProvider.overrideWith(() => buildTransaksiNotifier(api)),
+      riwayatAktivitasProvider.overrideWith(
+        () => buildRiwayatAktivitasNotifier(api),
+      ),
+      jadwalProvider.overrideWith(
+        () => TestJadwalNotifier(
+          repository: UnusedJadwalRepository(),
+          initialState: const JadwalLoaded([]),
+        ),
+      ),
+      nasabahPengumumanProvider.overrideWith(
+        () => NasabahPengumumanNotifier(
+          NasabahPengumumanRepository(api.network),
+        ),
+      ),
+      pengumumanProvider.overrideWith(
+        () => PengumumanNotifier(repository),
+      ),
+      onboardingProvider.overrideWith(
+        () => OnboardingNotifier(_MockOnboardingDataSource()),
+      ),
+      profileProvider.overrideWith(() => profile),
+    ]);
 
-    // Half-way through the registration wizard when they logged out.
-    onboarding.saveProfileDraft(const CompleteProfileRequest(
-      nama: 'Sari Dewi',
-      jenisKelamin: 'perempuan',
-      tanggalLahir: '1990-04-17',
-      noHp: '81234567890',
+    container.read(nasabahProvider);
+    container.read(hargaProvider);
+    container.read(transaksiProvider);
+    container.read(riwayatAktivitasProvider);
+    container.read(jadwalProvider);
+    container.read(onboardingProvider.notifier).saveProfileDraft(
+          const CompleteProfileRequest(
+            nama: 'Sari Dewi',
+            jenisKelamin: 'perempuan',
+            tanggalLahir: '1990-04-17',
+            noHp: '81234567890',
+          ),
+        );
+    final nasabahPengumumanSub = container.listen(
+      nasabahPengumumanProvider,
+      (_, __) {},
+    );
+    final pengumumanSub = container.listen(pengumumanProvider, (_, __) {});
+    final profileSub = container.listen(profileProvider, (_, __) {});
+    profile.setStateForTest(ProfileState(
+      selectedLogoBytes: Uint8List.fromList([1]),
+      selectedLogoFilename: 'previous.png',
     ));
+    await tester.runAsync(() async {
+      await container.read(nasabahPengumumanProvider.notifier).load();
+      await container.read(pengumumanProvider.notifier).loadPengumuman();
+    });
+    expect(container.read(pengumumanProvider), isA<PengumumanLoaded>());
 
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<NasabahCubit>.value(value: nasabah),
-          BlocProvider<HargaCubit>.value(value: harga),
-          BlocProvider<JadwalCubit>.value(value: jadwal),
-          BlocProvider<PengumumanCubit>.value(value: pengumuman),
-          BlocProvider<NasabahPengumumanCubit>.value(value: nasabahPengumuman),
-          BlocProvider<TransaksiCubit>.value(value: transaksi),
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: recentActivity),
-          BlocProvider<RiwayatAktivitasCubit>.value(value: riwayatAktivitas),
-          BlocProvider<ProfileCubit>.value(value: profile),
-          BlocProvider<OnboardingCubit>.value(value: onboarding),
-        ],
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => resetSessionScopedState(context),
-              child: const Text('logout'),
-            ),
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => resetSessionScopedState(context),
+            child: const Text('logout'),
           ),
         ),
       ),
-    );
-
+    ));
     await tester.tap(find.text('logout'));
     await tester.pump();
 
+    expect(invites.hasToken, isTrue);
+    expect(container.read(nasabahProvider), isA<NasabahInitial>());
+    expect(container.read(hargaProvider), isA<HargaInitial>());
+    expect(container.read(jadwalProvider), isA<JadwalInitial>());
+    expect(container.read(transaksiProvider), isA<TransaksiInitial>());
+    expect(container.read(riwayatAktivitasProvider),
+        const RiwayatAktivitasState());
+    expect(container.read(profileProvider), const ProfileState());
+    expect(container.read(nasabahPengumumanProvider).status,
+        NasabahPengumumanStatus.initial);
+    expect(container.read(pengumumanProvider), isA<PengumumanInitial>());
     expect(
-      di<InviteTokenStore>().hasToken,
-      isTrue,
-      reason:
-          'switching accounts is a step inside the invite flow, not an exit '
-          'from it — the token has to survive until it is redeemed or refused',
-    );
-    // Only the invite token is exempt; the session cubits still reset.
-    verify(() => nasabah.reset()).called(1);
-    verify(() => harga.reset()).called(1);
-    verify(() => jadwal.reset()).called(1);
-    verify(() => transaksi.reset()).called(1);
-    verify(() => dashboard.reset()).called(1);
-    verify(() => recentActivity.reset()).called(1);
-    verify(() => riwayatAktivitas.reset()).called(1);
-    verify(
-      () => profile.reset(),
-      // Holds the bank sampah's WhatsApp template and, more sensitively, any
-      // logo picked but not yet uploaded — a path into the previous user's
-      // gallery that would otherwise be sent as the next bank's logo.
-    ).called(1);
-    expect(
-      onboarding.hasProfileDraft,
-      isFalse,
-      reason: 'the draft is one person’s name, phone and date of birth — left '
-          'behind it would prefill the next account’s form with it, and be '
-          'submitted under their credentials',
-    );
+        container.read(onboardingProvider.notifier).hasProfileDraft, isFalse);
+    await tester.pumpWidget(const SizedBox.shrink());
+    nasabahPengumumanSub.close();
+    pengumumanSub.close();
+    profileSub.close();
+    container.dispose();
   });
 
   testWidgets('logs out and warns when a web session has an unsupported role',
       (tester) async {
-    await tester.pumpWidget(App(isWebOverride: true));
+    final auth = TestAuthenticationNotifier();
+    await tester.pumpWidget(App(
+      isWebOverride: true,
+      providerScopeBuilder: (child) => ProviderScope(
+        overrides: [authenticationProvider.overrideWith(() => auth)],
+        child: child,
+      ),
+    ));
     final router = AppRouterConfig.getRouter();
     addTearDown(router.dispose);
 
@@ -238,27 +178,24 @@ void main() {
     expect(rootNavigatorKey.currentContext, isNotNull);
     expect(find.text('Lupa kata sandi?'), findsOneWidget);
 
-    authenticationStates.add(Unauthenticated());
+    auth.setStateForTest(Unauthenticated());
     await tester.pump();
-    authenticationStates.add(
-      Authenticated(
-        authEntity: const AuthEntity(
-          name: 'Nasabah',
-          email: 'nasabah@example.com',
-          photoUrl: '',
-          token: 'token',
-          role: 'nasabah',
-        ),
+    auth.setStateForTest(Authenticated(
+      authEntity: const AuthEntity(
+        name: 'Nasabah',
+        email: 'nasabah@example.com',
+        photoUrl: '',
+        token: 'token',
+        role: 'nasabah',
       ),
-    );
+    ));
     for (var i = 0;
         i < 10 && find.text('Akses web tidak tersedia').evaluate().isEmpty;
         i++) {
       await tester.pump(const Duration(milliseconds: 250));
     }
 
-    final events = verify(() => authenticationBloc.add(captureAny())).captured;
-    expect(events.whereType<LogoutRequested>(), hasLength(1));
+    expect(auth.calls.where((call) => call == 'logout'), hasLength(1));
     expect(find.text('Akses web tidak tersedia'), findsOneWidget);
     expect(tester.takeException(), isNull);
 

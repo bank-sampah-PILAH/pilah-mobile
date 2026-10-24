@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 
@@ -18,7 +18,7 @@ import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 /// sama dapat tampil sebagai bottom sheet pada telepon dan sebagai dialog pada
 /// peramban. [presentation] hanya dipakai untuk hal yang memang berbeda di
 /// mata pengguna.
-class PilihNasabahPicker extends StatefulWidget {
+class PilihNasabahPicker extends ConsumerStatefulWidget {
   const PilihNasabahPicker({
     super.key,
     this.presentation = PickerPresentation.bottomSheet,
@@ -27,10 +27,10 @@ class PilihNasabahPicker extends StatefulWidget {
   final PickerPresentation presentation;
 
   @override
-  State<PilihNasabahPicker> createState() => _PilihNasabahPickerState();
+  ConsumerState<PilihNasabahPicker> createState() => _PilihNasabahPickerState();
 }
 
-class _PilihNasabahPickerState extends State<PilihNasabahPicker> {
+class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   late Future<List<NasabahEntity>> _nasabahFuture;
@@ -38,11 +38,11 @@ class _PilihNasabahPickerState extends State<PilihNasabahPicker> {
   @override
   void initState() {
     super.initState();
-    // Selalu ambil sendiri, bukan menumpang state cubit. Halaman nasabah bisa
-    // meninggalkan cubit dalam keadaan Loaded dengan daftar berpaginasi
+    // Selalu ambil sendiri, bukan menumpang state provider. Halaman nasabah bisa
+    // meninggalkan provider dalam keadaan Loaded dengan daftar berpaginasi
     // sementara daftar picker masih kosong, dan mengambil ulang di sini juga
     // membuat saldo yang tampil selalu yang terbaru setelah ada setoran.
-    _nasabahFuture = context.read<NasabahCubit>().loadActiveNasabah();
+    _nasabahFuture = ref.read(nasabahProvider.notifier).loadActiveNasabah();
   }
 
   @override

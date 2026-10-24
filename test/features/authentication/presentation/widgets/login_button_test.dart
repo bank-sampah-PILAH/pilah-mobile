@@ -1,24 +1,17 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
     as google_sign_in;
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/google_sign_in_error.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/login_button.dart';
 
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
+import '../../../../support/auth_support.dart';
 
 class _FakeAuthenticateParameters extends Fake
     implements google_sign_in.AuthenticateParameters {}
@@ -30,12 +23,11 @@ class _MockGoogleSignInPlatform extends Mock
 class _MockGoogleSignInAccount extends Mock implements GoogleSignInAccount {}
 
 void main() {
-  late _MockAuthBloc auth;
+  late TestAuthenticationNotifier auth;
   late google_sign_in.GoogleSignInPlatform originalGoogleSignInPlatform;
   late _MockGoogleSignInPlatform googleSignInPlatform;
 
   setUpAll(() {
-    registerFallbackValue(_FakeAuthEvent());
     registerFallbackValue(_FakeAuthenticateParameters());
   });
 
@@ -43,20 +35,22 @@ void main() {
     originalGoogleSignInPlatform = google_sign_in.GoogleSignInPlatform.instance;
     googleSignInPlatform = _MockGoogleSignInPlatform();
     google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
-    auth = _MockAuthBloc();
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
-      initialState: AuthenticationInitial(),
-    );
+    auth = TestAuthenticationNotifier();
   });
 
   tearDown(() async {
     google_sign_in.GoogleSignInPlatform.instance = originalGoogleSignInPlatform;
-    await auth.close();
   });
 
-  testWidgets('submits the authenticated Google user to the bloc',
+  Future<void> pumpLoginButton(WidgetTester tester, Widget button) =>
+      tester.pumpWidget(
+        ProviderScope(
+          overrides: [authenticationProvider.overrideWith(() => auth)],
+          child: MaterialApp(home: Scaffold(body: button)),
+        ),
+      );
+
+  testWidgets('submits the Google ID token to the auth provider',
       (tester) async {
     when(() => googleSignInPlatform.authenticate(any())).thenAnswer(
       (_) async => const google_sign_in.AuthenticationResults(
@@ -69,23 +63,12 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<AuthenticationBloc>.value(
-          value: auth,
-          child: const Scaffold(body: LoginButton()),
-        ),
-      ),
-    );
+    await pumpLoginButton(tester, const LoginButton());
     await tester.tap(find.text('Masuk dengan Google'));
     await tester.pumpAndSettle();
 
-    final event = verify(() => auth.add(captureAny())).captured.single
-        as LoginWithGoogleRequested;
-    expect(event.name, 'Unknown');
-    expect(event.email, 'ayu@example.com');
-    expect(event.photoUrl, '');
-    expect(event.idToken, 'signed-id-token');
+    expect(auth.lastIdToken, 'signed-id-token');
+    expect(auth.calls, contains('loginWithGoogle'));
   });
 
   testWidgets('shows a safe error for a failed Google sign-in', (tester) async {
@@ -96,14 +79,7 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<AuthenticationBloc>.value(
-          value: auth,
-          child: const Scaffold(body: LoginButton()),
-        ),
-      ),
-    );
+    await pumpLoginButton(tester, const LoginButton());
     await tester.tap(find.text('Masuk dengan Google'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
@@ -117,19 +93,12 @@ void main() {
       const GoogleSignInException(code: GoogleSignInExceptionCode.canceled),
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<AuthenticationBloc>.value(
-          value: auth,
-          child: const Scaffold(body: LoginButton()),
-        ),
-      ),
-    );
+    await pumpLoginButton(tester, const LoginButton());
     await tester.tap(find.text('Masuk dengan Google'));
     await tester.pumpAndSettle();
 
     expect(find.text(googleSignInFallbackMessage), findsNothing);
-    verifyNever(() => auth.add(any()));
+    expect(auth.calls, isEmpty);
   });
 
   testWidgets('uses the platform web button adapter when requested',
@@ -155,10 +124,10 @@ void main() {
     when(() => user.photoUrl).thenReturn('https://example.com/ayu.png');
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<AuthenticationBloc>.value(
-          value: auth,
-          child: Scaffold(
+      ProviderScope(
+        overrides: [authenticationProvider.overrideWith(() => auth)],
+        child: MaterialApp(
+          home: Scaffold(
             body: LoginButton(
               isWebOverride: true,
               webButtonBuilderOverride: ({
@@ -186,10 +155,8 @@ void main() {
 
     await tester.tap(find.text('simulate web sign-in'));
     await tester.pump();
-    final event = verify(() => auth.add(captureAny())).captured.single
-        as LoginWithGoogleRequested;
-    expect(event.email, 'ayu@example.com');
-    expect(event.idToken, 'web-id-token');
+    expect(auth.lastIdToken, 'web-id-token');
+    expect(auth.calls, contains('loginWithGoogle'));
 
     await tester.tap(find.text('simulate web error'));
     await tester.pump();

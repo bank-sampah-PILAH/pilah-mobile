@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
@@ -27,7 +26,7 @@ import 'package:pilah_mobile/features/main/presentation/widgets/role_destination
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -380,9 +379,8 @@ void main() {
       await visit(tester, router, '/approval-bank-sampah');
       expect(find.byType(ApprovalBankSampahListPage), findsOneWidget);
 
-      di.registerFactory<NasabahAppealCubit>(
-          () => NasabahAppealCubit(_MockAppeal()));
-      addTearDown(() => di.unregister<NasabahAppealCubit>());
+      di.registerFactory<AppealMembershipUseCase>(() => _MockAppeal());
+      addTearDown(() => di.unregister<AppealMembershipUseCase>());
       router.go(
         '/approval-bank-sampah/detail',
         extra: const NasabahMembershipEntity(

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/nasabah_pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
 
 import '../../../../support/auth_support.dart';
@@ -22,32 +21,32 @@ Map<String, dynamic> _row(String id, {bool dibaca = false}) => {
 
 void main() {
   late StubApi api;
-  late NasabahPengumumanCubit cubit;
+  late NasabahPengumumanRepository repository;
 
   setUp(() {
     api = StubApi();
-    cubit = NasabahPengumumanCubit(NasabahPengumumanRepository(api.network));
+    repository = NasabahPengumumanRepository(api.network);
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> openPage(WidgetTester tester,
       {Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(
-            value: authBlocIn(
-                Authenticated(authEntity: testAuth(role: 'nasabah'))),
-          ),
-          BlocProvider<NasabahPengumumanCubit>.value(value: cubit),
-        ],
-        child: PengumumanPage(membershipId: 'm-1'),
+      withAuthenticationProvider(
+        authNotifierIn(Authenticated(authEntity: testAuth(role: 'nasabah'))),
+        PengumumanPage(membershipId: 'm-1'),
       ),
       extraRoutes: ['/pengumuman/detail'],
       pushed: true,
       size: size,
+      wrap: (child) => ProviderScope(
+        overrides: [
+          nasabahPengumumanProvider.overrideWith(
+            () => NasabahPengumumanNotifier(repository),
+          ),
+        ],
+        child: child,
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -123,14 +122,9 @@ void main() {
       (tester) async {
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(
-            value: authBlocIn(Unauthenticated()),
-          ),
-          BlocProvider<NasabahPengumumanCubit>.value(value: cubit),
-        ],
-        child: const PengumumanPage(),
+      withAuthenticationProvider(
+        authNotifierIn(Unauthenticated()),
+        const PengumumanPage(),
       ),
       pushed: true,
       size: const Size(800, 2000),

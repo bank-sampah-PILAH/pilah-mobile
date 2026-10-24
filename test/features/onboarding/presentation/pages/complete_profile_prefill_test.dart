@@ -1,40 +1,28 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/onboarding_support.dart';
+import '../../../../support/auth_support.dart';
 
 class _MockDataSource extends Mock implements OnboardingRemoteDataSource {}
 
 Future<void> _pumpScreen(WidgetTester tester, AuthEntity account) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: Authenticated(authEntity: account),
-  );
+  final auth = authNotifierIn(Authenticated(authEntity: account));
 
   await tester.pumpWidget(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthenticationBloc>.value(value: auth),
-        BlocProvider<OnboardingCubit>.value(
-          value: OnboardingCubit(_MockDataSource()),
-        ),
-      ],
-      child: const MaterialApp(home: CompleteProfileScreen()),
+    withOnboarding(
+      withAuthenticationProvider(
+        auth,
+        const MaterialApp(home: CompleteProfileScreen()),
+      ),
+      _MockDataSource(),
     ),
   );
   await tester.pump();

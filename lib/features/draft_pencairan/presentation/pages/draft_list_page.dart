@@ -1,7 +1,7 @@
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -13,11 +13,9 @@ import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
-import 'package:pilah_mobile/services/di.dart';
-
 import '../../domain/model/draft_pencairan.dart';
-import '../blocs/draft_list_cubit.dart';
-import '../blocs/draft_list_state.dart';
+import '../providers/draft_list_provider.dart';
+import '../states/draft_list_state.dart';
 import '../widgets/draft_format.dart';
 import '../widgets/draft_status_badge.dart';
 import '../widgets/pencairan_konfirmasi_sheet.dart';
@@ -34,30 +32,36 @@ class DraftListPage extends StatelessWidget {
   const DraftListPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<DraftListCubit>()..load(),
-      child: const DraftListView(),
-    );
-  }
+  Widget build(BuildContext context) => const DraftListView();
 }
 
-class DraftListView extends StatelessWidget {
+class DraftListView extends ConsumerStatefulWidget {
   const DraftListView({super.key});
 
-  Future<void> _open(BuildContext context, String route,
+  @override
+  ConsumerState<DraftListView> createState() => _DraftListViewState();
+}
+
+class _DraftListViewState extends ConsumerState<DraftListView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(draftListProvider.notifier).load();
+    });
+  }
+
+  Future<void> _open(BuildContext context, WidgetRef ref, String route,
       {Object? extra}) async {
-    final cubit = context.read<DraftListCubit>();
     await context.push<Object?>(route, extra: extra);
     // Whatever happened over there, the list may have changed.
-    await cubit.load();
+    if (mounted) await ref.read(draftListProvider.notifier).load();
   }
 
   /// The picker hands back who was picked, and the editor is opened from here
   /// rather than in its place, so the list reloads when the editor is left and
   /// shows the draft that was just saved.
-  Future<void> _buat(BuildContext context) async {
-    final cubit = context.read<DraftListCubit>();
+  Future<void> _buat(BuildContext context, WidgetRef ref) async {
     final terpilih =
         await context.push<List<Kandidat>>(DraftListPage.routePilih);
     if (terpilih != null && terpilih.isNotEmpty && context.mounted) {
@@ -66,7 +70,7 @@ class DraftListView extends StatelessWidget {
         extra: DraftEditorArgs.baru(terpilih),
       );
     }
-    await cubit.load();
+    if (mounted) await ref.read(draftListProvider.notifier).load();
   }
 
   @override
@@ -74,36 +78,41 @@ class DraftListView extends StatelessWidget {
     // Di layar lebar tombol buat ada di header halaman, seperti Nasabah dan
     // Harga; FAB hanya untuk layar sempit.
     final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
+    final state = ref.watch(draftListProvider);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         // A desktop window keeps the list to the same column as the laporan;
         // the lists scroll across the body so their scrollbar is at the edge.
         child: ContentFrame(
-          child: BlocBuilder<DraftListCubit, DraftListState>(
-            builder: (context, state) => Column(
-              children: [
-                ContentInset(
-                  child: AppBackHeader(
-                    backKey: const Key('kembali'),
-                    title: 'Pencairan',
-                    actions: [
-                      if (wide)
-                        AppButton(
-                          key: const Key('buat-pencairan'),
-                          label: 'Buat Pencairan',
-                          icon: Icons.add,
-                          expand: false,
-                          onPressed: () => _buat(context),
-                        ),
-                    ],
-                  ),
+          child: Column(
+            children: [
+              ContentInset(
+                child: AppBackHeader(
+                  backKey: const Key('kembali'),
+                  title: 'Pencairan',
+                  actions: [
+                    if (wide)
+                      AppButton(
+                        key: const Key('buat-pencairan'),
+                        label: 'Buat Pencairan',
+                        icon: Icons.add,
+                        expand: false,
+                        onPressed: () => _buat(context, ref),
+                      ),
+                  ],
                 ),
-                const ContentInset(child: _SearchBar()),
-                ContentInset(child: _FilterChips(state: state)),
-                Expanded(child: _Body(state: state, onOpen: _open)),
-              ],
-            ),
+              ),
+              const ContentInset(child: _SearchBar()),
+              ContentInset(child: _FilterChips(state: state)),
+              Expanded(
+                child: _Body(
+                  state: state,
+                  onOpen: (context, route, {extra}) =>
+                      _open(context, ref, route, extra: extra),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -113,7 +122,7 @@ class DraftListView extends StatelessWidget {
               heroTag: 'draft_list_fab',
               backgroundColor: AppColors.greenDark,
               foregroundColor: Colors.white,
-              onPressed: () => _buat(context),
+              onPressed: () => _buat(context, ref),
               icon: const Icon(Icons.add),
               label: const Text('Buat Pencairan'),
             ),
@@ -121,16 +130,15 @@ class DraftListView extends StatelessWidget {
   }
 }
 
-/// The search field, kept in step with the cubit so that clearing the search
-/// from the empty state empties the text too.
-class _SearchBar extends StatefulWidget {
+/// The search field stays in step with state so clearing the search empties it.
+class _SearchBar extends ConsumerStatefulWidget {
   const _SearchBar();
 
   @override
-  State<_SearchBar> createState() => _SearchBarState();
+  ConsumerState<_SearchBar> createState() => _SearchBarState();
 }
 
-class _SearchBarState extends State<_SearchBar> {
+class _SearchBarState extends ConsumerState<_SearchBar> {
   final _controller = TextEditingController();
 
   @override
@@ -141,52 +149,49 @@ class _SearchBarState extends State<_SearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<DraftListCubit>();
-    return BlocListener<DraftListCubit, DraftListState>(
-      listenWhen: (a, b) => a.query != b.query,
-      listener: (context, state) {
-        if (_controller.text != state.query) _controller.text = state.query;
-      },
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: CustomSearchField(
-                key: const Key('cari-draft'),
-                controller: _controller,
-                hintText: 'Cari nama, pembuat, atau tanggal',
-                onChanged: cubit.setQuery,
-              ),
+    final state = ref.watch(draftListProvider);
+    final notifier = ref.read(draftListProvider.notifier);
+    ref.listen<DraftListState>(draftListProvider, (previous, next) {
+      if (previous?.query != next.query && _controller.text != next.query) {
+        _controller.text = next.query;
+      }
+    });
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: CustomSearchField(
+              key: const Key('cari-draft'),
+              controller: _controller,
+              hintText: 'Cari nama, pembuat, atau tanggal',
+              onChanged: notifier.setQuery,
             ),
-            const SizedBox(width: 8),
-            BlocBuilder<DraftListCubit, DraftListState>(
-              buildWhen: (a, b) => a.urutan != b.urutan,
-              builder: (context, state) => PencairanSortButton<DraftSortField>(
-                buttonKey: const Key('urutkan-draft'),
-                itemKeyPrefix: 'urut-draft-',
-                fields: DraftSortField.values,
-                labelOf: (field) => field.label,
-                current: state.urutan.field,
-                ascending: state.urutan.ascending,
-                onSort: cubit.setUrutan,
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          PencairanSortButton<DraftSortField>(
+            buttonKey: const Key('urutkan-draft'),
+            itemKeyPrefix: 'urut-draft-',
+            fields: DraftSortField.values,
+            labelOf: (field) => field.label,
+            current: state.urutan.field,
+            ascending: state.urutan.ascending,
+            onSort: notifier.setUrutan,
+          ),
+        ],
       ),
     );
   }
 }
 
-class _FilterChips extends StatelessWidget {
+class _FilterChips extends ConsumerWidget {
   final DraftListState state;
 
   const _FilterChips({required this.state});
 
   @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<DraftListCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(draftListProvider.notifier);
     Widget chip(Key key, String label, DraftStatus? value) => Padding(
           padding: const EdgeInsets.only(right: 8),
           child: PencairanChip(
@@ -196,7 +201,7 @@ class _FilterChips extends StatelessWidget {
             count: state.status == DraftListStatus.loaded
                 ? state.jumlah(value)
                 : null,
-            onTap: () => cubit.setFilter(value),
+            onTap: () => notifier.setFilter(value),
           ),
         );
     return SingleChildScrollView(
@@ -214,15 +219,15 @@ class _FilterChips extends StatelessWidget {
   }
 }
 
-class _Body extends StatelessWidget {
+class _Body extends ConsumerWidget {
   final DraftListState state;
   final Future<void> Function(BuildContext, String, {Object? extra}) onOpen;
 
   const _Body({required this.state, required this.onOpen});
 
   @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<DraftListCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(draftListProvider.notifier);
     switch (state.status) {
       case DraftListStatus.loading:
         return ListView(
@@ -237,7 +242,8 @@ class _Body extends StatelessWidget {
             children: [
               Text(state.errorMessage ?? 'Gagal memuat draft',
                   style: AppTextStyle.small),
-              TextButton(onPressed: cubit.load, child: const Text('Coba lagi')),
+              TextButton(
+                  onPressed: notifier.load, child: const Text('Coba lagi')),
             ],
           ),
         );
@@ -246,16 +252,16 @@ class _Body extends StatelessWidget {
         final dicari = state.query.trim().isNotEmpty;
         if (drafts.isEmpty && dicari) {
           return AppRefreshIndicator(
-            onRefresh: cubit.load,
+            onRefresh: notifier.load,
             child: _TidakAdaHasil(
               query: state.query.trim(),
-              onClear: () => cubit.setQuery(''),
+              onClear: () => notifier.setQuery(''),
             ),
           );
         }
         final entries = _susun(drafts, state.urutan);
         return AppRefreshIndicator(
-          onRefresh: cubit.load,
+          onRefresh: notifier.load,
           child: drafts.isEmpty
               ? const EmptyView(
                   title: 'Belum ada draft pencairan',
@@ -280,7 +286,7 @@ class _Body extends StatelessWidget {
                           DraftListPage.routeEditor,
                           extra: DraftEditorArgs.lanjutkan(draft.id),
                         ),
-                        onCancel: () => _batalkan(context, draft),
+                        onCancel: () => _batalkan(context, draft, notifier),
                       ),
                     );
                   },
@@ -365,8 +371,11 @@ class _TidakAdaHasil extends StatelessWidget {
       );
 }
 
-Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
-  final cubit = context.read<DraftListCubit>();
+Future<void> _batalkan(
+  BuildContext context,
+  DraftRingkasan draft,
+  DraftListNotifier notifier,
+) async {
   final ok = await showPencairanKonfirmasi(
     context,
     icon: Icons.delete_outline,
@@ -396,8 +405,8 @@ Future<void> _batalkan(BuildContext context, DraftRingkasan draft) async {
     jawaban: const KonfirmasiJawaban('Ya, batalkan', 'Kembali'),
     nada: KonfirmasiNada.bahaya,
   );
-  if (!ok) return;
-  final error = await cubit.batalkan(draft.id);
+  if (!ok || !context.mounted) return;
+  final error = await notifier.batalkan(draft.id);
   if (error != null && context.mounted) {
     AppNotification.showError(context, title: 'Gagal', message: error);
   }

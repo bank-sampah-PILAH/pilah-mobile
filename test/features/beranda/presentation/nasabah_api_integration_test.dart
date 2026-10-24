@@ -1,34 +1,28 @@
 import 'dart:async';
 import '../../../support/stub_api.dart';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import '../../../support/fake_riwayat.dart';
+import '../../../support/auth_support.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
-
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
@@ -66,7 +60,7 @@ Authenticated session(String id) => Authenticated(
 void main() {
   late _Repository repository;
   late FakeRiwayatRemoteDataSource riwayat;
-  late _Auth auth;
+  late TestAuthenticationNotifier auth;
   late _JadwalRepository jadwalRepository;
   late _PayoutUseCases payoutUseCases;
   setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
@@ -81,7 +75,7 @@ void main() {
         NasabahActivity('t3', DateTime(2026, 9, 21), 'setoran', '30000.00'),
       ],
     ]);
-    auth = _Auth();
+    auth = authNotifierIn(session('Siti'));
     jadwalRepository = _JadwalRepository();
     payoutUseCases = _PayoutUseCases();
     when(() => jadwalRepository.getJadwal(page: 1, date: null)).thenAnswer(
@@ -104,22 +98,16 @@ void main() {
         NasabahPengumumanRepository(pengumumanApi.network));
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(payoutUseCases),
-    );
+    di.registerFactory<PencairanUseCases>(() => payoutUseCases);
     registerFakeRiwayat(riwayat);
   });
   tearDown(() async {
-    await di.unregister<RiwayatPencairanCubit>();
+    await di.unregister<PencairanUseCases>();
     await unregisterFakeRiwayat();
     await di.unregister<NasabahRepository>();
     await di.unregister<JadwalRepository>();
-    await auth.close();
   });
-  Future<void> open(WidgetTester tester,
-      {Stream<AuthenticationStates>? states}) async {
-    whenListen(auth, states ?? const Stream<AuthenticationStates>.empty(),
-        initialState: session('Siti'));
+  Future<void> open(WidgetTester tester) async {
     final router = GoRouter(initialLocation: '/dashboard', routes: [
       GoRoute(
           path: '/dashboard', builder: (_, __) => const BerandaNasabahPage()),
@@ -132,8 +120,10 @@ void main() {
               )),
     ]);
     addTearDown(router.dispose);
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: MaterialApp.router(routerConfig: router)));
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
+      MaterialApp.router(routerConfig: router),
+    ));
     await tester.pump();
   }
 
@@ -181,14 +171,12 @@ void main() {
 
   testWidgets('switching account discards an earlier pending home response',
       (tester) async {
-    final states = StreamController<AuthenticationStates>();
-    addTearDown(states.close);
     final old = Completer<NasabahHome>();
     repository.pending = old;
-    await open(tester, states: states.stream);
+    await open(tester);
     repository.pending = null;
     repository.fail = true;
-    states.add(session('Budi'));
+    auth.setStateForTest(session('Budi'));
     await tester.pumpAndSettle();
     old.complete(await PreviewNasabahRepository().home());
     await tester.pumpAndSettle();
@@ -196,16 +184,14 @@ void main() {
     expect(find.text('Budi'), findsOneWidget);
   });
   testWidgets('Tabungan hides private data after logout', (tester) async {
-    final states = StreamController<AuthenticationStates>();
-    addTearDown(states.close);
-    await open(tester, states: states.stream);
+    await open(tester);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Rp 12.500,50'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rp 12.500,50'));
     await tester.pumpAndSettle();
     expect(find.text('Tabungan Saya'), findsOneWidget);
-    states.add(Unauthenticated());
+    auth.setStateForTest(Unauthenticated());
     await tester.pumpAndSettle();
     expect(find.text('Rp 12.500,50'), findsNothing);
     expect(find.text('Silakan masuk sebagai nasabah.'), findsOneWidget);

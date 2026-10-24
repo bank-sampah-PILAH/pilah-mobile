@@ -2,7 +2,8 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 
 import 'stub_api.dart';
 
@@ -10,14 +11,24 @@ class MockImagePicker extends Mock implements ImagePicker {}
 
 class MockImageCropper extends Mock implements ImageCropper {}
 
-/// A real [ProfileCubit] over the real profile data source, with HTTP stubbed
-/// and the gallery/cropper platform plugins mocked.
-ProfileCubit buildProfileCubit(
+class TestProfileNotifier extends ProfileNotifier {
+  TestProfileNotifier(
+    super.dataSource,
+    super.picker,
+    super.cropper, {
+    super.isWeb,
+  });
+
+  void setStateForTest(ProfileState value) => state = value;
+}
+
+/// A real [ProfileNotifier] with HTTP stubbed and media plugins mocked.
+TestProfileNotifier buildProfileNotifier(
   StubApi api, {
   ImagePicker? picker,
   ImageCropper? cropper,
 }) =>
-    ProfileCubit(
+    TestProfileNotifier(
       ProfileRemoteDataSourceImpl(api.network),
       picker ?? MockImagePicker(),
       cropper ?? MockImageCropper(),
