@@ -162,7 +162,7 @@ class _HomeSessionState extends State<_HomeSession>
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                       children: [
                         _HomeGreeting(name: widget.name),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: AppButton(

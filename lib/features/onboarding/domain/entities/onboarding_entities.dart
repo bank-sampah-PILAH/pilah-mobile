@@ -1,7 +1,7 @@
+import 'dart:typed_data';
+
 // Request/result models for the real onboarding endpoints
 // (PUT /onboarding/profile, POST /onboarding/bank-sampah).
-
-import 'package:pilah_mobile/features/map/presentation/widgets/location_service.dart';
 
 class CompleteProfileRequest {
   final String nama;
@@ -42,20 +42,17 @@ class RegisterBankSampahRequest {
   final String? kota;
   final String noHpPic;
 
-  /// Absolute path to the selected `foto_kegiatan` image (sent as multipart).
-  final String fotoKegiatanPath;
-
-  /// Location the penguru picked on the map, optional (PIL-326). Absent
-  /// when the penguru skipped it; the backend stores both or neither.
-  final ({double latitude, double longitude})? lokasi;
+  /// Picker output sent as multipart on web and native platforms.
+  final Uint8List fotoKegiatanBytes;
+  final String fotoKegiatanFilename;
 
   const RegisterBankSampahRequest({
     required this.nama,
     required this.alamat,
     this.kota,
     required this.noHpPic,
-    required this.fotoKegiatanPath,
-    this.lokasi,
+    required this.fotoKegiatanBytes,
+    required this.fotoKegiatanFilename,
   });
 }
 
@@ -66,24 +63,14 @@ class BankSampahDirectoryEntity {
   final String nama;
   final String alamat;
   final String kota;
-
-  /// Parsed when the bank has coordinates (PIL-326); null otherwise. A bank
-  /// without a location always lists, it just cannot appear on the map.
-  final ({double latitude, double longitude})? lokasi;
   final String fotoLogo;
-
-  /// Distance from the search origin, as the backend's `jarak_km` string
-  /// (PIL-314); present only in coordinate+radius search mode.
-  final String? jarakKm;
 
   const BankSampahDirectoryEntity({
     required this.id,
     required this.nama,
     required this.alamat,
     required this.kota,
-    this.lokasi,
     required this.fotoLogo,
-    this.jarakKm,
   });
 
   factory BankSampahDirectoryEntity.fromJson(Map<String, dynamic> json) =>
@@ -92,9 +79,7 @@ class BankSampahDirectoryEntity {
         nama: json['nama']?.toString() ?? '',
         alamat: (json['alamat'] as String?) ?? '',
         kota: (json['kota'] as String?) ?? '',
-        lokasi: parseLokasi(json['latitude'], json['longitude']),
         fotoLogo: (json['foto_logo'] as String?) ?? '',
-        jarakKm: (json['jarak_km'] as String?),
       );
 }
 

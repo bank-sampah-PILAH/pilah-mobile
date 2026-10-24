@@ -320,21 +320,16 @@ void main() {
 
   group('directories', () {
     test('lists the bank sampah directory', () async {
-      api.on('GET', '/api/v1/bank-sampah', json: {
-        'count': 2,
-        'previous': null,
-        'next': null,
-        'results': [
-          {
-            'id': 'b1',
-            'nama': 'Bank Melati',
-            'alamat': 'Jl. 1',
-            'kota': 'Depok',
-            'foto_logo': 'https://img.test/l.png',
-          },
-          <String, dynamic>{},
-        ],
-      });
+      api.on('GET', '/api/v1/bank-sampah', json: [
+        {
+          'id': 'b1',
+          'nama': 'Bank Melati',
+          'alamat': 'Jl. 1',
+          'kota': 'Depok',
+          'foto_logo': 'https://img.test/l.png',
+        },
+        <String, dynamic>{},
+      ]);
 
       final outcome = await cubit.loadBankSampahDirectory();
 

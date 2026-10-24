@@ -58,8 +58,6 @@ htmlcov/
 reference/
 # Flutter coverage output
 coverage/
-htmlcov/
-.env.pr15-original
 
 # FVM Version Cache
 .fvm/

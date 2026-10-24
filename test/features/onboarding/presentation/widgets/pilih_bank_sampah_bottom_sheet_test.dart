@@ -9,14 +9,6 @@ import '../../../../support/stub_api.dart';
 
 const _path = '/api/v1/bank-sampah';
 
-// PIL-308 paginated the directory — stubs answer the envelope form.
-Map<String, dynamic> _page(List<dynamic> results) => {
-      'count': results.length,
-      'previous': null,
-      'next': null,
-      'results': results
-    };
-
 Map<String, dynamic> _bank(String id, String nama, {String kota = 'Depok'}) =>
     {'id': id, 'nama': nama, 'alamat': 'Jl. $nama', 'kota': kota};
 
@@ -27,11 +19,10 @@ void main() {
   setUp(() {
     api = StubApi();
     picked = null;
-    api.on('GET', _path,
-        json: _page([
-          _bank('b1', 'Bank Melati'),
-          _bank('b2', 'Bank Mawar', kota: ''),
-        ]));
+    api.on('GET', _path, json: [
+      _bank('b1', 'Bank Melati'),
+      _bank('b2', 'Bank Mawar', kota: ''),
+    ]);
   });
 
   Future<void> openSheet(WidgetTester tester,
@@ -76,16 +67,10 @@ void main() {
     await openSheet(tester);
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'Bank Melati');
+    await tester.enterText(find.byType(TextField), 'mawar');
     await tester.pump();
-    expect(find.text('Bank Mawar'), findsNothing);
-    expect(find.text('Depok · Jl. Bank Melati'), findsOneWidget);
-
-    // Matching by kota too — Mawar has an empty kota so only Melati matches.
-    await tester.enterText(find.byType(TextField), 'depok');
-    await tester.pump();
-    expect(find.text('Depok · Jl. Bank Melati'), findsOneWidget);
-    expect(find.text('Jl. Bank Mawar'), findsNothing);
+    expect(find.text('Bank Melati'), findsNothing);
+    expect(find.text('Bank Mawar'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'zzz');
     await tester.pump();
@@ -101,7 +86,7 @@ void main() {
   });
 
   testWidgets('an empty directory says so', (tester) async {
-    api.on('GET', _path, json: _page(const []));
+    api.on('GET', _path, json: <dynamic>[]);
     await openSheet(tester);
     await tester.pumpAndSettle();
 
@@ -115,7 +100,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Internal Server Error'), findsOneWidget);
 
-    api.on('GET', _path, json: _page([_bank('b1', 'Bank Melati')]));
+    api.on('GET', _path, json: [_bank('b1', 'Bank Melati')]);
     await tester.tap(find.text('Coba Lagi'));
     await tester.pumpAndSettle();
 

@@ -17,10 +17,6 @@ class BankSampahProfile {
   /// backend answered.
   final String? fotoLogo;
 
-  /// The bank's map coordinates (PIL-326), or null when the penguru has not
-  /// set them yet — a bank always lists, it just cannot appear on a map.
-  final ({double latitude, double longitude})? lokasi;
-
   const BankSampahProfile({
     required this.id,
     required this.nama,
@@ -29,7 +25,6 @@ class BankSampahProfile {
     required this.noHpPic,
     required this.status,
     this.fotoLogo,
-    this.lokasi,
   });
 }
 

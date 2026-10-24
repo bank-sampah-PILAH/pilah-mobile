@@ -146,8 +146,7 @@ void main() {
     'nasabah receives customer destinations rather than staff menus',
     (tester) async {
       await mount(tester, session('nasabah'));
-      expect(labels(tester),
-          ['Beranda', 'Tabungan', 'Jadwal', 'Bank Sampah', 'Profil']);
+      expect(labels(tester), ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
       expect(find.text('Nasabah'), findsNothing);
       expect(find.text('Aktivitas'), findsNothing);
     },
@@ -289,8 +288,7 @@ void main() {
     await mount(tester, session('nasabah'), approvalNotifier: approval);
     approval.setStateForTest(const NasabahApprovalLoaded([approved]));
     await tester.pumpAndSettle();
-    expect(labels(tester),
-        ['Beranda', 'Tabungan', 'Jadwal', 'Bank Sampah', 'Profil']);
+    expect(labels(tester), ['Beranda', 'Tabungan', 'Jadwal', 'Profil']);
     expect(find.text('body:/home'), findsOneWidget);
   });
 

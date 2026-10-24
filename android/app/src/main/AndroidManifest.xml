@@ -12,11 +12,6 @@
             <data android:scheme="https" />
         </intent>
     </queries>
-    <!-- geolocator (LocationService, PIL-326/330): user location is optional
-         and silently degrades when denied, but the permission must be
-         declared for the OS prompt to ever appear on Android. -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="Pilah Mobile"
         android:name="${applicationName}"

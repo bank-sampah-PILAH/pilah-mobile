@@ -3,13 +3,27 @@ import 'package:flutter/material.dart';
 /// Satu tujuan navigasi: ikon, label, dan branch StatefulShellRoute yang
 /// dituju.
 class RoleDestination {
-  const RoleDestination(this.branchIndex, this.icon, this.label);
+  const RoleDestination(
+    this.branchIndex,
+    this.icon,
+    this.label, {
+    this.inBottomBar = true,
+    this.disabled = false,
+  });
 
   /// Indeks branch pada StatefulShellRoute, bukan posisi pada menu. Keduanya
   /// berbeda: menu nasabah menampilkan branch 0, 5, 4, 7 pada posisi 0..3.
   final int branchIndex;
   final IconData icon;
   final String label;
+
+  /// `false` untuk destinasi yang hanya muat di rail dan drawer: bottom bar
+  /// tidak nyaman dengan lebih dari lima. Tujuannya tetap dapat dicapai di
+  /// aplikasi lewat jalan lain (Profil).
+  final bool inBottomBar;
+
+  /// A disabled destination stays visible but cannot be selected.
+  final bool disabled;
 }
 
 /// Sumber tunggal daftar destinasi per role.
@@ -33,8 +47,16 @@ abstract final class RoleDestinations {
   ///
   /// [limitedNasabah] hanya berlaku bagi nasabah yang keanggotaannya belum
   /// disetujui; bagi staff nilainya diabaikan.
+  ///
+  /// [bottomBar] menyaring destinasi yang tidak muat di bottom bar.
   static List<RoleDestination> forRole(String? role,
-          {bool limitedNasabah = false}) =>
+          {bool limitedNasabah = false, bool bottomBar = false}) =>
+      _forRole(role, limitedNasabah: limitedNasabah)
+          .where((destination) => !bottomBar || destination.inBottomBar)
+          .toList(growable: false);
+
+  static List<RoleDestination> _forRole(String? role,
+          {required bool limitedNasabah}) =>
       switch (role) {
         'nasabah' when limitedNasabah => _limitedNasabah,
         'nasabah' => _nasabah,
@@ -46,19 +68,18 @@ abstract final class RoleDestinations {
 
   /// Branch index setiap destinasi [role], berurutan sesuai tampilan.
   static List<int> branchIndicesFor(String? role,
-          {bool limitedNasabah = false}) =>
-      forRole(role, limitedNasabah: limitedNasabah)
+          {bool limitedNasabah = false, bool bottomBar = false}) =>
+      forRole(role, limitedNasabah: limitedNasabah, bottomBar: bottomBar)
           .map((destination) => destination.branchIndex)
           .toList(growable: false);
 }
 
 // Urutan branch StatefulShellRoute: dashboard, nasabah, harga, laporan,
-// jadwal, customer history, customer bank, profile, cari bank sampah.
+// jadwal, customer history, customer bank, profile, pengumuman.
 const _nasabah = <RoleDestination>[
   RoleDestination(0, Icons.home_outlined, 'Beranda'),
   RoleDestination(5, Icons.account_balance_wallet_outlined, 'Tabungan'),
   RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
-  RoleDestination(8, Icons.storefront_outlined, 'Bank Sampah'),
   RoleDestination(7, Icons.person_outline, 'Profil'),
 ];
 
@@ -73,4 +94,11 @@ const _staff = <RoleDestination>[
   RoleDestination(2, Icons.local_offer_outlined, 'Harga'),
   RoleDestination(3, Icons.insert_drive_file_outlined, 'Aktivitas'),
   RoleDestination(4, Icons.calendar_month_outlined, 'Jadwal'),
+  RoleDestination(
+    8,
+    Icons.campaign_outlined,
+    'Pengumuman',
+    inBottomBar: false,
+    disabled: true,
+  ),
 ];
