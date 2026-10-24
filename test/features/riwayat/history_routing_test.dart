@@ -217,7 +217,7 @@ void main() {
     await tester.tap(find.descendant(of: bar, matching: find.text('Profil')));
     await tester.pumpAndSettle();
     expect(find.text('preview@example.test'), findsOneWidget);
-    expect(tester.widget<BottomNavigationBar>(bar).currentIndex, 3);
+    expect(tester.widget<BottomNavigationBar>(bar).currentIndex, 4);
   });
 
   testWidgets(

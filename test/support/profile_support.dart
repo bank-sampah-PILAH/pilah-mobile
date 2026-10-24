@@ -69,7 +69,12 @@ void stubProfile(
           });
 }
 
-Map<String, dynamic> bankJson({Object? logo}) => {
+Map<String, dynamic> bankJson({
+  Object? logo,
+  Object? latitude,
+  Object? longitude,
+}) =>
+    {
       'id': 'bank-1',
       'nama': 'Bank Sampah BTH',
       'alamat': 'Kel. Kukusan',
@@ -77,4 +82,6 @@ Map<String, dynamic> bankJson({Object? logo}) => {
       'no_hp_pic': '+6281234567890',
       'status': 'active',
       if (logo != null) 'foto_logo': logo,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     };

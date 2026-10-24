@@ -689,4 +689,67 @@ void main() {
 
     expect(api.requests.length, greaterThan(before));
   });
+
+  testWidgets('a bank without coordinates shows the unset note, not a map',
+      (tester) async {
+    api.on('GET', '/api/v1/bank-sampah/me',
+        json: bankJson(latitude: null, longitude: null));
+    cubit = buildProfileCubit(api, picker: picker, cropper: cropper);
+    await openPage(tester);
+
+    expect(find.text('Belum diatur — ketuk untuk memilih di peta'),
+        findsOneWidget);
+    expect(find.byKey(const Key('mini_map_pin')), findsNothing);
+    // No pending pick yet: the button labels itself plain Edit.
+    expect(find.text('Edit'), findsOneWidget);
+  });
+
+  testWidgets('a stored coordinate renders the mini-map and opens the picker',
+      (tester) async {
+    api.on('GET', '/api/v1/bank-sampah/me',
+        json: bankJson(latitude: '-6.362829', longitude: '106.828655'));
+    cubit = buildProfileCubit(api, picker: picker, cropper: cropper);
+    await openPage(tester);
+
+    expect(find.byKey(const Key('mini_map_pin')), findsOneWidget);
+    // No pending pick: no "unsaved" hint under the map.
+    expect(find.text('Tekan Simpan Pengaturan untuk menerapkan lokasi.'),
+        findsNothing);
+
+    await tester.tap(find.byKey(const Key('edit_lokasi_peta')));
+    await tester.pumpAndSettle();
+
+    // The picker opened; its fields mirror the stored point (PIL-326).
+    expect(find.byKey(const Key('simpan_lokasi')), findsOneWidget);
+    final latField = tester
+        .widget<TextField>(find.byKey(const Key('latitude_field')))
+        .controller!;
+    expect(double.parse(latField.text), closeTo(-6.362829, 0.0001));
+  });
+
+  testWidgets('a picked point updates the map and labels the button unsaved',
+      (tester) async {
+    api.on('GET', '/api/v1/bank-sampah/me',
+        json: bankJson(latitude: '-6.362829', longitude: '106.828655'));
+    cubit = buildProfileCubit(api, picker: picker, cropper: cropper);
+    await openPage(tester);
+
+    await tester.tap(find.byKey(const Key('edit_lokasi_peta')));
+    await tester.pumpAndSettle();
+
+    // Move the pick somewhere else through the coordinate fields and Simpan.
+    await tester.enterText(
+        find.byKey(const Key('latitude_field')), '-6.900000');
+    await tester.enterText(
+        find.byKey(const Key('longitude_field')), '107.600000');
+    await tester.tap(find.byKey(const Key('simpan_lokasi')));
+    await tester.pumpAndSettle();
+
+    // The pending point wins over the stored one; the button renames and the
+    // apply hint appears.
+    expect(find.byKey(const Key('mini-map--6.9-107.6')), findsOneWidget);
+    expect(find.text('Edit lokasi belum disimpan'), findsOneWidget);
+    expect(find.text('Tekan Simpan Pengaturan untuk menerapkan lokasi.'),
+        findsOneWidget);
+  });
 }
