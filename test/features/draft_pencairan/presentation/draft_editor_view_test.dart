@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
@@ -16,10 +14,8 @@ import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activi
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_controls.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
@@ -27,7 +23,6 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
 
-import '../../../support/platform_fakes.dart';
 import '../../../support/pump_app.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}
@@ -115,6 +110,43 @@ void main() {
     await cubit.load('d-1');
     await _pump(tester);
   }
+
+  group('draft export is unavailable', () {
+    for (final size in [const Size(390, 844), const Size(1440, 900)]) {
+      testWidgets('new draft has no export action at ${size.width}px',
+          (tester) async {
+        await pumpNew(tester, size: size);
+
+        expect(find.byKey(const Key('menu-ekspor')), findsNothing);
+        expect(find.text('Ekspor'), findsNothing);
+        expect(find.byTooltip('Ekspor'), findsNothing);
+        expect(find.byKey(const Key('simpan')), findsOneWidget);
+        expect(find.byKey(const Key('konfirmasi')), findsOneWidget);
+        verifyNever(() => repository.exportDraft(any(), any()));
+        verifyNever(() => repository.exportPratinjau(any(), any()));
+      });
+
+      for (final status in [
+        DraftStatus.draft,
+        DraftStatus.dikonfirmasi,
+        DraftStatus.dibatalkan,
+      ]) {
+        testWidgets('saved $status has no export action at ${size.width}px',
+            (tester) async {
+          await pumpSaved(tester, status: status);
+          tester.view.physicalSize = size;
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(const Key('menu-ekspor')), findsNothing);
+          expect(find.text('Ekspor'), findsNothing);
+          expect(find.byTooltip('Ekspor'), findsNothing);
+          expect(find.byKey(const Key('kembali')), findsOneWidget);
+          verifyNever(() => repository.exportDraft(any(), any()));
+          verifyNever(() => repository.exportPratinjau(any(), any()));
+        });
+      }
+    }
+  });
 
   group('a new draft', () {
     testWidgets('has its name filled in from the start', (tester) async {
@@ -1054,20 +1086,6 @@ void main() {
       await tester.pump(const Duration(seconds: 10));
     });
 
-    testWidgets('an export that fails says so in a toast', (tester) async {
-      when(() => repository.exportDraft('d-1', ExportBerkas.xlsx))
-          .thenAnswer((_) async => Left(ConnectionTimeOutException()));
-      await pumpSaved(tester);
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ekspor-xlsx')));
-      await pumpToast(tester);
-
-      expect(find.text('Gagal'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 10));
-    });
-
     testWidgets('choosing Transfer on a card changes its metode',
         (tester) async {
       await pumpNew(tester);
@@ -1118,201 +1136,6 @@ void main() {
 
       expect(find.textContaining('disimpan terlebih dulu'), findsNothing);
       expect(find.byKey(const Key('konfirmasi-peringatan')), findsOneWidget);
-    });
-
-    testWidgets('the header has a labelled Ekspor button, not a three-dot menu',
-        (tester) async {
-      await pumpSaved(tester);
-
-      expect(find.byKey(const Key('menu-editor')), findsNothing);
-      expect(find.text('Ekspor'), findsOneWidget);
-      expect(find.byIcon(Icons.download_outlined), findsOneWidget);
-    });
-
-    testWidgets('Ekspor opens a white card with PDF and Excel rows',
-        (tester) async {
-      await pumpSaved(tester);
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('ekspor-pdf')), findsOneWidget);
-      expect(find.byKey(const Key('ekspor-xlsx')), findsOneWidget);
-      expect(find.text('PDF'), findsOneWidget);
-      expect(find.text('Excel'), findsOneWidget);
-      expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.table_chart_outlined), findsOneWidget);
-      expect(find.text('Batalkan draft'), findsNothing);
-      final menu = tester.widget<Material>(find
-          .ancestor(
-              of: find.byKey(const Key('ekspor-pdf')),
-              matching: find.byType(Material))
-          .first);
-      expect(menu.color, Colors.white);
-      expect(menu.surfaceTintColor, Colors.transparent);
-    });
-
-    testWidgets('a new draft can be exported as it stands, without saving',
-        (tester) async {
-      when(() => repository.exportPratinjau(any(), ExportBerkas.pdf))
-          .thenAnswer(
-              (_) => Completer<Either<NetworkException, DraftExport>>().future);
-      await pumpNew(tester);
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ekspor-pdf')));
-      await tester.pump();
-
-      final input = verify(
-              () => repository.exportPratinjau(captureAny(), ExportBerkas.pdf))
-          .captured
-          .single as DraftInput;
-      expect(input.nama, startsWith('Pencairan '),
-          reason: 'named from the start, so the file has a title');
-      expect(input.items, hasLength(3));
-      verifyNever(() => repository.createDraft(any()));
-      verifyNever(() => repository.exportDraft(any(), any()));
-    });
-
-    testWidgets('export asks the server for the chosen format', (tester) async {
-      // Never answers: the download itself is covered at the cubit level, and
-      // an answer would bring the save-and-share toasts into a layout test.
-      when(() => repository.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
-          (_) => Completer<Either<NetworkException, DraftExport>>().future);
-      await pumpSaved(tester);
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ekspor-pdf')));
-      await tester.pump();
-
-      verify(() => repository.exportDraft('d-1', ExportBerkas.pdf)).called(1);
-      expect(cubit.state.phase, EditorPhase.exporting);
-    });
-
-    testWidgets('a PDF opens in a preview first instead of being saved',
-        (tester) async {
-      DraftPdfPreviewPage.viewBuilder =
-          (_, bytes) => const Center(child: Text('halaman pdf'));
-      addTearDown(() => DraftPdfPreviewPage.viewBuilder = null);
-      // Answers at once, as a fast server does: nothing may get in the way.
-      when(() => repository.exportDraft('d-1', ExportBerkas.pdf))
-          .thenAnswer((_) async => Right(DraftExport(
-                bytes: Uint8List.fromList([1, 2, 3]),
-                filename: 'draft.pdf',
-              )));
-      await pumpSaved(tester);
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ekspor-pdf')));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DraftPdfPreviewPage), findsOneWidget);
-      expect(find.text('halaman pdf'), findsOneWidget);
-      expect(find.textContaining('Berkas disimpan'), findsNothing);
-    });
-
-    testWidgets(
-        'after coming back from the preview, Ekspor and back still work',
-        (tester) async {
-      DraftPdfPreviewPage.viewBuilder =
-          (_, bytes) => const Center(child: Text('halaman pdf'));
-      addTearDown(() => DraftPdfPreviewPage.viewBuilder = null);
-      when(() => repository.exportDraft('d-1', ExportBerkas.pdf))
-          .thenAnswer((_) async => Right(DraftExport(
-                bytes: Uint8List.fromList([1, 2, 3]),
-                filename: 'draft.pdf',
-              )));
-      await pumpSaved(tester);
-
-      for (var round = 0; round < 3; round++) {
-        await tester.tap(find.byKey(const Key('menu-ekspor')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('ekspor-pdf')));
-        await tester.pumpAndSettle();
-        expect(find.byType(DraftPdfPreviewPage), findsOneWidget,
-            reason: 'round $round');
-
-        await tester.tap(find.byKey(const Key('kembali')));
-        await tester.pumpAndSettle();
-        expect(find.byType(DraftPdfPreviewPage), findsNothing);
-      }
-    });
-
-    testWidgets('while the file is made the Ekspor button shows a spinner',
-        (tester) async {
-      when(() => repository.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
-          (_) => Completer<Either<NetworkException, DraftExport>>().future);
-      await pumpSaved(tester);
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ekspor-pdf')));
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byKey(const Key('ekspor-spinner')), findsOneWidget);
-      expect(find.text('Menyiapkan...'), findsOneWidget);
-      expect(find.text('Informasi'), findsNothing,
-          reason: 'no toast route that could be left behind');
-      // Busy: a second tap opens nothing.
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byKey(const Key('ekspor-pdf')), findsNothing);
-    });
-
-    testWidgets('Excel is still saved straight away, with no preview',
-        (tester) async {
-      final paths = installFakePathProvider(downloads: 'Download');
-      when(() => repository.exportDraft('d-1', ExportBerkas.xlsx))
-          .thenAnswer((_) async => Right(DraftExport(
-                bytes: Uint8List.fromList([1, 2, 3]),
-                filename: 'draft.xlsx',
-              )));
-      await pumpSaved(tester);
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ekspor-xlsx')));
-      for (var i = 0; i < 8; i++) {
-        await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 100)));
-        await tester.pump(const Duration(milliseconds: 200));
-      }
-
-      expect(find.byType(DraftPdfPreviewPage), findsNothing);
-      expect(File('${paths.downloads}/draft.xlsx').existsSync(), isTrue);
-      // Let the success toast run its course, a frame at a time.
-      for (var i = 0; i < 60; i++) {
-        await tester.pump(const Duration(milliseconds: 200));
-      }
-    });
-
-    testWidgets('unsaved edits are exported as they stand, and not saved',
-        (tester) async {
-      when(() => repository.exportPratinjau(any(), ExportBerkas.pdf))
-          .thenAnswer(
-              (_) => Completer<Either<NetworkException, DraftExport>>().future);
-      await pumpSaved(tester);
-      cubit.setNama('Belum disimpan');
-      await tester.pump();
-      await tester.pump();
-
-      await tester.tap(find.byKey(const Key('menu-ekspor')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('ekspor-pdf')));
-      await tester.pump();
-
-      final input = verify(
-              () => repository.exportPratinjau(captureAny(), ExportBerkas.pdf))
-          .captured
-          .single as DraftInput;
-      expect(input.nama, 'Belum disimpan');
-      verifyNever(() => repository.updateDraft(any(), any()));
-      verifyNever(() => repository.exportDraft(any(), any()));
-      expect(cubit.state.dirty, isTrue, reason: 'still unsaved');
     });
   });
 
