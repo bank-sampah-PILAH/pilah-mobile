@@ -1,4 +1,6 @@
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
+// CI benchmark scratch edit: pure comment, no behavior change.
+// second scratch line to widen the lib diff
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
