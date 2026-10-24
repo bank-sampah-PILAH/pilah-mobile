@@ -4,6 +4,8 @@ import unittest
 
 import yaml
 
+from scripts import select_ci_changes
+
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
@@ -21,6 +23,21 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("scripts/select_ci_changes.py", select["run"])
         self.assertIn("pull_request.base.sha", str(select["env"]))
         self.assertIn("event.before", str(select["env"]))
+
+    def test_flutter_jobs_use_the_shared_setup_action(self):
+        ci = workflow("ci.yml")
+        for name in ("quality", "test_shards", "changed_tests", "browser_tests"):
+            uses = [step.get("uses") for step in ci["jobs"][name]["steps"]]
+            self.assertIn("./.github/actions/setup-flutter", uses, f"{name} must use the composite setup action")
+            self.assertFalse(
+                [use for use in uses if use and use.startswith("subosito/")],
+                f"{name} should not inline the flutter action",
+            )
+        action = yaml.load(
+            (ROOT / ".github/actions/setup-flutter/action.yml").read_text(), Loader=yaml.BaseLoader
+        )
+        steps = [step.get("uses") or step.get("name") for step in action["runs"]["steps"]]
+        self.assertIn("subosito/flutter-action@v2", steps)
 
         selected = ci["jobs"]["changed_tests"]
         self.assertIn("needs.changes.outputs.has_vm_tests", selected["if"])
@@ -41,6 +58,11 @@ class CiPipelineTest(unittest.TestCase):
         tests = ci["jobs"]["test_shards"]
         self.assertIn("needs.changes.outputs.full_suite", tests["if"])
         self.assertEqual(tests["strategy"]["matrix"]["shard"], ["0", "1", "2", "3"])
+        # Keep the matrix and the selector's shard count in sync; the merge step
+        # asserts the artifact count against the same output.
+        self.assertEqual(
+            len(tests["strategy"]["matrix"]["shard"]), select_ci_changes.UNIT_TEST_SHARDS
+        )
         run_tests = next(
             step["run"] for step in tests["steps"] if step.get("name") == "Run tests with coverage"
         )
@@ -72,7 +94,8 @@ class CiPipelineTest(unittest.TestCase):
         self.assertIn("--fail-under=25", steps[diff_index]["run"])
         self.assertIn("--add-tracefile", steps[merge_index]["run"])
         self.assertIn('for tracefile in "${unit_tracefiles[@]}"', steps[merge_index]["run"])
-        self.assertIn("Expected 4 coverage shards", steps[merge_index]["run"])
+        self.assertIn("EXPECTED_SHARDS", str(steps[merge_index]["env"]))
+        self.assertIn('"$EXPECTED_SHARDS"', steps[merge_index]["run"])
         self.assertIn("p+0 >= 25", steps[global_index]["run"])
 
     def test_verify_accepts_only_intentionally_skipped_jobs(self):

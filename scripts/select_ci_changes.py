@@ -36,6 +36,10 @@ BROWSER_ONLY_TESTS = {
     "test/report_download_browser_test.dart",
 }
 
+# Shards the full VM suite is split into on staging/main pushes. Single source
+# for both the test_shards matrix and the coverage merge-step invariant.
+UNIT_TEST_SHARDS = 4
+
 
 def changed_paths(base, head, cwd=None):
     result = subprocess.run(
@@ -91,6 +95,22 @@ def is_web_diff(paths):
     return False
 
 
+def mirror_test_path(path):
+    """lib/features/foo/bar.dart -> candidate test/ mirrors, direct first.
+
+    PRs that change lib/ code without touching a test file would otherwise run
+    no VM tests at all; the sibling-mirror convention covers most features."""
+    if not path.startswith("lib/") or not path.endswith(".dart"):
+        return []
+    parts = path[len("lib/"):-len(".dart")].split("/")
+    candidates = ["test/" + "/".join(parts) + "_test.dart"]
+    # Some screens are tested at directory level, e.g. harga_page_test.dart
+    # beside harga_page.dart — the filename ends with the element kind.
+    if parts and parts[-1].endswith(("page", "widget", "view", "provider", "cubit", "bloc", "notifier")):
+        candidates.append("test/" + "/".join(parts[:-1]) + "_test.dart")
+    return candidates
+
+
 def is_full_suite(event_name, ref):
     return event_name == "push" and ref in {"refs/heads/staging", "refs/heads/main"}
 
@@ -127,6 +147,14 @@ def main():
     base, head, event_name, ref = _base_and_head()
     paths = changed_paths(base, head)
     vm_tests = select_vm_tests(paths)
+    # Also run sibling-mirror tests for changed lib/ sources, verified to exist
+    # at HEAD so a stale candidate never reaches the runner.
+    mirrored = set()
+    for path in paths:
+        for candidate in mirror_test_path(path):
+            if candidate not in vm_tests and os.path.isfile(candidate):
+                mirrored.add(candidate)
+    vm_tests = sorted(set(vm_tests) | mirrored)
     outputs = {
         "base_sha": base,
         "browser_test_files": json.dumps(select_browser_tests(paths), separators=(",", ":")),
@@ -134,6 +162,7 @@ def main():
         "full_suite": str(is_full_suite(event_name, ref)).lower(),
         "has_vm_tests": str(bool(vm_tests)).lower(),
         "test_files": json.dumps(vm_tests, separators=(",", ":")),
+        "unit_test_shards": str(UNIT_TEST_SHARDS),
         "web_changed": str(is_web_diff(paths)).lower(),
     }
     output_path = os.environ.get("GITHUB_OUTPUT")

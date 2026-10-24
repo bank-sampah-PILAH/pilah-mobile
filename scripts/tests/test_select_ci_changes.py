@@ -12,6 +12,7 @@ from scripts.select_ci_changes import (
     is_coverage_gate,
     is_full_suite,
     is_web_diff,
+    mirror_test_path,
     select_browser_tests,
     select_vm_tests,
 )
@@ -148,6 +149,51 @@ class SelectCiChangesTest(unittest.TestCase):
         self.assertTrue(is_full_suite("push", "refs/heads/main"))
         self.assertFalse(is_full_suite("push", "refs/heads/feature/mobile-ci-speed"))
         self.assertFalse(is_full_suite("pull_request", "refs/pull/164/merge"))
+
+    def test_mirror_candidates_cover_direct_and_directory_mirror(self):
+        self.assertEqual(
+            mirror_test_path("lib/features/harga/data/harga_repository.dart"),
+            ["test/features/harga/data/harga_repository_test.dart"],
+        )
+        self.assertEqual(
+            mirror_test_path("lib/features/harga/presentation/pages/harga_page.dart"),
+            [
+                "test/features/harga/presentation/pages/harga_page_test.dart",
+                "test/features/harga/presentation/pages_test.dart",
+            ],
+        )
+        self.assertEqual(mirror_test_path("web/index.html"), [])
+        self.assertEqual(
+            mirror_test_path("lib/main_development.dart"),
+            ["test/main_development_test.dart"],
+        )
+        self.assertEqual(mirror_test_path("lib/no_extension.txt"), [])
+
+    def test_main_runs_mirror_tests_for_changed_lib_sources(self):
+        import json
+
+        from scripts.select_ci_changes import UNIT_TEST_SHARDS, main as select_main
+
+        env = {
+            "GITHUB_EVENT_NAME": "pull_request",
+            "GITHUB_REF": "refs/pull/164/merge",
+            "GITHUB_SHA": "head",
+            "PR_BASE_SHA": "base",
+            "PR_HEAD_SHA": "head",
+        }
+        with patch.dict(os.environ, env, clear=True), patch(
+            "scripts.select_ci_changes.changed_paths",
+            return_value=["lib/features/harga/presentation/pages/harga_page.dart"],
+        ), patch.object(os.path, "isfile", side_effect=lambda path: "harga_page_test" in path):
+            with patch("builtins.print") as printed:
+                select_main()
+        output = json.loads(printed.call_args[0][0])
+        self.assertGreater(UNIT_TEST_SHARDS, 0)
+        self.assertEqual(output["unit_test_shards"], str(UNIT_TEST_SHARDS))
+        self.assertEqual(
+            output["test_files"],
+            json.dumps(["test/features/harga/presentation/pages/harga_page_test.dart"]),
+        )
 
 
 if __name__ == "__main__":

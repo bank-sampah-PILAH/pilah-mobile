@@ -29,6 +29,7 @@ jobs:
       full_suite: ${{ steps.select.outputs.full_suite }}
       has_vm_tests: ${{ steps.select.outputs.has_vm_tests }}
       test_files: ${{ steps.select.outputs.test_files }}
+      unit_test_shards: ${{ steps.select.outputs.unit_test_shards }}
       web_changed: ${{ steps.select.outputs.web_changed }}
     steps:
       - uses: actions/checkout@v4
@@ -50,12 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -63,16 +58,7 @@ jobs:
       - name: Install workflow test dependency
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
 
-      - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
-
-      # .env is gitignored but declared as an asset, so analyze needs it present.
-      - name: Prepare .env
-        run: cp .env.example .env
-
-      # Generated sources are gitignored and must exist for analyze/tests.
-      - name: Generate code (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs
+      - uses: ./.github/actions/setup-flutter
 
       # Scope to Dart source trees; bricks/ contains non-parseable Mustache templates.
       - name: dart format check
@@ -94,25 +80,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Shard list mirrors the unit_test_shards output; the coverage merge step
+      # asserts their count match, so neither can drift silently.
       matrix:
         shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
-
-      - name: Prepare .env
-        run: cp .env.example .env
-
-      - name: Generate code (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs
+      - uses: ./.github/actions/setup-flutter
 
       # Keep the generated DI graph in coverage; the graph test resolves each registration.
       - name: Measure coverage of the generated DI graph
@@ -139,20 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
-
-      - name: Prepare .env
-        run: cp .env.example .env
-
-      - name: Generate code (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs
+      - uses: ./.github/actions/setup-flutter
 
       - name: Measure coverage of the generated DI graph
         run: sed -i '/^\/\/ coverage:ignore-file$/d' lib/services/di.config.dart
@@ -186,20 +148,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
-
-      - name: Prepare .env
-        run: cp .env.example .env
-
-      - name: Generate code (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs
+      - uses: ./.github/actions/setup-flutter
 
       - name: Collect browser download coverage
         run: >-
@@ -287,11 +236,12 @@ jobs:
         env:
           FULL_SUITE: ${{ needs.changes.outputs.full_suite }}
           COVERAGE_GATES: ${{ needs.changes.outputs.coverage_gates }}
+          EXPECTED_SHARDS: ${{ needs.changes.outputs.unit_test_shards }}
         run: |
           mkdir -p coverage/units coverage/browser
           mapfile -t unit_tracefiles < <(find coverage/units -type f -name '*.info' -print | sort)
-          if [[ "$FULL_SUITE" == 'true' && "${#unit_tracefiles[@]}" -ne 4 ]]; then
-            echo "::error::Expected 4 coverage shards, found ${#unit_tracefiles[@]}."
+          if [[ "$FULL_SUITE" == 'true' && "${#unit_tracefiles[@]}" -ne "$EXPECTED_SHARDS" ]]; then
+            echo "::error::Expected $EXPECTED_SHARDS coverage shards (matching the test_shards matrix), found ${#unit_tracefiles[@]}."
             exit 1
           fi
           if ((${#unit_tracefiles[@]})); then
