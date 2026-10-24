@@ -1,17 +1,14 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
@@ -22,9 +19,7 @@ import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../support/stub_api.dart';
-
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../support/auth_support.dart';
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
@@ -50,12 +45,22 @@ class _HomeRepository extends PreviewNasabahRepository {
 }
 
 void main() {
-  late _Auth auth;
+  late TestAuthenticationNotifier auth;
   late _JadwalRepository jadwal;
   late StubApi api;
 
   setUp(() {
-    auth = _Auth();
+    auth = authNotifierIn(Authenticated(
+      authEntity: AuthEntity(
+        id: 'nasabah-1',
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'token',
+        role: 'nasabah',
+        nextStep: 'nasabah_dashboard',
+      ),
+    ));
     jadwal = _JadwalRepository();
     api = StubApi();
     api.on('GET', '/api/v1/nasabah/me/pengumuman/beranda', json: {
@@ -81,21 +86,6 @@ void main() {
       (_) async => const Right(
           JadwalPageResult(items: [], totalCount: 0, hasMore: false)),
     );
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
-      initialState: Authenticated(
-        authEntity: AuthEntity(
-          id: 'nasabah-1',
-          name: 'Siti',
-          email: 'siti@example.test',
-          photoUrl: '',
-          token: 'token',
-          role: 'nasabah',
-          nextStep: 'nasabah_dashboard',
-        ),
-      ),
-    );
     di.registerSingleton<JadwalRepository>(jadwal);
     di.registerSingleton<NasabahPengumumanRepository>(
         NasabahPengumumanRepository(api.network));
@@ -107,7 +97,6 @@ void main() {
     }
     await di.unregister<JadwalRepository>();
     await di.unregister<NasabahPengumumanRepository>();
-    await auth.close();
   });
 
   Future<void> pumpHome(
@@ -133,9 +122,9 @@ void main() {
         GoRoute(path: entry.key, builder: entry.value),
     ]);
     addTearDown(router.dispose);
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-      value: auth,
-      child: MaterialApp.router(routerConfig: router),
+    await tester.pumpWidget(withAuthenticationProvider(
+      auth,
+      MaterialApp.router(routerConfig: router),
     ));
     await tester.pumpAndSettle();
   }

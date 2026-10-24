@@ -24,9 +24,7 @@ Map<String, dynamic> _readSplConfig() {
 
     final trimmed = line.trim();
 
-    if (section == 'app' ||
-        section == 'storage' ||
-        section == 'state_management') {
+    if (section == 'app' || section == 'storage') {
       final idx = trimmed.indexOf(':');
       if (idx > 0) {
         config.putIfAbsent(section!, () => <String, String>{});
@@ -53,12 +51,11 @@ Map<String, dynamic> _readSplConfig() {
   return config;
 }
 
-void _addFeatureToConfig(String name,
-    {required String storage, required String state}) {
+void _addFeatureToConfig(String name, {required String storage}) {
   const path = 'spl.yaml';
   final content = File(path).readAsStringSync();
   File(path).writeAsStringSync(
-    '$content\n  - name: $name\n    status: active\n    storage: $storage\n    state: $state\n',
+    '$content\n  - name: $name\n    status: active\n    storage: $storage\n',
   );
 }
 
@@ -149,16 +146,6 @@ void _updateStorageDefaultInConfig(String provider) {
   File(path).writeAsStringSync(content);
 }
 
-void _updateStateDefaultInConfig(String solution) {
-  const path = 'spl.yaml';
-  File(path).writeAsStringSync(
-    File(path).readAsStringSync().replaceFirst(
-          RegExp(r'default: (bloc|cubit|riverpod)'),
-          'default: $solution',
-        ),
-  );
-}
-
 // ─── Mason integration ────────────────────────────────────────────────────────
 
 bool? _masonAvailable;
@@ -170,8 +157,7 @@ Future<bool> _checkMason() async {
   return _masonAvailable!;
 }
 
-Future<bool> _tryMasonFeature(String module,
-    {bool withStorage = false, String state = 'bloc'}) async {
+Future<bool> _tryMasonFeature(String module, {bool withStorage = false}) async {
   if (!await _checkMason()) return false;
   print('  Using Mason brick: feature');
   final r = await Process.run(
@@ -183,8 +169,6 @@ Future<bool> _tryMasonFeature(String module,
       module,
       '--with_storage',
       withStorage.toString(),
-      '--state',
-      state,
       '-o',
       '.',
       '--no-confirm'

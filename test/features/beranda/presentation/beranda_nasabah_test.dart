@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:ui' show SemanticsAction;
 import '../../../support/stub_api.dart';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
@@ -13,49 +12,41 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_state.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../support/approved_membership.dart';
+import '../../../support/auth_support.dart';
 import '../../../support/fake_riwayat.dart';
-
-class _AuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
 
 /// Counts calls to [home] so a pull-to-refresh test can assert the load ran
 /// again, without caring how many times the widget tree rebuilds.
 class _CountingNasabahRepository extends PreviewNasabahRepository {
   _CountingNasabahRepository({required super.bankName});
   int homeCalls = 0;
+  String balanceAmount = '12500.50';
 
   @override
   Future<NasabahHome> home({String? membershipId}) {
     homeCalls++;
     return super.home(membershipId: membershipId);
   }
+
+  @override
+  Future<NasabahBalance> balance(String membershipId) async =>
+      NasabahBalance(balanceAmount, null);
 }
-
-class _DashboardCubit extends MockCubit<DashboardState>
-    implements DashboardCubit {}
-
-class _ActivityCubit extends MockCubit<RecentActivityState>
-    implements RecentActivityCubit {}
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
@@ -119,10 +110,7 @@ void main() {
     String bankName = 'Bank Sampah Melati',
     NasabahRepository? repository,
   }) async {
-    final auth = _AuthBloc();
-    final sessions = StreamController<AuthenticationStates>();
-    final dashboard = _DashboardCubit();
-    final activity = _ActivityCubit();
+    final auth = authNotifierIn(Unauthenticated());
     final jadwalRepository = _JadwalRepository();
     final invites = InviteTokenStore();
     final payoutUseCases = _PayoutUseCases();
@@ -138,7 +126,7 @@ void main() {
       )),
     );
 
-    final approval = registerApprovedMembership();
+    final approval = buildApprovedMembershipNotifier();
     di.registerSingleton<AppEnvironment>(const _TestAppEnvironment());
     di.registerSingleton<InviteTokenStore>(invites);
     di.registerSingleton<NasabahRepository>(
@@ -152,33 +140,12 @@ void main() {
         NasabahPengumumanRepository(pengumumanApi.network));
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(payoutUseCases),
-    );
+    di.registerFactory<PencairanUseCases>(() => payoutUseCases);
     registerFakeRiwayat(riwayatFixture);
-    whenListen(auth, sessions.stream, initialState: Unauthenticated());
-    whenListen(
-      dashboard,
-      const Stream<DashboardState>.empty(),
-      initialState: const DashboardState(status: DashboardStatus.loaded),
-    );
-    whenListen(
-      activity,
-      const Stream<RecentActivityState>.empty(),
-      initialState: const RecentActivityLoaded([]),
-    );
-    when(() => dashboard.loadStats()).thenAnswer((_) async {});
-    when(() => activity.load()).thenAnswer((_) async {});
-
     addTearDown(() async {
-      await sessions.close();
-      await auth.close();
-      await dashboard.close();
-      await activity.close();
-      await unregisterApprovedMembership(approval);
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
-      await di.unregister<RiwayatPencairanCubit>();
+      await di.unregister<PencairanUseCases>();
       await unregisterFakeRiwayat();
       await di.unregister<NasabahRepository>();
       await di.unregister<JadwalRepository>();
@@ -187,25 +154,22 @@ void main() {
 
     router.go(LoginPage.route);
     await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: auth),
-          BlocProvider<DashboardCubit>.value(value: dashboard),
-          BlocProvider<RecentActivityCubit>.value(value: activity),
-        ],
-        child: MaterialApp.router(routerConfig: router),
+      ProviderScope(
+        overrides: [nasabahApprovalProvider.overrideWith(() => approval)],
+        child: withAuthenticationProvider(
+          auth,
+          MaterialApp.router(routerConfig: router),
+        ),
       ),
     );
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
 
     // Exercise the production login listener and router, not a test-only route.
-    sessions.add(Authenticated(authEntity: _nasabah(bankName)));
+    auth.setStateForTest(Authenticated(authEntity: _nasabah(bankName)));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.byType(LoginPage), findsNothing);
-    verifyNever(() => dashboard.loadStats());
-    verifyNever(() => activity.load());
   }
 
   group('PIL-225 beranda nasabah — first red slice', () {
@@ -347,6 +311,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.homeCalls, 2);
+    });
+
+    testWidgets('resuming refreshes the latest saldo from the server', (
+      tester,
+    ) async {
+      final repository =
+          _CountingNasabahRepository(bankName: 'Bank Sampah Melati');
+      await loginAsNasabah(tester, repository: repository);
+      expect(repository.homeCalls, 1);
+      expect(find.text('Rp 12.500,50'), findsOneWidget);
+
+      repository.balanceAmount = '25000.00';
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(repository.homeCalls, 2);
+      expect(find.text('Rp 12.500,50'), findsNothing);
+      expect(find.text('Rp 25.000'), findsOneWidget);
     });
   });
 }

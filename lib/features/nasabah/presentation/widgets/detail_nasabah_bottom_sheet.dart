@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
@@ -10,35 +11,33 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 
-class DetailNasabahBottomSheet extends StatefulWidget {
+class DetailNasabahBottomSheet extends ConsumerStatefulWidget {
   static const dragHandleKey = ValueKey('detail-drag-handle');
 
   /// Nasabah yang ditampilkan, memakai entity domain apa adanya.
   final NasabahEntity nasabah;
 
-  final NasabahCubit? nasabahCubit;
-
   const DetailNasabahBottomSheet({
     super.key,
     required this.nasabah,
-    this.nasabahCubit,
   });
 
   static const Color mintTint = AppColors.greenLight;
   static const Color errorColor = AppColors.danger;
 
   @override
-  State<DetailNasabahBottomSheet> createState() =>
+  ConsumerState<DetailNasabahBottomSheet> createState() =>
       _DetailNasabahBottomSheetState();
 }
 
-class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
+class _DetailNasabahBottomSheetState
+    extends ConsumerState<DetailNasabahBottomSheet> {
   Future<NasabahRingkasan?>? _ringkasanFuture;
 
   /// Menyamakan sedang berjalan; tombolnya nonaktif supaya tidak terkirim dua kali.
@@ -48,8 +47,8 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
   void initState() {
     super.initState();
     final id = widget.nasabah.id;
-    if (id.isNotEmpty && widget.nasabahCubit != null) {
-      _ringkasanFuture = widget.nasabahCubit!.fetchRingkasan(id);
+    if (id.isNotEmpty) {
+      _ringkasanFuture = ref.read(nasabahProvider.notifier).fetchRingkasan(id);
     }
   }
 
@@ -246,8 +245,6 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                       : AppButtonVariant.primary,
                   icon: isActive ? Icons.block : Icons.check_circle_outline,
                   onPressed: () {
-                    if (widget.nasabahCubit == null) return;
-
                     showDialog(
                       context: context,
                       builder: (context) => NasabahConfirmationDialog(
@@ -255,7 +252,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                         customerName: name,
                         customerId:
                             nasabah.id.isNotEmpty ? nasabah.id : idNasabah,
-                        nasabahCubit: widget.nasabahCubit!,
+                        nasabahNotifier: ref.read(nasabahProvider.notifier),
                       ),
                     );
                   },
@@ -402,9 +399,7 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
                     child: AppButton(
                       label: 'Samakan dengan data akun',
                       variant: AppButtonVariant.warningOutlined,
-                      onPressed: widget.nasabahCubit == null || _isSyncing
-                          ? null
-                          : _samakan,
+                      onPressed: _isSyncing ? null : _samakan,
                     ),
                   ),
                 ],
@@ -431,7 +426,9 @@ class _DetailNasabahBottomSheetState extends State<DetailNasabahBottomSheet> {
     final overlayContext = Navigator.of(context, rootNavigator: true).context;
     final sheetContext = context;
     setState(() => _isSyncing = true);
-    final error = await widget.nasabahCubit!.sinkronProfil(widget.nasabah.id);
+    final error = await ref
+        .read(nasabahProvider.notifier)
+        .sinkronProfil(widget.nasabah.id);
     if (!mounted || !sheetContext.mounted) return;
     setState(() => _isSyncing = false);
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
@@ -16,12 +16,10 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/widgets/pencairan_form_fields.dart';
-import 'package:pilah_mobile/services/di.dart';
-
 import '../../domain/model/pencairan.dart';
 import '../../domain/pencairan_validator.dart';
-import '../blocs/edit_pencairan_cubit.dart';
-import '../blocs/edit_pencairan_state.dart';
+import '../states/edit_pencairan_state.dart';
+import '../providers/edit_pencairan_provider.dart';
 
 /// Pengurus correct a recorded pencairan (PIL-230). Pops `true` once saved so
 /// the caller can reload; the backend recomputes saldo and later snapshots.
@@ -33,15 +31,10 @@ class EditPencairanPage extends StatelessWidget {
   const EditPencairanPage({super.key, required this.pencairan});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<EditPencairanCubit>(),
-      child: EditPencairanView(pencairan: pencairan),
-    );
-  }
+  Widget build(BuildContext context) => EditPencairanView(pencairan: pencairan);
 }
 
-class EditPencairanView extends StatefulWidget {
+class EditPencairanView extends ConsumerStatefulWidget {
   final Pencairan pencairan;
   final DateTime Function() now;
 
@@ -66,10 +59,10 @@ class EditPencairanView extends StatefulWidget {
   });
 
   @override
-  State<EditPencairanView> createState() => _EditPencairanViewState();
+  ConsumerState<EditPencairanView> createState() => _EditPencairanViewState();
 }
 
-class _EditPencairanViewState extends State<EditPencairanView> {
+class _EditPencairanViewState extends ConsumerState<EditPencairanView> {
   late final _nominalController =
       TextEditingController(text: widget.pencairan.nominal.toString());
   late final _keteranganController =
@@ -128,7 +121,7 @@ class _EditPencairanViewState extends State<EditPencairanView> {
       confirmLabel: 'Simpan',
     );
     if (!confirmed || !mounted) return;
-    await context.read<EditPencairanCubit>().submit(
+    await ref.read(editPencairanProvider.notifier).submit(
           EditPencairanRequest(
             id: widget.pencairan.id,
             nominal: nominal,
@@ -252,80 +245,77 @@ class _EditPencairanViewState extends State<EditPencairanView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<EditPencairanCubit, EditPencairanState>(
-      listener: _onState,
-      builder: (context, state) {
-        final nominal = _nominal;
-        final nominalError = PencairanValidator.nominalEdit(nominal);
-        final canSubmit = state.status != EditStatus.submitting &&
-            nominalError == null &&
-            _alasanController.text.trim().isNotEmpty;
+    ref.listen(
+        editPencairanProvider, (previous, state) => _onState(context, state));
+    final state = ref.watch(editPencairanProvider);
+    final nominal = _nominal;
+    final nominalError = PencairanValidator.nominalEdit(nominal);
+    final canSubmit = state.status != EditStatus.submitting &&
+        nominalError == null &&
+        _alasanController.text.trim().isNotEmpty;
 
-        final form = _buildForm(state, nominalError);
-        final submit = AppButton(
-          key: const Key('submit-edit-pencairan'),
-          label: state.status == EditStatus.submitting
-              ? 'Menyimpan...'
-              : 'Simpan Perubahan',
-          onPressed: canSubmit ? () => _confirmAndSubmit(nominal!) : null,
-        );
-        if (widget.embedded) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final form = _buildForm(state, nominalError);
+    final submit = AppButton(
+      key: const Key('submit-edit-pencairan'),
+      label: state.status == EditStatus.submitting
+          ? 'Menyimpan...'
+          : 'Simpan Perubahan',
+      onPressed: canSubmit ? () => _confirmAndSubmit(nominal!) : null,
+    );
+    if (widget.embedded) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.showHeader)
+            AppPanelHeader(
+              title: 'Edit Pencairan',
+              onClose: () => Navigator.of(context).maybePop(),
+            ),
+          Flexible(child: form),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: submit,
+          ),
+        ],
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        // A desktop window keeps the form to a readable column; the form
+        // scrolls across the body so its scrollbar is at the window edge.
+        child: ContentFrame(
+          maxWidth: LayoutBreakpoint.formMaxWidth,
+          child: Column(
             children: [
-              if (widget.showHeader)
-                AppPanelHeader(
-                  title: 'Edit Pencairan',
-                  onClose: () => Navigator.of(context).maybePop(),
+              const ContentInset(child: AppBackHeader(title: 'Edit Pencairan')),
+              Expanded(
+                child: Builder(
+                  builder: (context) => _buildForm(
+                    state,
+                    nominalError,
+                    inset: ContentFrame.insetOf(context),
+                  ),
                 ),
-              Flexible(child: form),
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: submit,
               ),
             ],
-          );
-        }
-
-        return Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            // A desktop window keeps the form to a readable column; the form
-            // scrolls across the body so its scrollbar is at the window edge.
-            child: ContentFrame(
-              maxWidth: LayoutBreakpoint.formMaxWidth,
-              child: Column(
-                children: [
-                  const ContentInset(
-                      child: AppBackHeader(title: 'Edit Pencairan')),
-                  Expanded(
-                    child: Builder(
-                      builder: (context) => _buildForm(
-                        state,
-                        nominalError,
-                        inset: ContentFrame.insetOf(context),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
-          // The save button keeps to the same column as the form, not the
-          // whole width of the window.
-          bottomNavigationBar: SafeArea(
-            child: ContentBounds(
-              maxWidth: LayoutBreakpoint.formMaxWidth,
-              heightFactor: 1,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: submit,
-              ),
-            ),
+        ),
+      ),
+      // The save button keeps to the same column as the form, not the
+      // whole width of the window.
+      bottomNavigationBar: SafeArea(
+        child: ContentBounds(
+          maxWidth: LayoutBreakpoint.formMaxWidth,
+          heightFactor: 1,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: submit,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

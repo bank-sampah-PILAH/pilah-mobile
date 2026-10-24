@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
@@ -8,50 +8,62 @@ import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/versi_harga.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/riwayat_harga_provider.dart';
 
 /// Riwayat harga satu jenis sampah sebagai linimasa, terbaru di atas.
 ///
 /// Hanya isinya, tanpa Scaffold, supaya sama di halaman, di panel samping, dan
-/// di bottom sheet. Membutuhkan [RiwayatHargaCubit] di atasnya.
-class RiwayatHargaContent extends StatefulWidget {
+/// di bottom sheet. Loads the shared auto-dispose Riverpod provider.
+class RiwayatHargaContent extends ConsumerStatefulWidget {
   const RiwayatHargaContent({super.key, required this.jenisId});
 
   final String jenisId;
 
   @override
-  State<RiwayatHargaContent> createState() => _RiwayatHargaContentState();
+  ConsumerState<RiwayatHargaContent> createState() =>
+      _RiwayatHargaContentState();
 }
 
-class _RiwayatHargaContentState extends State<RiwayatHargaContent> {
+class _RiwayatHargaContentState extends ConsumerState<RiwayatHargaContent> {
   @override
   void initState() {
     super.initState();
-    context.read<RiwayatHargaCubit>().load(widget.jenisId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(riwayatHargaProvider.notifier).load(widget.jenisId);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant RiwayatHargaContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.jenisId != widget.jenisId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(riwayatHargaProvider.notifier).load(widget.jenisId);
+        }
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RiwayatHargaCubit, RiwayatHargaState>(
-      builder: (context, state) {
-        final pageState = switch (state.status) {
-          RiwayatHargaStatus.loading => PageState.loading,
-          RiwayatHargaStatus.failure => PageState.error,
-          RiwayatHargaStatus.loaded =>
-            state.riwayat.isEmpty ? PageState.empty : PageState.ready,
-        };
-        return PageStateView(
-          state: pageState,
-          errorMessage: state.errorMessage,
-          onRetry: () => context.read<RiwayatHargaCubit>().load(widget.jenisId),
-          emptyTitle: 'Belum Ada Riwayat Harga',
-          emptySubtitle:
-              'Harga yang diatur untuk jenis ini akan tampil di sini.',
-          emptyIcon: Icons.history,
-          skeletonCount: 3,
-          child: _Timeline(riwayat: state.riwayat),
-        );
-      },
+    final state = ref.watch(riwayatHargaProvider);
+    final pageState = switch (state.status) {
+      RiwayatHargaStatus.loading => PageState.loading,
+      RiwayatHargaStatus.failure => PageState.error,
+      RiwayatHargaStatus.loaded =>
+        state.riwayat.isEmpty ? PageState.empty : PageState.ready,
+    };
+    return PageStateView(
+      state: pageState,
+      errorMessage: state.errorMessage,
+      onRetry: () =>
+          ref.read(riwayatHargaProvider.notifier).load(widget.jenisId),
+      emptyTitle: 'Belum Ada Riwayat Harga',
+      emptySubtitle: 'Harga yang diatur untuk jenis ini akan tampil di sini.',
+      emptyIcon: Icons.history,
+      skeletonCount: 3,
+      child: _Timeline(riwayat: state.riwayat),
     );
   }
 }

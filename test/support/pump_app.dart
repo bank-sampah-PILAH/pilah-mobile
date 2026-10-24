@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
 /// Pumps [home] inside a `MaterialApp.router` so widgets that call
 /// `context.pop()` / `context.push()` work. Extra [routes] can be registered to
@@ -12,6 +15,7 @@ Future<GoRouter> pumpRouted(
   Widget home, {
   List<String> extraRoutes = const [],
   Widget Function(Widget child)? wrap,
+  Widget Function(Widget child)? providerScopeBuilder,
   Size? size,
   bool pushed = false,
 }) async {
@@ -22,6 +26,7 @@ Future<GoRouter> pumpRouted(
     addTearDown(tester.view.resetDevicePixelRatio);
   }
   final router = GoRouter(
+    refreshListenable: AppRouterConfig.authStateRefreshListenable,
     // The app's root key, so `AppNotification.afterNavigation` finds a navigator.
     navigatorKey: rootNavigatorKey,
     routes: [
@@ -39,7 +44,17 @@ Future<GoRouter> pumpRouted(
     ],
   );
   addTearDown(router.dispose);
-  final app = MaterialApp.router(routerConfig: router);
+  final routerApp = Consumer(
+    builder: (context, ref, _) {
+      ref.listen(authenticationProvider, (_, __) {
+        AppRouterConfig.notifyAuthStateChanged();
+      });
+      return MaterialApp.router(routerConfig: router);
+    },
+  );
+  final app = ProviderScope(
+    child: providerScopeBuilder?.call(routerApp) ?? routerApp,
+  );
   await tester.pumpWidget(wrap == null ? app : wrap(app));
   await tester.pump();
   if (pushed) {

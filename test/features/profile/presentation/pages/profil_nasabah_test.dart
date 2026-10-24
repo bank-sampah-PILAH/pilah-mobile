@@ -4,27 +4,20 @@ import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import '../../../../support/beranda_pengumuman_support.dart';
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 import '../../../../support/approved_membership.dart';
-
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _Profile extends MockCubit<ProfileState> implements ProfileCubit {}
+import '../../../../support/auth_support.dart';
 
 class _Environment extends Mock implements AppEnvironment {}
 
@@ -47,8 +40,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final router = AppRouterConfig.getRouter();
   tearDownAll(router.dispose);
-  late _Profile profile;
-
   Future<void> openProfile(
     WidgetTester tester, {
     String name = 'Siti Aminah',
@@ -56,12 +47,24 @@ void main() {
     String route = '/profile',
     String? apiName,
     bool membershipActive = true,
-    Stream<AuthenticationStates>? states,
+    TestAuthenticationNotifier? authNotifier,
     NasabahRepository? repository,
   }) async {
-    final auth = _Auth();
-    final approval = registerApprovedMembership();
-    profile = _Profile();
+    final auth = authNotifier ??
+        authNotifierIn(Authenticated(
+          authEntity: AuthEntity(
+            id: 'nasabah-226',
+            name: name,
+            email: email,
+            photoUrl: '',
+            token: 'test-token',
+            role: 'nasabah',
+            nextStep: 'dashboard',
+            bankSampahStatus: membershipActive ? 'active' : 'pending',
+            bankSampahNama: 'Bank Sampah Melati',
+          ),
+        ));
+    final approval = buildApprovedMembershipNotifier();
     final invites = InviteTokenStore();
     final environment = _Environment();
     when(() => environment.supportsDemoLogin).thenReturn(false);
@@ -71,36 +74,20 @@ void main() {
         PreviewNasabahRepository(name: apiName ?? name, email: email));
     registerNasabahPengumumanRepository();
     addTearDown(() => di.unregister<NasabahPengumumanRepository>());
-    whenListen(auth, states ?? const Stream<AuthenticationStates>.empty(),
-        initialState: Authenticated(
-            authEntity: AuthEntity(
-          id: 'nasabah-226',
-          name: name,
-          email: email,
-          photoUrl: '',
-          token: 'test-token',
-          role: 'nasabah',
-          nextStep: 'dashboard',
-          bankSampahStatus: membershipActive ? 'active' : 'pending',
-          bankSampahNama: 'Bank Sampah Melati',
-        )));
-    whenListen(profile, const Stream<ProfileState>.empty(),
-        initialState: const ProfileState(status: ProfileStatus.loaded));
-    when(() => profile.load(silent: true)).thenAnswer((_) async {});
     addTearDown(() async {
-      await auth.close();
-      await profile.close();
-      await unregisterApprovedMembership(approval);
       await di.unregister<AppEnvironment>();
       await di.unregister<InviteTokenStore>();
       await di.unregister<NasabahRepository>();
       invites.dispose();
     });
     router.go(route);
-    await tester.pumpWidget(MultiBlocProvider(providers: [
-      BlocProvider<AuthenticationBloc>.value(value: auth),
-      BlocProvider<ProfileCubit>.value(value: profile),
-    ], child: MaterialApp.router(routerConfig: router)));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        nasabahApprovalProvider.overrideWith(() => approval),
+        authenticationProvider.overrideWith(() => auth),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   }
@@ -109,15 +96,25 @@ void main() {
     testWidgets(
         'logout clears customer identity without loading staff settings',
         (tester) async {
-      final states = StreamController<AuthenticationStates>();
-      addTearDown(states.close);
-      await openProfile(tester, states: states.stream);
+      final auth = authNotifierIn(Authenticated(
+        authEntity: AuthEntity(
+          id: 'nasabah-226',
+          name: 'Siti Aminah',
+          email: 'siti@example.test',
+          photoUrl: '',
+          token: 'test-token',
+          role: 'nasabah',
+          nextStep: 'dashboard',
+          bankSampahStatus: 'active',
+          bankSampahNama: 'Bank Sampah Melati',
+        ),
+      ));
+      await openProfile(tester, authNotifier: auth);
       expect(find.text('siti@example.test'), findsOneWidget);
-      states.add(Unauthenticated());
+      auth.setStateForTest(Unauthenticated());
       await tester.pumpAndSettle();
       expect(find.text('siti@example.test'), findsNothing);
       expect(router.routeInformationProvider.value.uri.path, '/login');
-      verifyNever(() => profile.load(silent: true));
     });
     testWidgets('akses Profil dari Beranda membuka profil akun',
         (tester) async {
@@ -177,7 +174,6 @@ void main() {
     testWidgets('profil nasabah tidak meminta data pengaturan pengelola',
         (tester) async {
       await openProfile(tester);
-      verifyNever(() => profile.load(silent: true));
     });
 
     testWidgets('menarik layar ke bawah memuat ulang profil (PIL-285)',

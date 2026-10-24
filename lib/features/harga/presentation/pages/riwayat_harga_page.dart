@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/riwayat_harga_content.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 /// Every price version of one jenis sampah, newest first (PIL-331).
 class RiwayatHargaPage extends StatelessWidget {
@@ -16,12 +13,8 @@ class RiwayatHargaPage extends StatelessWidget {
   const RiwayatHargaPage({super.key, required this.jenis});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<RiwayatHargaCubit>(),
-      child: RiwayatHargaView(jenisId: jenis.id, namaJenis: jenis.name),
-    );
-  }
+  Widget build(BuildContext context) =>
+      RiwayatHargaView(jenisId: jenis.id, namaJenis: jenis.name);
 }
 
 class RiwayatHargaView extends StatefulWidget {

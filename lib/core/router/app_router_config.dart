@@ -7,14 +7,14 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/ap
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
 import 'package:pilah_mobile/core/router/pending_invite.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
@@ -54,8 +54,20 @@ import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_d
 import 'package:pilah_mobile/features/onboarding/presentation/pages/splash_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
 
+class _AuthStateListenable extends ChangeNotifier {
+  void notifyAuthStateChanged() => notifyListeners();
+}
+
 class AppRouterConfig {
+  static final _AuthStateListenable _authStateChanges = _AuthStateListenable();
+
+  static Listenable get authStateRefreshListenable => _authStateChanges;
+
+  static void notifyAuthStateChanged() =>
+      _authStateChanges.notifyAuthStateChanged();
+
   static final GoRouter _router = GoRouter(
+    refreshListenable: _authStateChanges,
     initialLocation: SplashPage.route,
     navigatorKey: rootNavigatorKey,
     // Global redirect: bank an incoming invite token, then act on it.
@@ -81,15 +93,16 @@ class AppRouterConfig {
       final path = state.uri.path;
 
       final restore = sessionRestoreRedirect(
-        sessionChecked:
-            context.read<AuthenticationBloc>().state is! AuthenticationInitial,
+        sessionChecked: ProviderScope.containerOf(context, listen: false)
+            .read(authenticationProvider) is! AuthenticationInitial,
         path: path,
         query: state.uri.query,
       );
       if (restore != null) return restore;
 
       final signedOut = signedOutRedirect(
-        signedOut: context.read<AuthenticationBloc>().state is Unauthenticated,
+        signedOut: ProviderScope.containerOf(context, listen: false)
+            .read(authenticationProvider) is Unauthenticated,
         path: path,
       );
       if (signedOut != null) return signedOut;
@@ -111,7 +124,8 @@ class AppRouterConfig {
       // token keeps until there is an account to redeem it with, and `/invite`
       // falls through to its own redirect → splash → login. The login and
       // splash flows re-check the store once they have a user.
-      final authState = context.read<AuthenticationBloc>().state;
+      final authState = ProviderScope.containerOf(context, listen: false)
+          .read(authenticationProvider);
       if (authState is! Authenticated) return null;
 
       // `null` means this account can't redeem an invite at all — in which
@@ -274,7 +288,8 @@ class AppRouterConfig {
           // previous registration was rejected (bank_sampah_status ==
           // 'rejected'), not as a first-time onboarding step. The screen reads
           // the flag to swap the stepper for a rejection notice.
-          final authState = context.read<AuthenticationBloc>().state;
+          final authState = ProviderScope.containerOf(context, listen: false)
+              .read(authenticationProvider);
           final isRejected = authState is Authenticated &&
               authState.authEntity.bankSampahStatus == 'rejected';
           return RegisterBankSampahScreen(isRejectedReapplication: isRejected);
@@ -345,9 +360,9 @@ class AppRouterConfig {
               GoRoute(
                 path: DashboardPage.route,
                 name: DashboardPage.route,
-                builder: (context, state) =>
-                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-                  builder: (context, authState) {
+                builder: (context, state) => Consumer(
+                  builder: (context, ref, child) {
+                    final authState = ref.watch(authenticationProvider);
                     if (authState is! Authenticated) {
                       return const Scaffold(
                           body: Center(
@@ -395,9 +410,9 @@ class AppRouterConfig {
               GoRoute(
                 path: JadwalPage.route,
                 name: JadwalPage.route,
-                builder: (context, state) =>
-                    BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-                  builder: (context, authState) {
+                builder: (context, state) => Consumer(
+                  builder: (context, ref, child) {
+                    final authState = ref.watch(authenticationProvider);
                     if (authState is! Authenticated) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -454,7 +469,8 @@ class AppRouterConfig {
   static GoRouter getRouter() => _router;
 
   static String? _roleRedirect(BuildContext context, String path) {
-    final state = context.read<AuthenticationBloc>().state;
+    final state = ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider);
     if (state is! Authenticated) return null;
     final role = state.authEntity.role;
     final webRedirect = webRoleRedirect(

@@ -20,7 +20,7 @@ class NetworkService {
   }) {
     dio.interceptors.add(interceptors);
     // Added after the logger so a dropped GET is still logged, then quietly
-    // retried once before the failure ever reaches a cubit.
+    // retried once before the failure reaches state handling.
     dio.interceptors.add(RetryInterceptor(dio));
   }
 

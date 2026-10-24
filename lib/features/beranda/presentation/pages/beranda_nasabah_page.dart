@@ -10,9 +10,9 @@ import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_bank_detail.dart';
@@ -28,23 +28,22 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 
 /// Membership eligibility comes from the API, not the login bank status.
-class BerandaNasabahPage extends StatelessWidget {
+class BerandaNasabahPage extends ConsumerWidget {
   const BerandaNasabahPage({super.key});
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-        builder: (context, state) {
-          if (state is! Authenticated || state.authEntity.role != 'nasabah') {
-            return const Scaffold(
-                body: Center(child: Text('Silakan masuk sebagai nasabah.')));
-          }
-          final auth = state.authEntity;
-          return _HomeSession(
-              key: ObjectKey(auth),
-              repository: di<NasabahRepository>(),
-              name: auth.name);
-        },
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    if (state is! Authenticated || state.authEntity.role != 'nasabah') {
+      return const Scaffold(
+          body: Center(child: Text('Silakan masuk sebagai nasabah.')));
+    }
+    final auth = state.authEntity;
+    return _HomeSession(
+      key: ObjectKey(auth),
+      repository: di<NasabahRepository>(),
+      name: auth.name,
+    );
+  }
 }
 
 class _HomeSession extends StatefulWidget {
@@ -55,7 +54,8 @@ class _HomeSession extends StatefulWidget {
   State<_HomeSession> createState() => _HomeSessionState();
 }
 
-class _HomeSessionState extends State<_HomeSession> {
+class _HomeSessionState extends State<_HomeSession>
+    with WidgetsBindingObserver {
   String? _membershipId;
   int _selectionVersion = 0;
   Future<void> Function()? _reload;
@@ -70,16 +70,37 @@ class _HomeSessionState extends State<_HomeSession> {
     ]);
   }
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refresh().catchError((_) {}));
+    }
+  }
+
   void _select(String? id) => setState(() {
         _membershipId = id;
         _selectionVersion++;
       });
 
   void _details(String title, Widget body) {
-    final initial = context.read<AuthenticationBloc>().state;
+    final initial = ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider);
     final owner = initial is Authenticated ? initial.authEntity : null;
-    final guardedBody = BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-      builder: (context, current) {
+    final guardedBody = Consumer(
+      builder: (context, ref, child) {
+        final current = ref.watch(authenticationProvider);
         if (current is! Authenticated ||
             current.authEntity.id != owner?.id ||
             current.authEntity.email != owner?.email ||
@@ -328,7 +349,7 @@ class _HomeSessionState extends State<_HomeSession> {
 
 Future<JadwalEntity?> _loadNearestSchedule() async {
   final repository = di<JadwalRepository>();
-  final now = DateTime.now();
+  final now = clock.now();
   JadwalEntity? nearest;
   var pageNumber = 1;
   // ponytail: scans every upcoming page; add a server-side nearest query if
@@ -341,8 +362,9 @@ Future<JadwalEntity?> _loadNearestSchedule() async {
     );
     for (final schedule in page.items) {
       final start = schedule.mulaiPada.toLocal();
+      final end = schedule.selesaiPada.toLocal();
       if (schedule.isPublished &&
-          !start.isBefore(now) &&
+          !end.isBefore(now) &&
           (nearest == null || start.isBefore(nearest.mulaiPada.toLocal()))) {
         nearest = schedule;
       }

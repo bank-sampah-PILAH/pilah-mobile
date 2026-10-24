@@ -1,18 +1,19 @@
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 
-class NasabahListItem extends StatelessWidget {
+class NasabahListItem extends ConsumerWidget {
   /// Satu nasabah sebagaimana dikembalikan API, dipakai apa adanya.
   ///
   /// Sebelumnya widget ini menerima dua belas parameter lepas lalu menyusunnya
@@ -21,12 +22,9 @@ class NasabahListItem extends StatelessWidget {
   /// kesalahan namanya baru terlihat saat dijalankan.
   final NasabahEntity nasabah;
 
-  final NasabahCubit? nasabahCubit;
-
   const NasabahListItem({
     super.key,
     required this.nasabah,
-    this.nasabahCubit,
   });
 
   bool get isActive => nasabah.isActive;
@@ -46,25 +44,23 @@ class NasabahListItem extends StatelessWidget {
   String get _idUntukApi =>
       nasabah.id.isNotEmpty ? nasabah.id : nasabah.idNasabah;
 
-  void _onTap(BuildContext context) {
+  void _onTap(BuildContext context, WidgetRef ref) {
     if (isPending) {
-      _showDecisionDialog(context);
+      _showDecisionDialog(context, ref);
       return;
     }
     showAdaptiveSurface<void>(
       context,
       builder: (context) => DetailNasabahBottomSheet(
         nasabah: nasabah,
-        nasabahCubit: nasabahCubit,
       ),
     );
   }
 
   /// Approve/reject flow for pending submissions (PIL-188). Captured before
   /// any await so notifications survive the list reload rebuilding this item.
-  Future<void> _showDecisionDialog(BuildContext context) async {
-    final cubit = nasabahCubit;
-    if (cubit == null) return;
+  Future<void> _showDecisionDialog(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(nasabahProvider.notifier);
     final overlayContext = Navigator.of(context, rootNavigator: true).context;
 
     final reject = await _showActionSheet(context);
@@ -75,7 +71,7 @@ class NasabahListItem extends StatelessWidget {
       customerName: name,
     );
     if (catatan == null) return;
-    final error = await cubit.decideNasabah(
+    final error = await notifier.decideNasabah(
       _idUntukApi,
       approve: !reject,
       catatan: catatan,
@@ -135,9 +131,9 @@ class NasabahListItem extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppTappableCard(
-      onTap: () => _onTap(context),
+      onTap: () => _onTap(context, ref),
       child: Row(
         children: [
           Container(

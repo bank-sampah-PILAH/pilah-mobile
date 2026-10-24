@@ -2,38 +2,41 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/layout/app_page_header.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
 
 /// One filtered report and activity feed for Pengurus on mobile and web.
-class LaporanPage extends StatefulWidget {
+class LaporanPage extends ConsumerStatefulWidget {
   const LaporanPage({super.key, this.isWeb = kIsWeb});
 
   static const route = '/laporan';
   final bool isWeb;
 
   @override
-  State<LaporanPage> createState() => _LaporanPageState();
+  ConsumerState<LaporanPage> createState() => _LaporanPageState();
 }
 
-class _LaporanPageState extends State<LaporanPage> {
+class _LaporanPageState extends ConsumerState<LaporanPage> {
   final _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    context
-        .read<RiwayatAktivitasCubit>()
-        .load(pageSize: widget.isWeb ? 10 : null);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(riwayatAktivitasProvider.notifier)
+            .load(pageSize: widget.isWeb ? 10 : null);
+      }
+    });
   }
 
   @override
@@ -47,23 +50,20 @@ class _LaporanPageState extends State<LaporanPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<RiwayatAktivitasCubit, RiwayatAktivitasState>(
-      // Reset filter mengosongkan pencarian di state; kolomnya ikut kosong.
-      listenWhen: (a, b) => a.search != b.search,
-      listener: (context, state) {
-        if (_searchController.text != state.search) {
-          _searchController.text = state.search;
-        }
-      },
-      child: Scaffold(
-        backgroundColor:
-            WebContentSurface.pageColor(context, phone: Colors.white),
-        body: SafeArea(
-          // Wide: a data page, so only the table card scrolls. Phone: the whole
-          // page scrolls, across the body, so its scrollbar is at the edge.
-          child: ContentFrame(
-            child: _webPadding(context) ? _dataPage() : _phonePage(),
-          ),
+    ref.listen(riwayatAktivitasProvider, (previous, current) {
+      if (previous?.search != current.search &&
+          _searchController.text != current.search) {
+        _searchController.text = current.search;
+      }
+    });
+    return Scaffold(
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
+      body: SafeArea(
+        // Wide: a data page, so only the table card scrolls. Phone: the whole
+        // page scrolls, across the body, so its scrollbar is at the edge.
+        child: ContentFrame(
+          child: _webPadding(context) ? _dataPage() : _phonePage(),
         ),
       ),
     );
@@ -77,7 +77,7 @@ class _LaporanPageState extends State<LaporanPage> {
             search: CustomSearchField(
               hintText: 'Cari nama pelanggan...',
               controller: _searchController,
-              onChanged: context.read<RiwayatAktivitasCubit>().search,
+              onChanged: ref.read(riwayatAktivitasProvider.notifier).search,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -103,8 +103,9 @@ class _LaporanPageState extends State<LaporanPage> {
           ),
           Expanded(
             child: AppRefreshIndicator(
-              onRefresh: () =>
-                  context.read<RiwayatAktivitasCubit>().load(silent: true),
+              onRefresh: () => ref
+                  .read(riwayatAktivitasProvider.notifier)
+                  .load(silent: true),
               child: AktivitasListView(isWeb: widget.isWeb),
             ),
           ),
@@ -130,7 +131,7 @@ class _LaporanPageState extends State<LaporanPage> {
         ],
         body: AppRefreshIndicator(
           onRefresh: () =>
-              context.read<RiwayatAktivitasCubit>().load(silent: true),
+              ref.read(riwayatAktivitasProvider.notifier).load(silent: true),
           child: AktivitasListView(isWeb: widget.isWeb),
         ),
       );

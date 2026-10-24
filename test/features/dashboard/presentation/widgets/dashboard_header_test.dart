@@ -1,13 +1,14 @@
+import 'dart:ui' show SemanticsAction, Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
 
 import '../../../../support/auth_support.dart';
@@ -36,13 +37,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.light,
-      home: BlocProvider<AuthenticationBloc>.value(
-        value: authBlocIn(
-          Authenticated(authEntity: testAuth(name: 'Pengurus PILAH E2E')),
-        ),
-        child: const Scaffold(
+    await tester.pumpWidget(withAuthenticationProvider(
+      authNotifierIn(
+        Authenticated(authEntity: testAuth(name: 'Pengurus PILAH E2E')),
+      ),
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
           body: Padding(padding: EdgeInsets.all(16), child: DashboardHeader()),
         ),
       ),
@@ -59,13 +60,13 @@ void main() {
   testWidgets('the avatar is announced as a button that opens the profile',
       (tester) async {
     final handle = tester.ensureSemantics();
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.light,
-      home: BlocProvider<AuthenticationBloc>.value(
-        value: authBlocIn(
-          Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
-        ),
-        child: const Scaffold(
+    await tester.pumpWidget(withAuthenticationProvider(
+      authNotifierIn(
+        Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
+      ),
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
           body: Padding(padding: EdgeInsets.all(16), child: DashboardHeader()),
         ),
       ),
@@ -88,15 +89,10 @@ void main() {
       final router = GoRouter(routes: [
         GoRoute(
           path: '/',
-          builder: (_, __) => BlocProvider<AuthenticationBloc>.value(
-            value: authBlocIn(
-              Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
-            ),
-            child: Scaffold(
-              body: Padding(
-                padding: const EdgeInsets.all(16),
-                child: DashboardHeader(showProfile: showProfile),
-              ),
+          builder: (_, __) => Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: DashboardHeader(showProfile: showProfile),
             ),
           ),
         ),
@@ -106,25 +102,30 @@ void main() {
         ),
       ]);
       addTearDown(router.dispose);
-      await tester.pumpWidget(
-          MaterialApp.router(theme: AppTheme.light, routerConfig: router));
+      await tester.pumpWidget(withAuthenticationProvider(
+        authNotifierIn(
+          Authenticated(authEntity: testAuth(name: 'Siti Aminah')),
+        ),
+        MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+      ));
       await tester.pump();
       return router;
     }
 
-    testWidgets('a megaphone beside the avatar opens it, with a way back',
+    testWidgets('the disabled megaphone stays visible and does not navigate',
         (tester) async {
       final router = await pump(tester);
 
+      expect(find.bySemanticsLabel('Kelola pengumuman'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Kelola pengumuman'));
       await tester.pumpAndSettle();
 
-      expect(find.text('kelola pengumuman'), findsOneWidget);
-      expect(router.canPop(), isTrue,
-          reason: 'pushed, so back returns to the dashboard');
+      expect(find.text('kelola pengumuman'), findsNothing);
+      expect(router.routeInformationProvider.value.uri.path, '/');
+      expect(router.canPop(), isFalse);
     });
 
-    testWidgets('is announced as a button', (tester) async {
+    testWidgets('is announced as a disabled button', (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester);
 
@@ -132,10 +133,21 @@ void main() {
         of: find.byIcon(Icons.campaign_outlined),
         matching: find.byType(AppTapTarget),
       );
+      final iconContainer = tester.widget<Container>(
+        find.descendant(of: door, matching: find.byType(Container)),
+      );
       expect(
-        tester.getSemantics(door),
-        isSemantics(
-            label: 'Kelola pengumuman', isButton: true, hasTapAction: true),
+        (iconContainer.decoration as BoxDecoration).color,
+        AppColors.fill,
+      );
+      final semantics = tester.getSemantics(door).getSemanticsData();
+      expect(semantics.label, 'Kelola pengumuman');
+      expect(semantics.flagsCollection.isButton, isTrue);
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(semantics.hasAction(SemanticsAction.tap), isFalse);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.campaign_outlined)).color,
+        AppColors.grey100,
       );
       handle.dispose();
     });

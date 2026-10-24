@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_fields.dart';
 
-class TambahNasabahBottomSheet extends StatefulWidget {
+class TambahNasabahBottomSheet extends ConsumerStatefulWidget {
   const TambahNasabahBottomSheet({super.key});
 
   @override
-  State<TambahNasabahBottomSheet> createState() =>
+  ConsumerState<TambahNasabahBottomSheet> createState() =>
       _TambahNasabahBottomSheetState();
 }
 
@@ -21,7 +21,8 @@ class TambahNasabahBottomSheet extends StatefulWidget {
 /// on the backend degrades to a still-inline error rather than a global one.
 const _phoneErrorKeys = ['no_hp', 'no_whatsapp', 'phone'];
 
-class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
+class _TambahNasabahBottomSheetState
+    extends ConsumerState<TambahNasabahBottomSheet> {
   final _formKey = GlobalKey<FormState>();
 
   final _namaController = TextEditingController();
@@ -134,14 +135,15 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
   Future<void> _handleSimpan() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final cubit = context.read<NasabahCubit>();
+    final notifier = ref.read(nasabahProvider.notifier);
+    final state = ref.read(nasabahProvider);
     final kode = _idNasabahController.text.trim();
 
     // Uniqueness check, moved out of the inline validator: a duplicate ID gets a
     // full, readable message in a notification plus a red border on the field,
     // and still blocks the save.
-    if (cubit.state is NasabahLoaded) {
-      final list = (cubit.state as NasabahLoaded).nasabahList;
+    if (state is NasabahLoaded) {
+      final list = state.nasabahList;
       final isDuplicate = list
           .any((e) => e.idNasabah.trim().toLowerCase() == kode.toLowerCase());
       if (isDuplicate) {
@@ -167,7 +169,7 @@ class _TambahNasabahBottomSheetState extends State<TambahNasabahBottomSheet> {
       alamat: _alamatController.text.trim(),
     );
 
-    final error = await cubit.addNasabah(request);
+    final error = await notifier.addNasabah(request);
     if (!mounted) return;
     setState(() => _isSaving = false);
 

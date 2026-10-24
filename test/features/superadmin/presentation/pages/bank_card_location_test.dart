@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 
-/// PendingBankCard only touches the cubit when its approve/reject buttons are
-/// tapped, so a bare stub is enough to render it.
-class _StubSuperadminCubit extends Cubit<SuperadminState>
-    implements SuperadminCubit {
-  _StubSuperadminCubit() : super(SuperadminInitial());
-
+/// PendingBankCard only uses actions when approve/reject buttons are tapped.
+class _StubSuperadminActions implements SuperadminActions {
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -94,16 +88,15 @@ void main() {
   });
 
   group('PendingBankCard', () {
-    late _StubSuperadminCubit cubit;
+    late _StubSuperadminActions actions;
 
-    setUp(() => cubit = _StubSuperadminCubit());
-    tearDown(() => cubit.close());
+    setUp(() => actions = _StubSuperadminActions());
 
     Future<void> pumpPending(WidgetTester tester, BankSampahEntity bank) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(
-            child: PendingBankCard(bank: bank, cubit: cubit),
+            child: PendingBankCard(bank: bank, actions: actions),
           ),
         ),
       ));

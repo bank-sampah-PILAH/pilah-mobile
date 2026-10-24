@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
@@ -16,8 +16,8 @@ import 'package:pilah_mobile/design/layout/data_table_card.dart';
 import 'package:pilah_mobile/design/layout/page_state_view.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
@@ -26,8 +26,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasaba
 
 /// Daftar nasabah untuk layar lebar: tabel, bukan kartu satu kolom.
 ///
-/// Memakai [NasabahCubit] yang sama dengan layar telepon, jadi pencarian,
-/// penyaring, paginasi, dan seluruh aturan ubah data tidak digandakan.
+/// Uses the same [nasabahProvider] as the phone layout, so list behavior is shared.
 class NasabahTable extends StatelessWidget {
   static const headerKey = ValueKey('nasabah-table-header');
 
@@ -72,20 +71,19 @@ class NasabahTable extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<NasabahCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(nasabahProvider);
+    final notifier = ref.read(nasabahProvider.notifier);
     return AppPageHeader(
       title: 'Daftar Nasabah',
-      subtitle: BlocBuilder<NasabahCubit, NasabahState>(
-        builder: (context, state) => Text('${cubit.activeCount} nasabah aktif'),
-      ),
+      subtitle: Text('${notifier.activeCount} nasabah aktif'),
       search: CustomSearchField(
         hintText: 'Cari nama nasabah...',
-        onChanged: cubit.searchNasabah,
+        onChanged: notifier.searchNasabah,
       ),
       actions: [
         AppButton(
@@ -102,80 +100,71 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Toolbar extends StatelessWidget {
+class _Toolbar extends ConsumerWidget {
   const _Toolbar();
 
   @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<NasabahCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(nasabahProvider);
+    final notifier = ref.read(nasabahProvider.notifier);
+    final activeTab = state is NasabahLoaded
+        ? state.isActiveTab
+        : state is NasabahLoading
+            ? state.isActiveTab
+            : notifier.isActiveTab;
     return Align(
       alignment: Alignment.centerLeft,
-      child: BlocBuilder<NasabahCubit, NasabahState>(
-        buildWhen: (previous, current) =>
-            previous.runtimeType != current.runtimeType ||
-            (previous is NasabahLoaded &&
-                current is NasabahLoaded &&
-                previous.isActiveTab != current.isActiveTab),
-        builder: (context, state) => NasabahFilterChips(
-          activeTab: state is NasabahLoaded
-              ? state.isActiveTab
-              : state is NasabahLoading
-                  ? state.isActiveTab
-                  : cubit.isActiveTab,
-          onTabChanged: cubit.setActiveTab,
-        ),
+      child: NasabahFilterChips(
+        activeTab: activeTab,
+        onTabChanged: notifier.setActiveTab,
       ),
     );
   }
 }
 
-class _TableBody extends StatelessWidget {
+class _TableBody extends ConsumerWidget {
   const _TableBody({required this.isWeb});
   final bool isWeb;
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<NasabahCubit, NasabahState>(
-      builder: (context, state) {
-        if (state is NasabahLoading || state is NasabahInitial) {
-          return const _Skeleton();
-        }
-        if (state is NasabahError) {
-          return PageStateView(
-            state: PageState.error,
-            errorMessage: state.message,
-            onRetry: context.read<NasabahCubit>().loadNasabah,
-            child: const SizedBox.shrink(),
-          );
-        }
-        if (state is! NasabahLoaded) return const SizedBox.shrink();
-        if (state.nasabahList.isEmpty) return _Empty(state: state);
-        return _Loaded(state: state, isWeb: isWeb);
-      },
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(nasabahProvider);
+    if (state is NasabahLoading || state is NasabahInitial) {
+      return const _Skeleton();
+    }
+    if (state is NasabahError) {
+      return PageStateView(
+        state: PageState.error,
+        errorMessage: state.message,
+        onRetry: ref.read(nasabahProvider.notifier).loadNasabah,
+        child: const SizedBox.shrink(),
+      );
+    }
+    if (state is! NasabahLoaded) return const SizedBox.shrink();
+    if (state.nasabahList.isEmpty) return _Empty(state: state);
+    return _Loaded(state: state, isWeb: isWeb);
   }
 }
 
 /// Tabel dengan isi: kepala kolom, penanda muat ulang, dan daftar baris.
-class _Loaded extends StatelessWidget {
+class _Loaded extends ConsumerWidget {
   const _Loaded({required this.state, required this.isWeb});
   final NasabahLoaded state;
   final bool isWeb;
 
-  /// Cubit sendiri yang menolak permintaan ganda dan permintaan setelah
-  /// halaman terakhir, jadi di sini cukup memberi tahu.
-  bool _onScroll(BuildContext context, ScrollNotification notification) {
+  /// The notifier rejects duplicate requests and requests after the last page.
+  bool _onScroll(WidgetRef ref, ScrollNotification notification) {
     if (!isWeb &&
         state.hasMore &&
         !state.isLoadingMore &&
         _hampirUjung(notification)) {
-      context.read<NasabahCubit>().loadMoreNasabah();
+      ref.read(nasabahProvider.notifier).loadMoreNasabah();
     }
     return false;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         const _HeaderRow(),
@@ -191,7 +180,7 @@ class _Loaded extends StatelessWidget {
         ),
         Expanded(
           child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) => _onScroll(context, notification),
+            onNotification: (notification) => _onScroll(ref, notification),
             child: ListView.separated(
               // Halaman baru mulai dari atas, bukan di offset halaman lama.
               key: ValueKey(state.currentPage),
@@ -212,7 +201,7 @@ class _Loaded extends StatelessWidget {
               totalItems: state.totalCount,
               pageSize: state.pageSize,
               itemLabel: 'nasabah',
-              onPageChanged: context.read<NasabahCubit>().loadPage,
+              onPageChanged: ref.read(nasabahProvider.notifier).loadPage,
             ),
           ),
       ],
@@ -296,15 +285,15 @@ class _HeaderRow extends StatelessWidget {
   }
 }
 
-class _Row extends StatefulWidget {
+class _Row extends ConsumerStatefulWidget {
   const _Row({required this.nasabah});
   final NasabahEntity nasabah;
 
   @override
-  State<_Row> createState() => _RowState();
+  ConsumerState<_Row> createState() => _RowState();
 }
 
-class _RowState extends State<_Row> {
+class _RowState extends ConsumerState<_Row> {
   bool _hover = false;
 
   NasabahEntity get n => widget.nasabah;
@@ -312,12 +301,12 @@ class _RowState extends State<_Row> {
   String get _idUntukApi => n.id.isNotEmpty ? n.id : n.idNasabah;
 
   Future<void> _decide(bool reject) async {
-    final cubit = context.read<NasabahCubit>();
+    final notifier = ref.read(nasabahProvider.notifier);
     final overlay = Navigator.of(context, rootNavigator: true).context;
     final catatan = await showNasabahApprovalDialog(context,
         isApproving: !reject, customerName: n.name);
     if (catatan == null) return;
-    final error = await cubit.decideNasabah(_idUntukApi,
+    final error = await notifier.decideNasabah(_idUntukApi,
         approve: !reject, catatan: catatan);
     if (overlay.mounted && error != null) {
       AppNotification.showError(overlay,
@@ -327,8 +316,7 @@ class _RowState extends State<_Row> {
 
   void _open() => showAdaptiveSurface<void>(
         context,
-        builder: (_) => DetailNasabahBottomSheet(
-            nasabah: n, nasabahCubit: context.read<NasabahCubit>()),
+        builder: (_) => DetailNasabahBottomSheet(nasabah: n),
       );
 
   @override

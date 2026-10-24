@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,7 +13,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/providers/edit_pencairan_provider.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
@@ -59,24 +59,28 @@ void main() {
     final results = <Object?>[];
     final record = pencairan ?? _pencairan;
     await tester.pumpWidget(
-      MaterialApp(
-        navigatorKey: rootNavigatorKey,
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () async => results.add(
-              await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider(
-                    create: (_) => EditPencairanCubit(useCases),
-                    child: EditPencairanView(
+      ProviderScope(
+        overrides: [
+          editPencairanProvider.overrideWith(
+            () => EditPencairanNotifier(useCases),
+          ),
+        ],
+        child: MaterialApp(
+          navigatorKey: rootNavigatorKey,
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => results.add(
+                await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => EditPencairanView(
                       pencairan: record,
                       now: () => _now,
                     ),
                   ),
                 ),
               ),
+              child: const Text('buka'),
             ),
-            child: const Text('buka'),
           ),
         ),
       ),
@@ -478,20 +482,24 @@ void main() {
 
   testWidgets('the embedded header closes the surface it sits in',
       (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      navigatorKey: rootNavigatorKey,
-      home: Builder(
-        builder: (context) => TextButton(
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => BlocProvider(
-              create: (_) => EditPencairanCubit(useCases),
-              child: Scaffold(
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        editPencairanProvider.overrideWith(
+          () => EditPencairanNotifier(useCases),
+        ),
+      ],
+      child: MaterialApp(
+        navigatorKey: rootNavigatorKey,
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => Scaffold(
                 body: EditPencairanView(
                     pencairan: _pencairan, embedded: true, now: () => _now),
               ),
-            ),
-          )),
-          child: const Text('buka'),
+            )),
+            child: const Text('buka'),
+          ),
         ),
       ),
     ));

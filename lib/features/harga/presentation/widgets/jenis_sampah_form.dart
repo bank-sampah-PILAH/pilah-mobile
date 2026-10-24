@@ -5,7 +5,7 @@ import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/wa_template_renderer.dart';
@@ -14,8 +14,8 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/ubah_harga.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/states/harga_state.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_confirmation_dialog.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_jenis.dart';
 
@@ -32,21 +32,16 @@ import 'package:pilah_mobile/features/harga/presentation/widgets/pesan_simpan_je
 /// Itu sebabnya form ini tidak pernah memanggil `context.pop()` sendiri. Pop
 /// hanya benar untuk sheet; panel berada inline di dalam body halaman dan
 /// ditutup dengan melepas pilihan. Keduanya diberitahu lewat [onSaved].
-class JenisSampahForm extends StatefulWidget {
+class JenisSampahForm extends ConsumerStatefulWidget {
   const JenisSampahForm({
     super.key,
     required this.onSaved,
     this.initialData,
-    this.hargaCubit,
     this.now = DateTime.now,
   });
 
   /// Jenis sampah yang sedang diubah, atau null untuk menambah yang baru.
   final HargaEntity? initialData;
-
-  /// Cubit yang dipakai. Bila null dibaca dari context, sehingga panel yang
-  /// sudah berada di dalam provider tidak perlu meneruskannya.
-  final HargaCubit? hargaCubit;
 
   /// Sumber waktu "sekarang", dapat diganti di test.
   final DateTime Function() now;
@@ -64,10 +59,10 @@ class JenisSampahForm extends StatefulWidget {
       initial == null ? 'Tambah Jenis Sampah' : 'Edit Jenis Sampah';
 
   @override
-  State<JenisSampahForm> createState() => _JenisSampahFormState();
+  ConsumerState<JenisSampahForm> createState() => _JenisSampahFormState();
 }
 
-class _JenisSampahFormState extends State<JenisSampahForm> {
+class _JenisSampahFormState extends ConsumerState<JenisSampahForm> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _kodeSampahController;
@@ -354,9 +349,9 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
     if (value == null || value.trim().isEmpty) {
       return _wajibDiisi;
     }
-    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
-    if (cubit.state is HargaLoaded) {
-      final list = (cubit.state as HargaLoaded).jenisSampahList;
+    final state = ref.read(hargaProvider);
+    if (state is HargaLoaded) {
+      final list = state.jenisSampahList;
       final isDuplicate = list.any((e) =>
           e.kodeSampah.trim().toLowerCase() == value.trim().toLowerCase() &&
           e.id != widget.initialData?.id);
@@ -382,7 +377,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
           message: message));
 
   Future<void> _handleToggleStatus() async {
-    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+    final notifier = ref.read(hargaProvider.notifier);
     final id = widget.initialData!.id;
     final wasActive = _isActive;
     final generasi = _generasiBaris;
@@ -399,8 +394,8 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
 
     setState(() => _isSaving = true);
     final error = wasActive
-        ? await cubit.deactivateHarga(id)
-        : await cubit.activateHarga(id);
+        ? await notifier.deactivateHarga(id)
+        : await notifier.activateHarga(id);
     if (!mounted) {
       if (error == null) _kabarkanTanpaForm(_pesanStatus(wasActive));
       return;
@@ -446,7 +441,7 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
   Future<void> _handleSimpan() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final cubit = widget.hargaCubit ?? context.read<HargaCubit>();
+    final notifier = ref.read(hargaProvider.notifier);
     final isEditMode = _isEditMode;
 
     final int priceVal = int.tryParse(_priceController.text) ?? 0;
@@ -475,12 +470,12 @@ class _JenisSampahFormState extends State<JenisSampahForm> {
 
     setState(() => _isSaving = true);
     var error = isEditMode
-        ? await cubit.updateHarga(harga)
-        : await cubit.addHarga(harga);
+        ? await notifier.updateHarga(harga)
+        : await notifier.addHarga(harga);
     // Harga tidak ikut PUT: setiap perubahan harga dicatat sebagai versi baru.
     var hanyaHargaGagal = false;
     if (error == null && hargaBerubah) {
-      error = await cubit.ubahHarga(UbahHarga(
+      error = await notifier.ubahHarga(UbahHarga(
         id: harga.id,
         harga: priceVal,
         berlakuMulai: berlakuMulai,

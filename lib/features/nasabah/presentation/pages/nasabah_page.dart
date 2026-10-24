@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
@@ -30,15 +30,15 @@ class NasabahPage extends StatelessWidget {
   }
 }
 
-class _NasabahPageBody extends StatefulWidget {
+class _NasabahPageBody extends ConsumerStatefulWidget {
   const _NasabahPageBody({required this.isWeb});
   final bool isWeb;
 
   @override
-  State<_NasabahPageBody> createState() => _NasabahPageBodyState();
+  ConsumerState<_NasabahPageBody> createState() => _NasabahPageBodyState();
 }
 
-class _NasabahPageBodyState extends State<_NasabahPageBody> {
+class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
   void _tambahNasabah() => showAdaptiveSurface<void>(
         context,
         builder: (context) => const TambahNasabahBottomSheet(),
@@ -48,13 +48,19 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
   void initState() {
     super.initState();
     // Load with the authenticated session when the tab is first opened.
-    context.read<NasabahCubit>().loadNasabah(
-          pageSize: widget.isWeb ? 10 : null,
-        );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(nasabahProvider.notifier).loadNasabah(
+              pageSize: widget.isWeb ? 10 : null,
+            );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(nasabahProvider);
+    final notifier = ref.read(nasabahProvider.notifier);
     if (context.layoutBreakpoint != LayoutBreakpoint.compact) {
       return Scaffold(
         backgroundColor:
@@ -97,26 +103,20 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                       ),
                     ),
                   ),
-                  BlocBuilder<NasabahCubit, NasabahState>(
-                    builder: (context, state) {
-                      final activeCount =
-                          context.read<NasabahCubit>().activeCount;
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.greenLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$activeCount aktif',
-                          style: AppTextStyle.small.copyWith(
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    },
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenLight,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${notifier.activeCount} aktif',
+                      style: AppTextStyle.small.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                   if (widget.isWeb)
                     IconButton(
@@ -132,39 +132,29 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
               CustomSearchField(
                 hintText: 'Cari nama nasabah...',
                 onChanged: (value) {
-                  context.read<NasabahCubit>().searchNasabah(value);
+                  notifier.searchNasabah(value);
                 },
               ),
               const SizedBox(height: 16),
 
               // Filter Chips
-              BlocBuilder<NasabahCubit, NasabahState>(
-                buildWhen: (previous, current) {
-                  if (previous is NasabahLoaded && current is NasabahLoaded) {
-                    return previous.isActiveTab != current.isActiveTab;
-                  }
-                  return true;
-                },
-                builder: (context, state) {
-                  final isActiveTab = state is NasabahLoaded
-                      ? state.isActiveTab
-                      : state is NasabahLoading
-                          ? state.isActiveTab
-                          : context.read<NasabahCubit>().isActiveTab;
-                  final chips = NasabahFilterChips(
-                    activeTab: isActiveTab,
-                    onTabChanged: (value) {
-                      context.read<NasabahCubit>().setActiveTab(value);
-                    },
-                  );
-                  return widget.isWeb
-                      ? SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: chips,
-                        )
-                      : chips;
-                },
-              ),
+              Builder(builder: (context) {
+                final isActiveTab = state is NasabahLoaded
+                    ? state.isActiveTab
+                    : state is NasabahLoading
+                        ? state.isActiveTab
+                        : notifier.isActiveTab;
+                final chips = NasabahFilterChips(
+                  activeTab: isActiveTab,
+                  onTabChanged: notifier.setActiveTab,
+                );
+                return widget.isWeb
+                    ? SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: chips,
+                      )
+                    : chips;
+              }),
               const SizedBox(height: 16),
 
               // List View
@@ -173,131 +163,118 @@ class _NasabahPageBodyState extends State<_NasabahPageBody> {
                   children: [
                     Expanded(
                       child: AppRefreshIndicator(
-                        onRefresh: () => context
-                            .read<NasabahCubit>()
-                            .loadNasabah(silent: true),
-                        child: BlocBuilder<NasabahCubit, NasabahState>(
-                          builder: (context, state) {
-                            if (state is NasabahLoading ||
-                                state is NasabahInitial) {
-                              return ListView.separated(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.only(bottom: 80),
-                                itemCount: 5,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) =>
-                                    const SkeletonListItem(),
-                              );
-                            }
+                        onRefresh: () => notifier.loadNasabah(silent: true),
+                        child: Builder(builder: (context) {
+                          if (state is NasabahLoading ||
+                              state is NasabahInitial) {
+                            return ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.only(bottom: 80),
+                              itemCount: 5,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) =>
+                                  const SkeletonListItem(),
+                            );
+                          }
 
-                            if (state is NasabahLoaded) {
-                              final customers = state.nasabahList;
+                          if (state is NasabahLoaded) {
+                            final customers = state.nasabahList;
 
-                              final Widget content;
-                              if (customers.isEmpty) {
-                                if (state.searchQuery.isNotEmpty) {
-                                  content = const EmptyView(
-                                    title: 'Nasabah Tidak Ditemukan',
-                                    subtitle: 'Coba kata kunci yang berbeda',
-                                    icon: Icons.search_off,
-                                  );
-                                } else {
-                                  content = EmptyView(
-                                    title: state.isMenungguTab
-                                        ? 'Tidak Ada Pengajuan'
-                                        : state.isActiveTab!
-                                            ? 'Belum Ada Nasabah'
-                                            : 'Tidak Ada Nasabah Nonaktif',
-                                    subtitle: state.isMenungguTab
-                                        ? 'Belum ada pengajuan keanggotaan yang menunggu persetujuan.'
-                                        : state.isActiveTab!
-                                            ? 'Tekan tombol + untuk menambah nasabah pertama.'
-                                            : 'Semua nasabah masih berstatus aktif.',
-                                    icon: state.isMenungguTab
-                                        ? Icons.hourglass_empty
-                                        : state.isActiveTab!
-                                            ? Icons.people_outline
-                                            : Icons.person_off_outlined,
-                                  );
-                                }
+                            final Widget content;
+                            if (customers.isEmpty) {
+                              if (state.searchQuery.isNotEmpty) {
+                                content = const EmptyView(
+                                  title: 'Nasabah Tidak Ditemukan',
+                                  subtitle: 'Coba kata kunci yang berbeda',
+                                  icon: Icons.search_off,
+                                );
                               } else {
-                                content = NasabahPagedListView(
-                                  items: customers,
-                                  hasMore: !widget.isWeb && state.hasMore,
-                                  isLoadingMore:
-                                      !widget.isWeb && state.isLoadingMore,
-                                  onLoadMore: () => context
-                                      .read<NasabahCubit>()
-                                      .loadMoreNasabah(),
-                                  nasabahCubit: context.read<NasabahCubit>(),
+                                content = EmptyView(
+                                  title: state.isMenungguTab
+                                      ? 'Tidak Ada Pengajuan'
+                                      : state.isActiveTab!
+                                          ? 'Belum Ada Nasabah'
+                                          : 'Tidak Ada Nasabah Nonaktif',
+                                  subtitle: state.isMenungguTab
+                                      ? 'Belum ada pengajuan keanggotaan yang menunggu persetujuan.'
+                                      : state.isActiveTab!
+                                          ? 'Tekan tombol + untuk menambah nasabah pertama.'
+                                          : 'Semua nasabah masih berstatus aktif.',
+                                  icon: state.isMenungguTab
+                                      ? Icons.hourglass_empty
+                                      : state.isActiveTab!
+                                          ? Icons.people_outline
+                                          : Icons.person_off_outlined,
                                 );
                               }
+                            } else {
+                              content = NasabahPagedListView(
+                                items: customers,
+                                hasMore: !widget.isWeb && state.hasMore,
+                                isLoadingMore:
+                                    !widget.isWeb && state.isLoadingMore,
+                                onLoadMore: notifier.loadMoreNasabah,
+                              );
+                            }
 
-                              return Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  content,
-                                  Positioned(
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    child: SizedBox(
-                                      height: 2,
-                                      child: AnimatedSwitcher(
-                                        duration:
-                                            const Duration(milliseconds: 200),
-                                        switchInCurve: Curves.easeOut,
-                                        switchOutCurve: Curves.easeIn,
-                                        child: state.isReloading
-                                            ? const LinearProgressIndicator(
-                                                key: ValueKey('reloading'),
-                                                minHeight: 2,
-                                                color: AppColors.greenDark,
-                                                backgroundColor:
-                                                    AppColors.greenLight,
-                                              )
-                                            : const SizedBox.shrink(
-                                                key: ValueKey('idle'),
-                                              ),
-                                      ),
+                            return Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                content,
+                                Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: SizedBox(
+                                    height: 2,
+                                    child: AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 200),
+                                      switchInCurve: Curves.easeOut,
+                                      switchOutCurve: Curves.easeIn,
+                                      child: state.isReloading
+                                          ? const LinearProgressIndicator(
+                                              key: ValueKey('reloading'),
+                                              minHeight: 2,
+                                              color: AppColors.greenDark,
+                                              backgroundColor:
+                                                  AppColors.greenLight,
+                                            )
+                                          : const SizedBox.shrink(
+                                              key: ValueKey('idle'),
+                                            ),
                                     ),
                                   ),
-                                ],
-                              );
-                            }
+                                ),
+                              ],
+                            );
+                          }
 
-                            // Rendered as a scrollable EmptyView rather than a blank
-                            // box so a failed load can be retried by pulling down.
-                            if (state is NasabahError) {
-                              return EmptyView(
-                                title: 'Gagal Memuat Data',
-                                subtitle: state.message,
-                                icon: Icons.error_outline,
-                              );
-                            }
+                          // Rendered as a scrollable EmptyView rather than a blank
+                          // box so a failed load can be retried by pulling down.
+                          if (state is NasabahError) {
+                            return EmptyView(
+                              title: 'Gagal Memuat Data',
+                              subtitle: state.message,
+                              icon: Icons.error_outline,
+                            );
+                          }
 
-                            return const SizedBox.shrink();
-                          },
-                        ),
+                          return const SizedBox.shrink();
+                        }),
                       ),
                     ),
-                    if (widget.isWeb)
-                      BlocBuilder<NasabahCubit, NasabahState>(
-                        builder: (context, state) => state is NasabahLoaded
-                            ? Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                child: WebPaginationBar(
-                                  currentPage: state.currentPage,
-                                  totalItems: state.totalCount,
-                                  pageSize: state.pageSize,
-                                  itemLabel: 'nasabah',
-                                  onPageChanged:
-                                      context.read<NasabahCubit>().loadPage,
-                                ),
-                              )
-                            : const SizedBox.shrink(),
+                    if (widget.isWeb && state is NasabahLoaded)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: WebPaginationBar(
+                          currentPage: state.currentPage,
+                          totalItems: state.totalCount,
+                          pageSize: state.pageSize,
+                          itemLabel: 'nasabah',
+                          onPageChanged: notifier.loadPage,
+                        ),
                       ),
                   ],
                 ),

@@ -1,16 +1,16 @@
 // ignore_for_file: avoid_print
 /// SPL Manager — Software Product Line CLI for Flutter Clean Architecture
 ///
-/// Variability points:
+/// Variability:
 ///   Storage (OR)       — one or more backends, each registered with @Named
-///   State Mgmt (OR)    — global default, per-feature override allowed
+///   State management   — Riverpod only
 ///
 /// Usage:
 ///   dart run codegen/spl_manager.dart <command> [args]
 ///
 /// Commands:
 ///   list
-///   add <name> [name2 ...] [--with-storage] [--storage <provider>] [--with-test] [--shell-route] [--state bloc|cubit|riverpod]
+///   add <name> [name2 ...] [--with-storage] [--storage <provider>] [--with-test] [--shell-route]
 ///   disable <name> [name2 ...]           Move feature(s) to catalog (keeps code, unwires DI)
 ///   enable <name> [name2 ...]            Restore feature(s) from catalog (wires DI)
 ///   remove <name> [name2 ...] [--yes|-y] Hard delete
@@ -18,8 +18,6 @@
 ///   storage remove <provider>
 ///   storage default <provider>
 ///   storage list
-///   state set <solution>       bloc|cubit|riverpod
-///   state list
 ///   fix
 library;
 
@@ -45,11 +43,12 @@ void main(List<String> args) async {
       await _cmdList();
 
     case 'add':
+      if (args.any(
+        (arg) => arg == '--state' || arg.startsWith('--state='),
+      )) {
+        _die('State management is fixed to Riverpod; remove --state.');
+      }
       // Global defaults from flags
-      final stateIdx = args.indexOf('--state');
-      final globalState = stateIdx != -1 && stateIdx + 1 < args.length
-          ? args[stateIdx + 1]
-          : null;
       final storageIdx = args.indexOf('--storage');
       final globalStorageOverride =
           storageIdx != -1 && storageIdx + 1 < args.length
@@ -63,21 +62,19 @@ void main(List<String> args) async {
       final specs = <String>[];
       for (var i = 1; i < args.length; i++) {
         if (args[i].startsWith('-')) continue;
-        if (stateIdx != -1 && i == stateIdx + 1) continue;
         if (storageIdx != -1 && i == storageIdx + 1) continue;
         specs.add(args[i]);
       }
       if (specs.isEmpty)
         _die(
-          'Usage: add <name>[,storage=<p>][,state=<s>][,test][,shell] [name2[,...]] ...\n'
+          'Usage: add <name>[,storage=<p>][,test][,shell] [name2[,...]] ...\n'
           '  Global flags (apply to all unless overridden inline):\n'
-          '    --with-storage  --storage <provider>  --with-test  --shell-route  --state <s>',
+          '    --with-storage  --storage <provider>  --with-test  --shell-route',
         );
       for (final spec in specs) {
         final f = _parseFeatureSpec(spec,
             globalStorageOverride: globalStorageOverride,
             globalWithStorage: globalWithStorage,
-            globalState: globalState,
             globalWithTest: globalWithTest,
             globalShellRoute: globalShellRoute);
         await _cmdAdd(f.name,
@@ -85,7 +82,6 @@ void main(List<String> args) async {
             storageOverride: f.storageOverride,
             withTest: f.withTest,
             shellRoute: f.shellRoute,
-            stateOverride: f.stateOverride,
             runDi: false);
       }
       print('\n  Wiring DI (build_runner)...');
@@ -148,17 +144,6 @@ void main(List<String> args) async {
         default:
           _die(
               'Unknown storage subcommand: ${args[1]}\nValid: add | remove | default | list');
-      }
-
-    case 'state':
-      if (args.length < 2) _die('Usage: state set <solution> | state list');
-      if (args[1] == 'set') {
-        if (args.length < 3) _die('Usage: state set <bloc|cubit|riverpod>');
-        _cmdStateSet(args[2]);
-      } else if (args[1] == 'list') {
-        _cmdStateList();
-      } else {
-        _die('Unknown state subcommand: ${args[1]}');
       }
 
     case 'fix':

@@ -1,103 +1,92 @@
 import 'dart:async';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import '../../../../support/jadwal_provider_support.dart';
 
-class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
+Widget _app(JadwalNotifier notifier) => ProviderScope(
+      overrides: [jadwalProvider.overrideWith(() => notifier)],
+      child: const MaterialApp(home: JadwalPage()),
+    );
 
-void _stubManagerLoads(_MockJadwalCubit cubit) {
-  when(() => cubit.loadJadwal(date: any(named: 'date')))
-      .thenAnswer((_) async {});
-  when(
-    () => cubit.loadCalendarDates(
-      startDate: any(named: 'startDate'),
-      endDate: any(named: 'endDate'),
-    ),
-  ).thenAnswer((_) async {});
-  when(() => cubit.loadUpcomingDates()).thenAnswer((_) async {});
-}
+TestJadwalNotifier _testNotifier(
+  JadwalState state, {
+  Future<NetworkException?> Function(String id, String action)? onChangeStatus,
+}) =>
+    TestJadwalNotifier(
+      repository: UnusedJadwalRepository(),
+      initialState: state,
+      onChangeStatus: onChangeStatus,
+    );
 
 void main() {
   setUpAll(() => registerFallbackValue(DateTime(2000)));
 
   testWidgets('draft schedule can be published from the management list',
       (tester) async {
-    final cubit = _MockJadwalCubit();
+    final changes = <(String, String)>[];
     final schedule = _schedule(status: 'draft');
-    when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
-    _stubManagerLoads(cubit);
-    when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
-
-    await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
-      ),
-    );
+    await tester.pumpWidget(_app(_testNotifier(
+      JadwalLoaded([schedule]),
+      onChangeStatus: (id, action) async {
+        changes.add((id, action));
+        return null;
+      },
+    )));
     await tester.pump();
 
     expect(find.text('Terbitkan'), findsOneWidget);
     await tester.tap(find.text('Terbitkan'));
     await tester.pump();
 
-    verify(() => cubit.changeStatus('jadwal-1', 'terbitkan')).called(1);
+    expect(changes, [('jadwal-1', 'terbitkan')]);
   });
 
   testWidgets('draft schedule confirms cancellation before transitioning',
       (tester) async {
-    final cubit = _MockJadwalCubit();
-    when(() => cubit.state)
-        .thenReturn(JadwalLoaded([_schedule(status: 'draft')]));
-    _stubManagerLoads(cubit);
-    when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
-
-    await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
-      ),
-    );
+    final changes = <(String, String)>[];
+    await tester.pumpWidget(_app(_testNotifier(
+      JadwalLoaded([_schedule(status: 'draft')]),
+      onChangeStatus: (id, action) async {
+        changes.add((id, action));
+        return null;
+      },
+    )));
     await tester.pump();
 
     await tester.tap(find.text('Batalkan'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AlertDialog), findsOneWidget);
-    verifyNever(() => cubit.changeStatus(any(), any()));
+    expect(changes, isEmpty);
 
     await tester.tap(find.text('Ya, batalkan'));
     await tester.pumpAndSettle();
 
-    verify(() => cubit.changeStatus('jadwal-1', 'batalkan')).called(1);
+    expect(changes, [('jadwal-1', 'batalkan')]);
   });
 
   testWidgets('published schedule confirms cancellation and reports failures',
       (tester) async {
-    final cubit = _MockJadwalCubit();
+    final changes = <(String, String)>[];
     final schedule = _schedule(status: 'diterbitkan');
-    when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
-    _stubManagerLoads(cubit);
-    when(() => cubit.changeStatus(any(), any())).thenAnswer(
-      (_) async => GeneralException(message: 'offline'),
-    );
-
-    await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
-      ),
-    );
+    await tester.pumpWidget(_app(_testNotifier(
+      JadwalLoaded([schedule]),
+      onChangeStatus: (id, action) async {
+        changes.add((id, action));
+        return GeneralException(message: 'offline');
+      },
+    )));
     await tester.pump();
 
     expect(find.text('Batalkan'), findsOneWidget);
@@ -107,11 +96,11 @@ void main() {
 
     expect(find.byType(AlertDialog), findsOneWidget);
     expect(find.text('Ya, batalkan'), findsOneWidget);
-    verifyNever(() => cubit.changeStatus(any(), any()));
+    expect(changes, isEmpty);
 
     await tester.tap(find.text('Kembali'));
     await tester.pumpAndSettle();
-    verifyNever(() => cubit.changeStatus(any(), any()));
+    expect(changes, isEmpty);
 
     await tester.tap(find.text('Batalkan'));
     await tester.pumpAndSettle();
@@ -119,7 +108,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    verify(() => cubit.changeStatus('jadwal-1', 'batalkan')).called(1);
+    expect(changes, [('jadwal-1', 'batalkan')]);
     expect(find.text('offline'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
@@ -127,18 +116,14 @@ void main() {
 
   testWidgets('published schedule confirms completion before transitioning',
       (tester) async {
-    final cubit = _MockJadwalCubit();
-    final schedule = _schedule(status: 'diterbitkan');
-    when(() => cubit.state).thenReturn(JadwalLoaded([schedule]));
-    _stubManagerLoads(cubit);
-    when(() => cubit.changeStatus(any(), any())).thenAnswer((_) async => null);
-
-    await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
-      ),
-    );
+    final changes = <(String, String)>[];
+    await tester.pumpWidget(_app(_testNotifier(
+      JadwalLoaded([_schedule(status: 'diterbitkan')]),
+      onChangeStatus: (id, action) async {
+        changes.add((id, action));
+        return null;
+      },
+    )));
     await tester.pump();
 
     await tester.tap(find.text('Tandai Selesai'));
@@ -146,18 +131,18 @@ void main() {
 
     expect(find.byType(AlertDialog), findsOneWidget);
     expect(find.text('Ya, selesaikan'), findsOneWidget);
-    verifyNever(() => cubit.changeStatus(any(), any()));
+    expect(changes, isEmpty);
 
     await tester.tap(find.text('Kembali'));
     await tester.pumpAndSettle();
-    verifyNever(() => cubit.changeStatus(any(), any()));
+    expect(changes, isEmpty);
 
     await tester.tap(find.text('Tandai Selesai'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ya, selesaikan'));
     await tester.pumpAndSettle();
 
-    verify(() => cubit.changeStatus('jadwal-1', 'selesaikan')).called(1);
+    expect(changes, [('jadwal-1', 'selesaikan')]);
   });
 
   testWidgets('disables lifecycle actions during a pending transition',
@@ -175,14 +160,12 @@ void main() {
         .thenAnswer((_) async => const Right(<DateTime>{}));
     when(() => repository.transition('jadwal-1', 'terbitkan'))
         .thenAnswer((_) => transition.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
 
     await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
-      ),
+      ProviderScope(
+          overrides: [jadwalProvider.overrideWith(() => cubit)],
+          child: const MaterialApp(home: JadwalPage())),
     );
     await tester.pumpAndSettle();
 
@@ -233,14 +216,12 @@ void main() {
         .thenAnswer((_) async => const Right(<DateTime>{}));
     when(() => repository.updateJadwal(schedule))
         .thenAnswer((_) => save.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
 
     await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
-      ),
+      ProviderScope(
+          overrides: [jadwalProvider.overrideWith(() => cubit)],
+          child: const MaterialApp(home: JadwalPage())),
     );
     await tester.pumpAndSettle();
 
@@ -292,14 +273,12 @@ void main() {
         .thenAnswer((_) async => const Right(<DateTime>{}));
     when(() => repository.transition('jadwal-1', 'terbitkan'))
         .thenAnswer((_) => transition.future);
-    final cubit = JadwalCubit(repository);
-    addTearDown(cubit.close);
+    final cubit = JadwalNotifier(repository);
 
     await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage()),
-      ),
+      ProviderScope(
+          overrides: [jadwalProvider.overrideWith(() => cubit)],
+          child: const MaterialApp(home: JadwalPage())),
     );
     await tester.pumpAndSettle();
 

@@ -9,7 +9,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import '../../domain/model/draft_pencairan.dart';
-import '../blocs/draft_editor_state.dart';
+import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
 import 'pencairan_ui.dart';
 import 'potongan_control.dart';

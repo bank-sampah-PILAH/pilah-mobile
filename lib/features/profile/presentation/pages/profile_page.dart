@@ -7,7 +7,8 @@ import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
@@ -21,17 +22,18 @@ import 'package:pilah_mobile/design/layout/content_frame.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/navigation_form.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/profile/domain/entities/profile_entities.dart';
 import 'package:pilah_mobile/features/profile/domain/wa_template_preview.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_state.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/states/profile_state.dart';
 import 'package:pilah_mobile/features/profile/presentation/widgets/wa_variable_chips.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key, this.isWeb});
 
   /// Mengganti `kIsWeb`, supaya test dapat memilih bentuk web atau aplikasi.
@@ -39,12 +41,10 @@ class ProfilePage extends StatelessWidget {
 
   static const route = AppLocations.profile;
 
-  // [ProfileCubit] is app-scoped and provided in [App]; loading is kicked off
-  // from _ProfileView's initState so the request carries the authenticated
-  // session rather than firing at cold start.
+  // Profile state is app-scoped; loading starts in _ProfileView after login.
   @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AuthenticationBloc>().state;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
     final role = state is Authenticated ? state.authEntity.role : null;
     if (role == 'nasabah') return const ProfilNasabahPage();
     if (role == 'pengelola' || role == 'pengelola_induk') {
@@ -58,16 +58,16 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class _ProfileView extends StatefulWidget {
+class _ProfileView extends ConsumerStatefulWidget {
   const _ProfileView({required this.isWeb});
 
   final bool isWeb;
 
   @override
-  State<_ProfileView> createState() => _ProfileViewState();
+  ConsumerState<_ProfileView> createState() => _ProfileViewState();
 }
 
-class _ProfileViewState extends State<_ProfileView>
+class _ProfileViewState extends ConsumerState<_ProfileView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _waController = TextEditingController();
@@ -105,7 +105,7 @@ class _ProfileViewState extends State<_ProfileView>
       _namaBankController.text != _baseNama ||
       _alamatBankController.text != _baseAlamat ||
       _hpBankController.text != _baseHp ||
-      context.read<ProfileCubit>().state.selectedLogoBytes != null;
+      ref.read(profileProvider).selectedLogoBytes != null;
 
   void _rebuildOnEdit() {
     if (mounted) setState(() {});
@@ -126,15 +126,11 @@ class _ProfileViewState extends State<_ProfileView>
       setState(() {});
     });
 
-    // The cubit is app-scoped, so it may already hold a profile loaded on an
-    // earlier visit. Seed from what it has right now — the BlocListener below
-    // only fires on a *change*, so on a revisit it would never run and the form
-    // would sit empty over a profile that is actually loaded.
-    final cubit = context.read<ProfileCubit>();
-    _seed(cubit.state);
-    // silent: keeps an already-loaded profile on screen instead of collapsing
-    // the tab into a spinner. load() ignores it when there is nothing to keep.
-    cubit.load(silent: true);
+    // Seed cached state before refreshing so revisits keep their form values.
+    _seed(ref.read(profileProvider));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(profileProvider.notifier).load(silent: true);
+    });
     for (final c in [
       _waController,
       _namaBankController,
@@ -183,16 +179,13 @@ class _ProfileViewState extends State<_ProfileView>
     return palette[seed.hashCode.abs() % palette.length];
   }
 
-  /// Returns to login once the bloc reports the sign-out. Clearing the
-  /// app-scoped cubit caches is handled centrally in [App], so it happens on
+  /// Returns to login once authentication reports sign-out. Clearing app-
+  /// scoped state is handled centrally in [App], so it happens on
   /// every logout path rather than only the one that passes through this page.
   void _onLoggedOut(BuildContext context, AuthenticationStates state) {
     if (state is! Unauthenticated) return;
     context.go(LoginPage.route);
   }
-
-  void _seedFromProfile(BuildContext context, ProfileState state) =>
-      _seed(state);
 
   /// Copies the loaded profile into the form controllers, once per field.
   ///
@@ -247,9 +240,9 @@ class _ProfileViewState extends State<_ProfileView>
 
   Future<void> _onSaveSettings() async {
     if (!(_bankFormKey.currentState?.validate() ?? false)) return;
-    final cubit = context.read<ProfileCubit>();
+    final cubit = ref.read(profileProvider.notifier);
 
-    // One flag for the whole save rather than the cubit's `isSavingTemplate`,
+    // One flag for the whole save rather than the provider's `isSavingTemplate`,
     // which only covers the template write: the bank profile is saved first, and
     // the button has to read "Menyimpan..." for that leg too.
     setState(() => _isSavingSettings = true);
@@ -270,7 +263,7 @@ class _ProfileViewState extends State<_ProfileView>
     // an emptied field is a deliberate "drop my custom template", and the
     // transaksi notification falls back to the default when it reads back blank.
     // This is only safe because the controller is seeded from the stored
-    // template on mount as well as on the load emit (see [_seedFromProfile]); a
+    // template on mount as well as on provider updates (see [_seed]); a
     // field that silently stayed empty would blank the template on a save the
     // user made purely for the bank fields.
     final waErr = await cubit.saveWaTemplate(_waController.text.trim());
@@ -292,12 +285,13 @@ class _ProfileViewState extends State<_ProfileView>
       destructive: true,
     );
     if (confirmed && mounted) {
-      context.read<AuthenticationBloc>().add(LogoutRequested());
+      ref.read(authenticationProvider.notifier).logout();
     }
   }
 
   Future<void> _onCopyInvite() async {
-    final (:url, :error) = await context.read<ProfileCubit>().generateInvite();
+    final (:url, :error) =
+        await ref.read(profileProvider.notifier).generateInvite();
     if (!mounted) return;
     if (error != null) {
       _snack(error.displayMessage, error: true);
@@ -312,92 +306,89 @@ class _ProfileViewState extends State<_ProfileView>
 
   @override
   Widget build(BuildContext context) {
-    final profileState = context.watch<ProfileCubit>().state;
-    final authState = context.watch<AuthenticationBloc>().state;
+    ref.listen(profileProvider, (_, next) => _seed(next));
+    ref.listen(authenticationProvider, (_, state) {
+      _onLoggedOut(context, state);
+    });
+    final profileState = ref.watch(profileProvider);
+    final authState = ref.watch(authenticationProvider);
     final auth = authState is Authenticated ? authState.authEntity : null;
 
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<AuthenticationBloc, AuthenticationStates>(
-            listener: _onLoggedOut),
-        BlocListener<ProfileCubit, ProfileState>(listener: _seedFromProfile),
-      ],
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          // The tabs scroll across the whole body, so their scrollbar is at the
-          // window edge; the frame keeps the content to a readable column.
-          child: ContentFrame(
-            child: Column(
-              children: [
-                // Di browser rail di kiri adalah jalan keluarnya, jadi tidak ada
-                // tombol kembali; judulnya mengikuti halaman tab web lain.
-                ContentInset(
-                  child: _webShell
-                      ? const Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            AppSpacing.webGutter,
-                            AppSpacing.webTop,
-                            AppSpacing.webGutter,
-                            AppSpacing.md,
-                          ),
-                          child: AppPageHeader(title: 'Profil & Pengaturan'),
-                        )
-                      : AppBackHeader(
-                          title: 'Profil & Pengaturan',
-                          onBack: () => context.canPop()
-                              ? context.pop()
-                              : context.go(AppLocations.dashboard),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        // The tabs scroll across the whole body, so their scrollbar is at the
+        // window edge; the frame keeps the content to a readable column.
+        child: ContentFrame(
+          child: Column(
+            children: [
+              // Di browser rail di kiri adalah jalan keluarnya, jadi tidak ada
+              // tombol kembali; judulnya mengikuti halaman tab web lain.
+              ContentInset(
+                child: _webShell
+                    ? const Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.webGutter,
+                          AppSpacing.webTop,
+                          AppSpacing.webGutter,
+                          AppSpacing.md,
                         ),
-                ),
+                        child: AppPageHeader(title: 'Profil & Pengaturan'),
+                      )
+                    : AppBackHeader(
+                        title: 'Profil & Pengaturan',
+                        onBack: () => context.canPop()
+                            ? context.pop()
+                            : context.go(AppLocations.dashboard),
+                      ),
+              ),
 
-                // Tab Bar
-                ContentInset(
-                  child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: _gutter),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey[200]!, width: 1),
-                      ),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      // Di web tab rata kiri selebar isinya, bukan dibagi rata
-                      // ke seluruh lebar halaman.
-                      isScrollable: _webShell,
-                      tabAlignment:
-                          _webShell ? TabAlignment.start : TabAlignment.fill,
-                      labelColor: AppColors.greenDark,
-                      unselectedLabelColor: Colors.grey[400],
-                      labelStyle: AppTextStyle.small.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      unselectedLabelStyle: AppTextStyle.small.copyWith(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 14,
-                      ),
-                      indicatorColor: AppColors.greenDark,
-                      indicatorWeight: 3,
-                      tabs: const [
-                        Tab(text: 'Pengaturan Umum'),
-                        Tab(text: 'Manajemen Tim'),
-                      ],
+              // Tab Bar
+              ContentInset(
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: _gutter),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey[200]!, width: 1),
                     ),
                   ),
+                  child: TabBar(
+                    controller: _tabController,
+                    // Di web tab rata kiri selebar isinya, bukan dibagi rata
+                    // ke seluruh lebar halaman.
+                    isScrollable: _webShell,
+                    tabAlignment:
+                        _webShell ? TabAlignment.start : TabAlignment.fill,
+                    labelColor: AppColors.greenDark,
+                    unselectedLabelColor: Colors.grey[400],
+                    labelStyle: AppTextStyle.small.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    unselectedLabelStyle: AppTextStyle.small.copyWith(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                    indicatorColor: AppColors.greenDark,
+                    indicatorWeight: 3,
+                    tabs: const [
+                      Tab(text: 'Pengaturan Umum'),
+                      Tab(text: 'Manajemen Tim'),
+                    ],
+                  ),
                 ),
+              ),
 
-                // Tab Views
-                Expanded(
-                  child: _buildTabBody(profileState, auth),
-                ),
+              // Tab Views
+              Expanded(
+                child: _buildTabBody(profileState, auth),
+              ),
 
-                // Bar bawah: hanya Simpan, dan hanya di tab Pengaturan Umum.
-                if (_tabController.index == 0 &&
-                    profileState.status == ProfileStatus.loaded)
-                  ContentInset(child: _buildActionBar()),
-              ],
-            ),
+              // Bar bawah: hanya Simpan, dan hanya di tab Pengaturan Umum.
+              if (_tabController.index == 0 &&
+                  profileState.status == ProfileStatus.loaded)
+                ContentInset(child: _buildActionBar()),
+            ],
           ),
         ),
       ),
@@ -493,7 +484,7 @@ class _ProfileViewState extends State<_ProfileView>
             ),
             const SizedBox(height: 16),
             OutlinedButton(
-              onPressed: () => context.read<ProfileCubit>().load(),
+              onPressed: () => ref.read(profileProvider.notifier).load(),
               child: const Text('Coba Lagi'),
             ),
           ],
@@ -639,7 +630,8 @@ class _ProfileViewState extends State<_ProfileView>
         final whatsappTemplate = _buildWhatsappTemplate(state);
 
         return AppRefreshIndicator(
-          onRefresh: () => context.read<ProfileCubit>().load(silent: true),
+          onRefresh: () =>
+              ref.read(profileProvider.notifier).load(silent: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: ContentFrame.insetOf(context).add(EdgeInsets.fromLTRB(
@@ -718,7 +710,7 @@ class _ProfileViewState extends State<_ProfileView>
             child: InkWell(
               onTap: () async {
                 try {
-                  await context.read<ProfileCubit>().pickLogo();
+                  await ref.read(profileProvider.notifier).pickLogo();
                 } catch (_) {
                   if (!mounted) return;
                   AppNotification.showError(context,
@@ -818,7 +810,7 @@ class _ProfileViewState extends State<_ProfileView>
     final isPengelolaUtama = team.any((m) => m.isCurrentUser && m.isPrimary);
 
     return AppRefreshIndicator(
-      onRefresh: () => context.read<ProfileCubit>().load(silent: true),
+      onRefresh: () => ref.read(profileProvider.notifier).load(silent: true),
       // A Builder, so the inset comes from the frame below the page body.
       child: Builder(
         builder: (context) => SingleChildScrollView(

@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,7 +9,7 @@ import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/providers/revisi_pencairan_provider.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
@@ -62,10 +62,14 @@ void main() {
 
   Future<void> pumpView(WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider(
-          create: (_) => RevisiPencairanCubit(useCases),
-          child: const RevisiPencairanView(pencairanId: 'p-1'),
+      ProviderScope(
+        overrides: [
+          revisiPencairanProvider.overrideWith(
+            () => RevisiPencairanNotifier(useCases),
+          ),
+        ],
+        child: const MaterialApp(
+          home: RevisiPencairanView(pencairanId: 'p-1'),
         ),
       ),
     );
@@ -233,18 +237,22 @@ void main() {
         (tester) async {
       when(() => useCases.getRevisi('p-1'))
           .thenAnswer((_) async => Right(_riwayat));
-      await tester.pumpWidget(MaterialApp(
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => BlocProvider(
-                create: (_) => RevisiPencairanCubit(useCases),
-                child: const Scaffold(
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          revisiPencairanProvider.overrideWith(
+            () => RevisiPencairanNotifier(useCases),
+          ),
+        ],
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const Scaffold(
                   body: RevisiPencairanView(pencairanId: 'p-1', embedded: true),
                 ),
-              ),
-            )),
-            child: const Text('buka'),
+              )),
+              child: const Text('buka'),
+            ),
           ),
         ),
       ));

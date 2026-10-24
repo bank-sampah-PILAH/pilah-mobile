@@ -2,18 +2,16 @@ import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
 import 'package:pilah_mobile/features/harga/data/datasources/harga_remote_data_source_impl.dart';
 import 'package:pilah_mobile/features/harga/data/repositories/harga_repository_impl.dart';
 import 'package:pilah_mobile/features/harga/domain/use_cases/get_riwayat_harga_usecase.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/riwayat_harga_cubit.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_flow.dart';
 import 'package:pilah_mobile/features/harga/presentation/widgets/harga_detail_sheet.dart';
 import 'package:pilah_mobile/services/di.dart';
@@ -45,14 +43,13 @@ const _expanded = Size(1440, 900);
 
 void main() {
   late StubApi api;
-  late HargaCubit cubit;
+  late HargaNotifier notifier;
 
   Future<void> openPage(WidgetTester tester,
       {Size size = _medium, bool isWeb = kIsWeb}) async {
     await pumpRouted(
       tester,
-      BlocProvider<HargaCubit>.value(
-          value: cubit, child: HargaPage(isWeb: isWeb)),
+      withHargaProvider(notifier, HargaPage(isWeb: isWeb)),
       size: size,
     );
     if (kIsWeb) await pumpReal(tester);
@@ -69,13 +66,12 @@ void main() {
 
   setUp(() {
     api = StubApi();
-    if (di.isRegistered<RiwayatHargaCubit>()) {
-      di.unregister<RiwayatHargaCubit>();
+    if (di.isRegistered<GetRiwayatHargaUseCase>()) {
+      di.unregister<GetRiwayatHargaUseCase>();
     }
-    di.registerFactory<RiwayatHargaCubit>(() => RiwayatHargaCubit(
-        GetRiwayatHargaUseCase(
-            HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network)))));
-    cubit = buildHargaCubit(api);
+    di.registerFactory<GetRiwayatHargaUseCase>(() => GetRiwayatHargaUseCase(
+        HargaRepositoryImpl(HargaRemoteDataSourceImpl(api.network))));
+    notifier = buildHargaNotifier(api);
     api.on('GET', '/api/v1/jenis-sampah', json: {
       'results': [
         _row('1', 'Botol PET'),
@@ -86,9 +82,8 @@ void main() {
   });
 
   tearDown(() async {
-    await cubit.close();
-    if (di.isRegistered<RiwayatHargaCubit>()) {
-      await di.unregister<RiwayatHargaCubit>();
+    if (di.isRegistered<GetRiwayatHargaUseCase>()) {
+      await di.unregister<GetRiwayatHargaUseCase>();
     }
   });
 
@@ -469,7 +464,7 @@ void main() {
   testWidgets('shows skeletons until the first load completes', (tester) async {
     await pumpRouted(
       tester,
-      BlocProvider<HargaCubit>.value(value: cubit, child: const HargaPage()),
+      withHargaProvider(notifier, const HargaPage()),
       size: const Size(800, 1600),
     );
     expect(find.byType(ListView), findsOneWidget);

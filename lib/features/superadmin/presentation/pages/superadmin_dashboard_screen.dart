@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
@@ -10,13 +10,11 @@ import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/superadmin/domain/entities/bank_sampah_entity.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_state.dart';
-import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/states/superadmin_state.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 const List<String> _monthsId = [
@@ -91,17 +89,18 @@ int _waitingDays(DateTime? date) {
   return today.difference(submission).inDays;
 }
 
-class SuperAdminDashboardScreen extends StatefulWidget {
+class SuperAdminDashboardScreen extends ConsumerStatefulWidget {
   const SuperAdminDashboardScreen({super.key});
 
   static const route = '/superadmin-dashboard';
 
   @override
-  State<SuperAdminDashboardScreen> createState() =>
+  ConsumerState<SuperAdminDashboardScreen> createState() =>
       _SuperAdminDashboardScreenState();
 }
 
-class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
+class _SuperAdminDashboardScreenState
+    extends ConsumerState<SuperAdminDashboardScreen> {
   String _activeTab = 'Menunggu';
 
   static const Map<String, String> _tabStatus = {
@@ -111,36 +110,34 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(superadminProvider.notifier).loadBankSampah('pending');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => di<SuperadminCubit>()..loadBankSampah('pending'),
-      child: Builder(
-        builder: (context) =>
-            BlocListener<AuthenticationBloc, AuthenticationStates>(
-          listener: (context, state) {
-            if (state is Unauthenticated) {
-              context.go('/login');
-            }
-          },
-          child: Scaffold(
-            backgroundColor: AppColors.fill,
-            body: Column(
-              children: [
-                _buildHeader(context),
-                Expanded(
-                  child: AppRefreshIndicator(
-                    // Reloads the tab currently on screen, not whichever status
-                    // the cubit happens to have loaded last.
-                    onRefresh: () => context
-                        .read<SuperadminCubit>()
-                        .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
-                    child: _buildContentArea(),
-                  ),
-                ),
-              ],
+    ref.listen(authenticationProvider, (previous, state) {
+      if (state is Unauthenticated) context.go('/login');
+    });
+    return Scaffold(
+      backgroundColor: AppColors.fill,
+      body: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: AppRefreshIndicator(
+              onRefresh: () => ref
+                  .read(superadminProvider.notifier)
+                  .loadBankSampah(_tabStatus[_activeTab]!, silent: true),
+              child: _buildContentArea(),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -182,8 +179,9 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                 ],
               ),
               InkWell(
-                onTap: () =>
-                    context.read<AuthenticationBloc>().add(LogoutRequested()),
+                onTap: () => ProviderScope.containerOf(context, listen: false)
+                    .read(authenticationProvider.notifier)
+                    .logout(),
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -211,9 +209,6 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     );
   }
 
-  // Takes the context explicitly: the SuperadminCubit is provided by the
-  // BlocProvider inside build(), so the surrounding State's own context sits
-  // above it and cannot resolve the cubit.
   Widget _buildTab(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.only(right: 12),
@@ -223,60 +218,57 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         onTap: () {
           if (_activeTab == label) return;
           setState(() => _activeTab = label);
-          context.read<SuperadminCubit>().loadBankSampah(_tabStatus[label]!);
+          ref
+              .read(superadminProvider.notifier)
+              .loadBankSampah(_tabStatus[label]!);
         },
       ),
     );
   }
 
   Widget _buildContentArea() {
-    return BlocBuilder<SuperadminCubit, SuperadminState>(
-      builder: (context, state) {
-        if (state is SuperadminLoading || state is SuperadminInitial) {
-          return ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            itemCount: 3,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (_, __) => const SkeletonListItem(),
-          );
-        }
+    final state = ref.watch(superadminProvider);
+    if (state is SuperadminLoading || state is SuperadminInitial) {
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (_, __) => const SkeletonListItem(),
+      );
+    }
 
-        if (state is SuperadminError) {
-          return EmptyView(
-            title: 'Gagal Memuat Data',
-            subtitle: state.message,
-            icon: Icons.error_outline,
-          );
-        }
+    if (state is SuperadminError) {
+      return EmptyView(
+        title: 'Gagal Memuat Data',
+        subtitle: state.message,
+        icon: Icons.error_outline,
+      );
+    }
 
-        if (state is SuperadminLoaded) {
-          if (state.banks.isEmpty) {
-            return _buildEmptyState(state.status);
+    if (state is SuperadminLoaded) {
+      if (state.banks.isEmpty) return _buildEmptyState(state.status);
+      final actions = ref.read(superadminProvider.notifier);
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        itemCount: state.banks.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (_, index) {
+          final bank = state.banks[index];
+          switch (state.status) {
+            case 'active':
+              return ApprovedBankCard(bank: bank);
+            case 'rejected':
+              return RejectedBankCard(bank: bank);
+            default:
+              return PendingBankCard(bank: bank, actions: actions);
           }
-          final cubit = context.read<SuperadminCubit>();
-          return ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            itemCount: state.banks.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (_, index) {
-              final bank = state.banks[index];
-              switch (state.status) {
-                case 'active':
-                  return ApprovedBankCard(bank: bank);
-                case 'rejected':
-                  return RejectedBankCard(bank: bank);
-                default:
-                  return PendingBankCard(bank: bank, cubit: cubit);
-              }
-            },
-          );
-        }
+        },
+      );
+    }
 
-        return const SizedBox.shrink();
-      },
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildEmptyState(String status) {
@@ -306,9 +298,9 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
 
 class PendingBankCard extends StatefulWidget {
   final BankSampahEntity bank;
-  final SuperadminCubit cubit;
+  final SuperadminActions actions;
 
-  const PendingBankCard({super.key, required this.bank, required this.cubit});
+  const PendingBankCard({super.key, required this.bank, required this.actions});
 
   @override
   State<PendingBankCard> createState() => _PendingBankCardState();
@@ -350,8 +342,8 @@ class _PendingBankCardState extends State<PendingBankCard> {
 
     setState(() => _isProcessing = true);
     final error = approve
-        ? await widget.cubit.approve(bank.id)
-        : await widget.cubit.reject(bank.id);
+        ? await widget.actions.approve(bank.id)
+        : await widget.actions.reject(bank.id);
 
     if (error != null) {
       if (mounted) setState(() => _isProcessing = false);

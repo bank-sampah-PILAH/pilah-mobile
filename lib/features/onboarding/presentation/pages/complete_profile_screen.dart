@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -9,19 +9,18 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acceptance_notice.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 
-class CompleteProfileScreen extends StatefulWidget {
+class CompleteProfileScreen extends ConsumerStatefulWidget {
   final bool isInviteMode;
 
   const CompleteProfileScreen({super.key, this.isInviteMode = false});
@@ -29,10 +28,11 @@ class CompleteProfileScreen extends StatefulWidget {
   static const route = '/complete-profile';
 
   @override
-  State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
+  ConsumerState<CompleteProfileScreen> createState() =>
+      _CompleteProfileScreenState();
 }
 
-class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
+class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   /// Invite mode is whatever the store says, with the constructor flag as a
   /// hint on top.
   ///
@@ -57,7 +57,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// pengelola/pengelola induk give their organization's address on a
   /// separate step.
   bool get _isNasabah {
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     return authState is Authenticated && authState.authEntity.role == 'nasabah';
   }
 
@@ -89,11 +89,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// would return to an empty form and have to retype everything, which is the
   /// whole reason the wizard defers the profile call.
   ///
-  /// Reads straight from the cubit rather than waiting for a state emission:
+  /// Reads straight from the provider rather than waiting for a state emission:
   /// the draft is not part of [OnboardingState], and the controllers have to be
   /// populated before the first build or the fields flash empty.
   void _restoreDraft() {
-    final draft = context.read<OnboardingCubit>().profileDraft;
+    final draft = ref.read(onboardingProvider.notifier).profileDraft;
     if (draft == null) {
       _prefillFromSavedProfile();
       return;
@@ -123,7 +123,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// ever restores from the in-memory wizard draft and starts blank
   /// regardless of what the account already has saved.
   void _prefillFromSavedProfile() {
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     if (authState is! Authenticated) return;
     final auth = authState.authEntity;
 
@@ -198,7 +198,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// status — a verdict only the backend can give, so those keep sending the
   /// profile immediately and routing on the answer.
   bool get _startsNewRegistration {
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     if (authState is! Authenticated) return false;
     return authState.authEntity.role == 'pengelola' &&
         authState.authEntity.bankSampahStatus == null;
@@ -213,12 +213,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// (`AuthService._sync_nasabah_prefill`) while the profile is still
   /// incomplete, so `next_step` after submitting can already be
   /// `nasabah_dashboard`. That case is handled downstream in
-  /// `OnboardingCubit.submitNasabahRegistration`, which skips the
+  /// `OnboardingNotifier.submitNasabahRegistration`, which skips the
   /// registration call entirely when the profile step alone finishes
   /// onboarding — this getter only decides whether to defer to that wizard
   /// step at all.
   bool get _startsNasabahRegistration {
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     return authState is Authenticated && authState.authEntity.role == 'nasabah';
   }
 
@@ -240,7 +240,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       alamat: _isNasabah ? _alamatController.text.trim() : '',
     );
 
-    final cubit = context.read<OnboardingCubit>();
+    final notifier = ref.read(onboardingProvider.notifier);
 
     // Condition B — a new bank sampah is coming next, so nothing is sent yet.
     //
@@ -255,7 +255,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     // fires when an invite token is banked, and this branch is the one where
     // there is none.
     if (!isInvite && _startsNewRegistration) {
-      cubit.saveProfileDraft(request);
+      notifier.saveProfileDraft(request);
       context.push('/register-bank-sampah');
       return;
     }
@@ -265,14 +265,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     // come back and edit their profile (including the alamat just entered)
     // right up until that final submit.
     if (!isInvite && _startsNasabahRegistration) {
-      cubit.saveProfileDraft(request);
+      notifier.saveProfileDraft(request);
       context.push('/register-nasabah');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final (:result, :error) = await cubit.completeProfile(request);
+    final (:result, :error) = await notifier.completeProfile(request);
 
     if (!mounted) return;
 
@@ -291,7 +291,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     // The name (and gender/dob) were just saved server-side; refresh the cached
     // user so the dashboard/profile show the entered name, not the Google one.
-    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    ref.read(authenticationProvider.notifier).refreshUser();
 
     _routeByNextStep(result?.nextStep, isInvite: false);
   }
@@ -309,13 +309,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       {required String? profileNextStep}) async {
     final store = di<InviteTokenStore>();
     // Captured before the refresh below re-emits the session.
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     final bankSampahStatus = authState is Authenticated
         ? authState.authEntity.bankSampahStatus
         : null;
 
-    final (:result, :error) =
-        await context.read<OnboardingCubit>().acceptInvite(store.token ?? '');
+    final (:result, :error) = await ref
+        .read(onboardingProvider.notifier)
+        .acceptInvite(store.token ?? '');
     if (!mounted) return;
 
     final acceptance = classifyInviteAcceptance(result: result, error: error);
@@ -327,7 +328,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     setState(() => _isLoading = false);
 
-    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    ref.read(authenticationProvider.notifier).refreshUser();
 
     switch (acceptance) {
       case InviteAcceptance.joined:
@@ -414,163 +415,161 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthenticationBloc, AuthenticationStates>(
-      listenWhen: (previous, current) => current is Unauthenticated,
-      listener: (context, state) => context.go(LoginPage.route),
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
-        child: Scaffold(
-          backgroundColor: AppColors.surface, // Light gray background
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                // 1. Header Section
-                OnboardingHeader(
-                  title: 'Lengkapi Profil Anda',
-                  subtitle: 'Data ini digunakan untuk verifikasi akun Anda.',
-                  onExit: () => confirmExitOnboarding(context,
-                      title: 'Batal Lengkapi Profil?'),
+    ref.listen(authenticationProvider, (previous, current) {
+      if (current is Unauthenticated) context.go(LoginPage.route);
+    });
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.surface, // Light gray background
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // 1. Header Section
+              OnboardingHeader(
+                title: 'Lengkapi Profil Anda',
+                subtitle: 'Data ini digunakan untuk verifikasi akun Anda.',
+                onExit: () => confirmExitOnboarding(context,
+                    title: 'Batal Lengkapi Profil?'),
+              ),
+
+              // The stepper shows only when profile completion leads to the
+              // bank sampah registration form, pengelola or nasabah.
+              if (!_isInviteMode &&
+                  (_startsNewRegistration || _startsNasabahRegistration))
+                OnboardingStepper(
+                  currentStep: 1,
+                  secondStepLabel:
+                      _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
                 ),
 
-                // The stepper shows only when profile completion leads to the
-                // bank sampah registration form, pengelola or nasabah.
-                if (!_isInviteMode &&
-                    (_startsNewRegistration || _startsNasabahRegistration))
-                  OnboardingStepper(
-                    currentStep: 1,
-                    secondStepLabel:
-                        _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
+              const SizedBox(height: 24),
+              OnboardingFormCard(
+                formKey: _formKey,
+                children: [
+                  OnboardingNameField(
+                    controller: _nameController,
+                    label: 'NAMA LENGKAP',
+                    hintText: 'Contoh: Siti Rahayu',
                   ),
 
-                const SizedBox(height: 24),
-                OnboardingFormCard(
-                  formKey: _formKey,
-                  children: [
-                    OnboardingNameField(
-                      controller: _nameController,
-                      label: 'NAMA LENGKAP',
-                      hintText: 'Contoh: Siti Rahayu',
-                    ),
-
-                    // Field 2: Jenis Kelamin
-                    OnboardingFormField(
-                      label: 'JENIS KELAMIN',
-                      child: DropdownButtonFormField<String>(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        initialValue: _gender,
-                        hint: Text(
-                          'Pilih jenis kelamin',
-                          style: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontWeight: FontWeight.normal,
+                  // Field 2: Jenis Kelamin
+                  OnboardingFormField(
+                    label: 'JENIS KELAMIN',
+                    child: DropdownButtonFormField<String>(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      initialValue: _gender,
+                      hint: Text(
+                        'Pilih jenis kelamin',
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                      icon: const Icon(Icons.keyboard_arrow_down,
+                          color: Colors.grey),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'Laki-laki',
+                          child: Row(
+                            children: [
+                              Icon(Icons.male,
+                                  size: 20, color: AppColors.inkSoft),
+                              SizedBox(width: 8),
+                              Text('Laki-laki'),
+                            ],
                           ),
                         ),
-                        icon: const Icon(Icons.keyboard_arrow_down,
-                            color: Colors.grey),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Laki-laki',
-                            child: Row(
-                              children: [
-                                Icon(Icons.male,
-                                    size: 20, color: AppColors.inkSoft),
-                                SizedBox(width: 8),
-                                Text('Laki-laki'),
-                              ],
-                            ),
+                        DropdownMenuItem(
+                          value: 'Perempuan',
+                          child: Row(
+                            children: [
+                              Icon(Icons.female,
+                                  size: 20, color: AppColors.inkSoft),
+                              SizedBox(width: 8),
+                              Text('Perempuan'),
+                            ],
                           ),
-                          DropdownMenuItem(
-                            value: 'Perempuan',
-                            child: Row(
-                              children: [
-                                Icon(Icons.female,
-                                    size: 20, color: AppColors.inkSoft),
-                                SizedBox(width: 8),
-                                Text('Perempuan'),
-                              ],
-                            ),
-                          ),
-                        ],
-                        onChanged: (val) {
-                          setState(() {
-                            _gender = val;
-                          });
-                        },
-                        decoration: appInputDecoration(),
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Jenis kelamin wajib dipilih';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-
-                    // Field 3: Tanggal Lahir
-                    OnboardingFormField(
-                      label: 'TANGGAL LAHIR',
-                      child: TextFormField(
-                        controller: _dobController,
-                        readOnly: true,
-                        onTap: _selectDate,
-                        decoration: appInputDecoration(
-                            hintText: 'dd/mm/yyyy',
-                            suffixIcon: const Icon(
-                                Icons.calendar_today_outlined,
-                                color: Colors.black87)),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Tanggal lahir wajib diisi';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-
-                    OnboardingPhoneField(
-                      controller: _phoneController,
-                      label: 'NOMOR HP / WHATSAPP',
-                      requiredMessage: 'Nomor HP wajib diisi',
-                    ),
-
-                    // Alamat: nasabah accounts only.
-                    if (_isNasabah)
-                      OnboardingAddressField(controller: _alamatController),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // 4. Action Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: AppButton(
-                    label: _isInviteMode
-                        ? 'Simpan & Masuk Dashboard'
-                        : 'Simpan Profil & Lanjut',
-                    trailingIcon: Icons.arrow_forward,
-                    isLoading: _isLoading,
-                    onPressed: _onSaveAndContinue,
-                  ),
-                ),
-
-                // 5. Footer Text
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Text(
-                    'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                      height: 1.5,
+                        ),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          _gender = val;
+                        });
+                      },
+                      decoration: appInputDecoration(),
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Jenis kelamin wajib dipilih';
+                        }
+                        return null;
+                      },
                     ),
                   ),
+
+                  // Field 3: Tanggal Lahir
+                  OnboardingFormField(
+                    label: 'TANGGAL LAHIR',
+                    child: TextFormField(
+                      controller: _dobController,
+                      readOnly: true,
+                      onTap: _selectDate,
+                      decoration: appInputDecoration(
+                          hintText: 'dd/mm/yyyy',
+                          suffixIcon: const Icon(Icons.calendar_today_outlined,
+                              color: Colors.black87)),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Tanggal lahir wajib diisi';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+
+                  OnboardingPhoneField(
+                    controller: _phoneController,
+                    label: 'NOMOR HP / WHATSAPP',
+                    requiredMessage: 'Nomor HP wajib diisi',
+                  ),
+
+                  // Alamat: nasabah accounts only.
+                  if (_isNasabah)
+                    OnboardingAddressField(controller: _alamatController),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // 4. Action Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: AppButton(
+                  label: _isInviteMode
+                      ? 'Simpan & Masuk Dashboard'
+                      : 'Simpan Profil & Lanjut',
+                  trailingIcon: Icons.arrow_forward,
+                  isLoading: _isLoading,
+                  onPressed: _onSaveAndContinue,
                 ),
-                const SizedBox(height: 20),
-              ],
-            ),
+              ),
+
+              // 5. Footer Text
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),

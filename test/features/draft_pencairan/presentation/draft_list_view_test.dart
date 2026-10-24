@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,7 +11,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/providers/draft_list_provider.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
@@ -50,6 +50,13 @@ void main() {
 
   setUp(() => repository = _MockRepository());
 
+  Widget view() => ProviderScope(
+        overrides: [
+          draftListProvider.overrideWith(() => DraftListNotifier(repository)),
+        ],
+        child: const DraftListView(),
+      );
+
   Future<GoRouter> pump(
     WidgetTester tester,
     List<DraftRingkasan> drafts, {
@@ -58,10 +65,7 @@ void main() {
     when(() => repository.getDrafts()).thenAnswer((_) async => Right(drafts));
     return pumpRouted(
       tester,
-      BlocProvider(
-        create: (_) => DraftListCubit(repository)..load(),
-        child: const DraftListView(),
-      ),
+      view(),
       extraRoutes: const [
         DraftListPage.routePilih,
         DraftListPage.routeEditor,
@@ -150,13 +154,7 @@ void main() {
   testWidgets('a failed load can be retried', (tester) async {
     when(() => repository.getDrafts())
         .thenAnswer((_) async => Left(ConnectionTimeOutException()));
-    await pumpRouted(
-      tester,
-      BlocProvider(
-        create: (_) => DraftListCubit(repository)..load(),
-        child: const DraftListView(),
-      ),
-    );
+    await pumpRouted(tester, view());
     await tester.pumpAndSettle();
     expect(find.text('Coba lagi'), findsOneWidget);
 
@@ -533,13 +531,7 @@ void main() {
       final pending =
           Completer<Either<NetworkException, List<DraftRingkasan>>>();
       when(() => repository.getDrafts()).thenAnswer((_) => pending.future);
-      await pumpRouted(
-        tester,
-        BlocProvider(
-          create: (_) => DraftListCubit(repository)..load(),
-          child: const DraftListView(),
-        ),
-      );
+      await pumpRouted(tester, view());
       await tester.pump();
 
       expect(

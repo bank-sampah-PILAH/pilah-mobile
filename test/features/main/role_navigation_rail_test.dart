@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction, Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -50,10 +52,47 @@ void main() {
       await taps(tester, role: 'pengelola');
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.destinations.length, 6);
-      expect(
-        rail.destinations.map((d) => (d.label as Text).data),
-        ['Dashboard', 'Nasabah', 'Harga', 'Aktivitas', 'Jadwal', 'Pengumuman'],
-      );
+      const expectedLabels = [
+        'Dashboard',
+        'Nasabah',
+        'Harga',
+        'Aktivitas',
+        'Jadwal',
+        'Pengumuman',
+      ];
+      final visibleLabels = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((label) => label.data)
+          .where(expectedLabels.contains)
+          .toList();
+      expect(visibleLabels, expectedLabels);
+    });
+
+    testWidgets('keeps Pengumuman visible but disabled', (tester) async {
+      final selected = await taps(tester, role: 'pengelola');
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.destinations.last.disabled, isTrue);
+
+      final semantics =
+          tester.getSemantics(find.text('Pengumuman')).getSemanticsData();
+      expect(semantics.flagsCollection.isButton, isTrue);
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(semantics.hasAction(SemanticsAction.tap), isFalse);
+      final disabledLabel = tester.widget<Semantics>(find
+          .ancestor(
+            of: find.text('Pengumuman'),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'Pengumuman',
+            ),
+          )
+          .first);
+      expect(disabledLabel.excludeSemantics, isTrue);
+
+      await tester.tap(find.text('Pengumuman'));
+      await tester.pumpAndSettle();
+      expect(selected, isEmpty);
     });
 
     testWidgets('shows the Transaksi accordion before destinations',

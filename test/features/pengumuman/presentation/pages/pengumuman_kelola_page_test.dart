@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/app_chip.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/pengumuman/data/datasources/pengumuman_remote_data_source.dart';
-import 'package:pilah_mobile/features/pengumuman/data/repositories/pengumuman_repository_impl.dart';
-import 'package:pilah_mobile/features/pengumuman/presentation/cubit/pengumuman_cubit.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
 import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 
+import '../../../../support/pengumuman_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
@@ -31,15 +31,19 @@ void main() {
   }
 
   late StubApi api;
-  late PengumumanCubit cubit;
 
   setUp(() {
     api = StubApi();
-    cubit = PengumumanCubit(
-        PengumumanRepositoryImpl(PengumumanRemoteDataSourceImpl(api.network)));
   });
 
-  tearDown(() => cubit.close());
+  Widget withProvider(Widget child) => ProviderScope(
+        overrides: [
+          pengumumanProvider.overrideWith(() => PengumumanNotifier(
+                buildPengumumanRepository(api),
+              )),
+        ],
+        child: child,
+      );
 
   Future<void> openPage(WidgetTester tester,
       {List<String> extraRoutes = const [],
@@ -47,10 +51,7 @@ void main() {
       Size size = const Size(800, 2000)}) async {
     await pumpRouted(
       tester,
-      BlocProvider<PengumumanCubit>.value(
-        value: cubit,
-        child: PengumumanKelolaPage(isWeb: isWeb),
-      ),
+      withProvider(PengumumanKelolaPage(isWeb: isWeb)),
       extraRoutes: extraRoutes,
       size: size,
     );
@@ -73,6 +74,121 @@ void main() {
         reason: 'the title starts at the content column plus the gutter');
     expect(find.byIcon(Icons.arrow_back), findsNothing,
         reason: 'a sidebar destination has nowhere to go back to');
+  });
+
+  testWidgets('a wide web window opens the create form beside the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+
+    await openPage(
+      tester,
+      extraRoutes: const ['/pengumuman/kelola/ubah'],
+      isWeb: true,
+      size: const Size(1440, 900),
+    );
+    expect(find.text('Buat Pengumuman'), findsNothing);
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+    expect(find.text('Buat Pengumuman'), findsOneWidget);
+    expect(
+      tester
+          .widget<MasterDetailLayout>(find.byType(MasterDetailLayout))
+          .masterScrolls,
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<Padding>(find.ancestor(
+            of: find.text('Buat Pengumuman'),
+            matching: find.byType(Padding),
+          ))
+          .any((padding) =>
+              padding.padding == const EdgeInsets.symmetric(horizontal: 16)),
+      isTrue,
+    );
+    expect(find.text('route:/pengumuman/kelola/ubah'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text('Buat Pengumuman')).dx,
+      greaterThan(tester.getTopLeft(find.text('Kelola Pengumuman')).dx),
+    );
+  });
+
+  testWidgets('the web form panel closes without leaving the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+  });
+
+  testWidgets('a web form panel closes when the window leaves expanded layout',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Buat Pengumuman'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(800, 900);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+  });
+
+  testWidgets('saving in the web panel closes it and keeps the list',
+      (tester) async {
+    api.on('GET', '/api/v1/pengumuman', json: {
+      'count': 0,
+      'next': null,
+      'results': [],
+    });
+    api.on('POST', '/api/v1/pengumuman', json: {
+      'id': '9',
+      'bank_sampah_id': 'bank-1',
+      'judul': 'Judul Uji',
+      'isi': 'Isi.',
+      'status': 'draft',
+    });
+    await openPage(tester, isWeb: true, size: const Size(1440, 900));
+
+    await tester.tap(find.widgetWithText(AppButton, 'Buat'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Judul Uji');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Isi.');
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pumpAndSettle();
+    await drainToast(tester);
+
+    expect(find.text('Buat Pengumuman'), findsNothing);
+    expect(find.text('Kelola Pengumuman'), findsOneWidget);
+    expect(
+      api.requests.any(
+          (call) => call.method == 'POST' && call.path == '/api/v1/pengumuman'),
+      isTrue,
+    );
   });
 
   testWidgets('a phone keeps the FAB and the back header', (tester) async {
@@ -478,10 +594,7 @@ void main() {
       await stubEmpty();
       await pumpRouted(
         tester,
-        BlocProvider<PengumumanCubit>.value(
-          value: cubit,
-          child: const PengumumanKelolaPage(isWeb: false),
-        ),
+        withProvider(const PengumumanKelolaPage(isWeb: false)),
         size: const Size(390, 844),
         pushed: true,
       );
@@ -503,16 +616,13 @@ void main() {
     late StateSetter flip;
     await pumpRouted(
       tester,
-      BlocProvider<PengumumanCubit>.value(
-        value: cubit,
-        child: StatefulBuilder(builder: (context, setState) {
-          flip = setState;
-          return TickerMode(
-            enabled: active,
-            child: const PengumumanKelolaPage(isWeb: false),
-          );
-        }),
-      ),
+      withProvider(StatefulBuilder(builder: (context, setState) {
+        flip = setState;
+        return TickerMode(
+          enabled: active,
+          child: const PengumumanKelolaPage(isWeb: false),
+        );
+      })),
       size: const Size(390, 844),
     );
     await tester.pumpAndSettle();

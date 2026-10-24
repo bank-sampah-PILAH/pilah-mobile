@@ -1,29 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/widgets/recent_activity_section.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 
-/// Stands in for the real cubit so the widget can be driven through each state
-/// without touching the network or the DI graph.
-class _StubRecentActivityCubit extends Cubit<RecentActivityState>
-    implements RecentActivityCubit {
-  _StubRecentActivityCubit(super.initialState);
+class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
 
+class _UnusedPencairanUseCases extends Mock implements PencairanUseCases {}
+
+class _StubRecentActivityNotifier extends RecentActivityNotifier {
+  _StubRecentActivityNotifier(this.initialState)
+      : super(_UnusedGetTransaksi(), _UnusedPencairanUseCases());
+
+  final RecentActivityState initialState;
   var loadCalls = 0;
+
+  @override
+  RecentActivityState build() => initialState;
 
   @override
   Future<void> load({bool silent = false}) async {
     loadCalls++;
   }
 
-  @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<void> close() async {}
 }
 
 final _today = DateTime(2026, 9, 22, 12);
@@ -56,12 +64,12 @@ ActivitasEntity _pencairan(String name, DateTime tanggal) =>
       saldoSesudah: 50000,
     ));
 
-Widget _host(RecentActivityCubit cubit) {
-  return MaterialApp(
-    home: Scaffold(
-      body: BlocProvider<RecentActivityCubit>.value(
-        value: cubit,
-        child: SingleChildScrollView(
+Widget _host(_StubRecentActivityNotifier cubit) {
+  return ProviderScope(
+    overrides: [recentActivityProvider.overrideWith(() => cubit)],
+    child: MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
           child: RecentActivitySection(now: () => _today),
         ),
       ),
@@ -73,7 +81,7 @@ void main() {
   group('RecentActivitySection', () {
     testWidgets('a failed fetch is not disguised as "no transactions yet"',
         (tester) async {
-      final cubit = _StubRecentActivityCubit(
+      final cubit = _StubRecentActivityNotifier(
           const RecentActivityError('Koneksi terputus'));
       addTearDown(cubit.close);
 
@@ -90,7 +98,7 @@ void main() {
     });
 
     testWidgets('the error state offers a working retry', (tester) async {
-      final cubit = _StubRecentActivityCubit(
+      final cubit = _StubRecentActivityNotifier(
           const RecentActivityError('Koneksi terputus'));
       addTearDown(cubit.close);
 
@@ -102,7 +110,7 @@ void main() {
     });
 
     testWidgets('a genuinely empty list still says so', (tester) async {
-      final cubit = _StubRecentActivityCubit(const RecentActivityLoaded([]));
+      final cubit = _StubRecentActivityNotifier(const RecentActivityLoaded([]));
       addTearDown(cubit.close);
 
       await tester.pumpWidget(_host(cubit));
@@ -113,7 +121,7 @@ void main() {
 
     testWidgets('renders every activity with its full date and time',
         (tester) async {
-      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
         _trx('Sari', tanggal: DateTime(2026, 9, 10, 9)),
         _trx('Andi', tanggal: DateTime(2026, 9, 10, 8)),
@@ -137,7 +145,7 @@ void main() {
     });
 
     testWidgets('renders a pencairan row alongside setoran', (tester) async {
-      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
         _pencairan('Ani Wijaya', DateTime(2026, 9, 22, 10)),
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
       ]));
@@ -150,7 +158,7 @@ void main() {
     });
 
     testWidgets('Lihat Semua opens the laporan tab', (tester) async {
-      final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+      final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
         _trx('Budi', tanggal: DateTime(2026, 9, 22, 9)),
       ]));
       addTearDown(cubit.close);
@@ -158,8 +166,8 @@ void main() {
         GoRoute(
           path: '/',
           builder: (_, __) => Scaffold(
-            body: BlocProvider<RecentActivityCubit>.value(
-              value: cubit,
+            body: ProviderScope(
+              overrides: [recentActivityProvider.overrideWith(() => cubit)],
               child: RecentActivitySection(now: () => _today),
             ),
           ),
@@ -180,7 +188,7 @@ void main() {
   });
   testWidgets('legacy activity without captions uses its day label',
       (tester) async {
-    final cubit = _StubRecentActivityCubit(RecentActivityLoaded([
+    final cubit = _StubRecentActivityNotifier(RecentActivityLoaded([
       ActivitasEntity(
           tipe: ActivitasTipe.setoran,
           tanggal: _today,

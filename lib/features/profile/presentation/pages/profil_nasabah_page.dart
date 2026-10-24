@@ -8,20 +8,21 @@ import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resou
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+
 import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 /// Shows the nasabah's own profile and lets them edit the fields the backend
 /// allows (nama, no_hp, jenis_kelamin, tanggal_lahir, alamat). Email, role and
 /// id are always read-only.
-class ProfilNasabahPage extends StatelessWidget {
+class ProfilNasabahPage extends ConsumerWidget {
   const ProfilNasabahPage({super.key});
 
   Future<void> _logout(BuildContext context) async {
@@ -33,24 +34,24 @@ class ProfilNasabahPage extends StatelessWidget {
       destructive: true,
     );
     if (confirmed && context.mounted) {
-      context.read<AuthenticationBloc>().add(LogoutRequested());
+      ProviderScope.containerOf(context, listen: false)
+          .read(authenticationProvider.notifier)
+          .logout();
     }
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-        builder: (context, state) {
-          final auth = state is Authenticated ? state.authEntity : null;
-          return Scaffold(
-            backgroundColor: NasabahStyle.background,
-            appBar: const NasabahPageAppBar(title: 'Profil'),
-            body: SafeArea(
-                child: _ProfilNasabahBody(
-                    auth: auth, onLogout: () => _logout(context))),
-          );
-        },
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    final auth = state is Authenticated ? state.authEntity : null;
+    return Scaffold(
+      backgroundColor: NasabahStyle.background,
+      appBar: const NasabahPageAppBar(title: 'Profil'),
+      body: SafeArea(
+          child:
+              _ProfilNasabahBody(auth: auth, onLogout: () => _logout(context))),
+    );
+  }
 }
 
 /// Owns the reload handle across rebuilds so a pull can reach the

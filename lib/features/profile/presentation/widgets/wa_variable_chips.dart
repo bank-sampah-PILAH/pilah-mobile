@@ -7,7 +7,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 ///
 /// Kept as its own widget (rather than inline in the settings page) so the chip
 /// list — including the `{daftar_item_harga}` augmentation below — can be
-/// widget-tested without the page's cubit, bloc, and service-locator wiring.
+/// widget-tested without the page or service-locator wiring.
 class WaVariableChips extends StatelessWidget {
   /// The variable tokens advertised by the backend (`variabel_tersedia`).
   final List<String> variables;

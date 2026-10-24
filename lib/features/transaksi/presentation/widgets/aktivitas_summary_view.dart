@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import '../../domain/entities/aktivitas_summary.dart';
-import '../cubit/riwayat_aktivitas_cubit.dart';
-import '../cubit/riwayat_aktivitas_state.dart';
+import '../providers/riwayat_aktivitas_provider.dart';
+import '../states/riwayat_aktivitas_state.dart';
 
 /// Displays authoritative totals for the selected period and filters.
 class AktivitasSummaryView extends StatelessWidget {
   const AktivitasSummaryView({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
-        builder: (context, state) {
+  Widget build(BuildContext context) => Consumer(
+        builder: (context, ref, child) {
+          final state = ref.watch(riwayatAktivitasProvider);
           if (state.status == AktivitasStatus.initial ||
               state.status == AktivitasStatus.loading) {
             return const Padding(
@@ -52,9 +52,9 @@ class AktivitasSummaryStrip extends StatelessWidget {
   const AktivitasSummaryStrip({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<RiwayatAktivitasCubit, RiwayatAktivitasState>(
-        builder: (context, state) {
+  Widget build(BuildContext context) => Consumer(
+        builder: (context, ref, child) {
+          final state = ref.watch(riwayatAktivitasProvider);
           final summary = state.summary;
           if (state.status != AktivitasStatus.loaded ||
               summary == null ||

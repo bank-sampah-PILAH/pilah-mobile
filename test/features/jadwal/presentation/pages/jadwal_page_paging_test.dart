@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
 
 class _MockJadwalRepository extends Mock implements JadwalRepository {}
@@ -17,7 +17,7 @@ class _MockJadwalRepository extends Mock implements JadwalRepository {}
 void main() {
   final today = DateUtils.dateOnly(DateTime.now());
   late _MockJadwalRepository repository;
-  late JadwalCubit cubit;
+  late JadwalNotifier cubit;
 
   setUpAll(() {
     registerFallbackValue(DateTime(2026, 10, 10));
@@ -28,10 +28,8 @@ void main() {
     repository = _MockJadwalRepository();
     when(() => repository.getCalendarDates(any(), any()))
         .thenAnswer((_) async => const Right({}));
-    cubit = JadwalCubit(repository);
+    cubit = JadwalNotifier(repository);
   });
-
-  tearDown(() => cubit.close());
 
   // Tall enough that the footer below the agenda is built (lists are lazy).
   void tallScreen(WidgetTester tester) {
@@ -41,10 +39,11 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  Widget app({DateTime? initialDate, bool customerMode = false}) => MaterialApp(
-        home: BlocProvider.value(
-          value: cubit,
-          child:
+  Widget app({DateTime? initialDate, bool customerMode = false}) =>
+      ProviderScope(
+        overrides: [jadwalProvider.overrideWith(() => cubit)],
+        child: MaterialApp(
+          home:
               JadwalPage(initialDate: initialDate, customerMode: customerMode),
         ),
       );
