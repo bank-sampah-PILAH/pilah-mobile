@@ -4,4 +4,5 @@ abstract final class AppLocations {
   static const profile = '/profile';
   static const history = '/riwayat';
   static const customerBank = '/bank-sampah';
+  static const cariBank = '/cari-bank-sampah';
 }
