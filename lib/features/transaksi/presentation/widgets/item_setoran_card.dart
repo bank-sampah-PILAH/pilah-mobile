@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
 import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 class ItemSetoranCard extends StatelessWidget {
   final int index;
   final Map<String, dynamic> itemData;
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
+
+  /// Dipanggil ketika pengelola menekan Enter pada kotak berat. Opsional, jadi
+  /// pemanggil yang tidak peduli tidak perlu berubah.
+  final VoidCallback? onSubmitted;
   final bool hasError;
   final String? errorText;
 
@@ -21,27 +28,13 @@ class ItemSetoranCard extends StatelessWidget {
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
+    this.onSubmitted,
     this.hasError = false,
     this.errorText,
   });
 
-  static const Color emeraldPrimary = Color(0xFF006D44);
-  static const Color errorLight = Color(0xFFFEF2F2);
-  static const Color errorColor = Color(0xFFDC2626);
-
-  String _formatCurrency(int value) {
-    String str = value.toString();
-    String result = '';
-    int count = 0;
-    for (int i = str.length - 1; i >= 0; i--) {
-      result = str[i] + result;
-      count++;
-      if (count % 3 == 0 && i != 0) {
-        result = '.$result';
-      }
-    }
-    return 'Rp $result';
-  }
+  static const Color errorLight = AppColors.dangerLight;
+  static const Color errorColor = AppColors.danger;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +48,7 @@ class ItemSetoranCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: Colors.grey[200]!, width: 1.5),
       ),
       child: Column(
@@ -70,18 +63,19 @@ class ItemSetoranCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                         color: hasError ? errorColor : Colors.grey[200]!),
                   ),
-                  child: BlocBuilder<HargaCubit, HargaState>(
-                    builder: (context, state) {
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      ref.watch(hargaProvider);
                       // Source the options from the full active list rather than
                       // the price-list page's tab/search-filtered state, so the
                       // dropdown always offers every active jenis sampah. The
-                      // BlocBuilder still rebuilds this once loadHarga() completes.
+                      // provider watch rebuilds this when loadHarga() completes.
                       final List<HargaEntity> activeList =
-                          context.read<HargaCubit>().activeJenisSampah;
+                          ref.read(hargaProvider.notifier).activeJenisSampah;
                       // Guard against a stale selection no longer in the list
                       // (e.g. a jenis that was deactivated): DropdownButton
                       // asserts if its value has no matching item.
@@ -92,12 +86,13 @@ class ItemSetoranCard extends StatelessWidget {
 
                       return DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           isExpanded: true,
                           value: selectedValue,
                           hint: Row(
                             children: [
                               const Icon(Icons.recycling,
-                                  color: emeraldPrimary, size: 20),
+                                  color: AppColors.greenDark, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'Pilih Jenis',
@@ -148,13 +143,13 @@ class ItemSetoranCard extends StatelessWidget {
               const SizedBox(width: 12),
               InkWell(
                 onTap: onDelete,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
                     color: errorLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Icon(Icons.close, color: errorColor, size: 20),
                 ),
@@ -184,7 +179,7 @@ class ItemSetoranCard extends StatelessWidget {
                 width: 120,
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Row(
@@ -202,13 +197,17 @@ class ItemSetoranCard extends StatelessWidget {
                       child: TextFormField(
                         key: ValueKey(harga),
                         initialValue: harga > 0
-                            ? _formatCurrency(harga).replaceAll('Rp ', '')
+                            ? CurrencyFormatter.formatRupiah(harga)
+                                .replaceAll('Rp ', '')
                             : '',
                         readOnly: true,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.only(bottom: 12),
-                        ),
+                        // readOnly sendiri masih menerima fokus, sehingga Tab
+                        // berhenti pada kolom yang tidak bisa diketik. Harga
+                        // datang dari master jenis sampah, bukan dari
+                        // pengelola, jadi ia tidak punya urusan dengan papan
+                        // tik sama sekali.
+                        canRequestFocus: false,
+                        decoration: appBorderlessInputDecoration(),
                         style: AppTextStyle.small.copyWith(
                           color: Colors.grey.shade700,
                           fontWeight: FontWeight.bold,
@@ -235,7 +234,7 @@ class ItemSetoranCard extends StatelessWidget {
                 height: 40,
                 width: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: TextFormField(
@@ -254,14 +253,15 @@ class ItemSetoranCard extends StatelessWidget {
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
                   ],
                   textAlign: TextAlign.center,
+                  // Satu baris, jadi Enter tidak punya makna lain di sini dan
+                  // bebas dipakai untuk mengirim.
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => onSubmitted?.call(),
                   style: AppTextStyle.small.copyWith(
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.only(bottom: 12),
-                  ),
+                  decoration: appBorderlessInputDecoration(),
                   onChanged: (value) {
                     final cleanValue = value.replaceAll(',', '.');
                     final newBerat = num.tryParse(cleanValue) ?? 0.0;
@@ -289,9 +289,9 @@ class ItemSetoranCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    _formatCurrency(subtotal),
+                    CurrencyFormatter.formatRupiah(subtotal),
                     style: AppTextStyle.title1.copyWith(
-                      color: emeraldPrimary,
+                      color: AppColors.greenDark,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),

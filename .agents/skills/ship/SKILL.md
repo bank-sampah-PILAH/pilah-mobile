@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Create an isolated sibling worktree under the repository parent's <repo>-worktrees directory, implement a requested feature or fix on a prompt-derived feature/<name> or fix/<name> branch, validate it with the repository's own checks, create atomic conventional commits, push the branch, and open a GitHub pull request or GitLab merge request. Use `staging` as the default checkout and PR/MR target unless the user explicitly names another branch. Use ONLY when the user's message starts with the literal word `ship` followed by a prompt. This trigger is mandatory regardless of change size, simplicity, or whether the user explicitly mentions a PR/MR.
+description: Create an isolated sibling worktree under the repository parent's <repo>-worktrees directory, implement a requested feature or fix on a prompt-derived feature/<name> or fix/<name> branch, or a Linear-linked feature/<issue-id> branch, validate it with the repository's own checks, create atomic conventional commits, push the branch, and open a GitHub pull request or GitLab merge request. Use `staging` as the checkout baseline and PR/MR target unless the user explicitly names another branch; never infer `main`. Use ONLY when the user's message starts with the literal word `ship` followed by a prompt. This trigger is mandatory regardless of change size, simplicity, or whether the user explicitly mentions a PR/MR.
 argument-hint: "<feature or fix prompt>"
 compatibility: Requires git and either gh or glab; run from an existing Git repository.
 metadata:
@@ -25,9 +25,10 @@ Execute the complete delivery workflow from an existing repository checkout. Wor
   - a short kebab-case `<name>` that accurately summarizes the requested change.
 - Resolve the baseline and target branches before creating worktrees:
   - default both `baseline_branch` and `target_branch` to `staging`;
+  - apply this `staging` default independently to every repository;
   - if the prompt explicitly names another checkout or base branch, use it for `baseline_branch`;
   - if the prompt explicitly names another PR/MR target, use it for `target_branch`;
-  - never silently fall back to the remote default branch when the resolved branch is missing.
+  - never infer `main` or silently fall back to the remote default branch when the resolved branch is missing.
 - If no repository path is given, use the current repository. Resolve its main checkout with `git rev-parse --show-toplevel`. Derive the worktree parent from the main checkout's actual parent directory; do not assume a fixed root such as `~/projects`.
 - Inspect `git status --short --branch`, remotes, the default branch, project documentation, contribution instructions, and available scripts before changing anything.
 - Do not overwrite, stash, reset, or delete existing work. If the main checkout has uncommitted changes, stop and report that it must be clean before shipping.
@@ -53,7 +54,7 @@ For example, a main checkout at `/work/project-a` uses `/work/project-a-worktree
   - worktree root: `<parent>/<repo>-worktrees`;
   - worktree path: `<parent>/<repo>-worktrees/<kind>-<name>`;
   - branch: `<kind>/<name>`.
-  - The branch must therefore be `feature/name` or `fix/name`; the worktree directory is `<kind>-<name>`.
+  - The branch must therefore be `feature/<issue-id>` for a Linear-linked change, or `feature/<name>` / `fix/<name>` otherwise; the worktree directory is `<kind>-<name>`.
 - Create the parent directory only when needed, then create the worktree from `origin/<baseline_branch>`:
 
 ```bash
@@ -82,6 +83,11 @@ fi
   this step or assume `git worktree add` includes ignored files.
 - If either the branch or worktree path already exists, stop and ask for a different name. Never reuse or delete it automatically.
 - Perform all implementation, tests, commits, pushes, and PR/MR commands from the new worktree.
+- For this mobile repository, leave the canonical checkout's detached submodule
+  worktree untouched. Do all implementation, validation, commits, pushes, and
+  PR operations in the new sibling worktree.
+- If work also touches `pilah-be`, follow the workspace `multi-ship` skill and
+  use the same issue-derived branch across both repositories.
 
 ## 3. Understand and implement
 
@@ -99,6 +105,34 @@ Run the checks documented by the repository first. If none are documented, detec
 - Rust: run `cargo fmt --check`, `cargo check`, `cargo test`, and configured clippy checks.
 - Python: run configured formatter, linter, type checker, and test commands; prefer project scripts or `pyproject.toml` tooling.
 - Other projects: use their documented formatter, linter, build, and test commands.
+
+For mobile code or behavior changes, first follow `AGENTS.md` to provision the
+ignored Android Firebase config; never use dummy config or commit it. If the
+file is unavailable, stop and report the blocker. Then run `flutter analyze`
+and `flutter test`, and build both targets:
+
+```bash
+flutter build apk --debug -t lib/main_development.dart
+flutter build web --release -t lib/main_development.dart
+```
+
+For web UI changes, after the release build succeeds, serve `build/web` from
+this repository with Python's standard-library server:
+`python3 -m http.server 7357 --bind 127.0.0.1 --directory build/web`
+(use a free port if needed), then use Playwright to check desktop-sized and
+mobile-sized browser viewports. Both entrypoints skip Firebase initialization
+on web because no current web flow uses Firebase; add FlutterFire web options
+before introducing a Firebase-backed web feature. Mobile viewport emulation
+verifies responsive web UI only, not native mobile behavior. Web support is limited to Super Admin,
+Pengurus, and Pengurus Induk; do not claim Nasabah web support. For user-visible
+web UI changes, capture proof screenshots for affected roles and viewports.
+Before the PR number exists, keep captures outside the repository. Skip
+screenshots for non-UI changes, do not commit artifacts, and state in the PR
+description when screenshots do not apply. After the PR exists, upload the
+screenshots to the PR description as described in
+[Upload screenshots](#upload-screenshots). For documentation-only changes, run the
+repository's documentation checks and `git diff --check`; skip Flutter
+analyze/tests, builds, browser checks, and screenshots.
 
 Fix failures caused by the implementation and rerun the failed checks. Do not bypass hooks or use `--no-verify`. Record the exact successful validation commands for the final response. If a check cannot run because a required tool or service is unavailable, stop before committing and report the blocker.
 
@@ -135,7 +169,45 @@ git push --set-upstream origin <kind>/<name>
 - Use `target_branch` as the PR/MR target; it defaults to `staging` unless the prompt explicitly names another target.
 - Derive a concise PR/MR title from the prompt and commits. Use the relevant conventional type prefix only when it improves clarity; do not duplicate noisy prefixes.
 - Write a focused description containing summary, key changes, and testing. Include the exact validation commands. Use a temporary file in the session scratchpad for multi-line descriptions, not a new project file.
-- Create the PR/MR with the CLI and capture its returned URL and title. Do not assign reviewers, enable auto-merge, delete the source branch, or mark draft unless explicitly requested.
+- Create the PR/MR with the CLI and capture its returned URL and title.
+- Immediately assign the authenticated user to the new PR/MR and verify the command succeeds:
+  - GitHub: `gh pr edit "<pr-url>" --add-assignee "@me"`.
+  - GitLab: `self_username="$(glab api user | jq -r '.username')"` followed by `glab mr update --assignee "$self_username"` from the new worktree.
+- Do not assign reviewers, enable auto-merge, delete the source branch, or mark draft unless explicitly requested.
+
+### Upload screenshots
+
+Use the `gh image` extension (`gh extension install drogers0/gh-image`) so
+images are hosted as GitHub `user-attachments` and render in the PR. The
+repository is public: only demo data may appear in screenshots.
+
+Check `gh-image --version` after installing or upgrading. On Linux the install
+picked the `hbd-linux-amd64` release asset (version ends in `-hbd`) instead of
+the default `linux-amd64`. Replace it with the default asset and verify it with
+`gh attestation verify <file> --repo drogers0/gh-image` (must exit 0) before
+copying it over `~/.local/share/gh/extensions/gh-image/gh-image`.
+
+Run it with an empty `HOME` and the `gh` token in the environment, so the
+upload goes through the token route and the browser-cookie fallback has no
+cookie store to read. Never set `GH_SESSION_TOKEN`.
+
+```bash
+EMPTY="$(mktemp -d)"
+env -u GH_SESSION_TOKEN HOME="$EMPTY" XDG_CONFIG_HOME="$EMPTY/c" \
+  XDG_DATA_HOME="$EMPTY/d" XDG_CACHE_HOME="$EMPTY/k" GH_TOKEN="$(gh auth token)" \
+  ~/.local/share/gh/extensions/gh-image/gh-image \
+  --repo <owner>/<repo> ./shot-1.png ./shot-2.png
+```
+
+- Call the installed binary directly, as above: going through `gh image` would
+  look for the `gh` config under the empty `HOME`.
+- Stop and report if stderr says it is using a browser session.
+- Each file prints one markdown image line. Put them in the PR description
+  with `gh pr edit <pr> --repo <owner>/<repo> --body-file <file>`; outside a git
+  directory `gh pr view` also needs `--repo`.
+- If `gh image` is unavailable, push the files to an orphan branch named
+  `pr-<PR_NUMBER>-screenshots` under `artifacts/pr-<PR_NUMBER>/` and link them
+  with `raw.githubusercontent.com`. Never delete that branch.
 
 ## 7. Final response
 

@@ -1,0 +1,65 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
+
+class DemoLoginButton extends StatelessWidget {
+  final bool isLoading;
+  final List<DemoLoginProfile> profiles;
+
+  const DemoLoginButton({
+    super.key,
+    this.isLoading = false,
+    this.profiles = DemoLoginProfiles.all,
+  });
+
+  Future<void> _selectProfile(BuildContext context) async {
+    final profile = await showModalBottomSheet<DemoLoginProfile>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(24, 20, 24, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pilih akun demo',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
+                ),
+              ),
+              ...profiles.map(
+                (profile) => ListTile(
+                  title: Text(profile.label),
+                  subtitle: Text(profile.email),
+                  onTap: () => Navigator.of(context).pop(profile),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (profile == null || !context.mounted) return;
+
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .loginWithGoogle(profile.idToken);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      label: 'Masuk dengan akun demo',
+      variant: AppButtonVariant.neutral,
+      icon: Icons.science_outlined,
+      onPressed: isLoading ? null : () => _selectProfile(context),
+    );
+  }
+}

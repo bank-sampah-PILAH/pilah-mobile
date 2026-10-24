@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart';
 
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class PilihNasabahSection extends StatelessWidget {
   final NasabahEntity? selectedCustomer;
@@ -26,28 +29,28 @@ class PilihNasabahSection extends StatelessWidget {
       children: [
         InkWell(
           onTap: () async {
-            final result = await showModalBottomSheet<NasabahEntity>(
+            // Bottom sheet pada telepon, dialog pada peramban. Wadahnya
+            // dipilih oleh showAdaptivePicker; di sini hanya isinya.
+            final result = await showAdaptivePicker<NasabahEntity>(
               context: context,
-              useRootNavigator: true,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => const PilihNasabahBottomSheet(),
+              builder: (context, presentation) =>
+                  PilihNasabahPicker(presentation: presentation),
             );
             if (result != null) {
               onCustomerSelected(result);
             }
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
                   color: hasError
-                      ? const Color(0xFFDC2626) // errorColor
+                      ? AppColors.danger // errorColor
                       : (selectedCustomer != null
-                          ? const Color(0xFF006D44)
+                          ? AppColors.greenDark
                           : Colors.grey[300]!),
                   width: 1.5),
             ),
@@ -57,7 +60,7 @@ class PilihNasabahSection extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF5F5F5), // grey[100]
+                          color: AppColors.fill, // grey[100]
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.person_outline,
@@ -82,7 +85,7 @@ class PilihNasabahSection extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           color: selectedCustomer!.avatarColor,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -137,7 +140,7 @@ class PilihNasabahSection extends StatelessWidget {
             child: Text(
               errorText!,
               style: AppTextStyle.small.copyWith(
-                color: const Color(0xFFDC2626),
+                color: AppColors.danger,
               ),
             ),
           ),

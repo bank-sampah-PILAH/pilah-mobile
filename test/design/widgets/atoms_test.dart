@@ -1,0 +1,203 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/atom/app_text_button.dart';
+import 'package:pilah_mobile/design/widgets/atom/app_text_field.dart';
+import 'package:pilah_mobile/design/widgets/atom/page_indicator.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
+
+import '../../support/pump_app.dart';
+
+Widget _host(Widget child) => MaterialApp(home: Scaffold(body: child));
+
+void main() {
+  group('AppTextButton', () {
+    testWidgets('reports taps on its label', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+          _host(AppTextButton(label: 'Lupa?', onTap: () => taps++)));
+
+      await tester.tap(find.text('Lupa?'));
+
+      expect(taps, 1);
+    });
+  });
+
+  group('AppTextButton semantics', () {
+    testWidgets('is announced as a button with its label', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester
+          .pumpWidget(_host(AppTextButton(label: 'Lupa?', onTap: () {})));
+
+      expect(
+        tester.getSemantics(find.text('Lupa?')),
+        isSemantics(label: 'Lupa?', isButton: true),
+      );
+      handle.dispose();
+    });
+  });
+
+  group('PageIndicator', () {
+    testWidgets('draws one dot per page', (tester) async {
+      await tester.pumpWidget(_host(PageIndicator(length: 4, activeIndex: 2)));
+
+      expect(find.byType(CircleAvatar), findsNWidgets(4));
+    });
+  });
+
+  group('AppTextField', () {
+    testWidgets('shows the label, hint and reports typing', (tester) async {
+      final controller = TextEditingController();
+      String? typed;
+      await tester.pumpWidget(_host(AppTextField(
+        controller: controller,
+        label: 'Nama',
+        hint: 'Isi nama',
+        onChanged: (v) => typed = v,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      )));
+      expect(find.text('Nama'), findsOneWidget);
+      expect(find.text('Isi nama'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'a1b2');
+
+      expect(typed, '12');
+    });
+
+    testWidgets('a label turns red when the field is in error', (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(),
+        label: 'Nama',
+        hint: 'x',
+        isError: true,
+      )));
+
+      expect(
+        tester.widget<Text>(find.text('Nama')).style?.color,
+        AppColors.danger,
+      );
+    });
+
+    testWidgets('looks like every other field: white, 12 rounded, green focus',
+        (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(),
+        hint: 'Isi nama',
+      )));
+
+      final decoration =
+          tester.widget<TextField>(find.byType(TextField)).decoration!;
+      expect(decoration.filled, isTrue);
+      expect(decoration.fillColor, Colors.white);
+      final focused = decoration.focusedBorder! as OutlineInputBorder;
+      expect(focused.borderRadius, BorderRadius.circular(12));
+      expect(focused.borderSide.color, AppColors.greenDark);
+    });
+
+    testWidgets('the reveal icon is the app green, not the retired seed blue',
+        (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(text: 'rahasia'),
+        hint: 'Sandi',
+        obscureText: true,
+      )));
+
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.visibility)).color,
+        AppColors.greenDark,
+      );
+    });
+
+    testWidgets('a password field can reveal and hide its text',
+        (tester) async {
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(text: 'rahasia'),
+        hint: 'Sandi',
+        obscureText: true,
+      )));
+      expect(
+          tester.widget<TextField>(find.byType(TextField)).obscureText, isTrue);
+
+      await tester.tap(find.byIcon(Icons.visibility));
+      await tester.pump();
+      expect(tester.widget<TextField>(find.byType(TextField)).obscureText,
+          isFalse);
+
+      await tester.tap(find.byIcon(Icons.visibility_off));
+      await tester.pump();
+      expect(
+          tester.widget<TextField>(find.byType(TextField)).obscureText, isTrue);
+    });
+  });
+
+  group('AppTextField password toggle', () {
+    testWidgets('is labelled for screen readers and flips its label',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_host(AppTextField(
+        controller: TextEditingController(text: 'rahasia'),
+        hint: 'Sandi',
+        obscureText: true,
+      )));
+
+      expect(
+        tester.getSemantics(find.byIcon(Icons.visibility)),
+        isSemantics(tooltip: 'Tampilkan kata sandi', isButton: true),
+      );
+
+      await tester.tap(find.byIcon(Icons.visibility));
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(find.byIcon(Icons.visibility_off)),
+        isSemantics(tooltip: 'Sembunyikan kata sandi', isButton: true),
+      );
+      handle.dispose();
+    });
+  });
+
+  group('ForgotPasswordPage', () {
+    testWidgets('formats the phone number and goes back on send',
+        (tester) async {
+      await pumpRouted(
+        tester,
+        // A non-const instance so the constructor itself runs.
+        // ignore: prefer_const_constructors
+        ForgotPasswordPage(),
+        pushed: true,
+      );
+      expect(find.text('Lupa kata sandi?'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '081234567890');
+      expect(find.text('0812-3456-7890'), findsOneWidget);
+
+      await tester.tap(find.text('Kirim'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/'), findsOneWidget);
+    });
+
+    testWidgets(
+        'looks like the rest of the app: header, green icon, white page',
+        (tester) async {
+      await pumpRouted(
+        tester,
+        // ignore: prefer_const_constructors
+        ForgotPasswordPage(),
+        pushed: true,
+      );
+
+      expect(find.byType(AppBackHeader), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.lock_reset)).color,
+        AppColors.greenDark,
+      );
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+        Colors.white,
+      );
+    });
+  });
+}

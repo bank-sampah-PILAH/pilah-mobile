@@ -1,0 +1,146 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/theme/app_theme.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_konfirmasi_sheet.dart';
+
+void main() {
+  bool? answer;
+
+  Future<void> open(
+    WidgetTester tester, {
+    KonfirmasiNada nada = KonfirmasiNada.normal,
+    Widget? isi,
+    // A phone unless a test says otherwise: the container follows the width.
+    Size size = const Size(390, 844),
+  }) async {
+    answer = null;
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light,
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: TextButton(
+            key: const Key('buka'),
+            onPressed: () async => answer = await showPencairanKonfirmasi(
+              context,
+              icon: Icons.payments_outlined,
+              judul: 'Konfirmasi pembayaran',
+              pesan: 'Saldo akan dikurangi.',
+              isi: isi,
+              jawaban: const KonfirmasiJawaban('Ya, sudah dibayar', 'Belum'),
+              nada: nada,
+            ),
+            child: const Text('buka'),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.byKey(const Key('buka')));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('on a phone it is a white, rounded bottom sheet, not a dialog',
+      (tester) async {
+    await open(tester);
+
+    expect(find.byType(Dialog), findsNothing);
+    final box = tester.widget<Container>(find
+        .descendant(
+            of: find.byType(BottomSheet), matching: find.byType(Container))
+        .first);
+    final decoration = box.decoration! as BoxDecoration;
+    expect(decoration.color, Colors.white);
+    expect(decoration.borderRadius,
+        const BorderRadius.vertical(top: Radius.circular(24)));
+  });
+
+  testWidgets('in a browser window it is a centred dialog that still answers',
+      (tester) async {
+    await open(tester, size: const Size(1440, 900));
+
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.text('Konfirmasi pembayaran'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('konfirmasi-ya')));
+    await tester.pumpAndSettle();
+
+    expect(answer, isTrue);
+    expect(find.byType(Dialog), findsNothing);
+  });
+
+  testWidgets('says what is asked: an icon, a title and a line of explanation',
+      (tester) async {
+    await open(tester);
+
+    expect(find.byIcon(Icons.payments_outlined), findsOneWidget);
+    expect(find.text('Konfirmasi pembayaran'), findsOneWidget);
+    expect(find.text('Saldo akan dikurangi.'), findsOneWidget);
+  });
+
+  testWidgets('can carry its own content between the text and the buttons',
+      (tester) async {
+    await open(tester, isi: const Text('3 nasabah', key: Key('isi')));
+
+    expect(find.byKey(const Key('isi')), findsOneWidget);
+    expect(tester.getTopLeft(find.byKey(const Key('isi'))).dy,
+        greaterThan(tester.getTopLeft(find.text('Saldo akan dikurangi.')).dy));
+    expect(tester.getTopLeft(find.byKey(const Key('isi'))).dy,
+        lessThan(tester.getTopLeft(find.text('Ya, sudah dibayar')).dy));
+  });
+
+  testWidgets('the two answers sit side by side, the no on the left',
+      (tester) async {
+    await open(tester);
+
+    final tidak = tester.getRect(find.byKey(const Key('konfirmasi-tidak')));
+    final ya = tester.getRect(find.byKey(const Key('konfirmasi-ya')));
+    expect(tidak.right, lessThanOrEqualTo(ya.left));
+    expect((tidak.center.dy - ya.center.dy).abs(), lessThan(2));
+  });
+
+  testWidgets('yes answers true and closes', (tester) async {
+    await open(tester);
+
+    await tester.tap(find.text('Ya, sudah dibayar'));
+    await tester.pumpAndSettle();
+
+    expect(answer, isTrue);
+    expect(find.byType(BottomSheet), findsNothing);
+  });
+
+  testWidgets('no, and dismissing, answer false', (tester) async {
+    await open(tester);
+    await tester.tap(find.text('Belum'));
+    await tester.pumpAndSettle();
+    expect(answer, isFalse);
+
+    await open(tester);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(answer, isFalse);
+  });
+
+  testWidgets('a harmful action reads red, a plain one green', (tester) async {
+    // The colour the button is painted with, which is what a user sees.
+    Color? yaColor() => tester
+        .widget<Material>(find
+            .descendant(
+              of: find.byKey(const Key('konfirmasi-ya')),
+              matching: find.byType(Material),
+            )
+            .first)
+        .color;
+
+    await open(tester);
+    expect(yaColor(), AppColors.greenDark);
+    await tester.tap(find.text('Belum'));
+    await tester.pumpAndSettle();
+
+    await open(tester, nada: KonfirmasiNada.bahaya);
+    expect(yaColor(), const Color(0xFFC62828));
+  });
+}

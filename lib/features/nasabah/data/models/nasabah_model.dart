@@ -1,16 +1,18 @@
-import 'package:flutter/material.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 /// Read model: maps the PILAH `NasabahSerializer` JSON to [NasabahEntity].
 ///
 /// Backend keys: id, kode, nama, jenis_kelamin, tanggal_lahir, no_hp, alamat,
-/// tanggal_daftar, is_active, total_saldo, created_at.
+/// tanggal_daftar, is_active, total_saldo, punya_akun, created_at.
 class NasabahModel extends NasabahEntity {
   NasabahModel({
     required super.id,
     required super.idNasabah,
     required super.name,
+    required super.email,
     required super.phone,
     required super.balance,
     required super.isActive,
@@ -21,15 +23,18 @@ class NasabahModel extends NasabahEntity {
     required super.jenisKelamin,
     required super.tanggalLahir,
     required super.tanggalDaftar,
+    required super.status,
+    required super.punyaAkun,
   });
 
   factory NasabahModel.fromJson(Map<String, dynamic> json) {
     final nama = (json['nama'] as String?)?.trim() ?? '';
-    final palette = _avatarPaletteFor(nama);
+    final palette = avatarPaletteFor(nama);
     return NasabahModel(
       id: json['id']?.toString() ?? '',
       idNasabah: json['kode']?.toString() ?? '',
       name: nama,
+      email: json['email']?.toString() ?? '',
       phone: json['no_hp']?.toString() ?? '',
       balance: formatRupiah(json['total_saldo']),
       isActive: json['is_active'] as bool? ?? true,
@@ -40,7 +45,21 @@ class NasabahModel extends NasabahEntity {
       jenisKelamin: genderLabel(json['jenis_kelamin']?.toString()),
       tanggalLahir: isoToDisplay(json['tanggal_lahir']?.toString()),
       tanggalDaftar: isoToDisplay(json['tanggal_daftar']?.toString()),
+      status: json['status']?.toString() ?? 'approved',
+      punyaAkun: json['punya_akun'] as bool? ?? false,
     );
+  }
+
+  /// UI label for the membership status (PIL-188).
+  String statusLabel() {
+    switch (status) {
+      case 'pending':
+        return 'Menunggu';
+      case 'rejected':
+        return 'Ditolak';
+      default:
+        return 'Disetujui';
+    }
   }
 
   /// Builds the request body for POST/PUT `/nasabah` from a [NasabahRequest].
@@ -48,6 +67,7 @@ class NasabahModel extends NasabahEntity {
     return {
       'kode': request.kode.trim(),
       'nama': request.nama.trim(),
+      'email': request.email.trim(),
       'jenis_kelamin': genderValue(request.jenisKelamin),
       'tanggal_lahir': displayToIso(request.tanggalLahir),
       'no_hp': request.noHp.trim(),
@@ -57,24 +77,8 @@ class NasabahModel extends NasabahEntity {
 
   // ---- formatting helpers -------------------------------------------------
 
-  static String formatRupiah(dynamic value) {
-    final amount = double.tryParse(value?.toString() ?? '') ?? 0;
-    final digits = amount.round().abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(digits[i]);
-    }
-    final sign = amount < 0 ? '-' : '';
-    return 'Rp $sign${buffer.toString()}';
-  }
-
-  static String initialsOf(String name) {
-    final parts =
-        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return 'NN';
-    return parts.take(2).map((p) => p[0].toUpperCase()).join();
-  }
+  static String formatRupiah(dynamic value) =>
+      CurrencyFormatter.formatRupiahValue(value);
 
   /// Maps the backend gender value to the UI label used by the dropdowns.
   static String genderLabel(String? value) {
@@ -116,29 +120,33 @@ class NasabahModel extends NasabahEntity {
     final year = parts[2];
     return '$year-$month-$day';
   }
-
-  static (Color, Color) _avatarPaletteFor(String name) {
-    if (name.isEmpty) return _avatarPalette.first;
-    return _avatarPalette[name.hashCode.abs() % _avatarPalette.length];
-  }
-
-  static const List<(Color, Color)> _avatarPalette = [
-    (Color(0xFFEAF5EC), Color(0xFF2F6B45)), // green
-    (Color(0xFFDBEAFE), Color(0xFF1E40AF)), // blue
-    (Color(0xFFF3E8FF), Color(0xFF6B21A8)), // purple
-    (Color(0xFFFFF8D6), Color(0xFFD4A017)), // yellow
-    (Color(0xFFFFEDD5), Color(0xFF9A3412)), // orange
-    (Color(0xFFCCFBF1), Color(0xFF0F766E)), // teal
-  ];
 }
 
 extension NasabahRingkasanMapper on NasabahRingkasan {
+  /// [json] adalah seluruh respons `GET /nasabah/{id}`.
   static NasabahRingkasan fromJson(Map<String, dynamic> json) {
+    final ringkasan =
+        json['ringkasan_transaksi'] as Map<String, dynamic>? ?? const {};
+    final akun = json['profil_akun'] as Map<String, dynamic>?;
     return NasabahRingkasan(
-      jumlahTransaksi: (json['jumlah_transaksi'] as num?)?.toInt() ?? 0,
-      totalKg: WeightFormatter.formatKg(json['total_kg']),
+      jumlahTransaksi: (ringkasan['jumlah_transaksi'] as num?)?.toInt() ?? 0,
+      totalKg: WeightFormatter.formatKg(ringkasan['total_kg']),
       tanggalTransaksiTerakhir: NasabahModel.isoToDisplay(
-          json['tanggal_transaksi_terakhir']?.toString()),
+          ringkasan['tanggal_transaksi_terakhir']?.toString()),
+      profilAkun: akun == null
+          ? null
+          : NasabahProfilAkun(
+              nama: akun['nama']?.toString() ?? '',
+              jenisKelamin:
+                  NasabahModel.genderLabel(akun['jenis_kelamin']?.toString()),
+              tanggalLahir:
+                  NasabahModel.isoToDisplay(akun['tanggal_lahir']?.toString()),
+              alamat: akun['alamat']?.toString() ?? '',
+              noHp: akun['no_hp']?.toString() ?? '',
+            ),
+      profilBerbeda: (json['profil_berbeda'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 }

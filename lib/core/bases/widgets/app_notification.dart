@@ -2,6 +2,7 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 class AppNotification {
@@ -11,8 +12,8 @@ class AppNotification {
   /// what the user just did; a warning is an aside about something that went a
   /// different way than expected but cost them nothing. The tint reads quieter
   /// than either, and the border supplies the edge the solid fill would.
-  static const Color _warningBackground = Color(0xFFFEF3C7);
-  static const Color _warningForeground = Color(0xFFD97706);
+  static const Color _warningBackground = AppColors.warningLight;
+  static const Color _warningForeground = AppColors.warning;
 
   /// One elevation shared by all three tones, so they read as the same
   /// component wearing different colours.
@@ -81,7 +82,7 @@ class AppNotification {
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.greenDark,
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const Icon(Icons.check_circle, color: Colors.white, size: 28),
       mainButton: hasAction
           ? TextButton(
@@ -125,7 +126,7 @@ class AppNotification {
       flushbarPosition: FlushbarPosition.TOP,
       backgroundColor: AppColors.greenDark,
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const SizedBox(
         width: 28,
         height: 28,
@@ -154,9 +155,9 @@ class AppNotification {
         style: AppTextStyle.small.copyWith(color: Colors.white, fontSize: 12),
       ),
       flushbarPosition: FlushbarPosition.TOP,
-      backgroundColor: const Color(0xFFDC2626), // error red
+      backgroundColor: AppColors.danger, // error red
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),
       duration: const Duration(seconds: 4),
       boxShadows: _shadow,
@@ -190,7 +191,7 @@ class AppNotification {
       borderColor: _warningForeground,
       borderWidth: 1,
       margin: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       icon: const Icon(Icons.warning_amber_rounded,
           color: _warningForeground, size: 28),
       duration: const Duration(seconds: 4),

@@ -20,7 +20,7 @@ class NetworkService {
   }) {
     dio.interceptors.add(interceptors);
     // Added after the logger so a dropped GET is still logged, then quietly
-    // retried once before the failure ever reaches a cubit.
+    // retried once before the failure reaches state handling.
     dio.interceptors.add(RetryInterceptor(dio));
   }
 
@@ -90,6 +90,26 @@ class NetworkService {
     Response response = await dio
         .get(environment.baseUrl + path,
             queryParameters: queryParams,
+            options: options.copyWith(
+              headers: headers,
+              responseType: ResponseType.bytes,
+            ))
+        .timeout(globalTimeout);
+    return response;
+  }
+
+  /// POSTs JSON and gets a binary payload back (e.g. an export of what is on
+  /// screen). Like [getBytes], it returns the raw [Response] for its headers.
+  Future<Response> postBytes(
+    String path, {
+    Map<String, dynamic>? queryParams,
+    Map<String, dynamic>? data,
+  }) async {
+    final headers = headersRequest()..['Accept'] = '*/*';
+    Response response = await dio
+        .post(environment.baseUrl + path,
+            queryParameters: queryParams,
+            data: json.encode(data),
             options: options.copyWith(
               headers: headers,
               responseType: ResponseType.bytes,
@@ -223,7 +243,7 @@ final interceptors = QueuedInterceptorsWrapper(onRequest: (options, handler) {
 ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}''',
       'headers': resp.requestOptions.headers,
       'queryParams': resp.requestOptions.queryParameters,
-      'body': resp.requestOptions.data,
+      'body': _requestBodyForLog(resp.requestOptions),
       'response': isBytes ? 'bytes' : resp.data,
     });
   }
@@ -235,7 +255,7 @@ ${resp.statusCode}: ${resp.requestOptions.baseUrl}${resp.requestOptions.path}'''
 ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOptions.path}''',
       'headers': err.requestOptions.headers,
       'queryParams': err.requestOptions.queryParameters,
-      'body': err.requestOptions.data,
+      'body': _requestBodyForLog(err.requestOptions),
       'response': err.response?.data,
       'type': err.type,
       // `type` alone can't tell a dropped connection from a parse failure —
@@ -254,6 +274,19 @@ ${err.response?.statusCode ?? 0}: ${err.requestOptions.baseUrl}${err.requestOpti
   }
   return handler.next(err);
 });
+
+Object? _requestBodyForLog(RequestOptions options) {
+  final data = options.data;
+  try {
+    final body = data is String ? jsonDecode(data) : data;
+    if (body is Map && body.containsKey('password')) {
+      return {...body, 'password': '[REDACTED]'};
+    }
+  } on FormatException {
+    if (data is String && data.contains('password')) return '[REDACTED]';
+  }
+  return data;
+}
 
 final options = Options(
   receiveTimeout: const Duration(milliseconds: 120000),

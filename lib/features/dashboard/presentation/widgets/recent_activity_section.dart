@@ -1,43 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/bases/widgets/activity_item.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/widgets/activity_item.dart';
-import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
 
-class RecentActivitySection extends StatelessWidget {
-  const RecentActivitySection({super.key});
+class RecentActivitySection extends ConsumerWidget {
+  final DateTime Function() now;
 
-  String _friendlyHeader(String header) {
-    switch (header) {
-      case 'HARI INI':
-        return 'Hari ini';
-      case 'KEMARIN':
-        return 'Kemarin';
-      default:
-        final lower = header.toLowerCase();
-        return lower.isEmpty
-            ? lower
-            : '${lower[0].toUpperCase()}${lower.substring(1)}';
-    }
+  const RecentActivitySection({super.key, this.now = DateTime.now});
+
+  String _dayLabel(DateTime? tanggal) {
+    if (tanggal == null) return 'Lainnya';
+    final today = now();
+    final diff = DateUtils.dateOnly(today)
+        .difference(DateUtils.dateOnly(tanggal))
+        .inDays;
+    if (diff <= 0) return 'Hari ini';
+    if (diff == 1) return 'Kemarin';
+    return '$diff hari lalu';
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(recentActivityProvider);
+    final items = state is RecentActivityLoaded ? state.items : const [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Aktivitas Terbaru',
-              style: AppTextStyle.title1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Aktivitas Terbaru',
+                style: AppTextStyle.title1.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             TextButton(
@@ -60,76 +63,53 @@ class RecentActivitySection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        BlocBuilder<RecentActivityCubit, RecentActivityState>(
-          builder: (context, state) {
-            if (state is RecentActivityLoading ||
-                state is RecentActivityInitial) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
+        if (state is RecentActivityLoading || state is RecentActivityInitial)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          )
+        else if (state is RecentActivityError)
+          _ActivityError(
+            message: state.message,
+            onRetry: () => ref.read(recentActivityProvider.notifier).load(),
+          )
+        else if (items.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'Belum ada aktivitas transaksi.',
+                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+              ),
+            ),
+          )
+        else
+          Column(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                ActivityItem(
+                  avatarText: items[i].avatarText,
+                  avatarColor: items[i].avatarColor,
+                  avatarTextColor: items[i].avatarTextColor,
+                  title: items[i].title,
+                  subtitleLines: items[i].subtitleLines,
+                  amount: items[i].amount,
+                  amountColor: items[i].amountColor,
+                  trailingCaptions: items[i].trailingCaptions.isNotEmpty
+                      ? items[i].trailingCaptions
+                      : [_dayLabel(items[i].tanggal)],
+                  badge: items[i].badge,
                 ),
-              );
-            }
-
-            // A failed fetch must not read as "no transactions yet" — the two
-            // look identical to the user but mean opposite things, and the
-            // empty wording sends them looking for a data problem that isn't
-            // there. Surface the failure and let them retry.
-            if (state is RecentActivityError) {
-              return _ActivityError(
-                message: state.message,
-                onRetry: () => context.read<RecentActivityCubit>().load(),
-              );
-            }
-
-            // Flatten the groups, keeping the day label from each one. The
-            // cubit has already capped the total at RecentActivityCubit.limit.
-            final entries = <({TransaksiEntity trx, String header})>[];
-            if (state is RecentActivityLoaded) {
-              for (final group in state.groups) {
-                for (final trx in group.transactions) {
-                  entries.add((trx: trx, header: group.header));
-                }
-              }
-            }
-
-            if (entries.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    'Belum ada aktivitas transaksi.',
-                    style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-                  ),
-                ),
-              );
-            }
-
-            return Column(
-              children: [
-                for (var i = 0; i < entries.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  ActivityItem(
-                    avatarText: entries[i].trx.initials,
-                    avatarColor: entries[i].trx.avatarColor,
-                    avatarTextColor: entries[i].trx.textColor,
-                    title: entries[i].trx.name,
-                    subtitle: entries[i].trx.subtitle,
-                    amount: entries[i].trx.amount,
-                    time: entries[i].trx.time != null
-                        ? '${_friendlyHeader(entries[i].header)}, ${entries[i].trx.time}'
-                        : _friendlyHeader(entries[i].header),
-                  ),
-                ],
               ],
-            );
-          },
-        ),
+            ],
+          ),
       ],
     );
   }

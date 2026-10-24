@@ -1,0 +1,261 @@
+import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/app.dart';
+import 'package:pilah_mobile/core/router/app_router_config.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart';
+import 'package:pilah_mobile/services/di.dart';
+
+import 'support/app_shell_support.dart';
+import 'support/approved_membership.dart';
+import 'support/profile_support.dart';
+import 'support/stub_api.dart';
+
+/// Runs the real [App] over the stubbed API. The app resolves its state from
+/// the service locator, so the shell's dependencies are registered there.
+void main() {
+  late AppShell shell;
+  late StubApi api;
+
+  setUp(() async {
+    api = StubApi();
+    shell = AppShell(api);
+    await shell.registerDi();
+    di.registerSingleton<GetNasabahMembershipsUseCase>(
+        buildApprovedMembershipUseCase());
+    di.registerSingleton<ProfileRemoteDataSource>(
+        ProfileRemoteDataSourceImpl(api.network));
+    di.registerSingleton<ImagePicker>(MockImagePicker());
+    di.registerSingleton<ImageCropper>(MockImageCropper());
+  });
+
+  tearDown(() async {
+    AppRouterConfig.getRouter().go('/login');
+    await di.unregister<GetNasabahMembershipsUseCase>();
+    await di.unregister<ProfileRemoteDataSource>();
+    await di.unregister<ImagePicker>();
+    await di.unregister<ImageCropper>();
+    await shell.unregisterDi();
+  });
+
+  /// Starts the app on its splash and lets the restored session in [shell.auth]
+  /// route it, as the session check does at cold start.
+  Future<void> boot(WidgetTester tester, {bool isWeb = false}) async {
+    AppRouterConfig.getRouter().go('/splash');
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(App(
+      isWebOverride: isWeb,
+      providerScopeBuilder: shell.wrap,
+    ));
+    // Unmount first so providers can dispose cleanly.
+    addTearDown(() => tester.pumpWidget(const SizedBox()));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+  }
+
+  String location() =>
+      AppRouterConfig.getRouter().routerDelegate.currentConfiguration.uri.path;
+
+  testWidgets(
+      'starts the router and lands a signed-in pengelola on the '
+      'dashboard', (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    expect(location(), '/dashboard');
+    expect(find.text('Flutter Pilah Mobile'), findsNothing);
+  });
+
+  testWidgets('every screen inherits the app theme, not the Material default',
+      (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final theme = Theme.of(tester.element(find.byType(Scaffold).first));
+    expect(theme.colorScheme.primary, AppColors.greenDark);
+  });
+
+  testWidgets('date pickers speak Indonesian, not English', (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final context = tester.element(find.byType(Scaffold).first);
+    showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDate: DateTime(2026, 10, 14),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Batal'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+  });
+
+  testWidgets('web document title follows the current route', (tester) async {
+    final labels = <String>[];
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'SystemChrome.setApplicationSwitcherDescription') {
+        labels
+            .add((call.arguments as Map<dynamic, dynamic>)['label'] as String);
+      }
+      return null;
+    });
+    addTearDown(() =>
+        messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester, isWeb: true);
+    expect(labels.last, 'PILAH | Dashboard');
+    expect(
+      browserTitleForPath('/approval-bank-sampah/detail'),
+      'PILAH | Approval Bank Sampah Detail',
+    );
+
+    AppRouterConfig.getRouter().go('/login');
+    await tester.pumpAndSettle();
+    expect(labels.last, 'PILAH | Login');
+  });
+
+  testWidgets('a rejected session clears the onboarding draft', (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MaterialApp)),
+      listen: false,
+    );
+    final onboarding = container.read(onboardingProvider.notifier);
+    onboarding.saveProfileDraft(const CompleteProfileRequest(
+      nama: 'Sari Dewi',
+      jenisKelamin: 'perempuan',
+      tanggalLahir: '1990-04-17',
+      noHp: '81234567890',
+    ));
+    expect(onboarding.hasProfileDraft, isTrue);
+
+    shell.signedInAs(Unauthenticated());
+    await tester.pumpAndSettle();
+
+    expect(onboarding.hasProfileDraft, isFalse);
+  });
+
+  group('coming back to the foreground', () {
+    Future<void> resume(WidgetTester tester) async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+    }
+
+    // Resumes without settling, so a slow invite gate stays on screen.
+    Future<void> resumeAndPump(WidgetTester tester) async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    // Lets the held-back invite answer arrive so no timer outlives the test.
+    Future<void> drainSlowInvite(WidgetTester tester) async {
+      api.latency = null;
+      await tester.pump(const Duration(hours: 2));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('sends a pengelola holding an unredeemed invite to redeem it',
+        (tester) async {
+      api.latency = const Duration(hours: 1);
+      shell.signedInAsRole('pengelola', step: 'dashboard');
+      await boot(tester);
+      expect(location(), '/dashboard');
+
+      shell.invites.save('invite-token');
+      await resumeAndPump(tester);
+
+      expect(
+        api.requests.where((r) => r.path.endsWith('/invites/accept')),
+        hasLength(1),
+      );
+      await drainSlowInvite(tester);
+    });
+
+    testWidgets('stays put when it is already on the invite target',
+        (tester) async {
+      // A slow answer keeps the invite gate on screen, so the second resume
+      // finds the app already where the invite belongs.
+      api.latency = const Duration(hours: 1);
+      shell.signedInAsRole('pengelola', step: 'dashboard');
+      await boot(tester);
+      shell.invites.save('invite-token');
+      await resumeAndPump(tester);
+      expect(location(), '/invite-processing');
+
+      shell.invites.save('invite-token');
+      await resumeAndPump(tester);
+
+      expect(location(), '/invite-processing');
+      await drainSlowInvite(tester);
+    });
+
+    testWidgets('does nothing without a banked token', (tester) async {
+      shell.signedInAsRole('pengelola', step: 'dashboard');
+      await boot(tester);
+
+      await resume(tester);
+
+      expect(location(), '/dashboard');
+    });
+
+    testWidgets('does nothing while signed out', (tester) async {
+      shell.signedInAs(Unauthenticated());
+      await boot(tester);
+      final before = location();
+      shell.invites.save('invite-token');
+
+      await resume(tester);
+
+      expect(location(), before);
+      expect(shell.invites.hasToken, isTrue);
+    });
+
+    testWidgets('discards a token the account can never redeem',
+        (tester) async {
+      shell.signedInAsRole('nasabah', step: 'nasabah_dashboard');
+      await boot(tester);
+      shell.invites.save('invite-token');
+
+      await resume(tester);
+
+      expect(shell.invites.hasToken, isFalse);
+    });
+
+    testWidgets('ignores lifecycle changes other than resuming',
+        (tester) async {
+      shell.signedInAsRole('pengelola', step: 'dashboard');
+      await boot(tester);
+      shell.invites.save('invite-token');
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pumpAndSettle();
+
+      expect(location(), '/dashboard');
+    });
+  });
+}

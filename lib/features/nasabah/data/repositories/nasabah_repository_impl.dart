@@ -13,10 +13,28 @@ class NasabahRepositoryImpl implements NasabahRepository {
   NasabahRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<NetworkException, List<NasabahEntity>>> getNasabah() {
-    return apiCall<List<NasabahEntity>>(
-      func: remoteDataSource.getNasabah(),
-      mapper: (result) => (result as List).cast<NasabahEntity>(),
+  Future<Either<NetworkException, HalamanNasabah>> getNasabah({
+    int page = 1,
+    int? pageSize,
+    String status = 'aktif',
+    String? search,
+  }) {
+    return apiCall<HalamanNasabah>(
+      func: remoteDataSource.getNasabah(
+        page: page,
+        pageSize: pageSize,
+        status: status,
+        search: search,
+      ),
+      mapper: (result) => result as HalamanNasabah,
+    );
+  }
+
+  @override
+  Future<Either<NetworkException, HalamanNasabah>> getActiveNasabah() {
+    return apiCall<HalamanNasabah>(
+      func: remoteDataSource.getActiveNasabah(),
+      mapper: (result) => result as HalamanNasabah,
     );
   }
 
@@ -50,6 +68,16 @@ class NasabahRepositoryImpl implements NasabahRepository {
   }
 
   @override
+  Future<Either<NetworkException, void>> sinkronProfilNasabah(String id) async {
+    try {
+      await remoteDataSource.sinkronProfil(id);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
+
+  @override
   Future<Either<NetworkException, void>> activateNasabah(String id) async {
     try {
       await remoteDataSource.setStatus(id, true);
@@ -63,6 +91,32 @@ class NasabahRepositoryImpl implements NasabahRepository {
   Future<Either<NetworkException, void>> deactivateNasabah(String id) async {
     try {
       await remoteDataSource.setStatus(id, false);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkException, void>> approveNasabah(
+    String id, {
+    String? catatan,
+  }) async {
+    try {
+      await remoteDataSource.approveNasabah(id, catatan);
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(NetworkException.handleException(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkException, void>> rejectNasabah(
+    String id, {
+    String? catatan,
+  }) async {
+    try {
+      await remoteDataSource.rejectNasabah(id, catatan);
       return const Right(null);
     } on Exception catch (e) {
       return Left(NetworkException.handleException(e));
