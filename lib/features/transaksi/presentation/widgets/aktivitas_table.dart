@@ -44,7 +44,7 @@ class AktivitasTable extends StatelessWidget {
   final int? page;
 
   /// Lebar relatif kolom: waktu, nasabah, tipe, rincian, nominal.
-  static const _columns = [4, 4, 2, 4, 3, 2];
+  static const _columns = [4, 4, 2, 4, 3, 3];
 
   static final _headStyle = AppTextStyle.extraSmall.copyWith(
     color: AppColors.grey100,
@@ -67,8 +67,7 @@ class AktivitasTable extends StatelessWidget {
           4,
           Text('NOMINAL', style: _headStyle, textAlign: TextAlign.end),
         ),
-        if (onEdit != null)
-          _cell(5, Text('AKSI', style: _headStyle, textAlign: TextAlign.end)),
+        if (onEdit != null) _aksiCell(Text('AKSI', style: _headStyle)),
       ]),
       body: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -88,6 +87,15 @@ class AktivitasTable extends StatelessWidget {
       pageKey: page,
     );
   }
+
+  /// Kolom Aksi dimulai agak jauh dari Nominal agar tombolnya tidak mepet.
+  static Widget _aksiCell(Widget child) => _cell(
+        5,
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.xl),
+          child: child,
+        ),
+      );
 
   static Widget _cell(int i, Widget child) => Expanded(
         flex: _columns[i],
@@ -215,10 +223,9 @@ class _RowState extends State<_Row> {
                 ),
               ),
               if (widget.onEdit != null)
-                AktivitasTable._cell(
-                  5,
+                AktivitasTable._aksiCell(
                   Align(
-                    alignment: Alignment.centerRight,
+                    alignment: Alignment.centerLeft,
                     child: item.tipe == ActivitasTipe.setoran
                         ? AppButton(
                             key: const ValueKey('aktivitas-edit'),
