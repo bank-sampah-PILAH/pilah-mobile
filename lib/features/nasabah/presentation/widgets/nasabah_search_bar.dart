@@ -10,7 +10,7 @@ class NasabahSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       onChanged: onChanged,
-      decoration: appSearchDecoration(hintText: 'Cari nama atau nomor...'),
+      decoration: appSearchDecoration(hintText: 'Cari nama, ID, atau nomor HP...'),
     );
   }
 }

@@ -130,7 +130,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
 
               // Search Bar
               CustomSearchField(
-                hintText: 'Cari nama nasabah...',
+                hintText: 'Cari nama, ID, atau nomor HP...',
                 onChanged: (value) {
                   notifier.searchNasabah(value);
                 },

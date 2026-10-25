@@ -82,7 +82,7 @@ class _Header extends ConsumerWidget {
       title: 'Daftar Nasabah',
       subtitle: Text('${notifier.activeCount} nasabah aktif'),
       search: CustomSearchField(
-        hintText: 'Cari nama nasabah...',
+        hintText: 'Cari nama, ID, atau nomor HP...',
         onChanged: notifier.searchNasabah,
       ),
       actions: [
