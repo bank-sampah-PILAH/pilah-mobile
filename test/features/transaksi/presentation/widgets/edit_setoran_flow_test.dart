@@ -503,6 +503,18 @@ void main() {
       expect(find.byType(Dialog), findsOneWidget);
     });
 
+    testWidgets('the Edit button keeps clear of the nominal column',
+        (tester) async {
+      await pumpTable(tester);
+
+      final nominal = tester.getRect(find.text('+Rp 4.000'));
+      final edit = tester.getRect(find.byKey(const ValueKey('aktivitas-edit')));
+      final aksi = tester.getRect(find.text('AKSI'));
+
+      expect(edit.left - nominal.right, greaterThanOrEqualTo(32));
+      expect(aksi.left, edit.left, reason: 'the header sits over the button');
+    });
+
     testWidgets('holding a table row does not start a selection',
         (tester) async {
       await pumpTable(tester);
