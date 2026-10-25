@@ -6,6 +6,7 @@ import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart';
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
@@ -22,6 +23,8 @@ class _MockGetDetail extends Mock implements GetTransaksiDetailUseCase {}
 class _MockAdd extends Mock implements AddTransaksiUseCase {}
 
 class _MockExport extends Mock implements ExportTransaksiUseCase {}
+
+class _MockEdit extends Mock implements EditTransaksiUseCase {}
 
 class _MockResendWa extends Mock implements ResendWaUseCase {}
 
@@ -71,6 +74,7 @@ void main() {
         _MockAdd(),
         _MockExport(),
         _MockResendWa(),
+        _MockEdit(),
       ),
     );
     cubit = harness.notifier;

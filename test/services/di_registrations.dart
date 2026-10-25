@@ -136,6 +136,8 @@ import 'package:pilah_mobile/features/transaksi/domain/use_cases/add_transaksi_u
     show AddTransaksiUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart'
     show ExportTransaksiUseCase;
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/edit_transaksi_usecase.dart'
+    show EditTransaksiUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart'
     show GetAktivitasUseCase;
 import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_detail_usecase.dart'
@@ -248,6 +250,7 @@ final diRegistrations = <(String, String?, Object Function())>[
   ('RejectBankSampahUseCase', null, () => di<RejectBankSampahUseCase>()),
   ('AddTransaksiUseCase', null, () => di<AddTransaksiUseCase>()),
   ('ExportTransaksiUseCase', null, () => di<ExportTransaksiUseCase>()),
+  ('EditTransaksiUseCase', null, () => di<EditTransaksiUseCase>()),
   ('GetTransaksiDetailUseCase', null, () => di<GetTransaksiDetailUseCase>()),
   ('GetTransaksiUseCase', null, () => di<GetTransaksiUseCase>()),
   ('ResendWaUseCase', null, () => di<ResendWaUseCase>()),
