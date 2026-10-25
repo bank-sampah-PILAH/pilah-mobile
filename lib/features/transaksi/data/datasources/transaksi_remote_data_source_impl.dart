@@ -107,7 +107,27 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   @override
   Future<TransaksiDetailEntity> getTransaksiDetail(String id) async {
     final response = await networkService.get('$_path/$id');
-    final json = response.data as Map<String, dynamic>;
+    return _mapDetail(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<TransaksiDetailEntity> editTransaksi(
+      TransaksiEditRequest request) async {
+    final body = {
+      if (request.items != null)
+        'items': request.items!
+            .map((item) =>
+                {'jenis_sampah_id': item.jenisSampahId, 'berat': item.berat})
+            .toList(),
+      if (request.catatan != null) 'catatan': request.catatan!.trim(),
+      'alasan': request.alasan.trim(),
+    };
+    final response =
+        await networkService.patch('$_path/${request.id}', data: body);
+    return _mapDetail(response.data as Map<String, dynamic>);
+  }
+
+  TransaksiDetailEntity _mapDetail(Map<String, dynamic> json) {
     final items = (json['items'] as List? ?? []).map((raw) {
       final item = raw as Map<String, dynamic>;
       return ItemSetoranEntity(
@@ -115,6 +135,30 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
         berat: '${WeightFormatter.formatKg(item['berat'])} kg',
         harga: _rupiah(item['harga_snapshot']),
         subtotal: _rupiah(item['subtotal']),
+        jenisSampahId: item['jenis_sampah_id']?.toString() ?? '',
+        beratKg: num.tryParse(item['berat']?.toString() ?? '') ?? 0,
+        hargaPerKg: _toInt(item['harga_snapshot']),
+      );
+    }).toList();
+    final revisi = (json['revisi'] as List? ?? []).map((raw) {
+      final r = raw as Map<String, dynamic>;
+      return TransaksiRevisiEntity(
+        versi: (r['versi'] as num?)?.toInt() ?? 0,
+        totalFormatted: _rupiah(r['total_nilai']),
+        catatan: r['catatan']?.toString() ?? '',
+        items: (r['items'] as List? ?? []).map((rawItem) {
+          final item = rawItem as Map<String, dynamic>;
+          return ItemSetoranEntity(
+            jenis: item['nama_sampah']?.toString() ?? '-',
+            berat: '${WeightFormatter.formatKg(item['berat'])} kg',
+            harga: _rupiah(item['harga']),
+            subtotal: _rupiah(item['subtotal']),
+          );
+        }).toList(),
+        alasan: r['alasan']?.toString() ?? '',
+        diubahOlehNama: r['diubah_oleh_nama']?.toString() ?? '-',
+        diubahPada:
+            DateTime.tryParse(r['diubah_pada']?.toString() ?? '')?.toLocal(),
       );
     }).toList();
 
@@ -124,6 +168,9 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       balanceFormatted: _rupiah(json['saldo_setelah_transaksi']),
       waStatus: _waStatus(json['status_wa']?.toString()),
       items: items,
+      catatan: json['catatan']?.toString() ?? '',
+      revisi: revisi,
+      tanggal: DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal(),
     );
   }
 
