@@ -57,6 +57,21 @@ class TestAuthenticationNotifier extends AuthenticationNotifier {
     lastRole = role;
   }
 
+  /// What [changeRole] answers: the server's refusal, or else the session it
+  /// switches to (none when left null).
+  String? changeRoleError;
+  AuthEntity? changedAuth;
+
+  @override
+  Future<String?> changeRole(GoogleRegistrationRole role) async {
+    calls.add('changeRole');
+    lastRole = role;
+    if (changeRoleError != null) return changeRoleError;
+    final next = changedAuth;
+    if (next != null) setStateForTest(Authenticated(authEntity: next));
+    return null;
+  }
+
   @override
   Future<void> changeGoogleAccount() async {
     calls.add('changeGoogleAccount');
