@@ -506,6 +506,38 @@ void main() {
       );
     });
 
+    testWidgets('the Transaksi header tells screen readers if it is open',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      Tristate expanded() => tester
+          .getSemantics(find.byKey(RoleTransactionMenu.headerKey))
+          .getSemanticsData()
+          .flagsCollection
+          .isExpanded;
+
+      expect(expanded(), Tristate.isTrue);
+      await tester.tap(find.text('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(expanded(), Tristate.isFalse);
+      handle.dispose();
+    });
+
+    testWidgets('rows other than the header carry no expanded state',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      final setoran = tester
+          .getSemantics(find.byKey(RoleTransactionMenu.setoranKey))
+          .getSemanticsData()
+          .flagsCollection;
+
+      expect(setoran.isExpanded, Tristate.none);
+      handle.dispose();
+    });
+
     testWidgets('tapping Transaksi folds and unfolds its rows', (tester) async {
       await taps(tester, role: 'pengelola', onAddTransaction: () {});
 
