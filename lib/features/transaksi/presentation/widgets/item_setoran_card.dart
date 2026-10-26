@@ -17,6 +17,10 @@ class ItemSetoranCard extends StatelessWidget {
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
 
+  /// Harga per kg yang dipakai ketika pengelola memilih jenis. Bawaannya harga
+  /// hari ini; edit setoran memberi harga pada tanggal setoran.
+  final int Function(HargaEntity jenis)? hargaFor;
+
   /// Dipanggil ketika pengelola menekan Enter pada kotak berat. Opsional, jadi
   /// pemanggil yang tidak peduli tidak perlu berubah.
   final VoidCallback? onSubmitted;
@@ -29,6 +33,7 @@ class ItemSetoranCard extends StatelessWidget {
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
+    this.hargaFor,
     this.onSubmitted,
     this.hasError = false,
     this.errorText,
@@ -131,7 +136,8 @@ class ItemSetoranCard extends StatelessWidget {
                                 ...itemData,
                                 'jenis': value,
                                 'jenis_sampah_id': selected.id,
-                                'harga': selected.price,
+                                'harga':
+                                    hargaFor?.call(selected) ?? selected.price,
                               });
                             }
                           },

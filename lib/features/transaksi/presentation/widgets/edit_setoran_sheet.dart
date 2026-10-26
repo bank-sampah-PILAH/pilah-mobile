@@ -226,6 +226,7 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
             key: _keys[i],
             index: i,
             itemData: _items[i],
+            hargaFor: (jenis) => _detail?.hargaPadaTanggal[jenis.id] ?? 0,
             hasError: ((_items[i]['berat'] as num?) ?? 0) <= 0,
             errorText: ((_items[i]['berat'] as num?) ?? 0) <= 0
                 ? 'Berat harus lebih dari 0'

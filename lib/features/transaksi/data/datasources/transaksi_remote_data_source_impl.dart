@@ -170,6 +170,10 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       items: items,
       catatan: json['catatan']?.toString() ?? '',
       revisi: revisi,
+      hargaPadaTanggal: {
+        for (final e in (json['harga_pada_tanggal'] as Map? ?? {}).entries)
+          e.key.toString(): _toInt(e.value),
+      },
       tanggal: DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal(),
     );
   }

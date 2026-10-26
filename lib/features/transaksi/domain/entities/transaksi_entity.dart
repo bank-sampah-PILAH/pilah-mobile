@@ -168,6 +168,10 @@ class TransaksiDetailEntity {
   final String catatan;
   final List<TransaksiRevisiEntity> revisi;
 
+  /// Harga per kg tiap jenis pada tanggal setoran (kunci: id jenis). Edit
+  /// menghitung dengan harga ini, bukan harga hari ini.
+  final Map<String, int> hargaPadaTanggal;
+
   /// Waktu setoran dicatat.
   final DateTime? tanggal;
 
@@ -179,6 +183,7 @@ class TransaksiDetailEntity {
     required this.items,
     this.catatan = '',
     this.revisi = const [],
+    this.hargaPadaTanggal = const {},
     this.tanggal,
   });
 }
