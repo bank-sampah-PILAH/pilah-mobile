@@ -542,8 +542,9 @@ void main() {
         (tester) async {
       await taps(tester, role: 'pengelola', onAddTransaction: () {});
       double centerY(Finder finder) => tester.getCenter(finder).dy;
-      // A row is 48dp; one extra step of separation is the most we want.
-      const oneRowAndASeparation = kMinInteractiveDimension + 16;
+      // A row is 48dp; only a few dp of separation on top of it, so the
+      // Transaksi group sits next to the destinations like any other item.
+      const oneRowAndASeparation = kMinInteractiveDimension + 8;
 
       expect(
         centerY(find.text('Dashboard')) - centerY(find.text('Pencairan')),
