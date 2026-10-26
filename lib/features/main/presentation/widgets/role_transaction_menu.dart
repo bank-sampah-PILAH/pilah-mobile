@@ -195,8 +195,8 @@ class RoleMenuRow extends StatefulWidget {
 }
 
 class _RoleMenuRowState extends State<RoleMenuRow> {
-  /// Tinggi baris dan ukuran pil, sama dengan destinasi NavigationRail.
-  static const double _rowHeight = 44;
+  /// Tinggi baris (target sentuh minimal, DESIGN.md) dan ukuran pil rail.
+  static const double _rowHeight = kMinInteractiveDimension;
   static const double _pillWidth = 56;
   static const double _pillHeight = 32;
 
