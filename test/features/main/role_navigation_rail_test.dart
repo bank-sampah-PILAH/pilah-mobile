@@ -286,4 +286,92 @@ void main() {
       expect(find.byType(NavigationRail), findsNothing);
     });
   });
+
+  group('RoleNavigationRail: Riwayat in the Transaksi accordion', () {
+    testWidgets('moves Aktivitas under Transaksi as Riwayat for a pengurus',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.destinations.length, 5);
+      expect(
+        rail.destinations.take(4).map((d) => (d.label as Text).data),
+        ['Dashboard', 'Nasabah', 'Harga', 'Jadwal'],
+      );
+      expect(find.text('Aktivitas'), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.riwayatKey), findsOneWidget);
+      expect(find.text('Riwayat'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Riwayat')).dy,
+        greaterThan(tester.getTopLeft(find.text('Pencairan')).dy),
+      );
+    });
+
+    testWidgets('tapping Riwayat reports the Aktivitas menu index',
+        (tester) async {
+      final selected =
+          await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      await tester.tap(find.byKey(RoleTransactionMenu.riwayatKey));
+      await tester.pumpAndSettle();
+
+      expect(selected, [3]);
+    });
+
+    testWidgets('the destinations after it still report their own index',
+        (tester) async {
+      final selected =
+          await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      await tester.tap(find.text('Jadwal'));
+      await tester.pumpAndSettle();
+
+      expect(selected, [4]);
+    });
+
+    testWidgets('on the history page Riwayat is selected, not a destination',
+        (tester) async {
+      await taps(tester,
+          role: 'pengelola', currentIndex: 3, onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.selectedIndex, isNull);
+      final riwayat =
+          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.riwayatKey));
+      expect(riwayat.selected, isTrue);
+    });
+
+    testWidgets('a destination after it keeps its highlight', (tester) async {
+      await taps(tester,
+          role: 'pengelola', currentIndex: 4, onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.selectedIndex, 3, reason: 'Jadwal is the fourth entry now');
+      expect(
+        tester
+            .widget<ListTile>(find.byKey(RoleTransactionMenu.riwayatKey))
+            .selected,
+        isFalse,
+      );
+    });
+
+    testWidgets('the collapsed rail keeps Aktivitas as its own destination',
+        (tester) async {
+      await taps(tester,
+          role: 'pengelola',
+          window: const Size(720, 900),
+          onAddTransaction: () {});
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.destinations.length, 6);
+      expect(find.text('Aktivitas'), findsOneWidget);
+    });
+
+    testWidgets('Pengelola Induk keeps Aktivitas', (tester) async {
+      await taps(tester, role: 'pengelola_induk', onAddTransaction: () {});
+
+      expect(find.text('Aktivitas'), findsOneWidget);
+      expect(find.text('Riwayat'), findsNothing);
+    });
+  });
 }
