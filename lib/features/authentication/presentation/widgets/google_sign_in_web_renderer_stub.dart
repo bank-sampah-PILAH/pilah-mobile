@@ -7,7 +7,7 @@ enum GSIButtonSize { large }
 enum GSIButtonText { signinWith }
 
 class GSIButtonConfiguration {
-  const GSIButtonConfiguration({
+  GSIButtonConfiguration({
     this.theme,
     this.size,
     this.text,
