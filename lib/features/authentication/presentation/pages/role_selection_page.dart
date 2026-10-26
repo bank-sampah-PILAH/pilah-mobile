@@ -100,6 +100,16 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     }
   }
 
+  /// Lanjutkan: a fresh registration creates the account with [role]; a
+  /// signed-in account switches to it.
+  void _submit(GoogleRegistrationRole role) {
+    if (_account != null) {
+      _changeRole(role);
+    } else {
+      ref.read(authenticationProvider.notifier).registerGoogleRole(role);
+    }
+  }
+
   /// Lanjutkan for a signed-in account. Success arrives as a new
   /// [Authenticated] session, which [_listen] routes on; a refusal keeps the
   /// account where it was and says why.
@@ -235,11 +245,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
                 isLoading: isLoading,
                 onPressed: _selectedRole == null
                     ? null
-                    : account != null
-                        ? () => _changeRole(_selectedRole!)
-                        : () => ref
-                            .read(authenticationProvider.notifier)
-                            .registerGoogleRole(_selectedRole!),
+                    : () => _submit(_selectedRole!),
               ),
             ),
           ],
