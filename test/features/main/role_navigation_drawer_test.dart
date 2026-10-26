@@ -80,8 +80,8 @@ void main() {
         tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
-      final pencairan =
-          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.pencairanKey));
+      final pencairan = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.pencairanKey));
       expect(pencairan.enabled, isFalse);
       expect(pencairan.onTap, isNull);
 
@@ -95,12 +95,14 @@ void main() {
       await mountDrawer(tester,
           transactionSelected: true, onAddTransaction: () {});
 
-      final transactionMenu =
-          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
-      expect(transactionMenu.iconColor, AppColors.greenDark);
-      expect(transactionMenu.collapsedIconColor, AppColors.greenDark);
-      final setoran =
-          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.headerKey))
+            .selected,
+        isTrue,
+      );
+      final setoran = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.setoranKey));
       expect(setoran.selected, isTrue);
       expect(
         tester.widget<Text>(find.text('Setoran')).style?.color,
@@ -308,6 +310,10 @@ void main() {
       expect(find.text('Riwayat'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('Riwayat')).dy,
+        lessThan(tester.getTopLeft(find.text('Setoran')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Pencairan')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
     });
@@ -338,7 +344,7 @@ void main() {
 
       expect(
         tester
-            .widget<ListTile>(find.byKey(RoleTransactionMenu.riwayatKey))
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.riwayatKey))
             .selected,
         isTrue,
       );
