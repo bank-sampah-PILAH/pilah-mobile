@@ -407,6 +407,16 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     AppNotification.showError(context, title: title, message: message);
   }
 
+  /// The title of the role this account registers as, while it may still be
+  /// changed (PIL-451): the role was saved on the role page and stays
+  /// changeable until a bank sampah is registered for it. An invite fixes the
+  /// role, so it gets none. Null when the note should not show.
+  String? _changeableRoleTitle(AuthenticationStates state) {
+    if (_isInviteMode || state is! Authenticated) return null;
+    if (state.authEntity.bankSampahStatus != null) return null;
+    return RoleSelectionPage.titleFor(state.authEntity.role);
+  }
+
   /// Intercepts a back-navigation attempt. [canPop] on the [PopScope] is false,
   /// so the pop is already blocked when this fires; we only need to offer the
   /// exit confirmation.
@@ -422,9 +432,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     });
     // Watched, not only listened to: a role changed from the role page comes
     // back to this same screen, which must then draw the new role's form.
-    final authState = ref.watch(authenticationProvider);
-    final account = authState is Authenticated ? authState.authEntity : null;
-    final roleTitle = RoleSelectionPage.titleFor(account?.role);
+    final roleTitle = _changeableRoleTitle(ref.watch(authenticationProvider));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
@@ -451,13 +459,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
                 ),
 
-              // PIL-451: the role was saved on the role page, and stays
-              // changeable until a bank sampah is registered for it. An invite
-              // fixes the role, so it gets no link.
-              if (!_isInviteMode &&
-                  roleTitle != null &&
-                  account?.bankSampahStatus == null)
-                _RoleNote(roleTitle: roleTitle),
+              if (roleTitle != null) _RoleNote(roleTitle: roleTitle),
 
               const SizedBox(height: 24),
               OnboardingFormCard(
