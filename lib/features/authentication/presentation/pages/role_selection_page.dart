@@ -22,6 +22,13 @@ class RoleSelectionPage extends ConsumerStatefulWidget {
 
   static const route = '/choose-role';
 
+  /// The title a role is offered under here, for screens that name the role
+  /// being registered; null for a role this page does not offer.
+  static String? titleFor(String? role) => _roleOptions
+      .where((option) => option.value.wireValue == role)
+      .firstOrNull
+      ?.title;
+
   @override
   ConsumerState<RoleSelectionPage> createState() => _RoleSelectionPageState();
 }

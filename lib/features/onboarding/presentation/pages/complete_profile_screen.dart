@@ -16,6 +16,7 @@ import 'package:pilah_mobile/features/onboarding/presentation/providers/onboardi
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acceptance_notice.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
@@ -418,6 +419,11 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     ref.listen(authenticationProvider, (previous, current) {
       if (current is Unauthenticated) context.go(LoginPage.route);
     });
+    // Watched, not only listened to: a role changed from the role page comes
+    // back to this same screen, which must then draw the new role's form.
+    final authState = ref.watch(authenticationProvider);
+    final account = authState is Authenticated ? authState.authEntity : null;
+    final roleTitle = RoleSelectionPage.titleFor(account?.role);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
@@ -443,6 +449,14 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                   secondStepLabel:
                       _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
                 ),
+
+              // PIL-451: the role was saved on the role page, and stays
+              // changeable until a bank sampah is registered for it. An invite
+              // fixes the role, so it gets no link.
+              if (!_isInviteMode &&
+                  roleTitle != null &&
+                  account?.bankSampahStatus == null)
+                _RoleNote(roleTitle: roleTitle),
 
               const SizedBox(height: 24),
               OnboardingFormCard(
@@ -572,6 +586,35 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Names the role being registered, with the way back to the role page for an
+/// account that tapped the wrong one (PIL-451). Pushed, so back returns here.
+class _RoleNote extends StatelessWidget {
+  const _RoleNote({required this.roleTitle});
+
+  final String roleTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Mendaftar sebagai $roleTitle',
+            style: const TextStyle(fontSize: 13, color: AppColors.inkSoft),
+          ),
+          TextButton(
+            onPressed: () => context.push(RoleSelectionPage.route),
+            child: const Text('Ganti peran'),
+          ),
+        ],
       ),
     );
   }
