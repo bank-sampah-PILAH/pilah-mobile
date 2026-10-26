@@ -3,6 +3,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
 
 void main() {
+  testWidgets('navigates to the previous and following calendar periods',
+      (tester) async {
+    final navigated = <int>[];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: JadwalCalendar(
+          selectedDate: DateTime(2026, 10, 3),
+          scheduledDates: const {},
+          isMonthExpanded: true,
+          onSelectDate: (_) {},
+          onNavigate: navigated.add,
+          onToggleMonth: () {},
+        ),
+      ),
+    ));
+
+    await tester.tap(find.byTooltip('Bulan sebelumnya'));
+    await tester.tap(find.byTooltip('Bulan berikutnya'));
+
+    expect(navigated, [-1, 1]);
+  });
+
   Future<void> pump(WidgetTester tester, {required bool month}) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(

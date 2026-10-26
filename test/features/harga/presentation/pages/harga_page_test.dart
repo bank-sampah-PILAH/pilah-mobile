@@ -776,4 +776,30 @@ void main() {
       reason: 'a blank form reappearing on resize reads as a bug',
     );
   });
+
+  testWidgets('switching an edit panel to create mode resets its fields',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await editJenis(tester, 'Botol PET');
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).first)
+          .controller
+          ?.text,
+      'K-1',
+    );
+
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+    expect(find.text('Tambah Jenis Sampah'), findsWidgets);
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).first)
+          .controller
+          ?.text,
+      isEmpty,
+    );
+  });
 }
