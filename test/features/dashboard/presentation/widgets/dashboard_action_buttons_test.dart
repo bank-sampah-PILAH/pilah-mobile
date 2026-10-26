@@ -10,7 +10,7 @@ void main() {
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(375, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(const MaterialApp(
+    await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: DashboardActionButtons()),
     ));
 
@@ -75,8 +75,7 @@ void main() {
     return router;
   }
 
-  testWidgets('offers Catat Setoran and a disabled Pencairan choice',
-      (tester) async {
+  testWidgets('offers Catat Setoran and Pencairan choices', (tester) async {
     await pumpChooser(tester);
 
     expect(find.text('Catat Setoran'), findsOneWidget);
@@ -95,7 +94,7 @@ void main() {
           matching: find.byType(InkWell),
         )
         .first;
-    expect(tester.widget<InkWell>(payoutChoice).onTap, isNull);
+    expect(tester.widget<InkWell>(payoutChoice).onTap, isNotNull);
   });
 
   testWidgets('on a phone the choice is still a bottom sheet', (tester) async {
@@ -119,18 +118,12 @@ void main() {
     expect(find.text('Form Setoran'), findsOneWidget);
   });
 
-  testWidgets('cannot navigate from the disabled Pencairan choice',
-      (tester) async {
+  testWidgets('opens Pencairan when that choice is selected', (tester) async {
     await pumpChooser(tester);
 
-    final payoutChoice = find.descendant(
-      of: find.byType(Dialog),
-      matching: find.text('Pencairan'),
-    );
-    await tester.tap(payoutChoice);
+    await tester.tap(find.text('Pencairan'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Daftar Pencairan'), findsNothing);
-    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.text('Daftar Pencairan'), findsOneWidget);
   });
 }
