@@ -157,6 +157,18 @@ void main() {
       verifyNever(() => local.saveToken(any()));
     });
 
+    test('saveToken stores both tokens as given', () async {
+      when(() => local.saveToken(any())).thenAnswer((_) async {});
+
+      final result = await repo.saveToken('access-x', 'refresh-x');
+
+      expect(result.isRight(), isTrue);
+      final saved = verify(() => local.saveToken(captureAny())).captured.single
+          as SaveTokenRequest;
+      expect(saved.accessToken, 'access-x');
+      expect(saved.refreshToken, 'refresh-x');
+    });
+
     test('a malformed 2xx body is a failure, not a crash', () async {
       // Same class of failure as loginWithGoogle's M1 case: a Dart Error from
       // parsing, which the `on Exception` guard does not catch.

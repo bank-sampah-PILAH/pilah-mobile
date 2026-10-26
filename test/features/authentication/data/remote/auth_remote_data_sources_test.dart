@@ -26,4 +26,25 @@ void main() {
 
     expect(body, session);
   });
+
+  test('restoring a session GETs auth/me and maps the user', () async {
+    final network = _MockNetworkService();
+    when(() => network.get('/api/v1/auth/me')).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/api/v1/auth/me'),
+        data: {
+          'id': 'user-1',
+          'nama': 'Ayu',
+          'email': 'ayu@example.com',
+          'role': 'nasabah',
+          'state': 'complete_profile',
+        },
+      ),
+    );
+
+    final auth = await AuthRemoteDataSourceImpl(network).getMe();
+
+    expect(auth.email, 'ayu@example.com');
+    expect(auth.role, 'nasabah');
+  });
 }
