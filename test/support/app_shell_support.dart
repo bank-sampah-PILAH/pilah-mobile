@@ -241,6 +241,14 @@ class TestAuthenticationSession
   }
 
   @override
+  Future<Either<NetworkException, AuthEntity>> changeRole(
+      GoogleRegistrationRole role) async {
+    final user = _user ?? testAuth();
+    state = Authenticated(authEntity: user);
+    return Right(user);
+  }
+
+  @override
   Future<Either<Exception, void>> saveToken(
           String accessToken, String refreshToken) async =>
       const Right(null);

@@ -126,6 +126,11 @@ class _NoopAuthRepository implements AuthRepository {
       Left(GeneralException(message: 'Not configured'));
 
   @override
+  Future<Either<NetworkException, AuthEntity>> changeRole(
+          GoogleRegistrationRole role) async =>
+      Left(GeneralException(message: 'Not configured'));
+
+  @override
   Future<Either<NetworkException, void>> logout() async => const Right(null);
 
   @override
