@@ -37,6 +37,14 @@ class RoleNavigationRail extends StatelessWidget {
   static const profileKey = ValueKey('rail-profile');
   static const profileCardKey = ValueKey('rail-profile-card');
 
+  /// Posisi destinasi yang sedang terbuka di antara yang digambar, atau null
+  /// bila halaman terbuka bukan salah satunya (mis. Riwayat di akordeon).
+  int? _selectedPosition(List<int> listed) {
+    final current = navigation.currentIndex;
+    final position = current == null ? -1 : listed.indexOf(current);
+    return position < 0 ? null : position;
+  }
+
   /// Label bank sampah, atau label umum bila namanya tidak diketahui.
   @override
   Widget build(BuildContext context) {
@@ -49,11 +57,7 @@ class RoleNavigationRail extends StatelessWidget {
     // Pengurus di rail lebar membuka Aktivitas sebagai Riwayat dari akordeon
     // Transaksi, jadi ia tidak lagi menjadi destinasi sendiri. `listed` memuat
     // indeks menu (pada daftar penuh) dari destinasi yang tetap digambar.
-    final riwayat = extended &&
-            navigation.role == 'pengelola' &&
-            navigation.onAddTransaction != null
-        ? RoleDestinations.riwayatIndex(destinations)
-        : null;
+    final riwayat = extended ? navigation.riwayatIndex(destinations) : null;
     final listed = [
       for (var i = 0; i < destinations.length; i++)
         if (i != riwayat) i,
@@ -83,16 +87,12 @@ class RoleNavigationRail extends StatelessWidget {
                   ? navigation.onAddTransaction
                   : null,
               transactionSelected: navigation.transactionSelected,
-              onRiwayat:
-                  riwayat == null ? null : () => navigation.onSelected(riwayat),
-              riwayatSelected:
-                  riwayat != null && navigation.currentIndex == riwayat,
+              onRiwayat: navigation.riwayatOpener(riwayat),
+              riwayatSelected: navigation.riwayatIsCurrent(riwayat),
             ),
             backgroundColor: Colors.white,
             indicatorColor: AppColors.greenLight,
-            selectedIndex: listed.contains(navigation.currentIndex)
-                ? listed.indexOf(navigation.currentIndex!)
-                : null,
+            selectedIndex: _selectedPosition(listed),
             onDestinationSelected: (position) =>
                 navigation.onSelected(listed[position]),
             // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan

@@ -200,17 +200,16 @@ class _RoleMenuRowState extends State<RoleMenuRow> {
   static const double _pillWidth = 56;
   static const double _pillHeight = 32;
 
+  Color get _activeColor =>
+      widget.selected ? AppColors.greenDark : AppColors.inkSoft;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final enabled = widget.enabled;
     // Warna nonaktif sama dengan destinasi rail yang nonaktif.
     final disabled = scheme.onSurface.withValues(alpha: 0.38);
-    final color = !enabled
-        ? disabled
-        : widget.selected
-            ? AppColors.greenDark
-            : AppColors.inkSoft;
+    final color = enabled ? _activeColor : disabled;
     return Semantics(
       button: true,
       enabled: enabled,
