@@ -156,5 +156,17 @@ void main() {
           'Peran tidak dapat diganti setelah pendaftaran berjalan.');
       verifyNever(() => local.saveToken(any()));
     });
+
+    test('a malformed 2xx body is a failure, not a crash', () async {
+      // Same class of failure as loginWithGoogle's M1 case: a Dart Error from
+      // parsing, which the `on Exception` guard does not catch.
+      when(() => remote.changeRole('nasabah'))
+          .thenThrow(ArgumentError('malformed 2xx body'));
+
+      final result = await repo.changeRole(GoogleRegistrationRole.nasabah);
+
+      expect(result.isLeft(), isTrue);
+      verifyNever(() => local.saveToken(any()));
+    });
   });
 }
