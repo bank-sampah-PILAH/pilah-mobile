@@ -362,6 +362,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The Dart analyzer inside the scanner resolves package: imports from the
+      # pub cache and the build_runner output. Without them every Flutter type is
+      # "undefined" and each file is reported as a parse error (dart:S2260).
+      - uses: ./.github/actions/setup-flutter
+
       - uses: actions/download-artifact@v4
         if: needs.coverage.outputs.has_coverage == 'true'
         with:
