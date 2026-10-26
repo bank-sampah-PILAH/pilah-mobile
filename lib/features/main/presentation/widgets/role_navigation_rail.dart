@@ -241,10 +241,11 @@ class _RailHeader extends StatelessWidget {
     final headerWidth = extended ? _leadingMaxWidth : 48.0;
 
     return Padding(
-      // Dengan menu Transaksi, baris terakhirnya langsung disusul destinasi;
-      // jarak bawah penuh membuat celahnya terlihat terlalu lebar.
-      padding: EdgeInsets.fromLTRB(
-          12, 16, 12, onAddTransaction == null ? 16 : AppSpacing.sm),
+      // Dengan menu Transaksi, baris terakhirnya langsung disusul destinasi:
+      // NavigationRail sudah memberi jarak atas sendiri, jadi tidak ada
+      // jarak bawah tambahan di sini.
+      padding:
+          EdgeInsets.fromLTRB(12, 16, 12, onAddTransaction == null ? 16 : 0),
       child: Column(
         crossAxisAlignment:
             extended ? CrossAxisAlignment.start : CrossAxisAlignment.center,
