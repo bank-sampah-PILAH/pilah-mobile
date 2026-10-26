@@ -46,6 +46,18 @@ class RoleNavigationRail extends StatelessWidget {
     );
     if (destinations.isEmpty) return const SizedBox.shrink();
     final extended = context.layoutBreakpoint == LayoutBreakpoint.expanded;
+    // Pengurus di rail lebar membuka Aktivitas sebagai Riwayat dari akordeon
+    // Transaksi, jadi ia tidak lagi menjadi destinasi sendiri. `listed` memuat
+    // indeks menu (pada daftar penuh) dari destinasi yang tetap digambar.
+    final riwayat = extended &&
+            navigation.role == 'pengelola' &&
+            navigation.onAddTransaction != null
+        ? RoleDestinations.riwayatIndex(destinations)
+        : null;
+    final listed = [
+      for (var i = 0; i < destinations.length; i++)
+        if (i != riwayat) i,
+    ];
     final labelStyle = AppTextStyle.small;
     final name = navigation.profileName?.trim() ?? '';
     return DecoratedBox(
@@ -71,11 +83,18 @@ class RoleNavigationRail extends StatelessWidget {
                   ? navigation.onAddTransaction
                   : null,
               transactionSelected: navigation.transactionSelected,
+              onRiwayat:
+                  riwayat == null ? null : () => navigation.onSelected(riwayat),
+              riwayatSelected:
+                  riwayat != null && navigation.currentIndex == riwayat,
             ),
             backgroundColor: Colors.white,
             indicatorColor: AppColors.greenLight,
-            selectedIndex: navigation.currentIndex,
-            onDestinationSelected: navigation.onSelected,
+            selectedIndex: listed.contains(navigation.currentIndex)
+                ? listed.indexOf(navigation.currentIndex!)
+                : null,
+            onDestinationSelected: (position) =>
+                navigation.onSelected(listed[position]),
             // none hanya wajib ketika extended; pada rail ringkas ia menyembunyikan
             // nama destinasi tanpa alasan dan meninggalkan ikon tanpa keterangan.
             labelType: extended
@@ -108,19 +127,19 @@ class RoleNavigationRail extends StatelessWidget {
                     ),
                   ),
             destinations: [
-              for (final destination in destinations)
+              for (final index in listed)
                 NavigationRailDestination(
-                  icon: Icon(destination.icon),
-                  label: destination.disabled
+                  icon: Icon(destinations[index].icon),
+                  label: destinations[index].disabled
                       ? Semantics(
                           button: true,
                           enabled: false,
-                          label: destination.label,
+                          label: destinations[index].label,
                           excludeSemantics: true,
-                          child: Text(destination.label),
+                          child: Text(destinations[index].label),
                         )
-                      : Text(destination.label),
-                  disabled: destination.disabled,
+                      : Text(destinations[index].label),
+                  disabled: destinations[index].disabled,
                 ),
             ],
           ),
@@ -149,11 +168,15 @@ class _RailHeader extends StatelessWidget {
     this.onHome,
     this.onAddTransaction,
     this.transactionSelected = false,
+    this.onRiwayat,
+    this.riwayatSelected = false,
   });
 
   final VoidCallback? onHome;
   final VoidCallback? onAddTransaction;
   final bool transactionSelected;
+  final VoidCallback? onRiwayat;
+  final bool riwayatSelected;
   final String label;
   final String initials;
   final bool extended;
@@ -275,8 +298,10 @@ class _RailHeader extends StatelessWidget {
               width: headerWidth,
               child: RoleTransactionMenu(
                 onSetoran: onAddTransaction!,
+                onRiwayat: onRiwayat,
                 compact: !extended,
                 selected: transactionSelected,
+                riwayatSelected: riwayatSelected,
               ),
             ),
           ],

@@ -8,23 +8,36 @@ class RoleTransactionMenu extends StatelessWidget {
   const RoleTransactionMenu({
     super.key,
     required this.onSetoran,
+    this.onRiwayat,
     this.onClose,
     this.compact = false,
     this.selected = false,
+    this.riwayatSelected = false,
   });
 
   static const menuKey = ValueKey('transaction-menu');
   static const setoranKey = ValueKey('transaction-menu-setoran');
   static const pencairanKey = ValueKey('transaction-menu-pencairan');
+  static const riwayatKey = ValueKey('transaction-menu-riwayat');
 
   final VoidCallback onSetoran;
+
+  /// Membuka riwayat transaksi. Null berarti Riwayat tidak ada di menu ini;
+  /// menu ringkas tidak pernah menampilkannya.
+  final VoidCallback? onRiwayat;
   final VoidCallback? onClose;
   final bool compact;
   final bool selected;
+  final bool riwayatSelected;
 
   void _openSetoran() {
     onClose?.call();
     onSetoran();
+  }
+
+  void _openRiwayat() {
+    onClose?.call();
+    onRiwayat!();
   }
 
   @override
@@ -63,20 +76,24 @@ class RoleTransactionMenu extends StatelessWidget {
       );
     }
 
+    final groupColor =
+        selected || riwayatSelected ? AppColors.greenDark : AppColors.inkSoft;
+    final riwayatColor =
+        riwayatSelected ? AppColors.greenDark : AppColors.inkSoft;
     return ExpansionTile(
       key: menuKey,
       initiallyExpanded: true,
       shape: const Border(),
       collapsedShape: const Border(),
-      iconColor: selectionColor,
-      collapsedIconColor: selectionColor,
-      textColor: selectionColor,
-      collapsedTextColor: selectionColor,
-      leading: Icon(Icons.receipt_long_outlined, color: selectionColor),
+      iconColor: groupColor,
+      collapsedIconColor: groupColor,
+      textColor: groupColor,
+      collapsedTextColor: groupColor,
+      leading: Icon(Icons.receipt_long_outlined, color: groupColor),
       title: Text(
         'Transaksi',
         style: AppTextStyle.small.copyWith(
-          color: selectionColor,
+          color: groupColor,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -106,6 +123,20 @@ class RoleTransactionMenu extends StatelessWidget {
             style: AppTextStyle.small.copyWith(color: AppColors.grey100),
           ),
         ),
+        if (onRiwayat != null)
+          ListTile(
+            key: riwayatKey,
+            dense: true,
+            selected: riwayatSelected,
+            selectedColor: riwayatColor,
+            selectedTileColor: Colors.transparent,
+            leading: Icon(Icons.history, color: riwayatColor),
+            title: Text(
+              'Riwayat',
+              style: AppTextStyle.small.copyWith(color: riwayatColor),
+            ),
+            onTap: _openRiwayat,
+          ),
       ],
     );
   }

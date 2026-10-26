@@ -39,6 +39,11 @@ class RoleNavigationDrawer extends StatelessWidget {
       limitedNasabah: navigation.limitedNasabah,
     );
     if (destinations.isEmpty) return const SizedBox.shrink();
+    // Pengurus membuka Aktivitas sebagai Riwayat dari akordeon Transaksi.
+    final riwayat =
+        navigation.role == 'pengelola' && navigation.onAddTransaction != null
+            ? RoleDestinations.riwayatIndex(destinations)
+            : null;
 
     final name = navigation.profileName?.trim() ?? '';
     return Drawer(
@@ -77,19 +82,25 @@ class RoleNavigationDrawer extends StatelessWidget {
                       onSetoran: navigation.onAddTransaction!,
                       onClose: () => Navigator.maybeOf(context)?.maybePop(),
                       selected: navigation.transactionSelected,
+                      onRiwayat: riwayat == null
+                          ? null
+                          : () => navigation.onSelected(riwayat),
+                      riwayatSelected:
+                          riwayat != null && navigation.currentIndex == riwayat,
                     ),
                   for (var index = 0; index < destinations.length; index++)
-                    _Destination(
-                      key: destinationKey(index),
-                      destination: destinations[index],
-                      selected: navigation.currentIndex == index,
-                      onTap: destinations[index].disabled
-                          ? null
-                          : () {
-                              Navigator.maybeOf(context)?.maybePop();
-                              navigation.onSelected(index);
-                            },
-                    ),
+                    if (index != riwayat)
+                      _Destination(
+                        key: destinationKey(index),
+                        destination: destinations[index],
+                        selected: navigation.currentIndex == index,
+                        onTap: destinations[index].disabled
+                            ? null
+                            : () {
+                                Navigator.maybeOf(context)?.maybePop();
+                                navigation.onSelected(index);
+                              },
+                      ),
                 ],
               ),
             ),
