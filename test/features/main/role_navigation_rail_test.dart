@@ -385,6 +385,23 @@ void main() {
       return tester.widget<Container>(pill).decoration! as ShapeDecoration;
     }
 
+    testWidgets('every row is at least 48dp tall to tap', (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+
+      for (final key in [
+        RoleTransactionMenu.headerKey,
+        RoleTransactionMenu.riwayatKey,
+        RoleTransactionMenu.setoranKey,
+        RoleTransactionMenu.pencairanKey,
+      ]) {
+        expect(
+          tester.getSize(find.byKey(key)).height,
+          greaterThanOrEqualTo(kMinInteractiveDimension),
+          reason: '$key',
+        );
+      }
+    });
+
     testWidgets('each row keeps its icon in a 56x32 rounded pill',
         (tester) async {
       await taps(tester, role: 'pengelola', onAddTransaction: () {});
