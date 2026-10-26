@@ -126,6 +126,7 @@ class _TransactionAccordionState extends State<_TransactionAccordion> {
           icon: Icons.receipt_long_outlined,
           label: 'Transaksi',
           selected: groupSelected,
+          expanded: _expanded,
           onTap: () => setState(() => _expanded = !_expanded),
           trailing: Icon(
             _expanded ? Icons.expand_less : Icons.expand_more,
@@ -179,6 +180,7 @@ class RoleMenuRow extends StatefulWidget {
     required this.label,
     this.onTap,
     this.selected = false,
+    this.expanded,
     this.trailing,
   });
 
@@ -186,6 +188,9 @@ class RoleMenuRow extends StatefulWidget {
   final String label;
   final VoidCallback? onTap;
   final bool selected;
+
+  /// Hanya untuk baris yang membuka dan menutup daftar; null untuk baris lain.
+  final bool? expanded;
   final Widget? trailing;
 
   bool get enabled => onTap != null;
@@ -214,6 +219,7 @@ class _RoleMenuRowState extends State<RoleMenuRow> {
       button: true,
       enabled: enabled,
       selected: widget.selected,
+      expanded: widget.expanded,
       label: widget.label,
       excludeSemantics: true,
       child: _PillInkResponse(
