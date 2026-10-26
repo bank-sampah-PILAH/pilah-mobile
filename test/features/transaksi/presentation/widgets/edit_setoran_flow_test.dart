@@ -49,7 +49,12 @@ Map<String, dynamic> _jenis(String id, String nama, String harga) => {
       'is_active': true,
     };
 
-Map<String, dynamic> _detail({String catatan = 'awal', List? revisi}) => {
+Map<String, dynamic> _detail({
+  String catatan = 'awal',
+  List? revisi,
+  Map<String, String> hargaPadaTanggal = const {'j1': '2000', 'j2': '800'},
+}) =>
+    {
       'nasabah_nama': 'Budi',
       'tanggal': '2026-10-05T03:00:00Z',
       'total_nilai': '4000',
@@ -66,6 +71,7 @@ Map<String, dynamic> _detail({String catatan = 'awal', List? revisi}) => {
         },
       ],
       'revisi': revisi ?? [],
+      'harga_pada_tanggal': hargaPadaTanggal,
     };
 
 ActivitasEntity _setoran(String id, String name) =>
@@ -298,6 +304,41 @@ void main() {
 
     expect(find.text('Jenis Sudah Dipilih'), findsOneWidget);
     expect(find.text('Pilih Jenis'), findsOneWidget);
+  });
+
+  Future<void> addKardus(WidgetTester tester) async {
+    await tester.ensureVisible(find.text('Tambah Item'));
+    await tester.tap(find.text('Tambah Item'));
+    await tester.pump();
+    final dropdown = find.byType(DropdownButton<String>).last;
+    await tester.ensureVisible(dropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(dropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kardus').last);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a jenis added to an old setoran is priced as on its date',
+      (tester) async {
+    await open(tester);
+
+    await addKardus(tester);
+
+    // Kardus costs 1.000 today but was 800 when the setoran was recorded.
+    expect(find.text('800'), findsOneWidget);
+    expect(find.text('1.000'), findsNothing);
+  });
+
+  testWidgets('a jenis with no price on the setoran date gets none',
+      (tester) async {
+    api.on('GET', _path, json: _detail(hargaPadaTanggal: const {'j1': '2000'}));
+    await open(tester);
+
+    await addKardus(tester);
+
+    expect(find.text('1.000'), findsNothing);
+    expect(find.text('800'), findsNothing);
   });
 
   group('selection on the phone feed', () {

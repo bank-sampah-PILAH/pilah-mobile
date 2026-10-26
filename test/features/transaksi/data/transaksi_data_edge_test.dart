@@ -96,6 +96,7 @@ void main() {
                     'subtotal': '6000',
                   },
                 ],
+                'harga_pada_tanggal': {'j1': '2000.00', 'j2': '800'},
                 'revisi': [
                   {
                     'versi': 1,
@@ -140,6 +141,7 @@ void main() {
     expect(detail.revisi.single.alasan, 'Salah timbang');
     expect(detail.revisi.single.diubahPada, isNull);
     expect(detail.catatan, 'ok');
+    expect(detail.hargaPadaTanggal, {'j1': 2000, 'j2': 800});
   });
 
   test('the repository wraps an edit failure as a NetworkException', () async {
