@@ -1,0 +1,34 @@
+import 'package:flutter/material.dart';
+
+enum GSIButtonTheme { outline }
+
+enum GSIButtonSize { large }
+
+enum GSIButtonText { signinWith }
+
+class GSIButtonConfiguration {
+  const GSIButtonConfiguration({
+    this.theme,
+    this.size,
+    this.text,
+    this.locale,
+  });
+
+  final GSIButtonTheme? theme;
+  final GSIButtonSize? size;
+  final GSIButtonText? text;
+  final String? locale;
+}
+
+Widget renderButton({GSIButtonConfiguration? configuration}) =>
+    GoogleSignInWebRendererStub(configuration: configuration);
+
+class GoogleSignInWebRendererStub extends StatelessWidget {
+  const GoogleSignInWebRendererStub({super.key, required this.configuration});
+
+  final GSIButtonConfiguration? configuration;
+
+  @override
+  Widget build(BuildContext context) =>
+      const SizedBox(key: ValueKey('google-sign-in-web-renderer-stub'));
+}
