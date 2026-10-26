@@ -108,6 +108,20 @@ class AuthenticationNotifier extends Notifier<AuthenticationStates> {
     );
   }
 
+  /// Switches a registering account to [role]. Returns null once the session
+  /// for the new role is in place, or the server's reason when the change is
+  /// refused, in which case the current session is left as it was.
+  Future<String?> changeRole(GoogleRegistrationRole role) async {
+    final result = await _loginWithGoogleUseCase.changeRole(role);
+    return result.fold(
+      (failure) => failure.displayMessage,
+      (entity) {
+        _emitAuthenticated(entity);
+        return null;
+      },
+    );
+  }
+
   /// Disconnect Google too; otherwise the next authenticate call reuses its
   /// account and cannot switch identities. PILAH state is still cleared on error.
   Future<void> changeGoogleAccount() async {
