@@ -9,6 +9,7 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
@@ -608,7 +609,7 @@ class _RoleNote extends StatelessWidget {
         children: [
           Text(
             'Mendaftar sebagai $roleTitle',
-            style: const TextStyle(fontSize: 13, color: AppColors.inkSoft),
+            style: AppTextStyle.small.copyWith(color: AppColors.inkSoft),
           ),
           TextButton(
             onPressed: () => context.push(RoleSelectionPage.route),
