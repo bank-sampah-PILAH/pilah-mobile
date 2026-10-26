@@ -5,6 +5,7 @@ import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/date_time_formatter.dart';
+import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -144,7 +145,8 @@ class _EditSetoranSheetState extends ConsumerState<EditSetoranSheet> {
       0,
       (sum, i) =>
           sum +
-          (((i['harga'] as int?) ?? 0) * ((i['berat'] as num?) ?? 0)).round());
+          setoranSubtotal(
+              (i['harga'] as int?) ?? 0, (i['berat'] as num?) ?? 0));
 
   Future<void> _save() async {
     setState(() {

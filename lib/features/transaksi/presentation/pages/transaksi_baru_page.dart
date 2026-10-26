@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -349,7 +350,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
     return setoranItems.fold(0, (sum, item) {
       final harga = item['harga'] as int? ?? 0;
       final berat = item['berat'] as num? ?? 1.0;
-      return sum + (harga * berat).round();
+      return sum + setoranSubtotal(harga, berat);
     });
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
+import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -41,7 +42,7 @@ class ItemSetoranCard extends StatelessWidget {
     final selectedType = itemData['jenis'] as String?;
     final harga = itemData['harga'] as int? ?? 0;
     final berat = itemData['berat'] as num? ?? 1.0;
-    final subtotal = (harga * berat).round();
+    final subtotal = setoranSubtotal(harga, berat);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
