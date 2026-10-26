@@ -538,6 +538,26 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('the destinations follow Transaksi without a wide gap',
+        (tester) async {
+      await taps(tester, role: 'pengelola', onAddTransaction: () {});
+      double centerY(Finder finder) => tester.getCenter(finder).dy;
+      // A row is 48dp; one extra step of separation is the most we want.
+      const oneRowAndASeparation = kMinInteractiveDimension + 16;
+
+      expect(
+        centerY(find.text('Dashboard')) - centerY(find.text('Pencairan')),
+        lessThanOrEqualTo(oneRowAndASeparation),
+      );
+
+      await tester.tap(find.text('Transaksi'));
+      await tester.pumpAndSettle();
+      expect(
+        centerY(find.text('Dashboard')) - centerY(find.text('Transaksi')),
+        lessThanOrEqualTo(oneRowAndASeparation),
+      );
+    });
+
     testWidgets('tapping Transaksi folds and unfolds its rows', (tester) async {
       await taps(tester, role: 'pengelola', onAddTransaction: () {});
 
