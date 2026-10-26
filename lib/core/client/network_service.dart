@@ -11,6 +11,7 @@ import 'network_utils.dart';
 
 @LazySingleton()
 class NetworkService {
+  static const _jsonContentType = 'application/json';
   final AppEnvironment environment;
   final NetworkUtils networkUtils;
 
@@ -27,9 +28,9 @@ class NetworkService {
   Map<String, String> headersRequest() {
     final userToken = networkUtils.accessToken;
     return {
-      'Content-Type': 'application/json',
+      'Content-Type': _jsonContentType,
       if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
-      'Accept': 'application/json'
+      'Accept': _jsonContentType
     };
   }
 
@@ -127,7 +128,7 @@ class NetworkService {
   }) async {
     final userToken = networkUtils.accessToken;
     final headers = <String, String>{
-      'Accept': 'application/json',
+      'Accept': _jsonContentType,
       if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
     };
 
@@ -149,7 +150,7 @@ class NetworkService {
   }) async {
     final userToken = networkUtils.accessToken;
     final headers = <String, String>{
-      'Accept': 'application/json',
+      'Accept': _jsonContentType,
       if (userToken.isNotEmpty) 'Authorization': 'Bearer $userToken',
     };
 

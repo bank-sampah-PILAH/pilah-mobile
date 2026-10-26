@@ -26,7 +26,7 @@
   "lib/features/harga/data/models/harga_model.dart": 6,
   "lib/features/harga/presentation/pages/harga_page.dart": 1,
   "lib/features/harga/presentation/widgets/jenis_sampah_form.dart": 10,
-  "lib/features/jadwal/presentation/pages/jadwal_page.dart": 14,
+  "lib/features/jadwal/presentation/pages/jadwal_page.dart": 12,
   "lib/features/jadwal/presentation/widgets/jadwal_calendar.dart": 5,
   "lib/features/nasabah/presentation/pages/nasabah_page.dart": 1,
   "lib/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart": 16,

@@ -7,14 +7,10 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 /// Pengurus dashboard action area: the two things done most, side by side.
-/// Pencairan lives behind the Transaksi Baru chooser (choosing it opens the
-/// same pencairan flow), not as its own button, so both routes stay reachable
-/// without duplicating the entry. Everything else is a destination in the
-/// navigation (Pengumuman is in the sidebar), not a button here.
+/// Pengumuman is a navigation destination, not an action button here.
 class DashboardActionButtons extends StatelessWidget {
   const DashboardActionButtons({super.key});
 
@@ -56,26 +52,16 @@ class DashboardActionButtons extends StatelessWidget {
   }
 
   Future<void> _openTransaksiChooser(BuildContext context) async {
-    final choice = await showAdaptiveSurface<_TransaksiChoice>(
+    final createSetoran = await showAdaptiveSurface<bool>(
       context,
       builder: (context) => const _TransaksiChooserSheet(),
     );
-    if (choice == null || !context.mounted) return;
-    switch (choice) {
-      case _TransaksiChoice.setoran:
-        context.push(TransaksiBaruPage.route);
-      case _TransaksiChoice.pencairan:
-        context.push(DraftListPage.route);
-    }
+    if (createSetoran != true || !context.mounted) return;
+    context.push(TransaksiBaruPage.route);
   }
 }
 
-enum _TransaksiChoice { setoran, pencairan }
-
-/// Lets the pengurus choose which transaction to record before opening its
-/// own form — one beranda entry point for both, without merging the two
-/// forms themselves (their data shapes are too different: multi-item vs
-/// single-value) (PIL-282).
+/// The setoran shortcut from the pengurus dashboard.
 class _TransaksiChooserSheet extends StatelessWidget {
   const _TransaksiChooserSheet();
 
@@ -97,7 +83,7 @@ class _TransaksiChooserSheet extends StatelessWidget {
             icon: Icons.add_circle_outline,
             title: 'Catat Setoran',
             subtitle: 'Rekam setoran sampah dari nasabah',
-            onTap: () => Navigator.of(context).pop(_TransaksiChoice.setoran),
+            onTap: () => Navigator.of(context).pop(true),
           ),
           const SizedBox(height: 8),
           const _ChoiceTile(

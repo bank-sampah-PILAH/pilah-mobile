@@ -13,6 +13,7 @@ import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/email_dikelola_nasabah_notice.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_confirmation_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
@@ -61,14 +62,11 @@ class _DetailNasabahBottomSheetState
     final String phone = nasabah.phone;
     final String balance = nasabah.balance;
     final String idNasabah = nasabah.idNasabah;
-    final String email = nasabah.email.isNotEmpty ? nasabah.email : '-';
-    final String jenisKelamin =
-        nasabah.jenisKelamin.isNotEmpty ? nasabah.jenisKelamin : '-';
-    final String tanggalLahir =
-        nasabah.tanggalLahir.isNotEmpty ? nasabah.tanggalLahir : '-';
-    final String address = nasabah.address.isNotEmpty ? nasabah.address : '-';
-    final String tanggalDaftar =
-        nasabah.tanggalDaftar.isNotEmpty ? nasabah.tanggalDaftar : '-';
+    final String email = _orDash(nasabah.email);
+    final String jenisKelamin = _orDash(nasabah.jenisKelamin);
+    final String tanggalLahir = _orDash(nasabah.tanggalLahir);
+    final String address = _orDash(nasabah.address);
+    final String tanggalDaftar = _orDash(nasabah.tanggalDaftar);
     // Email nasabah berakun menjadi kunci penautan ke akunnya dan tidak dapat
     // diubah pengurus (PIL-288). Tanpa penanda ini, pengurus baru tahu batas
     // itu dari 403 setelah mengisi form. Default tidak terkunci: payload lama
@@ -211,7 +209,20 @@ class _DetailNasabahBottomSheetState
           ),
           if (punyaAkun) ...[
             const SizedBox(height: 16),
-            _buildEmailDikelolaNasabah(),
+            EmailDikelolaNasabahNotice(
+              backgroundColor: DetailNasabahBottomSheet.mintTint,
+              titleStyle: AppTextStyle.title1.copyWith(
+                color: AppColors.greenDark,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              messageStyle: AppTextStyle.small.copyWith(
+                color: Colors.black87,
+                height: 1.4,
+              ),
+              message:
+                  'Pengurus dapat memperbaiki data lain, tetapi tidak emailnya.',
+            ),
           ],
           if (punyaAkun) _buildProfilAkunBerbeda(),
           const SizedBox(height: 24),
@@ -265,55 +276,7 @@ class _DetailNasabahBottomSheetState
     );
   }
 
-  /// Keterangan bahwa email ini kunci masuk pemilik akun, bukan data yang
-  /// boleh diganti pengurus.
-  ///
-  /// Sekadar penjelasan tampilan: batasnya tetap ditegakkan server pada setiap
-  /// permintaan (PIL-223), bukan oleh layar ini.
-  Widget _buildEmailDikelolaNasabah() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: DetailNasabahBottomSheet.mintTint,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.lock_outline,
-            size: 18,
-            color: AppColors.greenDark,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Email dikelola oleh nasabah',
-                  style: AppTextStyle.title1.copyWith(
-                    color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Pengurus dapat memperbaiki data lain, tetapi tidak emailnya.',
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.black87,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  String _orDash(String value) => value.isNotEmpty ? value : '-';
 
   /// Labels for the backend keys of `profil_berbeda`.
   static const Map<String, String> _labelField = {
