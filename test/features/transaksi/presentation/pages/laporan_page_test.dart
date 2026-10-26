@@ -15,6 +15,14 @@ import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/lapor
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
+
+import '../../../../support/harga_support.dart';
+import '../../../../support/stub_api.dart';
+import '../../../../support/transaksi_support.dart';
 
 class _MockGetAktivitasUseCase extends Mock implements GetAktivitasUseCase {}
 
@@ -392,5 +400,82 @@ void main() {
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
         isEmpty);
     expect(find.text('Budi Santoso'), findsOneWidget);
+  });
+
+  group('selection mode on the phone', () {
+    late StubApi api;
+
+    Future<ProviderContainer> pumpSelectable(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      api = StubApi();
+      api.on('GET', '/api/v1/jenis-sampah', json: {'results': []});
+      api.on('GET', '/api/v1/transaksi/t1', json: {
+        'nasabah_nama': 'Budi Santoso',
+        'total_nilai': '7000',
+        'saldo_setelah_transaksi': '7000',
+        'status_wa': 'belum_dikirim',
+        'catatan': '',
+        'items': [],
+        'revisi': [],
+      });
+      when(() => getTransaksi.execute(any())).thenAnswer((_) async => Right(
+            AktivitasPage([
+              ActivitasEntity.fromTransaksi(TransaksiEntity(
+                id: 't1',
+                initials: 'BS',
+                avatarColor: const Color(0xFFEAF5EC),
+                textColor: const Color(0xFF2F6B45),
+                name: 'Budi Santoso',
+                subtitle: 'Plastik PET • 2 kg',
+                amount: '+Rp 7.000',
+                isWaSuccess: true,
+                time: '08:00',
+                balance: '',
+                items: const [],
+                tanggal: DateTime(2026, 9, 22, 8),
+              )),
+            ], false),
+          ));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          riwayatAktivitasProvider.overrideWith(() => RiwayatAktivitasNotifier(
+              getTransaksi, _MockExportTransaksiUseCase())),
+          transaksiProvider.overrideWith(() => buildTransaksiNotifier(api)),
+          hargaProvider.overrideWith(() => buildHargaNotifier(api)),
+        ],
+        child: const MaterialApp(home: LaporanPage(isWeb: false)),
+      ));
+      await tester.pumpAndSettle();
+      final container =
+          ProviderScope.containerOf(tester.element(find.byType(LaporanPage)));
+      container.read(aktivitasSelectionProvider.notifier).select('t1');
+      await tester.pump();
+      return container;
+    }
+
+    testWidgets('the header Edit opens the form of the selected setoran',
+        (tester) async {
+      await pumpSelectable(tester);
+
+      await tester.tap(find.byKey(AktivitasSelectionBar.editKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Setoran'), findsOneWidget);
+    });
+
+    testWidgets('Back leaves the selection before it leaves the page',
+        (tester) async {
+      final container = await pumpSelectable(tester);
+      expect(find.text('1 dipilih'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+
+      expect(container.read(aktivitasSelectionProvider), isNull);
+      expect(find.text('1 dipilih'), findsNothing);
+    });
   });
 }

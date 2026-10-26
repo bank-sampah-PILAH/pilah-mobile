@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/spacing.dart';
@@ -17,6 +18,7 @@ class AktivitasTable extends StatelessWidget {
     super.key,
     required this.items,
     required this.onTap,
+    this.onEdit,
     this.footer = const [],
     this.toolbar,
     this.pagination,
@@ -25,6 +27,9 @@ class AktivitasTable extends StatelessWidget {
 
   final List<ActivitasEntity> items;
   final ValueChanged<ActivitasEntity> onTap;
+
+  /// Dipanggil dari kolom Aksi pada baris setoran. Null menyembunyikan kolom.
+  final ValueChanged<ActivitasEntity>? onEdit;
 
   /// Isi di bawah baris terakhir: indikator muat atau tombol "Muat Lagi".
   final List<Widget> footer;
@@ -39,7 +44,7 @@ class AktivitasTable extends StatelessWidget {
   final int? page;
 
   /// Lebar relatif kolom: waktu, nasabah, tipe, rincian, nominal.
-  static const _columns = [4, 4, 2, 4, 3];
+  static const _columns = [4, 4, 2, 4, 3, 3];
 
   static final _headStyle = AppTextStyle.extraSmall.copyWith(
     color: AppColors.grey100,
@@ -62,6 +67,7 @@ class AktivitasTable extends StatelessWidget {
           4,
           Text('NOMINAL', style: _headStyle, textAlign: TextAlign.end),
         ),
+        if (onEdit != null) _aksiCell(Text('AKSI', style: _headStyle)),
       ]),
       body: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -74,12 +80,22 @@ class AktivitasTable extends StatelessWidget {
                 key: rowKey(i),
                 item: items[i],
                 onTap: () => onTap(items[i]),
+                onEdit: onEdit == null ? null : () => onEdit!(items[i]),
               ),
       ),
       footer: pagination,
       pageKey: page,
     );
   }
+
+  /// Kolom Aksi dimulai agak jauh dari Nominal agar tombolnya tidak mepet.
+  static Widget _aksiCell(Widget child) => _cell(
+        5,
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.xl),
+          child: child,
+        ),
+      );
 
   static Widget _cell(int i, Widget child) => Expanded(
         flex: _columns[i],
@@ -91,10 +107,16 @@ class AktivitasTable extends StatelessWidget {
 }
 
 class _Row extends StatefulWidget {
-  const _Row({super.key, required this.item, required this.onTap});
+  const _Row({
+    super.key,
+    required this.item,
+    required this.onTap,
+    this.onEdit,
+  });
 
   final ActivitasEntity item;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
 
   @override
   State<_Row> createState() => _RowState();
@@ -200,6 +222,23 @@ class _RowState extends State<_Row> {
                   ),
                 ),
               ),
+              if (widget.onEdit != null)
+                AktivitasTable._aksiCell(
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: item.tipe == ActivitasTipe.setoran
+                        ? AppButton(
+                            key: const ValueKey('aktivitas-edit'),
+                            label: 'Edit',
+                            icon: Icons.edit_outlined,
+                            variant: AppButtonVariant.outlined,
+                            size: AppButtonSize.compact,
+                            expand: false,
+                            onPressed: widget.onEdit,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
             ]),
           ),
         ),

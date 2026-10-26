@@ -19,6 +19,9 @@ import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity
 import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/hold_to_select.dart';
 
 /// Renders the merged setoran + pencairan feed (PIL-282), grouped by day.
 /// Tapping a row opens that type's own detail sheet — setoran's
@@ -112,6 +115,11 @@ class AktivitasListView extends StatelessWidget {
               child: AktivitasTable(
                 items: state.items,
                 onTap: (item) => _openDetail(context, item),
+                onEdit: (item) async {
+                  final id = item.transaksi?.id;
+                  if (id == null || id.isEmpty) return;
+                  await showEditSetoranSheet(context, id);
+                },
                 footer: footer,
                 toolbar: const AktivitasSummaryStrip(),
                 page: state.currentPage,
@@ -276,26 +284,80 @@ void _openDetail(BuildContext context, ActivitasEntity item) {
   }
 }
 
-class _AktivitasRow extends StatelessWidget {
+class _AktivitasRow extends ConsumerWidget {
+  /// Seberapa jauh warna baris terpilih keluar dari isi barisnya, agar isi
+  /// tidak menempel di tepi.
+  static const _selectedBleed = 10.0;
+
   final ActivitasEntity item;
 
   const _AktivitasRow({required this.item});
 
   @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      onTap: () => _openDetail(context, item),
-      child: ActivityItem(
-        avatarText: item.avatarText,
-        avatarColor: item.avatarColor,
-        avatarTextColor: item.avatarTextColor,
-        title: item.title,
-        subtitleLines: item.subtitleLines,
-        amount: item.amount,
-        amountColor: item.amountColor,
-        trailingCaptions: item.trailingCaptions,
-        badge: item.badge,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = item.transaksi?.id ?? '';
+    final selectable = item.tipe == ActivitasTipe.setoran && id.isNotEmpty;
+    final selection = ref.watch(aktivitasSelectionProvider);
+    final selecting = selection != null;
+    final selected = selectable && selection == id;
+    final notifier = ref.read(aktivitasSelectionProvider.notifier);
+    return HoldToSelect(
+      enabled: selectable && !selecting,
+      bleed: _selectedBleed,
+      onSelected: () => notifier.select(id),
+      child: InkWell(
+        key: selected ? const ValueKey('aktivitas-row-selected') : null,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: () {
+          if (!selecting) return _openDetail(context, item);
+          if (selectable) notifier.toggle(id);
+        },
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            ActivityItem(
+              avatarText: item.avatarText,
+              avatarColor: item.avatarColor,
+              avatarTextColor: item.avatarTextColor,
+              title: item.title,
+              subtitleLines: item.subtitleLines,
+              amount: item.amount,
+              amountColor: item.amountColor,
+              trailingCaptions: item.trailingCaptions,
+              badge: item.badge,
+            ),
+            // In front of the card, whose own white background would hide a
+            // tint behind it.
+            if (selected)
+              Positioned(
+                top: 0,
+                bottom: 0,
+                left: -_selectedBleed,
+                right: -_selectedBleed,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    key: const ValueKey('aktivitas-row-selected-tint'),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenDark.withValues(alpha: 0.12),
+                      border:
+                          Border.all(color: AppColors.greenDark, width: 1.5),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                ),
+              ),
+            if (selected)
+              const Positioned(
+                top: 6,
+                left: 6 - _selectedBleed,
+                child: CircleAvatar(
+                  radius: 10,
+                  backgroundColor: AppColors.greenDark,
+                  child: Icon(Icons.check, color: Colors.white, size: 14),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

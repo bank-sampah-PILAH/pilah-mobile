@@ -377,6 +377,20 @@ class _DetailTransaksiBottomSheetState
             ),
           ),
 
+          if (_detail != null && _detail!.catatan.trim().isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const AppFieldLabel('CATATAN'),
+            const SizedBox(height: 8),
+            Text(_detail!.catatan, style: AppTextStyle.small),
+          ],
+          if (_detail != null && _detail!.revisi.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const AppFieldLabel('RIWAYAT PERUBAHAN'),
+            const SizedBox(height: 12),
+            for (final revisi in _detail!.revisi.reversed)
+              _RevisiCard(revisi: revisi),
+          ],
+
           // TEMP: the whole "STATUS NOTIFIKASI WA" section is hidden while the
           // notification flow moves from the Twilio webhook to a frontend
           // wa.me redirect. The backend cannot report a "sent" status yet, so
@@ -497,4 +511,65 @@ class _DetailTransaksiBottomSheetState
     }
   }
   // coverage:ignore-end
+}
+
+/// Satu versi lama setoran: siapa yang mengubahnya, kapan, mengapa, dan
+/// isinya sebelum diubah.
+class _RevisiCard extends StatelessWidget {
+  const _RevisiCard({required this.revisi});
+
+  final TransaksiRevisiEntity revisi;
+
+  @override
+  Widget build(BuildContext context) {
+    final waktu = revisi.diubahPada;
+    return Container(
+      key: ValueKey('revisi-${revisi.versi}'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Versi ${revisi.versi} (sebelum diubah)',
+            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            [
+              'Diubah oleh ${revisi.diubahOlehNama}',
+              if (waktu != null) _formatWaktu(waktu),
+            ].join(' • '),
+            style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+          ),
+          const SizedBox(height: 8),
+          Text('Alasan: ${revisi.alasan}', style: AppTextStyle.small),
+          const SizedBox(height: 8),
+          for (final item in revisi.items)
+            Text(
+              '${item.jenis} • ${item.berat} • ${item.subtotal}',
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+            ),
+          if (revisi.catatan.isNotEmpty)
+            Text('Catatan: ${revisi.catatan}',
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100)),
+          const SizedBox(height: 8),
+          Text(
+            'Total: ${revisi.totalFormatted}',
+            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatWaktu(DateTime d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}.${two(d.minute)}';
+  }
 }

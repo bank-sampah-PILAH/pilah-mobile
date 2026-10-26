@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
+import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -16,6 +17,10 @@ class ItemSetoranCard extends StatelessWidget {
   final ValueChanged<Map<String, dynamic>> onChanged;
   final VoidCallback onDelete;
 
+  /// Harga per kg yang dipakai ketika pengelola memilih jenis. Bawaannya harga
+  /// hari ini; edit setoran memberi harga pada tanggal setoran.
+  final int Function(HargaEntity jenis)? hargaFor;
+
   /// Dipanggil ketika pengelola menekan Enter pada kotak berat. Opsional, jadi
   /// pemanggil yang tidak peduli tidak perlu berubah.
   final VoidCallback? onSubmitted;
@@ -28,6 +33,7 @@ class ItemSetoranCard extends StatelessWidget {
     required this.itemData,
     required this.onChanged,
     required this.onDelete,
+    this.hargaFor,
     this.onSubmitted,
     this.hasError = false,
     this.errorText,
@@ -41,7 +47,7 @@ class ItemSetoranCard extends StatelessWidget {
     final selectedType = itemData['jenis'] as String?;
     final harga = itemData['harga'] as int? ?? 0;
     final berat = itemData['berat'] as num? ?? 1.0;
-    final subtotal = (harga * berat).round();
+    final subtotal = setoranSubtotal(harga, berat);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -130,7 +136,8 @@ class ItemSetoranCard extends StatelessWidget {
                                 ...itemData,
                                 'jenis': value,
                                 'jenis_sampah_id': selected.id,
-                                'harga': selected.price,
+                                'harga':
+                                    hargaFor?.call(selected) ?? selected.price,
                               });
                             }
                           },
