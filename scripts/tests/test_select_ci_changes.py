@@ -150,6 +150,25 @@ class SelectCiChangesTest(unittest.TestCase):
         self.assertFalse(is_full_suite("push", "refs/heads/feature/mobile-ci-speed"))
         self.assertFalse(is_full_suite("pull_request", "refs/pull/164/merge"))
 
+    def test_source_diffs_run_full_suite_for_accurate_sonar_coverage(self):
+        self.assertTrue(
+            is_full_suite(
+                "pull_request",
+                "refs/pull/175/merge",
+                ["lib/features/harga/presentation/pages/harga_page.dart"],
+            )
+        )
+        self.assertTrue(
+            is_full_suite(
+                "push",
+                "refs/heads/feature/quality-gates",
+                ["lib/features/jadwal/presentation/pages/jadwal_page.dart"],
+            )
+        )
+        self.assertFalse(
+            is_full_suite("pull_request", "refs/pull/175/merge", ["README.md"])
+        )
+
     def test_mirror_candidates_cover_direct_and_directory_mirror(self):
         self.assertEqual(
             mirror_test_path("lib/features/harga/data/harga_repository.dart"),
