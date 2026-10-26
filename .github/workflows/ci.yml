@@ -1,4 +1,4 @@
-# CI — changed-test feedback on PRs/feature pushes; full sharded suite on staging.
+# CI — selected tests for test-only changes; full coverage for Dart source changes.
 # Same-run LCOV is merged for Sonar, with the existing coverage gates on staging only.
 name: CI
 

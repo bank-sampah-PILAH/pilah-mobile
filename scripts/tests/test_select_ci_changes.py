@@ -142,7 +142,7 @@ class SelectCiChangesTest(unittest.TestCase):
             )
         )
 
-    def test_only_staging_and_existing_main_pushes_run_the_full_suite(self):
+    def test_staging_and_main_pushes_always_run_the_full_suite(self):
         self.assertTrue(is_full_suite("push", "refs/heads/staging"))
         self.assertTrue(is_coverage_gate("push", "refs/heads/staging"))
         self.assertFalse(is_coverage_gate("push", "refs/heads/main"))
