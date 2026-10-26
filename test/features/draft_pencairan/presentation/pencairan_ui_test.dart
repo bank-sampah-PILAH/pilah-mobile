@@ -74,7 +74,7 @@ void main() {
             child: PencairanPopupMenu<String>(
               key: const Key('menu'),
               onSelected: dipilih.add,
-              entries: const [
+              entries: [
                 PencairanMenuEntry(
                   key: Key('aksi-satu'),
                   value: 'satu',
