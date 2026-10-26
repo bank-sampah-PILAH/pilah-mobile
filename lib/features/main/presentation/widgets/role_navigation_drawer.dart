@@ -32,6 +32,36 @@ class RoleNavigationDrawer extends StatelessWidget {
   static ValueKey<String> destinationKey(int index) =>
       ValueKey('drawer-destination-$index');
 
+  /// Akordeon Transaksi (untuk pengurus), lalu destinasi. Aktivitas ikut
+  /// akordeon sebagai Riwayat, jadi ia tidak digambar lagi sebagai destinasi.
+  List<Widget> _menuRows(
+      BuildContext context, List<RoleDestination> destinations) {
+    final riwayat = navigation.riwayatIndex(destinations);
+    return [
+      if (navigation.hasTransactionMenu)
+        RoleTransactionMenu(
+          onSetoran: navigation.onAddTransaction!,
+          onClose: () => Navigator.maybeOf(context)?.maybePop(),
+          selected: navigation.transactionSelected,
+          onRiwayat: navigation.riwayatOpener(riwayat),
+          riwayatSelected: navigation.riwayatIsCurrent(riwayat),
+        ),
+      for (var index = 0; index < destinations.length; index++)
+        if (index != riwayat)
+          _Destination(
+            key: destinationKey(index),
+            destination: destinations[index],
+            selected: navigation.currentIndex == index,
+            onTap: destinations[index].disabled
+                ? null
+                : () {
+                    Navigator.maybeOf(context)?.maybePop();
+                    navigation.onSelected(index);
+                  },
+          ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final destinations = RoleDestinations.forRole(
@@ -39,7 +69,6 @@ class RoleNavigationDrawer extends StatelessWidget {
       limitedNasabah: navigation.limitedNasabah,
     );
     if (destinations.isEmpty) return const SizedBox.shrink();
-
     final name = navigation.profileName?.trim() ?? '';
     return Drawer(
       backgroundColor: Colors.white,
@@ -70,27 +99,7 @@ class RoleNavigationDrawer extends StatelessWidget {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: [
-                  if (navigation.role == 'pengelola' &&
-                      navigation.onAddTransaction != null)
-                    RoleTransactionMenu(
-                      onSetoran: navigation.onAddTransaction!,
-                      onClose: () => Navigator.maybeOf(context)?.maybePop(),
-                      selected: navigation.transactionSelected,
-                    ),
-                  for (var index = 0; index < destinations.length; index++)
-                    _Destination(
-                      key: destinationKey(index),
-                      destination: destinations[index],
-                      selected: navigation.currentIndex == index,
-                      onTap: destinations[index].disabled
-                          ? null
-                          : () {
-                              Navigator.maybeOf(context)?.maybePop();
-                              navigation.onSelected(index);
-                            },
-                    ),
-                ],
+                children: _menuRows(context, destinations),
               ),
             ),
             if (name.isNotEmpty)

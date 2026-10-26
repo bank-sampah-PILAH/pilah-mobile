@@ -80,8 +80,8 @@ void main() {
         tester.getTopLeft(find.text('Transaksi')).dy,
         lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
       );
-      final pencairan =
-          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.pencairanKey));
+      final pencairan = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.pencairanKey));
       expect(pencairan.enabled, isFalse);
       expect(pencairan.onTap, isNull);
 
@@ -95,12 +95,14 @@ void main() {
       await mountDrawer(tester,
           transactionSelected: true, onAddTransaction: () {});
 
-      final transactionMenu =
-          tester.widget<ExpansionTile>(find.byKey(RoleTransactionMenu.menuKey));
-      expect(transactionMenu.iconColor, AppColors.greenDark);
-      expect(transactionMenu.collapsedIconColor, AppColors.greenDark);
-      final setoran =
-          tester.widget<ListTile>(find.byKey(RoleTransactionMenu.setoranKey));
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.headerKey))
+            .selected,
+        isTrue,
+      );
+      final setoran = tester
+          .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.setoranKey));
       expect(setoran.selected, isTrue);
       expect(
         tester.widget<Text>(find.text('Setoran')).style?.color,
@@ -295,6 +297,65 @@ void main() {
       expect(selected, [3]);
       expect(find.text('Aktivitas'), findsNothing,
           reason: 'a drawer that stays open hides the page it just opened');
+    });
+  });
+
+  group('RoleNavigationDrawer: Riwayat in the Transaksi accordion', () {
+    testWidgets('moves Aktivitas under Transaksi as Riwayat for a pengurus',
+        (tester) async {
+      await mountDrawer(tester, onAddTransaction: () {});
+
+      expect(find.text('Aktivitas'), findsNothing);
+      expect(find.byKey(RoleTransactionMenu.riwayatKey), findsOneWidget);
+      expect(find.text('Riwayat'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Riwayat')).dy,
+        lessThan(tester.getTopLeft(find.text('Setoran')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Pencairan')).dy,
+        lessThan(tester.getTopLeft(find.text('Dashboard')).dy),
+      );
+    });
+
+    testWidgets('tapping Riwayat reports the Aktivitas menu index',
+        (tester) async {
+      final selected = await mountDrawer(tester, onAddTransaction: () {});
+
+      await tester.tap(find.byKey(RoleTransactionMenu.riwayatKey));
+      await tester.pumpAndSettle();
+
+      expect(selected, [3]);
+    });
+
+    testWidgets('the destinations after it keep their menu index',
+        (tester) async {
+      final selected = await mountDrawer(tester, onAddTransaction: () {});
+
+      await tester.tap(find.text('Jadwal'));
+      await tester.pumpAndSettle();
+
+      expect(selected, [4]);
+    });
+
+    testWidgets('on the history page Riwayat is the selected entry',
+        (tester) async {
+      await mountDrawer(tester, currentIndex: 3, onAddTransaction: () {});
+
+      expect(
+        tester
+            .widget<RoleMenuRow>(find.byKey(RoleTransactionMenu.riwayatKey))
+            .selected,
+        isTrue,
+      );
+    });
+
+    testWidgets('Pengelola Induk keeps Aktivitas', (tester) async {
+      await mountDrawer(tester,
+          role: 'pengelola_induk', onAddTransaction: () {});
+
+      expect(find.text('Aktivitas'), findsOneWidget);
+      expect(find.text('Riwayat'), findsNothing);
     });
   });
 }
