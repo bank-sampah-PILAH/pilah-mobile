@@ -111,8 +111,12 @@ def mirror_test_path(path):
     return candidates
 
 
-def is_full_suite(event_name, ref):
-    return event_name == "push" and ref in {"refs/heads/staging", "refs/heads/main"}
+def is_full_suite(event_name, ref, paths=()):
+    if event_name == "push" and ref in {"refs/heads/staging", "refs/heads/main"}:
+        return True
+    return event_name == "pull_request" and any(
+        path.startswith("lib/") and path.endswith(".dart") for path in paths
+    )
 
 
 def is_coverage_gate(event_name, ref):
@@ -159,7 +163,7 @@ def main():
         "base_sha": base,
         "browser_test_files": json.dumps(select_browser_tests(paths), separators=(",", ":")),
         "coverage_gates": str(is_coverage_gate(event_name, ref)).lower(),
-        "full_suite": str(is_full_suite(event_name, ref)).lower(),
+        "full_suite": str(is_full_suite(event_name, ref, paths)).lower(),
         "has_vm_tests": str(bool(vm_tests)).lower(),
         "test_files": json.dumps(vm_tests, separators=(",", ":")),
         "unit_test_shards": str(UNIT_TEST_SHARDS),

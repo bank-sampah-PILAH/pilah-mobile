@@ -186,10 +186,14 @@ class _LogoutCard extends StatelessWidget {
       ]));
 }
 
+const _profileNotFilled = 'Belum diisi';
+const _maleGenderApiValue = 'laki-laki';
+const _maleGenderLabel = 'Laki-laki';
+
 String _jenisKelaminLabel(String value) => switch (value) {
-      'laki-laki' => 'Laki-laki',
+      _maleGenderApiValue => _maleGenderLabel,
       'perempuan' => 'Perempuan',
-      _ => 'Belum diisi',
+      _ => _profileNotFilled,
     };
 
 /// Owns the nasabah's editable fields locally so a save reflects instantly —
@@ -388,7 +392,7 @@ class _ProfileDetailsCard extends StatelessWidget {
           _DetailRow(
               icon: Icons.phone_iphone_outlined,
               label: 'NOMOR HP',
-              value: identity.noHp.isEmpty ? 'Belum diisi' : identity.noHp),
+              value: identity.noHp.isEmpty ? _profileNotFilled : identity.noHp),
           const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Divider(height: 1, color: NasabahStyle.line)),
@@ -403,7 +407,7 @@ class _ProfileDetailsCard extends StatelessWidget {
               icon: Icons.cake_outlined,
               label: 'TANGGAL LAHIR',
               value: identity.tanggalLahir == null
-                  ? 'Belum diisi'
+                  ? _profileNotFilled
                   : nasabahDate(identity.tanggalLahir!)),
           const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
@@ -411,7 +415,9 @@ class _ProfileDetailsCard extends StatelessWidget {
           _DetailRow(
               icon: Icons.location_on_outlined,
               label: 'ALAMAT',
-              value: identity.alamat.isEmpty ? 'Belum diisi' : identity.alamat),
+              value: identity.alamat.isEmpty
+                  ? _profileNotFilled
+                  : identity.alamat),
         ]),
       );
 }
@@ -492,7 +498,7 @@ class _ProfileEditForm extends StatelessWidget {
           const SizedBox(height: 16),
           _fieldLabel('JENIS KELAMIN'),
           Row(children: [
-            _genderOption('laki-laki', 'Laki-laki'),
+            _genderOption(_maleGenderApiValue, _maleGenderLabel),
             const SizedBox(width: 12),
             _genderOption('perempuan', 'Perempuan'),
           ]),

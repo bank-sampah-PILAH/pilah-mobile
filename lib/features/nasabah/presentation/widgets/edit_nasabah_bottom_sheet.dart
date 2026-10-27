@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -10,6 +9,7 @@ import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dar
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_form_fields.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/email_dikelola_nasabah_notice.dart';
 
 /// Pesan 403 yang berarti profilnya milik pemilik akun (PIL-223). Endpoint
 /// ini juga membalas 403 untuk nasabah nonaktif dengan pesan lain, jadi
@@ -104,12 +104,42 @@ class _EditNasabahBottomSheetState
   Future<void> _selectDate() =>
       pickNasabahBirthDate(context, _tanggalLahirController);
 
+  String? _validateId(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Bagian ini wajib diisi.';
+    }
+    final state = ref.read(nasabahProvider);
+    if (state is NasabahLoaded) {
+      final isDuplicate = state.nasabahList.any((nasabah) =>
+          nasabah.idNasabah.trim().toLowerCase() ==
+              value.trim().toLowerCase() &&
+          nasabah.id != widget.nasabah.id);
+      if (isDuplicate) return 'ID Nasabah ini sudah digunakan.';
+    }
+    return _serverKodeError;
+  }
+
   @override
   Widget build(BuildContext context) {
     return NasabahFormSheet(
       title: 'Edit Nasabah',
       formKey: _formKey,
-      notice: _emailTerkunci ? _buildKeteranganEmailTerkunci() : null,
+      notice: _emailTerkunci
+          ? EmailDikelolaNasabahNotice(
+              backgroundColor: AppColors.greenLight,
+              titleStyle: AppTextStyle.title1.copyWith(
+                color: AppColors.greenDark,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              messageStyle: AppTextStyle.small.copyWith(
+                color: Colors.black87,
+                height: 1.4,
+              ),
+              message:
+                  'Nasabah ini sudah punya akun. Emailnya menjadi kunci masuk, jadi hanya itu yang tidak dapat diubah.',
+            )
+          : null,
       fields: [
         NasabahNameField(controller: _namaController),
         NasabahFieldPair(
@@ -121,21 +151,7 @@ class _EditNasabahBottomSheetState
                 setState(() => _serverKodeError = null);
               }
             },
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Bagian ini wajib diisi.';
-              }
-              final state = ref.read(nasabahProvider);
-              if (state is NasabahLoaded) {
-                final list = state.nasabahList;
-                final isDuplicate = list.any((e) =>
-                    e.idNasabah.trim().toLowerCase() ==
-                        value.trim().toLowerCase() &&
-                    e.id != widget.nasabah.id);
-                if (isDuplicate) return 'ID Nasabah ini sudah digunakan.';
-              }
-              return _serverKodeError;
-            },
+            validator: _validateId,
           ),
           right: NasabahGenderField(
             value: _jenisKelamin,
@@ -227,51 +243,6 @@ class _EditNasabahBottomSheetState
       context,
       title: 'Gagal Menyimpan',
       message: error.displayMessage,
-    );
-  }
-
-  /// Menjelaskan mengapa sebagian field tidak dapat disunting.
-  ///
-  /// Penjelasan tampilan saja; penolakannya tetap diputuskan server pada
-  /// setiap permintaan (PIL-223, OWASP A01 Broken Access Control).
-  Widget _buildKeteranganEmailTerkunci() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.greenLight,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.lock_outline, size: 18, color: AppColors.greenDark),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Email dikelola oleh nasabah',
-                  style: AppTextStyle.title1.copyWith(
-                    color: AppColors.greenDark,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Nasabah ini sudah punya akun. Emailnya menjadi kunci masuk, jadi hanya itu yang tidak dapat diubah.',
-                  style: AppTextStyle.small.copyWith(
-                    color: Colors.black87,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

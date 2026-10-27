@@ -21,6 +21,9 @@ void main() {
     if (di.isRegistered<NasabahRepository>()) {
       await di.unregister<NasabahRepository>();
     }
+    if (di.isRegistered<NasabahPengumumanRepository>()) {
+      await di.unregister<NasabahPengumumanRepository>();
+    }
   });
 
   testWidgets('preview executable entrypoint starts the app', (tester) async {
@@ -28,6 +31,19 @@ void main() {
     await tester.pump();
 
     expect(find.byType(MaterialApp), findsOneWidget);
+  });
+
+  testWidgets('preview stubs reject unsupported calls and missing details',
+      (tester) async {
+    await tester.pumpWidget(preview.buildPreviewApp());
+    final result = await di<RiwayatRepository>().setoranDetail('m1', 't1');
+    expect(result.fold((_) => true, (_) => false), isTrue);
+
+    final dynamic announcements = di<NasabahPengumumanRepository>();
+    expect(
+      () => announcements.unsupported(),
+      throwsA(isA<NoSuchMethodError>()),
+    );
   });
 
   testWidgets('preview entrypoint shows the offline Beranda for Siti',

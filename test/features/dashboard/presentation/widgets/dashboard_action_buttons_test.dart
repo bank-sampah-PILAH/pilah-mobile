@@ -10,7 +10,7 @@ void main() {
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(375, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(const MaterialApp(
+    await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: DashboardActionButtons()),
     ));
 
@@ -123,11 +123,7 @@ void main() {
       (tester) async {
     await pumpChooser(tester);
 
-    final payoutChoice = find.descendant(
-      of: find.byType(Dialog),
-      matching: find.text('Pencairan'),
-    );
-    await tester.tap(payoutChoice);
+    await tester.tap(find.text('Pencairan'));
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Pencairan'), findsNothing);

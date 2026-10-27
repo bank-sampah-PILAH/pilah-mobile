@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/constants/app_key.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import 'di_registrations.dart';
@@ -30,6 +31,13 @@ void main() {
           if (onlyIn != null && onlyIn != env) continue;
           expect(resolve, returnsNormally, reason: label);
         }
+      });
+
+      test('registers the beranda announcement repository', () {
+        expect(
+          di<NasabahPengumumanRepository>(),
+          isA<NasabahPengumumanRepository>(),
+        );
       });
     });
   }

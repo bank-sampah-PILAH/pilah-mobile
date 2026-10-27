@@ -705,6 +705,16 @@ void main() {
     expect(row.color, AppColors.greenLight);
   });
 
+  testWidgets('the row with its detail open stays tinted in the table',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    final row = tester.widget<Container>(find.byKey(HargaTable.rowKey('1')));
+    expect(row.color, AppColors.greenLight);
+  });
+
   testWidgets('on a wide screen the add button is in the header, not a FAB',
       (tester) async {
     await openPage(tester, size: _expanded);
@@ -774,6 +784,32 @@ void main() {
       find.byType(JenisSampahForm),
       findsNothing,
       reason: 'a blank form reappearing on resize reads as a bug',
+    );
+  });
+
+  testWidgets('switching an edit panel to create mode resets its fields',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await editJenis(tester, 'Botol PET');
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).first)
+          .controller
+          ?.text,
+      'K-1',
+    );
+
+    await tester.tap(find.byIcon(Icons.add).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(JenisSampahForm), findsOneWidget);
+    expect(find.text('Tambah Jenis Sampah'), findsWidgets);
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).first)
+          .controller
+          ?.text,
+      isEmpty,
     );
   });
 }

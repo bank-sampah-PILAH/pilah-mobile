@@ -20,6 +20,11 @@ import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 
+const _genderMaleApiValue = 'laki-laki';
+const _genderMaleLabel = 'Laki-laki';
+const _registerBankSampahRoute = '/register-bank-sampah';
+const _dashboardRoute = '/dashboard';
+
 class CompleteProfileScreen extends ConsumerStatefulWidget {
   final bool isInviteMode;
 
@@ -102,7 +107,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     _nameController.text = draft.nama;
     _phoneController.text = draft.noHp;
     _alamatController.text = draft.alamat;
-    _gender = draft.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+    _gender = draft.jenisKelamin == _genderMaleApiValue
+        ? _genderMaleLabel
+        : 'Perempuan';
 
     // Stored as the ISO string the API wants; the picker and the field need a
     // DateTime and dd/MM/yyyy back.
@@ -135,7 +142,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       _alamatController.text = auth.alamat;
     }
     if (auth.jenisKelamin.isNotEmpty) {
-      _gender = auth.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+      _gender = auth.jenisKelamin == _genderMaleApiValue
+          ? _genderMaleLabel
+          : 'Perempuan';
     }
 
     final tanggalLahir = auth.tanggalLahir;
@@ -234,7 +243,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
 
     final request = CompleteProfileRequest(
       nama: _nameController.text.trim(),
-      jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
+      jenisKelamin:
+          _gender == _genderMaleLabel ? _genderMaleApiValue : 'perempuan',
       tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
       noHp: _phoneController.text.trim(),
       alamat: _isNasabah ? _alamatController.text.trim() : '',
@@ -256,7 +266,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     // there is none.
     if (!isInvite && _startsNewRegistration) {
       notifier.saveProfileDraft(request);
-      context.push('/register-bank-sampah');
+      context.push(_registerBankSampahRoute);
       return;
     }
 
@@ -336,7 +346,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         // On the inviting bank sampah, which is active by the time an invite for
         // it exists — so onboarding ends here, at the dashboard, never at the
         // registration form the non-invite flow continues to.
-        context.go('/dashboard');
+        context.go(_dashboardRoute);
         break;
       case InviteAcceptance.otherBank:
       case InviteAcceptance.rejected:
@@ -371,10 +381,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   void _routeByNextStep(String? nextStep, {required bool isInvite}) {
     switch (nextStep) {
       case 'dashboard':
-        context.go('/dashboard');
+        context.go(_dashboardRoute);
         break;
       case 'register_bank_sampah':
-        context.go('/register-bank-sampah');
+        context.go(_registerBankSampahRoute);
         break;
       case 'approval_pending':
         context.go('/pending-approval');
@@ -397,7 +407,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       default:
         // Fallback preserves prior behaviour: invited managers join an existing
         // bank sampah (dashboard), new managers continue to registration.
-        context.go(isInvite ? '/dashboard' : '/register-bank-sampah');
+        context.go(isInvite ? _dashboardRoute : _registerBankSampahRoute);
     }
   }
 
@@ -471,13 +481,13 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                           color: Colors.grey),
                       items: const [
                         DropdownMenuItem(
-                          value: 'Laki-laki',
+                          value: _genderMaleLabel,
                           child: Row(
                             children: [
                               Icon(Icons.male,
                                   size: 20, color: AppColors.inkSoft),
                               SizedBox(width: 8),
-                              Text('Laki-laki'),
+                              Text(_genderMaleLabel),
                             ],
                           ),
                         ),

@@ -230,6 +230,8 @@ class _RegisterBankSampahScreenState
               // The same colour Material gives a TextFormField's
               // error, so the two read as one form.
               final errorColor = Theme.of(field.context).colorScheme.error;
+              final placeholderColor =
+                  field.hasError ? errorColor : Colors.grey.shade400;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -280,9 +282,7 @@ class _RegisterBankSampahScreenState
                           )
                         : CustomPaint(
                             painter: _DashedRectPainter(
-                                color: field.hasError
-                                    ? errorColor
-                                    : Colors.grey.shade400,
+                                color: placeholderColor,
                                 strokeWidth: 1.5,
                                 gap: 5.0,
                                 radius: 12.0),

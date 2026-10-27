@@ -7,14 +7,11 @@ import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 /// Pengurus dashboard action area: the two things done most, side by side.
-/// Pencairan lives behind the Transaksi Baru chooser (choosing it opens the
-/// same pencairan flow), not as its own button, so both routes stay reachable
-/// without duplicating the entry. Everything else is a destination in the
-/// navigation (Pengumuman is in the sidebar), not a button here.
+/// Pencairan remains visible but disabled in the Transaksi Baru chooser per
+/// PIL-379. Everything else is a destination in the navigation, not a button.
 class DashboardActionButtons extends StatelessWidget {
   const DashboardActionButtons({super.key});
 
@@ -64,13 +61,11 @@ class DashboardActionButtons extends StatelessWidget {
     switch (choice) {
       case _TransaksiChoice.setoran:
         context.push(TransaksiBaruPage.route);
-      case _TransaksiChoice.pencairan:
-        context.push(DraftListPage.route);
     }
   }
 }
 
-enum _TransaksiChoice { setoran, pencairan }
+enum _TransaksiChoice { setoran }
 
 /// Lets the pengurus choose which transaction to record before opening its
 /// own form — one beranda entry point for both, without merging the two

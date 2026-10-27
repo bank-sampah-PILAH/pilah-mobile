@@ -7,6 +7,7 @@ import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/proof_image_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -345,23 +346,34 @@ class _PendingBankCardState extends State<PendingBankCard> {
         ? await widget.actions.approve(bank.id)
         : await widget.actions.reject(bank.id);
 
+    if (error != null && mounted) {
+      setState(() => _isProcessing = false);
+    }
+    if (!overlayContext.mounted) return;
+    _showActionResult(overlayContext, bank, approve, error);
+  }
+
+  void _showActionResult(
+    BuildContext context,
+    BankSampahEntity bank,
+    bool approve,
+    NetworkException? error,
+  ) {
     if (error != null) {
-      if (mounted) setState(() => _isProcessing = false);
-      if (overlayContext.mounted) {
-        AppNotification.showError(overlayContext,
-            title: 'Gagal', message: error.displayMessage);
-      }
+      AppNotification.showError(
+        context,
+        title: 'Gagal',
+        message: error.displayMessage,
+      );
       return;
     }
-    if (overlayContext.mounted) {
-      AppNotification.showSuccess(
-        overlayContext,
-        title: approve ? 'Disetujui' : 'Ditolak',
-        message: approve
-            ? '${bank.nama} berhasil disetujui.'
-            : 'Pendaftaran ${bank.nama} telah ditolak.',
-      );
-    }
+    AppNotification.showSuccess(
+      context,
+      title: approve ? 'Disetujui' : 'Ditolak',
+      message: approve
+          ? '${bank.nama} berhasil disetujui.'
+          : 'Pendaftaran ${bank.nama} telah ditolak.',
+    );
   }
 
   @override

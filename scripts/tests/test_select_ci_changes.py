@@ -142,13 +142,32 @@ class SelectCiChangesTest(unittest.TestCase):
             )
         )
 
-    def test_only_staging_and_existing_main_pushes_run_the_full_suite(self):
+    def test_staging_and_main_pushes_always_run_the_full_suite(self):
         self.assertTrue(is_full_suite("push", "refs/heads/staging"))
         self.assertTrue(is_coverage_gate("push", "refs/heads/staging"))
         self.assertFalse(is_coverage_gate("push", "refs/heads/main"))
         self.assertTrue(is_full_suite("push", "refs/heads/main"))
         self.assertFalse(is_full_suite("push", "refs/heads/feature/mobile-ci-speed"))
         self.assertFalse(is_full_suite("pull_request", "refs/pull/164/merge"))
+
+    def test_source_diffs_run_full_suite_on_pr_but_not_feature_push(self):
+        self.assertTrue(
+            is_full_suite(
+                "pull_request",
+                "refs/pull/175/merge",
+                ["lib/features/harga/presentation/pages/harga_page.dart"],
+            )
+        )
+        self.assertFalse(
+            is_full_suite(
+                "push",
+                "refs/heads/feature/quality-gates",
+                ["lib/features/jadwal/presentation/pages/jadwal_page.dart"],
+            )
+        )
+        self.assertFalse(
+            is_full_suite("pull_request", "refs/pull/175/merge", ["README.md"])
+        )
 
     def test_mirror_candidates_cover_direct_and_directory_mirror(self):
         self.assertEqual(

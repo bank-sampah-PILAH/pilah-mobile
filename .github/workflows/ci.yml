@@ -1,4 +1,4 @@
-# CI — changed-test feedback on PRs/feature pushes; full sharded suite on staging.
+# CI — selected tests on feature pushes; full suites for Dart-source PRs and staging/main pushes.
 # Same-run LCOV is merged for Sonar, with the existing coverage gates on staging only.
 name: CI
 
@@ -141,7 +141,7 @@ jobs:
           retention-days: 1
 
   browser_tests:
-    if: needs.changes.outputs.full_suite == 'true' || needs.changes.outputs.web_changed == 'true'
+    if: needs.changes.outputs.full_suite == 'true' || (github.event_name == 'pull_request' && needs.changes.outputs.web_changed == 'true')
     needs: changes
     name: Browser tests
     runs-on: ubuntu-latest
@@ -327,6 +327,7 @@ jobs:
           FULL_SUITE: ${{ needs.changes.outputs.full_suite }}
           HAS_VM_TESTS: ${{ needs.changes.outputs.has_vm_tests }}
           WEB_CHANGED: ${{ needs.changes.outputs.web_changed }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           if [[ "$CHANGES_RESULT" != success || "$QUALITY_RESULT" != success || "$COVERAGE_RESULT" != success ]]; then
             echo "::error::Changed-file selection, quality, or coverage validation failed."
@@ -343,15 +344,15 @@ jobs:
               echo "::error::Changed VM tests did not match the selected-test policy."
               exit 1
             fi
-            if [[ "$WEB_CHANGED" == 'true' && "$BROWSER_RESULT" != success ]] || \
-               [[ "$WEB_CHANGED" != 'true' && "$BROWSER_RESULT" != skipped ]]; then
+            if [[ "$WEB_CHANGED" == 'true' && "$EVENT_NAME" == 'pull_request' && "$BROWSER_RESULT" != success ]] || \
+               [[ ( "$WEB_CHANGED" != 'true' || "$EVENT_NAME" != 'pull_request' ) && "$BROWSER_RESULT" != skipped ]]; then
               echo "::error::Browser tests did not match the web-diff policy."
               exit 1
             fi
           fi
 
   sonar:
-    if: ${{ always() && needs.changes.result == 'success' && needs.coverage.result == 'success' && needs.verify.result == 'success' && github.event_name != 'workflow_dispatch' }}
+    if: ${{ always() && needs.changes.result == 'success' && needs.coverage.result == 'success' && needs.verify.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main') }}
     name: SonarCloud analysis
     needs: [changes, coverage, verify]
     runs-on: ubuntu-latest

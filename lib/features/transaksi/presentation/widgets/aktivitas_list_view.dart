@@ -46,126 +46,153 @@ class AktivitasListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer(
-      builder: (context, ref, child) {
-        final state = ref.watch(riwayatAktivitasProvider);
-        if (state.status == AktivitasStatus.initial ||
-            state.status == AktivitasStatus.loading) {
-          return ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: _scrollPadding(context, bottom: 80),
-            itemCount: 5,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) => const SkeletonListItem(),
-          );
-        }
+      builder: (context, ref, child) =>
+          _buildState(context, ref.watch(riwayatAktivitasProvider)),
+    );
+  }
 
-        if (state.status == AktivitasStatus.failure) {
-          return Column(children: [
-            Expanded(
-                child: EmptyView(
-                    title: 'Gagal Memuat Data',
-                    subtitle: state.errorMessage ?? 'Terjadi kesalahan',
-                    icon: Icons.error_outline)),
-            TextButton(
-                onPressed: () =>
-                    ProviderScope.containerOf(context, listen: false)
-                        .read(riwayatAktivitasProvider.notifier)
-                        .load(),
-                child: const Text('Coba Lagi')),
-          ]);
-        }
+  Widget _buildState(BuildContext context, RiwayatAktivitasState state) {
+    if (state.status == AktivitasStatus.initial ||
+        state.status == AktivitasStatus.loading) {
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _scrollPadding(context, bottom: 80),
+        itemCount: 5,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => const SkeletonListItem(),
+      );
+    }
+    if (state.status == AktivitasStatus.failure) {
+      return _buildFailure(context, state);
+    }
+    if (state.items.isEmpty) return _buildEmpty(state);
+    return _buildLoaded(context, state);
+  }
 
-        if (state.items.isEmpty) {
-          return EmptyView(
-            title: state.search.isNotEmpty
-                ? 'Aktivitas Tidak Ditemukan'
-                : 'Belum Ada Aktivitas',
-            subtitle: state.search.isNotEmpty
-                ? 'Coba kata kunci atau nama pelanggan lain'
-                : 'Belum ada aktivitas tercatat pada periode ini.',
-            icon: Icons.receipt_long_outlined,
-          );
-        }
+  Widget _buildFailure(BuildContext context, RiwayatAktivitasState state) {
+    return Column(children: [
+      Expanded(
+        child: EmptyView(
+          title: 'Gagal Memuat Data',
+          subtitle: state.errorMessage ?? 'Terjadi kesalahan',
+          icon: Icons.error_outline,
+        ),
+      ),
+      TextButton(
+        onPressed: () => ProviderScope.containerOf(context, listen: false)
+            .read(riwayatAktivitasProvider.notifier)
+            .load(),
+        child: const Text('Coba Lagi'),
+      ),
+    ]);
+  }
 
-        final footer = _footer(context, state);
-        final wide = context.layoutBreakpoint != LayoutBreakpoint.compact;
-        Widget scrollNotifications(Widget child) =>
-            NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (!isWeb &&
-                    notification.metrics.axis == Axis.vertical &&
-                    notification.metrics.extentAfter < 200 &&
-                    state.errorMessage == null) {
-                  ProviderScope.containerOf(context, listen: false)
-                      .read(riwayatAktivitasProvider.notifier)
-                      .loadMore();
-                }
-                return false;
-              },
-              child: child,
-            );
-        if (wide) {
-          // Halaman data: tabel sebagai kartu yang mengisi sisa tinggi layar,
-          // hanya barisnya yang bergulir, dan paginasi di dasar kartu.
-          final side = ContentFrame.insetOf(context).add(
-              const EdgeInsets.symmetric(horizontal: AppSpacing.webGutter));
-          return scrollNotifications(
-            Padding(
-              padding: side.add(const EdgeInsets.only(bottom: AppSpacing.xl)),
-              child: AktivitasTable(
-                items: state.items,
-                onTap: (item) => _openDetail(context, item),
-                onEdit: (item) async {
-                  final id = item.transaksi?.id;
-                  if (id == null || id.isEmpty) return;
-                  await showEditSetoranSheet(context, id);
-                },
-                footer: footer,
-                toolbar: const AktivitasSummaryStrip(),
-                page: state.currentPage,
-                pagination: isWeb
-                    ? WebPaginationBar(
-                        currentPage: state.currentPage,
-                        totalItems: state.totalCount,
-                        pageSize: state.pageSize,
-                        itemLabel: 'transaksi',
-                        onPageChanged:
-                            ProviderScope.containerOf(context, listen: false)
-                                .read(riwayatAktivitasProvider.notifier)
-                                .loadPage,
-                      )
-                    : null,
-              ),
-            ),
-          );
+  Widget _buildEmpty(RiwayatAktivitasState state) {
+    final searching = state.search.isNotEmpty;
+    return EmptyView(
+      title: searching ? 'Aktivitas Tidak Ditemukan' : 'Belum Ada Aktivitas',
+      subtitle: searching
+          ? 'Coba kata kunci atau nama pelanggan lain'
+          : 'Belum ada aktivitas tercatat pada periode ini.',
+      icon: Icons.receipt_long_outlined,
+    );
+  }
+
+  Widget _buildLoaded(BuildContext context, RiwayatAktivitasState state) {
+    final footer = _footer(context, state);
+    if (context.layoutBreakpoint != LayoutBreakpoint.compact) {
+      return _buildWideList(context, state, footer);
+    }
+
+    final cards = _withScrollNotifications(
+      context,
+      state,
+      ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _scrollPadding(context, bottom: 24),
+        children: _groupedRows(state, now(), footer),
+      ),
+    );
+    if (!isWeb) return cards;
+    // Browser sempit: kartu satu kolom, paginasi di bawahnya.
+    return Column(
+      children: [
+        Expanded(child: cards),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildPagination(context, state),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWideList(
+    BuildContext context,
+    RiwayatAktivitasState state,
+    List<Widget> footer,
+  ) {
+    // Halaman data: tabel sebagai kartu yang mengisi sisa tinggi layar,
+    // hanya barisnya yang bergulir, dan paginasi di dasar kartu.
+    final side = ContentFrame.insetOf(context).add(
+      const EdgeInsets.symmetric(horizontal: AppSpacing.webGutter),
+    );
+    return _withScrollNotifications(
+      context,
+      state,
+      Padding(
+        padding: side.add(const EdgeInsets.only(bottom: AppSpacing.xl)),
+        child: AktivitasTable(
+          items: state.items,
+          onTap: (item) => _openDetail(context, item),
+          onEdit: (item) => _editItem(context, item),
+          footer: footer,
+          toolbar: const AktivitasSummaryStrip(),
+          page: state.currentPage,
+          pagination: isWeb ? _buildPagination(context, state) : null,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editItem(BuildContext context, ActivitasEntity item) async {
+    final id = item.transaksi?.id;
+    if (id == null || id.isEmpty) return;
+    await showEditSetoranSheet(context, id);
+  }
+
+  Widget _buildPagination(
+    BuildContext context,
+    RiwayatAktivitasState state,
+  ) {
+    return WebPaginationBar(
+      currentPage: state.currentPage,
+      totalItems: state.totalCount,
+      pageSize: state.pageSize,
+      itemLabel: 'transaksi',
+      onPageChanged: ProviderScope.containerOf(context, listen: false)
+          .read(riwayatAktivitasProvider.notifier)
+          .loadPage,
+    );
+  }
+
+  Widget _withScrollNotifications(
+    BuildContext context,
+    RiwayatAktivitasState state,
+    Widget child,
+  ) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (!isWeb &&
+            notification.metrics.axis == Axis.vertical &&
+            notification.metrics.extentAfter < 200 &&
+            state.errorMessage == null) {
+          ProviderScope.containerOf(context, listen: false)
+              .read(riwayatAktivitasProvider.notifier)
+              .loadMore();
         }
-        final cards = scrollNotifications(
-          ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: _scrollPadding(context, bottom: 24),
-            children: _groupedRows(state, now(), footer),
-          ),
-        );
-        if (!isWeb) return cards;
-        // Browser sempit: kartu satu kolom, paginasi di bawahnya.
-        return Column(
-          children: [
-            Expanded(child: cards),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: WebPaginationBar(
-                currentPage: state.currentPage,
-                totalItems: state.totalCount,
-                pageSize: state.pageSize,
-                itemLabel: 'transaksi',
-                onPageChanged: ProviderScope.containerOf(context, listen: false)
-                    .read(riwayatAktivitasProvider.notifier)
-                    .loadPage,
-              ),
-            ),
-          ],
-        );
+        return false;
       },
+      child: child,
     );
   }
 

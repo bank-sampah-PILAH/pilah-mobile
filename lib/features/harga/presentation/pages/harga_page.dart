@@ -337,7 +337,6 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
         final item = visibleItems[index];
         return _HargaCard(
           item: item,
-          selected: _selected?.id == item.id,
           onTap: () => _openDetail(item),
         );
       },
@@ -487,19 +486,13 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
 }
 
 /// Satu baris daftar harga.
-///
-/// Dipisahkan menjadi widget sendiri supaya [selected] punya tempat: pada
-/// jendela expanded baris yang sedang dibuka di panel perlu terlihat, kalau
-/// tidak isi panel tidak jelas milik baris yang mana.
 class _HargaCard extends StatelessWidget {
   const _HargaCard({
     required this.item,
-    required this.selected,
     required this.onTap,
   });
 
   final HargaEntity item;
-  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -578,13 +571,6 @@ class _HargaCard extends StatelessWidget {
       ),
     );
 
-    if (!selected) return card;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.greenDark, width: 2),
-      ),
-      child: card,
-    );
+    return card;
   }
 }
