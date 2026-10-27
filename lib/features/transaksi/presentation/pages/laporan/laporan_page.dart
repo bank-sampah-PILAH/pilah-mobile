@@ -1,90 +1,163 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/time_filter_chips.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/transaction_list_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/aktivitas_selection_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_selection_bar.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/edit_setoran_sheet.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_summary_view.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_filter_bar.dart';
 
-class LaporanPage extends StatelessWidget {
-  const LaporanPage({super.key});
+/// One filtered report and activity feed for Pengurus on mobile and web.
+class LaporanPage extends ConsumerStatefulWidget {
+  const LaporanPage({super.key, this.isWeb = kIsWeb});
 
   static const route = '/laporan';
+  final bool isWeb;
 
   @override
-  Widget build(BuildContext context) {
-    return const _LaporanPageBody();
-  }
+  ConsumerState<LaporanPage> createState() => _LaporanPageState();
 }
 
-class _LaporanPageBody extends StatefulWidget {
-  const _LaporanPageBody();
+class _LaporanPageState extends ConsumerState<LaporanPage> {
+  final _searchController = TextEditingController();
 
-  @override
-  State<_LaporanPageBody> createState() => _LaporanPageBodyState();
-}
-
-class _LaporanPageBodyState extends State<_LaporanPageBody> {
   @override
   void initState() {
     super.initState();
-    context.read<TransaksiCubit>().loadTransaksi();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(aktivitasSelectionProvider.notifier).clear();
+        ref
+            .read(riwayatAktivitasProvider.notifier)
+            .load(pageSize: widget.isWeb ? 10 : null);
+      }
+    });
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool _webPadding(BuildContext context) =>
+      context.layoutBreakpoint != LayoutBreakpoint.compact;
+
+  @override
   Widget build(BuildContext context) {
+    ref.listen(riwayatAktivitasProvider, (previous, current) {
+      if (previous?.search != current.search &&
+          _searchController.text != current.search) {
+        _searchController.text = current.search;
+      }
+    });
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Fixed Top Section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Column(
-                children: [
-                  // Header
-                  Row(
-                    children: [
-                      Text(
-                        'Semua Transaksi',
-                        style: AppTextStyle.headline1.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Search Bar
-                  CustomSearchField(
-                    hintText: 'Cari nama pelanggan...',
-                    onChanged: (value) {
-                      context.read<TransaksiCubit>().searchTransaksi(value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Filter Row
-                  const TimeFilterChips(),
-                ],
-              ),
-            ),
-
-            // Scrollable List Section
-            Expanded(
-              child: AppRefreshIndicator(
-                onRefresh: () =>
-                    context.read<TransaksiCubit>().loadTransaksi(silent: true),
-                child: const TransactionListView(),
-              ),
-            ),
-          ],
+        // Wide: a data page, so only the table card scrolls. Phone: the whole
+        // page scrolls, across the body, so its scrollbar is at the edge.
+        child: ContentFrame(
+          child: _webPadding(context) ? _dataPage() : _phonePage(),
         ),
       ),
     );
   }
+
+  Widget _header() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppPageHeader(
+            title: 'Riwayat Aktivitas',
+            search: CustomSearchField(
+              hintText: 'Cari nama pelanggan...',
+              controller: _searchController,
+              onChanged: ref.read(riwayatAktivitasProvider.notifier).search,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const AktivitasFilterBar(),
+        ],
+      );
+
+  /// Halaman data (layar lebar): judul, pencarian, dan penyaring tetap di
+  /// atas; tabel di bawahnya satu-satunya yang bergulir, dengan ringkasan satu
+  /// baris dan paginasi di dalam kartunya.
+  Widget _dataPage() => Column(
+        children: [
+          ContentInset(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.webGutter,
+                AppSpacing.webTop,
+                AppSpacing.webGutter,
+                AppSpacing.lg,
+              ),
+              child: _header(),
+            ),
+          ),
+          Expanded(
+            child: AppRefreshIndicator(
+              onRefresh: () => ref
+                  .read(riwayatAktivitasProvider.notifier)
+                  .load(silent: true),
+              child: AktivitasListView(isWeb: widget.isWeb),
+            ),
+          ),
+        ],
+      );
+
+  /// Telepon: header, penyaring, dan ringkasan bergulir bersama daftar. Saat
+  /// ada setoran terpilih, header mode pilih menumpuk di atasnya dan tombol
+  /// kembali melepas pilihan lebih dulu.
+  Widget _phonePage() {
+    final selecting = ref.watch(aktivitasSelectionProvider) != null;
+    return PopScope(
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) ref.read(aktivitasSelectionProvider.notifier).clear();
+      },
+      child: Column(
+        children: [
+          if (selecting)
+            AktivitasSelectionBar(
+              onEdit: (id) => showEditSetoranSheet(context, id),
+            ),
+          Expanded(child: _phoneList()),
+        ],
+      ),
+    );
+  }
+
+  Widget _phoneList() => NestedScrollView(
+        // Let filters and totals scroll away on short screens or with a keyboard.
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _header(),
+                  const AktivitasSummaryView(),
+                ],
+              ),
+            ),
+          ),
+        ],
+        body: AppRefreshIndicator(
+          onRefresh: () =>
+              ref.read(riwayatAktivitasProvider.notifier).load(silent: true),
+          child: AktivitasListView(isWeb: widget.isWeb),
+        ),
+      );
 }

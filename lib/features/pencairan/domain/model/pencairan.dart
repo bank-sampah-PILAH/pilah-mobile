@@ -1,0 +1,101 @@
+import 'package:equatable/equatable.dart';
+
+enum MetodePencairan {
+  tunai('Tunai'),
+  transfer('Transfer');
+
+  const MetodePencairan(this.label);
+
+  final String label;
+
+  static MetodePencairan fromApi(String? value) =>
+      value == transfer.name ? transfer : tunai;
+}
+
+/// A pengurus correction of a recorded pencairan (PIL-230). Every field is
+/// sent; the backend rejects an edit that changes nothing.
+class EditPencairanRequest extends Equatable {
+  final String id;
+  final int nominal;
+  final MetodePencairan metode;
+  final DateTime tanggal;
+  final String keterangan;
+  final String alasan;
+
+  const EditPencairanRequest({
+    required this.id,
+    required this.nominal,
+    required this.metode,
+    required this.tanggal,
+    required this.keterangan,
+    required this.alasan,
+  });
+
+  @override
+  List<Object?> get props => [id, nominal, metode, tanggal, keterangan, alasan];
+}
+
+class Pencairan extends Equatable {
+  final String id;
+  final String nasabahId;
+  final String nasabahNama;
+  final String bankSampahNama;
+  final int nominal;
+
+  /// Withheld from [nominal] when the pencairan came from a draft; the
+  /// nasabah's saldo still drops by the whole [nominal].
+  final int potongan;
+  final MetodePencairan metode;
+  final DateTime? tanggal;
+  final String keterangan;
+  final String status;
+  final int saldoSebelum;
+  final int saldoSesudah;
+  final String dicatatOlehNama;
+
+  /// True once a pengurus has edited this pencairan (PIL-230).
+  final bool diperbarui;
+
+  /// Earliest tanggal an edit may set; null from a backend without edits.
+  final DateTime? tanggalEditMinimum;
+
+  const Pencairan({
+    required this.id,
+    this.nasabahId = '',
+    required this.nasabahNama,
+    this.bankSampahNama = '',
+    required this.nominal,
+    this.potongan = 0,
+    required this.metode,
+    required this.tanggal,
+    required this.keterangan,
+    required this.status,
+    required this.saldoSebelum,
+    required this.saldoSesudah,
+    this.dicatatOlehNama = '',
+    this.diperbarui = false,
+    this.tanggalEditMinimum,
+  });
+
+  /// What was actually paid out.
+  int get dibayar => nominal - potongan;
+
+  @override
+  List<Object?> get props => [
+        id,
+        nasabahId,
+        nasabahNama,
+        bankSampahNama,
+        nominal,
+        potongan,
+        metode,
+        tanggal,
+        keterangan,
+        status,
+        saldoSebelum,
+        saldoSesudah,
+        dicatatOlehNama,
+        diperbarui,
+        tanggalEditMinimum,
+      ];
+}

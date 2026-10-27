@@ -1,0 +1,102 @@
+import 'package:dartz/dartz.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/core/router/app_locations.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
+import 'package:pilah_mobile/features/riwayat/domain/entities/riwayat_entities.dart';
+import 'package:pilah_mobile/features/riwayat/domain/repositories/riwayat_repository.dart';
+import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
+import 'package:pilah_mobile/preview/preview_authentication.dart';
+import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
+import 'package:pilah_mobile/services/di.dart';
+
+import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+
+/// Visual preview only. The normal app entrypoint still performs real login.
+void main() => runApp(buildPreviewApp());
+
+Widget buildPreviewApp() {
+  if (!di.isRegistered<NasabahRepository>()) {
+    di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+  }
+  if (!di.isRegistered<NasabahPengumumanRepository>()) {
+    di.registerSingleton<NasabahPengumumanRepository>(
+        const _PreviewPengumumanRepository());
+  }
+  // The history screen runs offline without configureDependencies, so wire its repository stub.
+  if (!di.isRegistered<RiwayatRepository>()) {
+    di.registerFactory<RiwayatRepository>(() => _PreviewRiwayatRepository());
+  }
+  final router = GoRouter(initialLocation: AppLocations.dashboard, routes: [
+    GoRoute(
+        path: AppLocations.history,
+        builder: (_, state) => NasabahHistoryScreen(
+              membershipId: state.uri.queryParameters['keanggotaan_id'],
+            )),
+    GoRoute(
+        path: AppLocations.dashboard,
+        builder: (_, __) => const BerandaNasabahPage()),
+    GoRoute(
+        path: AppLocations.profile,
+        builder: (_, __) => const ProfilNasabahPage()),
+  ]);
+  return ProviderScope(
+    overrides: [
+      authenticationProvider.overrideWith(createPreviewAuthenticationNotifier),
+      riwayatHistoryProvider.overrideWith(
+        () => RiwayatHistoryNotifier(
+          GetRiwayatHistoryUseCase(di<RiwayatRepository>()),
+          GetRiwayatSetoranDetailUseCase(di<RiwayatRepository>()),
+        ),
+      ),
+    ],
+    child: MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      title: 'PILAH - Preview Beranda',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.greenDark),
+      ),
+      routerConfig: router,
+    ),
+  );
+}
+
+/// Offline riwayat stub: empty history, no detail, no PDF — matching the
+/// design-preview contract of [PreviewNasabahRepository].
+class _PreviewRiwayatRepository implements RiwayatRepository {
+  @override
+  Future<Either<NetworkException, RiwayatHistory>> history(
+    String membershipId, {
+    int page = 1,
+  }) async =>
+      const Right<NetworkException, RiwayatHistory>(RiwayatHistory([], false));
+
+  @override
+  Future<Either<NetworkException, RiwayatSetoranDetail>> setoranDetail(
+    String membershipId,
+    String transactionId,
+  ) async =>
+      Left(NetworkException(message: 'Pratinjau tidak memiliki data detail.'));
+}
+
+/// Offline pengumuman stub: an empty beranda section, matching the same
+/// preview contract.
+class _PreviewPengumumanRepository implements NasabahPengumumanRepository {
+  const _PreviewPengumumanRepository();
+
+  @override
+  Future<PengumumanBeranda> getBeranda({String? membershipId}) async =>
+      const PengumumanBeranda(items: [], unreadCount: 0);
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}

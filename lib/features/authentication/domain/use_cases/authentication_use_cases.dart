@@ -5,7 +5,7 @@ import '../model/auth.dart';
 
 abstract class AuthenticationUseCases {
   Future<Either<NetworkException, AuthEntity>> postLogin(
-    String username,
+    String email,
     String password,
   );
 

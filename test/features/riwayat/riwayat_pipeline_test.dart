@@ -1,0 +1,196 @@
+import 'dart:async';
+
+import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
+import 'package:pilah_mobile/features/riwayat/data/datasources/riwayat_remote_data_source.dart';
+import 'package:pilah_mobile/features/riwayat/data/repositories/riwayat_repository_impl.dart';
+import 'package:pilah_mobile/features/riwayat/domain/use_cases/riwayat_use_cases.dart';
+import 'package:pilah_mobile/features/riwayat/presentation/providers/riwayat_history_provider.dart';
+import 'package:pilah_mobile/features/statement/data/remote/statement_remote_data_sources.dart';
+import 'package:pilah_mobile/features/statement/data/statement_repository_impl.dart';
+import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';
+import 'package:pilah_mobile/features/statement/domain/statement_interactor.dart';
+import 'package:pilah_mobile/features/statement/domain/use_cases/statement_use_cases.dart';
+import 'package:pilah_mobile/features/statement/presentation/providers/statement_export_provider.dart';
+import 'package:pilah_mobile/preview/preview_riwayat_repository.dart';
+
+import '../../support/stub_api.dart';
+
+class _UseCases extends Mock implements StatementUseCases {}
+
+class _Nasabah extends Mock implements NasabahRepository {}
+
+void main() {
+  const path = '/api/v1/nasabah/me/riwayat';
+  final detail = <String, dynamic>{
+    'tanggal': '2026-10-01T08:00:00+07:00',
+    'tipe': 'setoran',
+    'total_nilai': '25000.00',
+    'saldo_setelah_transaksi': '50000.00',
+    'catatan': 'uji',
+    'items': [],
+  };
+
+  test(
+      'real history/detail/PDF pipeline preserves membership, page and payload',
+      () async {
+    final api = StubApi();
+    api.on('GET', path, json: {
+      'results': [
+        {'id': 'tx-1', ...detail}
+      ],
+      'next': 'page=3',
+    });
+    api.on('GET', '$path/tx-1', json: detail);
+    api.onBytes('GET', '$path/export-pdf', [
+      37,
+      80,
+      68,
+      70
+    ], headers: {
+      'content-disposition': ['attachment; filename="statement.pdf"'],
+    });
+    final repo =
+        RiwayatRepositoryImpl(RiwayatRemoteDataSourceImpl(api.network));
+    final history = (await GetRiwayatHistoryUseCase(repo)
+            .execute(const RiwayatHistoryParams('member-1', page: 2)))
+        .getOrElse(() => throw StateError('history failed'));
+    expect(history.activities.single.id, 'tx-1');
+    expect(history.hasNext, isTrue);
+    expect(api.last.query, {'keanggotaan_id': 'member-1', 'page': '2'});
+    final loaded = (await GetRiwayatSetoranDetailUseCase(repo).execute(
+            const RiwayatSetoranDetailParams(
+                membershipId: 'member-1', transactionId: 'tx-1')))
+        .getOrElse(() => throw StateError('detail failed'));
+    expect(loaded.amount, '25000.00');
+    expect(api.last.query, {'keanggotaan_id': 'member-1'});
+    final statement =
+        StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
+    final pdf = (await statement.exportPdf('member-1'))
+        .getOrElse(() => throw StateError('PDF failed'));
+    expect(pdf.bytes, [37, 80, 68, 70]);
+    expect(pdf.filename, 'statement.pdf');
+    expect(api.last.query, {'keanggotaan_id': 'member-1'});
+  });
+
+  test('default use-case parameters and network failures remain typed',
+      () async {
+    final api = StubApi();
+    api.on('GET', path, json: {'results': [], 'next': null});
+    api.on('GET', '$path/', json: detail);
+    api.onBytes('GET', '$path/export-pdf', [1]);
+    final repo =
+        RiwayatRepositoryImpl(RiwayatRemoteDataSourceImpl(api.network));
+    expect((await GetRiwayatHistoryUseCase(repo).execute()).isRight(), isTrue);
+    expect(api.last.query['page'], '1');
+    expect(api.last.query['keanggotaan_id'], '');
+    expect((await GetRiwayatSetoranDetailUseCase(repo).execute()).isRight(),
+        isTrue);
+    final statement =
+        StatementRepositoryImpl(StatementRemoteDataSourceImpl(api.network));
+    final pdf = (await statement.exportPdf(''))
+        .getOrElse(() => throw StateError('PDF failed'));
+    expect(pdf.filename, 'Riwayat_Aktivitas.pdf');
+    api.fail('GET', path);
+    api.fail('GET', '$path/tx-1');
+    api.fail('GET', '$path/export-pdf');
+    expect((await repo.history('member-1')).isLeft(), isTrue);
+    expect((await repo.setoranDetail('member-1', 'tx-1')).isLeft(), isTrue);
+    expect((await statement.exportPdf('member-1')).isLeft(), isTrue);
+  });
+
+  test('statement pipeline emits loading, loaded and failure for the real API',
+      () async {
+    final api = StubApi();
+    api.onBytes('GET', '$path/export-pdf', [
+      1,
+      2
+    ], headers: {
+      'content-disposition': ['attachment; filename=unquoted.pdf'],
+    });
+    final remote = StatementRemoteDataSourceImpl(api.network);
+    final notifier = StatementExportNotifier(
+        StatementInteractor(StatementRepositoryImpl(remote)));
+    final container = ProviderContainer(overrides: [
+      statementExportProvider.overrideWith(() => notifier),
+    ]);
+    container.read(statementExportProvider);
+    final states = <StatementExportStatus>[];
+    final subscription = container.listen(statementExportProvider, (_, state) {
+      states.add(state.status);
+    });
+    final pdf = await notifier.export('member-1');
+    addTearDown(container.dispose);
+    expect(pdf!.filename, 'unquoted.pdf');
+    expect(pdf.bytes, [1, 2]);
+    expect(
+        container.read(statementExportProvider),
+        StatementExportState(
+            status: StatementExportStatus.loaded, export: pdf));
+    expect(container.read(statementExportProvider).props,
+        [StatementExportStatus.loaded, pdf, null]);
+    api.fail('GET', '$path/export-pdf');
+    expect(await notifier.export('member-1'), isNull);
+    expect(container.read(statementExportProvider).status,
+        StatementExportStatus.failure);
+    expect(container.read(statementExportProvider).error, isNotEmpty);
+    subscription.close();
+    await Future<void>.delayed(Duration.zero);
+    expect(states, [
+      StatementExportStatus.loading,
+      StatementExportStatus.loaded,
+      StatementExportStatus.loading,
+      StatementExportStatus.failure
+    ]);
+    expect(
+        remote.attachmentName(
+            Response(requestOptions: RequestOptions(path: '/'))),
+        'Riwayat_Aktivitas.pdf');
+  });
+
+  test('a disposed provider ignores a pending export result', () async {
+    final useCases = _UseCases();
+    final pending = Completer<Either<NetworkException, StatementExport>>();
+    when(() => useCases.exportPdf('m')).thenAnswer((_) => pending.future);
+    final notifier = StatementExportNotifier(useCases);
+    final container = ProviderContainer(overrides: [
+      statementExportProvider.overrideWith(() => notifier),
+    ]);
+    container.read(statementExportProvider);
+    final result = notifier.export('m');
+    container.dispose();
+    pending
+        .complete(const Right(StatementExport(bytes: [1], filename: 'a.pdf')));
+    expect(await result, isNull);
+  });
+
+  test('offline history adapter returns empty history and a typed detail error',
+      () async {
+    final repo = PreviewRiwayatRepository(_Nasabah());
+    final history = (await repo.history('m'))
+        .getOrElse(() => throw StateError('history failed'));
+    expect(history.activities, isEmpty);
+    expect(history.hasNext, isFalse);
+    expect((await repo.setoranDetail('m', 'tx')).isLeft(), isTrue);
+  });
+
+  test('history state copies retain omitted fields and explicitly clear errors',
+      () {
+    const initial = RiwayatHistoryState(
+        status: RiwayatHistoryStatus.failure,
+        page: 3,
+        hasNext: true,
+        error: 'offline');
+    expect(initial.copyWith(), initial);
+    final copy = initial.copyWith(error: null);
+    expect(copy.status, RiwayatHistoryStatus.failure);
+    expect(copy.page, 3);
+    expect(copy.hasNext, isTrue);
+    expect(copy.error, isNull);
+  });
+}

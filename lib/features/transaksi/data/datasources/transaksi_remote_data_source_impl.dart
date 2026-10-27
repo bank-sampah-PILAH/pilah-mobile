@@ -1,12 +1,13 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:pilah_mobile/core/client/network_service.dart';
+import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/features/transaksi/data/datasources/transaksi_remote_data_source.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_filter.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 
 @LazySingleton(as: TransaksiRemoteDataSource)
 class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
@@ -40,7 +41,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       final tanggal =
           DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal();
       final header = _bucketHeader(tanggal, today);
-      final entity = _mapListItem(json, tanggal);
+      final entity = mapListItem(json, tanggal);
       if (!groups.containsKey(header)) {
         groups[header] = [];
         order.add(header);
@@ -88,7 +89,11 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       if (request.catatan != null && request.catatan!.trim().isNotEmpty)
         'catatan': request.catatan!.trim(),
     };
-    final response = await networkService.post(_path, data: body);
+    final response = await networkService.post(
+      _path,
+      data: body,
+      headers: {'Idempotency-Key': request.idempotencyKey},
+    );
     final json = response.data as Map<String, dynamic>;
     final items = json['items'] as List? ?? [];
     return TransaksiCreated(
@@ -102,7 +107,27 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   @override
   Future<TransaksiDetailEntity> getTransaksiDetail(String id) async {
     final response = await networkService.get('$_path/$id');
-    final json = response.data as Map<String, dynamic>;
+    return _mapDetail(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<TransaksiDetailEntity> editTransaksi(
+      TransaksiEditRequest request) async {
+    final body = {
+      if (request.items != null)
+        'items': request.items!
+            .map((item) =>
+                {'jenis_sampah_id': item.jenisSampahId, 'berat': item.berat})
+            .toList(),
+      if (request.catatan != null) 'catatan': request.catatan!.trim(),
+      'alasan': request.alasan.trim(),
+    };
+    final response =
+        await networkService.patch('$_path/${request.id}', data: body);
+    return _mapDetail(response.data as Map<String, dynamic>);
+  }
+
+  TransaksiDetailEntity _mapDetail(Map<String, dynamic> json) {
     final items = (json['items'] as List? ?? []).map((raw) {
       final item = raw as Map<String, dynamic>;
       return ItemSetoranEntity(
@@ -110,6 +135,30 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
         berat: '${WeightFormatter.formatKg(item['berat'])} kg',
         harga: _rupiah(item['harga_snapshot']),
         subtotal: _rupiah(item['subtotal']),
+        jenisSampahId: item['jenis_sampah_id']?.toString() ?? '',
+        beratKg: num.tryParse(item['berat']?.toString() ?? '') ?? 0,
+        hargaPerKg: _toInt(item['harga_snapshot']),
+      );
+    }).toList();
+    final revisi = (json['revisi'] as List? ?? []).map((raw) {
+      final r = raw as Map<String, dynamic>;
+      return TransaksiRevisiEntity(
+        versi: (r['versi'] as num?)?.toInt() ?? 0,
+        totalFormatted: _rupiah(r['total_nilai']),
+        catatan: r['catatan']?.toString() ?? '',
+        items: (r['items'] as List? ?? []).map((rawItem) {
+          final item = rawItem as Map<String, dynamic>;
+          return ItemSetoranEntity(
+            jenis: item['nama_sampah']?.toString() ?? '-',
+            berat: '${WeightFormatter.formatKg(item['berat'])} kg',
+            harga: _rupiah(item['harga']),
+            subtotal: _rupiah(item['subtotal']),
+          );
+        }).toList(),
+        alasan: r['alasan']?.toString() ?? '',
+        diubahOlehNama: r['diubah_oleh_nama']?.toString() ?? '-',
+        diubahPada:
+            DateTime.tryParse(r['diubah_pada']?.toString() ?? '')?.toLocal(),
       );
     }).toList();
 
@@ -119,6 +168,13 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       balanceFormatted: _rupiah(json['saldo_setelah_transaksi']),
       waStatus: _waStatus(json['status_wa']?.toString()),
       items: items,
+      catatan: json['catatan']?.toString() ?? '',
+      revisi: revisi,
+      hargaPadaTanggal: {
+        for (final e in (json['harga_pada_tanggal'] as Map? ?? {}).entries)
+          e.key.toString(): _toInt(e.value),
+      },
+      tanggal: DateTime.tryParse(json['tanggal']?.toString() ?? '')?.toLocal(),
     );
   }
 
@@ -135,14 +191,14 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
 
   // ---- mapping helpers ----------------------------------------------------
 
-  TransaksiEntity _mapListItem(Map<String, dynamic> json, DateTime? tanggal) {
+  TransaksiEntity mapListItem(Map<String, dynamic> json, DateTime? tanggal) {
     final name = json['nasabah_nama']?.toString() ?? '-';
     final jenisUtama = json['jenis_sampah_utama']?.toString();
     final berat = WeightFormatter.formatKg(json['total_berat_kg']);
-    final palette = _avatarPaletteFor(name);
+    final palette = avatarPaletteFor(name);
     return TransaksiEntity(
       id: json['id']?.toString() ?? '',
-      initials: json['nasabah_inisial']?.toString() ?? _initialsOf(name),
+      initials: json['nasabah_inisial']?.toString() ?? initialsOf(name),
       avatarColor: palette.$1,
       textColor: palette.$2,
       name: name,
@@ -152,6 +208,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
       time: tanggal != null ? _formatTime(tanggal) : null,
       balance: '',
       items: const [],
+      tanggal: tanggal,
     );
   }
 
@@ -185,34 +242,7 @@ class TransaksiRemoteDataSourceImpl implements TransaksiRemoteDataSource {
   int _toInt(dynamic value) =>
       (double.tryParse(value?.toString() ?? '') ?? 0).round();
 
-  String _rupiah(dynamic value) {
-    final digits = _toInt(value).abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(digits[i]);
-    }
-    return 'Rp ${buffer.toString()}';
-  }
-
-  String _initialsOf(String name) {
-    final parts =
-        name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return 'NN';
-    return parts.take(2).map((p) => p[0].toUpperCase()).join();
-  }
-
-  (Color, Color) _avatarPaletteFor(String name) {
-    if (name.isEmpty) return _avatarPalette.first;
-    return _avatarPalette[name.hashCode.abs() % _avatarPalette.length];
-  }
-
-  static const List<(Color, Color)> _avatarPalette = [
-    (Color(0xFFEAF5EC), Color(0xFF2F6B45)),
-    (Color(0xFFDBEAFE), Color(0xFF1E40AF)),
-    (Color(0xFFF3E8FF), Color(0xFF6B21A8)),
-    (Color(0xFFFFF8D6), Color(0xFFD4A017)),
-    (Color(0xFFFFEDD5), Color(0xFF9A3412)),
-    (Color(0xFFCCFBF1), Color(0xFF0F766E)),
-  ];
+  /// Amounts in a detail are shown unsigned; the label says which way they go.
+  String _rupiah(dynamic value) =>
+      CurrencyFormatter.formatRupiah(_toInt(value).abs());
 }

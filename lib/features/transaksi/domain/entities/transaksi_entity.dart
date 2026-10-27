@@ -6,11 +6,20 @@ class ItemSetoranEntity {
   final String harga;
   final String subtotal;
 
+  /// Raw values kept beside the display strings so the edit form can start
+  /// from what was recorded. Empty / zero for rows that only feed a list.
+  final String jenisSampahId;
+  final num beratKg;
+  final int hargaPerKg;
+
   ItemSetoranEntity({
     required this.jenis,
     required this.berat,
     required this.harga,
     required this.subtotal,
+    this.jenisSampahId = '',
+    this.beratKg = 0,
+    this.hargaPerKg = 0,
   });
 }
 
@@ -27,6 +36,11 @@ class TransaksiEntity {
   final String balance;
   final List<ItemSetoranEntity> items;
 
+  /// The raw transaction timestamp, kept alongside the pre-formatted [time]
+  /// so callers that need to sort or merge across feeds (e.g. Riwayat
+  /// Aktivitas, PIL-282) aren't stuck re-parsing a display string.
+  final DateTime? tanggal;
+
   TransaksiEntity({
     this.id = '',
     required this.initials,
@@ -39,6 +53,7 @@ class TransaksiEntity {
     this.time,
     required this.balance,
     required this.items,
+    this.tanggal,
   });
 
   TransaksiEntity copyWith({bool? isWaSuccess}) {
@@ -54,6 +69,7 @@ class TransaksiEntity {
       time: time,
       balance: balance,
       items: items,
+      tanggal: tanggal,
     );
   }
 }
@@ -80,10 +96,14 @@ class ItemSetoranRequest {
 class TransaksiRequest {
   final String nasabahId;
   final List<ItemSetoranRequest> items;
+  final String idempotencyKey;
   final String? catatan;
 
   TransaksiRequest(
-      {required this.nasabahId, required this.items, this.catatan});
+      {required this.nasabahId,
+      required this.items,
+      required this.idempotencyKey,
+      this.catatan});
 }
 
 /// Result of creating a transaction, using backend-authoritative totals.
@@ -101,6 +121,43 @@ class TransaksiCreated {
   });
 }
 
+/// Write model for PATCH /transaksi/{id}. [items] and [catatan] are only sent
+/// when they were changed; [alasan] is always required.
+class TransaksiEditRequest {
+  final String id;
+  final List<ItemSetoranRequest>? items;
+  final String? catatan;
+  final String alasan;
+
+  TransaksiEditRequest({
+    required this.id,
+    this.items,
+    this.catatan,
+    required this.alasan,
+  });
+}
+
+/// A replaced version of a setoran, shown as "Riwayat perubahan" in the detail.
+class TransaksiRevisiEntity {
+  final int versi;
+  final String totalFormatted;
+  final String catatan;
+  final List<ItemSetoranEntity> items;
+  final String alasan;
+  final String diubahOlehNama;
+  final DateTime? diubahPada;
+
+  TransaksiRevisiEntity({
+    required this.versi,
+    required this.totalFormatted,
+    required this.catatan,
+    required this.items,
+    required this.alasan,
+    required this.diubahOlehNama,
+    this.diubahPada,
+  });
+}
+
 /// Full transaction detail (from GET /transaksi/{id}) for the detail sheet.
 class TransaksiDetailEntity {
   final String name;
@@ -108,6 +165,15 @@ class TransaksiDetailEntity {
   final String balanceFormatted;
   final String waStatus; // 'sent' | 'failed' | 'pending'
   final List<ItemSetoranEntity> items;
+  final String catatan;
+  final List<TransaksiRevisiEntity> revisi;
+
+  /// Harga per kg tiap jenis pada tanggal setoran (kunci: id jenis). Edit
+  /// menghitung dengan harga ini, bukan harga hari ini.
+  final Map<String, int> hargaPadaTanggal;
+
+  /// Waktu setoran dicatat.
+  final DateTime? tanggal;
 
   TransaksiDetailEntity({
     required this.name,
@@ -115,5 +181,9 @@ class TransaksiDetailEntity {
     required this.balanceFormatted,
     required this.waStatus,
     required this.items,
+    this.catatan = '',
+    this.revisi = const [],
+    this.hargaPadaTanggal = const {},
+    this.tanggal,
   });
 }

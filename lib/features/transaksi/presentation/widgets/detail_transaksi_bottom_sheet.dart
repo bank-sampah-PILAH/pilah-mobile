@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
+import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/app_sheet_container.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 class DetailTransaksiBottomSheet extends StatefulWidget {
   final Map<String, dynamic> transactionData;
@@ -21,10 +27,9 @@ class DetailTransaksiBottomSheet extends StatefulWidget {
 
 class _DetailTransaksiBottomSheetState
     extends State<DetailTransaksiBottomSheet> {
-  // Emerald Eco System Tokens
-  static const Color emeraldPrimary = Color(0xFF006D44);
-  static const Color mintTint = Color(0xFFF0FDF4); // or #ecfdf5 as requested
-  static const Color errorColor = Color(0xFFDC2626); // red for failed WA
+  // Local tokens (candidates for AppColors)
+  static const Color mintTint = AppColors.greenLight; // or #ecfdf5 as requested
+  static const Color errorColor = AppColors.danger; // red for failed WA
 
   String currentWaStatus = '';
   bool isLoadingWa = false;
@@ -42,8 +47,9 @@ class _DetailTransaksiBottomSheetState
     final id = widget.transactionData['id']?.toString();
     if (id == null || id.isEmpty) return;
     setState(() => _isLoadingDetail = true);
-    final detail =
-        await context.read<TransaksiCubit>().fetchTransaksiDetail(id);
+    final detail = await ProviderScope.containerOf(context, listen: false)
+        .read(transaksiProvider.notifier)
+        .fetchTransaksiDetail(id);
     if (!mounted) return;
     setState(() {
       _detail = detail;
@@ -52,6 +58,9 @@ class _DetailTransaksiBottomSheetState
     });
   }
 
+  // coverage:ignore-start
+  // Unreachable while the WhatsApp status section is hidden in build() (see the
+  // TEMP comment there); restore the tests with the section.
   Future<void> _retryWaNotification() async {
     final id = widget.transactionData['id']?.toString();
     if (id == null || id.isEmpty) return;
@@ -60,7 +69,9 @@ class _DetailTransaksiBottomSheetState
       isLoadingWa = true;
     });
 
-    final result = await context.read<TransaksiCubit>().resendWa(id);
+    final result = await ProviderScope.containerOf(context, listen: false)
+        .read(transaksiProvider.notifier)
+        .resendWa(id);
     if (!mounted) return;
 
     setState(() {
@@ -84,6 +95,8 @@ class _DetailTransaksiBottomSheetState
       );
     }
   }
+
+  // coverage:ignore-end
 
   @override
   Widget build(BuildContext context) {
@@ -113,323 +126,289 @@ class _DetailTransaksiBottomSheetState
                 ?.cast<Map<String, dynamic>>() ??
             []);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
+    return AppSheetContainer(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const BottomSheetHeader(title: 'Detail Transaksi'),
+          const SizedBox(height: 8),
+          const CustomStatusBadge(
+            statusText: 'Selesai',
+            backgroundColor: mintTint,
+            textColor: AppColors.greenDark,
+          ),
+          const SizedBox(height: 24),
 
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Detail Transaksi',
-                    style: AppTextStyle.headline1.copyWith(
-                      color: Colors.black87,
+          // Customer Info Box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface, // surface-container-low
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: avatarColor,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initials,
+                    style: AppTextStyle.title1.copyWith(
+                      color: textColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
                     ),
                   ),
-                  CustomStatusBadge(
-                    statusText: 'Selesai',
-                    backgroundColor: mintTint,
-                    textColor: emeraldPrimary,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Customer Info Box
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB), // surface-container-low
-                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: avatarColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        initials,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
                         style: AppTextStyle.title1.copyWith(
-                          color: textColor,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        time,
+                        style: AppTextStyle.small.copyWith(
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Rincian Setoran Section
+          const AppFieldLabel('RINCIAN SETORAN'),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: Column(
+              children: [
+                // Table Header
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        'JENIS',
+                        style: AppTextStyle.extraSmall.copyWith(
+                          color: Colors.grey[500],
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      flex: 2,
+                      child: Text(
+                        'BERAT',
+                        style: AppTextStyle.extraSmall.copyWith(
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        'HARGA/KG',
+                        style: AppTextStyle.extraSmall.copyWith(
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        'SUBTOTAL',
+                        textAlign: TextAlign.right,
+                        style: AppTextStyle.extraSmall.copyWith(
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 12),
+
+                // Loading indicator while fetching the item breakdown
+                if (_isLoadingDetail && items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Center(
+                      child: SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+
+                // Table Items
+                ...items.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Row(
                         children: [
-                          Text(
-                            name,
-                            style: AppTextStyle.title1.copyWith(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              item['jenis'] ?? '',
+                              style: AppTextStyle.small.copyWith(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            time,
-                            style: AppTextStyle.small.copyWith(
-                              color: Colors.grey[500],
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              item['berat'] ?? '',
+                              style: AppTextStyle.small.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              item['harga'] ?? '',
+                              style: AppTextStyle.small.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              item['subtotal'] ?? '',
+                              textAlign: TextAlign.right,
+                              style: AppTextStyle.small.copyWith(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                    )),
 
-              // Rincian Setoran Section
-              Text(
-                'RINCIAN SETORAN',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
+                // Total Row
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Table Header
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            'JENIS',
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            'BERAT',
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            'HARGA/KG',
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            'SUBTOTAL',
-                            textAlign: TextAlign.right,
-                            style: AppTextStyle.extraSmall.copyWith(
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                    const SizedBox(height: 12),
-
-                    // Loading indicator while fetching the item breakdown
-                    if (_isLoadingDetail && items.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: Center(
-                          child: SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
+                    Text(
+                      'Total Setoran',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
                       ),
-
-                    // Table Items
-                    ...items.map((item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  item['jenis'] ?? '',
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  item['berat'] ?? '',
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  item['harga'] ?? '',
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  item['subtotal'] ?? '',
-                                  textAlign: TextAlign.right,
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
-
-                    // Total Row
-                    const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total Setoran',
-                          style: AppTextStyle.small.copyWith(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          amount,
-                          style: AppTextStyle.title1.copyWith(
-                            color: emeraldPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                    ),
+                    Text(
+                      amount,
+                      style: AppTextStyle.title1.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
-              // Saldo Box
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: mintTint,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
+          // Saldo Box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: mintTint,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Saldo Setelah Transaksi',
-                          style: AppTextStyle.small.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          balance,
-                          style: AppTextStyle.headline1.copyWith(
-                            color: emeraldPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Saldo Setelah Transaksi',
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      balance,
+                      style: AppTextStyle.headline1.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                   ],
                 ),
-              ),
+              ],
+            ),
+          ),
 
-              // TEMP: the whole "STATUS NOTIFIKASI WA" section is hidden while the
-              // notification flow moves from the Twilio webhook to a frontend
-              // wa.me redirect. The backend cannot report a "sent" status yet, so
-              // this always rendered as "Gagal Kirim". Uncomment to restore it
-              // (the leading SizedBox is the spacing below the Saldo box).
-              /*
+          if (_detail != null && _detail!.catatan.trim().isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const AppFieldLabel('CATATAN'),
+            const SizedBox(height: 8),
+            Text(_detail!.catatan, style: AppTextStyle.small),
+          ],
+          if (_detail != null && _detail!.revisi.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const AppFieldLabel('RIWAYAT PERUBAHAN'),
+            const SizedBox(height: 12),
+            for (final revisi in _detail!.revisi.reversed)
+              _RevisiCard(revisi: revisi),
+          ],
+
+          // TEMP: the whole "STATUS NOTIFIKASI WA" section is hidden while the
+          // notification flow moves from the Twilio webhook to a frontend
+          // wa.me redirect. The backend cannot report a "sent" status yet, so
+          // this always rendered as "Gagal Kirim". Uncomment to restore it
+          // (the leading SizedBox is the spacing below the Saldo box).
+          /*
               const SizedBox(height: 24),
-              Text(
-                'STATUS NOTIFIKASI WA',
-                style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
+              const AppFieldLabel('STATUS NOTIFIKASI WA'),
               const SizedBox(height: 12),
               _buildWaStatusBox(currentWaStatus, name),
               */
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
 
+  // coverage:ignore-start
+  // Only used by the hidden WhatsApp status section (see the TEMP comment above).
   // Kept alive (unreferenced) while the WA status section above is disabled.
   // ignore: unused_element
   Widget _buildWaStatusBox(String status, String name) {
@@ -438,8 +417,8 @@ class _DetailTransaksiBottomSheetState
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: emeraldPrimary.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.greenDark.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -447,10 +426,11 @@ class _DetailTransaksiBottomSheetState
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: mintTint,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: const Icon(Icons.wechat,
-                  color: emeraldPrimary, size: 24), // Placeholder for WA icon
+                  color: AppColors.greenDark,
+                  size: 24), // Placeholder for WA icon
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -460,7 +440,7 @@ class _DetailTransaksiBottomSheetState
                   Text(
                     'Terkirim Sukses',
                     style: AppTextStyle.small.copyWith(
-                      color: emeraldPrimary,
+                      color: AppColors.greenDark,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -473,7 +453,7 @@ class _DetailTransaksiBottomSheetState
                 ],
               ),
             ),
-            const Icon(Icons.check, color: emeraldPrimary, size: 20),
+            const Icon(Icons.check, color: AppColors.greenDark, size: 20),
           ],
         ),
       );
@@ -483,7 +463,7 @@ class _DetailTransaksiBottomSheetState
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: errorColor.withValues(alpha: 0.3)),
         ),
         child: Row(
@@ -491,8 +471,8 @@ class _DetailTransaksiBottomSheetState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2), // very light red
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.dangerLight, // very light red
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: const Icon(Icons.wechat, color: errorColor, size: 24),
             ),
@@ -517,47 +497,79 @@ class _DetailTransaksiBottomSheetState
                 ],
               ),
             ),
-            isLoadingWa
-                ? Container(
-                    width: 32,
-                    height: 32,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: emeraldPrimary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : ElevatedButton.icon(
-                    onPressed: _retryWaNotification,
-                    icon: const Icon(Icons.refresh,
-                        size: 14, color: Colors.white),
-                    label: const Text(
-                      'Coba Lagi',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: emeraldPrimary,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      minimumSize: const Size(0, 0),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
+            AppButton(
+              label: 'Coba Lagi',
+              icon: Icons.refresh,
+              size: AppButtonSize.compact,
+              expand: false,
+              isLoading: isLoadingWa,
+              onPressed: _retryWaNotification,
+            ),
           ],
         ),
       );
     }
+  }
+  // coverage:ignore-end
+}
+
+/// Satu versi lama setoran: siapa yang mengubahnya, kapan, mengapa, dan
+/// isinya sebelum diubah.
+class _RevisiCard extends StatelessWidget {
+  const _RevisiCard({required this.revisi});
+
+  final TransaksiRevisiEntity revisi;
+
+  @override
+  Widget build(BuildContext context) {
+    final waktu = revisi.diubahPada;
+    return Container(
+      key: ValueKey('revisi-${revisi.versi}'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Versi ${revisi.versi} (sebelum diubah)',
+            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            [
+              'Diubah oleh ${revisi.diubahOlehNama}',
+              if (waktu != null) _formatWaktu(waktu),
+            ].join(' • '),
+            style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
+          ),
+          const SizedBox(height: 8),
+          Text('Alasan: ${revisi.alasan}', style: AppTextStyle.small),
+          const SizedBox(height: 8),
+          for (final item in revisi.items)
+            Text(
+              '${item.jenis} • ${item.berat} • ${item.subtotal}',
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+            ),
+          if (revisi.catatan.isNotEmpty)
+            Text('Catatan: ${revisi.catatan}',
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100)),
+          const SizedBox(height: 8),
+          Text(
+            'Total: ${revisi.totalFormatted}',
+            style: AppTextStyle.small.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatWaktu(DateTime d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}.${two(d.minute)}';
   }
 }

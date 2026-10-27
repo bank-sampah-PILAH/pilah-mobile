@@ -1,17 +1,12 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/onboarding_support.dart';
+import '../../../../support/auth_support.dart';
 
 class _MockOnboardingDataSource extends Mock
     implements OnboardingRemoteDataSource {}
@@ -20,32 +15,24 @@ class _MockOnboardingDataSource extends Mock
 ///
 /// The screen listens to [AuthenticationBloc] to bounce a logged-out user to
 /// the login page, so without one it throws ProviderNotFoundException before
-/// rendering anything. [OnboardingCubit] backs the wizard's back button.
+/// rendering anything. The onboarding provider backs the wizard's back button.
 Future<void> _pumpScreen(
   WidgetTester tester, {
   bool isRejectedReapplication = false,
-  OnboardingCubit? onboarding,
 }) async {
-  final auth = _MockAuthBloc();
-  whenListen(
-    auth,
-    const Stream<AuthenticationStates>.empty(),
-    initialState: AuthenticationInitial(),
-  );
+  final auth = authNotifierIn(AuthenticationInitial());
 
   await tester.pumpWidget(
-    MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthenticationBloc>.value(value: auth),
-        BlocProvider<OnboardingCubit>.value(
-          value: onboarding ?? OnboardingCubit(_MockOnboardingDataSource()),
-        ),
-      ],
-      child: MaterialApp(
-        home: RegisterBankSampahScreen(
-          isRejectedReapplication: isRejectedReapplication,
+    withOnboarding(
+      withAuthenticationProvider(
+        auth,
+        MaterialApp(
+          home: RegisterBankSampahScreen(
+            isRejectedReapplication: isRejectedReapplication,
+          ),
         ),
       ),
+      _MockOnboardingDataSource(),
     ),
   );
 }

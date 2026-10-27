@@ -1,22 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/refresh_user_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/invite_acceptance.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/invite_acceptance_notice.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_form_fields.dart';
 
-class CompleteProfileScreen extends StatefulWidget {
+const _genderMaleApiValue = 'laki-laki';
+const _genderMaleLabel = 'Laki-laki';
+const _registerBankSampahRoute = '/register-bank-sampah';
+const _dashboardRoute = '/dashboard';
+
+class CompleteProfileScreen extends ConsumerStatefulWidget {
   final bool isInviteMode;
 
   const CompleteProfileScreen({super.key, this.isInviteMode = false});
@@ -24,10 +33,11 @@ class CompleteProfileScreen extends StatefulWidget {
   static const route = '/complete-profile';
 
   @override
-  State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
+  ConsumerState<CompleteProfileScreen> createState() =>
+      _CompleteProfileScreenState();
 }
 
-class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
+class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   /// Invite mode is whatever the store says, with the constructor flag as a
   /// hint on top.
   ///
@@ -43,9 +53,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _nameController = TextEditingController();
   final _dobController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _alamatController = TextEditingController();
   String? _gender;
   DateTime? _selectedDob;
   bool _isLoading = false;
+
+  /// Only nasabah accounts have a use for a personal address here —
+  /// pengelola/pengelola induk give their organization's address on a
+  /// separate step.
+  bool get _isNasabah {
+    final authState = ref.read(authenticationProvider);
+    return authState is Authenticated && authState.authEntity.role == 'nasabah';
+  }
 
   @override
   void initState() {
@@ -75,16 +94,22 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// would return to an empty form and have to retype everything, which is the
   /// whole reason the wizard defers the profile call.
   ///
-  /// Reads straight from the cubit rather than waiting for a state emission:
+  /// Reads straight from the provider rather than waiting for a state emission:
   /// the draft is not part of [OnboardingState], and the controllers have to be
   /// populated before the first build or the fields flash empty.
   void _restoreDraft() {
-    final draft = context.read<OnboardingCubit>().profileDraft;
-    if (draft == null) return;
+    final draft = ref.read(onboardingProvider.notifier).profileDraft;
+    if (draft == null) {
+      _prefillFromSavedProfile();
+      return;
+    }
 
     _nameController.text = draft.nama;
     _phoneController.text = draft.noHp;
-    _gender = draft.jenisKelamin == 'laki-laki' ? 'Laki-laki' : 'Perempuan';
+    _alamatController.text = draft.alamat;
+    _gender = draft.jenisKelamin == _genderMaleApiValue
+        ? _genderMaleLabel
+        : 'Perempuan';
 
     // Stored as the ISO string the API wants; the picker and the field need a
     // DateTime and dd/MM/yyyy back.
@@ -95,8 +120,56 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
   }
 
+  /// Prefills the form from the account's own saved profile when there is no
+  /// wizard draft to restore instead (a draft always wins — it represents
+  /// more recent input than whatever the backend last saved).
+  ///
+  /// Covers both the plain Google-name fallback the backend has always
+  /// applied and a nasabah synced from a pengurus-entered record (PIL-154):
+  /// without this, neither is visible here, since this screen otherwise only
+  /// ever restores from the in-memory wizard draft and starts blank
+  /// regardless of what the account already has saved.
+  void _prefillFromSavedProfile() {
+    final authState = ref.read(authenticationProvider);
+    if (authState is! Authenticated) return;
+    final auth = authState.authEntity;
+
+    if (auth.name.isNotEmpty) _nameController.text = auth.name;
+    if (auth.noHp.isNotEmpty) {
+      _phoneController.text = _localPhoneDigits(auth.noHp);
+    }
+    if (_isNasabah && auth.alamat.isNotEmpty) {
+      _alamatController.text = auth.alamat;
+    }
+    if (auth.jenisKelamin.isNotEmpty) {
+      _gender = auth.jenisKelamin == _genderMaleApiValue
+          ? _genderMaleLabel
+          : 'Perempuan';
+    }
+
+    final tanggalLahir = auth.tanggalLahir;
+    if (tanggalLahir != null) {
+      final parsed = DateTime.tryParse(tanggalLahir);
+      if (parsed != null) {
+        _selectedDob = parsed;
+        _dobController.text = _displayDate(parsed);
+      }
+    }
+  }
+
   String _displayDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+
+  /// Strips a country-code or leading-zero prefix from a saved phone number
+  /// so it fits the field's own digits-only, `8...`-starting format.
+  ///
+  /// The backend normalizes and stores `no_hp` as `+62{national}`
+  /// (`normalize_indonesian_phone`), but this field pairs a fixed `+62`
+  /// prefix widget with a validator expecting just the national digits —
+  /// prefilling the raw saved value doubles the prefix and the field can
+  /// never pass its own validation until the user deletes and retypes it.
+  String _localPhoneDigits(String noHp) =>
+      noHp.replaceFirst(RegExp(r'^\+?62'), '').replaceFirst(RegExp(r'^0'), '');
 
   @override
   void dispose() {
@@ -104,27 +177,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     _nameController.dispose();
     _dobController.dispose();
     _phoneController.dispose();
+    _alamatController.dispose();
     super.dispose();
   }
 
   void _selectDate() async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showAppDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.greenDark, // header background color
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black, // body text color
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
@@ -145,9 +207,28 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// status — a verdict only the backend can give, so those keep sending the
   /// profile immediately and routing on the answer.
   bool get _startsNewRegistration {
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     if (authState is! Authenticated) return false;
-    return authState.authEntity.bankSampahStatus == null;
+    return authState.authEntity.role == 'pengelola' &&
+        authState.authEntity.bankSampahStatus == null;
+  }
+
+  /// Whether finishing this form banks the draft and pushes the nasabah
+  /// bank-sampah picker next, rather than submitting straight away.
+  ///
+  /// Unlike [_startsNewRegistration], reaching this screen does NOT mean the
+  /// account has no membership yet: a pengurus-entered Nasabah record
+  /// matching this account's verified email auto-links on login
+  /// (`AuthService._sync_nasabah_prefill`) while the profile is still
+  /// incomplete, so `next_step` after submitting can already be
+  /// `nasabah_dashboard`. That case is handled downstream in
+  /// `OnboardingNotifier.submitNasabahRegistration`, which skips the
+  /// registration call entirely when the profile step alone finishes
+  /// onboarding — this getter only decides whether to defer to that wizard
+  /// step at all.
+  bool get _startsNasabahRegistration {
+    final authState = ref.read(authenticationProvider);
+    return authState is Authenticated && authState.authEntity.role == 'nasabah';
   }
 
   String _isoDate(DateTime date) =>
@@ -162,12 +243,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     final request = CompleteProfileRequest(
       nama: _nameController.text.trim(),
-      jenisKelamin: _gender == 'Laki-laki' ? 'laki-laki' : 'perempuan',
+      jenisKelamin:
+          _gender == _genderMaleLabel ? _genderMaleApiValue : 'perempuan',
       tanggalLahir: _selectedDob != null ? _isoDate(_selectedDob!) : '',
       noHp: _phoneController.text.trim(),
+      alamat: _isNasabah ? _alamatController.text.trim() : '',
     );
 
-    final cubit = context.read<OnboardingCubit>();
+    final notifier = ref.read(onboardingProvider.notifier);
 
     // Condition B — a new bank sampah is coming next, so nothing is sent yet.
     //
@@ -182,14 +265,24 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     // fires when an invite token is banked, and this branch is the one where
     // there is none.
     if (!isInvite && _startsNewRegistration) {
-      cubit.saveProfileDraft(request);
-      context.push('/register-bank-sampah');
+      notifier.saveProfileDraft(request);
+      context.push(_registerBankSampahRoute);
+      return;
+    }
+
+    // Same deferral, for the nasabah wizard: the bank-sampah picker submits
+    // this draft alongside the membership application, so the user can still
+    // come back and edit their profile (including the alamat just entered)
+    // right up until that final submit.
+    if (!isInvite && _startsNasabahRegistration) {
+      notifier.saveProfileDraft(request);
+      context.push('/register-nasabah');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final (:result, :error) = await cubit.completeProfile(request);
+    final (:result, :error) = await notifier.completeProfile(request);
 
     if (!mounted) return;
 
@@ -208,7 +301,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     // The name (and gender/dob) were just saved server-side; refresh the cached
     // user so the dashboard/profile show the entered name, not the Google one.
-    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    ref.read(authenticationProvider.notifier).refreshUser();
 
     _routeByNextStep(result?.nextStep, isInvite: false);
   }
@@ -226,13 +319,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       {required String? profileNextStep}) async {
     final store = di<InviteTokenStore>();
     // Captured before the refresh below re-emits the session.
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ref.read(authenticationProvider);
     final bankSampahStatus = authState is Authenticated
         ? authState.authEntity.bankSampahStatus
         : null;
 
-    final (:result, :error) =
-        await context.read<OnboardingCubit>().acceptInvite(store.token ?? '');
+    final (:result, :error) = await ref
+        .read(onboardingProvider.notifier)
+        .acceptInvite(store.token ?? '');
     if (!mounted) return;
 
     final acceptance = classifyInviteAcceptance(result: result, error: error);
@@ -244,7 +338,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     setState(() => _isLoading = false);
 
-    context.read<AuthenticationBloc>().add(RefreshUserRequested());
+    ref.read(authenticationProvider.notifier).refreshUser();
 
     switch (acceptance) {
       case InviteAcceptance.joined:
@@ -252,7 +346,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         // On the inviting bank sampah, which is active by the time an invite for
         // it exists — so onboarding ends here, at the dashboard, never at the
         // registration form the non-invite flow continues to.
-        context.go('/dashboard');
+        context.go(_dashboardRoute);
         break;
       case InviteAcceptance.otherBank:
       case InviteAcceptance.rejected:
@@ -287,10 +381,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   void _routeByNextStep(String? nextStep, {required bool isInvite}) {
     switch (nextStep) {
       case 'dashboard':
-        context.go('/dashboard');
+        context.go(_dashboardRoute);
         break;
       case 'register_bank_sampah':
-        context.go('/register-bank-sampah');
+        context.go(_registerBankSampahRoute);
         break;
       case 'approval_pending':
         context.go('/pending-approval');
@@ -298,10 +392,22 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       case 'superadmin_dashboard':
         context.go('/superadmin-dashboard');
         break;
+      case 'register_nasabah':
+        context.go('/register-nasabah');
+        break;
+      case 'nasabah_dashboard':
+        context.go('/nasabah-dashboard');
+        break;
+      case 'register_bank_sampah_induk':
+        context.go('/register-bank-sampah-induk');
+        break;
+      case 'pengelola_induk_dashboard':
+        context.go('/pengelola-induk-dashboard');
+        break;
       default:
         // Fallback preserves prior behaviour: invited managers join an existing
         // bank sampah (dashboard), new managers continue to registration.
-        context.go(isInvite ? '/dashboard' : '/register-bank-sampah');
+        context.go(isInvite ? _dashboardRoute : _registerBankSampahRoute);
     }
   }
 
@@ -314,541 +420,166 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   /// exit confirmation.
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
-    _confirmExit();
-  }
-
-  /// Shows the "leave onboarding" confirmation. On confirm, runs the standard
-  /// logout (clears the session and emits [Unauthenticated]); the [BlocListener]
-  /// in [build] handles the redirect to login. Cancelling or dismissing leaves
-  /// the form and its input untouched.
-  Future<void> _confirmExit() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Batal Lengkapi Profil?',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        content: const Text(
-          'Apakah Anda yakin ingin keluar? Progress pengisian data Anda belum '
-          'tersimpan dan Anda akan dialihkan ke halaman login.',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: const Text('Ya, Keluar'),
-          ),
-        ],
-      ),
-    );
-    if (shouldLogout == true && mounted) {
-      context.read<AuthenticationBloc>().add(LogoutRequested());
-    }
-  }
-
-  Widget _buildFormField({
-    required String label,
-    required Widget child,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            text: label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-            children: const [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        child,
-        const SizedBox(height: 20),
-      ],
-    );
+    confirmExitOnboarding(context, title: 'Batal Lengkapi Profil?');
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthenticationBloc, AuthenticationStates>(
-      listenWhen: (previous, current) => current is Unauthenticated,
-      listener: (context, state) => context.go(LoginPage.route),
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
-        child: Scaffold(
-          backgroundColor: const Color(0xFFF9FAFB), // Light gray background
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                // 1. Header Section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(
-                      top: 70, left: 24, right: 24, bottom: 40),
-                  decoration: const BoxDecoration(
-                    color: AppColors.greenDark,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Lengkapi Profil Anda',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Data ini digunakan untuk verifikasi akun Anda.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _confirmExit,
-                        icon: const Icon(Icons.logout, color: Colors.white),
-                        tooltip: 'Keluar',
-                      ),
-                    ],
-                  ),
+    ref.listen(authenticationProvider, (previous, current) {
+      if (current is Unauthenticated) context.go(LoginPage.route);
+    });
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.surface, // Light gray background
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // 1. Header Section
+              OnboardingHeader(
+                title: 'Lengkapi Profil Anda',
+                subtitle: 'Data ini digunakan untuk verifikasi akun Anda.',
+                onExit: () => confirmExitOnboarding(context,
+                    title: 'Batal Lengkapi Profil?'),
+              ),
+
+              // The stepper shows only when profile completion leads to the
+              // bank sampah registration form, pengelola or nasabah.
+              if (!_isInviteMode &&
+                  (_startsNewRegistration || _startsNasabahRegistration))
+                OnboardingStepper(
+                  currentStep: 1,
+                  secondStepLabel:
+                      _isNasabah ? 'Pilih Bank Sampah' : 'Data Bank Sampah',
                 ),
 
-                // 2. Stepper Section (hidden in invite mode)
-                if (!_isInviteMode) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+              const SizedBox(height: 24),
+              OnboardingFormCard(
+                formKey: _formKey,
+                children: [
+                  OnboardingNameField(
+                    controller: _nameController,
+                    label: 'NAMA LENGKAP',
+                    hintText: 'Contoh: Siti Rahayu',
+                  ),
+
+                  // Field 2: Jenis Kelamin
+                  OnboardingFormField(
+                    label: 'JENIS KELAMIN',
+                    child: DropdownButtonFormField<String>(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      initialValue: _gender,
+                      hint: Text(
+                        'Pilih jenis kelamin',
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                      icon: const Icon(Icons.keyboard_arrow_down,
+                          color: Colors.grey),
+                      items: const [
+                        DropdownMenuItem(
+                          value: _genderMaleLabel,
+                          child: Row(
+                            children: [
+                              Icon(Icons.male,
+                                  size: 20, color: AppColors.inkSoft),
+                              SizedBox(width: 8),
+                              Text(_genderMaleLabel),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Perempuan',
+                          child: Row(
+                            children: [
+                              Icon(Icons.female,
+                                  size: 20, color: AppColors.inkSoft),
+                              SizedBox(width: 8),
+                              Text('Perempuan'),
+                            ],
+                          ),
                         ),
                       ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Step 1
-                        Column(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: const BoxDecoration(
-                                color: AppColors.greenDark,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '1',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Profil Diri',
-                              style: TextStyle(
-                                color: AppColors.greenDark,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Connector Line
-                        Container(
-                          width: 100,
-                          height: 2,
-                          margin: const EdgeInsets.only(bottom: 24),
-                          color: Colors.grey.shade300,
-                        ),
-
-                        // Step 2
-                        Column(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '2',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Data Bank Sampah',
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          _gender = val;
+                        });
+                      },
+                      decoration: appInputDecoration(),
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Jenis kelamin wajib dipilih';
+                        }
+                        return null;
+                      },
                     ),
                   ),
+
+                  // Field 3: Tanggal Lahir
+                  OnboardingFormField(
+                    label: 'TANGGAL LAHIR',
+                    child: TextFormField(
+                      controller: _dobController,
+                      readOnly: true,
+                      onTap: _selectDate,
+                      decoration: appInputDecoration(
+                          hintText: 'dd/mm/yyyy',
+                          suffixIcon: const Icon(Icons.calendar_today_outlined,
+                              color: Colors.black87)),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Tanggal lahir wajib diisi';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+
+                  OnboardingPhoneField(
+                    controller: _phoneController,
+                    label: 'NOMOR HP / WHATSAPP',
+                    requiredMessage: 'Nomor HP wajib diisi',
+                  ),
+
+                  // Alamat: nasabah accounts only.
+                  if (_isNasabah)
+                    OnboardingAddressField(controller: _alamatController),
                 ],
+              ),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                // 3. Form Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 15,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Field 1: Nama Lengkap
-                          _buildFormField(
-                            label: 'NAMA LENGKAP',
-                            child: TextFormField(
-                              controller: _nameController,
-                              decoration: InputDecoration(
-                                hintText: 'Contoh: Siti Rahayu',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().length < 3) {
-                                  return 'Nama minimal 3 karakter';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
+              // 4. Action Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: AppButton(
+                  label: _isInviteMode
+                      ? 'Simpan & Masuk Dashboard'
+                      : 'Simpan Profil & Lanjut',
+                  trailingIcon: Icons.arrow_forward,
+                  isLoading: _isLoading,
+                  onPressed: _onSaveAndContinue,
+                ),
+              ),
 
-                          // Field 2: Jenis Kelamin
-                          _buildFormField(
-                            label: 'JENIS KELAMIN',
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _gender,
-                              hint: Text(
-                                'Pilih jenis kelamin',
-                                style: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                              icon: const Icon(Icons.keyboard_arrow_down,
-                                  color: Colors.grey),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Laki-laki',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.male,
-                                          size: 20, color: Color(0xFF2563EB)),
-                                      SizedBox(width: 8),
-                                      Text('Laki-laki'),
-                                    ],
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Perempuan',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.female,
-                                          size: 20, color: Color(0xFFDB2777)),
-                                      SizedBox(width: 8),
-                                      Text('Perempuan'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                setState(() {
-                                  _gender = val;
-                                });
-                              },
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                              ),
-                              validator: (value) {
-                                if (value == null) {
-                                  return 'Jenis kelamin wajib dipilih';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-
-                          // Field 3: Tanggal Lahir
-                          _buildFormField(
-                            label: 'TANGGAL LAHIR',
-                            child: TextFormField(
-                              controller: _dobController,
-                              readOnly: true,
-                              onTap: _selectDate,
-                              decoration: InputDecoration(
-                                hintText: 'dd/mm/yyyy',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                                suffixIcon: const Icon(
-                                    Icons.calendar_today_outlined,
-                                    color: Colors.black87),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Tanggal lahir wajib diisi';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-
-                          // Field 4: Nomor HP
-                          _buildFormField(
-                            label: 'NOMOR HP / WHATSAPP',
-                            child: TextFormField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              decoration: InputDecoration(
-                                hintText: '812-3456-7890',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                                prefixIcon: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '+62',
-                                        style: TextStyle(
-                                          color: Colors.grey.shade700,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        height: 24,
-                                        width: 1,
-                                        color: Colors.grey.shade300,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey.shade300),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: AppColors.greenDark, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 0, vertical: 16),
-                              ),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Nomor HP wajib diisi';
-                                }
-                                final regex = RegExp(r'^8[1-9][0-9]{7,11}$');
-                                if (!regex.hasMatch(value)) {
-                                  return 'Format nomor tidak valid.';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              // 5. Footer Text
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    height: 1.5,
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // 4. Action Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _onSaveAndContinue,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.greenDark,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  _isInviteMode
-                                      ? 'Simpan & Masuk Dashboard'
-                                      : 'Simpan Profil & Lanjut',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward,
-                                    color: Colors.white, size: 20),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-
-                // 5. Footer Text
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Text(
-                    'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),

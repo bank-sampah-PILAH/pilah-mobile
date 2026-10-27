@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 
@@ -24,12 +25,12 @@ class CustomStatusBadge extends StatelessWidget {
 
     if (isActive != null) {
       if (isActive!) {
-        bg = const Color(0xFFDCFCE7); // green-100
-        text = const Color(0xFF166534); // green-800
+        bg = AppColors.greenLight; // green-100
+        text = AppColors.greenDark; // green-800
         label = 'Aktif';
       } else {
-        bg = const Color(0xFFFEE2E2); // red-100
-        text = const Color(0xFF991B1B); // red-800
+        bg = AppColors.dangerLight; // red-100
+        text = AppColors.danger; // red-800
         label = 'Nonaktif';
       }
     } else {
@@ -42,7 +43,7 @@ class CustomStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         label,

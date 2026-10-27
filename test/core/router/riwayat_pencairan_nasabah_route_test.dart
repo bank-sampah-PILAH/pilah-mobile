@@ -1,0 +1,92 @@
+import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/core/client/network_exception.dart';
+import 'package:pilah_mobile/core/router/app_router_config.dart';
+import 'package:pilah_mobile/core/router/invite_token_store.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
+import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
+import 'package:pilah_mobile/services/di.dart';
+
+import '../../support/auth_support.dart';
+
+class _MockUseCases extends Mock implements PencairanUseCases {}
+
+void main() {
+  setUpAll(() => registerFallbackValue(const RiwayatPencairanFilter()));
+
+  setUp(() {
+    if (di.isRegistered<InviteTokenStore>()) {
+      di.unregister<InviteTokenStore>();
+    }
+    di.registerSingleton<InviteTokenStore>(InviteTokenStore());
+  });
+
+  tearDown(() async {
+    if (di.isRegistered<InviteTokenStore>()) {
+      await di.unregister<InviteTokenStore>();
+    }
+  });
+
+  testWidgets('router builds every pengurus payout page with its extra',
+      (tester) async {
+    final useCases = _MockUseCases();
+    when(() => useCases.getRiwayat(any())).thenAnswer(
+        (_) async => const Right<NetworkException, List<Pencairan>>([]));
+    when(() => useCases.getRevisi('p-1')).thenAnswer(
+      (_) async => Right(
+        RiwayatRevisiPencairan(
+          pencairan: _pencairan,
+          revisi: const [],
+        ),
+      ),
+    );
+    di.registerFactory<PencairanUseCases>(() => useCases);
+
+    final auth = TestAuthenticationNotifier(
+      initialState: AuthenticationLoading(),
+    );
+    final router = AppRouterConfig.getRouter();
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authenticationProvider.overrideWith(() => auth)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+
+    router.go(EditPencairanPage.route, extra: _pencairan);
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Pencairan'), findsOneWidget);
+    expect(find.text('Ayu Nasabah'), findsOneWidget);
+
+    router.go(RevisiPencairanPage.route, extra: 'p-1');
+    await tester.pumpAndSettle();
+    expect(find.text('Riwayat Perubahan'), findsOneWidget);
+    expect(find.text('VERSI SEKARANG'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+}
+
+final _pencairan = Pencairan(
+  id: 'p-1',
+  nasabahId: 'n-1',
+  nasabahNama: 'Ayu Nasabah',
+  bankSampahNama: 'Bank Sampah Melati',
+  nominal: 200000,
+  metode: MetodePencairan.tunai,
+  tanggal: DateTime(2026, 9, 22, 9),
+  keterangan: 'Ambil di kasir',
+  status: 'tercatat',
+  saldoSebelum: 500000,
+  saldoSesudah: 300000,
+);

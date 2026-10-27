@@ -1,0 +1,137 @@
+import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+
+class TransaksiBerhasilPanel extends StatefulWidget {
+  final String customerName;
+  final int totalSetoran;
+  final int newBalance;
+  final int itemCount;
+  final Future<void> Function() onKirimWaSelesai;
+
+  const TransaksiBerhasilPanel({
+    super.key,
+    required this.customerName,
+    required this.totalSetoran,
+    required this.newBalance,
+    required this.itemCount,
+    required this.onKirimWaSelesai,
+  });
+
+  @override
+  State<TransaksiBerhasilPanel> createState() => _TransaksiBerhasilPanelState();
+}
+
+class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
+  bool _isSending = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Tanpa chrome wadahnya sendiri — warna, sudut dan padding datang dari
+    // showAdaptiveConfirmation, supaya isi yang sama tampil sebagai bottom
+    // sheet pada telepon dan dialog pada peramban.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Icon
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: Colors.green[50],
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_circle,
+              color: AppColors.greenDark, size: 40),
+        ),
+        const SizedBox(height: 24),
+
+        // Title & Subtitle
+        Text(
+          'Transaksi Berhasil!',
+          style: AppTextStyle.headline1.copyWith(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${widget.itemCount} jenis sampah berhasil dicatat.',
+          style: AppTextStyle.small.copyWith(
+            color: Colors.grey[500],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Summary Box
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            children: [
+              _buildSummaryRow('Nasabah', widget.customerName, isBold: false),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: AppColors.border),
+              ),
+              _buildSummaryRow('Nilai Setoran',
+                  '+${CurrencyFormatter.formatRupiah(widget.totalSetoran)}',
+                  isPrimary: true),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: AppColors.border),
+              ),
+              _buildSummaryRow('Saldo Terbaru',
+                  CurrencyFormatter.formatRupiah(widget.newBalance),
+                  isPrimary: true),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // Action Buttons
+        AppButton(
+          label: 'Kirim Notif WhatsApp & Selesai',
+          isLoading: _isSending,
+          onPressed: () async {
+            setState(() => _isSending = true);
+            await widget.onKirimWaSelesai();
+            if (!mounted) return;
+            setState(() => _isSending = false);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value,
+      {bool isPrimary = false, bool isBold = true}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: AppTextStyle.small.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+        Text(
+          value,
+          style: AppTextStyle.title1.copyWith(
+            color: isPrimary ? AppColors.greenDark : Colors.black87,
+            fontWeight: isBold || isPrimary ? FontWeight.bold : FontWeight.w600,
+            fontSize: isPrimary ? 16 : 14,
+          ),
+        ),
+      ],
+    );
+  }
+}

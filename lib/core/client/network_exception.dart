@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
@@ -78,33 +79,49 @@ class NetworkException implements Exception {
     return GeneralException(message: e.toString());
   }
 
+  /// The response body, decoded when it arrived as bytes: a request made with
+  /// `ResponseType.bytes` (a file download) still gets its errors as JSON text.
+  static dynamic _body(Response? response) {
+    final data = response?.data;
+    if (data is! List<int>) return data;
+    try {
+      return jsonDecode(utf8.decode(data));
+    } on FormatException {
+      return null;
+    }
+  }
+
   /// Extracts a human-readable message from the PILAH backend error payload.
   ///
   /// The Django API returns either:
   ///  - validation / duplicate errors (HTTP 422): `{"errors": {"field": ["msg"]}}`
   ///  - other errors (401/403/404/400): `{"error": "msg"}`
   static String? extractMessage(Response? response) {
-    final data = response?.data;
-    if (data is Map) {
-      final errors = data['errors'];
-      if (errors is Map && errors.isNotEmpty) {
-        final firstValue = errors.values.first;
-        if (firstValue is List && firstValue.isNotEmpty) {
-          return firstValue.first.toString();
-        }
-        return firstValue.toString();
-      }
-      final singleError = data['error'] ?? data['message'] ?? data['detail'];
-      if (singleError != null) return singleError.toString();
-    }
+    final data = _body(response);
+    if (data is Map) return _messageFromPayload(data);
     if (data is String && data.isNotEmpty) return data;
+    return null;
+  }
+
+  static String? _messageFromPayload(Map payload) {
+    final errors = payload['errors'];
+    if (errors is Map && errors.isNotEmpty) {
+      final firstValue = errors.values.first;
+      if (firstValue is List && firstValue.isNotEmpty) {
+        return firstValue.first.toString();
+      }
+      return firstValue.toString();
+    }
+    final singleError =
+        payload['error'] ?? payload['message'] ?? payload['detail'];
+    if (singleError != null) return singleError.toString();
     return null;
   }
 
   /// Flattens `{"errors": {"field": ["msg"]}}` into `{field: "msg"}` so forms can
   /// surface backend validation (e.g. duplicate `kode`) against the right field.
   Map<String, String> fieldErrors() {
-    final data = response?.data;
+    final data = _body(response);
     final result = <String, String>{};
     if (data is Map) {
       final errors = data['errors'];

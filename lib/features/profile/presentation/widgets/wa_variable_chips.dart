@@ -7,8 +7,10 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 ///
 /// Kept as its own widget (rather than inline in the settings page) so the chip
 /// list — including the `{daftar_item_harga}` augmentation below — can be
-/// widget-tested without the page's cubit, bloc, and service-locator wiring.
+/// widget-tested without the page or service-locator wiring.
 class WaVariableChips extends StatelessWidget {
+  static const _itemHargaVariable = '{daftar_item_harga}';
+
   /// The variable tokens advertised by the backend (`variabel_tersedia`).
   final List<String> variables;
 
@@ -30,7 +32,7 @@ class WaVariableChips extends StatelessWidget {
     '{Saldo}': 'Saldo tabungan nasabah',
     '{Tanggal}': 'Tanggal transaksi',
     '{daftar_item}': 'Daftar item & berat',
-    '{daftar_item_harga}': 'Daftar item, berat, & harga',
+    _itemHargaVariable: 'Daftar item, berat, & harga',
   };
 
   /// Ensures `{daftar_item_harga}` appears right after `{daftar_item}` in the
@@ -39,13 +41,13 @@ class WaVariableChips extends StatelessWidget {
   /// server returns — inserted after `{daftar_item}`, appended if that is absent,
   /// and left untouched if the source already includes it.
   static List<String> withDaftarItemHarga(List<String> source) {
-    if (source.contains('{daftar_item_harga}')) return source;
+    if (source.contains(_itemHargaVariable)) return source;
     final result = List<String>.from(source);
     final index = result.indexOf('{daftar_item}');
     if (index == -1) {
-      result.add('{daftar_item_harga}');
+      result.add(_itemHargaVariable);
     } else {
-      result.insert(index + 1, '{daftar_item_harga}');
+      result.insert(index + 1, _itemHargaVariable);
     }
     return result;
   }

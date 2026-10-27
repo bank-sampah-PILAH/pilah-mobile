@@ -1,89 +1,286 @@
-# CI — the automatic merge gate for pilah-mobile. One verification job, KISS:
-#   - install with --enforce-lockfile (fails on lockfile drift)
-#   - codegen (freezed/json/injectable outputs are gitignored, must be generated)
-#   - dart format check
-#   - flutter analyze (error+warning+info severity, blocking)
-#   - tests with coverage (>= 25% floor)
-#   - workflow hygiene (actionlint + shellcheck on this file)
+# CI — selected tests on feature pushes; full suites for Dart-source PRs and staging/main pushes.
+# Same-run LCOV is merged for Sonar, with the existing coverage gates on staging only.
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging, 'feature/**']
   pull_request:
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/staging' }}
 
 env:
-  # Matches the local dev SDK (3.38.3 stable). Pin exactly so a new Flutter
-  # release can't silently change analyzer/test behavior under the gate.
-  FLUTTER_VERSION: "3.38.3"
+  # Matches the repository's `.fvmrc` (3.41.3 stable). Pin exactly so a new
+  # Flutter release can't silently change analyzer/test behavior under the gate.
+  FLUTTER_VERSION: "3.41.3"
 
 jobs:
-  verify:
+  changes:
     if: github.event_name != 'workflow_dispatch'
-    name: Format, analyze, tests & build
+    name: Select changed tests
+    runs-on: ubuntu-latest
+    outputs:
+      base_sha: ${{ steps.select.outputs.base_sha }}
+      browser_test_files: ${{ steps.select.outputs.browser_test_files }}
+      coverage_gates: ${{ steps.select.outputs.coverage_gates }}
+      full_suite: ${{ steps.select.outputs.full_suite }}
+      has_vm_tests: ${{ steps.select.outputs.has_vm_tests }}
+      test_files: ${{ steps.select.outputs.test_files }}
+      unit_test_shards: ${{ steps.select.outputs.unit_test_shards }}
+      web_changed: ${{ steps.select.outputs.web_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select changed tests and web paths
+        id: select
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: python3 scripts/select_ci_changes.py
+
+  quality:
+    if: github.event_name != 'workflow_dispatch'
+    name: Format, analyze & workflow checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Exact-version Flutter via the official versioned runner. The pub cache
-      # is kept across runs so dependency downloads stay off the critical path.
-      - uses: subosito/flutter-action@v2
+      - uses: actions/setup-python@v5
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+          python-version: "3.12"
 
-      # Java 17 for the Gradle side of the debug APK build.
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+      - name: Install workflow test dependency
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
 
-      # --enforce-lockfile is the CI flag: it fails when pubspec.lock doesn't
-      # exactly represent a valid resolution for pubspec.yaml (or hashes don't
-      # match) instead of quietly re-resolving. Keeps dependency bumps
-      # deliberate — the lockfile must be updated in the same commit.
-      - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
+      - uses: ./.github/actions/setup-flutter
 
-      # .env is gitignored (runtime asset loaded via flutter_dotenv), but
-      # pubspec.yaml declares it as an asset — without the file even
-      # `flutter analyze` fails with asset_does_not_exist. A copy of the
-      # example env is materialized up front so analyze and tests both see it.
-      - name: Prepare .env
-        run: cp .env.example .env
-
-      # *.freezed.dart / *.g.dart are gitignored — CI checkouts don't have
-      # them, so they must be generated before analyze/tests can pass.
-      - name: Generate code (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      # Formatting first: it's nearly free, so an unformatted commit should
-      # fail in seconds rather than waiting for the analyzer to finish.
-      # Scoped to the real Dart trees — `dart format` has no exclude flag and
-      # bricks/ holds Mason Mustache templates, which are not parseable Dart.
+      # Scope to Dart source trees; bricks/ contains non-parseable Mustache templates.
       - name: dart format check
         run: dart format --output=none --set-exit-if-changed lib test codegen
 
-      # Blocking on the project's configured lints (analysis_options.yaml,
-      # flutter_lints). `--fatal-infos` treats style infos as failures too so
-      # sloppy code can't ride in silently.
       - name: flutter analyze
         run: flutter analyze --fatal-infos
 
-      - name: Run tests with coverage
-        run: flutter test --coverage
+      - name: Dashboard hosting behavior and pipeline safety
+        run: python3 -m unittest discover -s scripts/tests -v
 
-      # Blocking gate. The suite is young (26% at gate introduction — large
-      # feature areas predate it), so the floor starts at 25% and must only
-      # move UP as tests are added. Parse the lcov directly: no lcov/genhtml
-      # tooling needed on the runner.
+      - name: actionlint
+        run: docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color
+
+  test_shards:
+    if: needs.changes.outputs.full_suite == 'true'
+    needs: changes
+    name: Test shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # Shard list mirrors the unit_test_shards output; the coverage merge step
+      # asserts their count match, so neither can drift silently.
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      # Keep the generated DI graph in coverage; the graph test resolves each registration.
+      - name: Measure coverage of the generated DI graph
+        run: sed -i '/^\/\/ coverage:ignore-file$/d' lib/services/di.config.dart
+
+      - name: Run tests with coverage
+        run: flutter test --coverage --total-shards=${{ strategy.job-total }} --shard-index=${{ matrix.shard }}
+
+      - name: Name shard coverage file
+        run: mv coverage/lcov.info coverage/lcov-${{ matrix.shard }}.info
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage-${{ matrix.shard }}
+          path: coverage/lcov-${{ matrix.shard }}.info
+          if-no-files-found: error
+          retention-days: 1
+
+  changed_tests:
+    if: needs.changes.outputs.full_suite != 'true' && needs.changes.outputs.has_vm_tests == 'true'
+    needs: changes
+    name: Changed test files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Measure coverage of the generated DI graph
+        run: sed -i '/^\/\/ coverage:ignore-file$/d' lib/services/di.config.dart
+
+      - name: Run changed test files with coverage
+        env:
+          TEST_FILES: ${{ needs.changes.outputs.test_files }}
+        run: |
+          mapfile -t test_files < <(python3 -c 'import json,os; [print(path) for path in json.loads(os.environ["TEST_FILES"])]')
+          if ((${#test_files[@]} == 0)); then
+            echo "::error::No changed test files were provided to the selected-test job."
+            exit 1
+          fi
+          flutter test --coverage "${test_files[@]}"
+
+      - name: Name selected-test coverage file
+        run: mv coverage/lcov.info coverage/lcov-selected.info
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage-selected
+          path: coverage/lcov-selected.info
+          if-no-files-found: error
+          retention-days: 1
+
+  browser_tests:
+    if: needs.changes.outputs.full_suite == 'true' || (github.event_name == 'pull_request' && needs.changes.outputs.web_changed == 'true')
+    needs: changes
+    name: Browser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-flutter
+
+      - name: Collect browser download coverage
+        run: >-
+          dart run test --platform chrome
+          --dart2js-args=-O0
+          --coverage-path=coverage/browser.lcov.info
+          test/browser/file_downloader_test.dart
+
+      - name: Run web-specific widget tests
+        run: >-
+          flutter test --platform chrome
+          test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
+          test/report_download_browser_test.dart
+
+      - name: Verify the web dashboard role layout
+        run: >-
+          flutter test --platform chrome
+          --plain-name "web dashboard uses the web default for Pengurus"
+          test/features/dashboard/presentation/pages/dashboard_page_test.dart
+
+      - name: Run changed browser test files outside the fixed browser suite
+        if: needs.changes.outputs.browser_test_files != '[]'
+        env:
+          BROWSER_TEST_FILES: ${{ needs.changes.outputs.browser_test_files }}
+        run: |
+          mapfile -t browser_test_files < <(python3 -c 'import json,os; [print(path) for path in json.loads(os.environ["BROWSER_TEST_FILES"])]')
+          for index in "${!browser_test_files[@]}"; do
+            test_file="${browser_test_files[$index]}"
+            if [[ "$test_file" == test/browser/* ]]; then
+              dart run test --platform chrome --dart2js-args=-O0 \
+                --coverage-path="coverage/browser-selected-${index}.info" "$test_file"
+            else
+              flutter test --platform chrome --coverage \
+                --coverage-path="coverage/browser-selected-${index}.info" "$test_file"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-coverage
+          path: coverage/browser*.info
+          if-no-files-found: error
+          retention-days: 1
+
+  coverage:
+    if: ${{ always() && github.event_name != 'workflow_dispatch' }}
+    name: Coverage gates
+    needs: [changes, test_shards, changed_tests, browser_tests]
+    runs-on: ubuntu-latest
+    outputs:
+      has_coverage: ${{ steps.merge.outputs.has_coverage }}
+      sonar_reports: ${{ steps.merge.outputs.sonar_reports }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install coverage tools
+        run: python -m pip install --disable-pip-version-check diff-cover==10.6.0
+
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y lcov
+
+      - name: Download unit coverage
+        if: needs.test_shards.result == 'success' || needs.changed_tests.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: unit-coverage-*
+          path: coverage/units
+          merge-multiple: false
+
+      - name: Download browser coverage
+        if: needs.browser_tests.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: browser-coverage
+          path: coverage/browser
+
+      - name: Merge LCOV for Sonar and staging gates
+        id: merge
+        env:
+          FULL_SUITE: ${{ needs.changes.outputs.full_suite }}
+          COVERAGE_GATES: ${{ needs.changes.outputs.coverage_gates }}
+          EXPECTED_SHARDS: ${{ needs.changes.outputs.unit_test_shards }}
+        run: |
+          mkdir -p coverage/units coverage/browser
+          mapfile -t unit_tracefiles < <(find coverage/units -type f -name '*.info' -print | sort)
+          if [[ "$FULL_SUITE" == 'true' && "${#unit_tracefiles[@]}" -ne "$EXPECTED_SHARDS" ]]; then
+            echo "::error::Expected $EXPECTED_SHARDS coverage shards (matching the test_shards matrix), found ${#unit_tracefiles[@]}."
+            exit 1
+          fi
+          if ((${#unit_tracefiles[@]})); then
+            lcov_args=()
+            for tracefile in "${unit_tracefiles[@]}"; do
+              lcov_args+=(--add-tracefile "$tracefile")
+            done
+            lcov "${lcov_args[@]}" --output-file coverage/lcov.info
+          fi
+
+          mapfile -t browser_tracefiles < <(find coverage/browser -type f -name '*.info' -print | sort)
+          if ((${#browser_tracefiles[@]})); then
+            lcov_args=()
+            for tracefile in "${browser_tracefiles[@]}"; do
+              lcov_args+=(--add-tracefile "$tracefile")
+            done
+            lcov "${lcov_args[@]}" --output-file coverage/browser.lcov.info
+          fi
+
+          if [[ "$COVERAGE_GATES" == 'true' && ( ! -f coverage/lcov.info || ! -f coverage/browser.lcov.info ) ]]; then
+            echo "::error::The staging coverage gates require merged VM and browser LCOV."
+            exit 1
+          fi
+
+          reports=()
+          [[ -f coverage/lcov.info ]] && reports+=(coverage/lcov.info)
+          [[ -f coverage/browser.lcov.info ]] && reports+=(coverage/browser.lcov.info)
+          if ((${#reports[@]})); then
+            report_list=$(IFS=,; printf '%s' "${reports[*]}")
+            echo "has_coverage=true" >> "$GITHUB_OUTPUT"
+            echo "sonar_reports=$report_list" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_coverage=false" >> "$GITHUB_OUTPUT"
+            echo "sonar_reports=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Keep the existing 25% floor; staging evaluates it against the full merged VM coverage.
       - name: Coverage report (fail under 25%)
+        if: needs.changes.outputs.coverage_gates == 'true'
         run: |
           # shellcheck disable=SC2016  # the awk program is intentionally single-quoted
           pct="$(awk '
@@ -94,11 +291,146 @@ jobs:
           awk -v p="$pct" 'BEGIN { exit (p+0 >= 25 ? 0 : 1) }' \
             || { echo "::error::line coverage ${pct}% is below the 25% gate"; exit 1; }
 
-      # Lints the CI workflow files themselves (syntax, expression misuse,
-      # invalid action inputs, shell scripts in run blocks). Cheap step at the
-      # end so workflow edits still get everything else checked in one job.
-      - name: actionlint
-        run: docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:latest -color
+      - name: Staging diff coverage (fail under 25%)
+        if: needs.changes.outputs.coverage_gates == 'true'
+        env:
+          BASE_SHA: ${{ needs.changes.outputs.base_sha }}
+        run: >-
+          diff-cover coverage/lcov.info
+          --compare-branch="$BASE_SHA"
+          --fail-under=25
+          --total-percent-float
+          --show-uncovered
+
+      - uses: actions/upload-artifact@v4
+        if: steps.merge.outputs.has_coverage == 'true'
+        with:
+          name: sonar-coverage
+          path: coverage/*.info
+          if-no-files-found: error
+          retention-days: 1
+
+  verify:
+    if: ${{ always() && github.event_name != 'workflow_dispatch' }}
+    name: Format, analyze, tests & build
+    needs: [changes, quality, test_shards, changed_tests, browser_tests, coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require applicable checks to pass
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          TEST_SHARDS_RESULT: ${{ needs.test_shards.result }}
+          CHANGED_TESTS_RESULT: ${{ needs.changed_tests.result }}
+          BROWSER_RESULT: ${{ needs.browser_tests.result }}
+          COVERAGE_RESULT: ${{ needs.coverage.result }}
+          FULL_SUITE: ${{ needs.changes.outputs.full_suite }}
+          HAS_VM_TESTS: ${{ needs.changes.outputs.has_vm_tests }}
+          WEB_CHANGED: ${{ needs.changes.outputs.web_changed }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$CHANGES_RESULT" != success || "$QUALITY_RESULT" != success || "$COVERAGE_RESULT" != success ]]; then
+            echo "::error::Changed-file selection, quality, or coverage validation failed."
+            exit 1
+          fi
+          if [[ "$FULL_SUITE" == 'true' ]]; then
+            if [[ "$TEST_SHARDS_RESULT" != success || "$BROWSER_RESULT" != success ]]; then
+              echo "::error::The full Flutter and browser suites must pass."
+              exit 1
+            fi
+          else
+            if [[ "$HAS_VM_TESTS" == 'true' && "$CHANGED_TESTS_RESULT" != success ]] || \
+               [[ "$HAS_VM_TESTS" != 'true' && "$CHANGED_TESTS_RESULT" != skipped ]]; then
+              echo "::error::Changed VM tests did not match the selected-test policy."
+              exit 1
+            fi
+            if [[ "$WEB_CHANGED" == 'true' && "$EVENT_NAME" == 'pull_request' && "$BROWSER_RESULT" != success ]] || \
+               [[ ( "$WEB_CHANGED" != 'true' || "$EVENT_NAME" != 'pull_request' ) && "$BROWSER_RESULT" != skipped ]]; then
+              echo "::error::Browser tests did not match the web-diff policy."
+              exit 1
+            fi
+          fi
+
+  sonar:
+    if: ${{ always() && needs.changes.result == 'success' && needs.coverage.result == 'success' && needs.verify.result == 'success' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main') }}
+    name: SonarCloud analysis
+    needs: [changes, coverage, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The Dart analyzer inside the scanner resolves package: imports from the
+      # pub cache and the build_runner output. Without them every Flutter type is
+      # "undefined" and each file is reported as a parse error (dart:S2260).
+      - uses: ./.github/actions/setup-flutter
+
+      - uses: actions/download-artifact@v4
+        if: needs.coverage.outputs.has_coverage == 'true'
+        with:
+          name: sonar-coverage
+          path: coverage
+
+      - name: Prepare Sonar arguments
+        id: sonar_args
+        env:
+          SONAR_COVERAGE_REPORTS: ${{ needs.coverage.outputs.sonar_reports }}
+        run: |
+          args=$(cat <<'ARGS'
+          -Dsonar.organization=bank-sampah-pilah
+          -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
+          -Dsonar.sources=lib
+          -Dsonar.coverage.exclusions=lib/main_development.dart,lib/main_production.dart,lib/main_beranda_preview.dart
+          -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+          -Dsonar.scanner.skipJreProvisioning=true
+          ARGS
+          )
+          if [[ -n "$SONAR_COVERAGE_REPORTS" ]]; then
+            args+=$'\n-Dsonar.dart.lcov.reportPaths='"$SONAR_COVERAGE_REPORTS"
+          fi
+          {
+            echo 'args<<EOF'
+            printf '%s\n' "$args"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java 21 (scanner engine)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # SonarCloud intermittently returns 403 during bootstrap; a fresh connection often succeeds.
+      - name: SonarCloud Scan
+        id: sonar_scan
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: ${{ steps.sonar_args.outputs.args }}
+
+      - name: SonarCloud Scan (retry)
+        if: steps.sonar_scan.outcome == 'failure'
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: ${{ steps.sonar_args.outputs.args }}
+
+  deploy_web_staging:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      flavor: staging
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
 
   debug_apk:
     if: github.event_name == 'workflow_dispatch'
