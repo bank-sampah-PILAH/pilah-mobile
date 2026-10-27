@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Chrome tests exercise the real renderer and guard this stub's API shape.
 enum GSIButtonTheme { outline }
 
 enum GSIButtonSize { large }

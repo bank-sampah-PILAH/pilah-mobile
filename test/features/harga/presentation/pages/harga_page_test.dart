@@ -705,6 +705,16 @@ void main() {
     expect(row.color, AppColors.greenLight);
   });
 
+  testWidgets('the row with its detail open stays tinted in the table',
+      (tester) async {
+    await openPage(tester, size: _expanded);
+    await tester.tap(find.text('Botol PET'));
+    await tester.pumpAndSettle();
+
+    final row = tester.widget<Container>(find.byKey(HargaTable.rowKey('1')));
+    expect(row.color, AppColors.greenLight);
+  });
+
   testWidgets('on a wide screen the add button is in the header, not a FAB',
       (tester) async {
     await openPage(tester, size: _expanded);

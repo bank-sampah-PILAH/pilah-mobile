@@ -11,10 +11,8 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_l
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 /// Pengurus dashboard action area: the two things done most, side by side.
-/// Pencairan lives behind the Transaksi Baru chooser (choosing it opens the
-/// same pencairan flow), not as its own button, so both routes stay reachable
-/// without duplicating the entry. Everything else is a destination in the
-/// navigation (Pengumuman is in the sidebar), not a button here.
+/// Pencairan remains visible but disabled in the Transaksi Baru chooser per
+/// PIL-379. Everything else is a destination in the navigation, not a button.
 class DashboardActionButtons extends StatelessWidget {
   const DashboardActionButtons({super.key});
 
@@ -100,11 +98,11 @@ class _TransaksiChooserSheet extends StatelessWidget {
             onTap: () => Navigator.of(context).pop(_TransaksiChoice.setoran),
           ),
           const SizedBox(height: 8),
-          _ChoiceTile(
+          const _ChoiceTile(
             icon: Icons.payments_outlined,
             title: 'Pencairan',
             subtitle: 'Buat draft, potongan, dan pencairan banyak nasabah',
-            onTap: () => Navigator.of(context).pop(_TransaksiChoice.pencairan),
+            onTap: null,
           ),
         ],
       ),

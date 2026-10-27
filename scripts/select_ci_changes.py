@@ -114,7 +114,7 @@ def mirror_test_path(path):
 def is_full_suite(event_name, ref, paths=()):
     if event_name == "push" and ref in {"refs/heads/staging", "refs/heads/main"}:
         return True
-    return event_name in {"push", "pull_request"} and any(
+    return event_name == "pull_request" and any(
         path.startswith("lib/") and path.endswith(".dart") for path in paths
     )
 
