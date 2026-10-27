@@ -51,6 +51,12 @@ void main() {
 
         expect(api.last.query['search'], query);
         expect(find.text('Siti Aminah'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate((widget) =>
+              widget is Text &&
+              widget.data == (layout.isWeb ? 'NAS-000123' : 'ID: NAS-000123')),
+          findsOneWidget,
+        );
         expect(find.text('Budi Santoso'), findsNothing);
       }
 

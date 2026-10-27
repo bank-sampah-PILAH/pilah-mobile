@@ -21,7 +21,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_search_bar.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/constants/nasabah_search.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
@@ -83,7 +83,7 @@ class _Header extends ConsumerWidget {
       title: 'Daftar Nasabah',
       subtitle: Text('${notifier.activeCount} nasabah aktif'),
       search: CustomSearchField(
-        hintText: NasabahSearchBar.hintText,
+        hintText: nasabahSearchHint,
         onChanged: notifier.searchNasabah,
       ),
       actions: [
