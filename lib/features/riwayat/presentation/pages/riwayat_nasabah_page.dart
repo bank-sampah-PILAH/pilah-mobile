@@ -10,9 +10,14 @@ import 'package:pilah_mobile/features/riwayat/presentation/widgets/nasabah_setor
 
 /// The Setoran tab, scoped by the host screen to one membership.
 class RiwayatNasabahPage extends ConsumerStatefulWidget {
-  const RiwayatNasabahPage({super.key, required this.membershipId});
+  const RiwayatNasabahPage(
+      {super.key, required this.membershipId, this.onRefresh});
 
   final String membershipId;
+
+  /// Runs alongside the history reset so tab-level refreshes also reload
+  /// data owned by the host (the saldo card).
+  final Future<void> Function()? onRefresh;
 
   @override
   ConsumerState<RiwayatNasabahPage> createState() => _RiwayatNasabahPageState();
@@ -46,6 +51,11 @@ class _RiwayatNasabahPageState extends ConsumerState<RiwayatNasabahPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(riwayatHistoryProvider);
     final notifier = ref.read(riwayatHistoryProvider.notifier);
+    Future<void> refresh() async {
+      await notifier.loadHistoryCurrent(reset: true);
+      await widget.onRefresh?.call();
+    }
+
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
@@ -53,7 +63,7 @@ class _RiwayatNasabahPageState extends ConsumerState<RiwayatNasabahPage> {
         child: RefreshIndicator(
           // Refresh means re-ask page 1: reset:false would request the
           // page after the last one and append its rows below.
-          onRefresh: () => notifier.loadHistoryCurrent(reset: true),
+          onRefresh: refresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
@@ -70,7 +80,7 @@ class _RiwayatNasabahPageState extends ConsumerState<RiwayatNasabahPage> {
                     tooltip: 'Muat ulang',
                     onPressed: state.status == RiwayatHistoryStatus.loading
                         ? null
-                        : () => notifier.loadHistoryCurrent(reset: true),
+                        : refresh,
                     icon: const Icon(Icons.refresh),
                     color: NasabahStyle.emerald,
                   ),
