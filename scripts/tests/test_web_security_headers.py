@@ -86,3 +86,22 @@ class WebSecurityHeadersTest(unittest.TestCase):
                 self.assertEqual(csp.get("form-action"), ["'self'"])
                 self.assertEqual(csp.get("frame-ancestors"), ["'none'"])
 
+    def test_csp_still_lets_flutter_web_and_google_sign_in_load(self):
+        # Verified in a real browser against the release build: with only 'self' the page
+        # stays blank (CanvasKit script) and the Google button never renders.
+        csp = policy(headers_of(self.base, "/").get("Content-Security-Policy", ""))
+        self.assertIn("'wasm-unsafe-eval'", csp.get("script-src", []))
+        self.assertIn("https://www.gstatic.com/flutter-canvaskit/", csp.get("script-src", []))
+        self.assertIn("https://accounts.google.com/gsi/client", csp.get("script-src", []))
+        # Flutter's engine and the Google button inject inline styles.
+        self.assertIn("'unsafe-inline'", csp.get("style-src", []))
+        self.assertIn("https://fonts.gstatic.com", csp.get("font-src", []))
+        self.assertEqual(csp.get("frame-src"), ["https://accounts.google.com"])
+        self.assertIn("blob:", csp.get("worker-src", []))
+        self.assertIn("data:", csp.get("img-src", []))
+        self.assertIn("https:", csp.get("img-src", []))
+        for origin in ("'self'", "https://*.fly.dev", "https://*.run.app",
+                       "https://accounts.google.com", "https://www.gstatic.com",
+                       "https://storage.googleapis.com"):
+            self.assertIn(origin, csp.get("connect-src", []), origin)
+
