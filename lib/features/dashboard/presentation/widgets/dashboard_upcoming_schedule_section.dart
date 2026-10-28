@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
@@ -24,17 +25,21 @@ class DashboardUpcomingScheduleSection extends StatefulWidget {
 
 class _DashboardUpcomingScheduleSectionState
     extends State<DashboardUpcomingScheduleSection> {
-  late Future<JadwalEntity?> _request;
+  /// Jadwal terdekat yang ditampilkan: tiga cukup memberi gambaran minggu ini
+  /// tanpa memanjangkan dashboard.
+  static const _shown = 3;
+
+  late Future<List<JadwalEntity>> _request;
 
   @override
   void initState() {
     super.initState();
-    _request = _loadNearestSchedule();
+    _request = _loadUpcoming();
   }
 
-  Future<JadwalEntity?> _loadNearestSchedule() async {
+  Future<List<JadwalEntity>> _loadUpcoming() async {
     final now = widget.now();
-    JadwalEntity? nearest;
+    final upcoming = <JadwalEntity>[];
     var pageNumber = 1;
 
     while (true) {
@@ -44,20 +49,20 @@ class _DashboardUpcomingScheduleSectionState
       );
       final page = result.fold((failure) => throw failure, (page) => page);
       for (final schedule in page.items) {
-        final start = schedule.mulaiPada.toLocal();
         if (schedule.isPublished &&
-            !start.isBefore(now) &&
-            (nearest == null || start.isBefore(nearest.mulaiPada.toLocal()))) {
-          nearest = schedule;
+            !schedule.selesaiPada.toLocal().isBefore(now)) {
+          upcoming.add(schedule);
         }
       }
-      if (page.items.isEmpty || !page.hasMore) return nearest;
+      if (page.items.isEmpty || !page.hasMore) break;
       pageNumber++;
     }
+    upcoming.sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
+    return upcoming.take(_shown).toList();
   }
 
   void _retry() {
-    final request = _loadNearestSchedule();
+    final request = _loadUpcoming();
     setState(() {
       _request = request;
     });
@@ -67,19 +72,12 @@ class _DashboardUpcomingScheduleSectionState
   Widget build(BuildContext context) => Theme(
         data: Theme.of(context).copyWith(
           cardTheme: CardThemeData(
-            color: AppColors.cardOffWhite,
+            color: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.greenDark,
-              textStyle:
-                  AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
           ),
         ),
@@ -105,7 +103,7 @@ class _DashboardUpcomingScheduleSectionState
               ],
             ),
             const SizedBox(height: 8),
-            FutureBuilder<JadwalEntity?>(
+            FutureBuilder<List<JadwalEntity>>(
               future: _request,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
@@ -140,8 +138,8 @@ class _DashboardUpcomingScheduleSectionState
                     ),
                   );
                 }
-                final schedule = snapshot.data;
-                if (schedule == null) {
+                final schedules = snapshot.data ?? const <JadwalEntity>[];
+                if (schedules.isEmpty) {
                   return Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -165,61 +163,18 @@ class _DashboardUpcomingScheduleSectionState
                   );
                 }
 
-                final start = schedule.mulaiPada.toLocal();
-                final date = _scheduleDateParam(start);
                 return Card(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => context.go(
-                      Uri(
-                        path: JadwalPage.route,
-                        queryParameters: {'date': date},
-                      ).toString(),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_month_outlined,
-                            color: AppColors.greenDark,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  schedule.jenisKegiatan,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  '${formatJadwalDayHeading(start, today: widget.now())} · ${_scheduleTime(start)}',
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                if (schedule.lokasi.isNotEmpty)
-                                  Text(
-                                    schedule.lokasi,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyle.small.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right, color: Colors.grey),
-                        ],
-                      ),
-                    ),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < schedules.length; i++) ...[
+                        if (i > 0)
+                          const Divider(height: 1, indent: 16, endIndent: 16),
+                        _ScheduleRow(
+                          schedule: schedules[i],
+                          today: widget.now(),
+                        ),
+                      ],
+                    ],
                   ),
                 );
               },
@@ -227,6 +182,72 @@ class _DashboardUpcomingScheduleSectionState
           ],
         ),
       );
+}
+
+class _ScheduleRow extends StatelessWidget {
+  const _ScheduleRow({required this.schedule, required this.today});
+
+  final JadwalEntity schedule;
+  final DateTime today;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = schedule.mulaiPada.toLocal();
+    final date = _scheduleDateParam(start);
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: () => context.go(
+        Uri(
+          path: JadwalPage.route,
+          queryParameters: {'date': date},
+        ).toString(),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.calendar_month_outlined,
+              color: AppColors.greenDark,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    schedule.jenisKegiatan,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${formatJadwalDayHeading(start, today: today)} · ${_scheduleTime(start)}',
+                    style: AppTextStyle.small.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  if (schedule.lokasi.isNotEmpty)
+                    Text(
+                      schedule.lokasi,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyle.small.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 String _scheduleDateParam(DateTime date) =>

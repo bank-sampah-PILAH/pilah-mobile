@@ -1,12 +1,17 @@
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
+/// Pengurus dashboard action area: the two things done most, side by side.
+/// Pencairan remains visible but disabled in the Transaksi Baru chooser per
+/// PIL-379. Everything else is a destination in the navigation, not a button.
 class DashboardActionButtons extends StatelessWidget {
   const DashboardActionButtons({super.key});
 
@@ -15,29 +20,18 @@ class DashboardActionButtons extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: ElevatedButton.icon(
+          child: AppButton(
+            label: 'Transaksi Baru',
+            icon: Icons.add,
             onPressed: () => _openTransaksiChooser(context),
-            icon: const Icon(Icons.add, color: Colors.white, size: 20),
-            label: Text(
-              'Transaksi Baru',
-              style: AppTextStyle.small.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: OutlinedButton.icon(
+          child: AppButton(
+            label: 'Tambah Nasabah',
+            variant: AppButtonVariant.outlined,
+            icon: Icons.person_add_outlined,
             onPressed: () {
               // 1. Trigger the route change to the Nasabah tab
               context.go('/nasabah');
@@ -45,36 +39,13 @@ class DashboardActionButtons extends StatelessWidget {
               // 2. Wait for the tab transition animation to complete before showing the modal
               Future.delayed(const Duration(milliseconds: 300), () {
                 if (context.mounted) {
-                  showModalBottomSheet(
-                    context: context,
-                    useRootNavigator: true,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
+                  showAdaptiveSurface(
+                    context,
                     builder: (context) => const TambahNasabahBottomSheet(),
                   );
                 }
               });
             },
-            icon: const Icon(Icons.person_add_outlined,
-                color: AppColors.greenDark, size: 20),
-            label: Text(
-              'Tambah Nasabah',
-              style: AppTextStyle.small.copyWith(
-                color: AppColors.black,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              side: BorderSide(color: Colors.grey.shade300),
-              backgroundColor: Colors.white,
-            ),
           ),
         ),
       ],
@@ -82,24 +53,19 @@ class DashboardActionButtons extends StatelessWidget {
   }
 
   Future<void> _openTransaksiChooser(BuildContext context) async {
-    final choice = await showModalBottomSheet<_TransaksiChoice>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final choice = await showAdaptiveSurface<_TransaksiChoice>(
+      context,
       builder: (context) => const _TransaksiChooserSheet(),
     );
     if (choice == null || !context.mounted) return;
     switch (choice) {
       case _TransaksiChoice.setoran:
         context.push(TransaksiBaruPage.route);
-      case _TransaksiChoice.pencairan:
-        context.push(DraftListPage.route);
     }
   }
 }
 
-enum _TransaksiChoice { setoran, pencairan }
+enum _TransaksiChoice { setoran }
 
 /// Lets the pengurus choose which transaction to record before opening its
 /// own form — one beranda entry point for both, without merging the two
@@ -113,7 +79,7 @@ class _TransaksiChooserSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
@@ -129,11 +95,11 @@ class _TransaksiChooserSheet extends StatelessWidget {
             onTap: () => Navigator.of(context).pop(_TransaksiChoice.setoran),
           ),
           const SizedBox(height: 8),
-          _ChoiceTile(
+          const _ChoiceTile(
             icon: Icons.payments_outlined,
             title: 'Pencairan',
             subtitle: 'Buat draft, potongan, dan pencairan banyak nasabah',
-            onTap: () => Navigator.of(context).pop(_TransaksiChoice.pencairan),
+            onTap: null,
           ),
         ],
       ),
@@ -145,7 +111,7 @@ class _ChoiceTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ChoiceTile({
     required this.icon,
@@ -156,24 +122,29 @@ class _ChoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.greenLight,
-                borderRadius: BorderRadius.circular(12),
+                color: enabled ? AppColors.greenLight : AppColors.fill,
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: Icon(icon, color: AppColors.greenDark, size: 22),
+              child: Icon(
+                icon,
+                color: enabled ? AppColors.greenDark : AppColors.grey100,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -183,7 +154,7 @@ class _ChoiceTile extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
+                      color: enabled ? Colors.black87 : AppColors.grey100,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -195,7 +166,7 @@ class _ChoiceTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[400]),
+            if (enabled) Icon(Icons.chevron_right, color: Colors.grey[400]),
           ],
         ),
       ),

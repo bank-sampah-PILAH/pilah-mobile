@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/edit_nasabah_bottom_sheet.dart';
 
@@ -40,16 +41,14 @@ NasabahEntity _nasabah({
 
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    notifier = buildNasabahNotifier(api);
     api.on('GET', _path, json: nasabahPage([]));
     api.on('GET', '$_path/n1', json: <String, dynamic>{});
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> openSheet(
       WidgetTester tester, Widget Function(BuildContext) sheet) async {
@@ -68,9 +67,8 @@ void main() {
           ),
         ),
       ),
-      // Above the navigator, as in the app, so sheets opened from sheets still
-      // find the cubit.
-      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
+      // Keep the provider above the navigator so root-modal sheets can read it.
+      wrap: (app) => withNasabahProvider(notifier, app),
       size: const Size(800, 2600),
     );
     await tester.tap(find.text('open'));
@@ -78,9 +76,8 @@ void main() {
   }
 
   group('detail sheet', () {
-    Future<void> openDetail(WidgetTester tester, NasabahEntity n) => openSheet(
-        tester,
-        (_) => DetailNasabahBottomSheet(nasabah: n, nasabahCubit: cubit));
+    Future<void> openDetail(WidgetTester tester, NasabahEntity n) =>
+        openSheet(tester, (_) => DetailNasabahBottomSheet(nasabah: n));
 
     testWidgets('deactivating asks first, then reports success',
         (tester) async {
@@ -171,7 +168,7 @@ void main() {
       expect(find.text('Edit Nasabah'), findsOneWidget);
     });
 
-    testWidgets('without a cubit the status button does nothing',
+    testWidgets('the status button opens its confirmation dialog',
         (tester) async {
       await openSheet(
           tester, (_) => DetailNasabahBottomSheet(nasabah: _nasabah()));
@@ -180,7 +177,7 @@ void main() {
       await tester.tap(find.text('Nonaktifkan'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nonaktifkan Nasabah?'), findsNothing);
+      expect(find.text('Nonaktifkan Nasabah?'), findsOneWidget);
     });
   });
 
@@ -195,6 +192,13 @@ void main() {
       await tester.tap(find.text('Simpan Perubahan'));
       await pumpToast(tester);
     }
+
+    testWidgets('the phone field carries the shared +62 prefix',
+        (tester) async {
+      await openEdit(tester, _nasabah());
+
+      expect(find.byType(PhonePrefix), findsOneWidget);
+    });
 
     testWidgets('strips the country prefix and saves the changes',
         (tester) async {
@@ -270,8 +274,13 @@ void main() {
     testWidgets('a code already used in the list is rejected locally',
         (tester) async {
       api.on('GET', _path, json: nasabahPage([nasabahRow('n2')]));
-      await tester.runAsync(cubit.loadNasabah);
       await openEdit(tester, _nasabah());
+      final scopedNotifier = ProviderScope.containerOf(
+        tester.element(find.byType(EditNasabahBottomSheet)),
+        listen: false,
+      ).read(nasabahProvider.notifier);
+      await tester.runAsync(scopedNotifier.loadNasabah);
+      await tester.pumpAndSettle();
 
       await tester.enterText(field('NAS-1'), ' nas-n2 ');
       await save(tester);

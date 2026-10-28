@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_approval_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_approval_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 
 /// Replaces unavailable savings content while a membership needs a decision.
-class NasabahVerificationHome extends StatelessWidget {
+class NasabahVerificationHome extends ConsumerWidget {
   const NasabahVerificationHome({super.key, required this.name});
 
   final String name;
 
   @override
-  Widget build(BuildContext context) {
-    final state = context.watch<NasabahApprovalCubit>().state;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(nasabahApprovalProvider);
     final memberships = state is NasabahApprovalLoaded
         ? state.memberships
         : const <NasabahMembershipEntity>[];
@@ -38,7 +40,7 @@ class NasabahVerificationHome extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: NasabahStyle.maxWidth),
           child: AppRefreshIndicator(
             onRefresh: () =>
-                context.read<NasabahApprovalCubit>().load(silent: true),
+                ref.read(nasabahApprovalProvider.notifier).load(silent: true),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -68,7 +70,7 @@ class NasabahVerificationHome extends StatelessWidget {
                     message: state.message,
                     action: 'Coba lagi',
                     onPressed: () =>
-                        context.read<NasabahApprovalCubit>().load(),
+                        ref.read(nasabahApprovalProvider.notifier).load(),
                   )
                 else if (membership == null)
                   _Notice(
@@ -81,31 +83,21 @@ class NasabahVerificationHome extends StatelessWidget {
                 else ...[
                   _StatusCard(membership: membership),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => context
-                          .push<bool>(
-                        ApprovalBankSampahDetailPage.route,
-                        extra: membership,
-                      )
-                          .then((_) {
-                        if (context.mounted) {
-                          context
-                              .read<NasabahApprovalCubit>()
-                              .load(silent: true);
-                        }
-                      }),
-                      icon: const Icon(Icons.arrow_forward_rounded, size: 20),
-                      label: const Text('Lihat detail pengajuan'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: NasabahStyle.emerald,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
+                  AppButton(
+                    label: 'Lihat detail pengajuan',
+                    icon: Icons.arrow_forward_rounded,
+                    onPressed: () => context
+                        .push<bool>(
+                      ApprovalBankSampahDetailPage.route,
+                      extra: membership,
+                    )
+                        .then((_) {
+                      if (context.mounted) {
+                        ref
+                            .read(nasabahApprovalProvider.notifier)
+                            .load(silent: true);
+                      }
+                    }),
                   ),
                   const SizedBox(height: 32),
                   Text('Perjalanan pengajuan',
@@ -137,13 +129,13 @@ class _StatusCard extends StatelessWidget {
           Icons.hourglass_top_rounded,
           'Pengajuan sedang ditinjau',
           'Pengurus bank sampah sedang memverifikasi keanggotaan Anda. Belum ada tindakan yang perlu dilakukan.',
-          const Color(0xFF9A6400),
+          AppColors.warning,
         ),
       MembershipStatus.rejected => (
           Icons.info_outline_rounded,
           'Pengajuan belum disetujui',
           'Lihat alasan penolakan dan ajukan banding dari detail pengajuan.',
-          const Color(0xFFC62828),
+          AppColors.danger,
         ),
       MembershipStatus.approved => (
           Icons.info_outline_rounded,

@@ -1,40 +1,57 @@
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_card.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
 
 /// Shows the nasabah's own profile and lets them edit the fields the backend
 /// allows (nama, no_hp, jenis_kelamin, tanggal_lahir, alamat). Email, role and
 /// id are always read-only.
-class ProfilNasabahPage extends StatelessWidget {
+class ProfilNasabahPage extends ConsumerWidget {
   const ProfilNasabahPage({super.key});
 
-  void _logout(BuildContext context) =>
-      context.read<AuthenticationBloc>().add(LogoutRequested());
+  Future<void> _logout(BuildContext context) async {
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Keluar dari akun?',
+      message: 'Anda perlu masuk kembali untuk mengakses akun ini.',
+      confirmLabel: 'Ya, Keluar',
+      destructive: true,
+    );
+    if (confirmed && context.mounted) {
+      ProviderScope.containerOf(context, listen: false)
+          .read(authenticationProvider.notifier)
+          .logout();
+    }
+  }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<AuthenticationBloc, AuthenticationStates>(
-        builder: (context, state) {
-          final auth = state is Authenticated ? state.authEntity : null;
-          return Scaffold(
-            backgroundColor: NasabahStyle.background,
-            appBar: const NasabahPageAppBar(title: 'Profil'),
-            body: SafeArea(
-                child: _ProfilNasabahBody(
-                    auth: auth, onLogout: () => _logout(context))),
-          );
-        },
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(authenticationProvider);
+    final auth = state is Authenticated ? state.authEntity : null;
+    return Scaffold(
+      backgroundColor: NasabahStyle.background,
+      appBar: const NasabahPageAppBar(title: 'Profil'),
+      body: SafeArea(
+          child:
+              _ProfilNasabahBody(auth: auth, onLogout: () => _logout(context))),
+    );
+  }
 }
 
 /// Owns the reload handle across rebuilds so a pull can reach the
@@ -105,7 +122,7 @@ class _IdentityCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
                 color: NasabahStyle.emeraldLight,
-                borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(AppRadius.sm)),
             child: Text('Nasabah',
                 style: NasabahStyle.text(13,
                     weight: FontWeight.w600, color: NasabahStyle.emeraldDark))),
@@ -161,23 +178,22 @@ class _LogoutCard extends StatelessWidget {
               ])),
         ]),
         const SizedBox(height: 16),
-        SizedBox(
-            height: 46,
-            child: OutlinedButton(
-                onPressed: onLogout,
-                style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: NasabahStyle.line),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                child: Text('Keluar',
-                    style: NasabahStyle.text(15, weight: FontWeight.w600)))),
+        AppButton(
+          label: 'Keluar',
+          variant: AppButtonVariant.neutral,
+          onPressed: onLogout,
+        ),
       ]));
 }
 
+const _profileNotFilled = 'Belum diisi';
+const _maleGenderApiValue = 'laki-laki';
+const _maleGenderLabel = 'Laki-laki';
+
 String _jenisKelaminLabel(String value) => switch (value) {
-      'laki-laki' => 'Laki-laki',
+      _maleGenderApiValue => _maleGenderLabel,
       'perempuan' => 'Perempuan',
-      _ => 'Belum diisi',
+      _ => _profileNotFilled,
     };
 
 /// Owns the nasabah's editable fields locally so a save reflects instantly —
@@ -247,20 +263,11 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   Future<void> _pickTanggalLahir() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
       initialDate: _tanggalLahir ?? DateTime(now.year - 20),
       firstDate: DateTime(1900),
       lastDate: now,
-      // The app theme's primary is teal-blue; this screen speaks emerald.
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context)
-              .colorScheme
-              .copyWith(primary: NasabahStyle.emerald, onPrimary: Colors.white),
-        ),
-        child: child!,
-      ),
     );
     if (!mounted) return;
     if (picked != null) setState(() => _tanggalLahir = picked);
@@ -385,7 +392,7 @@ class _ProfileDetailsCard extends StatelessWidget {
           _DetailRow(
               icon: Icons.phone_iphone_outlined,
               label: 'NOMOR HP',
-              value: identity.noHp.isEmpty ? 'Belum diisi' : identity.noHp),
+              value: identity.noHp.isEmpty ? _profileNotFilled : identity.noHp),
           const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Divider(height: 1, color: NasabahStyle.line)),
@@ -400,7 +407,7 @@ class _ProfileDetailsCard extends StatelessWidget {
               icon: Icons.cake_outlined,
               label: 'TANGGAL LAHIR',
               value: identity.tanggalLahir == null
-                  ? 'Belum diisi'
+                  ? _profileNotFilled
                   : nasabahDate(identity.tanggalLahir!)),
           const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
@@ -408,7 +415,9 @@ class _ProfileDetailsCard extends StatelessWidget {
           _DetailRow(
               icon: Icons.location_on_outlined,
               label: 'ALAMAT',
-              value: identity.alamat.isEmpty ? 'Belum diisi' : identity.alamat),
+              value: identity.alamat.isEmpty
+                  ? _profileNotFilled
+                  : identity.alamat),
         ]),
       );
 }
@@ -446,8 +455,11 @@ class _ProfileEditForm extends StatelessWidget {
   Widget _genderOption(String value, String label) {
     final selected = jenisKelamin == value;
     return Expanded(
-      child: GestureDetector(
+      child: AppTapTarget(
         onTap: () => onJenisKelamin(value),
+        selected: selected,
+        inGroup: true,
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -474,7 +486,7 @@ class _ProfileEditForm extends StatelessWidget {
               controller: namaCtrl,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           const SizedBox(height: 16),
           _fieldLabel('NOMOR HP'),
           TextField(
@@ -482,11 +494,11 @@ class _ProfileEditForm extends StatelessWidget {
               keyboardType: TextInputType.phone,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           const SizedBox(height: 16),
           _fieldLabel('JENIS KELAMIN'),
           Row(children: [
-            _genderOption('laki-laki', 'Laki-laki'),
+            _genderOption(_maleGenderApiValue, _maleGenderLabel),
             const SizedBox(width: 12),
             _genderOption('perempuan', 'Perempuan'),
           ]),
@@ -519,7 +531,7 @@ class _ProfileEditForm extends StatelessWidget {
               maxLines: 3,
               style: NasabahStyle.text(15),
               cursorColor: NasabahStyle.emerald,
-              decoration: NasabahStyle.input()),
+              decoration: appInputDecoration()),
           if (error != null) ...[
             const SizedBox(height: 12),
             Text(error!,
@@ -528,26 +540,17 @@ class _ProfileEditForm extends StatelessWidget {
           const SizedBox(height: 20),
           Row(children: [
             Expanded(
-                child: OutlinedButton(
-                    onPressed: onCancel,
-                    style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: NasabahStyle.line),
-                        foregroundColor: NasabahStyle.ink,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
-                    child: const Text('Batal'))),
+                child: AppButton(
+              label: 'Batal',
+              variant: AppButtonVariant.neutral,
+              onPressed: onCancel,
+            )),
             const SizedBox(width: 12),
             Expanded(
-                child: ElevatedButton(
-                    onPressed: onSave,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: NasabahStyle.emerald,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12))),
-                    child: Text(saving ? 'Menyimpan...' : 'Simpan Perubahan'))),
+                child: AppButton(
+              label: saving ? 'Menyimpan...' : 'Simpan Perubahan',
+              onPressed: onSave,
+            )),
           ]),
         ]),
       );

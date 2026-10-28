@@ -6,17 +6,21 @@ import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_l
 import 'package:pilah_mobile/features/transaksi/presentation/pages/transaksi_baru_page.dart';
 
 void main() {
-  testWidgets('add customer label stays on one line on a narrow screen',
+  testWidgets('two main buttons, side by side, and no Pengumuman entry',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(375, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(const MaterialApp(
+    await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: DashboardActionButtons()),
     ));
 
-    final label = tester.widget<Text>(find.text('Tambah Nasabah'));
-    expect(label.maxLines, 1);
-    expect(label.softWrap, isFalse);
+    expect(find.text('Transaksi Baru'), findsOneWidget);
+    expect(find.text('Tambah Nasabah'), findsOneWidget);
+    expect(find.text('Pengumuman'), findsNothing,
+        reason:
+            'Pengumuman is a navigation destination, not a dashboard button');
+    expect(tester.getTopLeft(find.text('Transaksi Baru')).dy,
+        tester.getTopLeft(find.text('Tambah Nasabah')).dy);
     expect(tester.takeException(), isNull);
   });
 
@@ -38,13 +42,13 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
 
-    await tester.tap(find.text('Tambah Nasabah'));
+    await tester.tap(find.textContaining('Tambah'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
     expect(find.text('Daftar Nasabah'), findsOneWidget);
-    expect(find.text('Tambah Nasabah'), findsOneWidget);
+    expect(find.textContaining('Tambah'), findsOneWidget);
   });
 
   Future<GoRouter> pumpChooser(WidgetTester tester) async {
@@ -71,12 +75,38 @@ void main() {
     return router;
   }
 
-  testWidgets('offers a choice between Catat Setoran and Pencairan',
+  testWidgets('offers Catat Setoran and a disabled Pencairan choice',
       (tester) async {
     await pumpChooser(tester);
 
     expect(find.text('Catat Setoran'), findsOneWidget);
-    expect(find.text('Pencairan'), findsOneWidget);
+    // The dialog entry, not anything behind the barrier. A wide window gets a
+    // dialog, not a sheet as wide as the window.
+    expect(
+        find.descendant(
+          of: find.byType(Dialog),
+          matching: find.text('Pencairan'),
+        ),
+        findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+    final payoutChoice = find
+        .ancestor(
+          of: find.text('Pencairan'),
+          matching: find.byType(InkWell),
+        )
+        .first;
+    expect(tester.widget<InkWell>(payoutChoice).onTap, isNull);
+  });
+
+  testWidgets('on a phone the choice is still a bottom sheet', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpChooser(tester);
+
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
   });
 
   testWidgets('opens Setoran Baru when Catat Setoran is chosen',
@@ -89,13 +119,14 @@ void main() {
     expect(find.text('Form Setoran'), findsOneWidget);
   });
 
-  testWidgets('opens the pencairan list when Pencairan is chosen',
+  testWidgets('cannot navigate from the disabled Pencairan choice',
       (tester) async {
     await pumpChooser(tester);
 
     await tester.tap(find.text('Pencairan'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Daftar Pencairan'), findsOneWidget);
+    expect(find.text('Daftar Pencairan'), findsNothing);
+    expect(find.byType(Dialog), findsOneWidget);
   });
 }

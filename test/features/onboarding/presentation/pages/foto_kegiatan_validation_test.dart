@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// Mirrors the `FormField<File>` wiring used for "Foto Kegiatan" in
 /// RegisterBankSampahScreen.
 ///
-/// The real screen needs a cubit, a router and an image picker to build, none of
-/// which this behaviour depends on. What matters — and what QA reported missing
+/// The real screen needs provider state, a router and an image picker to build,
+/// none of which this behaviour depends on. What matters — and what QA reported missing
 /// — is that the photo participates in Form.validate() like every other required
 /// field, rather than failing separately.
 class _PhotoFieldHarness extends StatefulWidget {

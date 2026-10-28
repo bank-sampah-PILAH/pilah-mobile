@@ -18,6 +18,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
   @override
   Future<HalamanNasabah> getNasabah({
     int page = 1,
+    int? pageSize,
     String status = 'aktif',
     String? search,
   }) async {
@@ -29,6 +30,7 @@ class NasabahRemoteDataSourceImpl implements NasabahRemoteDataSource {
       queryParams: {
         'status': status,
         'page': page,
+        if (pageSize != null) 'page_size': pageSize,
         if (search != null && search.isNotEmpty) 'search': search,
       },
     );

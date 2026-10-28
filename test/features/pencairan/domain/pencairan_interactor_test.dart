@@ -22,13 +22,6 @@ const _record = Pencairan(
   saldoSesudah: 50000,
 );
 
-final _request = PencairanRequest(
-  nasabahId: 'n-1',
-  nominal: 150000,
-  metode: MetodePencairan.transfer,
-  tanggal: DateTime(2026, 9, 22),
-);
-
 final _editRequest = EditPencairanRequest(
   id: 'p-1',
   nominal: 125000,
@@ -47,23 +40,6 @@ void main() {
   setUp(() {
     repository = _MockRepository();
     interactor = PencairanInteractor(repository);
-  });
-
-  test('delegates saldo lookup', () async {
-    const expected = Right<NetworkException, int>(50000);
-    when(() => repository.getSaldo('n-1')).thenAnswer((_) async => expected);
-
-    expect(await interactor.getSaldo('n-1'), expected);
-    verify(() => repository.getSaldo('n-1')).called(1);
-  });
-
-  test('delegates payout creation', () async {
-    const expected = Right<NetworkException, Pencairan>(_record);
-    when(() => repository.createPencairan(_request))
-        .thenAnswer((_) async => expected);
-
-    expect(await interactor.createPencairan(_request), expected);
-    verify(() => repository.createPencairan(_request)).called(1);
   });
 
   test('delegates payout history lookup', () async {

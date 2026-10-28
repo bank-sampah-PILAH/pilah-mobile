@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 
-class RoleHandoffPage extends StatelessWidget {
+class RoleHandoffPage extends ConsumerWidget {
   final String title;
   final String message;
   final bool registrationInProgress;
@@ -44,95 +45,82 @@ class RoleHandoffPage extends StatelessWidget {
     }
 
     if (!context.mounted) return;
-    context.read<AuthenticationBloc>().add(LogoutRequested());
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .logout();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocListener<AuthenticationBloc, AuthenticationStates>(
-      listenWhen: (previous, current) => current is Unauthenticated,
-      listener: (context, state) => context.go(LoginPage.route),
-      child: Scaffold(
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(authenticationProvider, (previous, current) {
+      if (current is Unauthenticated) context.go(LoginPage.route);
+    });
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          title: const Text('PILAH'),
-        ),
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
+        title: const Text('PILAH'),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
               padding: const EdgeInsets.all(24),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 480),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.greenLight,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        registrationInProgress
-                            ? Icons.assignment_outlined
-                            : Icons.check_circle_outline,
-                        color: AppColors.greenDark,
-                        size: 34,
-                      ),
+              decoration: BoxDecoration(
+                color: AppColors.greenLight,
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      registrationInProgress
+                          ? Icons.assignment_outlined
+                          : Icons.check_circle_outline,
+                      color: AppColors.greenDark,
+                      size: 34,
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyle.headline1,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyle.headline1,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyle.small.copyWith(
+                      color: AppColors.grey100,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (showPayoutHistory) ...[
+                    AppButton(
+                      label: 'Riwayat Nasabah',
+                      variant: AppButtonVariant.outlined,
+                      icon: Icons.receipt_long_outlined,
+                      onPressed: () => context.push(Uri(
+                        path: AppLocations.history,
+                        queryParameters: {'filter': 'pencairan'},
+                      ).toString()),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyle.small.copyWith(
-                        color: AppColors.grey100,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    if (showPayoutHistory) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.push(Uri(
-                            path: AppLocations.history,
-                            queryParameters: {'filter': 'pencairan'},
-                          ).toString()),
-                          icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Riwayat Nasabah'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(48),
-                            foregroundColor: AppColors.greenDark,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _changeAccount(context),
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Keluar dan ganti akun'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          backgroundColor: AppColors.greenDark,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
                   ],
-                ),
+                  AppButton(
+                    label: 'Keluar dan ganti akun',
+                    icon: Icons.logout,
+                    onPressed: () => _changeAccount(context),
+                  ),
+                ],
               ),
             ),
           ),

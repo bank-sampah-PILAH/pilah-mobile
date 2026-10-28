@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
@@ -15,14 +14,12 @@ const _path = '/api/v1/nasabah';
 
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    notifier = buildNasabahNotifier(api);
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester) async {
     await pumpRouted(
@@ -30,8 +27,8 @@ void main() {
       // A non-const instance so the constructor itself runs.
       // ignore: prefer_const_constructors
       NasabahPage(),
-      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
-      size: const Size(800, 2000),
+      wrap: (app) => withNasabahProvider(notifier, app),
+      size: const Size(590, 2000),
     );
     await tester.pumpAndSettle();
   }
@@ -78,7 +75,7 @@ void main() {
 
     listAs([]);
     await tester.enterText(find.byType(TextField).first, 'zzz');
-    await tester.pump(NasabahCubit.jedaPencarian * 2);
+    await tester.pump(NasabahNotifier.jedaPencarian * 2);
     await tester.pumpAndSettle();
 
     expect(api.last.query['search'], 'zzz');
@@ -97,6 +94,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Budi Santoso'), findsOneWidget);
+  });
+
+  testWidgets('pull-to-refresh fetches the current nasabah balance', (
+    tester,
+  ) async {
+    listAs([nasabahRow('1', saldo: '25000')]);
+    await open(tester);
+    expect(find.text('Rp 25.000'), findsOneWidget);
+
+    listAs([nasabahRow('1', saldo: '30000')]);
+    await tester.drag(find.byType(ListView).first, const Offset(0, 500));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rp 30.000'), findsOneWidget);
+    expect(
+      api.requests
+          .where((request) => request.method == 'GET' && request.path == _path),
+      hasLength(2),
+    );
   });
 
   testWidgets('the add button opens the form', (tester) async {

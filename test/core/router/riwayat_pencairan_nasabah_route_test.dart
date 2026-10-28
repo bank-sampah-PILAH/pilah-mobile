@@ -1,31 +1,22 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/revisi_pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/riwayat_pencairan_filter.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/revisi_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/riwayat_pencairan_cubit.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _MockAuthenticationBloc
-    extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../support/auth_support.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
 
@@ -36,16 +27,6 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<PencairanCubit>()) di.unregister<PencairanCubit>();
-    if (di.isRegistered<RiwayatPencairanCubit>()) {
-      di.unregister<RiwayatPencairanCubit>();
-    }
-    if (di.isRegistered<EditPencairanCubit>()) {
-      di.unregister<EditPencairanCubit>();
-    }
-    if (di.isRegistered<RevisiPencairanCubit>()) {
-      di.unregister<RevisiPencairanCubit>();
-    }
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
   });
 
@@ -53,25 +34,11 @@ void main() {
     if (di.isRegistered<InviteTokenStore>()) {
       await di.unregister<InviteTokenStore>();
     }
-    if (di.isRegistered<PencairanCubit>()) {
-      await di.unregister<PencairanCubit>();
-    }
-    if (di.isRegistered<RiwayatPencairanCubit>()) {
-      await di.unregister<RiwayatPencairanCubit>();
-    }
-    if (di.isRegistered<EditPencairanCubit>()) {
-      await di.unregister<EditPencairanCubit>();
-    }
-    if (di.isRegistered<RevisiPencairanCubit>()) {
-      await di.unregister<RevisiPencairanCubit>();
-    }
   });
 
   testWidgets('router builds every pengurus payout page with its extra',
       (tester) async {
     final useCases = _MockUseCases();
-    when(() => useCases.getSaldo('n-1'))
-        .thenAnswer((_) async => const Right<NetworkException, int>(500000));
     when(() => useCases.getRiwayat(any())).thenAnswer(
         (_) async => const Right<NetworkException, List<Pencairan>>([]));
     when(() => useCases.getRevisi('p-1')).thenAnswer(
@@ -82,37 +49,20 @@ void main() {
         ),
       ),
     );
-    di.registerFactory<PencairanCubit>(() => PencairanCubit(useCases));
-    di.registerFactory<RiwayatPencairanCubit>(
-      () => RiwayatPencairanCubit(useCases),
-    );
-    di.registerFactory<EditPencairanCubit>(
-      () => EditPencairanCubit(useCases),
-    );
-    di.registerFactory<RevisiPencairanCubit>(
-      () => RevisiPencairanCubit(useCases),
-    );
+    di.registerFactory<PencairanUseCases>(() => useCases);
 
-    final authBloc = _MockAuthenticationBloc();
-    whenListen(
-      authBloc,
-      const Stream<AuthenticationStates>.empty(),
+    final auth = TestAuthenticationNotifier(
       initialState: AuthenticationLoading(),
     );
     final router = AppRouterConfig.getRouter();
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      BlocProvider<AuthenticationBloc>.value(
-        value: authBloc,
+      ProviderScope(
+        overrides: [authenticationProvider.overrideWith(() => auth)],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
-
-    router.go(CatatPencairanPage.route);
-    await tester.pumpAndSettle();
-    expect(find.text('Catat Pencairan'), findsNWidgets(2));
-    expect(find.text('Tap untuk pilih nasabah'), findsOneWidget);
 
     router.go(EditPencairanPage.route, extra: _pencairan);
     await tester.pumpAndSettle();
@@ -122,7 +72,7 @@ void main() {
     router.go(RevisiPencairanPage.route, extra: 'p-1');
     await tester.pumpAndSettle();
     expect(find.text('Riwayat Perubahan'), findsOneWidget);
-    expect(find.text('Versi sekarang'), findsOneWidget);
+    expect(find.text('VERSI SEKARANG'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

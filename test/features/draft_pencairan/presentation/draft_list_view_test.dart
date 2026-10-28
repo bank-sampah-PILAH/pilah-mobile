@@ -2,15 +2,16 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/providers/draft_list_provider.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 
@@ -49,22 +50,27 @@ void main() {
 
   setUp(() => repository = _MockRepository());
 
+  Widget view() => ProviderScope(
+        overrides: [
+          draftListProvider.overrideWith(() => DraftListNotifier(repository)),
+        ],
+        child: const DraftListView(),
+      );
+
   Future<GoRouter> pump(
     WidgetTester tester,
-    List<DraftRingkasan> drafts,
-  ) async {
+    List<DraftRingkasan> drafts, {
+    Size? size,
+  }) async {
     when(() => repository.getDrafts()).thenAnswer((_) async => Right(drafts));
     return pumpRouted(
       tester,
-      BlocProvider(
-        create: (_) => DraftListCubit(repository)..load(),
-        child: const DraftListView(),
-      ),
+      view(),
       extraRoutes: const [
         DraftListPage.routePilih,
         DraftListPage.routeEditor,
-        '/catat-pencairan',
       ],
+      size: size,
     );
   }
 
@@ -148,13 +154,7 @@ void main() {
   testWidgets('a failed load can be retried', (tester) async {
     when(() => repository.getDrafts())
         .thenAnswer((_) async => Left(ConnectionTimeOutException()));
-    await pumpRouted(
-      tester,
-      BlocProvider(
-        create: (_) => DraftListCubit(repository)..load(),
-        child: const DraftListView(),
-      ),
-    );
+    await pumpRouted(tester, view());
     await tester.pumpAndSettle();
     expect(find.text('Coba lagi'), findsOneWidget);
 
@@ -164,6 +164,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Cair Oktober'), findsOneWidget);
+  });
+
+  testWidgets('a wide window creates from the header, a phone from the FAB',
+      (tester) async {
+    await pump(tester, const [], size: const Size(1200, 900));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byKey(const Key('buat-pencairan')), findsOneWidget);
+    expect(tester.getTopRight(find.byKey(const Key('buat-pencairan'))).dy,
+        lessThan(100),
+        reason: 'in the header row');
+
+    await pump(tester, const [], size: const Size(390, 844));
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byKey(const Key('buat-pencairan')), findsNothing);
+  });
+
+  testWidgets('on a phone the floating button starts picking nasabah',
+      (tester) async {
+    await pump(tester, const [], size: const Size(390, 844));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('route:${DraftListPage.routePilih}'), findsOneWidget);
   });
 
   testWidgets('the add button starts picking nasabah', (tester) async {
@@ -259,9 +286,34 @@ void main() {
     expect(find.byKey(const Key('batalkan-d-1')), findsNothing);
   });
 
+  testWidgets('on a desktop window the list keeps to a centred column',
+      (tester) async {
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)],
+        size: const Size(1440, 900));
+    await tester.pumpAndSettle();
+
+    final kartu = find
+        .ancestor(
+            of: find.text('Cair Oktober'), matching: find.byType(PencairanCard))
+        .first;
+    expect(tester.getSize(kartu).width,
+        lessThanOrEqualTo(LayoutBreakpoint.contentMaxWidth));
+    expect(tester.getCenter(kartu).dx, closeTo(720, 1),
+        reason: 'centred in the window');
+    expect(tester.getSize(find.byKey(const Key('cari-draft'))).width,
+        lessThanOrEqualTo(LayoutBreakpoint.contentMaxWidth));
+    final scroll = find
+        .ancestor(
+            of: find.text('Cair Oktober'), matching: find.byType(ListView))
+        .first;
+    expect(tester.getSize(scroll).width, 1440,
+        reason: 'so the scrollbar is at the window edge');
+  });
+
   testWidgets('the trash icon asks first, then cancels and reloads',
       (tester) async {
-    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)]);
+    await pump(tester, [_draft('d-1', 'Cair Oktober', DraftStatus.draft)],
+        size: const Size(390, 844));
     await tester.pumpAndSettle();
     when(() => repository.cancelDraft('d-1'))
         .thenAnswer((_) async => Right(_batal()));
@@ -313,31 +365,13 @@ void main() {
     expect(find.byKey(const Key('batalkan-d-1')), findsOneWidget);
   });
 
-  testWidgets('the three dots open a white card to log one nasabah',
+  testWidgets('the header has no menu to log a pencairan for one nasabah',
       (tester) async {
     await pump(tester, const []);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('menu-lainnya')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Catat pencairan satu nasabah'), findsOneWidget);
-    expect(
-        find.descendant(
-            of: find.byKey(const Key('aksi-catat')),
-            matching: find.byIcon(Icons.edit_note)),
-        findsOneWidget);
-    final kartu = tester.widget<Material>(find
-        .ancestor(
-            of: find.byKey(const Key('aksi-catat')),
-            matching: find.byType(Material))
-        .first);
-    expect(kartu.color, Colors.white);
-    expect(kartu.surfaceTintColor, Colors.transparent);
-
-    await tester.tap(find.byKey(const Key('aksi-catat')));
-    await tester.pumpAndSettle();
-    expect(find.text('route:/catat-pencairan'), findsOneWidget);
+    expect(find.byKey(const Key('menu-lainnya')), findsNothing);
+    expect(find.text('Catat pencairan satu nasabah'), findsNothing);
   });
 
   testWidgets(
@@ -497,13 +531,7 @@ void main() {
       final pending =
           Completer<Either<NetworkException, List<DraftRingkasan>>>();
       when(() => repository.getDrafts()).thenAnswer((_) => pending.future);
-      await pumpRouted(
-        tester,
-        BlocProvider(
-          create: (_) => DraftListCubit(repository)..load(),
-          child: const DraftListView(),
-        ),
-      );
+      await pumpRouted(tester, view());
       await tester.pump();
 
       expect(

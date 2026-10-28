@@ -1,37 +1,35 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 
 import '../../../../support/auth_support.dart';
+import '../../../../support/image_picker_channel.dart';
 import '../../../../support/profile_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
-
 void main() {
   late StubApi api;
-  late ProfileCubit cubit;
+  late TestProfileNotifier notifier;
   late MockImagePicker picker;
   late MockImageCropper cropper;
-  late MockAuthBloc auth;
+  late TestAuthenticationNotifier auth;
 
   setUpAll(() {
-    registerFallbackValue(_FakeAuthEvent());
     registerFallbackValue(ImageSource.gallery);
     registerFallbackValue(ImageCompressFormat.jpg);
     registerFallbackValue(const CropAspectRatio(ratioX: 1, ratioY: 1));
@@ -42,37 +40,157 @@ void main() {
     stubProfile(api);
     picker = MockImagePicker();
     cropper = MockImageCropper();
-    cubit = buildProfileCubit(api, picker: picker, cropper: cropper);
-    auth = authBlocIn(Authenticated(authEntity: testAuth()));
+    notifier = buildProfileNotifier(api, picker: picker, cropper: cropper);
+    auth = authNotifierIn(Authenticated(authEntity: testAuth()));
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> openPage(
     WidgetTester tester, {
-    MockAuthBloc? bloc,
+    TestAuthenticationNotifier? authNotifier,
     Size size = const Size(800, 2400),
+    bool? isWeb,
+    bool pushed = true,
+    List<String> extraRoutes = const [],
   }) async {
     await pumpRouted(
       tester,
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthenticationBloc>.value(value: bloc ?? auth),
-          BlocProvider<ProfileCubit>.value(value: cubit),
+      // A non-const instance so the constructor itself runs.
+      // ignore: prefer_const_constructors
+      ProfilePage(isWeb: isWeb),
+      extraRoutes: ['/login', ...extraRoutes],
+      providerScopeBuilder: (app) => ProviderScope(
+        overrides: [
+          profileProvider.overrideWith(() => notifier),
+          authenticationProvider.overrideWith(() => authNotifier ?? auth),
         ],
-        // A non-const instance so the constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: ProfilePage(),
+        child: app,
       ),
-      extraRoutes: ['/login'],
       size: size,
-      pushed: true,
+      pushed: pushed,
     );
     await tester.pumpAndSettle();
   }
 
+  group('in the web shell', () {
+    testWidgets('there is no back button: the rail is the way out',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      expect(find.byType(AppBackHeader), findsNothing);
+      expect(find.byIcon(Icons.arrow_back), findsNothing);
+      expect(find.text('Profil & Pengaturan'), findsOneWidget);
+    });
+
+    testWidgets('the page keeps the content width and the web gutter',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      // (1440 - 1200) / 2 of margin plus the 32 gutter.
+      const left = 120.0 + 32;
+      expect(tester.getTopLeft(find.text('Profil & Pengaturan')).dx, left);
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Bank Sampah BTH'), 'Bank Baru');
+      await tester.pumpAndSettle();
+      final save =
+          tester.getRect(find.widgetWithText(AppButton, 'Simpan Pengaturan'));
+      expect(save.right, 1440 - left,
+          reason: 'the action bar stops at the content edge too');
+    });
+
+    testWidgets('the settings scroll across the window, content in a column',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      final scroll = find.ancestor(
+        of: find.text('PROFIL BANK SAMPAH'),
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(tester.getSize(scroll.first).width, 1440,
+          reason: 'so the scrollbar is at the window edge');
+      // Inside the card that starts at the column's left edge (120 + 32).
+      expect(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dx,
+          closeTo(120.0 + 32, 16));
+    });
+
+    testWidgets('Keluar sits in the account card, small, above the settings',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      final keluar = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
+      expect(keluar, findsOneWidget, reason: 'only one, not also at the end');
+      expect(tester.getTopLeft(keluar).dy,
+          lessThan(tester.getTopLeft(find.text('PROFIL BANK SAMPAH')).dy));
+      expect(tester.getTopLeft(keluar).dx,
+          greaterThan(tester.getTopRight(find.text('siti@example.test')).dx),
+          reason: 'to the right of the identity');
+      expect(tester.getSize(keluar).width, lessThan(300));
+    });
+
+    testWidgets('Keluar still asks first and signs out on confirm',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      final keluar = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
+      await tester.ensureVisible(keluar);
+      await tester.pumpAndSettle();
+      await tester.tap(keluar);
+      await tester.pumpAndSettle();
+      expect(find.text('Keluar dari akun?'), findsOneWidget);
+
+      await tester.tap(find.text('Ya, Keluar'));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('logout'));
+    });
+
+    testWidgets('Simpan is hidden until something changes, then right aligned',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+      final save = find.widgetWithText(AppButton, 'Simpan Pengaturan');
+
+      expect(save, findsNothing, reason: 'nothing has changed yet');
+      expect(find.text('Perubahan belum disimpan'), findsNothing);
+
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Bank Sampah BTH'), 'Bank Baru');
+      await tester.pumpAndSettle();
+
+      expect(save, findsOneWidget);
+      expect(find.text('Perubahan belum disimpan'), findsOneWidget);
+      expect(tester.getRect(save).right, 120.0 + 1200 - 32);
+      expect(tester.getSize(save).width, lessThan(400));
+    });
+
+    testWidgets('changing a field back leaves nothing to save', (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+      final field = find.widgetWithText(TextFormField, 'Bank Sampah BTH');
+
+      await tester.enterText(field, 'Bank Baru');
+      await tester.pump();
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Bank Baru'), 'Bank Sampah BTH');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Perubahan belum disimpan'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Simpan Pengaturan'), findsNothing);
+    });
+
+    testWidgets('the tabs sit at the left, not spread over the page',
+        (tester) async {
+      await openPage(tester, size: const Size(1440, 900), isWeb: true);
+
+      expect(tester.getTopLeft(find.text('Pengaturan Umum')).dx, lessThan(400));
+      expect(tester.getTopLeft(find.text('Manajemen Tim')).dx, lessThan(600));
+    });
+
+    testWidgets('a phone-sized app still has its back header', (tester) async {
+      await openPage(tester, size: const Size(390, 844), isWeb: false);
+
+      expect(find.byType(AppBackHeader), findsOneWidget);
+    });
+  });
+
   testWidgets('a signed-out visitor is asked to sign in', (tester) async {
-    await openPage(tester, bloc: authBlocIn(Unauthenticated()));
+    await openPage(tester, authNotifier: authNotifierIn(Unauthenticated()));
 
     expect(
         find.text('Silakan masuk untuk melihat profil Anda.'), findsOneWidget);
@@ -82,14 +200,16 @@ void main() {
       (tester) async {
     await openPage(tester);
 
-    expect(find.text('Profil & Pengaturan'), findsOneWidget);
+    expect(find.widgetWithText(AppBackHeader, 'Profil & Pengaturan'),
+        findsOneWidget);
     expect(find.text('Siti Aminah'), findsOneWidget);
     expect(
         find.widgetWithText(TextFormField, 'Bank Sampah BTH'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, 'Kel. Kukusan'), findsOneWidget);
     expect(
         find.widgetWithText(TextFormField, '+6281234567890'), findsOneWidget);
-    expect(find.text('Simpan Pengaturan'), findsOneWidget);
+    expect(find.text('Simpan Pengaturan'), findsNothing,
+        reason: 'nothing to save until a field changes');
   });
 
   testWidgets('shows the signed-in account email in the profile',
@@ -97,6 +217,68 @@ void main() {
     await openPage(tester);
 
     expect(find.text('siti@example.test'), findsOneWidget);
+  });
+
+  group('on a phone', () {
+    testWidgets('back falls back to the dashboard when nothing was pushed',
+        (tester) async {
+      await openPage(tester,
+          size: const Size(390, 844),
+          isWeb: false,
+          pushed: false,
+          extraRoutes: ['/dashboard']);
+
+      await tester.tap(find.byKey(const Key('kembali')).evaluate().isNotEmpty
+          ? find.byKey(const Key('kembali'))
+          : find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(find.text('route:/dashboard'), findsOneWidget,
+          reason: 'pop() with an empty stack would throw and do nothing');
+    });
+
+    testWidgets('Keluar is the last thing on the page, full width',
+        (tester) async {
+      await openPage(tester, size: const Size(390, 844), isWeb: false);
+
+      final keluar = find.widgetWithText(AppButton, 'Keluar dari Aplikasi');
+      expect(keluar, findsOneWidget);
+      expect(
+          tester.getTopLeft(keluar).dy,
+          greaterThan(
+              tester.getBottomLeft(find.text('TEMPLATE NOTIFIKASI WA')).dy));
+      expect(tester.getSize(keluar).width, greaterThan(300));
+    });
+
+    testWidgets('Simpan is hidden until something changes', (tester) async {
+      await openPage(tester, size: const Size(390, 844), isWeb: false);
+      final save = find.widgetWithText(AppButton, 'Simpan Pengaturan');
+
+      expect(save, findsNothing);
+      expect(find.text('Perubahan belum disimpan'), findsNothing);
+
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Bank Sampah BTH'), 'Bank Baru');
+      await tester.pumpAndSettle();
+
+      expect(save, findsOneWidget);
+      expect(find.text('Perubahan belum disimpan'), findsOneWidget);
+      expect(tester.getSize(save).width, greaterThan(300),
+          reason: 'full width on a phone');
+    });
+
+    testWidgets('the account card is white like the web one', (tester) async {
+      await openPage(tester, size: const Size(390, 844), isWeb: false);
+
+      final behindEmail = find.ancestor(
+        of: find.text('siti@example.test'),
+        matching: find.byWidgetPredicate((w) =>
+            w is Container &&
+            w.decoration is BoxDecoration &&
+            (w.decoration! as BoxDecoration).color == AppColors.greenDark),
+      );
+      expect(behindEmail, findsNothing);
+    });
   });
 
   testWidgets('desktop places bank settings beside the WhatsApp template',
@@ -159,6 +341,7 @@ void main() {
     await openPage(tester);
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Nama Baru');
+    await tester.pump();
     await tester.tap(find.text('Simpan Pengaturan'));
     await pumpToast(tester);
 
@@ -176,6 +359,9 @@ void main() {
     });
     await openPage(tester);
 
+    // Simpan waits for a change.
+    await tester.enterText(find.byType(TextFormField).at(0), 'Nama Baru');
+    await tester.pump();
     await tester.tap(find.text('Simpan Pengaturan'));
     await pumpToast(tester);
 
@@ -197,6 +383,9 @@ void main() {
     });
     await openPage(tester);
 
+    // Simpan waits for a change.
+    await tester.enterText(find.byType(TextFormField).at(0), 'Nama Baru');
+    await tester.pump();
     await tester.tap(find.text('Simpan Pengaturan'));
     await pumpToast(tester);
 
@@ -218,7 +407,7 @@ void main() {
 
   testWidgets('picking a logo shows the cropped image', (tester) async {
     final file = File('${Directory.systemTemp.path}/profile_page_logo.jpg')
-      ..writeAsBytesSync(List.filled(8, 0));
+      ..writeAsBytesSync(tinyPng);
     addTearDown(() => file.deleteSync());
     when(() => picker.pickImage(source: any(named: 'source')))
         .thenAnswer((_) async => XFile(file.path));
@@ -234,13 +423,15 @@ void main() {
     await openPage(tester);
 
     await tester.tap(find.byIcon(Icons.home_outlined));
+    await pumpReal(tester);
     await tester.pumpAndSettle();
 
-    expect(cubit.state.selectedLogoFile?.path, file.path);
+    expect(notifier.state.selectedLogoBytes, tinyPng);
+    expect(notifier.state.selectedLogoFilename, 'profile_page_logo.jpg');
     expect(find.byType(Image), findsWidgets);
   });
 
-  testWidgets('an unreadable picked logo falls back to the placeholder',
+  testWidgets('an unreadable picked logo reports a recoverable error',
       (tester) async {
     when(() => picker.pickImage(source: any(named: 'source')))
         .thenAnswer((_) async => XFile('/no/such/logo.jpg'));
@@ -256,28 +447,52 @@ void main() {
     await openPage(tester);
 
     await tester.tap(find.byIcon(Icons.home_outlined));
-    await tester.pumpAndSettle();
-    await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 300)));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await pumpReal(tester);
+    await pumpToast(tester);
 
+    expect(find.text('Foto tidak dapat dibaca. Silakan coba lagi.'),
+        findsOneWidget);
     expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+    expect(notifier.state.selectedLogoBytes, isNull);
+    await settleToasts(tester);
+  });
+
+  testWidgets('a picker failure keeps the previously selected logo',
+      (tester) async {
+    await openPage(tester);
+    final bytes = Uint8List.fromList(tinyPng);
+    notifier.setStateForTest(notifier.state.copyWith(
+        selectedLogoBytes: bytes, selectedLogoFilename: 'previous.png'));
+    await tester.pumpAndSettle();
+    when(() => picker.pickImage(source: any(named: 'source')))
+        .thenThrow(StateError('picker unavailable'));
+
+    await tester.tap(find.byType(ClipOval));
+    await pumpToast(tester);
+
+    expect(find.text('Foto tidak dapat dibaca. Silakan coba lagi.'),
+        findsOneWidget);
+    expect(notifier.state.selectedLogoBytes, bytes);
+    expect(notifier.state.selectedLogoFilename, 'previous.png');
+    final preview =
+        tester.widget<ClipOval>(find.byType(ClipOval)).child as Image;
+    expect((preview.image as MemoryImage).bytes, bytes);
+    await settleToasts(tester);
   });
 
   testWidgets('previews a browser-selected logo from its bytes',
       (tester) async {
     await openPage(tester);
-    expect(cubit.state.status.toString(), 'ProfileStatus.loaded');
-    cubit.emit(cubit.state.copyWith(
+    expect(notifier.state.status.toString(), 'ProfileStatus.loaded');
+    notifier.setStateForTest(notifier.state.copyWith(
       selectedLogoBytes: Uint8List.fromList(base64Decode(
           'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
       selectedLogoFilename: 'bank-logo.png',
     ));
-    expect(cubit.state.selectedLogoBytes, isNotNull);
+    expect(notifier.state.selectedLogoBytes, isNotNull);
     await tester.pumpAndSettle();
 
-    expect(cubit.state.selectedLogoBytes, isNotNull);
+    expect(notifier.state.selectedLogoBytes, isNotNull);
     expect(
       tester.widget<ClipOval>(find.byType(ClipOval)).child,
       isA<Image>(),
@@ -287,12 +502,12 @@ void main() {
   testWidgets('a browser logo decode error uses the placeholder',
       (tester) async {
     await openPage(tester);
-    cubit.emit(cubit.state.copyWith(
+    notifier.setStateForTest(notifier.state.copyWith(
       selectedLogoBytes: Uint8List.fromList(base64Decode(
           'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+b3ioAAAAASUVORK5CYII=')),
       selectedLogoFilename: 'bank-logo.png',
     ));
-    expect(cubit.state.selectedLogoBytes, isNotNull);
+    expect(notifier.state.selectedLogoBytes, isNotNull);
     await tester.pumpAndSettle();
 
     final logo = tester.widget<ClipOval>(find.byType(ClipOval)).child as Image;
@@ -346,8 +561,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Siti'), findsOneWidget);
     expect(find.text('Anda'), findsOneWidget);
-    expect(find.text('Pengelola Utama'), findsOneWidget);
-    expect(find.text('Pengelola'), findsWidgets);
+    expect(find.text('Pengurus Utama'), findsOneWidget);
+    expect(find.text('Pengurus'), findsWidgets);
     expect(find.text('Simpan Pengaturan'), findsNothing);
 
     await tester.tap(find.text('Salin Link Undangan'));
@@ -383,7 +598,7 @@ void main() {
 
     expect(find.text('Salin Link Undangan'), findsNothing);
     expect(
-        find.text('Belum ada pengelola lain yang tergabung.'), findsOneWidget);
+        find.text('Belum ada pengurus lain yang tergabung.'), findsOneWidget);
   });
 
   testWidgets('a member without a name shows their email', (tester) async {
@@ -400,22 +615,45 @@ void main() {
     expect(find.text('anon@x.test'), findsOneWidget);
   });
 
-  testWidgets('logging out is requested from the settings tab', (tester) async {
+  testWidgets('a bank sampah operator is labelled Pengurus, not Pengelola',
+      (tester) async {
+    await openPage(tester);
+
+    expect(find.text('Pengurus'), findsOneWidget);
+    expect(find.text('Pengelola'), findsNothing);
+  });
+
+  testWidgets('logging out asks first, then signs out on confirm',
+      (tester) async {
     await openPage(tester);
 
     await tester.tap(find.text('Keluar dari Aplikasi'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+    expect(find.text('Keluar dari akun?'), findsOneWidget);
+    expect(auth.calls, isNot(contains('logout')));
+
+    await tester.tap(find.text('Ya, Keluar'));
+    await tester.pumpAndSettle();
+
+    expect(auth.calls, contains('logout'));
+  });
+
+  testWidgets('cancelling the logout keeps the session', (tester) async {
+    await openPage(tester);
+
+    await tester.tap(find.text('Keluar dari Aplikasi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    expect(auth.calls, isNot(contains('logout')));
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {
-    final bloc = MockAuthBloc();
-    whenListen(
-        bloc, Stream<AuthenticationStates>.fromIterable([Unauthenticated()]),
-        initialState: Authenticated(authEntity: testAuth()));
+    await openPage(tester);
 
-    await openPage(tester, bloc: bloc);
+    auth.setStateForTest(Unauthenticated());
     await tester.pumpAndSettle();
 
     expect(find.text('route:/login'), findsOneWidget);

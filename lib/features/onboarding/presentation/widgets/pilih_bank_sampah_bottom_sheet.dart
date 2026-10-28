@@ -1,16 +1,18 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 
 /// Lets a calon nasabah pick a bank sampah to apply to (PIL-204), searching
-/// the list [OnboardingCubit.loadBankSampahDirectory] fetches on open.
-class PilihBankSampahBottomSheet extends StatefulWidget {
+/// the list [OnboardingNotifier.loadBankSampahDirectory] fetches on open.
+class PilihBankSampahBottomSheet extends ConsumerStatefulWidget {
   /// Bank sampah ids to hide from the list, e.g. ones already joined.
   final Set<String> excludedBankIds;
 
@@ -18,14 +20,14 @@ class PilihBankSampahBottomSheet extends StatefulWidget {
       {super.key, this.excludedBankIds = const {}});
 
   @override
-  State<PilihBankSampahBottomSheet> createState() =>
+  ConsumerState<PilihBankSampahBottomSheet> createState() =>
       _PilihBankSampahBottomSheetState();
 }
 
 enum _LoadState { loading, error, loaded }
 
 class _PilihBankSampahBottomSheetState
-    extends State<PilihBankSampahBottomSheet> {
+    extends ConsumerState<PilihBankSampahBottomSheet> {
   String _searchQuery = '';
   final _searchController = TextEditingController();
 
@@ -42,7 +44,7 @@ class _PilihBankSampahBottomSheetState
   Future<void> _load() async {
     setState(() => _loadState = _LoadState.loading);
     final (:result, :error) =
-        await context.read<OnboardingCubit>().loadBankSampahDirectory();
+        await ref.read(onboardingProvider.notifier).loadBankSampahDirectory();
     if (!mounted) return;
     if (error != null) {
       setState(() {
@@ -72,13 +74,14 @@ class _PilihBankSampahBottomSheetState
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: DialogSurface.keyboardInset(context),
       ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Column(
@@ -153,7 +156,7 @@ class _PilihBankSampahBottomSheetState
         final bank = filtered[index];
         return InkWell(
           onTap: () => context.pop(bank),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0),
             child: Row(
@@ -163,7 +166,7 @@ class _PilihBankSampahBottomSheetState
                   height: 48,
                   decoration: BoxDecoration(
                     color: AppColors.greenDark.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   alignment: Alignment.center,
                   child:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -11,13 +12,18 @@ import 'package:pilah_mobile/design/constants/form_style.dart';
 /// back button, bold title, spaced grey section labels, white 12px inputs,
 /// pill chips, and soft cards.
 void main() {
-  group('PencairanHeader', () {
+  group('AppBackHeader on the draft screens', () {
     testWidgets('shows the title and a grey rounded back button that goes back',
         (tester) async {
       await pumpRouted(
         tester,
         const Scaffold(
-          body: SafeArea(child: PencairanHeader(title: 'Pencairan')),
+          body: SafeArea(
+            child: AppBackHeader(
+              title: 'Pencairan',
+              backKey: Key('kembali'),
+            ),
+          ),
         ),
         pushed: true,
       );
@@ -29,7 +35,7 @@ void main() {
         matching: find.byType(Container),
       ));
       final decoration = box.decoration! as BoxDecoration;
-      expect(decoration.color, Colors.grey[100]);
+      expect(decoration.color, AppColors.fill);
       expect(decoration.borderRadius, BorderRadius.circular(12));
 
       await tester.tap(find.byKey(const Key('kembali')));
@@ -44,7 +50,7 @@ void main() {
         tester,
         const Scaffold(
           body: SafeArea(
-            child: PencairanHeader(
+            child: AppBackHeader(
               title: 'Pencairan',
               actions: [Icon(Icons.more_vert, key: Key('aksi'))],
             ),
@@ -68,7 +74,7 @@ void main() {
             child: PencairanPopupMenu<String>(
               key: const Key('menu'),
               onSelected: dipilih.add,
-              entries: const [
+              entries: [
                 PencairanMenuEntry(
                   key: Key('aksi-satu'),
                   value: 'satu',
@@ -262,7 +268,7 @@ void main() {
     expect(focused.borderSide.color, AppColors.greenDark);
     expect(focused.borderSide.width, 1.5);
     final error = decoration.errorBorder! as OutlineInputBorder;
-    expect(error.borderSide.color, Colors.red);
+    expect(error.borderSide.color, AppColors.danger);
   });
 
   group('PencairanChip', () {
@@ -282,9 +288,9 @@ void main() {
     testWidgets('is solid green with white text when selected', (tester) async {
       await pumpChip(tester, selected: true);
 
-      final box = tester.widget<Container>(find.descendant(
-          of: find.byKey(const Key('chip')), matching: find.byType(Container)));
-      expect((box.decoration! as BoxDecoration).color, AppColors.greenDark);
+      final pill = tester.widget<Material>(find.descendant(
+          of: find.byKey(const Key('chip')), matching: find.byType(Material)));
+      expect(pill.color, AppColors.greenDark);
       expect(
           tester.widget<Text>(find.text('Tunai')).style!.color, Colors.white);
     });
@@ -304,9 +310,9 @@ void main() {
         ),
       );
 
-      final box = tester.widget<Container>(find.descendant(
-          of: find.byKey(const Key('chip')), matching: find.byType(Container)));
-      expect((box.decoration! as BoxDecoration).color, const Color(0xFFF3F4F6));
+      final pill = tester.widget<Material>(find.descendant(
+          of: find.byKey(const Key('chip')), matching: find.byType(Material)));
+      expect(pill.color, AppColors.fill);
       await tester.tap(find.byKey(const Key('chip')));
       expect(taps, 1);
     });

@@ -37,6 +37,22 @@ enum LayoutBreakpoint {
   /// membatasi lebar badan konten pada jendela expanded.
   static const double contentMaxWidth = 1200;
 
+  /// Lebar maksimum kolom formulir pada blok `expanded`, dalam logical pixel.
+  ///
+  /// Formulir satu kolom dan daftar catatan yang dibaca per baris tidak
+  /// butuh 1200: kolom isian selebar layar desktop justru sulit dipindai.
+  /// 640 sedikit di atas [mediumMinWidth], jadi formulir di desktop tampil
+  /// kurang lebih selebar di tablet.
+  static const double formMaxWidth = 640;
+
+  /// Lebar panel samping pada blok `expanded`, dalam logical pixel.
+  ///
+  /// Panel yang memegang ringkasan dan tombol aksi di samping formulir:
+  /// Setoran Baru, Catat Pencairan, dan editor draft pencairan. Sedikit lebih
+  /// sempit dari telepon, cukup untuk satu kolom angka dan tombol selebar
+  /// panel.
+  static const double sidePanelWidth = 340;
+
   /// Mengklasifikasikan [width] logical pixel ke dalam satu blok.
   ///
   /// Batas dimiliki oleh blok yang lebih lebar: tepat 600 adalah [medium] dan

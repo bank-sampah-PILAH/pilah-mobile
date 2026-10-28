@@ -4,16 +4,21 @@ import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
 import 'package:pilah_mobile/features/authentication/domain/repository/auth_repository.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/authentication_use_cases.dart';
 import 'package:pilah_mobile/features/authentication/domain/use_cases/login_with_google_usecase.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/check_session_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 
-/// Uses the production event handlers with an explicitly offline session.
-/// Only the preview entrypoint creates this; it is never registered in app DI.
-AuthenticationBloc createPreviewAuthenticationBloc() {
-  final session = PreviewAuthenticationSession();
-  return AuthenticationBloc(session, LoginWithGoogleUseCase(session))
-    ..add(CheckSessionRequested());
+/// Supplies an explicitly offline authenticated session to the preview app.
+class PreviewAuthenticationNotifier extends AuthenticationNotifier {
+  PreviewAuthenticationNotifier(PreviewAuthenticationSession session)
+      : super(session, LoginWithGoogleUseCase(session));
+
+  @override
+  AuthenticationStates build() =>
+      Authenticated(authEntity: PreviewAuthenticationSession.auth);
 }
+
+PreviewAuthenticationNotifier createPreviewAuthenticationNotifier() =>
+    PreviewAuthenticationNotifier(PreviewAuthenticationSession());
 
 class PreviewAuthenticationSession
     implements AuthenticationUseCases, AuthRepository {

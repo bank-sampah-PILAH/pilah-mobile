@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/app.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/get_nasabah_memberships_usecase.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import 'support/app_shell_support.dart';
+import 'support/approved_membership.dart';
+import 'support/profile_support.dart';
 import 'support/stub_api.dart';
 
-/// Runs the real [App] over the stubbed API. The app resolves its cubits from
-/// the service locator, so the shell's instances are registered there.
+/// Runs the real [App] over the stubbed API. The app resolves its state from
+/// the service locator, so the shell's dependencies are registered there.
 void main() {
   late AppShell shell;
   late StubApi api;
@@ -30,46 +29,38 @@ void main() {
     api = StubApi();
     shell = AppShell(api);
     await shell.registerDi();
-    di.registerFactory<NasabahCubit>(() => shell.nasabah);
-    di.registerFactory<HargaCubit>(() => shell.harga);
-    di.registerFactory<JadwalCubit>(() => shell.jadwal);
-    di.registerFactory<TransaksiCubit>(() => shell.transaksi);
-    di.registerFactory<DashboardCubit>(() => shell.dashboard);
-    di.registerFactory<RecentActivityCubit>(() => shell.recent);
-    di.registerFactory<RiwayatAktivitasCubit>(() => shell.riwayat);
-    di.registerFactory<ProfileCubit>(() => shell.profile);
-    di.registerFactory<AuthenticationBloc>(() => shell.auth);
-    di.registerFactory<OnboardingCubit>(() => shell.onboarding);
+    di.registerSingleton<GetNasabahMembershipsUseCase>(
+        buildApprovedMembershipUseCase());
+    di.registerSingleton<ProfileRemoteDataSource>(
+        ProfileRemoteDataSourceImpl(api.network));
+    di.registerSingleton<ImagePicker>(MockImagePicker());
+    di.registerSingleton<ImageCropper>(MockImageCropper());
   });
 
   tearDown(() async {
     AppRouterConfig.getRouter().go('/login');
-    await di.unregister<NasabahCubit>();
-    await di.unregister<HargaCubit>();
-    await di.unregister<JadwalCubit>();
-    await di.unregister<TransaksiCubit>();
-    await di.unregister<DashboardCubit>();
-    await di.unregister<RecentActivityCubit>();
-    await di.unregister<RiwayatAktivitasCubit>();
-    await di.unregister<ProfileCubit>();
-    await di.unregister<AuthenticationBloc>();
-    await di.unregister<OnboardingCubit>();
+    await di.unregister<GetNasabahMembershipsUseCase>();
+    await di.unregister<ProfileRemoteDataSource>();
+    await di.unregister<ImagePicker>();
+    await di.unregister<ImageCropper>();
     await shell.unregisterDi();
   });
 
   /// Starts the app on its splash and lets the restored session in [shell.auth]
   /// route it, as the session check does at cold start.
   Future<void> boot(WidgetTester tester, {bool isWeb = false}) async {
+    AppRouterConfig.getRouter().go('/splash');
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(App(isWebOverride: isWeb));
-    // Unmount first: the providers close their cubits on disposal, which only
-    // completes once their listeners are gone.
+    await tester.pumpWidget(App(
+      isWebOverride: isWeb,
+      providerScopeBuilder: shell.wrap,
+    ));
+    // Unmount first so providers can dispose cleanly.
     addTearDown(() => tester.pumpWidget(const SizedBox()));
     await tester.pump(const Duration(seconds: 1));
-    shell.states.add(shell.auth.state);
     await tester.pumpAndSettle();
   }
 
@@ -84,6 +75,32 @@ void main() {
 
     expect(location(), '/dashboard');
     expect(find.text('Flutter Pilah Mobile'), findsNothing);
+  });
+
+  testWidgets('every screen inherits the app theme, not the Material default',
+      (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final theme = Theme.of(tester.element(find.byType(Scaffold).first));
+    expect(theme.colorScheme.primary, AppColors.greenDark);
+  });
+
+  testWidgets('date pickers speak Indonesian, not English', (tester) async {
+    shell.signedInAsRole('pengelola', bankStatus: 'active');
+    await boot(tester);
+
+    final context = tester.element(find.byType(Scaffold).first);
+    showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDate: DateTime(2026, 10, 14),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Batal'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
   });
 
   testWidgets('web document title follows the current route', (tester) async {
@@ -113,27 +130,33 @@ void main() {
     expect(labels.last, 'PILAH | Login');
   });
 
-  testWidgets('a rejected session resets the cubits that outlive it',
-      (tester) async {
+  testWidgets('a rejected session clears the onboarding draft', (tester) async {
     shell.signedInAsRole('pengelola', bankStatus: 'active');
     await boot(tester);
-    shell.onboarding.saveProfileDraft(const CompleteProfileRequest(
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MaterialApp)),
+      listen: false,
+    );
+    final onboarding = container.read(onboardingProvider.notifier);
+    onboarding.saveProfileDraft(const CompleteProfileRequest(
       nama: 'Sari Dewi',
       jenisKelamin: 'perempuan',
       tanggalLahir: '1990-04-17',
       noHp: '81234567890',
     ));
-    expect(shell.onboarding.hasProfileDraft, isTrue);
+    expect(onboarding.hasProfileDraft, isTrue);
 
-    shell.states.add(Unauthenticated());
+    shell.signedInAs(Unauthenticated());
     await tester.pumpAndSettle();
 
-    expect(shell.onboarding.hasProfileDraft, isFalse);
+    expect(onboarding.hasProfileDraft, isFalse);
   });
 
   group('coming back to the foreground', () {
     Future<void> resume(WidgetTester tester) async {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
     }
@@ -141,6 +164,8 @@ void main() {
     // Resumes without settling, so a slow invite gate stays on screen.
     Future<void> resumeAndPump(WidgetTester tester) async {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       for (var i = 0; i < 4; i++) {
         await tester.pump(const Duration(milliseconds: 100));

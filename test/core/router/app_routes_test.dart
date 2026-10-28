@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/use_cases/appeal_membership_usecase.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_detail_page.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/pages/approval_bank_sampah_list_page.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/nasabah_bank_page.dart';
@@ -12,19 +11,28 @@ import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencair
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_args.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_list_page.dart';
+import 'package:pilah_mobile/features/pengumuman/domain/entities/pengumuman_entity.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_detail_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_form_page.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/pages/pengumuman_kelola_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/pilih_nasabah_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/revisi_pencairan_page.dart';
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_history_screen.dart';
+import 'package:pilah_mobile/features/main/presentation/pages/main_page.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_destinations.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/router/app_router_config.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:pilah_mobile/features/harga/domain/entities/harga_entity.dart';
 import 'package:pilah_mobile/features/harga/presentation/pages/harga_page.dart';
+import 'package:pilah_mobile/features/harga/presentation/pages/riwayat_harga_page.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/pages/nasabah_page.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/invite_gate_page.dart';
@@ -32,7 +40,6 @@ import 'package:pilah_mobile/features/onboarding/presentation/pages/pending_appr
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_nasabah_screen.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/role_handoff_page.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/pages/catat_pencairan_page.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/pages/laporan/laporan_page.dart';
@@ -56,12 +63,13 @@ void main() {
 
   tearDown(() => shell.unregisterDi());
 
-  Future<GoRouter> boot(WidgetTester tester) async {
+  Future<GoRouter> boot(WidgetTester tester, {String? initialLocation}) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final router = AppRouterConfig.getRouter();
+    if (initialLocation != null) router.go(initialLocation);
     await tester
         .pumpWidget(shell.wrap(MaterialApp.router(routerConfig: router)));
     await tester.pump();
@@ -97,7 +105,7 @@ void main() {
         '/register-nasabah': RegisterNasabahScreen,
         '/complete-profile': CompleteProfileScreen,
         '/register-bank-sampah': RegisterBankSampahScreen,
-        '/catat-pencairan': CatatPencairanPage,
+        '/pengumuman/kelola': PengumumanKelolaPage,
         '/pengelola-induk-dashboard': RoleHandoffPage,
         '/register-bank-sampah-induk': RoleHandoffPage,
       };
@@ -107,6 +115,19 @@ void main() {
             settle: !entry.key.contains('induk'));
         expect(find.byType(entry.value), findsOneWidget, reason: entry.key);
       }
+    });
+
+    testWidgets('Pengumuman is the shell branch the rail destination points at',
+        (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/pengumuman/kelola');
+
+      final shell = tester.widget<MainPage>(find.byType(MainPage));
+      expect(shell.navigationShell.currentIndex,
+          RoleDestinations.forRole('pengelola').last.branchIndex,
+          reason: 'the destination list and the router must agree on the '
+              'branch index, or the rail opens the wrong page');
     });
 
     testWidgets('can open the pencairan edit and revision pages',
@@ -135,6 +156,56 @@ void main() {
       expect(find.byType(RevisiPencairanPage), findsOneWidget);
     });
 
+    testWidgets(
+        'the pencairan edit and revision pages without their pencairan '
+        '(a refreshed web tab) fall back to the laporan', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/edit-pencairan');
+      expect(find.byType(EditPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
+
+      await visit(tester, router, '/riwayat-perubahan-pencairan');
+      expect(find.byType(RevisiPencairanPage), findsNothing);
+      expect(find.byType(LaporanPage), findsOneWidget);
+    });
+
+    testWidgets('can open the price history of a jenis sampah', (tester) async {
+      final router = await boot(tester);
+
+      router.go(
+        '/riwayat-harga',
+        extra: HargaEntity(
+          id: 'j-1',
+          kodeSampah: 'PLS-001',
+          name: 'Botol PET',
+          price: 3500,
+          priceFormatted: 'Rp 3500',
+          category: 'plastik',
+          subtitle: '',
+          badgeText: 'Anorganik',
+          icon: Icons.recycling,
+          iconColor: Colors.green,
+          isActive: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RiwayatHargaPage), findsOneWidget);
+      expect(find.text('Botol PET'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the price history without a jenis (a refreshed web tab) '
+        'falls back to the harga list', (tester) async {
+      final router = await boot(tester);
+
+      await visit(tester, router, '/riwayat-harga');
+
+      expect(find.byType(RiwayatHargaPage), findsNothing);
+      expect(find.byType(HargaPage), findsOneWidget);
+    });
+
     testWidgets('can open the draft pencairan pages', (tester) async {
       final router = await boot(tester);
 
@@ -153,6 +224,29 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(DraftEditorPage), findsOneWidget);
       expect(find.text('Ahmad'), findsOneWidget);
+    });
+
+    testWidgets('the pengumuman form needs its args and otherwise falls back',
+        (tester) async {
+      // The fallback redirect lands on the dashboard, so its own fetches
+      // need quiet stubs.
+      api.on('GET', '/api/v1/dashboard/stats', json: <String, dynamic>{});
+      api.on('GET', '/api/v1/transaksi', json: {'results': []});
+      api.on('GET', '/api/v1/pencairan',
+          json: {'count': 0, 'next': null, 'results': []});
+      final router = await boot(tester);
+
+      // Without args there is nothing to edit: the route redirects home.
+      await visit(tester, router, '/pengumuman/kelola/ubah');
+      expect(find.byType(PengumumanFormPage), findsNothing);
+
+      router.go(
+        '/pengumuman/kelola/ubah',
+        extra: const PengumumanFormArgs(),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PengumumanFormPage), findsOneWidget);
+      expect(find.text('Buat Pengumuman'), findsOneWidget);
     });
 
     testWidgets('can continue a saved draft from its id', (tester) async {
@@ -216,11 +310,11 @@ void main() {
     });
 
     testWidgets(
-        'a pending invite link banks its token and goes through the gate',
+        'a browser hash-path invite banks its token and goes through the gate',
         (tester) async {
       final router = await boot(tester);
 
-      await visit(tester, router, '/invite?token=tok-9');
+      await visit(tester, router, '/invite/web-token-9');
 
       expect(shell.invites.token, isNull,
           reason: 'the gate spends the token on its first attempt');
@@ -285,9 +379,8 @@ void main() {
       await visit(tester, router, '/approval-bank-sampah');
       expect(find.byType(ApprovalBankSampahListPage), findsOneWidget);
 
-      di.registerFactory<NasabahAppealCubit>(
-          () => NasabahAppealCubit(_MockAppeal()));
-      addTearDown(() => di.unregister<NasabahAppealCubit>());
+      di.registerFactory<AppealMembershipUseCase>(() => _MockAppeal());
+      addTearDown(() => di.unregister<AppealMembershipUseCase>());
       router.go(
         '/approval-bank-sampah/detail',
         extra: const NasabahMembershipEntity(
@@ -314,6 +407,38 @@ void main() {
 
       expect(tester.widget<JadwalPage>(find.byType(JadwalPage)).customerMode,
           isTrue);
+    });
+
+    testWidgets(
+        'opens the pengumuman list and reaches the detail from its extra',
+        (tester) async {
+      api.on('GET', '/api/v1/nasabah/me/pengumuman',
+          json: {'count': 0, 'next': null, 'results': []});
+      final router = await boot(tester);
+
+      await visit(tester, router, '/pengumuman?keanggotaan_id=m1');
+      expect(find.byType(PengumumanPage), findsOneWidget);
+      expect(
+          tester
+              .widget<PengumumanPage>(find.byType(PengumumanPage))
+              .membershipId,
+          'm1');
+
+      router.go('/pengumuman/detail');
+      await tester.pumpAndSettle();
+      // Without its entity there is nothing to show: falls back to the list.
+      expect(find.byType(PengumumanDetailPage), findsNothing);
+      expect(find.byType(PengumumanPage), findsOneWidget);
+
+      router.go('/pengumuman/detail',
+          extra: PengumumanEntity(
+            id: 'p1',
+            bankSampahId: 'b1',
+            judul: 'Jemputan',
+            isi: 'Isi',
+          ));
+      await tester.pumpAndSettle();
+      expect(find.byType(PengumumanDetailPage), findsOneWidget);
     });
 
     testWidgets('/nasabah-dashboard is an alias of the home', (tester) async {
@@ -362,6 +487,26 @@ void main() {
       await visit(tester, router, '/invite?token=abc');
 
       expect(shell.invites.token, 'abc');
+    });
+
+    testWidgets('a browser hash-path invite token with no session is banked',
+        (tester) async {
+      shell.signedInAs(Unauthenticated());
+      final router = await boot(tester);
+
+      await visit(tester, router, '/invite/web-token-abc');
+
+      expect(shell.invites.token, 'web-token-abc');
+    });
+
+    testWidgets('a cold-start browser hash-path invite banks its token',
+        (tester) async {
+      shell.signedInAs(AuthenticationInitial());
+
+      await boot(tester, initialLocation: '/invite/cold-start-token');
+      await tester.pumpAndSettle();
+
+      expect(shell.invites.token, 'cold-start-token');
     });
   });
 

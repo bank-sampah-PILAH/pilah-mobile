@@ -1,22 +1,26 @@
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/theme/app_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/features/harga/presentation/cubit/harga_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:pilah_mobile/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/harga/presentation/providers/harga_provider.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/nasabah_pengumuman_provider.dart';
+import 'package:pilah_mobile/features/pengumuman/presentation/providers/pengumuman_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:pilah_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_approval_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/core/router/invite_token_store.dart';
@@ -95,9 +99,13 @@ class App extends StatelessWidget {
   @visibleForTesting
   final bool? isWebOverride;
 
+  @visibleForTesting
+  final Widget Function(Widget child)? providerScopeBuilder;
+
   const App({
     super.key,
     @visibleForTesting this.isWebOverride,
+    @visibleForTesting this.providerScopeBuilder,
   }); // coverage:ignore-line
 
   // This widget is the root of your application.
@@ -105,64 +113,19 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWeb = isWebOverride ?? kIsWeb;
     final router = AppRouterConfig.getRouter();
-    return MultiBlocProvider(
-      providers: [
-        // Cubits load their data from each page's initState (post-login), so
-        // the requests carry the authenticated session instead of firing once
-        // at cold start before a token exists.
-        BlocProvider<NasabahCubit>(
-          create: (context) => di<NasabahCubit>(),
-        ),
-        BlocProvider<HargaCubit>(
-          create: (context) => di<HargaCubit>(),
-        ),
-        BlocProvider<JadwalCubit>(
-          create: (context) => di<JadwalCubit>(),
-        ),
-        BlocProvider<TransaksiCubit>(
-          create: (context) => di<TransaksiCubit>(),
-        ),
-        BlocProvider<DashboardCubit>(
-          create: (context) => di<DashboardCubit>(),
-        ),
-        BlocProvider<RecentActivityCubit>(
-          create: (context) => di<RecentActivityCubit>(),
-        ),
-        BlocProvider<RiwayatAktivitasCubit>(
-          create: (context) => di<RiwayatAktivitasCubit>(),
-        ),
-        // Provided app-wide, not just under the Profile page: the transaksi
-        // success flow reads the saved WhatsApp template from here to build the
-        // wa.me notification.
-        BlocProvider<ProfileCubit>(
-          create: (context) => di<ProfileCubit>(),
-        ),
-        BlocProvider<AuthenticationBloc>(
-          create: (context) => di<AuthenticationBloc>(),
-        ),
-        BlocProvider<OnboardingCubit>(
-          create: (context) => di<OnboardingCubit>(),
-        ),
-      ],
-      // Session hygiene for the app-scoped (@lazySingleton) cubits. These
-      // outlive any one session, so without this the next user to log in
-      // inherits the previous one's cached lists and stats.
-      //
-      // It lives at the root, above the router, on purpose: `Unauthenticated`
-      // is emitted by an explicit logout *and* by a rejected/expired session on
-      // startup, from whichever screen happens to be on top. A listener tied to
-      // a single page only runs while that page is mounted, which silently
-      // misses every other exit path.
-      child: BlocListener<AuthenticationBloc, AuthenticationStates>(
-        listenWhen: (previous, current) => current is Unauthenticated,
-        listener: (context, state) => resetSessionScopedState(context),
-        child: BlocListener<AuthenticationBloc, AuthenticationStates>(
-          listenWhen: (previous, current) =>
-              (isWebOverride ?? kIsWeb) &&
+    final app = Consumer(
+      builder: (context, ref, child) {
+        // Session hygiene belongs above the router so every logout and
+        // rejected session resets user-scoped state, regardless of route.
+        ref.listen(authenticationProvider, (previous, current) {
+          AppRouterConfig.notifyAuthStateChanged();
+          if (current is Unauthenticated) {
+            resetSessionScopedState(context);
+          }
+          if (isWeb &&
               current is Authenticated &&
-              !isSupportedWebRole(current.authEntity.role),
-          listener: (context, state) {
-            context.read<AuthenticationBloc>().add(LogoutRequested());
+              !isSupportedWebRole(current.authEntity.role)) {
+            ref.read(authenticationProvider.notifier).logout();
             AppNotification.afterNavigation(
               (context) => AppNotification.showWarning(
                 context,
@@ -171,26 +134,26 @@ class App extends StatelessWidget {
                     'Akun ini hanya dapat digunakan melalui aplikasi mobile.',
               ),
             );
-          },
-          child: _PendingInviteResumeWatcher(
-            child: _BrowserTitleUpdater(
-              router: router,
-              enabled: isWeb,
-              child: MaterialApp.router(
-                title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
-                theme: ThemeData(
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: AppColors.primary,
-                  ),
-                  useMaterial3: true,
-                ),
-                routerConfig: router,
-              ),
+          }
+        });
+        return _PendingInviteResumeWatcher(
+          child: _BrowserTitleUpdater(
+            router: router,
+            enabled: isWeb,
+            child: MaterialApp.router(
+              title: isWeb ? 'PILAH | Beranda' : 'Flutter Pilah Mobile',
+              theme: AppTheme.light,
+              // Material widgets (date pickers, dialog buttons) in Indonesian.
+              locale: const Locale('id'),
+              supportedLocales: const [Locale('id')],
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              routerConfig: router,
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
+    return providerScopeBuilder?.call(app) ?? ProviderScope(child: app);
   }
 }
 
@@ -243,7 +206,8 @@ class _PendingInviteResumeWatcherState
     if (!mounted) return;
     if (!di<InviteTokenStore>().hasToken) return;
 
-    final authState = context.read<AuthenticationBloc>().state;
+    final authState = ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider);
     if (authState is! Authenticated) return;
 
     final target = resolvePendingInvite(
@@ -268,22 +232,46 @@ class _PendingInviteResumeWatcherState
 /// rejected/expired session. Top-level so it can be exercised directly in tests
 /// rather than only through the full [App] widget tree.
 void resetSessionScopedState(BuildContext context) {
-  context.read<NasabahCubit>().reset();
-  context.read<HargaCubit>().reset();
-  context.read<JadwalCubit>().reset();
-  context.read<TransaksiCubit>().reset();
-  context.read<DashboardCubit>().reset();
-  context.read<RecentActivityCubit>().reset();
-  context.read<RiwayatAktivitasCubit>().reset();
+  final providers = ProviderScope.containerOf(context, listen: false);
+  if (providers.exists(nasabahProvider)) {
+    providers.read(nasabahProvider.notifier).reset();
+  }
+  if (providers.exists(hargaProvider)) {
+    providers.read(hargaProvider.notifier).reset();
+  }
+  providers.read(jadwalProvider.notifier).reset();
+  if (providers.exists(pengumumanProvider)) {
+    providers.read(pengumumanProvider.notifier).reset();
+  }
+  if (providers.exists(nasabahPengumumanProvider)) {
+    providers.read(nasabahPengumumanProvider.notifier).reset();
+  }
+  providers
+    ..invalidate(pengumumanProvider)
+    ..invalidate(nasabahPengumumanProvider);
+  if (providers.exists(transaksiProvider)) {
+    providers.read(transaksiProvider.notifier).reset();
+  }
+  providers.invalidate(dashboardProvider);
+  providers.invalidate(recentActivityProvider);
+  if (providers.exists(riwayatAktivitasProvider)) {
+    providers.read(riwayatAktivitasProvider.notifier).reset();
+  }
   // Carries the previous bank sampah's WhatsApp template and, more sensitively,
   // any logo picked but not yet uploaded — a path into that user's gallery.
-  context.read<ProfileCubit>().reset();
+  if (providers.exists(profileProvider)) {
+    providers.read(profileProvider.notifier).reset();
+    providers.invalidate(profileProvider);
+  }
+  providers.invalidate(nasabahApprovalProvider);
   // The half-filled registration profile, unlike the invite token below, is
   // squarely session-scoped: it is one person's name, phone and date of birth.
   // Left behind it would prefill the next account's form with a stranger's
   // details, and worse, `submitRegistration` would send them under that
   // account's credentials.
-  context.read<OnboardingCubit>().clearProfileDraft();
+  if (providers.exists(onboardingProvider)) {
+    providers.read(onboardingProvider.notifier).clearProfileDraft();
+  }
   // A pending invite token is deliberately NOT cleared here.
   //
   // Logging out is a step *inside* the invite flow, not an exit from it:

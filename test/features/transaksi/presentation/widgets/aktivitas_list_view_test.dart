@@ -1,6 +1,5 @@
-import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,16 +8,41 @@ import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/aktivitas_entity.dart';
 import 'package:pilah_mobile/features/transaksi/domain/entities/transaksi_entity.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/states/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_list_view.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/aktivitas_table.dart';
 
 import '../../../../support/stub_api.dart';
 import '../../../../support/transaksi_support.dart';
 
-class _MockRiwayatCubit extends MockCubit<RiwayatAktivitasState>
-    implements RiwayatAktivitasCubit {}
+class _TestRiwayatNotifier extends RiwayatAktivitasNotifier {
+  _TestRiwayatNotifier(this.initialState)
+      : super(_MockGetAktivitas(), _MockExportTransaksi());
+
+  final RiwayatAktivitasState initialState;
+  final calls = <String>[];
+
+  @override
+  RiwayatAktivitasState build() => initialState;
+
+  @override
+  Future<void> load({bool silent = false, int? pageSize}) async =>
+      calls.add('load:$silent');
+
+  @override
+  Future<void> loadMore() async => calls.add('loadMore');
+
+  @override
+  Future<void> loadPage(int page) async => calls.add('loadPage:$page');
+}
+
+class _MockGetAktivitas extends Mock implements GetAktivitasUseCase {}
+
+class _MockExportTransaksi extends Mock implements ExportTransaksiUseCase {}
 
 final _now = DateTime(2026, 10, 5, 12);
 
@@ -59,29 +83,25 @@ ActivitasEntity _pencairan(String name, DateTime at) =>
     ));
 
 void main() {
-  late _MockRiwayatCubit cubit;
-  late TransaksiCubit transaksi;
+  late _TestRiwayatNotifier feedNotifier;
+  late TransaksiNotifier transaksi;
 
   setUp(() {
-    cubit = _MockRiwayatCubit();
-    transaksi = buildTransaksiCubit(StubApi());
+    transaksi = buildTransaksiNotifier(StubApi());
   });
 
-  tearDown(() => transaksi.close());
-
-  Future<void> pumpList(
-      WidgetTester tester, RiwayatAktivitasState state) async {
-    when(() => cubit.state).thenReturn(state);
-    when(() => cubit.load(silent: true)).thenAnswer((_) async {});
+  Future<void> pumpList(WidgetTester tester, RiwayatAktivitasState state,
+      {bool isWeb = kIsWeb}) async {
+    feedNotifier = _TestRiwayatNotifier(state);
     final router = GoRouter(routes: [
       GoRoute(
         path: '/',
-        builder: (_, __) => MultiBlocProvider(
-          providers: [
-            BlocProvider<RiwayatAktivitasCubit>.value(value: cubit),
-            BlocProvider<TransaksiCubit>.value(value: transaksi),
-          ],
-          child: Scaffold(body: AktivitasListView(now: () => _now)),
+        builder: (_, __) => withTransaksiProviders(
+          riwayat: feedNotifier,
+          transaksi: transaksi,
+          child: Scaffold(
+            body: AktivitasListView(now: () => _now, isWeb: isWeb),
+          ),
         ),
       ),
       GoRoute(
@@ -134,6 +154,10 @@ void main() {
   });
 
   testWidgets('groups rows under day headings', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await pumpList(
         tester,
         RiwayatAktivitasState(status: AktivitasStatus.loaded, items: [
@@ -150,6 +174,27 @@ void main() {
     expect(find.text('Ani'), findsOneWidget);
   });
 
+  testWidgets('a wide screen lists the activity as a table', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpList(
+        tester,
+        RiwayatAktivitasState(
+            status: AktivitasStatus.loaded, items: [_setoran('Ani', _now)]));
+
+    expect(find.byType(AktivitasTable), findsOneWidget);
+    expect(find.text('HARI INI'), findsNothing);
+
+    await tester.tap(find.text('Ani'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Plastik'), findsWidgets);
+    expect(find.byType(Dialog), findsOneWidget,
+        reason: 'a setoran opens as a dialog on a wide window');
+  });
+
   testWidgets('tapping a setoran opens its detail sheet', (tester) async {
     await pumpList(
         tester,
@@ -164,6 +209,10 @@ void main() {
 
   testWidgets('a saved pencairan edit refreshes the feed silently',
       (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await pumpList(
         tester,
         RiwayatAktivitasState(
@@ -177,16 +226,15 @@ void main() {
     await tester.tap(find.text('simpan'));
     await tester.pumpAndSettle();
 
-    verify(() => cubit.load(silent: true)).called(1);
+    expect(feedNotifier.calls, contains('load:true'));
   });
   testWidgets('initial failure retry requests the first page', (tester) async {
-    when(() => cubit.load()).thenAnswer((_) async {});
     await pumpList(
         tester,
         const RiwayatAktivitasState(
             status: AktivitasStatus.failure, errorMessage: 'offline'));
     await tester.tap(find.text('Coba Lagi'));
-    verify(() => cubit.load()).called(1);
+    expect(feedNotifier.calls, contains('load:false'));
   });
 
   testWidgets('loading the next page preserves existing rows', (tester) async {
@@ -200,21 +248,40 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  for (final error in <String?>[null, 'Halaman berikutnya gagal']) {
-    testWidgets('next-page action retains rows and retries: $error',
-        (tester) async {
-      when(() => cubit.loadMore()).thenAnswer((_) async {});
-      await pumpList(
-          tester,
-          RiwayatAktivitasState(
-              status: AktivitasStatus.loaded,
-              hasNext: true,
-              errorMessage: error,
-              items: [_setoran('Siti', _now)]));
-      expect(find.text('Siti'), findsOneWidget);
-      if (error != null) expect(find.text(error), findsOneWidget);
-      await tester.tap(find.text(error == null ? 'Muat Lagi' : 'Coba Lagi'));
-      verify(() => cubit.loadMore()).called(1);
-    });
+  if (!kIsWeb) {
+    for (final error in <String?>[null, 'Halaman berikutnya gagal']) {
+      testWidgets('next-page action retains rows and retries: $error',
+          (tester) async {
+        await pumpList(
+            tester,
+            RiwayatAktivitasState(
+                status: AktivitasStatus.loaded,
+                hasNext: true,
+                errorMessage: error,
+                items: [_setoran('Siti', _now)]));
+        expect(find.text('Siti'), findsOneWidget);
+        if (error != null) expect(find.text(error), findsOneWidget);
+        await tester.tap(find.text(error == null ? 'Muat Lagi' : 'Coba Lagi'));
+        expect(feedNotifier.calls, contains('loadMore'));
+      });
+    }
   }
+
+  testWidgets('web retry uses the failed server page', (tester) async {
+    await pumpList(
+      tester,
+      RiwayatAktivitasState(
+        status: AktivitasStatus.loaded,
+        hasNext: true,
+        errorMessage: 'Halaman gagal dimuat',
+        retryPage: 2,
+        items: [_setoran('Siti', _now)],
+      ),
+      isWeb: true,
+    );
+
+    expect(find.text('Coba Lagi'), findsOneWidget);
+    await tester.tap(find.text('Coba Lagi'));
+    expect(feedNotifier.calls, contains('loadPage:2'));
+  });
 }

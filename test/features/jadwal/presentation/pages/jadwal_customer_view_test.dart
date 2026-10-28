@@ -1,22 +1,18 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/pages/jadwal_page.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
-
-class _MockJadwalCubit extends MockCubit<JadwalState> implements JadwalCubit {}
+import '../../../../support/jadwal_provider_support.dart';
 
 void main() {
   testWidgets('customer sees only published schedules in a read-only view', (
     tester,
   ) async {
     final today = DateUtils.dateOnly(DateTime.now());
-    final cubit = _MockJadwalCubit();
     final schedules = [
       _schedule(
         id: 'published',
@@ -28,19 +24,13 @@ void main() {
       _schedule(id: 'cancelled', location: 'Dibatalkan', status: 'dibatalkan'),
       _schedule(id: 'completed', location: 'Selesai', status: 'selesai'),
     ];
-    when(() => cubit.state).thenReturn(
-      JadwalLoaded(schedules, scheduledDates: {today}, totalCount: 1),
-    );
-    when(() => cubit.loadJadwal(date: today)).thenAnswer((_) async {});
-    _stubCalendarLoad(cubit, today);
-
-    await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage(customerMode: true)),
-      ),
-    );
-    await tester.pump();
+    await _pumpCustomer(
+        tester,
+        JadwalLoaded(
+          schedules,
+          scheduledDates: {today},
+          totalCount: 1,
+        ));
 
     expect(find.text('Balai Warga'), findsOneWidget);
     expect(find.text('Penimbangan Sampah'), findsOneWidget);
@@ -69,6 +59,34 @@ void main() {
     expect(find.text('Ubah Jadwal'), findsNothing);
   });
 
+  testWidgets('customer pull-to-refresh reloads visible calendar dates', (
+    tester,
+  ) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final agendaLoads = <({bool silent, DateTime? date})>[];
+    final calendarLoads = <(DateTime, DateTime)>[];
+    await _pumpCustomer(
+      tester,
+      const JadwalLoaded([]),
+      onLoadJadwal: (
+          {bool silent = false, DateTime? date, DateTime? dateTo}) async {
+        agendaLoads.add((silent: silent, date: date));
+      },
+      onLoadCalendarDates: ({required startDate, required endDate}) async {
+        calendarLoads.add((startDate, endDate));
+      },
+    );
+
+    await tester.drag(find.byType(ListView), const Offset(0, 300));
+    await tester.pumpAndSettle();
+
+    expect(
+      agendaLoads.where((call) => call.silent && call.date == today),
+      hasLength(1),
+    );
+    expect(calendarLoads, hasLength(2));
+  });
+
   testWidgets('customer can select a date and sees a read-only empty state', (
     tester,
   ) async {
@@ -76,8 +94,9 @@ void main() {
     final selectedDate = today.add(
       Duration(days: today.weekday == DateTime.sunday ? -1 : 1),
     );
-    final cubit = _MockJadwalCubit();
-    when(() => cubit.state).thenReturn(
+    final agendaLoads = <DateTime?>[];
+    await _pumpCustomer(
+      tester,
       JadwalLoaded(
         [
           _schedule(
@@ -89,21 +108,10 @@ void main() {
         scheduledDates: {today},
         totalCount: 1,
       ),
+      onLoadJadwal: ({date, bool silent = false, dateTo}) async {
+        if (!silent) agendaLoads.add(date);
+      },
     );
-    when(() => cubit.loadJadwal(date: today)).thenAnswer((_) async {});
-    when(() => cubit.loadJadwal(date: selectedDate)).thenAnswer((_) async {});
-    _stubCalendarLoad(cubit, today);
-    if (selectedDate.month != today.month || selectedDate.year != today.year) {
-      _stubCalendarLoad(cubit, selectedDate);
-    }
-
-    await tester.pumpWidget(
-      BlocProvider<JadwalCubit>.value(
-        value: cubit,
-        child: const MaterialApp(home: JadwalPage(customerMode: true)),
-      ),
-    );
-    await tester.pump();
 
     await tester.tap(
       find.byKey(
@@ -114,12 +122,41 @@ void main() {
     );
     await tester.pump();
 
-    verify(() => cubit.loadJadwal(date: selectedDate)).called(1);
+    expect(agendaLoads, contains(selectedDate));
     expect(find.text(formatJadwalDayHeading(selectedDate)), findsOneWidget);
     expect(find.text('Belum ada jadwal kegiatan'), findsOneWidget);
     expect(find.text('Buat Jadwal'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
   });
+}
+
+Future<TestJadwalNotifier> _pumpCustomer(
+  WidgetTester tester,
+  JadwalState initialState, {
+  Future<void> Function({
+    bool silent,
+    DateTime? date,
+    DateTime? dateTo,
+  })? onLoadJadwal,
+  Future<void> Function({
+    required DateTime startDate,
+    required DateTime endDate,
+  })? onLoadCalendarDates,
+}) async {
+  final notifier = TestJadwalNotifier(
+    repository: UnusedJadwalRepository(),
+    initialState: initialState,
+    onLoadJadwal: onLoadJadwal,
+    onLoadCalendarDates: onLoadCalendarDates,
+  );
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [jadwalProvider.overrideWith(() => notifier)],
+      child: const MaterialApp(home: JadwalPage(customerMode: true)),
+    ),
+  );
+  await tester.pump();
+  return notifier;
 }
 
 JadwalEntity _schedule({
@@ -144,17 +181,4 @@ JadwalEntity _schedule({
 DateTime _todayAt(int hour) {
   final today = DateUtils.dateOnly(DateTime.now());
   return DateTime(today.year, today.month, today.day, hour);
-}
-
-void _stubCalendarLoad(_MockJadwalCubit cubit, DateTime date) {
-  final first = DateTime(date.year, date.month, 1);
-  final offset = first.weekday - DateTime.monday;
-  final firstVisible = first.subtract(Duration(days: offset));
-  final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
-  final weekCount = (offset + daysInMonth + 6) ~/ 7;
-  final lastVisible = firstVisible.add(Duration(days: weekCount * 7 - 1));
-  when(
-    () =>
-        cubit.loadCalendarDates(startDate: firstVisible, endDate: lastVisible),
-  ).thenAnswer((_) async {});
 }

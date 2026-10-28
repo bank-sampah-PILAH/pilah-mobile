@@ -100,9 +100,6 @@ class NetworkException implements Exception {
     final data = _body(response);
     if (data is Map) return _messageFromPayload(data);
     if (data is String && data.isNotEmpty) return data;
-    if (data is List<int> && data.isNotEmpty) {
-      return _messageFromBytes(data);
-    }
     return null;
   }
 
@@ -119,19 +116,6 @@ class NetworkException implements Exception {
         payload['error'] ?? payload['message'] ?? payload['detail'];
     if (singleError != null) return singleError.toString();
     return null;
-  }
-
-  /// Byte payloads happen on `ResponseType.bytes` endpoints (PDF/XLSX
-  /// exports): the backend's 400 JSON body arrives as bytes, so it is decoded
-  /// here before the message is read — without this the user sees the generic
-  /// prefix instead of e.g. "Tidak ada data pada periode ini".
-  static String? _messageFromBytes(List<int> bytes) {
-    try {
-      final decoded = jsonDecode(utf8.decode(bytes, allowMalformed: true));
-      return decoded is Map ? _messageFromPayload(decoded) : null;
-    } catch (_) {
-      return null;
-    }
   }
 
   /// Flattens `{"errors": {"field": ["msg"]}}` into `{field: "msg"}` so forms can

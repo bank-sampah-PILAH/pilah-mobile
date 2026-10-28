@@ -25,6 +25,24 @@
   provision it if missing.
 - Run `flutter pub get` and the documented code generation command when
   generated sources are needed.
+- Commit `lib/services/di.config.dart` exactly as `build_runner` writes it; CI
+  and the CD workflows regenerate it, so a hand-edited copy hides what ships.
+  Add every new injectable registration to
+  `test/services/di_registrations.dart`. `di_graph_test` resolves each one in
+  dev and prod, and fails when the list and the generated file disagree.
+
+- For quick iteration, run the affected test file with
+  `flutter test test/path/to/feature_test.dart`, or one named test with
+  `flutter test test/path/to/feature_test.dart --plain-name "test description"`.
+  Before shipping, run full `flutter analyze` and `flutter test`; mobile changes
+  also need the Android debug APK and web release builds listed below. PRs and
+  feature-branch pushes run only changed VM test files under `test/` (none when
+  none changed) plus the sibling `test/` mirrors of any changed `lib/` source
+  file, with browser tests only for web-code or browser-test diffs.
+  Pushes to `staging` run the full sharded Flutter and browser suites. After LCOV
+  merge, the existing 25% global and diff-coverage gates run only on `staging`;
+  diff coverage compares the push with its previous SHA. Sonar reuses same-run
+  coverage when available and never reruns tests.
 
 ## Validation
 
@@ -42,10 +60,16 @@
   Firebase initialization because no web-supported flow uses Firebase; add
   FlutterFire web options before introducing a Firebase-backed web flow.
 - For user-visible Flutter web UI changes, capture Playwright screenshots for
-  affected supported roles and viewports under `artifacts/pr-<PR_NUMBER>/`.
-  Before the PR number exists, save captures outside the repository and move
-  them after PR creation. Skip screenshots for non-UI changes, do not commit
-  artifacts, and say in the PR description when UI screenshots do not apply.
+  affected supported roles and viewports. Before the PR number exists, keep
+  captures outside the repository; afterwards they may sit under
+  `artifacts/pr-<PR_NUMBER>/`. Never commit them. Skip screenshots for non-UI
+  changes, and say in the PR description when UI screenshots do not apply.
+- Put PR screenshots in the PR description with `gh image`, which uploads to
+  GitHub `user-attachments`; follow the "Upload screenshots" step of the
+  `ship` skill. The
+  repository is public, so screenshots must show demo data only. If `gh image`
+  cannot be used, fall back to an orphan branch `pr-<PR_NUMBER>-screenshots`
+  and never delete that branch, since doing so breaks the images in the PR.
 - Do not commit `.env`, Firebase credentials, build output, or generated local
   runtime files.
 
@@ -61,3 +85,4 @@
 - Use the local `.agents/skills/lgtm` skill with the global `lgtm` workflow for
   merge and cleanup.
 - Make changes, commits, pushes, and PRs from the designated sibling worktree.
+- Read `DESIGN.md` before adding or changing any Flutter UI.

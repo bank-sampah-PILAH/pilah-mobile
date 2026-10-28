@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/logout_events.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 import 'package:pilah_mobile/features/superadmin/presentation/pages/superadmin_dashboard_screen.dart';
-import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/auth_support.dart';
 import '../../../../support/pump_app.dart';
@@ -18,32 +14,30 @@ import '../../../../support/superadmin_support.dart';
 
 const _path = '/api/v1/superadmin/bank-sampah';
 
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
-
 void main() {
   late StubApi api;
-  late MockAuthBloc auth;
-
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
+  late TestAuthenticationNotifier auth;
 
   setUp(() {
     api = StubApi();
-    di.registerFactory<SuperadminCubit>(() => buildSuperadminCubit(api));
-    auth = authBlocIn(Authenticated(authEntity: testAuth(role: 'superadmin')));
+    auth =
+        authNotifierIn(Authenticated(authEntity: testAuth(role: 'superadmin')));
   });
-
-  tearDown(() => di.unregister<SuperadminCubit>());
 
   Future<void> openScreen(WidgetTester tester) async {
     await pumpRouted(
       tester,
-      BlocProvider<AuthenticationBloc>.value(
-        value: auth,
-        // A non-const instance, so the widget's constructor itself runs.
-        // ignore: prefer_const_constructors
-        child: SuperAdminDashboardScreen(),
-      ),
+      // A non-const instance, so the widget's constructor itself runs.
+      // ignore: prefer_const_constructors
+      SuperAdminDashboardScreen(),
       extraRoutes: ['/login'],
+      providerScopeBuilder: (app) => ProviderScope(
+        overrides: [
+          superadminProvider.overrideWith(() => buildSuperadminNotifier(api)),
+          authenticationProvider.overrideWith(() => auth),
+        ],
+        child: app,
+      ),
       size: const Size(800, 1800),
     );
     await tester.pumpAndSettle();
@@ -75,6 +69,24 @@ void main() {
     expect(find.text('Diajukan: -'), findsOneWidget);
     expect(find.text('Menunggu: 0 hari'), findsOneWidget);
     expect(find.text('PENDING'), findsNWidgets(2));
+  });
+
+  testWidgets('the status tabs announce which one is selected', (tester) async {
+    final handle = tester.ensureSemantics();
+    stubTabs();
+    await openScreen(tester);
+    Finder tab(String label) =>
+        find.ancestor(of: find.text(label), matching: find.byType(AppChip));
+
+    expect(
+      tester.getSemantics(tab('Menunggu')),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: true),
+    );
+    expect(
+      tester.getSemantics(tab('Disetujui')),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
+    );
+    handle.dispose();
   });
 
   testWidgets('approving asks first, posts and reports success',
@@ -234,19 +246,15 @@ void main() {
     await tester.tap(find.byIcon(Icons.logout));
     await tester.pump();
 
-    verify(() => auth.add(any(that: isA<LogoutRequested>()))).called(1);
+    expect(auth.calls, contains('logout'));
   });
 
   testWidgets('leaves for the login page once signed out', (tester) async {
     stubTabs();
-    final bloc = MockAuthBloc();
-    final states =
-        Stream<AuthenticationStates>.fromIterable([Unauthenticated()]);
-    whenListen(bloc, states,
-        initialState: Authenticated(authEntity: testAuth()));
-    auth = bloc;
-
     await openScreen(tester);
+
+    auth.setStateForTest(Unauthenticated());
+    await tester.pumpAndSettle();
 
     expect(find.text('route:/login'), findsOneWidget);
   });

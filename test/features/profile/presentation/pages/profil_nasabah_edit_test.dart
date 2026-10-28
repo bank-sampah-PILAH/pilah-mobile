@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:bloc_test/bloc_test.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/profile/presentation/pages/profil_nasabah_page.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
 
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../../support/auth_support.dart';
 
 /// Records updateProfile calls and echoes them back like a real PATCH would.
 class _Repository extends PreviewNasabahRepository {
@@ -59,11 +55,20 @@ class _Repository extends PreviewNasabahRepository {
 }
 
 void main() {
-  late _Auth auth;
+  late TestAuthenticationNotifier auth;
   late _Repository repository;
 
   Future<void> open(WidgetTester tester, {NasabahIdentity? identity}) async {
-    auth = _Auth();
+    auth = authNotifierIn(Authenticated(
+        authEntity: AuthEntity(
+      id: 'u',
+      name: 'Siti Aminah',
+      email: 'siti@example.test',
+      photoUrl: '',
+      token: 'tok',
+      role: 'nasabah',
+      nextStep: 'dashboard',
+    )));
     repository = _Repository(identity ??
         const NasabahIdentity(
             'u', 'Siti Aminah', 'siti@example.test', 'nasabah',
@@ -71,23 +76,11 @@ void main() {
             jenisKelamin: 'perempuan',
             alamat: 'Jl. Melati No. 1'));
     di.registerSingleton<NasabahRepository>(repository);
-    whenListen(auth, const Stream<AuthenticationStates>.empty(),
-        initialState: Authenticated(
-            authEntity: AuthEntity(
-          id: 'u',
-          name: 'Siti Aminah',
-          email: 'siti@example.test',
-          photoUrl: '',
-          token: 'tok',
-          role: 'nasabah',
-          nextStep: 'dashboard',
-        )));
     addTearDown(() async {
-      await auth.close();
       await di.unregister<NasabahRepository>();
     });
-    await tester.pumpWidget(BlocProvider<AuthenticationBloc>.value(
-        value: auth, child: const MaterialApp(home: ProfilNasabahPage())));
+    await tester.pumpWidget(withAuthenticationProvider(
+        auth, const MaterialApp(home: ProfilNasabahPage())));
     await tester.pumpAndSettle();
   }
 
@@ -122,6 +115,36 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.updateCalls.single, {'no_hp': '089900001111'});
+  });
+
+  testWidgets('the gender options announce which one is selected',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(
+      tester,
+      identity: NasabahIdentity(
+          'u', 'Siti Aminah', 'siti@example.test', 'nasabah',
+          noHp: '081234567890', jenisKelamin: 'perempuan'),
+    );
+    await tester.tap(find.byTooltip('Ubah profil'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Laki-laki'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSemantics(find.text('Perempuan')),
+      isSemantics(
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        isInMutuallyExclusiveGroup: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.text('Laki-laki')),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
+    );
+    handle.dispose();
   });
 
   testWidgets('memilih Laki-laki pada kontrol jenis kelamin dan menyimpan',

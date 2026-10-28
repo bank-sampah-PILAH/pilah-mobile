@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_config.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/role_navigation_rail.dart';
 
 import '../../support/pump_app.dart';
@@ -16,10 +17,12 @@ void main() {
       Scaffold(
         body: Row(children: [
           RoleNavigationRail(
-            role: 'pengelola',
-            currentIndex: 0,
-            bankSampahNama: 'Bank Sampah Melati',
-            onSelected: selected.add,
+            navigation: RoleNavigationConfig(
+              role: 'pengelola',
+              currentIndex: 0,
+              bankSampahNama: 'Bank Sampah Melati',
+              onSelected: selected.add,
+            ),
           ),
           const Expanded(child: SizedBox.shrink()),
         ]),

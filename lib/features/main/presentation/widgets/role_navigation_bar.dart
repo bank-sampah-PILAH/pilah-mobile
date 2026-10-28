@@ -25,14 +25,10 @@ class RoleNavigationBar extends StatelessWidget {
   static bool isStaff(String? role) => RoleDestinations.isStaff(role);
   static bool supports(String? role) => RoleDestinations.supports(role);
 
-  static List<int> branchIndicesFor(String? role,
-          {bool limitedNasabah = false}) =>
-      RoleDestinations.branchIndicesFor(role, limitedNasabah: limitedNasabah);
-
   @override
   Widget build(BuildContext context) {
-    final destinations =
-        RoleDestinations.forRole(role, limitedNasabah: limitedNasabah);
+    final destinations = RoleDestinations.forRole(role,
+        limitedNasabah: limitedNasabah, bottomBar: true);
     if (destinations.isEmpty) return const SizedBox.shrink();
     return Container(
       decoration: const BoxDecoration(

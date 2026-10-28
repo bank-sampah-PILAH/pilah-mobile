@@ -3,15 +3,15 @@ import 'package:pilah_mobile/features/superadmin/data/repositories/superadmin_re
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/approve_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/get_bank_sampah_usecase.dart';
 import 'package:pilah_mobile/features/superadmin/domain/use_cases/reject_bank_sampah_usecase.dart';
-import 'package:pilah_mobile/features/superadmin/presentation/cubit/superadmin_cubit.dart';
+import 'package:pilah_mobile/features/superadmin/presentation/providers/superadmin_provider.dart';
 
 import 'stub_api.dart';
 
-/// A real [SuperadminCubit] over the real superadmin stack, with only HTTP stubbed.
-SuperadminCubit buildSuperadminCubit(StubApi api) {
+/// A notifier over the real superadmin stack, with only HTTP stubbed.
+SuperadminNotifier buildSuperadminNotifier(StubApi api) {
   final repository =
       SuperadminRepositoryImpl(SuperadminRemoteDataSourceImpl(api.network));
-  return SuperadminCubit(
+  return SuperadminNotifier(
     GetBankSampahUseCase(repository),
     ApproveBankSampahUseCase(repository),
     RejectBankSampahUseCase(repository),

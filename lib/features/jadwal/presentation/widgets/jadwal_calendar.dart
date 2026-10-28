@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 const _monthNames = [
   'Januari',
@@ -28,12 +29,34 @@ const _weekdayNames = [
 
 const _weekdayShortNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
+/// Label hari di atas kolom tanggal; dipakai juga untuk mengukur ke mana judul
+/// bulan harus sejajar.
+final _weekdayLabelStyle = TextStyle(
+  color: Colors.grey.shade600,
+  fontSize: 11,
+  fontWeight: FontWeight.w600,
+);
+
 String formatJadwalDayHeading(DateTime date, {DateTime? today}) {
   final reference = DateUtils.dateOnly(today ?? DateTime.now());
   final selected = DateUtils.dateOnly(date);
   final day = '${_weekdayNames[selected.weekday - 1]}, ${selected.day} '
       '${_monthNames[selected.month - 1]}';
   return DateUtils.isSameDay(selected, reference) ? 'Hari ini, $day' : day;
+}
+
+String formatJadwalMonth(DateTime date) =>
+    '${_monthNames[date.month - 1]} ${date.year}';
+
+/// Jarak dari tepi kiri kalender ke awal label "Sen", untuk lebar isi [width].
+double _firstWeekdayInset(BuildContext context, double width) {
+  final label = TextPainter(
+    text: TextSpan(text: _weekdayShortNames.first, style: _weekdayLabelStyle),
+    textDirection: TextDirection.ltr,
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final inset = (width / 7 - label.width) / 2;
+  return inset < 0 ? 0 : inset;
 }
 
 class JadwalCalendar extends StatelessWidget {
@@ -44,6 +67,9 @@ class JadwalCalendar extends StatelessWidget {
   final ValueChanged<int> onNavigate;
   final VoidCallback onToggleMonth;
 
+  /// Tombol pekan/bulan. Disembunyikan bila kalender selalu sebulan penuh.
+  final bool showToggle;
+
   const JadwalCalendar({
     super.key,
     required this.selectedDate,
@@ -52,6 +78,7 @@ class JadwalCalendar extends StatelessWidget {
     required this.onSelectDate,
     required this.onNavigate,
     required this.onToggleMonth,
+    this.showToggle = true,
   });
 
   bool _hasSchedule(DateTime date) =>
@@ -66,52 +93,72 @@ class JadwalCalendar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  monthLabel,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+          // Judul sejajar dengan awal "Sen": kolom tanggal membagi lebar sama
+          // rata dan labelnya di tengah kolom, jadi kiri label = setengah sisa
+          // lebar kolom.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final titleInset = _firstWeekdayInset(
+                context,
+                constraints.maxWidth,
+              );
+              return Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: titleInset),
+                      child: Text(
+                        monthLabel,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              IconButton(
-                tooltip:
-                    isMonthExpanded ? 'Bulan sebelumnya' : 'Minggu sebelumnya',
-                visualDensity: VisualDensity.compact,
-                onPressed: () => onNavigate(-1),
-                icon: const Icon(Icons.chevron_left),
-              ),
-              IconButton(
-                tooltip:
-                    isMonthExpanded ? 'Bulan berikutnya' : 'Minggu berikutnya',
-                visualDensity: VisualDensity.compact,
-                onPressed: () => onNavigate(1),
-                icon: const Icon(Icons.chevron_right),
-              ),
-              IconButton(
-                key: const ValueKey('jadwal-calendar-toggle'),
-                tooltip: isMonthExpanded
-                    ? 'Tampilkan satu minggu'
-                    : 'Tampilkan kalender sebulan',
-                visualDensity: VisualDensity.compact,
-                onPressed: onToggleMonth,
-                icon: Icon(
-                  isMonthExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.calendar_month_outlined,
-                ),
-              ),
-            ],
+                  IconButton(
+                    tooltip: isMonthExpanded
+                        ? 'Bulan sebelumnya'
+                        : 'Minggu sebelumnya',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => onNavigate(-1),
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  IconButton(
+                    tooltip: isMonthExpanded
+                        ? 'Bulan berikutnya'
+                        : 'Minggu berikutnya',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => onNavigate(1),
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                  if (showToggle)
+                    IconButton(
+                      key: const ValueKey('jadwal-calendar-toggle'),
+                      tooltip: isMonthExpanded
+                          ? 'Tampilkan satu minggu'
+                          : 'Tampilkan kalender sebulan',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onToggleMonth,
+                      icon: Icon(
+                        isMonthExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.calendar_month_outlined,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
+          // Napas antara nama bulan dan baris hari, supaya judulnya tidak
+          // menempel pada kalender.
+          const SizedBox(height: 8),
           AnimatedSize(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeInOut,
@@ -162,11 +209,7 @@ class JadwalCalendar extends StatelessWidget {
               child: Center(
                 child: Text(
                   _weekdayShortNames[index],
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: _weekdayLabelStyle,
                 ),
               ),
             ),
@@ -226,7 +269,7 @@ class _JadwalDateCell extends StatelessWidget {
         selected: selected,
         child: InkWell(
           key: ValueKey('jadwal-date-${date.year}-${date.month}-${date.day}'),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: showWeekday ? 5 : 2),
@@ -236,11 +279,7 @@ class _JadwalDateCell extends StatelessWidget {
                 if (showWeekday) ...[
                   Text(
                     _weekdayShortNames[date.weekday - 1],
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: _weekdayLabelStyle,
                   ),
                   const SizedBox(height: 4),
                 ],

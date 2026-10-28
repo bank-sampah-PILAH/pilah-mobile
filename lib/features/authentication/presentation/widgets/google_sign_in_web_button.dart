@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:google_sign_in_web/web_only.dart' as google_sign_in_web;
+// VM tests use a placeholder; web builds use the real GIS renderer.
+import 'google_sign_in_web_renderer_stub.dart'
+    if (dart.library.js_interop) 'package:google_sign_in_web/web_only.dart'
+    as google_sign_in_web;
 import 'package:pilah_mobile/design/constants/colors.dart';
 
 Widget buildWebGoogleSignInButton({

@@ -1,62 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 
 /// The look of Catat Pencairan, shared by the draft screens so they read as
 /// one flow: a grey rounded back button, bold title, spaced section labels,
 /// white 12px inputs, pill chips and soft cards.
-
-/// Title row with the app's grey rounded back button. Going back uses
-/// `maybePop`, so a screen guarding unsaved edits with a `PopScope` is asked.
-class PencairanHeader extends StatelessWidget {
-  final String title;
-  final List<Widget> actions;
-
-  const PencairanHeader({
-    super.key,
-    required this.title,
-    this.actions = const [],
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          InkWell(
-            key: const Key('kembali'),
-            onTap: () => Navigator.of(context).maybePop(),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.arrow_back, color: Colors.grey[800], size: 20),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          ...actions,
-        ],
-      ),
-    );
-  }
-}
 
 /// Heading above a group of fields (`RINGKASAN`). [SectionLabel.field] is the
 /// quieter label of a single field inside a card (`NOMINAL`).
@@ -80,7 +31,9 @@ class SectionLabel extends StatelessWidget {
       );
 }
 
-/// A pill: solid green when selected, light grey otherwise.
+/// A pill: solid green when selected, light grey otherwise. It is an
+/// [AppChip] under the hood, so it is announced to screen readers as a
+/// selected or unselected button.
 class PencairanChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -100,54 +53,13 @@ class PencairanChip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final color = selected ? Colors.white : const Color(0xFF6B7280);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.greenDark : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: AppTextStyle.small.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (count != null) ...[
-              const SizedBox(width: 6),
-              Container(
-                constraints: const BoxConstraints(minWidth: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white : const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: selected ? AppColors.greenDark : color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppChip(
+        label: label,
+        selected: selected,
+        onTap: onTap,
+        icon: icon,
+        count: count,
+      );
 }
 
 /// White box with a 2px green outline, for a panel such as the options that
@@ -179,7 +91,7 @@ class PencairanCard extends StatelessWidget {
         padding: padding,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: borderColor == null
               ? null
               : Border.all(color: borderColor!, width: 2),
@@ -295,9 +207,9 @@ class PencairanPopupMenu<T> extends StatelessWidget {
     this.tooltip = 'Menu',
   });
 
-  static const _merah = Color(0xFFC62828);
-  static const _merahMuda = Color(0xFFFDECEC);
-  static const _hijauMuda = Color(0xFFE8F5E9);
+  static const _merah = AppColors.danger;
+  static const _merahMuda = AppColors.dangerLight;
+  static const _hijauMuda = AppColors.greenLight;
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +220,8 @@ class PencairanPopupMenu<T> extends StatelessWidget {
       surfaceTintColor: Colors.transparent,
       elevation: 8,
       shadowColor: Colors.black38,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       onSelected: onSelected,
       itemBuilder: (_) => [
         for (final entry in entries)
@@ -408,7 +321,7 @@ class PencairanActionButton extends StatelessWidget {
       ],
     );
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
     );
     return SizedBox(
       height: 52,

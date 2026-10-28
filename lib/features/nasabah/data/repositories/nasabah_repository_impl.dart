@@ -15,12 +15,14 @@ class NasabahRepositoryImpl implements NasabahRepository {
   @override
   Future<Either<NetworkException, HalamanNasabah>> getNasabah({
     int page = 1,
+    int? pageSize,
     String status = 'aktif',
     String? search,
   }) {
     return apiCall<HalamanNasabah>(
       func: remoteDataSource.getNasabah(
         page: page,
+        pageSize: pageSize,
         status: status,
         search: search,
       ),

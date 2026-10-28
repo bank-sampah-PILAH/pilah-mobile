@@ -27,7 +27,15 @@ void main() {
         .thenAnswer((_) async => Response(
               requestOptions: RequestOptions(path: '/api/v1/aktivitas'),
               data: {
+                'count': 51,
                 'next': '/api/v1/aktivitas?page=3',
+                'summary': {
+                  'jumlah_transaksi': 0,
+                  'total_berat': '0.00',
+                  'total_setoran': 0,
+                  'total_pencairan': 0,
+                  'saldo': 0
+                },
                 'results': [
                   {
                     'tipe': 'setoran',
@@ -66,6 +74,7 @@ void main() {
     ));
     result.fold((error) => fail(error.toString()), (page) {
       expect(page.hasNext, isTrue);
+      expect(page.totalCount, 51);
       expect(page.items.map((item) => item.tipe),
           [ActivitasTipe.setoran, ActivitasTipe.pencairan]);
       expect(page.items.first.transaksi!.id, 'setoran-1');
@@ -82,7 +91,17 @@ void main() {
           'page_size': 20,
         })).thenAnswer((_) async => Response(
           requestOptions: RequestOptions(path: '/api/v1/aktivitas'),
-          data: {'results': [], 'next': null},
+          data: {
+            'results': [],
+            'next': null,
+            'summary': {
+              'jumlah_transaksi': 0,
+              'total_berat': '0.00',
+              'total_setoran': 0,
+              'total_pencairan': 0,
+              'saldo': 0
+            },
+          },
         ));
     final result = await AktivitasRepositoryImpl(network)
         .history(const TransaksiFilter.semua());

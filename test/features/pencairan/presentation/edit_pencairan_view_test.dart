@@ -1,15 +1,19 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
+import 'package:pilah_mobile/design/widgets/app_back_header.dart';
+import 'package:pilah_mobile/design/widgets/app_chip.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/core/router/root_navigator_key.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
-import 'package:pilah_mobile/features/pencairan/presentation/blocs/edit_pencairan_cubit.dart';
+import 'package:pilah_mobile/features/pencairan/presentation/providers/edit_pencairan_provider.dart';
 import 'package:pilah_mobile/features/pencairan/presentation/pages/edit_pencairan_page.dart';
 
 class _MockUseCases extends Mock implements PencairanUseCases {}
@@ -55,24 +59,28 @@ void main() {
     final results = <Object?>[];
     final record = pencairan ?? _pencairan;
     await tester.pumpWidget(
-      MaterialApp(
-        navigatorKey: rootNavigatorKey,
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () async => results.add(
-              await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider(
-                    create: (_) => EditPencairanCubit(useCases),
-                    child: EditPencairanView(
+      ProviderScope(
+        overrides: [
+          editPencairanProvider.overrideWith(
+            () => EditPencairanNotifier(useCases),
+          ),
+        ],
+        child: MaterialApp(
+          navigatorKey: rootNavigatorKey,
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => results.add(
+                await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => EditPencairanView(
                       pencairan: record,
                       now: () => _now,
                     ),
                   ),
                 ),
               ),
+              child: const Text('buka'),
             ),
-            child: const Text('buka'),
           ),
         ),
       ),
@@ -82,7 +90,7 @@ void main() {
     return results;
   }
 
-  CustomPrimaryButton submitButton(WidgetTester tester) =>
+  AppButton submitButton(WidgetTester tester) =>
       tester.widget(find.byKey(const Key('submit-edit-pencairan')));
 
   Future<void> tapSubmit(WidgetTester tester) async {
@@ -91,6 +99,31 @@ void main() {
     await tester.tap(submit);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('keeps the form to a readable column on a desktop window',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpView(tester);
+
+    final field = find.byKey(const Key('nominal-field'));
+    expect(tester.getSize(field).width,
+        lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth));
+    expect(tester.getCenter(field).dx, closeTo(720, 1),
+        reason: 'centred in the window');
+    final scroll =
+        find.ancestor(of: field, matching: find.byType(SingleChildScrollView));
+    expect(tester.getSize(scroll.first).width, 1440,
+        reason: 'the form scrolls across the window: scrollbar at the edge');
+    final submit = find.byKey(const Key('submit-edit-pencairan'));
+    expect(field.hitTestable(), findsOneWidget,
+        reason: 'the form is not squeezed out by the save bar');
+    expect(find.byKey(const Key('alasan-field')), findsOneWidget);
+    expect(tester.getSize(submit).width,
+        lessThanOrEqualTo(LayoutBreakpoint.formMaxWidth),
+        reason: 'the save button is not as wide as the window');
+  });
 
   testWidgets('starts from the recorded values and states the tanggal limit',
       (tester) async {
@@ -102,6 +135,74 @@ void main() {
       find.text('Tanggal hanya bisa dimundurkan sampai 14 September 2026'),
       findsOneWidget,
     );
+  });
+
+  group('looks like the catat form', () {
+    testWidgets('has a white page headed by the back button, not an app bar',
+        (tester) async {
+      await pumpView(tester);
+
+      expect(find.byType(AppBar), findsNothing);
+      expect(
+          find.widgetWithText(AppBackHeader, 'Edit Pencairan'), findsOneWidget);
+      expect(
+        tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+        Colors.white,
+      );
+    });
+
+    testWidgets('captions every field above it, with no floating label',
+        (tester) async {
+      await pumpView(tester);
+
+      for (final caption in [
+        'NOMINAL',
+        'METODE',
+        'TANGGAL',
+        'KETERANGAN (OPSIONAL)',
+        'ALASAN PERUBAHAN',
+      ]) {
+        expect(find.widgetWithText(AppFieldLabel, caption), findsOneWidget,
+            reason: caption);
+      }
+      for (final key in ['nominal-field', 'keterangan-field', 'alasan-field']) {
+        expect(
+          tester.widget<TextField>(find.byKey(Key(key))).decoration?.labelText,
+          isNull,
+          reason: key,
+        );
+      }
+    });
+
+    testWidgets('keeps the submit button at the foot, out of the scroll',
+        (tester) async {
+      await pumpView(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(SingleChildScrollView),
+          matching: find.byKey(const Key('submit-edit-pencairan')),
+        ),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('submit-edit-pencairan')), findsOneWidget);
+    });
+  });
+
+  testWidgets('offers the metode as the same chips as the catat form',
+      (tester) async {
+    await pumpView(tester);
+
+    AppChip chip(MetodePencairan metode) =>
+        tester.widget(find.byKey(Key('metode-chip-${metode.name}')));
+    expect(chip(MetodePencairan.tunai).selected, isTrue);
+    expect(chip(MetodePencairan.transfer).selected, isFalse);
+
+    await tester.tap(find.byKey(const Key('metode-chip-transfer')));
+    await tester.pump();
+
+    expect(chip(MetodePencairan.tunai).selected, isFalse);
+    expect(chip(MetodePencairan.transfer).selected, isTrue);
   });
 
   testWidgets('keeps submit disabled until an alasan and valid nominal',
@@ -326,6 +427,34 @@ void main() {
       expect(find.byType(DatePickerDialog), findsNothing);
     });
 
+    testWidgets('shows the tanggal as locked too, not as a field to tap',
+        (tester) async {
+      await pumpView(tester, pencairan: berpotongan);
+
+      final decorator = tester.widget<InputDecorator>(find.descendant(
+        of: find.byKey(const Key('tanggal-field')),
+        matching: find.byType(InputDecorator),
+      ));
+      expect(decorator.decoration.enabled, isFalse,
+          reason: 'it looks like the locked nominal');
+      expect(
+          tester.widget<InkWell>(find.byKey(const Key('tanggal-field'))).onTap,
+          isNull,
+          reason: 'no ripple promising a picker');
+    });
+
+    testWidgets('says the nominal and tanggal are the locked ones',
+        (tester) async {
+      await pumpView(tester, pencairan: berpotongan);
+
+      expect(
+        find.text('Pencairan ini memakai potongan, jadi nominal dan '
+            'tanggalnya dikunci; hanya metode dan keterangan yang bisa '
+            'diubah.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
         'still lets the metode be corrected, sending the values as recorded',
         (tester) async {
@@ -349,5 +478,39 @@ void main() {
       expect(request.tanggal, DateTime(2026, 9, 21, 9, 30));
       expect(request.metode, MetodePencairan.tunai);
     });
+  });
+
+  testWidgets('the embedded header closes the surface it sits in',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        editPencairanProvider.overrideWith(
+          () => EditPencairanNotifier(useCases),
+        ),
+      ],
+      child: MaterialApp(
+        navigatorKey: rootNavigatorKey,
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => Scaffold(
+                body: EditPencairanView(
+                    pencairan: _pencairan, embedded: true, now: () => _now),
+              ),
+            )),
+            child: const Text('buka'),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('buka'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit Pencairan'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Pencairan'), findsNothing);
+    expect(find.text('buka'), findsOneWidget);
   });
 }

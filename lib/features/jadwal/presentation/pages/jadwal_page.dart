@@ -1,18 +1,36 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
+import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
+import 'package:pilah_mobile/design/layout/app_page_header.dart';
+import 'package:pilah_mobile/design/layout/content_frame.dart';
+import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/bottom_sheet_header.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_primary_button.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
+import 'package:pilah_mobile/design/layout/master_detail_layout.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_field_label.dart';
 import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_cubit.dart';
-import 'package:pilah_mobile/features/jadwal/presentation/cubit/jadwal_state.dart';
+import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_status.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/providers/jadwal_provider.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/states/jadwal_state.dart';
 import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_calendar.dart';
+import 'package:pilah_mobile/features/jadwal/presentation/widgets/jadwal_upcoming_months.dart';
+import 'package:pilah_mobile/design/widgets/app_tap_target.dart';
+import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 
-class JadwalPage extends StatefulWidget {
+const _createScheduleLabel = 'Buat Jadwal';
+
+class JadwalPage extends ConsumerStatefulWidget {
   static const route = '/jadwal';
   final bool customerMode;
   final DateTime? initialDate;
@@ -20,33 +38,104 @@ class JadwalPage extends StatefulWidget {
   const JadwalPage({super.key, this.customerMode = false, this.initialDate});
 
   @override
-  State<JadwalPage> createState() => _JadwalPageState();
+  ConsumerState<JadwalPage> createState() => _JadwalPageState();
 }
 
-class _JadwalPageState extends State<JadwalPage> {
+class _JadwalPageState extends ConsumerState<JadwalPage> {
   late DateTime _selectedDate;
   bool _isMonthExpanded = false;
   late final ScrollController _scrollController;
   DateTime? _markerMonth;
+
+  /// Apakah panel form sedang terbuka di samping agenda. Hanya dipakai pada
+  /// expanded; di bawah itu form dibuka sebagai bottom sheet, lihat [_openForm].
+  bool _panelOpen = false;
+  JadwalEntity? _panelInitial;
+
+  /// Agenda Pengurus di jendela expanded memuat dari tanggal terpilih sampai
+  /// akhir bulan; selain itu satu hari saja.
+  late bool _rangeMode;
+
+  bool _wantsRange(LayoutBreakpoint breakpoint) =>
+      !widget.customerMode && breakpoint == LayoutBreakpoint.expanded;
+
+  /// Memuat agenda untuk [date] sesuai [_rangeMode]. Tanpa rentang, argumen
+  /// `dateTo` tidak dikirim sama sekali.
+  Future<void> _loadAgenda(DateTime date, {bool silent = false}) {
+    final cubit = ref.read(jadwalProvider.notifier);
+    final end = _rangeMode ? DateTime(date.year, date.month + 1, 0) : null;
+    if (end == null) {
+      return silent
+          ? cubit.loadJadwal(silent: true, date: date)
+          : cubit.loadJadwal(date: date);
+    }
+    return silent
+        ? cubit.loadJadwal(silent: true, date: date, dateTo: end)
+        : cubit.loadJadwal(date: date, dateTo: end);
+  }
 
   @override
   void initState() {
     super.initState();
     _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
     _scrollController = ScrollController()..addListener(_loadNextPageNearEnd);
-    context.read<JadwalCubit>().loadJadwal(date: _selectedDate);
-    _loadCalendarDatesFor(_selectedDate);
+    // Belum boleh berlangganan MediaQuery di sini; lebar dibaca tanpa
+    // dependensi dan didChangeDependencies menjaga perubahannya.
+    final width =
+        context.getInheritedWidgetOfExactType<MediaQuery>()?.data.size.width;
+    _rangeMode = _wantsRange(LayoutBreakpoint.fromWidth(width ?? 0));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadAgenda(_selectedDate);
+      ref.read(jadwalProvider.notifier).loadUpcomingDates();
+      _loadCalendarDatesFor(_selectedDate);
+    });
+  }
+
+  /// Menutup panel ketika jendela berhenti menjadi expanded.
+  ///
+  /// [_openForm] memilih wadah sekali, saat dibuka, tetapi lebar jendela dapat
+  /// berubah setelah itu — dan tanpa ini panel yang sudah terbuka justru
+  /// berakhir di lebar yang [_openForm] sengaja hindari. Pada medium
+  /// [MasterDetailLayout] tetap merender detail, jadi form berada di panel 2/5
+  /// yang sekitar 320 piksel. Pada compact ia melepas detail sama sekali, jadi
+  /// form dibuang sementara [_panelOpen] tetap true: halaman kehilangan
+  /// formnya dan tidak punya apa pun untuk ditutup.
+  ///
+  /// Dengan ini syarat "panel hanya ada pada expanded" berlaku terus, bukan
+  /// hanya pada saat dibuka. Mengecilkan jendela mengembalikan lebar penuh ke
+  /// agenda, dan menekan tombol tambah lagi memberi bottom sheet, wadah yang
+  /// memang benar untuk lebar itu.
+  ///
+  /// `MediaQuery` dibaca sebagai dependensi, sehingga method ini ikut
+  /// terpanggil setiap kali ukuran jendela berubah. Field diubah langsung
+  /// tanpa `setState` karena build selalu menyusul.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_panelOpen && context.layoutBreakpoint != LayoutBreakpoint.expanded) {
+      _panelOpen = false;
+      _panelInitial = null;
+    }
+    final wantsRange = _wantsRange(context.layoutBreakpoint);
+    if (wantsRange != _rangeMode) {
+      _rangeMode = wantsRange;
+      // Memuat mengubah state kubit, yang tidak boleh terjadi di tengah build.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadAgenda(_selectedDate);
+      });
+    }
   }
 
   @override
   void didUpdateWidget(covariant JadwalPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final requestedDate = widget.initialDate;
-    if (requestedDate != null) {
-      _selectDate(requestedDate);
-    } else if (oldWidget.initialDate != null) {
-      _selectDate(DateTime.now());
-    }
+    final requestedDate = widget.initialDate ??
+        (oldWidget.initialDate == null ? null : DateTime.now());
+    if (requestedDate == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _selectDate(requestedDate);
+    });
   }
 
   @override
@@ -62,10 +151,10 @@ class _JadwalPageState extends State<JadwalPage> {
         _scrollController.position.extentAfter > 320) {
       return;
     }
-    context.read<JadwalCubit>().loadNextPage();
+    ref.read(jadwalProvider.notifier).loadNextPage();
   }
 
-  void _loadCalendarDatesFor(DateTime date) {
+  Future<void> _loadCalendarDatesFor(DateTime date) {
     final month = DateTime(date.year, date.month);
     _markerMonth = month;
     final first = DateTime(date.year, date.month, 1);
@@ -74,23 +163,30 @@ class _JadwalPageState extends State<JadwalPage> {
     final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
     final weekCount = (offset + daysInMonth + 6) ~/ 7;
     final lastVisible = firstVisible.add(Duration(days: weekCount * 7 - 1));
-    context.read<JadwalCubit>().loadCalendarDates(
+    return ref.read(jadwalProvider.notifier).loadCalendarDates(
           startDate: firstVisible,
           endDate: lastVisible,
         );
+  }
+
+  Future<void> _refreshAgenda() async {
+    await Future.wait([
+      _loadAgenda(_selectedDate, silent: true),
+      _loadCalendarDatesFor(_selectedDate),
+    ]);
   }
 
   void _selectDate(DateTime date) {
     final selectedDate = DateUtils.dateOnly(date);
     if (DateUtils.isSameDay(selectedDate, _selectedDate)) return;
     setState(() => _selectedDate = selectedDate);
-    context.read<JadwalCubit>().loadJadwal(date: selectedDate);
+    _loadAgenda(selectedDate);
     final month = DateTime(selectedDate.year, selectedDate.month);
     if (_markerMonth != month) _loadCalendarDatesFor(selectedDate);
   }
 
-  void _navigateCalendar(int direction) {
-    if (!_isMonthExpanded) {
+  void _navigateCalendar(int direction, {bool wholeMonth = false}) {
+    if (!wholeMonth && !_isMonthExpanded) {
       _selectDate(_selectedDate.add(Duration(days: direction * 7)));
       return;
     }
@@ -105,13 +201,23 @@ class _JadwalPageState extends State<JadwalPage> {
   }
 
   void _openForm([JadwalEntity? initial]) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => BlocProvider.value(
-        value: context.read<JadwalCubit>(),
+    // Hanya expanded, bukan medium. Pada medium panel hanya mendapat dua dari
+    // lima bagian lebar, sekitar 320 piksel, dan form ini berisi dropdown serta
+    // dua pemilih tanggal yang tidak muat di sana. Di bawah expanded bottom
+    // sheet tetap wadah yang lebih baik.
+    if (context.layoutBreakpoint == LayoutBreakpoint.expanded) {
+      setState(() {
+        _panelOpen = true;
+        _panelInitial = initial;
+      });
+      return;
+    }
+
+    final container = ProviderScope.containerOf(context);
+    showAdaptiveSurface<void>(
+      context,
+      builder: (_) => UncontrolledProviderScope(
+        container: container,
         child: _JadwalForm(
           initial: initial,
           initialDate: initial == null ? _selectedDate : null,
@@ -120,138 +226,157 @@ class _JadwalPageState extends State<JadwalPage> {
     );
   }
 
-  Future<void> _changeStatus(JadwalEntity item, String action) async {
-    final failure = await context.read<JadwalCubit>().changeStatus(
+  void _closePanel() {
+    if (!_panelOpen) return;
+    setState(() {
+      _panelOpen = false;
+      _panelInitial = null;
+    });
+  }
+
+  /// Form sebagai panel di samping agenda, atau null bila tidak ada yang
+  /// sedang disunting. [MasterDetailLayout] sendiri yang mengabaikannya pada
+  /// compact, sehingga telepon tetap memakai bottom sheet.
+  Widget? _buildFormPanel() {
+    if (!_panelOpen) return null;
+    return _JadwalForm(
+      key: ValueKey('jadwal-panel-${_panelInitial?.id ?? 'baru'}'),
+      initial: _panelInitial,
+      initialDate: _panelInitial == null ? _selectedDate : null,
+      onClose: _closePanel,
+    );
+  }
+
+  Future<void> _changeStatus(JadwalEntity item, JadwalAction action) async {
+    final failure = await ref.read(jadwalProvider.notifier).changeStatus(
           item.id,
-          action,
+          action.wireValue,
         );
     if (!mounted || failure == null) return;
-    ScaffoldMessenger.of(
+    AppNotification.showError(
       context,
-    ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+      title: 'Gagal',
+      message: failure.displayMessage,
+    );
   }
 
   Future<void> _confirmCancellation(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Batalkan jadwal?'),
-        content: const Text('Jadwal yang dibatalkan tidak dapat dipulihkan.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, batalkan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Batalkan jadwal?',
+      message: 'Jadwal yang dibatalkan tidak dapat dipulihkan.',
+      confirmLabel: 'Ya, batalkan',
+      cancelLabel: 'Kembali',
+      destructive: true,
     );
-    if (!mounted || confirmed != true) return;
-    await _changeStatus(item, 'batalkan');
+    if (!mounted || !confirmed) return;
+    await _changeStatus(item, JadwalAction.batalkan);
   }
 
   Future<void> _confirmCompletion(JadwalEntity item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tandai jadwal selesai?'),
-        content: const Text('Jadwal yang diselesaikan tidak dapat diubah.'),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.greenDark),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, selesaikan'),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Tandai jadwal selesai?',
+      message: 'Jadwal yang diselesaikan tidak dapat diubah.',
+      confirmLabel: 'Ya, selesaikan',
+      cancelLabel: 'Kembali',
+      destructive: false,
     );
-    if (!mounted || confirmed != true) return;
-    await _changeStatus(item, 'selesaikan');
+    if (!mounted || !confirmed) return;
+    await _changeStatus(item, JadwalAction.selesaikan);
   }
+
+  /// Pengurus di layar lebar memakai kepala halaman yang sama dengan tab web
+  /// lain, di dalam daftar, bukan `AppBar`.
+  bool get _webHeader =>
+      !widget.customerMode &&
+      context.layoutBreakpoint != LayoutBreakpoint.compact;
+
+  /// Di jendela expanded "Buat Jadwal" ada di kepala halaman seperti tab web
+  /// lain, bukan tombol mengambang; di bawahnya tombol mengambang tetap.
+  bool get _createInHeader =>
+      !widget.customerMode &&
+      context.layoutBreakpoint == LayoutBreakpoint.expanded;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          WebContentSurface.pageColor(context, phone: Colors.white),
       appBar: widget.customerMode
           ? const NasabahPageAppBar(title: 'Jadwal Bank Sampah')
-          : AppBar(
-              title: Text(
-                'Jadwal Kegiatan',
-                style: AppTextStyle.headline1.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
+          : _webHeader
+              ? null
+              : AppBar(
+                  title: Text(
+                    'Jadwal Kegiatan',
+                    style: AppTextStyle.headline1.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  surfaceTintColor: Colors.transparent,
                 ),
-              ),
-              backgroundColor: Colors.white,
-              elevation: 0,
-              surfaceTintColor: Colors.transparent,
-            ),
-      floatingActionButton: widget.customerMode
+      floatingActionButton: widget.customerMode || _createInHeader
           ? null
-          : BlocBuilder<JadwalCubit, JadwalState>(
-              builder: (context, state) => FloatingActionButton(
-                heroTag: 'jadwal_page_fab',
-                tooltip: 'Buat Jadwal',
-                onPressed: state is JadwalLoaded &&
-                        (state.isTransitioning || state.isSaving)
-                    ? null
-                    : () => _openForm(),
-                backgroundColor: AppColors.greenDark,
-                child: const Icon(Icons.add, color: Colors.white),
-              ),
+          : Builder(
+              builder: (context) {
+                final state = ref.watch(jadwalProvider);
+                return FloatingActionButton(
+                  heroTag: 'jadwal_page_fab',
+                  tooltip: _createScheduleLabel,
+                  onPressed: state is JadwalLoaded &&
+                          (state.isTransitioning || state.isSaving)
+                      ? null
+                      : () => _openForm(),
+                  backgroundColor: AppColors.greenDark,
+                  child: const Icon(Icons.add, color: Colors.white),
+                );
+              },
             ),
-      body: BlocBuilder<JadwalCubit, JadwalState>(
-        builder: (context, state) {
-          if (state is JadwalInitial || state is JadwalLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is JadwalError) {
-            return _RetryableMessage(
-              message: state.message,
-              buttonLabel: 'Coba Lagi',
-              onPressed: () =>
-                  context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
-            );
-          }
+      body: _buildAgendaBody(),
+    );
+  }
 
-          final loadedState = state as JadwalLoaded;
-          final visibleItems = widget.customerMode
-              ? loadedState.items
-                  .where(
-                    (item) =>
-                        item.status == 'diterbitkan' &&
-                        DateUtils.isSameDay(
-                          item.mulaiPada.toLocal(),
-                          _selectedDate,
-                        ),
-                  )
-                  .toList()
-              : loadedState.items;
-          final items = List<JadwalEntity>.of(visibleItems)
-            ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
-          return RefreshIndicator(
-            onRefresh: () => context.read<JadwalCubit>().loadJadwal(
-                  silent: true,
-                  date: _selectedDate,
-                ),
-            child: widget.customerMode
-                ? _buildCustomerAgenda(items, loadedState)
-                : _buildPengurusAgenda(items, loadedState),
-          );
-        },
-      ),
+  Widget _buildAgendaBody() {
+    final state = ref.watch(jadwalProvider);
+    if (state is JadwalInitial || state is JadwalLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state is JadwalError) {
+      return _RetryableMessage(
+        message: state.message,
+        buttonLabel: 'Coba Lagi',
+        onPressed: () => _loadAgenda(_selectedDate),
+      );
+    }
+    return _buildLoadedAgenda(state as JadwalLoaded);
+  }
+
+  Widget _buildLoadedAgenda(JadwalLoaded loadedState) {
+    final visibleItems = widget.customerMode
+        ? loadedState.items
+            .where(
+              (item) =>
+                  item.status == 'diterbitkan' &&
+                  DateUtils.isSameDay(item.mulaiPada.toLocal(), _selectedDate),
+            )
+            .toList()
+        : loadedState.items;
+    final items = List<JadwalEntity>.of(visibleItems)
+      ..sort((a, b) => a.mulaiPada.compareTo(b.mulaiPada));
+    return RefreshIndicator(
+      onRefresh: _refreshAgenda,
+      child: widget.customerMode
+          ? _buildCustomerAgenda(items, loadedState)
+          : MasterDetailLayout(
+              masterScrolls: true,
+              master: _buildPengurusAgenda(items, loadedState),
+              detail: _buildFormPanel(),
+            ),
     );
   }
 
@@ -304,10 +429,10 @@ class _JadwalPageState extends State<JadwalPage> {
             child: Center(child: CircularProgressIndicator()),
           )
         else if (items.isEmpty)
-          _CustomerEmptyScheduleDay(
+          _EmptyScheduleDay(
             date: _selectedDate,
-            onRefresh: () =>
-                context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
+            dateHint: 'Tanggal dengan jadwal ditandai titik.',
+            onRefresh: () => _loadAgenda(_selectedDate),
           )
         else
           ...items.map(
@@ -333,91 +458,275 @@ class _JadwalPageState extends State<JadwalPage> {
     List<JadwalEntity> items,
     JadwalLoaded loadedState,
   ) {
-    final isTransitioning = loadedState.isTransitioning;
-    final isLifecycleActionDisabled = isTransitioning || loadedState.isSaving;
-    final dayItems = items
-        .where(
-          (item) =>
-              DateUtils.isSameDay(item.mulaiPada.toLocal(), _selectedDate),
-        )
-        .toList();
+    final dayItems = _rangeMode
+        ? items
+        : items
+            .where(
+              (item) =>
+                  DateUtils.isSameDay(item.mulaiPada.toLocal(), _selectedDate),
+            )
+            .toList();
 
-    return ListView(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
-      children: [
-        JadwalCalendar(
-          selectedDate: _selectedDate,
-          scheduledDates: loadedState.scheduledDates,
-          isMonthExpanded: _isMonthExpanded,
-          onSelectDate: _selectDate,
-          onNavigate: _navigateCalendar,
-          onToggleMonth: () =>
-              setState(() => _isMonthExpanded = !_isMonthExpanded),
+    // Lebar daftar, bukan jendela: dengan panel form terbuka daftar tinggal
+    // sebagian lebar dan kembali bertumpuk.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sideBySide =
+            _webHeader && constraints.maxWidth >= _sideBySideMinWidth;
+        // Batas lebar konten sebagai jarak samping (nol bila panel terbuka),
+        // supaya area gulir selebar badan dan scrollbarnya di tepi jendela.
+        final gutter = _webHeader ? AppSpacing.webGutter : 16.0;
+        final sideInset = EdgeInsets.symmetric(horizontal: gutter) +
+            ContentFrame.insetOf(context);
+        final calendar = _agendaCalendar(loadedState, sideBySide: sideBySide);
+        final agenda = _pengurusAgendaChildren(dayItems, loadedState);
+        final header = _agendaHeader(loadedState);
+        return sideBySide
+            ? _sideBySideAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda,
+                loadedState: loadedState,
+              )
+            : _stackedAgenda(
+                sideInset: sideInset,
+                header: header,
+                calendar: calendar,
+                agenda: agenda,
+              );
+      },
+    );
+  }
+
+  JadwalCalendar _agendaCalendar(
+    JadwalLoaded loadedState, {
+    required bool sideBySide,
+  }) =>
+      JadwalCalendar(
+        selectedDate: _selectedDate,
+        scheduledDates: loadedState.scheduledDates,
+        isMonthExpanded: sideBySide || _isMonthExpanded,
+        showToggle: !sideBySide,
+        onSelectDate: _selectDate,
+        onNavigate: (direction) =>
+            _navigateCalendar(direction, wholeMonth: sideBySide),
+        onToggleMonth: () =>
+            setState(() => _isMonthExpanded = !_isMonthExpanded),
+      );
+
+  List<Widget> _agendaHeader(JadwalLoaded loadedState) => [
+        AppPageHeader(
+          title: 'Jadwal Kegiatan',
+          actions: [
+            if (_createInHeader)
+              AppButton(
+                label: _createScheduleLabel,
+                icon: Icons.add,
+                expand: false,
+                onPressed: loadedState.isTransitioning || loadedState.isSaving
+                    ? null
+                    : _openForm,
+              ),
+          ],
         ),
-        const SizedBox(height: 24),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        const SizedBox(height: AppSpacing.lg),
+      ];
+
+  /// Kalender dan "Berikutnya" diam di kiri; hanya agenda yang bergulir, jadi
+  /// kolom kiri tidak kosong saat agenda panjang.
+  Widget _sideBySideAgenda({
+    required EdgeInsets sideInset,
+    required List<Widget> header,
+    required JadwalCalendar calendar,
+    required List<Widget> agenda,
+    required JadwalLoaded loadedState,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.webTop),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Text(
-                formatJadwalDayHeading(_selectedDate),
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sideInset.left),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: header,
               ),
             ),
-            Text(
-              '${loadedState.totalCount} jadwal',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: sideInset.left),
+                  SizedBox(
+                    width: _sideCalendarWidth,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          calendar,
+                          const SizedBox(height: AppSpacing.lg),
+                          JadwalUpcomingMonths(
+                            upcomingDates: loadedState.upcomingDates,
+                            today: clock.now(),
+                            selectedDate: _selectedDate,
+                            onSelect: _selectDate,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xl),
+                  Expanded(
+                    child: ListView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.only(
+                        right: sideInset.right,
+                        bottom: 24,
+                      ),
+                      children: agenda,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        if (dayItems.isEmpty)
-          _EmptyScheduleDay(
-            date: _selectedDate,
-            onCreate: _openForm,
-            onRefresh: () =>
-                context.read<JadwalCubit>().loadJadwal(date: _selectedDate),
-          )
-        else
-          ...dayItems.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ScheduleCard(
-                item: item,
-                onTap: isTransitioning ? null : () => _openForm(item),
-                onCancel: isLifecycleActionDisabled
-                    ? null
-                    : () => _confirmCancellation(item),
-                onPublish: isLifecycleActionDisabled
-                    ? null
-                    : () => _changeStatus(item, 'terbitkan'),
-                onComplete: isLifecycleActionDisabled
-                    ? null
-                    : () => _confirmCompletion(item),
+      );
+
+  /// Kalender di atas agenda, satu kolom yang bergulir bersama.
+  Widget _stackedAgenda({
+    required EdgeInsets sideInset,
+    required List<Widget> header,
+    required JadwalCalendar calendar,
+    required List<Widget> agenda,
+  }) =>
+      ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          sideInset.left,
+          _webHeader ? AppSpacing.webTop : 16,
+          sideInset.right,
+          104,
+        ),
+        children: [
+          if (_webHeader) ...header,
+          calendar,
+          const SizedBox(height: 24),
+          ...agenda,
+        ],
+      );
+
+  /// Daftar lebar daftar jadwal yang cukup untuk kalender di samping agenda.
+  static const _sideBySideMinWidth = 900.0;
+  static const _sideCalendarWidth = 400.0;
+
+  /// Judul hari, kartu jadwal (atau keadaan kosong), dan pemuat berikutnya.
+  ///
+  /// Satu hari: [items] sudah hanya hari terpilih. Rentang: [items] adalah sisa
+  /// bulan; tiap hari berjadwal mendapat judul sendiri, dan hari terpilih
+  /// selalu tampil, kosong atau tidak, sebagai titik awal.
+  List<Widget> _pengurusAgendaChildren(
+    List<JadwalEntity> items,
+    JadwalLoaded loadedState,
+  ) {
+    final byDay = <DateTime, List<JadwalEntity>>{};
+    for (final item in items) {
+      byDay
+          .putIfAbsent(DateUtils.dateOnly(item.mulaiPada.toLocal()), () => [])
+          .add(item);
+    }
+    final days = (_rangeMode ? {_selectedDate, ...byDay.keys} : {_selectedDate})
+        .toList()
+      ..sort();
+    return [
+      for (var i = 0; i < days.length; i++) ...[
+        if (i > 0) const SizedBox(height: 12),
+        ..._dayAgenda(
+          days[i],
+          byDay[days[i]] ?? const [],
+          // Satu hari memakai jumlah dari server; rentang menghitung per hari.
+          _rangeMode
+              ? (byDay[days[i]] ?? const []).length
+              : loadedState.totalCount,
+          loadedState,
+        ),
+      ],
+      if (!loadedState.isLoading && loadedState.hasMore)
+        _buildLoadMoreFooter(loadedState),
+    ];
+  }
+
+  List<Widget> _dayAgenda(
+    DateTime day,
+    List<JadwalEntity> dayItems,
+    int count,
+    JadwalLoaded loadedState,
+  ) {
+    final isTransitioning = loadedState.isTransitioning;
+    final isLifecycleActionDisabled = isTransitioning || loadedState.isSaving;
+    return [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Text(
+              formatJadwalDayHeading(day),
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-        if (!loadedState.isLoading && loadedState.hasMore)
-          _buildLoadMoreFooter(loadedState),
-      ],
-    );
+          Text(
+            '$count jadwal',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      if (dayItems.isEmpty)
+        _EmptyScheduleDay(
+          date: day,
+          dateHint: 'Jadwal di tanggal lain ditandai dengan titik.',
+          onCreate: _openForm,
+          onRefresh: () => _loadAgenda(_selectedDate),
+        )
+      else
+        ...dayItems.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ScheduleCard(
+              item: item,
+              onTap: isTransitioning ? null : () => _openForm(item),
+              onCancel: isLifecycleActionDisabled
+                  ? null
+                  : () => _confirmCancellation(item),
+              onPublish: isLifecycleActionDisabled
+                  ? null
+                  : () => _changeStatus(item, JadwalAction.terbitkan),
+              onComplete: isLifecycleActionDisabled
+                  ? null
+                  : () => _confirmCompletion(item),
+            ),
+          ),
+        ),
+    ];
   }
 
   Widget _buildLoadMoreFooter(JadwalLoaded loadedState) {
     if (loadedState.loadingMoreError != null) {
       return Center(
         child: TextButton.icon(
-          onPressed: context.read<JadwalCubit>().loadNextPage,
+          onPressed: ref.read(jadwalProvider.notifier).loadNextPage,
           icon: const Icon(Icons.refresh),
           label: const Text('Coba muat lagi'),
         ),
@@ -457,7 +766,6 @@ class _RetryableMessage extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
               onPressed: onPressed,
               icon: const Icon(Icons.refresh),
               label: Text(buttonLabel),
@@ -467,72 +775,22 @@ class _RetryableMessage extends StatelessWidget {
       );
 }
 
-class _CustomerEmptyScheduleDay extends StatelessWidget {
-  final DateTime date;
-  final VoidCallback onRefresh;
-
-  const _CustomerEmptyScheduleDay({
-    required this.date,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-        decoration: BoxDecoration(
-          color: AppColors.cardOffWhite,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.event_available_outlined,
-              size: 36,
-              color: AppColors.greenDark.withValues(alpha: 0.8),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Belum ada jadwal kegiatan',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. Tanggal dengan jadwal ditandai titik.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
-              onPressed: onRefresh,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Muat Ulang'),
-            ),
-          ],
-        ),
-      );
-}
-
 class _EmptyScheduleDay extends StatelessWidget {
   final DateTime date;
-  final VoidCallback onCreate;
+  final String dateHint;
+  final VoidCallback? onCreate;
   final VoidCallback onRefresh;
 
   const _EmptyScheduleDay({
     required this.date,
-    required this.onCreate,
+    required this.dateHint,
     required this.onRefresh,
+    this.onCreate,
   });
 
   @override
   Widget build(BuildContext context) {
+    final onCreate = this.onCreate;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
@@ -556,7 +814,7 @@ class _EmptyScheduleDay extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. Jadwal di tanggal lain ditandai dengan titik.',
+            'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey.shade600,
@@ -564,21 +822,24 @@ class _EmptyScheduleDay extends StatelessWidget {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.greenDark,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+          if (onCreate == null)
+            const SizedBox(height: 12)
+          else ...[
+            const SizedBox(height: 18),
+            // Penuh lebar di ponsel, tetapi tidak melebar di agenda web.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 280),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onCreate,
+                  icon: const Icon(Icons.add),
+                  label: const Text(_createScheduleLabel),
+                ),
               ),
-              onPressed: onCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('Buat Jadwal'),
             ),
-          ),
+          ],
           TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: AppColors.greenDark),
             onPressed: onRefresh,
             icon: const Icon(Icons.refresh, size: 18),
             label: const Text('Muat Ulang'),
@@ -614,123 +875,109 @@ class _ScheduleCard extends StatelessWidget {
         ? '${_formatTime(startsAt)} – ${_formatTime(endsAt)}'
         : '${_formatDateTime(startsAt)} – ${_formatDateTime(endsAt)}';
 
+    // Seluruh kartu satu area ketuk, termasuk baris aksi: hover dan riak
+    // menutup kartu sampai sudut membulat. Tombol aksi menangkap ketukannya
+    // sendiri, jadi menekannya tidak ikut membuka formulir.
     return Card(
-      margin: EdgeInsets.zero,
-      color: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.greenLight.withValues(alpha: 0.45),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _activityLabel(item.jenisKegiatan),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _ScheduleInfoLine(
+                icon: Icons.schedule_outlined,
+                text: timeRange,
+              ),
+              const SizedBox(height: 8),
+              _ScheduleInfoLine(
+                icon: Icons.place_outlined,
+                text: item.lokasi,
+              ),
+              if (item.keterangan.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _ScheduleInfoLine(
+                  icon: Icons.notes_outlined,
+                  text: item.keterangan,
+                ),
+              ],
+              const SizedBox(height: 8),
+              // Status and actions share one row; on a narrow card the actions
+              // wrap under the badge, right-aligned, rather than overflow.
+              Row(
                 children: [
-                  Text(
-                    _activityLabel(item.jenisKegiatan),
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ScheduleInfoLine(
-                    icon: Icons.schedule_outlined,
-                    text: timeRange,
-                  ),
-                  const SizedBox(height: 8),
-                  _ScheduleInfoLine(
-                    icon: Icons.place_outlined,
-                    text: item.lokasi,
-                  ),
-                  if (item.keterangan.trim().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _ScheduleInfoLine(
-                      icon: Icons.notes_outlined,
-                      text: item.keterangan,
+                  _ScheduleStatus(status: item.status),
+                  if (!readOnly && item.isOverlapping) ...[
+                    const SizedBox(width: 8),
+                    const Tooltip(
+                      message: 'Jadwal bertumpuk di lokasi yang sama',
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _ScheduleStatus(status: item.status),
-                      const Spacer(),
-                      if (!readOnly && item.isOverlapping)
-                        const Tooltip(
-                          message: 'Jadwal bertumpuk di lokasi yang sama',
-                          child: Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.orange,
-                            size: 20,
-                          ),
-                        ),
-                    ],
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          if (!readOnly)
+                            for (final action in _availableActions)
+                              _actionButton(action),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-          if (!readOnly && item.status == 'draft')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: OverflowBar(
-                alignment: MainAxisAlignment.end,
-                spacing: 8,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onPublish,
-                    child: const Text('Terbitkan'),
-                  ),
-                ],
-              ),
-            ),
-          if (!readOnly && item.status == 'diterbitkan')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: OverflowBar(
-                alignment: MainAxisAlignment.end,
-                spacing: 8,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onCancel,
-                    child: const Text('Batalkan'),
-                  ),
-                  FilledButton.tonal(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
-                      foregroundColor: AppColors.greenDark,
-                    ),
-                    onPressed: onComplete,
-                    child: const Text('Tandai Selesai'),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
+
+  /// Aksi yang sah dari status jadwal ini.
+  ///
+  /// Status yang tidak dikenali build ini tidak memberi aksi apa pun, bukan
+  /// aksi penuh: pengurus melihat kartunya tetapi tidak dapat mengubahnya.
+  Set<JadwalAction> get _availableActions =>
+      JadwalStatus.fromWire(item.status)?.availableActions ?? const {};
+
+  Widget _actionButton(JadwalAction action) => switch (action) {
+        JadwalAction.batalkan => TextButton(
+            onPressed: onCancel,
+            child: Text(action.label),
+          ),
+        JadwalAction.terbitkan => FilledButton(
+            onPressed: onPublish,
+            child: Text(action.label),
+          ),
+        JadwalAction.selesaikan => AppButton(
+            label: action.label,
+            variant: AppButtonVariant.tonal,
+            expand: false,
+            onPressed: onComplete,
+          ),
+      };
 }
 
 class _ScheduleInfoLine extends StatelessWidget {
@@ -766,19 +1013,13 @@ class _ScheduleStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = switch (status) {
-      'draft' => const Color(0xFFFFF4DE),
-      'diterbitkan' => AppColors.greenLight,
-      'dibatalkan' => const Color(0xFFFDECEC),
-      'selesai' => const Color(0xFFF0F2F0),
-      _ => AppColors.cardOffWhite,
-    };
-    final foreground = switch (status) {
-      'draft' => const Color(0xFF8A5A00),
-      'diterbitkan' => AppColors.greenDark,
-      'dibatalkan' => const Color(0xFF9B3D3D),
-      'selesai' => const Color(0xFF59665C),
-      _ => Colors.grey.shade700,
+    final resolved = JadwalStatus.fromWire(status);
+    final (background, foreground) = switch (resolved) {
+      JadwalStatus.draf => (AppColors.warningLight, AppColors.warning),
+      JadwalStatus.diterbitkan => (AppColors.greenLight, AppColors.greenDark),
+      JadwalStatus.dibatalkan => (AppColors.dangerLight, AppColors.danger),
+      JadwalStatus.selesai => (AppColors.fill, AppColors.inkSoft),
+      null => (AppColors.cardOffWhite, Colors.grey.shade700),
     };
 
     return Container(
@@ -788,7 +1029,7 @@ class _ScheduleStatus extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _statusLabel(status),
+        resolved?.label ?? status,
         style: TextStyle(
           color: foreground,
           fontSize: 12,
@@ -810,17 +1051,30 @@ String _formatTime(DateTime value) {
   return '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
 
-class _JadwalForm extends StatefulWidget {
+class _JadwalForm extends ConsumerStatefulWidget {
   final JadwalEntity? initial;
   final DateTime? initialDate;
 
-  const _JadwalForm({this.initial, this.initialDate});
+  /// Diisi hanya ketika form tampil sebagai panel. Panel tidak berada di atas
+  /// navigator, jadi ia ditutup lewat callback, bukan dengan `Navigator.pop`.
+  /// Nilainya sekaligus menjadi penanda wadah: null berarti bottom sheet.
+  final VoidCallback? onClose;
+
+  const _JadwalForm({
+    super.key,
+    this.initial,
+    this.initialDate,
+    this.onClose,
+  });
+
+  /// Apakah form sedang tampil sebagai panel, bukan sebagai bottom sheet.
+  bool get isPanel => onClose != null;
 
   @override
-  State<_JadwalForm> createState() => _JadwalFormState();
+  ConsumerState<_JadwalForm> createState() => _JadwalFormState();
 }
 
-class _JadwalFormState extends State<_JadwalForm> {
+class _JadwalFormState extends ConsumerState<_JadwalForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _locationController;
   late final TextEditingController _descriptionController;
@@ -882,22 +1136,13 @@ class _JadwalFormState extends State<_JadwalForm> {
     super.dispose();
   }
 
-  Widget _buildLabel(String text) => Text(
-        text,
-        style: AppTextStyle.extraSmall.copyWith(
-          color: Colors.grey[500],
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-      );
-
   Future<void> _pickDateTime({required bool start}) async {
     final current = start ? _startsAt : _endsAt;
     final currentDate = DateUtils.dateOnly(current);
     final today = DateUtils.dateOnly(DateTime.now());
     final firstDate = currentDate.isBefore(today) ? currentDate : today;
     final lastDate = today.add(const Duration(days: 730));
-    final date = await showDatePicker(
+    final date = await showAppDatePicker(
       context: context,
       initialDate: currentDate.isAfter(lastDate) ? lastDate : currentDate,
       firstDate: firstDate,
@@ -932,21 +1177,23 @@ class _JadwalFormState extends State<_JadwalForm> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (widget.initial == null && _startsAt.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Waktu mulai harus di masa depan')),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu mulai harus di masa depan',
       );
       return;
     }
     if (!_endsAt.isAfter(_startsAt)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Waktu selesai harus setelah waktu mulai'),
-        ),
+      AppNotification.showWarning(
+        context,
+        title: 'Waktu tidak valid',
+        message: 'Waktu selesai harus setelah waktu mulai',
       );
       return;
     }
     final initial = widget.initial;
-    final failure = await context.read<JadwalCubit>().saveJadwal(
+    final failure = await ref.read(jadwalProvider.notifier).saveJadwal(
           JadwalEntity(
             id: initial?.id ?? '',
             bankSampahId: initial?.bankSampahId ?? '',
@@ -963,23 +1210,31 @@ class _JadwalFormState extends State<_JadwalForm> {
         );
     if (!mounted) return;
     if (failure == null) {
-      Navigator.of(context).pop();
+      final close = widget.onClose;
+      if (close != null) {
+        close();
+      } else {
+        Navigator.of(context).pop();
+      }
     } else {
-      ScaffoldMessenger.of(
+      AppNotification.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text(failure.displayMessage)));
+        title: 'Gagal',
+        message: failure.displayMessage,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: DialogSurface.keyboardInset(context)),
       child: Container(
         key: const ValueKey('jadwal-form'),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SingleChildScrollView(
@@ -990,12 +1245,17 @@ class _JadwalFormState extends State<_JadwalForm> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 BottomSheetHeader(
-                  title: widget.initial == null ? 'Buat Jadwal' : 'Ubah Jadwal',
+                  title: widget.initial == null
+                      ? _createScheduleLabel
+                      : 'Ubah Jadwal',
+                  showDragHandle: !widget.isPanel,
+                  onClose: widget.onClose,
                 ),
                 const SizedBox(height: 24),
-                _buildLabel('JENIS KEGIATAN'),
+                const AppFieldLabel('JENIS KEGIATAN'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   initialValue: _activity,
                   decoration: appInputDecoration(),
                   items: const [
@@ -1011,7 +1271,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onChanged: (value) => setState(() => _activity = value!),
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('LOKASI'),
+                const AppFieldLabel('LOKASI'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _locationController,
@@ -1021,7 +1281,7 @@ class _JadwalFormState extends State<_JadwalForm> {
                       : null,
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('KETERANGAN'),
+                const AppFieldLabel('KETERANGAN'),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
@@ -1045,9 +1305,10 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onTap: () => _pickDateTime(start: false),
                 ),
                 const SizedBox(height: 20),
-                _buildLabel('CAKUPAN PENERIMA'),
+                const AppFieldLabel('CAKUPAN PENERIMA'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   initialValue: _audience,
                   decoration: appInputDecoration(),
                   items: [
@@ -1064,13 +1325,14 @@ class _JadwalFormState extends State<_JadwalForm> {
                   onChanged: (value) => setState(() => _audience = value!),
                 ),
                 const SizedBox(height: 24),
-                BlocBuilder<JadwalCubit, JadwalState>(
-                  builder: (context, state) {
+                Builder(
+                  builder: (context) {
+                    final state = ref.watch(jadwalProvider);
                     final isSaving = state is JadwalLoaded && state.isSaving;
                     return SizedBox(
                       width: double.infinity,
-                      child: CustomPrimaryButton(
-                        title: isSaving
+                      child: AppButton(
+                        label: isSaving
                             ? 'Menyimpan...'
                             : widget.initial == null
                                 ? 'Simpan Jadwal'
@@ -1104,9 +1366,9 @@ class _DateTimeTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => AppTapTarget(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: InputDecorator(
           decoration: decoration.copyWith(
             labelText: label,
@@ -1122,11 +1384,3 @@ String _formatDateTime(DateTime value) {
   return '${twoDigits(value.day)}/${twoDigits(value.month)}/${value.year}, '
       '${twoDigits(value.hour)}:${twoDigits(value.minute)}';
 }
-
-String _statusLabel(String status) => switch (status) {
-      'draft' => 'Draf',
-      'diterbitkan' => 'Diterbitkan',
-      'dibatalkan' => 'Dibatalkan',
-      'selesai' => 'Selesai',
-      _ => status,
-    };

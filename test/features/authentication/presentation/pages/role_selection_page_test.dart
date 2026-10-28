@@ -1,7 +1,6 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
@@ -9,25 +8,20 @@ import 'package:google_sign_in_platform_interface/google_sign_in_platform_interf
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/register_google_role_events.dart';
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
+
+import '../../../../support/auth_support.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
-
-class _MockAuthBloc extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
-
-class _FakeAuthEvent extends Fake implements AuthenticationEvent {}
 
 class _MockGoogleSignInPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements google_sign_in.GoogleSignInPlatform {}
 
 void main() {
-  late _MockAuthBloc auth;
-  late google_sign_in.GoogleSignInPlatform originalGoogleSignInPlatform;
+  late TestAuthenticationNotifier auth;
+  late google_sign_in.GoogleSignInPlatform originalPlatform;
   late _MockGoogleSignInPlatform googleSignInPlatform;
   final registration = GoogleRegistrationRequired(
     registrationToken: 'signed-token',
@@ -37,26 +31,20 @@ void main() {
     photoUrl: 'https://example.com/ayu.png',
   );
 
-  setUpAll(() => registerFallbackValue(_FakeAuthEvent()));
-
   setUp(() {
-    originalGoogleSignInPlatform = google_sign_in.GoogleSignInPlatform.instance;
+    originalPlatform = google_sign_in.GoogleSignInPlatform.instance;
     googleSignInPlatform = _MockGoogleSignInPlatform();
     google_sign_in.GoogleSignInPlatform.instance = googleSignInPlatform;
     when(() =>
             googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
         .thenAnswer((_) async {});
-    auth = _MockAuthBloc();
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
+    auth = TestAuthenticationNotifier(
       initialState: GoogleRegistrationPending(registration: registration),
     );
   });
 
-  tearDown(() async {
-    google_sign_in.GoogleSignInPlatform.instance = originalGoogleSignInPlatform;
-    await auth.close();
+  tearDown(() {
+    google_sign_in.GoogleSignInPlatform.instance = originalPlatform;
   });
 
   testWidgets('offers roles supported by the platform and submits selection',
@@ -66,20 +54,16 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<AuthenticationBloc>.value(
-          value: auth,
-          child: const RoleSelectionPage(),
-        ),
-      ),
-    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authenticationProvider.overrideWith(() => auth)],
+      child: const MaterialApp(home: RoleSelectionPage()),
+    ));
 
     expect(find.text('Daftar Akun'), findsOneWidget);
     expect(find.text('Langkah 1'), findsOneWidget);
     expect(find.text('ayu@example.com'), findsOneWidget);
     expect(find.text('Nasabah'), kIsWeb ? findsNothing : findsOneWidget);
-    expect(find.text('Pengelola Bank Sampah'), findsOneWidget);
+    expect(find.text('Pengurus Bank Sampah'), findsOneWidget);
     expect(find.text('Pengelola Bank Sampah Induk'), findsOneWidget);
     expect(find.text('Superadmin'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -88,10 +72,8 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Lanjutkan'));
 
-    final event = verify(() => auth.add(captureAny())).captured.single
-        as RegisterGoogleRoleRequested;
     expect(
-      event.role,
+      auth.lastRole,
       kIsWeb
           ? GoogleRegistrationRole.pengelola
           : GoogleRegistrationRole.nasabah,
@@ -104,8 +86,8 @@ void main() {
       routes: [
         GoRoute(
           path: RoleSelectionPage.route,
-          builder: (context, state) => BlocProvider<AuthenticationBloc>.value(
-            value: auth,
+          builder: (context, state) => ProviderScope(
+            overrides: [authenticationProvider.overrideWith(() => auth)],
             child: const RoleSelectionPage(),
           ),
         ),
@@ -121,13 +103,10 @@ void main() {
     await tester.tap(find.text('Ganti akun'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Login page'), findsOneWidget);
+    expect(auth.calls, contains('changeGoogleAccount'));
     verify(() =>
             googleSignInPlatform.signOut(const google_sign_in.SignOutParams()))
         .called(1);
-    expect(find.text('Login page'), findsOneWidget);
-    expect(
-      verify(() => auth.add(captureAny())).captured.single,
-      isA<ChangeGoogleAccountRequested>(),
-    );
   });
 }

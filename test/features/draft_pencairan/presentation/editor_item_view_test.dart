@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_editor_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_view.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 EditorItem _item(

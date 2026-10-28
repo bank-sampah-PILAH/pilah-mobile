@@ -1,17 +1,10 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
-import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
-class MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
+import '../../../../support/nasabah_support.dart';
 
 const _duplicatePhoneMessage = 'Nomor HP nasabah sudah digunakan';
 const _shortAddressMessage = 'Alamat minimal 10 karakter.';
@@ -31,11 +24,9 @@ NetworkException _duplicatePhoneException() =>
       ),
     );
 
-Widget _host(NasabahCubit cubit) => MaterialApp(
-      home: BlocProvider<NasabahCubit>.value(
-        value: cubit,
-        child: const Scaffold(body: TambahNasabahBottomSheet()),
-      ),
+Widget _host(TestNasabahNotifier notifier) => withNasabahProvider(
+      notifier,
+      const MaterialApp(home: Scaffold(body: TambahNasabahBottomSheet())),
     );
 
 /// Fills every field the client-side validators require, so submitting reaches
@@ -70,18 +61,6 @@ Future<void> _submit(WidgetTester tester) async {
 }
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(NasabahRequest(
-      kode: '',
-      nama: '',
-      email: '',
-      jenisKelamin: '',
-      tanggalLahir: '',
-      noHp: '',
-      alamat: '',
-    ));
-  });
-
   group('422 duplicate-phone parsing', () {
     test('maps the no_hp payload to a field error rather than a bare message',
         () {
@@ -107,11 +86,10 @@ void main() {
   });
 
   group('TambahNasabahBottomSheet validation', () {
-    late MockNasabahCubit cubit;
+    late TestNasabahNotifier notifier;
 
     setUp(() {
-      cubit = MockNasabahCubit();
-      when(() => cubit.state).thenReturn(const NasabahLoaded(nasabahList: []));
+      notifier = TestNasabahNotifier();
     });
 
     testWidgets('rejects short addresses before making the request',
@@ -121,25 +99,24 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      when(() => cubit.addNasabah(any()))
-          .thenAnswer((_) async => NetworkException.handleBadResponse(
-                Response(
-                  requestOptions: RequestOptions(path: '/api/v1/nasabah'),
-                  statusCode: 422,
-                  data: {
-                    'errors': {
-                      'alamat': ['Alamat wajib diisi'],
-                    },
-                  },
-                ),
-              ));
+      notifier.add = (_) async => NetworkException.handleBadResponse(
+            Response(
+              requestOptions: RequestOptions(path: '/api/v1/nasabah'),
+              statusCode: 422,
+              data: {
+                'errors': {
+                  'alamat': ['Alamat wajib diisi'],
+                },
+              },
+            ),
+          );
 
-      await tester.pumpWidget(_host(cubit));
+      await tester.pumpWidget(_host(notifier));
       await _fillValidForm(tester, address: 'JL. ngawi');
       await _submit(tester);
 
       expect(find.text(_shortAddressMessage), findsOneWidget);
-      verifyNever(() => cubit.addNasabah(any()));
+      expect(notifier.addedRequests, isEmpty);
     });
 
     testWidgets(
@@ -150,10 +127,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      when(() => cubit.addNasabah(any()))
-          .thenAnswer((_) async => _duplicatePhoneException());
+      notifier.add = (_) async => _duplicatePhoneException();
 
-      await tester.pumpWidget(_host(cubit));
+      await tester.pumpWidget(_host(notifier));
       await _fillValidForm(tester);
       await _submit(tester);
 
@@ -173,10 +149,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      when(() => cubit.addNasabah(any()))
-          .thenAnswer((_) async => _duplicatePhoneException());
+      notifier.add = (_) async => _duplicatePhoneException();
 
-      await tester.pumpWidget(_host(cubit));
+      await tester.pumpWidget(_host(notifier));
       await _fillValidForm(tester);
       await _submit(tester);
       expect(find.text(_duplicatePhoneMessage), findsOneWidget);

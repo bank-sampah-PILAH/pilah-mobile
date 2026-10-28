@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
 
 /// Shows a bank sampah's foto kegiatan so a superadmin can review it.
 ///
@@ -19,7 +22,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
       return Dialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
         child: Column(
@@ -42,7 +45,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
             ),
 
             const SizedBox(height: 8),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            const Divider(height: 1, color: AppColors.border),
 
             // Image Area
             Padding(
@@ -75,7 +78,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                             // submitted nothing, and a reviewer has to be able
                             // to tell those apart.
                             errorBuilder: (context, error, stackTrace) {
-                              return _ProofPlaceholder(
+                              return const _ProofPlaceholder(
                                 icon: Icons.broken_image,
                                 title: 'Gagal memuat gambar',
                                 subtitle: 'Periksa koneksi lalu coba lagi.',
@@ -83,7 +86,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                             },
                           ),
                         )
-                      : _ProofPlaceholder(
+                      : const _ProofPlaceholder(
                           icon: Icons.image_not_supported_outlined,
                           title: 'Tidak ada foto kegiatan',
                           subtitle:
@@ -93,7 +96,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
               ),
             ),
 
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            const Divider(height: 1, color: AppColors.border),
 
             // Bottom Bar
             Padding(
@@ -101,19 +104,11 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  ElevatedButton(
+                  AppButton(
+                    label: 'Close',
+                    variant: AppButtonVariant.neutral,
+                    expand: false,
                     onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6B7280), // Cool gray
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    child: const Text('Close'),
                   ),
                 ],
               ),

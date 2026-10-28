@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/transaksi_cubit.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/transaksi_provider.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/detail_transaksi_bottom_sheet.dart';
 
 import '../../../../support/pump_app.dart';
@@ -27,35 +26,31 @@ Map<String, dynamic> _row({String wa = 'terkirim'}) => {
 
 void main() {
   late StubApi api;
-  late TransaksiCubit cubit;
+  late TransaksiNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildTransaksiCubit(api);
+    notifier = buildTransaksiNotifier(api);
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester, Map<String, dynamic> data) async {
     await pumpRouted(
       tester,
-      BlocProvider<TransaksiCubit>.value(
-        value: cubit,
-        child: Builder(
-          builder: (context) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => BlocProvider<TransaksiCubit>.value(
-                  value: cubit,
-                  child: DetailTransaksiBottomSheet(transactionData: data),
-                ),
-              ),
-              child: const Text('open'),
+      Builder(
+        builder: (context) => Scaffold(
+          body: ElevatedButton(
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              builder: (_) => DetailTransaksiBottomSheet(transactionData: data),
             ),
+            child: const Text('open'),
           ),
         ),
+      ),
+      wrap: (app) => withTransaksiProviders(
+        transaksi: notifier,
+        child: app,
       ),
       size: const Size(800, 2000),
     );
@@ -101,6 +96,25 @@ void main() {
     expect(find.text('2,5 kg'), findsOneWidget);
     expect(find.text('Rp 15.000'), findsOneWidget);
     expect(find.text('Rp 40.000'), findsOneWidget);
+  });
+
+  testWidgets(
+      'the status badge sits under the title and the close button '
+      'closes the sheet', (tester) async {
+    api.on('GET', _path, json: _row());
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selesai'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Selesai')).dy,
+      greaterThan(tester.getBottomLeft(find.text('Detail Transaksi')).dy),
+    );
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail Transaksi'), findsNothing);
   });
 
   testWidgets('a spinner shows while the breakdown loads and nothing is known',
@@ -149,5 +163,53 @@ void main() {
     expect(find.text('NN'), findsOneWidget);
     expect(find.text('Hari ini'), findsOneWidget);
     expect(find.text('Rp 0'), findsOneWidget);
+  });
+
+  testWidgets(
+      'shows the note and each replaced version under Riwayat Perubahan',
+      (tester) async {
+    api.on('GET', _path, json: {
+      ..._row(),
+      'catatan': 'titip ke Bu RT',
+      'revisi': [
+        {
+          'versi': 1,
+          'total_nilai': '4000',
+          'catatan': 'catatan lama',
+          'alasan': 'Salah timbang',
+          'diubah_oleh_nama': 'Ibu Sari',
+          'diubah_pada': '2026-10-24T03:00:00Z',
+          'items': [
+            {
+              'nama_sampah': 'Botol',
+              'harga': '2000',
+              'berat': '2.000',
+              'subtotal': '4000',
+            },
+          ],
+        },
+      ],
+    });
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('titip ke Bu RT'), findsOneWidget);
+    expect(find.text('RIWAYAT PERUBAHAN'), findsOneWidget);
+    expect(find.byKey(const ValueKey('revisi-1')), findsOneWidget);
+    expect(find.text('Alasan: Salah timbang'), findsOneWidget);
+    expect(find.text('Catatan: catatan lama'), findsOneWidget);
+    expect(find.textContaining('Diubah oleh Ibu Sari'), findsOneWidget);
+    expect(find.text('Botol • 2 kg • Rp 4.000'), findsOneWidget);
+    expect(find.text('Total: Rp 4.000'), findsOneWidget);
+  });
+
+  testWidgets('a setoran that was never edited shows no history',
+      (tester) async {
+    api.on('GET', _path, json: {..._row(), 'revisi': []});
+    await open(tester, listData());
+    await tester.pumpAndSettle();
+
+    expect(find.text('RIWAYAT PERUBAHAN'), findsNothing);
+    expect(find.text('CATATAN'), findsNothing);
   });
 }

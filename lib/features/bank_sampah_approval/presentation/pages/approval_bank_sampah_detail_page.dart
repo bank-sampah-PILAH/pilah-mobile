@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/design/widgets/app_dialog.dart';
+import 'package:pilah_mobile/design/widgets/nasabah_page_app_bar.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/domain/entities/nasabah_membership_entity.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_cubit.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/cubit/nasabah_appeal_state.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/providers/nasabah_appeal_provider.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_appeal_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
-import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_status_badge.dart';
-import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_bank_identity.dart';
 
 /// Detail view for one membership, pushed from [ApprovalBankSampahListView]
 /// with the tapped [NasabahMembershipEntity] passed directly via GoRouter's
@@ -24,82 +27,72 @@ class ApprovalBankSampahDetailPage extends StatelessWidget {
   static const route = '/approval-bank-sampah/detail';
 
   @override
-  Widget build(BuildContext context) {
-    // A new instance per visit, like NasabahApprovalCubit: an appeal is
-    // scoped to this one detail-page visit, not app-wide state.
-    return BlocProvider<NasabahAppealCubit>(
-      create: (_) => di<NasabahAppealCubit>(),
-      child: ApprovalBankSampahDetailView(membership: membership),
-    );
-  }
+  Widget build(BuildContext context) =>
+      ApprovalBankSampahDetailView(membership: membership);
 }
 
 /// The detail body, split out from [ApprovalBankSampahDetailPage] so widget
-/// tests can inject a cubit directly with `BlocProvider.value` instead of
-/// going through the DI container — mirrors the list page's own split.
-class ApprovalBankSampahDetailView extends StatelessWidget {
+/// tests can override its provider without going through the DI container.
+class ApprovalBankSampahDetailView extends ConsumerWidget {
   final NasabahMembershipEntity membership;
 
   const ApprovalBankSampahDetailView({super.key, required this.membership});
 
-  Future<void> _appeal(BuildContext context) async {
-    final cubit = context.read<NasabahAppealCubit>();
+  Future<void> _appeal(BuildContext context, WidgetRef ref) async {
     final pesan = await showDialog<String>(
       context: context,
       builder: (dialogContext) => _AppealMessageDialog(),
     );
     if (pesan == null) return;
-    cubit.submit(membership.bankSampahId, pesan: pesan);
+    ref
+        .read(nasabahAppealProvider.notifier)
+        .submit(membership.bankSampahId, pesan: pesan);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocListener<NasabahAppealCubit, NasabahAppealState>(
-      listener: (context, state) {
-        if (state is NasabahAppealSuccess) {
-          context.pop(true);
-          AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
-                ctx,
-                title: 'Banding Diajukan',
-                message:
-                    'Pengajuan Anda telah dikirim ulang untuk ditinjau pengurus.',
-              ));
-        } else if (state is NasabahAppealFailure) {
-          AppNotification.showError(
-            context,
-            title: 'Gagal Mengajukan Banding',
-            message: state.message,
-          );
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          foregroundColor: Colors.black87,
-          title: Text(membership.bankSampahNama, style: AppTextStyle.appBar),
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStatusCard(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<NasabahAppealState>(nasabahAppealProvider, (previous, state) {
+      if (state is NasabahAppealSuccess) {
+        context.pop(true);
+        AppNotification.afterNavigation((ctx) => AppNotification.showSuccess(
+              ctx,
+              title: 'Banding Diajukan',
+              message:
+                  'Pengajuan Anda telah dikirim ulang untuk ditinjau pengurus.',
+            ));
+      } else if (state is NasabahAppealFailure) {
+        AppNotification.showError(
+          context,
+          title: 'Gagal Mengajukan Banding',
+          message: state.message,
+        );
+      }
+    });
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: NasabahPageAppBar(
+        title: membership.bankSampahNama,
+        showBack: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatusCard(),
+              const SizedBox(height: 24),
+              if (membership.status == MembershipStatus.rejected) ...[
+                _buildAppealButton(context, ref),
                 const SizedBox(height: 24),
-                if (membership.status == MembershipStatus.rejected) ...[
-                  _buildAppealButton(context),
-                  const SizedBox(height: 24),
-                ],
-                Text(
-                  'Riwayat Persetujuan',
-                  style: AppTextStyle.title1.copyWith(fontSize: 16),
-                ),
-                const SizedBox(height: 16),
-                MembershipApprovalTimeline(membership: membership),
               ],
-            ),
+              Text(
+                'Riwayat Persetujuan',
+                style: AppTextStyle.title1.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              MembershipApprovalTimeline(membership: membership),
+            ],
           ),
         ),
       ),
@@ -130,50 +123,16 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.greenDark.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.recycling, color: AppColors.greenDark),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      membership.bankSampahNama,
-                      style: AppTextStyle.title1.copyWith(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      [membership.bankSampahKota, membership.bankSampahAlamat]
-                          .where((part) => part.trim().isNotEmpty)
-                          .join(' · '),
-                      style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              MembershipStatusBadge(status: membership.status),
-            ],
+          MembershipBankIdentity(
+            membership: membership,
+            nameStyle: AppTextStyle.title1.copyWith(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            locationStyle: AppTextStyle.small.copyWith(
+              color: Colors.grey[500],
+            ),
           ),
           if (membership.status == MembershipStatus.rejected) ...[
             const SizedBox(height: 16),
@@ -196,41 +155,12 @@ class ApprovalBankSampahDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildAppealButton(BuildContext context) {
-    return BlocBuilder<NasabahAppealCubit, NasabahAppealState>(
-      builder: (context, state) {
-        final submitting = state is NasabahAppealSubmitting;
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: submitting ? null : () => _appeal(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: submitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    'Ajukan Banding',
-                    style: AppTextStyle.small.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
-        );
-      },
+  Widget _buildAppealButton(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(nasabahAppealProvider);
+    return AppButton(
+      label: 'Ajukan Banding',
+      isLoading: state is NasabahAppealSubmitting,
+      onPressed: () => _appeal(context, ref),
     );
   }
 }
@@ -254,31 +184,17 @@ class _AppealMessageDialogState extends State<_AppealMessageDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text(
-        'Ajukan Banding',
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
+    return AppDialog(
+      title: 'Ajukan Banding',
       content: TextField(
         controller: _controller,
         maxLines: 3,
-        decoration: const InputDecoration(
-          hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)',
-          border: OutlineInputBorder(),
-        ),
+        decoration: appInputDecoration(
+            hintText: 'Jelaskan perbaikan yang sudah Anda lakukan (opsional)'),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.greenDark),
-          child: const Text('Kirim'),
-        ),
-      ],
+      confirmLabel: 'Kirim',
+      onConfirm: () => Navigator.of(context).pop(_controller.text.trim()),
+      onCancel: () => Navigator.of(context).pop(),
     );
   }
 }

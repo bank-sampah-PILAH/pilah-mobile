@@ -4,17 +4,37 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag whose tested AAB should be uploaded
+        required: true
+        type: string
+      track:
+        description: Play track to receive the exact released AAB
+        required: true
+        type: choice
+        options:
+          - alpha
+          - beta
+          - production
+        default: alpha
+      confirm_play_review_approved:
+        description: Required when promoting to production after Google approval
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: cd-production-${{ github.ref }}
   cancel-in-progress: false
 
 env:
-  # Keep CD on the same pinned Flutter release as the merge gate.
   FLUTTER_VERSION: "3.41.3"
 
 jobs:
   deploy_web_production:
+    if: github.event_name == 'push'
     uses: ./.github/workflows/deploy-web.yml
     with:
       flavor: production
@@ -25,6 +45,7 @@ jobs:
 
   # Scans what was just deployed. It only flags the tag red; the deploy is already live.
   nuclei_post_deploy:
+    if: github.event_name == 'push'
     name: Exposure scan (Nuclei, production web)
     needs: deploy_web_production
     permissions:
@@ -34,13 +55,137 @@ jobs:
       environment: production
       target_url: ${{ needs.deploy_web_production.outputs.url }}
 
-  release:
-    name: Build production APK artifact
+  verify:
+    if: github.event_name == 'push'
+    name: Release checks and SonarCloud quality gate
     runs-on: ubuntu-latest
-    # Configure required reviewers on this environment to gate the upload.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Prepare test environment
+        run: cp .env.example .env
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Check Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib test codegen
+
+      - name: Analyze Flutter code
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Run web-specific widget tests
+        run: >-
+          flutter test --platform chrome
+          test/features/authentication/presentation/widgets/google_sign_in_web_button_chrome.dart
+
+      - name: Verify web dashboard role layout
+        run: >-
+          flutter test --platform chrome
+          --plain-name "web dashboard uses the web default for Pengurus"
+          test/features/dashboard/presentation/pages/dashboard_page_test.dart
+
+      - name: Enforce coverage floor
+        run: |
+          pct="$(awk '
+            /^DA:/ { found++; split($0, a, ","); if (a[2]+0 > 0) hit++ }
+            END { if (found == 0) exit 1; printf "%.1f", 100 * hit / found }
+          ' coverage/lcov.info)"
+          echo "line coverage: ${pct}%"
+          awk -v p="$pct" 'BEGIN { exit (p+0 >= 25 ? 0 : 1) }' \
+            || { echo "::error::coverage ${pct}% is below the 25% gate"; exit 1; }
+
+      - name: Install release workflow test dependencies
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+
+      - name: Check release workflow safeguards
+        run: python3 -m unittest discover -s scripts/tests -v
+
+      - name: SonarCloud scan and quality gate
+        id: sonar_scan
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=bank-sampah-pilah
+            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
+            -Dsonar.sources=lib
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=lib/services/di.config.dart,lib/main_development.dart,lib/main_production.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.scanner.skipJreProvisioning=true
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+      - name: SonarCloud scan and quality gate (retry)
+        id: sonar_retry
+        if: steps.sonar_scan.outcome == 'failure'
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=bank-sampah-pilah
+            -Dsonar.projectKey=bank-sampah-PILAH_pilah-mobile
+            -Dsonar.sources=lib
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=lib/services/di.config.dart,lib/main_development.dart,lib/main_production.dart
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/generated/**,**/*.gr.dart
+            -Dsonar.scanner.skipJreProvisioning=true
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+      - name: Enforce SonarCloud quality gate
+        if: always()
+        env:
+          SONAR_SCAN_OUTCOME: ${{ steps.sonar_scan.outcome }}
+          SONAR_RETRY_OUTCOME: ${{ steps.sonar_retry.outcome }}
+        run: |
+          if [[ "$SONAR_SCAN_OUTCOME" == "success" || "$SONAR_RETRY_OUTCOME" == "success" ]]; then
+            exit 0
+          fi
+          echo "::error::SonarCloud scan and retry both failed; release quality gate is not satisfied."
+          exit 1
+
+  release:
+    if: github.event_name == 'push'
+    name: Build, sign, and upload the production AAB
+    needs: verify
+    runs-on: ubuntu-latest
     environment: production
     permissions:
       contents: write
+    concurrency:
+      group: play-release-${{ github.repository }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
@@ -50,12 +195,38 @@ jobs:
           channel: stable
           cache: true
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Prepare application environment
+      - name: Validate version and tag
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import re
+
+          version = re.search(r"^version:\s*(\d+\.\d+\.\d+)\+(\d+)\s*$", pathlib.Path("pubspec.yaml").read_text(), re.MULTILINE)
+          if version is None:
+              raise SystemExit("pubspec.yaml must set version as MAJOR.MINOR.PATCH+BUILD")
+          name, code = version.groups()
+          if os.environ["RELEASE_TAG"] != f"v{name}":
+              raise SystemExit("release tag must match the pubspec versionName (vMAJOR.MINOR.PATCH)")
+          if int(code) <= 6:
+              raise SystemExit("versionCode must be greater than the rejected Play version code 6")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"name={name}\ncode={code}\n")
+          PY
+
+      - name: Prepare production environment
         env:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
         run: |
@@ -63,7 +234,7 @@ jobs:
             echo "::error::The production environment secret APP_ENV_FILE is required."
             exit 1
           fi
-          printf '%s' "$APP_ENV_FILE" > .env
+          python3 scripts/prepare_web_env.py production .env
 
       - name: Prepare Android signing
         env:
@@ -71,12 +242,14 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          PLAY_TEST_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
         run: |
           required_secrets=(
             ANDROID_KEYSTORE_BASE64
             ANDROID_KEY_ALIAS
             ANDROID_KEY_PASSWORD
             ANDROID_KEYSTORE_PASSWORD
+            PLAY_TEST_SERVICE_ACCOUNT_JSON
           )
           for secret_name in "${required_secrets[@]}"; do
             if [ -z "${!secret_name}" ]; then
@@ -93,7 +266,7 @@ jobs:
             "keyAlias=$ANDROID_KEY_ALIAS" \
             "storeFile=upload-keystore.jks" > android/key.properties
 
-      - name: Prepare google-services.json
+      - name: Prepare Firebase configuration
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
@@ -102,48 +275,158 @@ jobs:
             exit 1
           fi
           printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-          jq empty android/app/google-services.json
+          jq -e '(.client | map(select(.client_info.android_client_info.package_name == "com.mobile.pilahapp")) | length) > 0' \
+            android/app/google-services.json > /dev/null \
+            || { echo "::error::Firebase configuration must include com.mobile.pilahapp."; exit 1; }
 
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Generate code (build_runner)
+      - name: Generate code
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Build signed production APK
-        run: flutter build apk --release -t lib/main_production.dart
+      - name: Build signed production AAB
+        run: flutter build appbundle --release -t lib/main_production.dart
 
-      - name: Upload production APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-${{ github.run_number }}-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-          retention-days: 14
+      - name: Create release metadata
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          BUILD_NAME: ${{ steps.version.outputs.name }}
+          BUILD_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          bundle_dir=build/app/outputs/bundle/release
+          (
+            cd "$bundle_dir"
+            sha256sum app-release.aab > app-release.aab.sha256
+          )
+          checksum="$(cut -d ' ' -f1 "$bundle_dir/app-release.aab.sha256")"
+          cat > "$bundle_dir/release-metadata.txt" <<EOF
+          Tag: $RELEASE_TAG
+          Source commit: $GITHUB_SHA
+          Workflow run: $GITHUB_RUN_ID
+          Version name: $BUILD_NAME
+          Version code: $BUILD_CODE
+          AAB SHA-256: $checksum
+          EOF
 
-      - name: Create production release with generated notes
+      - name: Save immutable GitHub release artifact
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Using existing production release $RELEASE_TAG."
-          else
-            gh release create "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "$RELEASE_TAG" \
-              --generate-notes
+            echo "::error::Release $RELEASE_TAG already exists; use workflow dispatch to retry or promote its exact AAB."
+            exit 1
           fi
+          bundle_dir=build/app/outputs/bundle/release
+          gh release create "$RELEASE_TAG" \
+            "$bundle_dir/app-release.aab" \
+            "$bundle_dir/app-release.aab.sha256" \
+            "$bundle_dir/release-metadata.txt" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$RELEASE_TAG" \
+            --generate-notes
 
-      - name: Attach production APK to release
+      - name: Upload the same AAB to the closed Alpha track
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
+          packageName: com.mobile.pilahapp
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          tracks: alpha
+          status: completed
+          releaseName: ${{ github.ref_name }}
+
+  promote_production:
+    if: github.event_name == 'workflow_dispatch'
+    name: Promote an existing tested AAB
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    concurrency:
+      group: play-release-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - name: Check out the Play promotion script
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download and verify the existing release AAB
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
-          gh release upload "$RELEASE_TAG" \
-            build/app/outputs/flutter-apk/app-release.apk \
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release_tag must use vMAJOR.MINOR.PATCH format."
+            exit 1
+          fi
+          mkdir -p dist
+          gh release download "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --clobber
+            --pattern app-release.aab \
+            --pattern app-release.aab.sha256 \
+            --pattern release-metadata.txt \
+            --dir dist
+          (cd dist && sha256sum --check app-release.aab.sha256)
 
-      # Google Play upload can be added later when Play Console access and
-      # production credentials are available.
+      - name: Require production approval and credentials
+        if: inputs.track == 'production'
+        env:
+          PLAY_REVIEW_APPROVED: ${{ inputs.confirm_play_review_approved }}
+          PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ "$PLAY_REVIEW_APPROVED" != "true" ]; then
+            echo "::error::Confirm Google Play approval before promoting to production."
+            exit 1
+          fi
+          if [ -z "$PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::The production environment secret PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON is required."
+            exit 1
+          fi
+
+      - name: Require test-track credentials
+        if: inputs.track != 'production'
+        env:
+          PLAY_TEST_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$PLAY_TEST_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::The production environment secret PLAY_TEST_SERVICE_ACCOUNT_JSON is required."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Play promotion API dependency
+        run: python3 -m pip install --disable-pip-version-check google-auth==2.62.0
+
+      - name: Promote existing bundle to test track
+        if: inputs.track != 'production'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_TEST_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: ${{ inputs.track }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: >-
+          python3 scripts/promote_play_release.py
+          --package-name com.mobile.pilahapp
+          --track "$PLAY_TRACK"
+          --release-tag "$RELEASE_TAG"
+          --bundle dist/app-release.aab
+          --metadata dist/release-metadata.txt
+
+      - name: Promote existing bundle to production
+        if: inputs.track == 'production'
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: production
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: >-
+          python3 scripts/promote_play_release.py
+          --package-name com.mobile.pilahapp
+          --track "$PLAY_TRACK"
+          --release-tag "$RELEASE_TAG"
+          --bundle dist/app-release.aab
+          --metadata dist/release-metadata.txt

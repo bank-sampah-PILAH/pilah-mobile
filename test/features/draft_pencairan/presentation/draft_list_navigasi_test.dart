@@ -1,10 +1,11 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_cubit.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_list_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/providers/draft_list_provider.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_list_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/draft_format.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}
@@ -31,7 +32,10 @@ DraftRingkasan _draft(
 
 void main() {
   late _MockRepository repository;
-  late DraftListCubit cubit;
+  late ProviderContainer container;
+  late ProviderSubscription<DraftListState> keepAlive;
+  late DraftListNotifier notifier;
+  DraftListState current() => container.read(draftListProvider);
 
   final rows = [
     _draft('d-1', 'Cair Oktober',
@@ -49,86 +53,98 @@ void main() {
 
   setUp(() async {
     repository = _MockRepository();
-    cubit = DraftListCubit(repository);
+    container = ProviderContainer(
+      overrides: [
+        draftListProvider.overrideWith(() => DraftListNotifier(repository)),
+      ],
+    );
+    keepAlive =
+        container.listen(draftListProvider, (_, __) {}, fireImmediately: true);
+    notifier = container.read(draftListProvider.notifier);
     when(() => repository.getDrafts()).thenAnswer((_) async => Right(rows));
-    await cubit.load();
+    await notifier.load();
+  });
+
+  tearDown(() {
+    keepAlive.close();
+    container.dispose();
   });
 
   group('searching', () {
     test('matches the name, whatever the case', () {
-      cubit.setQuery('SEPTEMBER');
-      expect(cubit.state.tampil.map((d) => d.id), ['d-2']);
+      notifier.setQuery('SEPTEMBER');
+      expect(current().tampil.map((d) => d.id), ['d-2']);
     });
 
     test('matches who made it', () {
-      cubit.setQuery('budi');
-      expect(cubit.state.tampil.map((d) => d.id), ['d-2']);
+      notifier.setQuery('budi');
+      expect(current().tampil.map((d) => d.id), ['d-2']);
     });
 
     test('matches the date as written on the card', () {
-      cubit.setQuery('7 okt');
-      expect(cubit.state.tampil.map((d) => d.id), ['d-1']);
+      notifier.setQuery('7 okt');
+      expect(current().tampil.map((d) => d.id), ['d-1']);
     });
 
     test('ignores blanks around the words, and clearing shows all', () {
-      cubit.setQuery('  cair  ');
-      expect(cubit.state.tampil, hasLength(2));
-      cubit.setQuery('');
-      expect(cubit.state.tampil, hasLength(3));
+      notifier.setQuery('  cair  ');
+      expect(current().tampil, hasLength(2));
+      notifier.setQuery('');
+      expect(current().tampil, hasLength(3));
     });
 
     test('narrows together with the status filter', () {
-      cubit.setQuery('cair');
-      cubit.setFilter(DraftStatus.draft);
-      expect(cubit.state.tampil.map((d) => d.id), ['d-1']);
+      notifier.setQuery('cair');
+      notifier.setFilter(DraftStatus.draft);
+      expect(current().tampil.map((d) => d.id), ['d-1']);
     });
   });
 
   group('counts on the chips', () {
     test('count every status, and all of them for null', () {
-      expect(cubit.state.jumlah(null), 3);
-      expect(cubit.state.jumlah(DraftStatus.draft), 1);
-      expect(cubit.state.jumlah(DraftStatus.dikonfirmasi), 1);
-      expect(cubit.state.jumlah(DraftStatus.dibatalkan), 1);
+      expect(current().jumlah(null), 3);
+      expect(current().jumlah(DraftStatus.draft), 1);
+      expect(current().jumlah(DraftStatus.dikonfirmasi), 1);
+      expect(current().jumlah(DraftStatus.dibatalkan), 1);
     });
 
     test('follow the search but not the chosen status', () {
-      cubit.setFilter(DraftStatus.draft);
-      cubit.setQuery('cair');
-      expect(cubit.state.jumlah(null), 2);
-      expect(cubit.state.jumlah(DraftStatus.dikonfirmasi), 1);
-      expect(cubit.state.jumlah(DraftStatus.dibatalkan), 0);
+      notifier.setFilter(DraftStatus.draft);
+      notifier.setQuery('cair');
+      expect(current().jumlah(null), 2);
+      expect(current().jumlah(DraftStatus.dikonfirmasi), 1);
+      expect(current().jumlah(DraftStatus.dibatalkan), 0);
     });
   });
 
   group('sorting', () {
     test('newest first by default', () {
-      expect(cubit.state.urutan.field, DraftSortField.tanggal);
-      expect(cubit.state.urutan.ascending, isFalse);
-      expect(cubit.state.tampil.map((d) => d.id), ['d-3', 'd-1', 'd-2']);
+      expect(current().urutan.field, DraftSortField.tanggal);
+      expect(current().urutan.ascending, isFalse);
+      expect(current().tampil.map((d) => d.id), ['d-3', 'd-1', 'd-2']);
     });
 
     test('choosing the date again flips it to oldest first', () {
-      cubit.setUrutan(DraftSortField.tanggal);
-      expect(cubit.state.urutan.ascending, isTrue);
-      expect(cubit.state.tampil.map((d) => d.id), ['d-2', 'd-1', 'd-3']);
+      notifier.setUrutan(DraftSortField.tanggal);
+      expect(current().urutan.ascending, isTrue);
+      expect(current().tampil.map((d) => d.id), ['d-2', 'd-1', 'd-3']);
     });
 
     test('the total paid starts with the biggest, and flips to the smallest',
         () {
-      cubit.setUrutan(DraftSortField.dibayar);
-      expect(cubit.state.urutan.ascending, isFalse);
-      expect(cubit.state.tampil.map((d) => d.id), ['d-1', 'd-3', 'd-2']);
-      cubit.setUrutan(DraftSortField.dibayar);
-      expect(cubit.state.tampil.map((d) => d.id), ['d-2', 'd-3', 'd-1']);
+      notifier.setUrutan(DraftSortField.dibayar);
+      expect(current().urutan.ascending, isFalse);
+      expect(current().tampil.map((d) => d.id), ['d-1', 'd-3', 'd-2']);
+      notifier.setUrutan(DraftSortField.dibayar);
+      expect(current().tampil.map((d) => d.id), ['d-2', 'd-3', 'd-1']);
     });
 
     test('a name goes A to Z first', () {
-      cubit.setUrutan(DraftSortField.nama);
-      expect(cubit.state.urutan.ascending, isTrue);
-      expect(cubit.state.tampil.map((d) => d.id), ['d-3', 'd-1', 'd-2']);
-      cubit.setUrutan(DraftSortField.nama);
-      expect(cubit.state.tampil.map((d) => d.id), ['d-2', 'd-1', 'd-3']);
+      notifier.setUrutan(DraftSortField.nama);
+      expect(current().urutan.ascending, isTrue);
+      expect(current().tampil.map((d) => d.id), ['d-3', 'd-1', 'd-2']);
+      notifier.setUrutan(DraftSortField.nama);
+      expect(current().tampil.map((d) => d.id), ['d-2', 'd-1', 'd-3']);
     });
 
     test('only the date order is grouped under date headings', () {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 import '../../domain/model/draft_pencairan.dart';
@@ -34,7 +35,8 @@ class ExportMenuButton extends StatelessWidget {
       elevation: 8,
       shadowColor: Colors.black38,
       offset: const Offset(0, 44),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       onSelected: onSelected,
       itemBuilder: (_) => [
         _ExportItem(
@@ -42,15 +44,15 @@ class ExportMenuButton extends StatelessWidget {
           berkas: ExportBerkas.pdf,
           label: 'PDF',
           icon: Icons.picture_as_pdf_outlined,
-          tint: const Color(0xFFFDECEC),
-          iconColor: const Color(0xFFC62828),
+          tint: AppColors.dangerLight,
+          iconColor: AppColors.danger,
         ),
         _ExportItem(
           key: const Key('ekspor-xlsx'),
           berkas: ExportBerkas.xlsx,
           label: 'Excel',
           icon: Icons.table_chart_outlined,
-          tint: const Color(0xFFE8F5E9),
+          tint: AppColors.greenLight,
           iconColor: AppColors.greenDark,
         ),
       ],
@@ -58,7 +60,7 @@ class ExportMenuButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

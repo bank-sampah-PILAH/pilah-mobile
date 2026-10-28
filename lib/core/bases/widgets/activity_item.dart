@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 /// A single row in a money-activity list (setoran, pencairan, …): avatar,
@@ -46,17 +47,19 @@ class ActivityItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
+      // Avatar, text and amount share one vertical centre, so a row with a
+      // one-line subtitle and the taller amount column do not sit at the top.
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
               color: avatarColor,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             alignment: Alignment.center,
             child: Text(
@@ -70,10 +73,13 @@ class ActivityItem extends StatelessWidget {
           const SizedBox(width: 16),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyle.small.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
@@ -92,39 +98,55 @@ class ActivityItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                amount,
-                style: AppTextStyle.small.copyWith(
-                  color: accentColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              for (final caption in trailingCaptions) ...[
-                const SizedBox(height: 4),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  caption,
-                  style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-              if (badge != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  badge!,
-                  style: AppTextStyle.extraSmall.copyWith(
+                  amount,
+                  textAlign: TextAlign.end,
+                  style: AppTextStyle.small.copyWith(
                     color: accentColor,
-                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (trailingCaptions.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  // Date and time share a line; they wrap only when the row
+                  // is too narrow for both.
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 6,
+                    runSpacing: 2,
+                    children: [
+                      for (var i = 0; i < trailingCaptions.length; i++) ...[
+                        if (i > 0) _caption('·'),
+                        _caption(trailingCaptions[i]),
+                      ],
+                    ],
+                  ),
+                ],
+                if (badge != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    badge!,
+                    style: AppTextStyle.extraSmall.copyWith(
+                      color: accentColor,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
     );
   }
+
+  static Widget _caption(String text) => Text(
+        text,
+        style: AppTextStyle.extraSmall.copyWith(color: Colors.grey[600]),
+      );
 }

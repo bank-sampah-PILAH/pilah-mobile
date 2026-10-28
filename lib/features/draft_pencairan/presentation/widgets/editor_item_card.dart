@@ -1,12 +1,15 @@
+import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
 
 import '../../domain/model/draft_pencairan.dart';
-import '../blocs/draft_editor_state.dart';
+import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
 import 'pencairan_ui.dart';
 import 'potongan_control.dart';
@@ -34,20 +37,13 @@ class EditorItemCard extends StatelessWidget {
 
   Future<void> _aturPotongan(BuildContext context) async {
     var pilihan = item.potongan ?? state.potonganDefault;
-    final hasil = await showModalBottomSheet<_PotonganChoice>(
+    final hasil = await showAdaptiveConfirmation<_PotonganChoice>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, _) => StatefulBuilder(
         builder: (context, setSheet) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            16 + MediaQuery.of(context).viewInsets.bottom,
+          // Papan tik mendorong isi ke atas alih-alih menutupinya.
+          padding: EdgeInsets.only(
+            bottom: DialogSurface.keyboardInset(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -68,10 +64,6 @@ class EditorItemCard extends StatelessWidget {
                     key: const Key('terapkan-item'),
                     onPressed: () => Navigator.of(sheetContext)
                         .pop(_PotonganChoice(pilihan)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenDark,
-                      foregroundColor: Colors.white,
-                    ),
                     child: const Text('Terapkan'),
                   ),
                   const SizedBox(width: 12),
@@ -134,7 +126,7 @@ class EditorItemCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.statOrangeLight,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text('Disesuaikan',
                       style: AppTextStyle.extraSmall
@@ -195,6 +187,17 @@ class EditorItemCard extends StatelessWidget {
             potongan: potongan,
             onEdit: readOnly ? null : () => _aturPotongan(context),
           ),
+          if (state.dibatasiSaldo(item))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Saldo tidak cukup untuk '
+                '${rupiah(state.jumlahUmum!.nilai.floor())}, '
+                'dicairkan ${rupiah(item.nominal)}',
+                key: Key('saldo-kurang-${item.nasabahId}'),
+                style: AppTextStyle.small.copyWith(color: AppColors.warning),
+              ),
+            ),
           if (error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -247,7 +250,7 @@ class _HasilStrip extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.greenLight,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         children: [
@@ -284,12 +287,12 @@ class _HasilStrip extends StatelessWidget {
         child: InkWell(
           key: Key('potongan-item-$nasabahId'),
           onTap: onEdit,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -341,7 +344,7 @@ class _HasilStrip extends StatelessWidget {
               style: AppTextStyle.title1.copyWith(
                 fontSize: emphasized ? 20 : 15,
                 fontWeight: emphasized ? FontWeight.bold : FontWeight.w600,
-                color: emphasized ? const Color(0xFF006D44) : valueColor,
+                color: emphasized ? AppColors.greenDark : valueColor,
               ),
             ),
           ),
@@ -399,7 +402,7 @@ class _NominalFieldState extends State<_NominalField> {
   @override
   Widget build(BuildContext context) {
     final red = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       borderSide: const BorderSide(color: Colors.red),
     );
     final base = appInputDecoration(hintText: 'Contoh: 50000');

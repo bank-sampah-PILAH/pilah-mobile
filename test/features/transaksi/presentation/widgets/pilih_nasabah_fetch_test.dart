@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart' show Right;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
@@ -13,9 +13,11 @@ import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_ringk
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/get_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/reject_nasabah_usecase.dart';
 import 'package:pilah_mobile/features/nasabah/domain/use_cases/update_nasabah_usecase.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_bottom_sheet.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_picker.dart';
+import '../../../../support/notifier_harness.dart';
 import '../../../../support/mock_sinkron_profil_nasabah_use_case.dart';
+import '../../../../support/nasabah_support.dart';
 
 class _MockGetNasabahUseCase extends Mock implements GetNasabahUseCase {}
 
@@ -59,12 +61,12 @@ NasabahEntity _nasabah(String nomor) => NasabahEntity(
 void main() {
   late _MockGetNasabahUseCase getUseCase;
   late _MockGetActiveNasabahUseCase getActiveUseCase;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
 
   setUp(() {
     getUseCase = _MockGetNasabahUseCase();
     getActiveUseCase = _MockGetActiveNasabahUseCase();
-    cubit = NasabahCubit(
+    notifier = NasabahNotifier(
       getUseCase,
       getActiveUseCase,
       _MockGetNasabahRingkasanUseCase(),
@@ -78,8 +80,6 @@ void main() {
     );
   });
 
-  tearDown(() => cubit.close());
-
   testWidgets('opened cold, the picker fetches every active nasabah',
       (tester) async {
     when(() => getActiveUseCase.execute()).thenAnswer(
@@ -91,9 +91,9 @@ void main() {
     );
 
     await tester.pumpWidget(MaterialApp(
-      home: BlocProvider<NasabahCubit>.value(
-        value: cubit,
-        child: const Scaffold(body: PilihNasabahBottomSheet()),
+      home: withNasabahProvider(
+        notifier,
+        const Scaffold(body: PilihNasabahPicker()),
       ),
     ));
     await tester.pumpAndSettle();
@@ -104,7 +104,8 @@ void main() {
     verifyNever(() => getUseCase.execute(any()));
   });
 
-  testWidgets('fetches even when the cubit already holds the nasabah page list',
+  testWidgets(
+      'fetches even when the notifier already holds the nasabah page list',
       (tester) async {
     when(() => getUseCase.execute(any())).thenAnswer(
       (_) async => Right(HalamanNasabah(
@@ -121,15 +122,16 @@ void main() {
       )),
     );
 
-    // Pengurus membuka halaman nasabah lebih dulu: cubit sudah Loaded, tetapi
-    // daftar picker masih kosong karena diisi jalur yang berbeda.
-    await cubit.loadNasabah();
+    // The page state is loaded first in the same container the picker uses.
+    final harness = NotifierHarness(nasabahProvider, () => notifier);
+    addTearDown(harness.dispose);
+    await notifier.loadNasabah();
     clearInteractions(getActiveUseCase);
 
     await tester.pumpWidget(MaterialApp(
-      home: BlocProvider<NasabahCubit>.value(
-        value: cubit,
-        child: const Scaffold(body: PilihNasabahBottomSheet()),
+      home: UncontrolledProviderScope(
+        container: harness.container,
+        child: const Scaffold(body: PilihNasabahPicker()),
       ),
     ));
     await tester.pumpAndSettle();

@@ -2,36 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 
 import '../../domain/model/draft_pencairan.dart';
 import 'draft_format.dart';
 import 'pencairan_ui.dart';
 
-/// Asks for the smallest saldo to list, in a white rounded sheet like the one
-/// for a nasabah's potongan: amounts to pick with a tap, a field for any other,
-/// and a count of who meets it. Returns the amount, or null when dismissed.
+/// Asks for the smallest saldo to list: amounts to pick with a tap, a field
+/// for any other, and a count of who meets it. A bottom sheet on a phone and a
+/// centred dialog in a wider window, through [showAdaptiveConfirmation].
+/// Returns the amount, or null when dismissed.
 Future<int?> showSaldoMinSheet(
   BuildContext context, {
   required List<Kandidat> kandidat,
   required int awal,
 }) {
-  return showModalBottomSheet<int>(
+  return showAdaptiveConfirmation<int>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    builder: (_, presentation) => _SaldoMinSheet(
+      kandidat: kandidat,
+      awal: awal,
+      presentation: presentation,
     ),
-    builder: (_) => _SaldoMinSheet(kandidat: kandidat, awal: awal),
   );
 }
 
 class _SaldoMinSheet extends StatefulWidget {
   final List<Kandidat> kandidat;
   final int awal;
+  final PickerPresentation presentation;
 
-  const _SaldoMinSheet({required this.kandidat, required this.awal});
+  const _SaldoMinSheet({
+    required this.kandidat,
+    required this.awal,
+    required this.presentation,
+  });
 
   @override
   State<_SaldoMinSheet> createState() => _SaldoMinSheetState();
@@ -61,11 +68,12 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
     final memenuhi =
         widget.kandidat.where((k) => !k.kosong && k.saldo >= nilai).length;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        20,
-        16,
-        16 + MediaQuery.of(context).viewInsets.bottom,
+      // The keyboard pushes a sheet up from below; a Dialog already keeps
+      // clear of it by itself.
+      padding: EdgeInsets.only(
+        bottom: widget.presentation == PickerPresentation.bottomSheet
+            ? MediaQuery.viewInsetsOf(context).bottom
+            : 0,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -122,7 +130,7 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
               color: nilai > 0 && memenuhi == 0
                   ? Colors.red.shade50
                   : AppColors.greenLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Row(
               children: [
@@ -157,17 +165,11 @@ class _SaldoMinSheetState extends State<_SaldoMinSheet> {
               ElevatedButton(
                 key: const Key('terapkan-saldo-min'),
                 onPressed: () => Navigator.of(context).pop(_nilai),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.greenDark,
-                  foregroundColor: Colors.white,
-                ),
                 child: const Text('Terapkan'),
               ),
               const SizedBox(width: 12),
               TextButton(
                 key: const Key('batal-saldo-min'),
-                style:
-                    TextButton.styleFrom(foregroundColor: AppColors.greenDark),
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Batal'),
               ),

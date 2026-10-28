@@ -1,37 +1,52 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/nasabah/domain/entities/nasabah_entity.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_state.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/transaksi/presentation/widgets/pilih_nasabah_section.dart';
 
 import '../../../../support/nasabah_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
-class _MockNasabahCubit extends MockCubit<NasabahState>
-    implements NasabahCubit {}
+class _BrokenNasabahNotifier extends NasabahNotifier {
+  _BrokenNasabahNotifier(NasabahNotifier delegate)
+      : super(
+          delegate.getNasabahUseCase,
+          delegate.getActiveNasabahUseCase,
+          delegate.getNasabahRingkasanUseCase,
+          delegate.addNasabahUseCase,
+          delegate.updateNasabahUseCase,
+          delegate.activateNasabahUseCase,
+          delegate.deactivateNasabahUseCase,
+          delegate.approveNasabahUseCase,
+          delegate.rejectNasabahUseCase,
+          delegate.sinkronProfilNasabahUseCase,
+        );
+
+  @override
+  NasabahState build() => NasabahInitial();
+
+  @override
+  Future<List<NasabahEntity>> loadActiveNasabah() async =>
+      throw StateError('rusak');
+}
 
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
   NasabahEntity? chosen;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    notifier = buildNasabahNotifier(api);
     chosen = null;
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester,
       {NasabahEntity? selected,
       bool hasError = true,
-      NasabahCubit? withCubit}) async {
+      NasabahNotifier? withNotifier}) async {
     await pumpRouted(
       tester,
       Scaffold(
@@ -42,8 +57,7 @@ void main() {
           errorText: 'Nasabah harus dipilih',
         ),
       ),
-      wrap: (app) => BlocProvider<NasabahCubit>.value(
-          value: withCubit ?? cubit, child: app),
+      wrap: (app) => withNasabahProvider(withNotifier ?? notifier, app),
       size: const Size(800, 1800),
     );
   }
@@ -118,12 +132,8 @@ void main() {
   });
 
   testWidgets('an unexpected error is shown as plain text', (tester) async {
-    final broken = _MockNasabahCubit();
-    whenListen(broken, const Stream<NasabahState>.empty(),
-        initialState: NasabahInitial());
-    when(() => broken.loadActiveNasabah())
-        .thenAnswer((_) async => throw StateError('rusak'));
-    await open(tester, withCubit: broken);
+    final broken = _BrokenNasabahNotifier(notifier);
+    await open(tester, withNotifier: broken);
     await openPicker(tester);
 
     expect(find.textContaining('rusak'), findsOneWidget);

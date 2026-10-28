@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pilah_mobile/features/nasabah/presentation/cubit/nasabah_cubit.dart';
+import 'package:pilah_mobile/design/widgets/phone_prefix.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
 import '../../../../support/nasabah_support.dart';
@@ -12,15 +13,13 @@ const _path = '/api/v1/nasabah';
 
 void main() {
   late StubApi api;
-  late NasabahCubit cubit;
+  late NasabahNotifier notifier;
 
   setUp(() {
     api = StubApi();
-    cubit = buildNasabahCubit(api);
+    notifier = buildNasabahNotifier(api);
     api.on('GET', _path, json: nasabahPage([]));
   });
-
-  tearDown(() => cubit.close());
 
   Future<void> open(WidgetTester tester) async {
     await pumpRouted(
@@ -38,7 +37,7 @@ void main() {
           ),
         ),
       ),
-      wrap: (app) => BlocProvider<NasabahCubit>.value(value: cubit, child: app),
+      wrap: (app) => withNasabahProvider(notifier, app),
       size: const Size(800, 2600),
     );
     await tester.tap(find.text('open'));
@@ -71,6 +70,12 @@ void main() {
     await pumpToast(tester);
   }
 
+  testWidgets('the phone field carries the shared +62 prefix', (tester) async {
+    await open(tester);
+
+    expect(find.byType(PhonePrefix), findsOneWidget);
+  });
+
   testWidgets('a valid form creates the nasabah and confirms', (tester) async {
     api.on('POST', _path, status: 201, json: nasabahRow('9'));
     await open(tester);
@@ -102,8 +107,13 @@ void main() {
   testWidgets('a duplicate code in the loaded list is caught before saving',
       (tester) async {
     api.on('GET', _path, json: nasabahPage([nasabahRow('2')]));
-    await tester.runAsync(cubit.loadNasabah);
     await open(tester);
+    final scopedNotifier = ProviderScope.containerOf(
+      tester.element(find.byType(TambahNasabahBottomSheet)),
+      listen: false,
+    ).read(nasabahProvider.notifier);
+    await tester.runAsync(scopedNotifier.loadNasabah);
+    await tester.pumpAndSettle();
 
     await fill(tester, kode: 'nas-2');
     await save(tester);

@@ -81,11 +81,11 @@ void showInviteAcceptanceNotice(
           context,
           title: registrationUnderReview
               ? 'Pengajuan Sedang Ditinjau'
-              : 'Sudah Menjadi Pengelola',
+              : 'Sudah Menjadi Pengurus',
           message: registrationUnderReview
               ? 'Tidak dapat bergabung, Anda masih memiliki pengajuan '
                   'pendaftaran bank sampah yang sedang ditinjau'
-              : 'Kamu sudah menjadi pengelola di suatu bank sampah',
+              : 'Kamu sudah menjadi pengurus di suatu bank sampah',
         ),
       );
       break;

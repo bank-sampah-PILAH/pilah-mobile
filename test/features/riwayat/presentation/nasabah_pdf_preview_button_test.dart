@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
@@ -7,8 +8,7 @@ import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_pre
 import 'package:pilah_mobile/features/riwayat/presentation/pages/nasabah_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/statement/domain/model/statement_export.dart';
 import 'package:pilah_mobile/features/statement/domain/use_cases/statement_use_cases.dart';
-import 'package:pilah_mobile/features/statement/presentation/blocs/statement_export_cubit.dart';
-import 'package:pilah_mobile/services/di.dart';
+import 'package:pilah_mobile/features/statement/presentation/providers/statement_export_provider.dart';
 
 import '../../../support/pump_app.dart';
 
@@ -16,24 +16,24 @@ class _UseCases extends Mock implements StatementUseCases {}
 
 void main() {
   late _UseCases useCases;
+  late StatementExportNotifier notifier;
 
   setUp(() {
     useCases = _UseCases();
-    di.registerFactory<StatementExportCubit>(
-        () => StatementExportCubit(useCases));
-    addTearDown(() async {
-      await di.unregister<StatementExportCubit>();
-    });
+    notifier = StatementExportNotifier(useCases);
   });
 
   Future<void> pumpButton(WidgetTester tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-          home: Builder(
-              builder: (context) => Scaffold(
-                    body: NasabahPdfPreviewButton(membershipId: 'member-b'),
-                  ))),
-    );
+    await tester.pumpWidget(ProviderScope(
+      overrides: [statementExportProvider.overrideWith(() => notifier)],
+      child: MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: NasabahPdfPreviewButton(membershipId: 'member-b'),
+          ),
+        ),
+      ),
+    ));
   }
 
   const export = StatementExport(

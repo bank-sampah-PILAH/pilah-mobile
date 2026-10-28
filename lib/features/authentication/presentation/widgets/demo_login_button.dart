@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/design/constants/text_style.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/events/login_with_google_events.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/widgets/app_button.dart';
+import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
 
 class DemoLoginButton extends StatelessWidget {
@@ -50,38 +48,18 @@ class DemoLoginButton extends StatelessWidget {
 
     if (profile == null || !context.mounted) return;
 
-    context.read<AuthenticationBloc>().add(
-          LoginWithGoogleRequested(
-            name: profile.name,
-            email: profile.email,
-            photoUrl: '',
-            idToken: profile.idToken,
-          ),
-        );
+    ProviderScope.containerOf(context, listen: false)
+        .read(authenticationProvider.notifier)
+        .loginWithGoogle(profile.idToken);
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: isLoading ? null : () => _selectProfile(context),
-        icon: const Icon(Icons.science_outlined, color: AppColors.greenDark),
-        label: Text(
-          'Masuk dengan akun demo',
-          style: AppTextStyle.headline3.copyWith(
-            color: AppColors.black,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          side: BorderSide(color: Colors.grey.shade300),
-          backgroundColor: Colors.white,
-        ),
-      ),
+    return AppButton(
+      label: 'Masuk dengan akun demo',
+      variant: AppButtonVariant.neutral,
+      icon: Icons.science_outlined,
+      onPressed: isLoading ? null : () => _selectProfile(context),
     );
   }
 }

@@ -4,27 +4,24 @@ part of '../spl_manager.dart';
 // ─── Per-feature spec parser ──────────────────────────────────────────────────
 //
 // Parses a feature spec string of the form:
-//   name[,storage=<provider>][,with-storage][,state=<solution>][,test][,shell]
+//   name[,storage=<provider>][,with-storage][,test][,shell]
 //
 // Per-feature keys override the global flags passed as defaults.
 // Examples:
-//   "orders"                           → no options
-//   "orders,storage=sqflite,state=cubit" → sqflite + cubit override
-//   "settings,test,shell"              → with tests, shell route
-//   "feed,with-storage"                → use global default backend
+//   "orders"              → no options
+//   "settings,test,shell" → with tests, shell route
+//   "feed,with-storage"   → use global default backend
 
 ({
   String name,
   String? storageOverride,
   bool withStorage,
-  String? stateOverride,
   bool withTest,
   bool shellRoute,
 }) _parseFeatureSpec(
   String spec, {
   String? globalStorageOverride,
   bool globalWithStorage = false,
-  String? globalState,
   bool globalWithTest = false,
   bool globalShellRoute = false,
 }) {
@@ -33,7 +30,6 @@ part of '../spl_manager.dart';
 
   String? storageOverride = globalStorageOverride;
   bool withStorage = globalWithStorage;
-  String? stateOverride = globalState;
   bool withTest = globalWithTest;
   bool shellRoute = globalShellRoute;
 
@@ -44,7 +40,7 @@ part of '../spl_manager.dart';
     } else if (part == 'with-storage' || part == 'ws') {
       withStorage = true;
     } else if (part.startsWith('state=')) {
-      stateOverride = part.substring(6);
+      _die('State management is fixed to Riverpod; remove "$part".');
     } else if (part == 'test') {
       withTest = true;
     } else if (part == 'shell') {
@@ -56,28 +52,12 @@ part of '../spl_manager.dart';
     name: name,
     storageOverride: storageOverride,
     withStorage: withStorage,
-    stateOverride: stateOverride,
     withTest: withTest,
     shellRoute: shellRoute,
   );
 }
 
 // ─── Validation + Notes ───────────────────────────────────────────────────────
-
-void _validateStateChoice(String state) {
-  const valid = ['bloc', 'cubit', 'riverpod'];
-  if (!valid.contains(state)) {
-    _die('Unknown state: "$state"\nValid: ${valid.join(' | ')}');
-  }
-}
-
-void _printStateNotes(String state) {
-  if (state == 'riverpod') {
-    print('');
-    print('  ⚠  Riverpod requires: flutter_riverpod in pubspec.yaml');
-    print('  ⚠  Add ProviderScope at the root of your widget tree in main()');
-  }
-}
 
 void _printStorageNotes(String provider) {
   switch (provider) {
@@ -128,16 +108,16 @@ SPL Manager — Software Product Line CLI
 
 Variability:
   Storage [OR]      multiple backends can coexist; each feature picks one
-  State Mgmt [OR]   global default + per-feature override
+  State Mgmt        Riverpod only
 
 Commands:
   list
   add <spec> [spec2 ...]
     Scaffold one or more features. Each spec is:
-      <name>[,storage=<p>][,state=<s>][,test][,shell]
+      <name>[,storage=<p>][,test][,shell]
 
     Inline examples:
-      add orders,storage=sqflite,state=cubit
+      add orders,storage=sqflite
       add feed,test inventory,shell settings
       add orders,storage=sqflite feed,with-storage settings
 
@@ -146,7 +126,6 @@ Commands:
       --storage <provider>        Use a specific backend for all
       --with-test                 Generate tests for all
       --shell-route               Shell route for all
-      --state bloc|cubit|riverpod State mgmt for all
 
     Available providers: flutter_secure_storage | sqflite | hive | shared_preferences
 
@@ -158,8 +137,6 @@ Commands:
   storage remove <provider>              Unregister a backend
   storage default <provider>             Set default for --with-storage / ,with-storage
   storage list
-  state set <bloc|cubit|riverpod>        Change default state mgmt
-  state list
   fix                                    Re-run build_runner
 ''');
 }

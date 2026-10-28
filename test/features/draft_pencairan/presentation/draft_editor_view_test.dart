@@ -2,40 +2,71 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_cubit.dart';
-import 'package:pilah_mobile/features/dashboard/presentation/cubit/recent_activity_state.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
+import 'package:pilah_mobile/features/dashboard/presentation/states/recent_activity_state.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/model/draft_pencairan.dart';
 import 'package:pilah_mobile/features/draft_pencairan/domain/repository/draft_pencairan_repository.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_cubit.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/draft_editor_state.dart';
-import 'package:pilah_mobile/features/draft_pencairan/presentation/blocs/editor_item_view.dart';
+import '../../../support/draft_pencairan_support.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/states/draft_editor_state.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_view.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_editor_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/pages/draft_pdf_preview_page.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_card.dart';
+import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/editor_item_controls.dart';
 import 'package:pilah_mobile/features/draft_pencairan/presentation/widgets/pencairan_ui.dart';
 import 'package:pilah_mobile/features/pencairan/domain/model/pencairan.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_cubit.dart';
-import 'package:pilah_mobile/features/transaksi/presentation/cubit/riwayat_aktivitas_state.dart';
+import 'package:pilah_mobile/features/pencairan/domain/use_cases/pencairan_use_cases.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/presentation/providers/riwayat_aktivitas_provider.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/export_transaksi_usecase.dart';
+import 'package:pilah_mobile/features/transaksi/domain/use_cases/get_aktivitas_usecase.dart';
 
 import '../../../support/platform_fakes.dart';
 import '../../../support/pump_app.dart';
 
 class _MockRepository extends Mock implements DraftPencairanRepository {}
 
-class _MockRiwayat extends MockCubit<RiwayatAktivitasState>
-    implements RiwayatAktivitasCubit {}
+class _UnusedGetAktivitas extends Mock implements GetAktivitasUseCase {}
 
-class _MockRecent extends MockCubit<RecentActivityState>
-    implements RecentActivityCubit {}
+class _UnusedExportTransaksi extends Mock implements ExportTransaksiUseCase {}
+
+class _TestRiwayat extends RiwayatAktivitasNotifier {
+  _TestRiwayat() : super(_UnusedGetAktivitas(), _UnusedExportTransaksi());
+
+  final silentLoads = <bool>[];
+
+  @override
+  Future<void> load({bool silent = false, int? pageSize}) async {
+    silentLoads.add(silent);
+  }
+}
+
+class _UnusedGetTransaksi extends Mock implements GetTransaksiUseCase {}
+
+class _UnusedPencairanUseCases extends Mock implements PencairanUseCases {}
+
+class _TestRecentActivityNotifier extends RecentActivityNotifier {
+  _TestRecentActivityNotifier()
+      : super(_UnusedGetTransaksi(), _UnusedPencairanUseCases());
+
+  int silentLoads = 0;
+
+  @override
+  RecentActivityState build() => RecentActivityInitial();
+
+  @override
+  Future<void> load({bool silent = false}) async {
+    if (silent) silentLoads++;
+  }
+}
 
 const _ahmad =
     Kandidat(id: 'n-1', kode: 'NAS-0001', nama: 'Ahmad Ridwan', saldo: 465600);
@@ -83,7 +114,7 @@ DraftPencairan _saved({DraftStatus status = DraftStatus.draft}) =>
 
 void main() {
   late _MockRepository repository;
-  late DraftEditorCubit cubit;
+  late TestDraftEditorNotifier cubit;
 
   setUpAll(() {
     registerFallbackValue(
@@ -93,11 +124,14 @@ void main() {
 
   setUp(() => repository = _MockRepository());
 
-  Future<void> pumpNew(WidgetTester tester) async {
-    cubit = DraftEditorCubit(repository)
+  Future<void> pumpNew(
+    WidgetTester tester, {
+    Size size = const Size(420, 2600),
+  }) async {
+    cubit = TestDraftEditorNotifier(repository)
       ..startNew(const [_ahmad, _budi, _citra]);
     _current = cubit;
-    await _pump(tester);
+    await _pump(tester, size: size);
   }
 
   Future<void> pumpSaved(
@@ -106,7 +140,7 @@ void main() {
   }) async {
     when(() => repository.getDraft('d-1'))
         .thenAnswer((_) async => Right(_saved(status: status)));
-    cubit = DraftEditorCubit(repository);
+    cubit = TestDraftEditorNotifier(repository);
     _current = cubit;
     await cubit.load('d-1');
     await _pump(tester);
@@ -391,7 +425,7 @@ void main() {
 
     testWidgets('the cards fit a narrow phone, even with big amounts',
         (tester) async {
-      cubit = DraftEditorCubit(repository)
+      cubit = TestDraftEditorNotifier(repository)
         ..startNew(const [
           Kandidat(
               id: 'n-9',
@@ -596,7 +630,7 @@ void main() {
       expect(find.text('Disesuaikan'), findsNothing);
     });
 
-    testWidgets('the potongan sheet is white with rounded top corners',
+    testWidgets('the potongan picker is a bottom sheet on a phone',
         (tester) async {
       await pumpNew(tester);
 
@@ -604,12 +638,19 @@ void main() {
       await tester.tap(find.byKey(const Key('potongan-item-n-2')));
       await tester.pumpAndSettle();
 
-      final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
-      expect(sheet.backgroundColor, Colors.white);
-      expect(
-          sheet.shape,
-          const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24))));
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+    });
+
+    testWidgets('and a dialog on a wide window', (tester) async {
+      await pumpNew(tester, size: const Size(1200, 2600));
+
+      await tester.ensureVisible(find.byKey(const Key('potongan-item-n-2')));
+      await tester.tap(find.byKey(const Key('potongan-item-n-2')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
     });
 
     testWidgets('Ikuti potongan umum sits to the right of Terapkan',
@@ -738,6 +779,29 @@ void main() {
       expect(cubit.state.status, DraftStatus.dikonfirmasi);
     });
 
+    testWidgets(
+        'on a desktop window paying from the side panel asks in a dialog',
+        (tester) async {
+      when(() => repository.createDraft(any()))
+          .thenAnswer((_) async => Right(_saved()));
+      when(() => repository.confirmDraft('d-1')).thenAnswer(
+          (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      await tester.tap(find.byKey(const Key('konfirmasi')));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+
+      await tester.tap(find.text('Ya, sudah dibayar'));
+      await tester.pumpAndSettle();
+
+      verifyInOrder([
+        () => repository.createDraft(any()),
+        () => repository.confirmDraft('d-1'),
+      ]);
+      expect(cubit.state.status, DraftStatus.dikonfirmasi);
+    });
+
     testWidgets('declining the dialog saves and pays nothing', (tester) async {
       await pumpNew(tester);
 
@@ -818,7 +882,7 @@ void main() {
     });
 
     testWidgets('both labels still fit on a narrow phone', (tester) async {
-      cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+      cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
       _current = cubit;
       await _pump(tester, size: const Size(320, 1800));
 
@@ -895,7 +959,7 @@ void main() {
         (tester) async {
       when(() => repository.getDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       await _pump(tester);
 
@@ -909,28 +973,27 @@ void main() {
 
     testWidgets('a paid draft reloads the riwayat and the dashboard activity',
         (tester) async {
-      final riwayat = _MockRiwayat();
-      final recent = _MockRecent();
-      when(() => riwayat.load(silent: true)).thenAnswer((_) async {});
-      when(() => recent.load(silent: true)).thenAnswer((_) async {});
+      final riwayat = _TestRiwayat();
+      final recent = _TestRecentActivityNotifier();
       when(() => repository.confirmDraft('d-1')).thenAnswer(
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_saved()));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(
+        repository,
+        overrides: [
+          recentActivityProvider.overrideWith(() => recent),
+          riwayatAktivitasProvider.overrideWith(() => riwayat),
+        ],
+      );
       _current = cubit;
+      cubit.container.read(riwayatAktivitasProvider);
+      cubit.container.read(recentActivityProvider);
       await cubit.load('d-1');
       await pumpRouted(
         tester,
         const _Host(),
         size: const Size(420, 2600),
-        wrap: (app) => MultiBlocProvider(
-          providers: [
-            BlocProvider<RiwayatAktivitasCubit>.value(value: riwayat),
-            BlocProvider<RecentActivityCubit>.value(value: recent),
-          ],
-          child: app,
-        ),
       );
       await tester.pumpAndSettle();
 
@@ -939,8 +1002,8 @@ void main() {
       await tester.tap(find.text('Ya, sudah dibayar'));
       await tester.pumpAndSettle();
 
-      verify(() => riwayat.load(silent: true)).called(1);
-      verify(() => recent.load(silent: true)).called(1);
+      expect(riwayat.silentLoads, [true]);
+      expect(recent.silentLoads, 1);
     });
 
     testWidgets('after paying, the toast offers to open the riwayat',
@@ -949,7 +1012,7 @@ void main() {
           (_) async => Right(_saved(status: DraftStatus.dikonfirmasi)));
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(_saved()));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       await cubit.load('d-1');
       await pumpRouted(
@@ -1142,7 +1205,7 @@ void main() {
     });
 
     testWidgets('export asks the server for the chosen format', (tester) async {
-      // Never answers: the download itself is covered at the cubit level, and
+      // Never answers: the download itself is covered at the notifier level, and
       // an answer would bring the save-and-share toasts into a layout test.
       when(() => repository.exportDraft('d-1', ExportBerkas.pdf)).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftExport>>().future);
@@ -1320,6 +1383,80 @@ void main() {
       expect(dekor.boxShadow, isNotEmpty);
     });
 
+    testWidgets(
+        'on a desktop window it is a side panel, open, holding the buttons',
+        (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      final samping = find.byKey(const Key('draft-editor-panel'));
+      expect(samping, findsOneWidget);
+      for (final key in [
+        'total-dibayar',
+        'total-nominal',
+        'total-potongan',
+        'simpan',
+        'konfirmasi',
+      ]) {
+        expect(find.descendant(of: samping, matching: find.byKey(Key(key))),
+            findsOneWidget,
+            reason: key);
+      }
+      // Nothing to open or swipe: there is room for every total.
+      expect(find.byKey(const Key('ringkasan-toggle')), findsNothing);
+      // Beside the form, not under it.
+      final form = find.byType(TextField).first;
+      expect(tester.getTopLeft(samping).dx,
+          greaterThanOrEqualTo(tester.getTopRight(form).dx));
+      expect(tester.getTopLeft(samping).dy,
+          lessThan(tester.getBottomLeft(form).dy));
+    });
+
+    testWidgets('both panes scroll out to the window edges', (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+
+      final samping = find.byKey(const Key('draft-editor-panel'));
+      expect(tester.getRect(samping).right, 1440,
+          reason: 'the panel scrollbar is at the window edge');
+      expect(tester.getRect(find.byType(CustomScrollView).first).left, 0,
+          reason: 'the form scrolls from the window edge');
+      // The content itself still sits in the centred column.
+      expect(tester.getTopLeft(find.byKey(const Key('nama-draft'))).dx,
+          120.0 + 16);
+    });
+
+    testWidgets('resizing across the desktop breakpoint keeps the search',
+        (tester) async {
+      await pumpNew(tester, size: const Size(1440, 900));
+      final cari = find.descendant(
+          of: find.byType(EditorItemControls),
+          matching: find.byType(TextField));
+      await tester.enterText(cari, 'budi');
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+
+      tester.view.physicalSize = const Size(420, 2600);
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+      expect(tester.widget<TextField>(cari).controller!.text, 'budi');
+
+      tester.view.physicalSize = const Size(1440, 900);
+      await tester.pumpAndSettle();
+      expect(find.text('NASABAH (1 dari 3)'), findsOneWidget);
+    });
+
+    testWidgets('its amounts line up at the right edge, under Total dibayar',
+        (tester) async {
+      await pumpNew(tester);
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      final kanan = tester.getTopRight(panel()).dx - 20;
+      for (final key in ['total-nominal', 'total-potongan']) {
+        expect(tester.getTopRight(find.byKey(Key(key))).dx, closeTo(kanan, 1),
+            reason: key);
+      }
+    });
+
     testWidgets('tapping it opens the details, tapping again closes them',
         (tester) async {
       await pumpNew(tester);
@@ -1336,6 +1473,31 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('total-nominal')), findsNothing);
+    });
+
+    testWidgets('announces itself as a button that is expanded or collapsed',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpNew(tester);
+
+      expect(
+        tester.getSemantics(find.byKey(const Key('ringkasan-toggle'))),
+        isSemantics(
+          isButton: true,
+          hasExpandedState: true,
+          isExpanded: false,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('ringkasan-toggle')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.byKey(const Key('ringkasan-toggle'))),
+        isSemantics(isButton: true, hasExpandedState: true, isExpanded: true),
+      );
+      handle.dispose();
     });
 
     testWidgets('a swipe up opens it and a swipe down closes it',
@@ -1403,7 +1565,7 @@ void main() {
     testWidgets('there is no panel while the draft is loading', (tester) async {
       when(() => repository.getDraft('d-1')).thenAnswer(
           (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       unawaited(cubit.load('d-1'));
       await pumpRouted(tester, const _Host());
@@ -1411,6 +1573,27 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(panel(), findsNothing);
+    });
+
+    testWidgets(
+        'on a desktop window the panel is there while loading, spinner beside it',
+        (tester) async {
+      when(() => repository.getDraft('d-1')).thenAnswer(
+          (_) => Completer<Either<NetworkException, DraftPencairan>>().future);
+      cubit = TestDraftEditorNotifier(repository);
+      _current = cubit;
+      unawaited(cubit.load('d-1'));
+      await pumpRouted(tester, const _Host(), size: const Size(1440, 900));
+      await tester.pump();
+
+      expect(panel(), findsOneWidget);
+      expect(find.byKey(const Key('draft-editor-panel')), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(tester.getCenter(find.byType(CircularProgressIndicator)).dx,
+          lessThan(tester.getTopLeft(panel()).dx));
+      // Nothing to save or pay before the draft has arrived.
+      expect(find.byKey(const Key('simpan')), findsNothing);
+      expect(find.byKey(const Key('konfirmasi')), findsNothing);
     });
   });
 
@@ -1433,7 +1616,10 @@ void main() {
 
     bool terapkanAktif(WidgetTester tester) =>
         tester
-            .widget<ElevatedButton>(find.byKey(const Key('terapkan-umum')))
+            .widget<ElevatedButton>(find.descendant(
+              of: find.byKey(const Key('terapkan-umum')),
+              matching: find.byType(ElevatedButton),
+            ))
             .onPressed !=
         null;
 
@@ -1482,7 +1668,7 @@ void main() {
         WidgetTester tester, DraftPencairan draft) async {
       when(() => repository.getDraft('d-1'))
           .thenAnswer((_) async => Right(draft));
-      cubit = DraftEditorCubit(repository);
+      cubit = TestDraftEditorNotifier(repository);
       _current = cubit;
       await cubit.load('d-1');
       await _pump(tester);
@@ -1666,6 +1852,133 @@ void main() {
 
       expect(cubit.state.items.map((i) => i.nominal), [100000, 50000, 100000]);
       expect(find.text('Bermasalah 0'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a Nominal above some saldo warns, before Terapkan, who is paid '
+        'their whole saldo instead, and blocks nothing', (tester) async {
+      await pumpNew(tester);
+      Finder catatan() => find.byKey(const Key('jumlah-saldo-kurang'));
+
+      await jumlah(tester, 'rupiah', '40000');
+      expect(catatan(), findsNothing, reason: 'every saldo covers Rp 40.000');
+
+      await jumlah(tester, 'rupiah', '100000');
+      expect(
+        tester.widget<Text>(catatan()).data,
+        '1 nasabah saldonya di bawah Rp 100.000. '
+        'Mereka dicairkan seluruh saldonya.',
+      );
+      expect(terapkanAktif(tester), isTrue, reason: 'a warning, not a block');
+
+      await jumlah(tester, 'persen', '50');
+      expect(catatan(), findsNothing, reason: 'a share never exceeds a saldo');
+    });
+
+    testWidgets(
+        'Terapkan asks first when the Nominal holds someone to their saldo',
+        (tester) async {
+      await pumpNew(tester);
+      Future<void> tekanTerapkan() async {
+        await tester.pump();
+        await tester.ensureVisible(find.byKey(const Key('terapkan-umum')));
+        await tester.tap(find.byKey(const Key('terapkan-umum')));
+        await tester.pumpAndSettle();
+      }
+
+      await jumlah(tester, 'rupiah', '100000');
+      await tekanTerapkan();
+      expect(find.text('Terapkan Nominal Rp 100.000?'), findsOneWidget);
+      expect(
+        find.text('1 nasabah saldonya di bawah Rp 100.000. '
+            'Mereka dicairkan seluruh saldonya.'),
+        findsWidgets,
+      );
+
+      await tester.tap(find.byKey(const Key('konfirmasi-tidak')));
+      await tester.pumpAndSettle();
+      expect(cubit.state.items.map((i) => i.nominal), [465600, 50000, 250000],
+          reason: 'Batal applies nothing');
+
+      await tekanTerapkan();
+      await tester.tap(find.byKey(const Key('konfirmasi-ya')));
+      await tester.pumpAndSettle();
+      expect(cubit.state.items.map((i) => i.nominal), [100000, 50000, 100000]);
+    });
+
+    testWidgets(
+        'the dialog lists everyone held to their saldo, by name and saldo, '
+        'even just one', (tester) async {
+      await pumpNew(tester);
+      Finder daftar() => find.byKey(const Key('daftar-saldo-kurang'));
+      Future<void> tanya(String nilai) async {
+        await jumlah(tester, 'rupiah', nilai);
+        await tester.pump();
+        await tester.ensureVisible(find.byKey(const Key('terapkan-umum')));
+        await tester.tap(find.byKey(const Key('terapkan-umum')));
+        await tester.pumpAndSettle();
+      }
+
+      await tanya('100000');
+      expect(find.descendant(of: daftar(), matching: find.text('Budi Santoso')),
+          findsOneWidget,
+          reason: 'one nasabah is named too');
+      expect(
+          find.descendant(of: daftar(), matching: find.text('Saldo Rp 50.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Citra Dewi')),
+          findsNothing,
+          reason: 'the saldo of Citra covers Rp 100.000');
+      await tester.tap(find.byKey(const Key('konfirmasi-tidak')));
+      await tester.pumpAndSettle();
+
+      await tanya('300000');
+      expect(find.descendant(of: daftar(), matching: find.text('Budi Santoso')),
+          findsOneWidget);
+      expect(
+          find.descendant(of: daftar(), matching: find.text('Saldo Rp 50.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Citra Dewi')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: daftar(), matching: find.text('Saldo Rp 250.000')),
+          findsOneWidget);
+      expect(find.descendant(of: daftar(), matching: find.text('Ahmad Ridwan')),
+          findsNothing,
+          reason: 'the saldo of Ahmad covers Rp 300.000');
+    });
+
+    testWidgets('a Nominal every saldo covers applies without asking',
+        (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah', '40000');
+      await _terapkanUmum(tester);
+
+      expect(find.byKey(const Key('konfirmasi-ya')), findsNothing);
+      expect(cubit.state.items.map((i) => i.nominal), [40000, 40000, 40000]);
+    });
+
+    testWidgets(
+        'after Terapkan each nasabah held to their saldo says so on their card',
+        (tester) async {
+      await pumpNew(tester);
+
+      await jumlah(tester, 'rupiah', '100000');
+      await _terapkanUmum(tester);
+
+      final budi = find.byKey(const Key('saldo-kurang-n-2'));
+      await tester.ensureVisible(budi);
+      expect(tester.widget<Text>(budi).data,
+          'Saldo tidak cukup untuk Rp 100.000, dicairkan Rp 50.000');
+      expect(find.byKey(const Key('saldo-kurang-n-1')), findsNothing);
+      expect(find.byKey(const Key('saldo-kurang-n-3')), findsNothing);
+
+      // A nominal set by hand is the pengurus's own choice: no warning.
+      await tester.enterText(find.byKey(const Key('nominal-n-2')), '30000');
+      await tester.pump();
+      expect(budi, findsNothing);
     });
 
     testWidgets('Persen pays that share of each saldo, rounded down',
@@ -1944,7 +2257,7 @@ void main() {
     }
 
     Future<void> pumpBanyak(WidgetTester tester) async {
-      cubit = DraftEditorCubit(repository)..startNew(banyak);
+      cubit = TestDraftEditorNotifier(repository)..startNew(banyak);
       _current = cubit;
       await _pump(tester);
     }
@@ -2011,7 +2324,7 @@ void main() {
     ];
 
     Future<void> pumpBanyak(WidgetTester tester) async {
-      cubit = DraftEditorCubit(repository)..startNew(banyak);
+      cubit = TestDraftEditorNotifier(repository)..startNew(banyak);
       _current = cubit;
       await _pump(tester);
     }
@@ -2328,7 +2641,7 @@ void main() {
 
   testWidgets('a new draft that was never saved asks before it is thrown away',
       (tester) async {
-    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
     _current = cubit;
     await _pump(tester, pushed: true);
 
@@ -2346,7 +2659,7 @@ void main() {
       (tester) async {
     when(() => repository.createDraft(any()))
         .thenAnswer((_) async => Right(_saved()));
-    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
     _current = cubit;
     await _pump(tester, pushed: true);
     await cubit.save();
@@ -2361,7 +2674,7 @@ void main() {
 
   testWidgets('leaving with unsaved edits asks before throwing them away',
       (tester) async {
-    cubit = DraftEditorCubit(repository)..startNew(const [_ahmad]);
+    cubit = TestDraftEditorNotifier(repository)..startNew(const [_ahmad]);
     _current = cubit;
     await _pump(tester, pushed: true);
     cubit.setNama('Belum disimpan');
@@ -2386,7 +2699,7 @@ void main() {
   });
 }
 
-DraftEditorCubit? _current;
+TestDraftEditorNotifier? _current;
 
 /// Opens the summary panel above the buttons, if it is closed.
 Future<void> _bukaRingkasan(WidgetTester tester) async {
@@ -2402,6 +2715,15 @@ Future<void> _terapkanUmum(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('terapkan-umum')));
   await tester.pump();
   await tester.pump();
+  // A Nominal that holds someone to their saldo asks first; these tests mean
+  // to apply it.
+  final ya = find.byKey(const Key('konfirmasi-ya'));
+  if (ya.evaluate().isNotEmpty) {
+    await tester.pumpAndSettle();
+    await tester.tap(ya);
+    await tester.pump();
+    await tester.pump();
+  }
 }
 
 Future<void> _pump(
@@ -2409,7 +2731,7 @@ Future<void> _pump(
   bool pushed = false,
   Size size = const Size(420, 2600),
 }) async {
-  // The cubit is created by each test; find it through the provider.
+  // The notifier is created by each test; find it through the provider.
   await pumpRouted(
     tester,
     Builder(builder: (context) {
@@ -2425,8 +2747,8 @@ class _Host extends StatelessWidget {
   const _Host();
 
   @override
-  Widget build(BuildContext context) => BlocProvider<DraftEditorCubit>.value(
-        value: _current!,
+  Widget build(BuildContext context) => UncontrolledProviderScope(
+        container: _current!.container,
         child: const DraftEditorView(),
       );
 }

@@ -1,40 +1,47 @@
-import 'package:bloc_test/bloc_test.dart';
+import 'package:clock/clock.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/domain/model/auth.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_bloc.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_events.dart';
-import 'package:pilah_mobile/features/authentication/presentation/blocs/authentication_states.dart';
+
+import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/pages/beranda_nasabah_page.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_entity.dart';
 import 'package:pilah_mobile/features/jadwal/domain/entities/jadwal_page_result.dart';
 import 'package:pilah_mobile/features/jadwal/domain/repositories/jadwal_repository.dart';
 import 'package:pilah_mobile/preview/preview_nasabah_repository.dart';
+import 'package:pilah_mobile/features/pengumuman/data/nasabah_pengumuman_repository.dart';
 import 'package:pilah_mobile/services/di.dart';
-
-class _Auth extends MockBloc<AuthenticationEvent, AuthenticationStates>
-    implements AuthenticationBloc {}
+import '../../../support/stub_api.dart';
+import '../../../support/auth_support.dart';
 
 class _JadwalRepository extends Mock implements JadwalRepository {}
 
 void main() {
-  testWidgets('shows the nearest schedule and opens its date', (tester) async {
-    final auth = _Auth();
+  testWidgets('shows an ongoing schedule and opens its date', (tester) async {
+    final auth = authNotifierIn(Authenticated(
+      authEntity: AuthEntity(
+        id: 'nasabah-1',
+        name: 'Siti',
+        email: 'siti@example.test',
+        photoUrl: '',
+        token: 'token',
+        role: 'nasabah',
+        nextStep: 'nasabah_dashboard',
+      ),
+    ));
     final jadwalRepository = _JadwalRepository();
-    final today = DateUtils.dateOnly(DateTime.now());
-    final ongoingDate = today.subtract(const Duration(days: 1));
+    final now = DateTime(2026, 10, 23, 9, 30);
+    final today = DateUtils.dateOnly(now);
     final ongoing = JadwalEntity(
       id: 'ongoing',
       bankSampahId: 'bank-1',
       jenisKegiatan: 'Sedang berlangsung',
-      mulaiPada:
-          DateTime(ongoingDate.year, ongoingDate.month, ongoingDate.day, 10),
-      selesaiPada: today.add(const Duration(days: 1)),
+      mulaiPada: DateTime(today.year, today.month, today.day, 9),
+      selesaiPada: DateTime(today.year, today.month, today.day, 10),
       lokasi: 'Balai Warga',
       status: 'diterbitkan',
     );
@@ -85,23 +92,16 @@ void main() {
         hasMore: false,
       )),
     );
-    whenListen(
-      auth,
-      const Stream<AuthenticationStates>.empty(),
-      initialState: Authenticated(
-        authEntity: AuthEntity(
-          id: 'nasabah-1',
-          name: 'Siti',
-          email: 'siti@example.test',
-          photoUrl: '',
-          token: 'token',
-          role: 'nasabah',
-          nextStep: 'nasabah_dashboard',
-        ),
-      ),
-    );
 
     di.registerSingleton<NasabahRepository>(PreviewNasabahRepository());
+    // The beranda page resolves the pengumuman section from the service
+    // locator, so the stub API behind it needs the same registration.
+    final pengumumanApi = StubApi();
+    pengumumanApi.on('GET', '/api/v1/nasabah/me/pengumuman/beranda',
+        json: {'items': [], 'unread_count': 0});
+    di.registerSingleton<NasabahPengumumanRepository>(
+        NasabahPengumumanRepository(pengumumanApi.network));
+    addTearDown(() => di.unregister<NasabahPengumumanRepository>());
     di.registerSingleton<JadwalRepository>(jadwalRepository);
     final router = GoRouter(initialLocation: '/beranda', routes: [
       GoRoute(
@@ -118,30 +118,33 @@ void main() {
     ]);
     addTearDown(() async {
       router.dispose();
-      await auth.close();
       await di.unregister<NasabahRepository>();
       await di.unregister<JadwalRepository>();
     });
 
-    await tester.pumpWidget(
-      BlocProvider<AuthenticationBloc>.value(
-        value: auth,
-        child: MaterialApp.router(routerConfig: router),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        withAuthenticationProvider(
+          auth,
+          MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
 
-    await tester.scrollUntilVisible(find.text('Penimbangan'), 240);
-    expect(find.text('Penimbangan'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Sedang berlangsung'), 240);
+    expect(find.text('Sedang berlangsung'), findsOneWidget);
+    expect(find.text('Penimbangan'), findsNothing);
     expect(find.text('Pengumpulan'), findsNothing);
     expect(find.text('Jadwal Jauh'), findsNothing);
     expect(find.text('Balai Warga'), findsOneWidget);
-    await tester.tap(find.text('Penimbangan'));
+    expect(find.text('23/10/2026 · 09.00'), findsOneWidget);
+    await tester.tap(find.text('Sedang berlangsung'));
     await tester.pumpAndSettle();
 
-    final expectedDate = '${nearestDate.year.toString().padLeft(4, '0')}-'
-        '${nearestDate.month.toString().padLeft(2, '0')}-'
-        '${nearestDate.day.toString().padLeft(2, '0')}';
+    final expectedDate = '${today.year.toString().padLeft(4, '0')}-'
+        '${today.month.toString().padLeft(2, '0')}-'
+        '${today.day.toString().padLeft(2, '0')}';
     expect(find.text('Tanggal: $expectedDate'), findsOneWidget);
   });
 }
