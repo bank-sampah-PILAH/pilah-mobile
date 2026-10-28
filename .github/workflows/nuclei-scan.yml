@@ -11,10 +11,11 @@
 #
 # Passive GET requests only. The target is a fixed choice, not a free URL. Only a workflow
 # in this repo can pass target_url (the production deploy does, with the URL it just read
-# from Cloud Run). Otherwise URLs come from repository variables (Settings -> Secrets and variables -> Actions -> Variables):
+# from Cloud Run). Otherwise URLs come from repository variables
+# (Settings -> Secrets and variables -> Actions -> Variables):
 #   STAGING_WEB_URL      (required for staging)
 #   PRODUCTION_WEB_URL   (production cron and manual runs; the Cloud Run URL is
-#                                generated, read it from the deploy job summary, never guess)
+#                         generated, read it from the deploy job summary, never guess)
 name: Nuclei scan
 
 on:
@@ -75,7 +76,25 @@ jobs:
             https://*) ;;
             *) echo "::error::Missing or non-HTTPS web URL for $ENVIRONMENT; set the ${ENVIRONMENT^^}_WEB_URL repository variable."; exit 1 ;;
           esac
-          echo "TARGET=$url" >> "$GITHUB_ENV"
+          # Reduce the URL to host[:port]: a trailing slash, a path or an explicit port
+          # must not leak into the TLS target (host:443:443) or the result file names.
+          hostport="${url#https://}"
+          hostport="${hostport%%[/?#]*}"
+          case "$hostport" in
+            ""|*@*|*\[*) echo "::error::Unsupported web URL '$url' (userinfo and IPv6 literals are not allowed)."; exit 1 ;;
+          esac
+          host="${hostport%%:*}"
+          port=443
+          case "$hostport" in *:*) port="${hostport#*:}" ;; esac
+          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+            echo "::error::Invalid port '$port' in web URL '$url'."; exit 1
+          fi
+          if [ "$port" = 443 ]; then base="https://$host"; else base="https://$host:$port"; fi
+          {
+            echo "TARGET=$base"
+            echo "TLS_TARGET=$host:$port"
+            echo "RESULT_NAME=$host-$port"
+          } >> "$GITHUB_ENV"
 
       # A scan of an unreachable host finds nothing and would look green.
       - name: Check target is up
@@ -125,9 +144,8 @@ jobs:
               -v "$PWD/results":/results "$NUCLEI_IMAGE" \
               -rl 5 -c 3 -timeout 15 -duc -nc -ni -jsonl "$@"
           }
-          name="${TARGET#https://}"
-          run_nuclei -u "$TARGET" -t "${http_templates#,}" -o "/results/$name-http.jsonl"
-          run_nuclei -u "$name:443" -t "${ssl_templates#,}" -o "/results/$name-ssl.jsonl"
+          run_nuclei -u "$TARGET" -t "${http_templates#,}" -o "/results/$RESULT_NAME-http.jsonl"
+          run_nuclei -u "$TLS_TARGET" -t "${ssl_templates#,}" -o "/results/$RESULT_NAME-ssl.jsonl"
 
       - name: Summary
         if: always()
@@ -142,7 +160,7 @@ jobs:
               jq -r '"| \(.host) | \(.["template-id"]) | \(.info.severity) | \(.["matcher-name"] // (.["extracted-results"] // [] | join(", "))) |"' "$f"
             done
             echo
-            echo "Empty table: no findings. Missing-header items are info-level and known."
+            echo "Empty table: no findings. Items listed under KNOWN_NOISE in the Gate step are accepted."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload results
@@ -155,21 +173,33 @@ jobs:
           if-no-files-found: ignore
 
       # Last, so the summary and artifact exist even when this fails. Gate on the
-      # template, not the severity: swagger-api, cors-misconfig and the TLS checks
-      # are "info" yet exactly what we want to catch. For a false positive, add its
-      # template id to KNOWN_NOISE (and say why in the PR).
-      # Known, accepted: http-missing-security-headers (no HSTS, Permissions-Policy, COEP,
-      # CORP) and weak-csp-detect (CSP only has frame-ancestors) fire on every run. They
-      # are hardening debt, not fixed yet.
+      # template, not the severity: pubspec-config, sourcemaps and the TLS checks are
+      # "info" yet exactly what we want to catch. Accepted noise is a list of
+      # [template-id, matcher-name] pairs, so one missing header never hides another:
+      # http-missing-security-headers reports each header as its own matcher. For a
+      # false positive, add its pair and say why in the PR.
+      # Known, accepted hardening debt: no HSTS, Permissions-Policy, COEP, COOP, CORP or
+      # X-Permitted-Cross-Domain-Policies, and a CSP that only has frame-ancestors
+      # (weak-csp-detect: missing object-src and script-src). A new weak-CSP matcher, or
+      # dropping the CSP header altogether, turns this red.
       - name: Gate
         run: |
-          KNOWN_NOISE='["http-missing-security-headers","weak-csp-detect"]'
+          KNOWN_NOISE='[
+            ["http-missing-security-headers","strict-transport-security"],
+            ["http-missing-security-headers","permissions-policy"],
+            ["http-missing-security-headers","cross-origin-embedder-policy"],
+            ["http-missing-security-headers","cross-origin-opener-policy"],
+            ["http-missing-security-headers","cross-origin-resource-policy"],
+            ["http-missing-security-headers","x-permitted-cross-domain-policies"],
+            ["weak-csp-detect","missing-object-src"],
+            ["weak-csp-detect","missing-script-src"]
+          ]'
           shopt -s nullglob
           files=(results/*.jsonl)
           [ "${#files[@]}" -gt 0 ] || { echo "::error::No scan results were produced."; exit 1; }
           findings=$(jq -r --argjson noise "$KNOWN_NOISE" \
-            'select(.["template-id"] as $id | $noise | index($id) | not)
-             | "\(.host) \(.["template-id"]) [\(.info.severity)] \(.["matched-at"])"' \
+            'select([.["template-id"], .["matcher-name"]] as $k | $noise | any(. == $k) | not)
+             | "\(.host) \(.["template-id"]) [\(.info.severity)] \(.["matcher-name"] // "-") \(.["matched-at"])"' \
             "${files[@]}")
           if [ -n "$findings" ]; then
             echo "::error::Nuclei findings outside KNOWN_NOISE:"
