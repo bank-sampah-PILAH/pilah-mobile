@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/client/network_exception.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/recent_activity_provider.dart';
@@ -1378,7 +1379,7 @@ void main() {
           tester.widget<Container>(panel()).decoration! as BoxDecoration;
       expect(dekor.color, Colors.white);
       final sudut = dekor.borderRadius! as BorderRadius;
-      expect(sudut.topLeft, const Radius.circular(20));
+      expect(sudut.topLeft, const Radius.circular(AppRadius.xl));
       expect(sudut.bottomLeft, Radius.zero);
       expect(dekor.boxShadow, isNotEmpty);
     });
