@@ -256,6 +256,8 @@ jobs:
           if ((${#browser_tracefiles[@]})); then
             lcov_args=()
             for tracefile in "${browser_tracefiles[@]}"; do
+              # Chrome records absolute SF paths; Sonar resolves only repo-relative ones.
+              sed -i "s|^SF:$PWD/|SF:|" "$tracefile"
               lcov_args+=(--add-tracefile "$tracefile")
             done
             lcov "${lcov_args[@]}" --output-file coverage/browser.lcov.info
