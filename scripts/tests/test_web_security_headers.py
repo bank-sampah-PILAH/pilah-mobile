@@ -105,3 +105,12 @@ class WebSecurityHeadersTest(unittest.TestCase):
                        "https://storage.googleapis.com"):
             self.assertIn(origin, csp.get("connect-src", []), origin)
 
+    def test_scripts_never_run_inline_or_through_eval_and_no_source_is_a_bare_wildcard(self):
+        csp = policy(headers_of(self.base, "/").get("Content-Security-Policy", ""))
+        self.assertNotIn("'unsafe-inline'", csp.get("script-src", []))
+        self.assertNotIn("'unsafe-eval'", csp.get("script-src", []))
+        for directive in ("default-src", "script-src", "connect-src", "frame-src", "worker-src"):
+            for source in csp.get(directive, []):
+                with self.subTest(directive=directive, source=source):
+                    self.assertNotIn(source, ("*", "https:", "http:", "data:"))
+
