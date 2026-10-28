@@ -9,6 +9,11 @@ import '../../../../support/nasabah_support.dart';
 import '../../../../support/pump_app.dart';
 import '../../../../support/stub_api.dart';
 
+Finder _pickerText(String text) => find.descendant(
+      of: find.byType(ListView).last,
+      matching: find.text(text),
+    );
+
 class _BrokenNasabahNotifier extends NasabahNotifier {
   _BrokenNasabahNotifier(NasabahNotifier delegate)
       : super(
@@ -28,8 +33,10 @@ class _BrokenNasabahNotifier extends NasabahNotifier {
   NasabahState build() => NasabahInitial();
 
   @override
-  Future<List<NasabahEntity>> loadActiveNasabah() async =>
-      throw StateError('rusak');
+  Future<HalamanNasabah> loadActiveNasabahPage({
+    int page = 1,
+    String? search,
+  }) async => throw StateError('rusak');
 }
 
 void main() {
@@ -75,32 +82,120 @@ void main() {
     expect(find.text('Nasabah harus dipilih'), findsOneWidget);
   });
 
-  testWidgets('the list can be searched, and picking reports the nasabah',
-      (tester) async {
-    api.on('GET', '/api/v1/nasabah',
-        json: nasabahPage([
-          nasabahRow('1', nama: 'Budi Santoso'),
-          nasabahRow('2', nama: 'Siti Aminah', saldo: '1500'),
-        ]));
+  testWidgets(
+    'server search finds first, middle and last nasabah and preserves selection',
+    (tester) async {
+      final rows = List.generate(1000, (index) {
+        final number = (index + 1).toString().padLeft(4, '0');
+        return nasabahRow(
+          number,
+          nama: 'Load Nasabah $number',
+          active: index != 1,
+          status: index == 2 ? 'pending' : 'approved',
+        );
+      });
+      api.onRequest(
+        'GET',
+        '/api/v1/nasabah',
+        json: (options) {
+          final query = options.uri.queryParameters;
+          final search = query['search']?.toLowerCase();
+          final matches = rows.where((row) {
+            return search == null ||
+                (row['nama'] as String).toLowerCase().contains(search);
+          }).toList();
+          final page = int.parse(query['page'] ?? '1');
+          final pageSize = int.parse(query['page_size'] ?? '50');
+          final start = (page - 1) * pageSize;
+          final results = matches.skip(start).take(pageSize).toList();
+          return nasabahPage(
+            results,
+            count: matches.length,
+            hasNext: start + results.length < matches.length,
+          );
+        },
+      );
+      await open(tester);
+      await openPicker(tester);
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+      expect(_pickerText('Load Nasabah 0002'), findsNothing);
+      expect(_pickerText('Load Nasabah 0003'), findsNothing);
+      expect(find.text('Load Nasabah 0500'), findsNothing);
+      expect(api.last.query['page_size'], '50');
+
+      await tester.enterText(find.byType(TextField), 'L');
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.text('Ketik minimal 2 karakter untuk mencari.'),
+        findsOneWidget,
+      );
+      expect(api.requests, hasLength(1));
+
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 0001');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 0001'), findsOneWidget);
+      expect(api.last.query['search'], 'Load Nasabah 0001');
+
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 05');
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 0500');
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(
+        api.requests,
+        hasLength(2),
+        reason: 'typing restarts the debounce instead of fetching each key',
+      );
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 0500'), findsOneWidget);
+      expect(api.last.query['search'], 'Load Nasabah 0500');
+
+      await tester.enterText(find.byType(TextField), 'Load Nasabah 1000');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      expect(_pickerText('Load Nasabah 1000'), findsOneWidget);
+      expect(api.last.query['search'], 'Load Nasabah 1000');
+      expect(find.text('Rp 25.000'), findsOneWidget);
+
+      await tester.tap(_pickerText('Load Nasabah 1000'));
+      await tester.pumpAndSettle();
+      expect(chosen?.id, '1000');
+      expect(chosen?.idNasabah, 'NAS-1000');
+      expect(chosen?.balance, 'Rp 25.000');
+    },
+  );
+
+  testWidgets('scrolling loads the next server page', (tester) async {
+    final rows = List.generate(100, (index) {
+      final number = (index + 1).toString().padLeft(4, '0');
+      return nasabahRow(number, nama: 'Load Nasabah $number');
+    });
+    api.onRequest(
+      'GET',
+      '/api/v1/nasabah',
+      json: (options) {
+        final query = options.uri.queryParameters;
+        final page = int.parse(query['page'] ?? '1');
+        final pageSize = int.parse(query['page_size'] ?? '50');
+        final start = (page - 1) * pageSize;
+        final results = rows.skip(start).take(pageSize).toList();
+        return nasabahPage(
+          results,
+          count: rows.length,
+          hasNext: start + results.length < rows.length,
+        );
+      },
+    );
     await open(tester);
     await openPicker(tester);
-    expect(find.text('Budi Santoso'), findsOneWidget);
-    expect(find.text('NAS-2 · 08122'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'siti');
-    await tester.pump();
-    expect(find.text('Budi Santoso'), findsNothing);
-
-    await tester.enterText(find.byType(TextField), 'zzz');
-    await tester.pump();
-    expect(find.text('Nasabah tidak ditemukan.'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'siti');
-    await tester.pump();
-    await tester.tap(find.text('Siti Aminah'));
+    await tester.drag(find.byType(ListView).last, const Offset(0, -5000));
     await tester.pumpAndSettle();
 
-    expect(chosen?.id, '2');
+    expect(api.requests, hasLength(2));
+    expect(api.last.query['page'], '2');
+    expect(find.text('Load Nasabah 0051'), findsOneWidget);
   });
 
   testWidgets('an empty list says there are no active nasabah', (tester) async {

@@ -437,6 +437,11 @@ void main() {
     expect(find.text('Budi Santoso'), findsWidgets);
     expect(find.text('+Rp 5.000'), findsOneWidget);
     expect(find.text('Rp 30.000'), findsOneWidget);
+    final submit = api.requests.singleWhere(
+      (request) =>
+          request.method == 'POST' && request.path == '/api/v1/transaksi',
+    );
+    expect(submit.json['nasabah_id'], 'n1');
     // The shell tabs that stay alive were nudged to refresh.
     expect(
         api.requests.any((r) => r.path == '/api/v1/dashboard/stats'), isTrue);

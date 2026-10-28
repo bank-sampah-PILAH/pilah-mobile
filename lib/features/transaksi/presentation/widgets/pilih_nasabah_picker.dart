@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,22 +35,282 @@ class PilihNasabahPicker extends ConsumerStatefulWidget {
 class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  late Future<List<NasabahEntity>> _nasabahFuture;
+  final ScrollController _listController = ScrollController();
+  final List<NasabahEntity> _nasabah = [];
+  Timer? _searchDebounce;
+  int _page = 0;
+  int _requestGeneration = 0;
+  bool _hasMore = false;
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  Object? _error;
+  Object? _loadMoreError;
 
   @override
   void initState() {
     super.initState();
-    // Selalu ambil sendiri, bukan menumpang state provider. Halaman nasabah bisa
-    // meninggalkan provider dalam keadaan Loaded dengan daftar berpaginasi
-    // sementara daftar picker masih kosong, dan mengambil ulang di sini juga
-    // membuat saldo yang tampil selalu yang terbaru setelah ada setoran.
-    _nasabahFuture = ref.read(nasabahProvider.notifier).loadActiveNasabah();
+    _listController.addListener(_loadMoreWhenNearEnd);
+    unawaited(_loadPage(page: 1, query: '', generation: _requestGeneration));
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
+    _listController.dispose();
     super.dispose();
+  }
+
+  void _search(String value) {
+    final query = value.trim();
+    final generation = ++_requestGeneration;
+    _searchDebounce?.cancel();
+    setState(() {
+      searchQuery = query;
+      _nasabah.clear();
+      _page = 0;
+      _hasMore = false;
+      _isLoading = query.isEmpty || query.length >= 2;
+      _isLoadingMore = false;
+      _error = null;
+      _loadMoreError = null;
+    });
+    if (_listController.hasClients) _listController.jumpTo(0);
+
+    if (query.length == 1) return;
+    if (query.isEmpty) {
+      unawaited(_loadPage(page: 1, query: '', generation: generation));
+      return;
+    }
+    _searchDebounce = Timer(NasabahNotifier.jedaPencarian, () {
+      unawaited(_loadPage(page: 1, query: query, generation: generation));
+    });
+  }
+
+  Future<void> _loadPage({
+    required int page,
+    required String query,
+    required int generation,
+    bool append = false,
+  }) async {
+    setState(() {
+      if (append) {
+        _isLoadingMore = true;
+        _loadMoreError = null;
+      } else {
+        _isLoading = true;
+        _error = null;
+      }
+    });
+    try {
+      final result = await ref
+          .read(nasabahProvider.notifier)
+          .loadActiveNasabahPage(
+            page: page,
+            search: query.length >= 2 ? query : null,
+          );
+      if (!mounted || generation != _requestGeneration) return;
+      final eligible = result.items
+          .where(
+            (customer) => customer.isActive && customer.status == 'approved',
+          )
+          .toList();
+      setState(() {
+        _page = page;
+        if (append) {
+          _nasabah.addAll(eligible);
+        } else {
+          _nasabah
+            ..clear()
+            ..addAll(eligible);
+        }
+        _hasMore = result.hasMore;
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+    } catch (error) {
+      if (!mounted || generation != _requestGeneration) return;
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+        if (append) {
+          _loadMoreError = error;
+        } else {
+          _error = error;
+        }
+      });
+    }
+  }
+
+  void _loadMoreWhenNearEnd() {
+    if (_listController.hasClients &&
+        _listController.position.extentAfter < 240) {
+      _loadMore();
+    }
+  }
+
+  void _loadMore() {
+    if (!_hasMore || _isLoading || _isLoadingMore || searchQuery.length == 1) {
+      return;
+    }
+    unawaited(
+      _loadPage(
+        page: _page + 1,
+        query: searchQuery,
+        generation: _requestGeneration,
+        append: true,
+      ),
+    );
+  }
+
+  Widget _buildNasabahList() {
+    if (searchQuery.length == 1) {
+      return Center(
+        child: Text(
+          'Ketik minimal 2 karakter untuk mencari.',
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+        ),
+      );
+    }
+    if (_isLoading && _nasabah.isEmpty) {
+      return const Center(
+        child: SizedBox(
+          height: 24,
+          width: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (_error != null && _nasabah.isEmpty) {
+      final error = _error;
+      return Center(
+        child: Text(
+          error is NetworkException ? error.displayMessage : error.toString(),
+          textAlign: TextAlign.center,
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+        ),
+      );
+    }
+    if (_nasabah.isEmpty) {
+      return Center(
+        child: Text(
+          searchQuery.isEmpty
+              ? 'Belum ada nasabah aktif.'
+              : 'Nasabah tidak ditemukan.',
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _listController,
+      itemCount: _nasabah.length + (_hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _nasabah.length) {
+          if (_isLoadingMore) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            );
+          }
+          if (_loadMoreError != null) {
+            return Center(
+              child: TextButton(
+                onPressed: _loadMore,
+                child: const Text('Gagal memuat. Coba lagi'),
+              ),
+            );
+          }
+          return const SizedBox(height: 24);
+        }
+
+        final customer = _nasabah[index];
+        // `id` is the backend UUID and means nothing to a user;
+        // `idNasabah` carries the human-readable kode. It can be empty (the
+        // mapper defaults it), in which case the phone stands alone.
+        final subtitle = [
+          if (customer.idNasabah.trim().isNotEmpty) customer.idNasabah,
+          customer.phone,
+        ].join(' · ');
+        return InkWell(
+          onTap: () => context.pop(customer),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: customer.avatarColor,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    customer.initials,
+                    style: AppTextStyle.title1.copyWith(
+                      color: customer.textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        customer.name,
+                        style: AppTextStyle.title1.copyWith(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AppTextStyle.small.copyWith(
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Saldo',
+                      style: AppTextStyle.extraSmall.copyWith(
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      customer.balance,
+                      style: AppTextStyle.title1.copyWith(
+                        color: AppColors.greenDark,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -65,153 +327,12 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
         CustomSearchField(
           hintText: 'Cari nama...',
           controller: _searchController,
-          onChanged: (value) {
-            setState(() {
-              searchQuery = value;
-            });
-          },
+          onChanged: _search,
         ),
         const SizedBox(height: 16),
 
         // List
-        Expanded(
-          child: FutureBuilder<List<NasabahEntity>>(
-            future: _nasabahFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(
-                  child: SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                );
-              }
-
-              if (snapshot.hasError) {
-                final error = snapshot.error;
-                return Center(
-                  child: Text(
-                    error is NetworkException
-                        ? error.displayMessage
-                        : error.toString(),
-                    textAlign: TextAlign.center,
-                    style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-                  ),
-                );
-              }
-
-              // Source the options from the full active list rather than the
-              // nasabah page's tab/search-filtered state, so every active
-              // nasabah stays selectable regardless of that page's last view.
-              final query = searchQuery.toLowerCase();
-              final filteredCustomers = (snapshot.data ?? [])
-                  .where(
-                      (customer) => customer.name.toLowerCase().contains(query))
-                  .toList();
-
-              if (filteredCustomers.isEmpty) {
-                return Center(
-                  child: Text(
-                    query.isEmpty
-                        ? 'Belum ada nasabah aktif.'
-                        : 'Nasabah tidak ditemukan.',
-                    style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                itemCount: filteredCustomers.length,
-                itemBuilder: (context, index) {
-                  final customer = filteredCustomers[index];
-                  // `id` is the backend UUID and means nothing to a user;
-                  // `idNasabah` carries the human-readable kode. It can be
-                  // empty (the mapper defaults it), in which case the phone
-                  // stands alone rather than leading with a stray separator.
-                  final subtitle = [
-                    if (customer.idNasabah.trim().isNotEmpty)
-                      customer.idNasabah,
-                    customer.phone,
-                  ].join(' · ');
-                  return InkWell(
-                    onTap: () {
-                      context.pop(customer);
-                    },
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: customer.avatarColor,
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              customer.initials,
-                              style: AppTextStyle.title1.copyWith(
-                                color: customer.textColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  customer.name,
-                                  style: AppTextStyle.title1.copyWith(
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  subtitle,
-                                  style: AppTextStyle.small.copyWith(
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Saldo',
-                                style: AppTextStyle.extraSmall.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                customer.balance,
-                                style: AppTextStyle.title1.copyWith(
-                                  color: AppColors.greenDark,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
+        Expanded(child: _buildNasabahList()),
       ],
     );
   }

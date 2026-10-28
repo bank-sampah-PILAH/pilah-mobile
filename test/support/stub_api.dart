@@ -84,6 +84,23 @@ class StubApi implements HttpClientAdapter {
         );
   }
 
+  /// Answers `METHOD path` with JSON generated from the request.
+  void onRequest(
+    String method,
+    String path, {
+    int status = 200,
+    required Object? Function(RequestOptions options) json,
+  }) {
+    _routes['${method.toUpperCase()} $path'] = (options) =>
+        ResponseBody.fromString(
+          jsonEncode(json(options)),
+          status,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+  }
+
   /// Answers `METHOD path` with raw bytes.
   void onBytes(String method, String path, List<int> bytes,
       {Map<String, List<String>> headers = const {}}) {
