@@ -23,7 +23,7 @@ class SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         style: AppTextStyle.extraSmall.copyWith(
-          color: _field ? Colors.grey[700] : Colors.black87,
+          color: _field ? AppColors.inkSoft : AppColors.black,
           fontSize: _field ? 11 : 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.0,
@@ -98,7 +98,7 @@ class PencairanCard extends StatelessWidget {
           boxShadow: _shadow
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: AppColors.black.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -154,7 +154,7 @@ class PencairanMetaLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final muted =
-        AppTextStyle.small.copyWith(color: Colors.grey[700], fontSize: 12);
+        AppTextStyle.small.copyWith(color: AppColors.inkSoft, fontSize: 12);
     return Text.rich(
       TextSpan(
         children: [
@@ -162,7 +162,7 @@ class PencairanMetaLine extends StatelessWidget {
           TextSpan(
             text: nama,
             style: muted.copyWith(
-              color: Colors.black87,
+              color: AppColors.black,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -215,11 +215,11 @@ class PencairanPopupMenu<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<T>(
       tooltip: tooltip,
-      icon: Icon(Icons.more_vert, color: Colors.grey[800]),
+      icon: Icon(Icons.more_vert, color: AppColors.inkSoft),
       color: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 8,
-      shadowColor: Colors.black38,
+      shadowColor: AppColors.grey200,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg)),
       onSelected: onSelected,
@@ -285,7 +285,7 @@ class PencairanActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
     final foreground = !enabled
-        ? Colors.grey[500]!
+        ? AppColors.grey100
         : filled
             ? Colors.white
             : AppColors.greenDark;
@@ -330,7 +330,7 @@ class PencairanActionButton extends StatelessWidget {
               onPressed: onTap,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.greenDark,
-                disabledBackgroundColor: Colors.grey[300],
+                disabledBackgroundColor: AppColors.border,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: shape,
                 elevation: 0,
@@ -342,7 +342,7 @@ class PencairanActionButton extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.white,
                 side: BorderSide(
-                  color: enabled ? AppColors.greenDark : Colors.grey[300]!,
+                  color: enabled ? AppColors.greenDark : AppColors.border,
                   width: 1.5,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
@@ -28,7 +29,7 @@ class StatCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.lg),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -49,7 +50,7 @@ class StatCard extends StatelessWidget {
             Text(
               value,
               style: AppTextStyle.title1.copyWith(
-                color: Colors.black87,
+                color: AppColors.black,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -60,7 +61,7 @@ class StatCard extends StatelessWidget {
             Text(
               label,
               style: AppTextStyle.extraSmall.copyWith(
-                color: Colors.grey[600],
+                color: AppColors.grey100,
                 fontSize: 11,
               ),
               maxLines: 2,

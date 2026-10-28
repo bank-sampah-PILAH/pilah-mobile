@@ -129,7 +129,7 @@ class _ChoiceTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Row(
@@ -154,19 +154,20 @@ class _ChoiceTile extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyle.title1.copyWith(
-                      color: enabled ? Colors.black87 : AppColors.grey100,
+                      color: enabled ? AppColors.black : AppColors.grey100,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100),
                   ),
                 ],
               ),
             ),
-            if (enabled) Icon(Icons.chevron_right, color: Colors.grey[400]),
+            if (enabled) Icon(Icons.chevron_right, color: AppColors.grey200),
           ],
         ),
       ),

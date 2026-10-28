@@ -119,7 +119,7 @@ class _PilihBankSampahBottomSheetState
               Text(
                 _errorMessage ?? 'Gagal memuat daftar bank sampah.',
                 textAlign: TextAlign.center,
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const SizedBox(height: 12),
               TextButton(onPressed: _load, child: const Text('Coba Lagi')),
@@ -145,7 +145,7 @@ class _PilihBankSampahBottomSheetState
           query.isEmpty
               ? 'Belum ada bank sampah yang tersedia.'
               : 'Bank sampah tidak ditemukan.',
-          style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+          style: AppTextStyle.small.copyWith(color: AppColors.grey100),
         ),
       );
     }
@@ -180,7 +180,7 @@ class _PilihBankSampahBottomSheetState
                       Text(
                         bank.nama,
                         style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
+                          color: AppColors.black,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -191,7 +191,7 @@ class _PilihBankSampahBottomSheetState
                             .where((part) => part.trim().isNotEmpty)
                             .join(' · '),
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

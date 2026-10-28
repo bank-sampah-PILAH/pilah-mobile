@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
@@ -55,7 +56,7 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
         backgroundColor: const WidgetStatePropertyAll(Colors.white),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         elevation: const WidgetStatePropertyAll(8),
-        shadowColor: const WidgetStatePropertyAll(Colors.black38),
+        shadowColor: const WidgetStatePropertyAll(AppColors.grey200),
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.lg)),
@@ -111,10 +112,10 @@ class PencairanSortButton<T extends Enum> extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: Icon(Icons.swap_vert, color: Colors.grey[800]),
+            child: Icon(Icons.swap_vert, color: AppColors.inkSoft),
           ),
         ),
       ),

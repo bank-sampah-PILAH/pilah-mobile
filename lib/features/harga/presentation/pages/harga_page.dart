@@ -250,7 +250,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
             Text(
               _pageTitle,
               style: AppTextStyle.headline1.copyWith(
-                color: Colors.black87,
+                color: AppColors.black,
                 fontWeight: FontWeight.bold,
                 fontSize: 24,
               ),

@@ -349,7 +349,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   margin: EdgeInsets.symmetric(horizontal: _gutter),
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                      bottom: BorderSide(color: AppColors.border, width: 1),
                     ),
                   ),
                   child: TabBar(
@@ -360,7 +360,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     tabAlignment:
                         _webShell ? TabAlignment.start : TabAlignment.fill,
                     labelColor: AppColors.greenDark,
-                    unselectedLabelColor: Colors.grey[400],
+                    unselectedLabelColor: AppColors.grey200,
                     labelStyle: AppTextStyle.small.copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -475,12 +475,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off, color: Colors.grey[400], size: 48),
+            Icon(Icons.cloud_off, color: AppColors.grey200, size: 48),
             const SizedBox(height: 16),
             Text(
               message ?? 'Gagal memuat data profil',
               textAlign: TextAlign.center,
-              style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -894,12 +894,13 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
                     'Belum ada pengurus lain yang tergabung.',
                     textAlign: TextAlign.center,
-                    style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                    style:
+                        AppTextStyle.small.copyWith(color: AppColors.grey100),
                   ),
                 )
               else
@@ -909,7 +910,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
+                        color: AppColors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -920,7 +921,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       for (int i = 0; i < team.length; i++) ...[
                         if (i > 0)
                           Divider(
-                              color: Colors.grey[100],
+                              color: AppColors.fill,
                               height: 1,
                               thickness: 1,
                               indent: 16,
@@ -962,7 +963,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   child: Text(
                     member.nama.isNotEmpty ? member.nama : member.email,
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.black87,
+                      color: AppColors.black,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -1027,7 +1028,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         Text(
           label,
           style: AppTextStyle.extraSmall.copyWith(
-            color: Colors.grey[600],
+            color: AppColors.grey100,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.0,
           ),
@@ -1051,7 +1052,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
         Text(
           label,
           style: AppTextStyle.extraSmall.copyWith(
-            color: Colors.grey[500],
+            color: AppColors.grey100,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
           ),
@@ -1062,7 +1063,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           validator: validator,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          style: AppTextStyle.small.copyWith(color: Colors.black87),
+          style: AppTextStyle.small.copyWith(color: AppColors.black),
           decoration: appInputDecoration(
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: iconColor, size: 20)
@@ -1121,7 +1122,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               Text(
                 'ISI PESAN',
                 style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[500],
+                  color: AppColors.grey100,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
@@ -1134,12 +1135,12 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 decoration: appInputDecoration(),
-                style: AppTextStyle.small.copyWith(color: Colors.black87),
+                style: AppTextStyle.small.copyWith(color: AppColors.black),
               ),
               const SizedBox(height: 24),
               Text(
                 'Gunakan variabel berikut agar sistem mengisi otomatis:',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const SizedBox(height: 12),
               WaVariableChips(
@@ -1168,7 +1169,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                         Text(
                           'PREVIEW PESAN',
                           style: AppTextStyle.extraSmall.copyWith(
-                            color: Colors.grey[600],
+                            color: AppColors.grey100,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
                           ),
@@ -1180,7 +1181,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                           // freely inside the scrollable tab.
                           softWrap: true,
                           style: AppTextStyle.small
-                              .copyWith(color: Colors.black87, height: 1.5),
+                              .copyWith(color: AppColors.black, height: 1.5),
                         ),
                       ],
                     ),

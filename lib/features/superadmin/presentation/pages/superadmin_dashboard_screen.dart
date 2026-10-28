@@ -76,7 +76,7 @@ class _LocationLine extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+        style: TextStyle(fontSize: 13, color: AppColors.grey100),
       ),
     );
   }
@@ -472,7 +472,7 @@ class ApprovedBankCard extends StatelessWidget {
           _CardHeader(
             title: bank.nama,
             badgeText: 'AKTIF',
-            badgeBg: Colors.green.shade100,
+            badgeBg: AppColors.greenLight,
             badgeFg: AppColors.greenDark,
             badgeIcon: Icons.check_box,
           ),
@@ -500,15 +500,15 @@ class RejectedBankCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CardShell(
-      accentColor: Colors.red.shade400,
+      accentColor: AppColors.danger,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CardHeader(
             title: bank.nama,
             badgeText: 'DITOLAK',
-            badgeBg: Colors.red.shade50,
-            badgeFg: Colors.red.shade600,
+            badgeBg: AppColors.dangerLight,
+            badgeFg: AppColors.danger,
           ),
           _LocationLine(bank),
           const SizedBox(height: 12),
@@ -537,7 +537,7 @@ class _CardShell extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4)),
         ],
@@ -593,7 +593,7 @@ class _CardHeader extends StatelessWidget {
             style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87),
+                color: AppColors.black),
           ),
         ),
         const SizedBox(width: 8),
@@ -626,15 +626,14 @@ Widget _infoRow(IconData icon, String text, {bool isBold = false}) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon,
-          size: 16, color: isBold ? Colors.black87 : Colors.grey.shade500),
+      Icon(icon, size: 16, color: isBold ? AppColors.black : AppColors.grey100),
       const SizedBox(width: 8),
       Expanded(
         child: Text(
           text,
           style: TextStyle(
             fontSize: 13,
-            color: isBold ? Colors.black87 : Colors.grey.shade600,
+            color: isBold ? AppColors.black : AppColors.grey100,
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           ),
         ),

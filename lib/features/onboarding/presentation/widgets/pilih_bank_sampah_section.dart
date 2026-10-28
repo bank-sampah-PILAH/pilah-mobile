@@ -50,7 +50,7 @@ class PilihBankSampahSection extends StatelessWidget {
       hasError: hasError,
       hasSelection: selectedBank != null,
       backgroundColor: enabled ? Colors.white : AppColors.fill,
-      defaultBorderColor: Colors.grey[300]!,
+      defaultBorderColor: AppColors.border,
       errorText: errorText,
       child: selectedBank == null
           ? Row(
@@ -63,18 +63,18 @@ class PilihBankSampahSection extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.recycling_outlined,
-                      color: Colors.grey[500], size: 20),
+                      color: AppColors.grey100, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Tap untuk pilih bank sampah',
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
+                Icon(Icons.keyboard_arrow_down, color: AppColors.grey200),
               ],
             )
           : Row(
@@ -98,7 +98,7 @@ class PilihBankSampahSection extends StatelessWidget {
                       Text(
                         selectedBank!.nama,
                         style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
+                          color: AppColors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -107,14 +107,14 @@ class PilihBankSampahSection extends StatelessWidget {
                         Text(
                           selectedBank!.kota,
                           style: AppTextStyle.small.copyWith(
-                            color: Colors.grey[500],
+                            color: AppColors.grey100,
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                Icon(Icons.edit_outlined, color: Colors.grey[400]),
+                Icon(Icons.edit_outlined, color: AppColors.grey200),
               ],
             ),
     );

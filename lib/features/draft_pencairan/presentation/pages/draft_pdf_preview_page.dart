@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_back_header.dart';
 import 'package:printing/printing.dart';
 import 'package:pilah_mobile/design/layout/content_bounds.dart';
@@ -33,7 +34,7 @@ class DraftPdfPreviewPage extends StatelessWidget {
         maxPageWidth: 700,
         pdfFileName: 'draft-pencairan.pdf',
         loadingWidget: const CircularProgressIndicator(),
-        scrollViewDecoration: BoxDecoration(color: Colors.grey[200]),
+        scrollViewDecoration: BoxDecoration(color: AppColors.border),
       );
   // coverage:ignore-end
 

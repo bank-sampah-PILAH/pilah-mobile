@@ -422,7 +422,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                                   Text(
                                     '${setoranItems.length} item',
                                     style: AppTextStyle.small.copyWith(
-                                      color: Colors.grey[500],
+                                      color: AppColors.grey100,
                                     ),
                                   ),
                                 ],
@@ -498,7 +498,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
-              color: _hasSubmitted ? AppColors.danger : Colors.grey[300]!,
+              color: _hasSubmitted ? AppColors.danger : AppColors.border,
               width: 1.5,
             ),
           ),
@@ -507,16 +507,16 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                child: Icon(Icons.add, color: Colors.grey[400], size: 24),
+                child: Icon(Icons.add, color: AppColors.grey200, size: 24),
               ),
               const SizedBox(height: 16),
               Text(
                 'Belum Ada Item Setoran',
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.grey[500],
+                  color: AppColors.grey100,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -524,7 +524,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
               const SizedBox(height: 8),
               Text(
                 'Tap tombol di bawah untuk menambah item.',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey200),
                 textAlign: TextAlign.center,
               ),
             ],

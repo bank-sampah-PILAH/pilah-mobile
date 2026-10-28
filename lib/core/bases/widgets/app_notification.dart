@@ -19,7 +19,7 @@ class AppNotification {
   /// component wearing different colours.
   static final List<BoxShadow> _shadow = List.unmodifiable([
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.1),
+      color: AppColors.black.withValues(alpha: 0.1),
       offset: const Offset(0, 4),
       blurRadius: 10,
     ),

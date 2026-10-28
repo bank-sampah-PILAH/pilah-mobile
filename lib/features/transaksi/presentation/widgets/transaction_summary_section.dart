@@ -21,7 +21,7 @@ class TransactionSummarySection extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -35,7 +35,7 @@ class TransactionSummarySection extends StatelessWidget {
               Text(
                 'Subtotal item',
                 style: AppTextStyle.small.copyWith(
-                  color: Colors.grey[500],
+                  color: AppColors.grey100,
                 ),
               ),
               const SizedBox(width: 12),
@@ -47,7 +47,7 @@ class TransactionSummarySection extends StatelessWidget {
                     CurrencyFormatter.formatRupiah(grandTotal),
                     maxLines: 1,
                     style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
+                      color: AppColors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -66,7 +66,7 @@ class TransactionSummarySection extends StatelessWidget {
               Text(
                 'Grand Total',
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
+                  color: AppColors.black,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),

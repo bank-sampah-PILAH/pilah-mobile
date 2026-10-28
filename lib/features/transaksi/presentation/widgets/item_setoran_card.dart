@@ -55,7 +55,7 @@ class ItemSetoranCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Colors.grey[200]!, width: 1.5),
+        border: Border.all(color: AppColors.border, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,10 +68,10 @@ class ItemSetoranCard extends StatelessWidget {
                   height: 48,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
-                        color: hasError ? errorColor : Colors.grey[200]!),
+                        color: hasError ? errorColor : AppColors.border),
                   ),
                   child: Consumer(
                     builder: (context, ref, child) {
@@ -103,12 +103,12 @@ class ItemSetoranCard extends StatelessWidget {
                               Text(
                                 'Pilih Jenis',
                                 style: AppTextStyle.small
-                                    .copyWith(color: Colors.grey[500]),
+                                    .copyWith(color: AppColors.grey100),
                               ),
                             ],
                           ),
                           icon: Icon(Icons.keyboard_arrow_down,
-                              color: Colors.grey[400]),
+                              color: AppColors.grey200),
                           items: activeList.map((type) {
                             return DropdownMenuItem<String>(
                               value: type.name,
@@ -120,7 +120,7 @@ class ItemSetoranCard extends StatelessWidget {
                                   Text(
                                     type.name,
                                     style: AppTextStyle.small.copyWith(
-                                      color: Colors.black87,
+                                      color: AppColors.black,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -178,16 +178,16 @@ class ItemSetoranCard extends StatelessWidget {
             children: [
               Text(
                 'Harga/kg:',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const SizedBox(width: 8),
               Container(
                 height: 40,
                 width: 120,
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -197,7 +197,7 @@ class ItemSetoranCard extends StatelessWidget {
                       child: Text(
                         'Rp',
                         style: AppTextStyle.small
-                            .copyWith(color: Colors.grey[500]),
+                            .copyWith(color: AppColors.grey100),
                       ),
                     ),
                     Expanded(
@@ -216,7 +216,7 @@ class ItemSetoranCard extends StatelessWidget {
                         canRequestFocus: false,
                         decoration: appBorderlessInputDecoration(),
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.grey.shade700,
+                          color: AppColors.inkSoft,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -227,7 +227,7 @@ class ItemSetoranCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '/kg',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
             ],
           ),
@@ -242,7 +242,7 @@ class ItemSetoranCard extends StatelessWidget {
                 width: 100,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: TextFormField(
                   // Seed the field with the same comma-formatted weight shown
@@ -265,7 +265,7 @@ class ItemSetoranCard extends StatelessWidget {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => onSubmitted?.call(),
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.black87,
+                    color: AppColors.black,
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: appBorderlessInputDecoration(),
@@ -282,7 +282,7 @@ class ItemSetoranCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'kg',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
               const Spacer(),
               // Subtotal
@@ -292,7 +292,7 @@ class ItemSetoranCard extends StatelessWidget {
                   Text(
                     'Subtotal',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                   Text(

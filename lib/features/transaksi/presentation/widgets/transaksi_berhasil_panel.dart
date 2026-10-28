@@ -41,7 +41,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: Colors.green[50],
+            color: AppColors.greenLight,
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.check_circle,
@@ -53,7 +53,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Text(
           'Transaksi Berhasil!',
           style: AppTextStyle.headline1.copyWith(
-            color: Colors.black87,
+            color: AppColors.black,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -62,7 +62,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Text(
           '${widget.itemCount} jenis sampah berhasil dicatat.',
           style: AppTextStyle.small.copyWith(
-            color: Colors.grey[500],
+            color: AppColors.grey100,
           ),
         ),
         const SizedBox(height: 24),
@@ -71,9 +71,9 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             children: [
@@ -120,13 +120,13 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
         Text(
           label,
           style: AppTextStyle.small.copyWith(
-            color: Colors.grey[600],
+            color: AppColors.grey100,
           ),
         ),
         Text(
           value,
           style: AppTextStyle.title1.copyWith(
-            color: isPrimary ? AppColors.greenDark : Colors.black87,
+            color: isPrimary ? AppColors.greenDark : AppColors.black,
             fontWeight: isBold || isPrimary ? FontWeight.bold : FontWeight.w600,
             fontSize: isPrimary ? 16 : 14,
           ),

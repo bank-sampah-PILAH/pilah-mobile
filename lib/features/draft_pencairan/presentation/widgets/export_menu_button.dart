@@ -25,7 +25,7 @@ class ExportMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled ? Colors.grey[800] : Colors.grey[400];
+    final color = enabled ? AppColors.inkSoft : AppColors.grey200;
     return PopupMenuButton<ExportBerkas>(
       key: const Key('menu-ekspor'),
       enabled: enabled,
@@ -33,7 +33,7 @@ class ExportMenuButton extends StatelessWidget {
       color: Colors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 8,
-      shadowColor: Colors.black38,
+      shadowColor: AppColors.grey200,
       offset: const Offset(0, 44),
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg)),
@@ -59,7 +59,7 @@ class ExportMenuButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: AppColors.fill,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(

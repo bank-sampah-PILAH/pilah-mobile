@@ -77,7 +77,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
             const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: AppColors.black.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, -4),
           ),
@@ -114,7 +114,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                               Text(
                                 'Total dibayar',
                                 style: AppTextStyle.small
-                                    .copyWith(color: Colors.grey[600]),
+                                    .copyWith(color: AppColors.grey100),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -137,7 +137,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                                 _terbuka
                                     ? Icons.keyboard_arrow_down
                                     : Icons.keyboard_arrow_up,
-                                color: Colors.grey[600],
+                                color: AppColors.grey100,
                               ),
                             ],
                           ),
@@ -216,7 +216,7 @@ class _Baris extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+            style: AppTextStyle.small.copyWith(color: AppColors.grey100),
           ),
         ),
         // Tight, so the FittedBox spans its half and puts the amount at the
@@ -230,7 +230,7 @@ class _Baris extends StatelessWidget {
               nilai,
               key: nilaiKey,
               style: AppTextStyle.title1.copyWith(
-                color: warna ?? Colors.black87,
+                color: warna ?? AppColors.black,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),

@@ -38,7 +38,7 @@ class RecentActivitySection extends ConsumerWidget {
               child: Text(
                 'Aktivitas Terbaru',
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
+                  color: AppColors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -85,7 +85,7 @@ class RecentActivitySection extends ConsumerWidget {
             child: Center(
               child: Text(
                 'Belum ada aktivitas transaksi.',
-                style: AppTextStyle.small.copyWith(color: Colors.grey[500]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
               ),
             ),
           )
@@ -130,12 +130,12 @@ class _ActivityError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, color: Colors.grey[400], size: 32),
+            Icon(Icons.cloud_off, color: AppColors.grey200, size: 32),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+              style: AppTextStyle.small.copyWith(color: AppColors.grey100),
             ),
             const SizedBox(height: 8),
             TextButton(

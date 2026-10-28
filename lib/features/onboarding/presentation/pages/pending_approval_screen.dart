@@ -32,7 +32,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                   border: isCompleted
                       ? null
-                      : Border.all(color: Colors.grey.shade400, width: 3),
+                      : Border.all(color: AppColors.grey200, width: 3),
                 ),
                 child: Center(
                   child: isCompleted
@@ -41,7 +41,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                           width: 12,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade400,
+                            color: AppColors.grey200,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -55,7 +55,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                         ? AppColors.greenDark
                         // Only reachable for an incomplete step that is not last;
                         // the screen's fixed steps never include one.
-                        : Colors.grey.shade300, // coverage:ignore-line
+                        : AppColors.border, // coverage:ignore-line
                   ),
                 ),
             ],
@@ -72,7 +72,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: AppColors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -80,7 +80,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -139,7 +139,7 @@ class PendingApprovalScreen extends ConsumerWidget {
             Icon(
               Icons.access_time_filled,
               size: 64,
-              color: Colors.grey.shade400,
+              color: AppColors.grey200,
             ),
             const SizedBox(height: 16),
             const Text(
@@ -147,7 +147,7 @@ class PendingApprovalScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: AppColors.black,
               ),
             ),
             const SizedBox(height: 8),
@@ -155,7 +155,7 @@ class PendingApprovalScreen extends ConsumerWidget {
               'Admin sedang meninjau data institusi Anda.',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: AppColors.grey100,
               ),
             ),
 
@@ -171,7 +171,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: AppColors.black.withValues(alpha: 0.04),
                       blurRadius: 15,
                       offset: const Offset(0, 4),
                     ),
@@ -211,21 +211,21 @@ class PendingApprovalScreen extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: AppColors.fill,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.info_outline,
-                        color: Colors.grey.shade600, size: 20),
+                        color: AppColors.grey100, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Silakan periksa halaman ini secara berkala. Status pendaftaran Anda akan otomatis diperbarui di layar ini.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade700,
+                          color: AppColors.inkSoft,
                           height: 1.4,
                         ),
                       ),

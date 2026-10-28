@@ -133,7 +133,7 @@ class _EditNasabahBottomSheetState
                 fontSize: 14,
               ),
               messageStyle: AppTextStyle.small.copyWith(
-                color: Colors.black87,
+                color: AppColors.black,
                 height: 1.4,
               ),
               message:

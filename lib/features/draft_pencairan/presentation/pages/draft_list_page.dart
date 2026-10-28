@@ -324,7 +324,7 @@ class _KelompokHeader extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyle.extraSmall.copyWith(
-            color: Colors.grey[700],
+            color: AppColors.inkSoft,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.8,
           ),
@@ -350,7 +350,7 @@ class _TidakAdaHasil extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                    Icon(Icons.search_off, size: 48, color: AppColors.grey200),
                     const SizedBox(height: 12),
                     Text(
                       "Tidak ada pencairan untuk '$query'",
@@ -386,7 +386,7 @@ Future<void> _batalkan(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: AppColors.fill,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
@@ -458,7 +458,7 @@ class _DraftCardState extends State<_DraftCard> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.people_outline, size: 16, color: Colors.grey[700]),
+                Icon(Icons.people_outline, size: 16, color: AppColors.inkSoft),
                 const SizedBox(width: 4),
                 Text('${draft.jumlahItem} nasabah',
                     style: AppTextStyle.extraSmall),
@@ -473,7 +473,7 @@ class _DraftCardState extends State<_DraftCard> {
                     children: [
                       Text('Total dibayar',
                           style: AppTextStyle.extraSmall
-                              .copyWith(color: Colors.grey[700])),
+                              .copyWith(color: AppColors.inkSoft)),
                       Text(
                         rupiah(draft.totalDibayar),
                         style: AppTextStyle.headline3.copyWith(
@@ -493,7 +493,7 @@ class _DraftCardState extends State<_DraftCard> {
                     _expanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: Colors.grey[800],
+                    color: AppColors.inkSoft,
                   ),
                 ),
               ],
@@ -504,7 +504,7 @@ class _DraftCardState extends State<_DraftCard> {
             ],
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, color: Colors.grey.shade200),
+              child: Divider(height: 1, color: AppColors.border),
             ),
             _Footer(draft: draft, onCancel: widget.onCancel),
           ],
@@ -531,7 +531,7 @@ class _Rincian extends StatelessWidget {
               value,
               style: AppTextStyle.small.copyWith(
                 fontWeight: FontWeight.w600,
-                color: color ?? Colors.black87,
+                color: color ?? AppColors.black,
               ),
             ),
           ],
@@ -570,7 +570,7 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = AppTextStyle.extraSmall.copyWith(color: Colors.grey[700]);
+    final muted = AppTextStyle.extraSmall.copyWith(color: AppColors.inkSoft);
     final time = waktu(draft.createdAt);
     return Row(
       key: Key('footer-${draft.id}'),
@@ -594,7 +594,7 @@ class _Footer extends StatelessWidget {
               if (time.isNotEmpty)
                 Row(
                   children: [
-                    Icon(Icons.schedule, size: 14, color: Colors.grey[700]),
+                    Icon(Icons.schedule, size: 14, color: AppColors.inkSoft),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(time,
@@ -613,7 +613,7 @@ class _Footer extends StatelessWidget {
             tooltip: 'Batalkan draft',
             visualDensity: VisualDensity.compact,
             onPressed: onCancel,
-            icon: Icon(Icons.delete_outline, color: Colors.red[700]),
+            icon: Icon(Icons.delete_outline, color: AppColors.danger),
           ),
       ],
     );

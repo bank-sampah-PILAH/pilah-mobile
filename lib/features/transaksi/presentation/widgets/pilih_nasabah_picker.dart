@@ -277,7 +277,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                   Text(
                     customer.name,
                     style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
+                      color: AppColors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -286,7 +286,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                   Text(
                     subtitle,
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -298,7 +298,7 @@ class _PilihNasabahPickerState extends ConsumerState<PilihNasabahPicker> {
                 Text(
                   'Saldo',
                   style: AppTextStyle.extraSmall.copyWith(
-                    color: Colors.grey[500],
+                    color: AppColors.grey100,
                   ),
                 ),
                 const SizedBox(height: 4),

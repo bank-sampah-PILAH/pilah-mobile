@@ -32,7 +32,7 @@ const _weekdayShortNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 /// Label hari di atas kolom tanggal; dipakai juga untuk mengukur ke mana judul
 /// bulan harus sejajar.
 final _weekdayLabelStyle = TextStyle(
-  color: Colors.grey.shade600,
+  color: AppColors.grey100,
   fontSize: 11,
   fontWeight: FontWeight.w600,
 );
@@ -94,7 +94,7 @@ class JadwalCalendar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -115,7 +115,7 @@ class JadwalCalendar extends StatelessWidget {
                       child: Text(
                         monthLabel,
                         style: const TextStyle(
-                          color: Colors.black87,
+                          color: AppColors.black,
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                         ),
@@ -297,8 +297,8 @@ class _JadwalDateCell extends StatelessWidget {
                       color: selected
                           ? Colors.white
                           : isInDisplayedMonth
-                              ? Colors.black87
-                              : Colors.grey.shade400,
+                              ? AppColors.black
+                              : AppColors.grey200,
                       fontSize: 13,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     ),

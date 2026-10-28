@@ -473,12 +473,12 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       hint: Text(
                         'Pilih jenis kelamin',
                         style: TextStyle(
-                          color: Colors.grey.shade400,
+                          color: AppColors.grey200,
                           fontWeight: FontWeight.normal,
                         ),
                       ),
                       icon: const Icon(Icons.keyboard_arrow_down,
-                          color: Colors.grey),
+                          color: AppColors.grey100),
                       items: const [
                         DropdownMenuItem(
                           value: _genderMaleLabel,
@@ -528,7 +528,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       decoration: appInputDecoration(
                           hintText: 'dd/mm/yyyy',
                           suffixIcon: const Icon(Icons.calendar_today_outlined,
-                              color: Colors.black87)),
+                              color: AppColors.black)),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Tanggal lahir wajib diisi';
@@ -573,7 +573,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade500,
+                    color: AppColors.grey100,
                     height: 1.5,
                   ),
                 ),

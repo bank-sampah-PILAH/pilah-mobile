@@ -93,14 +93,14 @@ class _DetailNasabahBottomSheetState
                 decoration: BoxDecoration(
                   color: isActive
                       ? DetailNasabahBottomSheet.mintTint
-                      : Colors.red[50],
+                      : AppColors.dangerLight,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   initials,
                   style: AppTextStyle.headline1.copyWith(
-                    color: isActive ? AppColors.greenDark : Colors.red[400],
+                    color: isActive ? AppColors.greenDark : AppColors.danger,
                     fontWeight: FontWeight.bold,
                     fontSize: 24,
                   ),
@@ -114,7 +114,7 @@ class _DetailNasabahBottomSheetState
                     Text(
                       name,
                       style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
+                        color: AppColors.black,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
@@ -125,7 +125,7 @@ class _DetailNasabahBottomSheetState
                         Text(
                           idNasabah,
                           style: AppTextStyle.small.copyWith(
-                            color: Colors.grey[500],
+                            color: AppColors.grey100,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -144,7 +144,7 @@ class _DetailNasabahBottomSheetState
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Column(
@@ -163,7 +163,7 @@ class _DetailNasabahBottomSheetState
                         ? Icons.female
                         : Icons.male,
                     size: 16,
-                    color: Colors.grey[600],
+                    color: AppColors.grey100,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -183,7 +183,7 @@ class _DetailNasabahBottomSheetState
                   tanggalDaftar,
                   isBold: true,
                   icon: Icon(Icons.calendar_month,
-                      size: 16, color: Colors.indigo[300]),
+                      size: 16, color: AppColors.blue),
                 ),
                 const SizedBox(height: 16),
                 _buildRingkasanRow(),
@@ -191,14 +191,14 @@ class _DetailNasabahBottomSheetState
                 Text(
                   'Alamat',
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.grey[500],
+                    color: AppColors.grey100,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   address,
                   style: AppTextStyle.title1.copyWith(
-                    color: Colors.black87,
+                    color: AppColors.black,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     height: 1.4,
@@ -217,7 +217,7 @@ class _DetailNasabahBottomSheetState
                 fontSize: 14,
               ),
               messageStyle: AppTextStyle.small.copyWith(
-                color: Colors.black87,
+                color: AppColors.black,
                 height: 1.4,
               ),
               message:
@@ -315,7 +315,7 @@ class _DetailNasabahBottomSheetState
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange[50],
+              color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Column(
@@ -324,12 +324,12 @@ class _DetailNasabahBottomSheetState
                 Row(
                   children: [
                     Icon(Icons.sync_problem,
-                        size: 18, color: Colors.orange[700]),
+                        size: 18, color: AppColors.warning),
                     const SizedBox(width: 8),
                     Text(
                       'Data akun berbeda',
                       style: AppTextStyle.title1.copyWith(
-                        color: Colors.orange[800],
+                        color: AppColors.warning,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -340,7 +340,7 @@ class _DetailNasabahBottomSheetState
                 Text(
                   'Nasabah ini memiliki data berbeda dari catatan yang anda miliki.',
                   style: AppTextStyle.small.copyWith(
-                    color: Colors.black87,
+                    color: AppColors.black,
                     height: 1.4,
                   ),
                 ),
@@ -452,7 +452,7 @@ class _DetailNasabahBottomSheetState
         Text(
           label,
           style: AppTextStyle.small.copyWith(
-            color: Colors.grey[500],
+            color: AppColors.grey100,
           ),
         ),
         const SizedBox(width: 16),
@@ -469,7 +469,7 @@ class _DetailNasabahBottomSheetState
                 child: Text(
                   value,
                   style: AppTextStyle.title1.copyWith(
-                    color: valueColor ?? Colors.black87,
+                    color: valueColor ?? AppColors.black,
                     fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
                     fontSize: 14,
                   ),

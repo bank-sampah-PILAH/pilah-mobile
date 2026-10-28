@@ -107,7 +107,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,12 +127,12 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
           MembershipBankIdentity(
             membership: membership,
             nameStyle: AppTextStyle.title1.copyWith(
-              color: Colors.black87,
+              color: AppColors.black,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
             locationStyle: AppTextStyle.small.copyWith(
-              color: Colors.grey[500],
+              color: AppColors.grey100,
             ),
           ),
           if (membership.status == MembershipStatus.rejected) ...[
@@ -140,7 +140,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             Text(
               'Alasan Penolakan',
               style: AppTextStyle.extraSmall.copyWith(
-                color: Colors.grey[500],
+                color: AppColors.grey100,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
@@ -148,7 +148,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             const SizedBox(height: 4),
             ExpandableText(
               text: membership.alasanPenolakan ?? '-',
-              style: AppTextStyle.small.copyWith(color: Colors.black87),
+              style: AppTextStyle.small.copyWith(color: AppColors.black),
             ),
           ],
         ],

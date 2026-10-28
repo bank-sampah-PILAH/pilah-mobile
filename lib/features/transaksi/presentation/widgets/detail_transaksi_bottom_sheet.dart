@@ -102,9 +102,9 @@ class _DetailTransaksiBottomSheetState
   Widget build(BuildContext context) {
     final String initials = widget.transactionData['initials'] ?? 'NN';
     final Color avatarColor =
-        widget.transactionData['avatarColor'] ?? Colors.grey[200]!;
+        widget.transactionData['avatarColor'] ?? AppColors.border;
     final Color textColor =
-        widget.transactionData['textColor'] ?? Colors.grey[600]!;
+        widget.transactionData['textColor'] ?? AppColors.grey100;
     final String name = widget.transactionData['name'] ?? 'Unknown';
     final String time = widget.transactionData['time'] ?? 'Hari ini';
     final String amount =
@@ -174,7 +174,7 @@ class _DetailTransaksiBottomSheetState
                       Text(
                         name,
                         style: AppTextStyle.title1.copyWith(
-                          color: Colors.black87,
+                          color: AppColors.black,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -183,7 +183,7 @@ class _DetailTransaksiBottomSheetState
                       Text(
                         time,
                         style: AppTextStyle.small.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                         ),
                       ),
                     ],
@@ -213,7 +213,7 @@ class _DetailTransaksiBottomSheetState
                       child: Text(
                         'JENIS',
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -223,7 +223,7 @@ class _DetailTransaksiBottomSheetState
                       child: Text(
                         'BERAT',
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -233,7 +233,7 @@ class _DetailTransaksiBottomSheetState
                       child: Text(
                         'HARGA/KG',
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -244,7 +244,7 @@ class _DetailTransaksiBottomSheetState
                         'SUBTOTAL',
                         textAlign: TextAlign.right,
                         style: AppTextStyle.extraSmall.copyWith(
-                          color: Colors.grey[500],
+                          color: AppColors.grey100,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -278,7 +278,7 @@ class _DetailTransaksiBottomSheetState
                             child: Text(
                               item['jenis'] ?? '',
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.black87,
+                                color: AppColors.black,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -288,7 +288,7 @@ class _DetailTransaksiBottomSheetState
                             child: Text(
                               item['berat'] ?? '',
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[600],
+                                color: AppColors.grey100,
                               ),
                             ),
                           ),
@@ -297,7 +297,7 @@ class _DetailTransaksiBottomSheetState
                             child: Text(
                               item['harga'] ?? '',
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.grey[600],
+                                color: AppColors.grey100,
                               ),
                             ),
                           ),
@@ -307,7 +307,7 @@ class _DetailTransaksiBottomSheetState
                               item['subtotal'] ?? '',
                               textAlign: TextAlign.right,
                               style: AppTextStyle.small.copyWith(
-                                color: Colors.black87,
+                                color: AppColors.black,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -325,7 +325,7 @@ class _DetailTransaksiBottomSheetState
                     Text(
                       'Total Setoran',
                       style: AppTextStyle.small.copyWith(
-                        color: Colors.black87,
+                        color: AppColors.black,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -359,7 +359,7 @@ class _DetailTransaksiBottomSheetState
                     Text(
                       'Saldo Setelah Transaksi',
                       style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[600],
+                        color: AppColors.grey100,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -447,7 +447,7 @@ class _DetailTransaksiBottomSheetState
                   Text(
                     'ke $name',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -491,7 +491,7 @@ class _DetailTransaksiBottomSheetState
                   Text(
                     'ke $name',
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[500],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],

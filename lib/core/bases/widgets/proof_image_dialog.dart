@@ -17,7 +17,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
 
   showDialog(
     context: context,
-    barrierColor: Colors.black87,
+    barrierColor: AppColors.black,
     builder: (context) {
       return Dialog(
         backgroundColor: Colors.white,
@@ -35,8 +35,8 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
-                  icon:
-                      const Icon(Icons.close, color: Colors.black54, size: 20),
+                  icon: const Icon(Icons.close,
+                      color: AppColors.grey100, size: 20),
                   onPressed: () => Navigator.of(context).pop(),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -64,10 +64,10 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Container(
-                                color: Colors.grey.shade100,
+                                color: AppColors.fill,
                                 child: Center(
                                   child: CircularProgressIndicator(
-                                    color: Colors.blueGrey.shade300,
+                                    color: AppColors.grey100,
                                   ),
                                 ),
                               );
@@ -136,18 +136,18 @@ class _ProofPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey.shade100,
+      color: AppColors.fill,
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.grey.shade400, size: 48),
+          Icon(icon, color: AppColors.grey200, size: 48),
           const SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.grey.shade700,
+              color: AppColors.inkSoft,
               fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
@@ -156,7 +156,7 @@ class _ProofPlaceholder extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            style: TextStyle(color: AppColors.grey100, fontSize: 12),
           ),
         ],
       ),

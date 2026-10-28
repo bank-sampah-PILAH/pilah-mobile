@@ -98,7 +98,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle.headline1.copyWith(
-                        color: Colors.black87,
+                        color: AppColors.black,
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
                       ),

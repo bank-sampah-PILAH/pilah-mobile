@@ -143,7 +143,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               'bank sampah.',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.brown[700],
+                color: AppColors.inkSoft,
               ),
             ),
           ),
@@ -171,7 +171,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: AppColors.inkSoft,
             ),
           ),
           const SizedBox(height: 8),
@@ -192,7 +192,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
                     _membershipStatusLabel(membership),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -232,7 +232,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
           child: Text(
             'Pengajuan akan ditinjau oleh pengurus bank sampah.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+            style: TextStyle(fontSize: 12, color: AppColors.grey200),
           ),
         ),
         const SizedBox(height: 20),

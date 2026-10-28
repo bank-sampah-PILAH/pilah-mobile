@@ -103,7 +103,8 @@ class NasabahListItem extends ConsumerWidget {
               onTap: () => Navigator.of(sheetContext).pop(false),
             ),
             ListTile(
-              leading: const Icon(Icons.cancel_outlined, color: Colors.red),
+              leading:
+                  const Icon(Icons.cancel_outlined, color: AppColors.danger),
               title: const Text('Tolak'),
               onTap: () => Navigator.of(sheetContext).pop(true),
             ),
@@ -163,7 +164,7 @@ class NasabahListItem extends ConsumerWidget {
                       child: Text(
                         name,
                         style: AppTextStyle.title1.copyWith(
-                          color: isActive ? Colors.black87 : Colors.grey[600],
+                          color: isActive ? AppColors.black : AppColors.grey100,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -183,7 +184,7 @@ class NasabahListItem extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   phone,
-                  style: AppTextStyle.small.copyWith(color: Colors.grey[400]),
+                  style: AppTextStyle.small.copyWith(color: AppColors.grey200),
                 ),
               ],
             ),
@@ -196,7 +197,7 @@ class NasabahListItem extends ConsumerWidget {
               Text(
                 balance,
                 style: AppTextStyle.title1.copyWith(
-                  color: isActive ? AppColors.greenDark : Colors.grey[500],
+                  color: isActive ? AppColors.greenDark : AppColors.grey100,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
@@ -205,7 +206,7 @@ class NasabahListItem extends ConsumerWidget {
               Text(
                 'saldo',
                 style: AppTextStyle.extraSmall.copyWith(
-                  color: Colors.grey[400],
+                  color: AppColors.grey200,
                 ),
               ),
             ],

@@ -40,7 +40,7 @@ class DashboardHeader extends ConsumerWidget {
             children: [
               Text(
                 bankName,
-                style: AppTextStyle.small.copyWith(color: Colors.grey[600]),
+                style: AppTextStyle.small.copyWith(color: AppColors.grey100),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
@@ -53,7 +53,7 @@ class DashboardHeader extends ConsumerWidget {
                   ],
                 ),
                 style: AppTextStyle.title1.copyWith(
-                  color: Colors.black87,
+                  color: AppColors.black,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 ),

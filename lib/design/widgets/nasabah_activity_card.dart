@@ -64,8 +64,7 @@ class NasabahActivityCard extends StatelessWidget {
                 style: NasabahStyle.text(
                   13,
                   weight: FontWeight.w600,
-                  color:
-                      isWithdrawal ? Colors.red.shade700 : AppColors.greenDark,
+                  color: isWithdrawal ? AppColors.danger : AppColors.greenDark,
                   tabularFigures: true,
                 ),
               ),

@@ -311,7 +311,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                   title: Text(
                     'Jadwal Kegiatan',
                     style: AppTextStyle.headline1.copyWith(
-                      color: Colors.black87,
+                      color: AppColors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 24,
                     ),
@@ -406,7 +406,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               child: Text(
                 formatJadwalDayHeading(_selectedDate),
                 style: const TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.black,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
@@ -415,7 +415,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
             Text(
               '${loadedState.totalCount} jadwal',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: AppColors.grey100,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -676,7 +676,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
             child: Text(
               formatJadwalDayHeading(day),
               style: const TextStyle(
-                color: Colors.black87,
+                color: AppColors.black,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -685,7 +685,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
           Text(
             '$count jadwal',
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: AppColors.grey100,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -797,7 +797,7 @@ class _EmptyScheduleDay extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -817,7 +817,7 @@ class _EmptyScheduleDay extends StatelessWidget {
             'Tidak ada jadwal pada ${formatJadwalDayHeading(date)}. $dateHint',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: AppColors.grey100,
               fontSize: 13,
               height: 1.4,
             ),
@@ -891,7 +891,7 @@ class _ScheduleCard extends StatelessWidget {
               Text(
                 _activityLabel(item.jenisKegiatan),
                 style: const TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.black,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -925,7 +925,7 @@ class _ScheduleCard extends StatelessWidget {
                       message: 'Jadwal bertumpuk di lokasi yang sama',
                       child: Icon(
                         Icons.warning_amber_rounded,
-                        color: Colors.orange,
+                        color: AppColors.warning,
                         size: 20,
                       ),
                     ),
@@ -990,13 +990,13 @@ class _ScheduleInfoLine extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.grey.shade600, size: 18),
+          Icon(icon, color: AppColors.grey100, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: AppColors.inkSoft,
                 fontSize: 13,
                 height: 1.35,
               ),
@@ -1019,7 +1019,7 @@ class _ScheduleStatus extends StatelessWidget {
       JadwalStatus.diterbitkan => (AppColors.greenLight, AppColors.greenDark),
       JadwalStatus.dibatalkan => (AppColors.dangerLight, AppColors.danger),
       JadwalStatus.selesai => (AppColors.fill, AppColors.inkSoft),
-      null => (AppColors.cardOffWhite, Colors.grey.shade700),
+      null => (AppColors.cardOffWhite, AppColors.inkSoft),
     };
 
     return Container(

@@ -91,7 +91,7 @@ class _DashboardUpcomingScheduleSectionState
                   child: Text(
                     'Jadwal Terdekat',
                     style: AppTextStyle.title1.copyWith(
-                      color: Colors.black87,
+                      color: AppColors.black,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -121,7 +121,7 @@ class _DashboardUpcomingScheduleSectionState
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          const Icon(Icons.cloud_off, color: Colors.grey),
+                          const Icon(Icons.cloud_off, color: AppColors.grey100),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text('Gagal memuat jadwal mendatang.',
@@ -154,7 +154,7 @@ class _DashboardUpcomingScheduleSectionState
                               child: Text(
                             'Belum ada jadwal mendatang.',
                             style: AppTextStyle.small.copyWith(
-                              color: Colors.grey[600],
+                              color: AppColors.grey100,
                             ),
                           )),
                         ],
@@ -220,14 +220,14 @@ class _ScheduleRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.black87,
+                      color: AppColors.black,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     '${formatJadwalDayHeading(start, today: today)} · ${_scheduleTime(start)}',
                     style: AppTextStyle.small.copyWith(
-                      color: Colors.grey[600],
+                      color: AppColors.grey100,
                     ),
                   ),
                   if (schedule.lokasi.isNotEmpty)
@@ -236,13 +236,13 @@ class _ScheduleRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyle.small.copyWith(
-                        color: Colors.grey[600],
+                        color: AppColors.grey100,
                       ),
                     ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            const Icon(Icons.chevron_right, color: AppColors.grey100),
           ],
         ),
       ),

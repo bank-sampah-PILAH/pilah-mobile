@@ -397,7 +397,7 @@ class _Footer extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         child: ContentBounds(
@@ -419,7 +419,7 @@ class _Footer extends StatelessWidget {
                       if (state.kelebihan)
                         Text('Maksimal 1.000 nasabah per draft',
                             style: AppTextStyle.small
-                                .copyWith(color: Colors.red[700])),
+                                .copyWith(color: AppColors.danger)),
                     ],
                   ),
                 ),

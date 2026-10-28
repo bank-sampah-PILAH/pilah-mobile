@@ -82,7 +82,7 @@ class ActivityItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyle.small.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppColors.black,
                   ),
                 ),
                 for (final line in subtitleLines) ...[
@@ -90,7 +90,7 @@ class ActivityItem extends StatelessWidget {
                   Text(
                     line,
                     style: AppTextStyle.extraSmall.copyWith(
-                      color: Colors.grey[600],
+                      color: AppColors.grey100,
                     ),
                   ),
                 ],
@@ -147,6 +147,6 @@ class ActivityItem extends StatelessWidget {
 
   static Widget _caption(String text) => Text(
         text,
-        style: AppTextStyle.extraSmall.copyWith(color: Colors.grey[600]),
+        style: AppTextStyle.extraSmall.copyWith(color: AppColors.grey100),
       );
 }

@@ -7,6 +7,7 @@ import 'package:pilah_mobile/features/beranda/data/nasabah_repository.dart';
 import 'package:pilah_mobile/features/beranda/presentation/widgets/nasabah_resource.dart';
 import 'package:pilah_mobile/services/di.dart';
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/constants/nasabah_style.dart';
@@ -534,8 +535,7 @@ class _ProfileEditForm extends StatelessWidget {
               decoration: appInputDecoration()),
           if (error != null) ...[
             const SizedBox(height: 12),
-            Text(error!,
-                style: NasabahStyle.text(13, color: Colors.red.shade700)),
+            Text(error!, style: NasabahStyle.text(13, color: AppColors.danger)),
           ],
           const SizedBox(height: 20),
           Row(children: [

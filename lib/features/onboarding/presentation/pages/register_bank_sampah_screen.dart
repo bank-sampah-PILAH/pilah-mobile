@@ -144,7 +144,7 @@ class _RegisterBankSampahScreenState
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade600, size: 22),
+          Icon(Icons.error_outline, color: AppColors.danger, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -153,7 +153,7 @@ class _RegisterBankSampahScreenState
                 Text(
                   'Pendaftaran Ditolak',
                   style: TextStyle(
-                    color: Colors.red.shade700,
+                    color: AppColors.danger,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -163,7 +163,7 @@ class _RegisterBankSampahScreenState
                   'Pendaftaran sebelumnya ditolak. Mohon periksa kembali data '
                   'Anda dan daftar ulang.',
                   style: TextStyle(
-                    color: Colors.red.shade700,
+                    color: AppColors.danger,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -231,7 +231,7 @@ class _RegisterBankSampahScreenState
               // error, so the two read as one form.
               final errorColor = Theme.of(field.context).colorScheme.error;
               final placeholderColor =
-                  field.hasError ? errorColor : Colors.grey.shade400;
+                  field.hasError ? errorColor : AppColors.grey200;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -266,7 +266,7 @@ class _RegisterBankSampahScreenState
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: const BoxDecoration(
-                                        color: Colors.black54,
+                                        color: AppColors.grey100,
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -298,7 +298,7 @@ class _RegisterBankSampahScreenState
                                   const Text(
                                     'Pilih foto',
                                     style: TextStyle(
-                                      color: Colors.black87,
+                                      color: AppColors.black,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
@@ -307,7 +307,7 @@ class _RegisterBankSampahScreenState
                                   Text(
                                     'JPG / PNG · Maks. 5 MB',
                                     style: TextStyle(
-                                      color: Colors.grey.shade500,
+                                      color: AppColors.grey100,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -368,7 +368,7 @@ class _RegisterBankSampahScreenState
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade400,
+              color: AppColors.grey200,
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 
 /// The "+62 |" before a phone number field. Pass it as the `prefixIcon` of
@@ -16,7 +17,7 @@ class PhonePrefix extends StatelessWidget {
           Text(
             '+62',
             style: AppTextStyle.headline3.copyWith(
-              color: Colors.grey.shade700,
+              color: AppColors.inkSoft,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -25,7 +26,7 @@ class PhonePrefix extends StatelessWidget {
             key: const Key('phone-divider'),
             height: 24,
             width: 1,
-            color: Colors.grey.shade300,
+            color: AppColors.border,
           ),
         ],
       ),
