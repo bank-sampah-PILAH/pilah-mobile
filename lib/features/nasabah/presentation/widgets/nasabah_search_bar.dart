@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/constants/nasabah_search.dart';
 
 class NasabahSearchBar extends StatelessWidget {
   final ValueChanged<String>? onChanged;
@@ -10,7 +11,7 @@ class NasabahSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       onChanged: onChanged,
-      decoration: appSearchDecoration(hintText: 'Cari nama atau nomor...'),
+      decoration: appSearchDecoration(hintText: nasabahSearchHint),
     );
   }
 }

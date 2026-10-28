@@ -94,7 +94,7 @@ void main() {
 
   // Pencarian dijalankan server (PIL-214) supaya seluruh nasabah ikut dicari,
   // bukan hanya halaman yang kebetulan sudah dimuat. Backend mencocokkan nama,
-  // nomor HP, dan email sekaligus.
+  // ID nasabah, nomor HP, dan email sekaligus.
   test('forwards the typed query to the server after the typing pause',
       () async {
     await cubit.loadNasabah();

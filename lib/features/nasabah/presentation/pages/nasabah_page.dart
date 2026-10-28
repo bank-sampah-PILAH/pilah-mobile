@@ -17,6 +17,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/constants/nasabah_search.dart';
 
 class NasabahPage extends StatelessWidget {
   const NasabahPage({super.key, this.isWeb = kIsWeb});
@@ -130,7 +131,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
 
               // Search Bar
               CustomSearchField(
-                hintText: 'Cari nama nasabah...',
+                hintText: nasabahSearchHint,
                 onChanged: (value) {
                   notifier.searchNasabah(value);
                 },

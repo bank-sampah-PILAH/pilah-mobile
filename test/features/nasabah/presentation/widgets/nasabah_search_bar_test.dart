@@ -12,7 +12,7 @@ void main() {
         body: NasabahSearchBar(onChanged: (v) => typed = v),
       ),
     ));
-    expect(find.text('Cari nama atau nomor...'), findsOneWidget);
+    expect(find.text('Cari nama, ID, atau nomor HP...'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'budi');
 
