@@ -1,20 +1,14 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Ratchet against Flutter's stock palette used outside `lib/design/`.
+/// Ban on Flutter's stock palette used outside `lib/design/`.
 ///
 /// `Colors.grey`, `Colors.black87` and `Colors.red` are not the colours of the
 /// app: `Colors.grey` is #9E9E9E, 2.7:1 on white, which fails WCAG AA as text.
 /// `AppColors` holds the palette that was checked for contrast. `Colors.white`
-/// and `Colors.transparent` are fine. New stock colours are not allowed; the
-/// existing ones are recorded per file in
-/// `hardcoded_material_colors_baseline.json` and can only go down.
-///
-/// After removing some, lower the baseline with
-/// `UPDATE_BASELINE=1 flutter test test/design/hardcoded_material_colors_test.dart`.
-const _baselinePath = 'test/design/hardcoded_material_colors_baseline.json';
+/// and `Colors.transparent` are fine. No file outside `lib/design/` may use a
+/// stock colour, and there is no baseline to hide behind.
 
 /// The left boundary keeps `AppColors.black` and `AppColors.grey100` out of the
 /// count: only a bare `Colors.` is the stock palette.
@@ -29,19 +23,13 @@ Map<String, int> _scan() {
   for (final entity in Directory('lib').listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('.dart')) continue;
     final path = entity.path;
-    if (path.startsWith('lib/design/')) continue;
+    if (path == 'lib/design/constants/colors.dart') continue;
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) continue;
     final count = _stock.allMatches(entity.readAsStringSync()).length;
     if (count > 0) found[path] = count;
   }
   return found;
 }
-
-Map<String, int> _baseline() => File(_baselinePath).existsSync()
-    ? (jsonDecode(File(_baselinePath).readAsStringSync())
-            as Map<String, dynamic>)
-        .map((k, v) => MapEntry(k, v as int))
-    : <String, int>{};
 
 void main() {
   test('the pattern counts the stock palette but not AppColors', () {
@@ -54,49 +42,18 @@ void main() {
     expect(_stock.hasMatch('Colors.transparent'), isFalse);
   });
 
-  test('no screen adds a stock Flutter colour', () {
-    final current = _scan();
-
-    if (Platform.environment['UPDATE_BASELINE'] == '1') {
-      final sorted = Map.fromEntries(
-        current.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
-      );
-      File(_baselinePath).writeAsStringSync(
-        '${const JsonEncoder.withIndent('  ').convert(sorted)}\n',
-      );
-      return;
-    }
-
-    final baseline = _baseline();
-    final problems = <String>[
-      for (final entry in current.entries)
-        if (entry.value > (baseline[entry.key] ?? 0))
-          '${entry.key}: ${entry.value} stock colours, baseline allows '
-              '${baseline[entry.key] ?? 0}',
+  test('no screen uses a stock Flutter colour', () {
+    final problems = [
+      for (final entry in _scan().entries)
+        '${entry.key}: ${entry.value} stock colours',
     ];
 
     expect(
       problems,
       isEmpty,
-      reason: 'Use AppRadius.sm, md, lg or xl '
-          '(lib/design/constants/radius.dart). If the design needs a new '
-          'step, add it there instead of writing a number in a screen.',
-    );
-  });
-
-  test('the baseline only lists files that still use stock colours', () {
-    final current = _scan();
-    final stale = [
-      for (final entry in _baseline().entries)
-        if ((current[entry.key] ?? 0) < entry.value)
-          '${entry.key}: baseline ${entry.value}, now ${current[entry.key] ?? 0}',
-    ];
-
-    expect(
-      stale,
-      isEmpty,
-      reason: 'Stock colours were removed: lower the baseline with '
-          'UPDATE_BASELINE=1 flutter test test/design/hardcoded_material_colors_test.dart.',
+      reason: 'Use a colour from AppColors (lib/design/constants/colors.dart). '
+          'If the design needs a new one, add it there with its contrast '
+          'checked instead of writing a stock colour in a screen.',
     );
   });
 }

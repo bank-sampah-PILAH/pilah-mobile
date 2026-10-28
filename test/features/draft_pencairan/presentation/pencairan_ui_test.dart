@@ -171,7 +171,7 @@ void main() {
       expect(style.fontSize, 12);
       expect(style.fontWeight, FontWeight.bold);
       expect(style.letterSpacing, 1.0);
-      expect(style.color, Colors.black87);
+      expect(style.color, AppColors.black);
     });
 
     testWidgets('a field label is a step quieter: smaller, dark grey',
@@ -184,7 +184,7 @@ void main() {
       expect(style.fontSize, 11);
       expect(style.fontWeight, FontWeight.bold);
       expect(style.letterSpacing, 1.0);
-      expect(style.color, Colors.grey[700]);
+      expect(style.color, AppColors.inkSoft);
     });
   });
 
@@ -229,11 +229,11 @@ void main() {
         findsOneWidget);
     final text = tester.widget<Text>(find.byType(Text));
     final spans = (text.textSpan! as TextSpan).children!.cast<TextSpan>();
-    expect(spans[0].style!.color, Colors.grey[700]);
+    expect(spans[0].style!.color, AppColors.inkSoft);
     expect(spans[1].text, 'Pengurus PILAH');
-    expect(spans[1].style!.color, Colors.black87);
+    expect(spans[1].style!.color, AppColors.black);
     expect(spans[1].style!.fontWeight, FontWeight.w600);
-    expect(spans[2].style!.color, Colors.grey[700]);
+    expect(spans[2].style!.color, AppColors.inkSoft);
   });
 
   testWidgets('PencairanChip can carry an icon', (tester) async {
@@ -263,7 +263,7 @@ void main() {
     expect(decoration.fillColor, Colors.white);
     final enabled = decoration.enabledBorder! as OutlineInputBorder;
     expect(enabled.borderRadius, BorderRadius.circular(12));
-    expect(enabled.borderSide.color, Colors.grey[300]);
+    expect(enabled.borderSide.color, AppColors.border);
     final focused = decoration.focusedBorder! as OutlineInputBorder;
     expect(focused.borderSide.color, AppColors.greenDark);
     expect(focused.borderSide.width, 1.5);
@@ -379,14 +379,14 @@ void main() {
       tester,
       Scaffold(
         body: PencairanCard(
-            borderColor: Colors.red.shade300, child: const Text('isi')),
+            borderColor: AppColors.danger, child: const Text('isi')),
       ),
     );
 
     final box = tester.widget<Container>(find.descendant(
         of: find.byType(PencairanCard), matching: find.byType(Container)));
     expect(((box.decoration! as BoxDecoration).border! as Border).top.color,
-        Colors.red.shade300);
+        AppColors.danger);
   });
 
   group('PencairanActionButton', () {
@@ -451,7 +451,7 @@ void main() {
       await pump(tester, filled: true, onPressed: null);
 
       expect(tester.widget<Icon>(find.byIcon(Icons.save_outlined)).color,
-          Colors.grey[500]);
+          AppColors.grey100);
       await tester.tap(find.byKey(const Key('aksi')), warnIfMissed: false);
     });
 

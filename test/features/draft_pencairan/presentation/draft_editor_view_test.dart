@@ -188,16 +188,16 @@ void main() {
         'NASABAH (3)',
       ]) {
         final style = tester.widget<Text>(find.text(heading)).style!;
-        expect(style.color, Colors.black87, reason: heading);
+        expect(style.color, AppColors.black, reason: heading);
         expect(style.fontSize, 12, reason: heading);
       }
       for (final label in ['POTONGAN UMUM']) {
         expect(tester.widget<Text>(find.text(label)).style!.color,
-            Colors.grey[700],
+            AppColors.inkSoft,
             reason: label);
       }
       expect(tester.widget<Text>(find.text('NOMINAL').first).style!.color,
-          Colors.grey[700]);
+          AppColors.inkSoft);
     });
 
     testWidgets('each nasabah card leads with an avatar and the name',
@@ -258,7 +258,7 @@ void main() {
               matching: find.byType(Container))
           .first);
       final border = (box.decoration! as BoxDecoration).border! as Border;
-      expect(border.top.color, Colors.red.shade300);
+      expect(border.top.color, AppColors.danger);
     });
 
     testWidgets('Total potongan is yellow with a minus, like on the cards',
@@ -953,7 +953,7 @@ void main() {
           .children!
           .cast<TextSpan>();
       expect(spans[1].text, 'Ibu Sari');
-      expect(spans[1].style!.color, Colors.black87);
+      expect(spans[1].style!.color, AppColors.black);
     });
 
     testWidgets('opening an already paid draft does not announce a payment',
