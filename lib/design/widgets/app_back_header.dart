@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -61,7 +62,7 @@ class AppBackHeader extends StatelessWidget {
               style: AppTextStyle.headline1.copyWith(
                 color: AppColors.black,
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontSize: AppFontSize.xxl,
               ),
             ),
           ),

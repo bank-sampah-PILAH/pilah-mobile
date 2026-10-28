@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/avatar_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -153,8 +154,8 @@ class PencairanMetaLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted =
-        AppTextStyle.small.copyWith(color: AppColors.inkSoft, fontSize: 12);
+    final muted = AppTextStyle.small
+        .copyWith(color: AppColors.inkSoft, fontSize: AppFontSize.sm);
     return Text.rich(
       TextSpan(
         children: [
@@ -313,7 +314,7 @@ class PencairanActionButton extends StatelessWidget {
               style: AppTextStyle.title1.copyWith(
                 color: foreground,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: AppFontSize.md,
               ),
             ),
           ),

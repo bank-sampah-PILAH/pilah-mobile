@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_tappable_card.dart';
@@ -28,7 +29,7 @@ class MembershipListItem extends StatelessWidget {
         nameStyle: AppTextStyle.title1.copyWith(
           color: AppColors.black,
           fontWeight: FontWeight.bold,
-          fontSize: 16,
+          fontSize: AppFontSize.lg,
         ),
         locationStyle: AppTextStyle.small.copyWith(color: AppColors.grey100),
       ),

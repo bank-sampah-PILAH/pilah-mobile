@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/formatter/weight_formatter.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
@@ -167,8 +168,8 @@ class ItemSetoranCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               errorText!,
-              style:
-                  AppTextStyle.small.copyWith(color: errorColor, fontSize: 12),
+              style: AppTextStyle.small
+                  .copyWith(color: errorColor, fontSize: AppFontSize.sm),
             ),
           ],
           const SizedBox(height: 16),
@@ -300,7 +301,7 @@ class ItemSetoranCard extends StatelessWidget {
                     style: AppTextStyle.title1.copyWith(
                       color: AppColors.greenDark,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: AppFontSize.lg,
                     ),
                   ),
                 ],

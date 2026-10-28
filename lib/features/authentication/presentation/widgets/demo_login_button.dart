@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/widgets/demo_login_profile.dart';
@@ -28,7 +29,8 @@ class DemoLoginButton extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Pilih akun demo',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: AppFontSize.xl),
                   ),
                 ),
               ),

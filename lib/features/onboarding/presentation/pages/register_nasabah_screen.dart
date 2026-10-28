@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -142,7 +143,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
               'Saat ini Anda hanya dapat terdaftar di 1 '
               'bank sampah.',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.sm,
                 color: AppColors.inkSoft,
               ),
             ),
@@ -169,7 +170,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
           const Text(
             'BANK SAMPAH YANG SUDAH TERGABUNG',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.sm,
               fontWeight: FontWeight.bold,
               color: AppColors.inkSoft,
             ),
@@ -191,7 +192,7 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
                   Text(
                     _membershipStatusLabel(membership),
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                       color: AppColors.grey100,
                     ),
                   ),
@@ -232,7 +233,8 @@ class _RegisterNasabahScreenState extends ConsumerState<RegisterNasabahScreen> {
           child: Text(
             'Pengajuan akan ditinjau oleh pengurus bank sampah.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: AppColors.grey200),
+            style:
+                TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey200),
           ),
         ),
         const SizedBox(height: 20),

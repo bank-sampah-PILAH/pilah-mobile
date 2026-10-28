@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -166,7 +167,7 @@ class NasabahListItem extends ConsumerWidget {
                         style: AppTextStyle.title1.copyWith(
                           color: isActive ? AppColors.black : AppColors.grey100,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: AppFontSize.lg,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -199,7 +200,7 @@ class NasabahListItem extends ConsumerWidget {
                 style: AppTextStyle.title1.copyWith(
                   color: isActive ? AppColors.greenDark : AppColors.grey100,
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                  fontSize: AppFontSize.md,
                 ),
               ),
               const SizedBox(height: 4),

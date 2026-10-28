@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/router/app_locations.dart';
 import 'package:pilah_mobile/design/constants/form_style.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -363,11 +364,11 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                     unselectedLabelColor: AppColors.grey200,
                     labelStyle: AppTextStyle.small.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: AppFontSize.md,
                     ),
                     unselectedLabelStyle: AppTextStyle.small.copyWith(
                       fontWeight: FontWeight.normal,
-                      fontSize: 14,
+                      fontSize: AppFontSize.md,
                     ),
                     indicatorColor: AppColors.greenDark,
                     indicatorWeight: 3,
@@ -838,7 +839,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                         style: AppTextStyle.title1.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 17,
+                          fontSize: AppFontSize.lg,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -951,7 +952,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: AppFontSize.md,
               ),
             ),
           ),
@@ -983,7 +984,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                       style: AppTextStyle.extraSmall.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                        fontSize: AppFontSize.xs,
                       ),
                     ),
                   ),

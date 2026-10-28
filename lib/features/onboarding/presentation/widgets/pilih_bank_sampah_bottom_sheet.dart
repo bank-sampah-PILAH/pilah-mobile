@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -182,7 +183,7 @@ class _PilihBankSampahBottomSheetState
                         style: AppTextStyle.title1.copyWith(
                           color: AppColors.black,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: AppFontSize.lg,
                         ),
                       ),
                       const SizedBox(height: 4),

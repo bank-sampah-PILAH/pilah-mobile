@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
@@ -305,7 +306,7 @@ class _HasilStrip extends StatelessWidget {
                   style: AppTextStyle.small.copyWith(
                     color: AppColors.greenDark,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: AppFontSize.sm,
                   ),
                 ),
               ],

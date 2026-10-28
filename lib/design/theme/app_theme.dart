@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -36,7 +37,7 @@ abstract final class AppTheme {
     // 14 rather than the 16 of headline3: two half-width buttons, such as
     // "Batal" and "Simpan Perubahan", must fit a phone.
     final label = AppTextStyle.headline3.copyWith(
-      fontSize: 14,
+      fontSize: AppFontSize.md,
       fontWeight: FontWeight.w600,
     );
     const padding = EdgeInsets.symmetric(horizontal: 24, vertical: 12);

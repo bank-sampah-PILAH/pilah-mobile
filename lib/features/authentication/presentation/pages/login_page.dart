@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/client/app_environment.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
@@ -216,7 +217,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                               'Pilih Google atau gunakan email dan kata sandi yang terdaftar untuk melanjutkan.',
                               style: AppTextStyle.small.copyWith(
                                 color: AppColors.grey100,
-                                fontSize: 14,
+                                fontSize: AppFontSize.md,
                               ),
                             ),
                             const SizedBox(height: 32),

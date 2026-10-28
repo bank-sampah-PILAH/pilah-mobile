@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
 import 'dart:async';
 
@@ -116,8 +117,8 @@ class _HomeSessionState extends State<_HomeSession>
       builder: (context, _) => SingleChildScrollView(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(title,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: AppFontSize.xxl, fontWeight: FontWeight.w700)),
           guardedBody,
           TextButton(
               onPressed: () => Navigator.of(context).pop(),

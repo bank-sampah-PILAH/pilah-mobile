@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -176,7 +177,7 @@ class _DetailTransaksiBottomSheetState
                         style: AppTextStyle.title1.copyWith(
                           color: AppColors.black,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: AppFontSize.lg,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -334,7 +335,7 @@ class _DetailTransaksiBottomSheetState
                       style: AppTextStyle.title1.copyWith(
                         color: AppColors.greenDark,
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: AppFontSize.lg,
                       ),
                     ),
                   ],
@@ -368,7 +369,7 @@ class _DetailTransaksiBottomSheetState
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.greenDark,
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: AppFontSize.xl,
                       ),
                     ),
                   ],

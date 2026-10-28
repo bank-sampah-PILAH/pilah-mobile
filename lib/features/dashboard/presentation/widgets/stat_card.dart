@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -52,7 +53,7 @@ class StatCard extends StatelessWidget {
               style: AppTextStyle.title1.copyWith(
                 color: AppColors.black,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: AppFontSize.lg,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -62,7 +63,7 @@ class StatCard extends StatelessWidget {
               label,
               style: AppTextStyle.extraSmall.copyWith(
                 color: AppColors.grey100,
-                fontSize: 11,
+                fontSize: AppFontSize.sm,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

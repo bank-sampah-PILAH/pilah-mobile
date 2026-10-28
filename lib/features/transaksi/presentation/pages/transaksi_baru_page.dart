@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/utils/formatter/setoran_subtotal.dart';
 import 'package:go_router/go_router.dart';
@@ -519,7 +520,7 @@ class _TransaksiBaruPageState extends ConsumerState<TransaksiBaruPage> {
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.grey100,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: AppFontSize.lg,
                 ),
               ),
               const SizedBox(height: 8),

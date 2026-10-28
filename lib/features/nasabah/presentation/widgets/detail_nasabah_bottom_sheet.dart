@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -102,7 +103,7 @@ class _DetailNasabahBottomSheetState
                   style: AppTextStyle.headline1.copyWith(
                     color: isActive ? AppColors.greenDark : AppColors.danger,
                     fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    fontSize: AppFontSize.display,
                   ),
                 ),
               ),
@@ -116,7 +117,7 @@ class _DetailNasabahBottomSheetState
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.black,
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: AppFontSize.xxl,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -200,7 +201,7 @@ class _DetailNasabahBottomSheetState
                   style: AppTextStyle.title1.copyWith(
                     color: AppColors.black,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: AppFontSize.md,
                     height: 1.4,
                   ),
                 ),
@@ -214,7 +215,7 @@ class _DetailNasabahBottomSheetState
               titleStyle: AppTextStyle.title1.copyWith(
                 color: AppColors.greenDark,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: AppFontSize.md,
               ),
               messageStyle: AppTextStyle.small.copyWith(
                 color: AppColors.black,
@@ -331,7 +332,7 @@ class _DetailNasabahBottomSheetState
                       style: AppTextStyle.title1.copyWith(
                         color: AppColors.warning,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -471,7 +472,7 @@ class _DetailNasabahBottomSheetState
                   style: AppTextStyle.title1.copyWith(
                     color: valueColor ?? AppColors.black,
                     fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 14,
+                    fontSize: AppFontSize.md,
                   ),
                   textAlign: TextAlign.right,
                 ),

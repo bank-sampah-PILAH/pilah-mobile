@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -147,7 +148,7 @@ class _ProofPlaceholder extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.inkSoft,
-              fontSize: 13,
+              fontSize: AppFontSize.sm,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -155,7 +156,8 @@ class _ProofPlaceholder extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.grey100, fontSize: 12),
+            style: const TextStyle(
+                color: AppColors.grey100, fontSize: AppFontSize.sm),
           ),
         ],
       ),

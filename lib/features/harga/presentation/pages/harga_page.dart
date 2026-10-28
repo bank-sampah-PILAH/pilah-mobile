@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -252,7 +253,7 @@ class _HargaPageBodyState extends ConsumerState<_HargaPageBody> {
               style: AppTextStyle.headline1.copyWith(
                 color: AppColors.black,
                 fontWeight: FontWeight.bold,
-                fontSize: 24,
+                fontSize: AppFontSize.display,
               ),
             ),
             const SizedBox(height: 16),

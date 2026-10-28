@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/layout/picker_presentation.dart';
@@ -80,7 +81,7 @@ class PilihNasabahSection extends StatelessWidget {
                     style: AppTextStyle.title1.copyWith(
                       color: selectedCustomer!.textColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: AppFontSize.lg,
                     ),
                   ),
                 ),

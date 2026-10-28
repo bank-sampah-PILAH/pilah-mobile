@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
@@ -71,7 +72,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                     title,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: AppFontSize.md,
                       color: AppColors.black,
                     ),
                   ),
@@ -79,7 +80,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                       color: AppColors.grey100,
                     ),
                   ),
@@ -116,7 +117,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   const Text(
                     'Pendaftaran Terkirim!',
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: AppFontSize.display,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -125,7 +126,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                   Text(
                     'Menunggu tinjauan dari Admin.',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.md,
                       color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
@@ -145,7 +146,7 @@ class PendingApprovalScreen extends ConsumerWidget {
             const Text(
               'Sedang Diproses',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: AppFontSize.xxl,
                 fontWeight: FontWeight.bold,
                 color: AppColors.black,
               ),
@@ -154,7 +155,7 @@ class PendingApprovalScreen extends ConsumerWidget {
             const Text(
               'Admin sedang meninjau data institusi Anda.',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.md,
                 color: AppColors.grey100,
               ),
             ),
@@ -224,7 +225,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                       child: Text(
                         'Silakan periksa halaman ini secara berkala. Status pendaftaran Anda akan otomatis diperbarui di layar ini.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.sm,
                           color: AppColors.inkSoft,
                           height: 1.4,
                         ),

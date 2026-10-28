@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/widgets/app_date_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -572,7 +573,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                   'Data Anda aman dan hanya digunakan untuk keperluan verifikasi bank sampah.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.sm,
                     color: AppColors.grey100,
                     height: 1.5,
                   ),

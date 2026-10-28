@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
@@ -155,7 +156,7 @@ class _RegisterBankSampahScreenState
                   style: TextStyle(
                     color: AppColors.danger,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: AppFontSize.md,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -164,7 +165,7 @@ class _RegisterBankSampahScreenState
                   'Anda dan daftar ulang.',
                   style: TextStyle(
                     color: AppColors.danger,
-                    fontSize: 13,
+                    fontSize: AppFontSize.sm,
                     height: 1.4,
                   ),
                 ),
@@ -300,7 +301,7 @@ class _RegisterBankSampahScreenState
                                     style: TextStyle(
                                       color: AppColors.black,
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 14,
+                                      fontSize: AppFontSize.md,
                                     ),
                                   ),
                                   SizedBox(height: 4),
@@ -308,7 +309,7 @@ class _RegisterBankSampahScreenState
                                     'JPG / PNG · Maks. 5 MB',
                                     style: TextStyle(
                                       color: AppColors.grey100,
-                                      fontSize: 12,
+                                      fontSize: AppFontSize.sm,
                                     ),
                                   ),
                                 ],
@@ -322,7 +323,7 @@ class _RegisterBankSampahScreenState
                       field.errorText!,
                       style: TextStyle(
                         color: errorColor,
-                        fontSize: 12,
+                        fontSize: AppFontSize.sm,
                       ),
                     ),
                   ],
@@ -367,7 +368,7 @@ class _RegisterBankSampahScreenState
             'Pengajuan akan ditinjau oleh Admin PILAH.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.sm,
               color: AppColors.grey200,
             ),
           ),

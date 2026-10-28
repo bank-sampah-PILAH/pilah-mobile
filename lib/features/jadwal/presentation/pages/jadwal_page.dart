@@ -1,3 +1,4 @@
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/layout/dialog_surface.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:clock/clock.dart';
@@ -313,7 +314,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                     style: AppTextStyle.headline1.copyWith(
                       color: AppColors.black,
                       fontWeight: FontWeight.bold,
-                      fontSize: 24,
+                      fontSize: AppFontSize.display,
                     ),
                   ),
                   backgroundColor: Colors.white,
@@ -407,7 +408,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
                 formatJadwalDayHeading(_selectedDate),
                 style: const TextStyle(
                   color: AppColors.black,
-                  fontSize: 18,
+                  fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -416,7 +417,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               '${loadedState.totalCount} jadwal',
               style: const TextStyle(
                 color: AppColors.grey100,
-                fontSize: 13,
+                fontSize: AppFontSize.sm,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -677,7 +678,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
               formatJadwalDayHeading(day),
               style: const TextStyle(
                 color: AppColors.black,
-                fontSize: 18,
+                fontSize: AppFontSize.xl,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -686,7 +687,7 @@ class _JadwalPageState extends ConsumerState<JadwalPage> {
             '$count jadwal',
             style: const TextStyle(
               color: AppColors.grey100,
-              fontSize: 13,
+              fontSize: AppFontSize.sm,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -810,7 +811,8 @@ class _EmptyScheduleDay extends StatelessWidget {
           const Text(
             'Belum ada jadwal kegiatan',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                fontSize: AppFontSize.lg, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
@@ -818,7 +820,7 @@ class _EmptyScheduleDay extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.grey100,
-              fontSize: 13,
+              fontSize: AppFontSize.sm,
               height: 1.4,
             ),
           ),
@@ -892,7 +894,7 @@ class _ScheduleCard extends StatelessWidget {
                 _activityLabel(item.jenisKegiatan),
                 style: const TextStyle(
                   color: AppColors.black,
-                  fontSize: 16,
+                  fontSize: AppFontSize.lg,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -997,7 +999,7 @@ class _ScheduleInfoLine extends StatelessWidget {
               text,
               style: const TextStyle(
                 color: AppColors.inkSoft,
-                fontSize: 13,
+                fontSize: AppFontSize.sm,
                 height: 1.35,
               ),
             ),
@@ -1032,7 +1034,7 @@ class _ScheduleStatus extends StatelessWidget {
         resolved?.label ?? status,
         style: TextStyle(
           color: foreground,
-          fontSize: 12,
+          fontSize: AppFontSize.sm,
           fontWeight: FontWeight.w700,
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
 import 'package:pilah_mobile/core/bases/widgets/expandable_text.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -89,7 +90,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
               ],
               Text(
                 'Riwayat Persetujuan',
-                style: AppTextStyle.title1.copyWith(fontSize: 16),
+                style: AppTextStyle.title1.copyWith(fontSize: AppFontSize.lg),
               ),
               const SizedBox(height: 16),
               MembershipApprovalTimeline(membership: membership),
@@ -120,7 +121,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             },
             style: AppTextStyle.title1.copyWith(
               color: AppColors.greenDark,
-              fontSize: 18,
+              fontSize: AppFontSize.xl,
             ),
           ),
           const SizedBox(height: 16),
@@ -129,7 +130,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
             nameStyle: AppTextStyle.title1.copyWith(
               color: AppColors.black,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: AppFontSize.lg,
             ),
             locationStyle: AppTextStyle.small.copyWith(
               color: AppColors.grey100,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -49,7 +50,7 @@ class TotalKasCard extends ConsumerWidget {
             style: AppTextStyle.headline1.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 28,
+              fontSize: AppFontSize.figure,
             ),
           ),
           const SizedBox(height: 8),
@@ -57,7 +58,7 @@ class TotalKasCard extends ConsumerWidget {
             'Total nilai transaksi bulan ini',
             style: AppTextStyle.small.copyWith(
               color: AppColors.greenLight,
-              fontSize: 12,
+              fontSize: AppFontSize.sm,
             ),
           ),
         ],

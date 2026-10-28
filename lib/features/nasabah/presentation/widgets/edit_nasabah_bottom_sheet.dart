@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -130,7 +131,7 @@ class _EditNasabahBottomSheetState
               titleStyle: AppTextStyle.title1.copyWith(
                 color: AppColors.greenDark,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: AppFontSize.md,
               ),
               messageStyle: AppTextStyle.small.copyWith(
                 color: AppColors.black,

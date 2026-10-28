@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/features/main/presentation/widgets/web_content_surface.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -100,7 +101,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.black,
                         fontWeight: FontWeight.bold,
-                        fontSize: 24,
+                        fontSize: AppFontSize.display,
                       ),
                     ),
                   ),

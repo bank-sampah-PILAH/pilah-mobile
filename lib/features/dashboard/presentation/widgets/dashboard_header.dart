@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
@@ -49,13 +50,14 @@ class DashboardHeader extends ConsumerWidget {
                 TextSpan(
                   text: 'Selamat datang, $name ',
                   children: const [
-                    TextSpan(text: '👋', style: TextStyle(fontSize: 18)),
+                    TextSpan(
+                        text: '👋', style: TextStyle(fontSize: AppFontSize.xl)),
                   ],
                 ),
                 style: AppTextStyle.title1.copyWith(
                   color: AppColors.black,
                   fontWeight: FontWeight.bold,
-                  fontSize: 20,
+                  fontSize: AppFontSize.xxl,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -99,7 +101,7 @@ class DashboardHeader extends ConsumerWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: AppFontSize.xl,
                 ),
               ),
             ),

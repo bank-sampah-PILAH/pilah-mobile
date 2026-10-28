@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_confirm_dialog.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_refresh_indicator.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
@@ -76,7 +77,8 @@ class _LocationLine extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 13, color: AppColors.grey100),
+        style:
+            const TextStyle(fontSize: AppFontSize.sm, color: AppColors.grey100),
       ),
     );
   }
@@ -167,14 +169,14 @@ class _SuperAdminDashboardScreenState
                     'SuperAdmin PILAH',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 13),
+                        fontSize: AppFontSize.sm),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     'Manajemen Bank Sampah',
                     style: TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
+                        fontSize: AppFontSize.xxl,
                         fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -591,7 +593,7 @@ class _CardHeader extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
-                fontSize: 16,
+                fontSize: AppFontSize.lg,
                 fontWeight: FontWeight.bold,
                 color: AppColors.black),
           ),
@@ -612,7 +614,9 @@ class _CardHeader extends StatelessWidget {
               Text(
                 badgeText,
                 style: TextStyle(
-                    color: badgeFg, fontSize: 10, fontWeight: FontWeight.bold),
+                    color: badgeFg,
+                    fontSize: AppFontSize.xs,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -632,7 +636,7 @@ Widget _infoRow(IconData icon, String text, {bool isBold = false}) {
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppFontSize.sm,
             color: isBold ? AppColors.black : AppColors.grey100,
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           ),

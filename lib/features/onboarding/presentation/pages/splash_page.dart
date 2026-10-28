@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/router/auth_routing.dart';
@@ -106,7 +107,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       'PILAH',
                       style: AppTextStyle.headline1.copyWith(
                         color: AppColors.greenDark,
-                        fontSize: 48,
+                        fontSize: AppFontSize.jumbo,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 2.0,
                       ),
@@ -117,7 +118,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       'Sistem Manajemen Bank Sampah',
                       style: AppTextStyle.small.copyWith(
                         color: AppColors.grey100,
-                        fontSize: 14,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -143,7 +144,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       'Bank Sampah BTH, Depok',
                       style: AppTextStyle.extraSmall.copyWith(
                         color: AppColors.grey100,
-                        fontSize: 12,
+                        fontSize: AppFontSize.sm,
                       ),
                     ),
                   ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
@@ -127,7 +128,7 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
                                     style: AppTextStyle.headline1.copyWith(
                                       color: AppColors.greenDark,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 20,
+                                      fontSize: AppFontSize.xxl,
                                     ),
                                   ),
                                 ),
@@ -232,7 +233,7 @@ class _Baris extends StatelessWidget {
               style: AppTextStyle.title1.copyWith(
                 color: warna ?? AppColors.black,
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontSize: AppFontSize.md,
               ),
             ),
           ),

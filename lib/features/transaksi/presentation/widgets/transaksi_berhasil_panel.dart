@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pilah_mobile/design/constants/font_size.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -55,7 +56,7 @@ class _TransaksiBerhasilPanelState extends State<TransaksiBerhasilPanel> {
           style: AppTextStyle.headline1.copyWith(
             color: AppColors.black,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: AppFontSize.xxl,
           ),
         ),
         const SizedBox(height: 8),
