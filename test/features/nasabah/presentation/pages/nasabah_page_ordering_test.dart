@@ -46,7 +46,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('${layout.name} selects every order and keeps its label visible',
+    testWidgets(
+        '${layout.name} selects every order and keeps its label visible',
         (tester) async {
       await open(tester, size: layout.size, isWeb: layout.web);
 

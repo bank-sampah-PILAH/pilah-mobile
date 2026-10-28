@@ -21,6 +21,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/detail_nasabah_bottom_sheet.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_approval_dialog.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_order_controls.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
 
@@ -112,12 +113,19 @@ class _Toolbar extends ConsumerWidget {
         : state is NasabahLoading
             ? state.isActiveTab
             : notifier.isActiveTab;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: NasabahFilterChips(
-        activeTab: activeTab,
-        onTabChanged: notifier.setActiveTab,
-      ),
+    return Wrap(
+      spacing: AppSpacing.xl,
+      runSpacing: AppSpacing.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        IntrinsicWidth(
+          child: NasabahFilterChips(
+            activeTab: activeTab,
+            onTabChanged: notifier.setActiveTab,
+          ),
+        ),
+        const NasabahOrderControls(),
+      ],
     );
   }
 }

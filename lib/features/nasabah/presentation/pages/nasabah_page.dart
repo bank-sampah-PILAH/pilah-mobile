@@ -8,6 +8,7 @@ import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/providers/nasabah_provider.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_order_controls.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
@@ -148,13 +149,12 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
                   activeTab: isActiveTab,
                   onTabChanged: notifier.setActiveTab,
                 );
-                return widget.isWeb
-                    ? SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: chips,
-                      )
-                    : chips;
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: chips,
+                );
               }),
+              const NasabahOrderControls(),
               const SizedBox(height: 16),
 
               // List View
