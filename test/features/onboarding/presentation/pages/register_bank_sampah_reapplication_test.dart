@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 
 import '../../../../support/onboarding_support.dart';
 import '../../../../support/auth_support.dart';
@@ -37,6 +38,13 @@ Future<void> _pumpScreen(
   );
 }
 
+void _setViewport(WidgetTester tester, Size size) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 void main() {
   group('RegisterBankSampahScreen re-application mode', () {
     testWidgets(
@@ -65,6 +73,39 @@ void main() {
       expect(find.text('Pendaftaran Ditolak'), findsNothing);
       // Same form in both modes.
       expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+    });
+
+    testWidgets('centers the complete flow in a login-width card on desktop', (
+      tester,
+    ) async {
+      _setViewport(tester, const Size(1440, 1200));
+      await _pumpScreen(tester);
+
+      final card = find.byKey(const ValueKey('onboarding-desktop-card'));
+      expect(tester.getSize(card).width, OnboardingDesktopCard.desktopWidth);
+      expect(tester.getRect(card).center.dx, 720);
+      expect(
+        tester.getSize(find.byType(OnboardingHeader)).width,
+        OnboardingDesktopCard.desktopWidth - 2,
+      );
+      expect(
+        tester.getSize(find.byType(OnboardingStepper)).width,
+        OnboardingDesktopCard.desktopWidth - 2,
+      );
+    });
+
+    testWidgets('keeps the existing full-width layout on narrow screens', (
+      tester,
+    ) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pumpScreen(tester);
+
+      expect(
+        find.byKey(const ValueKey('onboarding-desktop-card')),
+        findsNothing,
+      );
+      expect(tester.getSize(find.byType(OnboardingHeader)).width, 390);
+      expect(tester.getSize(find.byType(OnboardingStepper)).width, 390);
     });
 
     testWidgets('offers a way back to step one in both modes', (tester) async {

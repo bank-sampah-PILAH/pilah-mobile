@@ -10,6 +10,7 @@ import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_rem
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/onboarding_support.dart';
@@ -137,6 +138,26 @@ void main() {
       di.unregister<InviteTokenStore>();
     }
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
+  });
+
+  testWidgets('centers profile completion in the desktop onboarding card',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1440, 1200);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final cubit = buildOnboardingContainer(_MockDataSource());
+    addTearDown(cubit.dispose);
+
+    await _pumpScreen(tester, onboarding: cubit);
+
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('onboarding-desktop-card')))
+          .width,
+      OnboardingDesktopCard.desktopWidth,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   group('returning to step one', () {

@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/authentication/presentation/providers/auth
 import '../../../../support/auth_support.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/role_selection_page.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
 
 class _MockGoogleSignInPlatform extends Mock
     with MockPlatformInterfaceMixin
@@ -45,6 +46,28 @@ void main() {
 
   tearDown(() {
     google_sign_in.GoogleSignInPlatform.instance = originalPlatform;
+  });
+
+  testWidgets('centers role selection in the desktop onboarding card',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authenticationProvider.overrideWith(() => auth)],
+      child: const MaterialApp(home: RoleSelectionPage()),
+    ));
+
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('onboarding-desktop-card')))
+          .width,
+      OnboardingDesktopCard.desktopWidth,
+    );
+    expect(find.text('Daftar Akun'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('offers roles supported by the platform and submits selection',

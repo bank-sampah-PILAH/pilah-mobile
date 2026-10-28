@@ -18,6 +18,7 @@ class OnboardingStepScaffold extends ConsumerWidget {
     required this.formKey,
     required this.formFields,
     required this.footer,
+    this.desktopCard = false,
   });
 
   final String title;
@@ -28,12 +29,26 @@ class OnboardingStepScaffold extends ConsumerWidget {
   final GlobalKey<FormState> formKey;
   final List<Widget> formFields;
   final List<Widget> footer;
+  final bool desktopCard;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(authenticationProvider, (previous, current) {
       if (current is Unauthenticated) onUnauthenticated();
     });
+    final content = Column(
+      children: [
+        OnboardingHeader(
+          title: title,
+          subtitle: subtitle,
+          onExit: onExit,
+        ),
+        progress,
+        const SizedBox(height: 24),
+        OnboardingFormCard(formKey: formKey, children: formFields),
+        ...footer,
+      ],
+    );
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) => handleOnboardingStepPop(
@@ -43,21 +58,9 @@ class OnboardingStepScaffold extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: AppColors.surface,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              OnboardingHeader(
-                title: title,
-                subtitle: subtitle,
-                onExit: onExit,
-              ),
-              progress,
-              const SizedBox(height: 24),
-              OnboardingFormCard(formKey: formKey, children: formFields),
-              ...footer,
-            ],
-          ),
-        ),
+        body: desktopCard
+            ? OnboardingDesktopScrollView(child: content)
+            : SingleChildScrollView(child: content),
       ),
     );
   }

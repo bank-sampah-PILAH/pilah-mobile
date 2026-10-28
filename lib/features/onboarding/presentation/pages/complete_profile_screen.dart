@@ -433,7 +433,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       onPopInvokedWithResult: (didPop, result) => _onPopInvoked(didPop),
       child: Scaffold(
         backgroundColor: AppColors.surface, // Light gray background
-        body: SingleChildScrollView(
+        body: OnboardingDesktopScrollView(
           child: Column(
             children: [
               // 1. Header Section
@@ -469,6 +469,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                     label: 'JENIS KELAMIN',
                     child: DropdownButtonFormField<String>(
                       borderRadius: BorderRadius.circular(AppRadius.md),
+                      isExpanded: true,
                       initialValue: _gender,
                       hint: Text(
                         'Pilih jenis kelamin',

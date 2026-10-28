@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
+import 'package:pilah_mobile/design/constants/spacing.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 
 /// The green banner at the top of an onboarding step: a title, a line under
 /// it and a logout button that calls [onExit].
@@ -56,6 +58,72 @@ class OnboardingHeader extends StatelessWidget {
   }
 }
 
+/// Centers onboarding content in a login-width card on expanded screens.
+class OnboardingDesktopCard extends StatelessWidget {
+  const OnboardingDesktopCard({super.key, required this.child});
+
+  static const double desktopWidth = 448;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (context.layoutBreakpoint != LayoutBreakpoint.expanded) return child;
+
+    return Center(
+      child: SizedBox(
+        width: desktopWidth,
+        child: Container(
+          key: const ValueKey('onboarding-desktop-card'),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.greenLight),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.greenDark.withValues(alpha: 0.1),
+                blurRadius: 32,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Keeps long onboarding forms scrollable while centering their card vertically.
+class OnboardingDesktopScrollView extends StatelessWidget {
+  const OnboardingDesktopScrollView({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (LayoutBreakpoint.fromWidth(constraints.maxWidth) !=
+            LayoutBreakpoint.expanded) {
+          return SingleChildScrollView(child: child);
+        }
+
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: OnboardingDesktopCard(child: child),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// The two steps of onboarding, "Profil Diri" and then the step named by
 /// [secondStepLabel]. [currentStep] is 1 or 2: step one shows a check mark
 /// once step two is reached, and step two is greyed until then.
@@ -93,11 +161,13 @@ class OnboardingStepper extends StatelessWidget {
             reached: true,
             done: onSecond,
           ),
-          Container(
-            width: 100,
-            height: 2,
-            margin: const EdgeInsets.only(bottom: 24),
-            color: onSecond ? AppColors.greenDark : AppColors.border,
+          Flexible(
+            child: Container(
+              width: 100,
+              height: 2,
+              margin: const EdgeInsets.only(bottom: 24),
+              color: onSecond ? AppColors.greenDark : AppColors.border,
+            ),
           ),
           _Step(
             number: 2,

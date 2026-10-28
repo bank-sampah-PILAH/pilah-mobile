@@ -190,6 +190,7 @@ class _RegisterBankSampahScreenState
               secondStepLabel: 'Data Bank Sampah',
             ),
       formKey: _formKey,
+      desktopCard: true,
       formFields: [
         OnboardingNameField(
           controller: _namaController,
