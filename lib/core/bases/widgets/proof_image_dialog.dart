@@ -51,7 +51,7 @@ void showProofImageDialog(BuildContext context, {String? imageUrl}) {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: hasProof

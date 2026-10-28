@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:pilah_mobile/features/dashboard/presentation/states/dashboard_state.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 class TotalKasCard extends ConsumerWidget {
   const TotalKasCard({super.key});
@@ -29,7 +30,7 @@ class TotalKasCard extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.greenDark,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

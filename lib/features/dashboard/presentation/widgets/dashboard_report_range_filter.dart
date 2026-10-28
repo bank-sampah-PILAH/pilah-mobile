@@ -73,7 +73,8 @@ class DashboardReportRangeFilter extends StatelessWidget {
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       side: BorderSide(color: AppColors.greenDark.withValues(alpha: 0.2)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
       textStyle: AppTextStyle.small.copyWith(fontWeight: FontWeight.w600),
     );
     return ConstrainedBox(

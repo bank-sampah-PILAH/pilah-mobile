@@ -10,6 +10,7 @@ import 'package:pilah_mobile/services/di.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/authentication/presentation/providers/authentication_provider.dart';
 import 'package:pilah_mobile/features/authentication/presentation/pages/login_page.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key, this.from});
@@ -134,7 +135,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: AppColors.greenDark,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
                     const SizedBox(height: 12),

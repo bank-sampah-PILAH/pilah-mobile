@@ -14,6 +14,7 @@ import 'package:pilah_mobile/features/bank_sampah_approval/presentation/provider
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/states/nasabah_appeal_state.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_approval_timeline.dart';
 import 'package:pilah_mobile/features/bank_sampah_approval/presentation/widgets/membership_bank_identity.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 /// Detail view for one membership, pushed from [ApprovalBankSampahListView]
 /// with the tapped [NasabahMembershipEntity] passed directly via GoRouter's
@@ -105,7 +106,7 @@ class ApprovalBankSampahDetailView extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(

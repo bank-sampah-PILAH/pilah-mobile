@@ -796,7 +796,7 @@ class _EmptyScheduleDay extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
       decoration: BoxDecoration(
         color: AppColors.cardOffWhite,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
@@ -1026,7 +1026,7 @@ class _ScheduleStatus extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         resolved?.label ?? status,

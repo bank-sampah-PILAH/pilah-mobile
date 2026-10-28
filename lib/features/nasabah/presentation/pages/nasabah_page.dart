@@ -17,6 +17,7 @@ import 'package:pilah_mobile/design/layout/layout_breakpoint.dart';
 import 'package:pilah_mobile/design/layout/web_pagination_bar.dart';
 import 'package:pilah_mobile/design/layout/adaptive_surface.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_table.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 class NasabahPage extends StatelessWidget {
   const NasabahPage({super.key, this.isWeb = kIsWeb});
@@ -108,7 +109,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppColors.greenLight,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Text(
                       '${notifier.activeCount} aktif',

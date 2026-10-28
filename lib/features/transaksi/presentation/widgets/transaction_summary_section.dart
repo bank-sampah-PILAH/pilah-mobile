@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 class TransactionSummarySection extends StatelessWidget {
   final int grandTotal;
@@ -17,7 +18,7 @@ class TransactionSummarySection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),

@@ -893,7 +893,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     border: Border.all(color: Colors.grey[200]!),
                   ),
                   child: Text(
@@ -906,7 +906,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.04),
@@ -1020,7 +1020,7 @@ class _ProfileViewState extends ConsumerState<_ProfileView>
           height: 16,
           decoration: BoxDecoration(
             color: AppColors.greenDark,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
         const SizedBox(width: 8),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 /// The tappable variable chips under the WhatsApp template editor. Tapping a
 /// chip inserts its `{token}` into the template via [onInsert].
@@ -68,12 +69,12 @@ class WaVariableChips extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => onInsert(label),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.greenLight.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(color: AppColors.greenLight, width: 1),
           ),
           child: Row(

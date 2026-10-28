@@ -459,13 +459,13 @@ class _ProfileEditForm extends StatelessWidget {
         onTap: () => onJenisKelamin(value),
         selected: selected,
         inGroup: true,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
               color: selected ? NasabahStyle.emerald : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
                   color: selected ? NasabahStyle.emerald : NasabahStyle.line)),
           child: Text(label,

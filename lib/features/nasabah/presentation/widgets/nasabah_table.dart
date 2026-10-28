@@ -477,7 +477,8 @@ class _Skeleton extends StatelessWidget {
         width: w,
         height: 12,
         decoration: BoxDecoration(
-            color: AppColors.fill, borderRadius: BorderRadius.circular(6)));
+            color: AppColors.fill,
+            borderRadius: BorderRadius.circular(AppRadius.sm)));
     return Column(children: [
       const _HeaderRow(),
       const Divider(height: 1),

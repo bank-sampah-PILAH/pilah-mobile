@@ -106,7 +106,7 @@ class _ExportItem extends PopupMenuItem<ExportBerkas> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: tint,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(icon, size: 20, color: iconColor),
               ),

@@ -125,7 +125,8 @@ class NasabahHistoryScreen extends ConsumerWidget {
                                       indicatorSize: TabBarIndicatorSize.tab,
                                       indicator: BoxDecoration(
                                         color: NasabahStyle.emerald,
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.md),
                                       ),
                                       labelColor: Colors.white,
                                       unselectedLabelColor: NasabahStyle.muted,

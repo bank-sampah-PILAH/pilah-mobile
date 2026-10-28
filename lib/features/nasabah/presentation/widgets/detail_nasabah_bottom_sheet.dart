@@ -145,7 +145,7 @@ class _DetailNasabahBottomSheetState
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

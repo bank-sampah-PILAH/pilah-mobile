@@ -6,6 +6,7 @@ import 'package:pilah_mobile/core/utils/formatter/currency_formatter.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
 import 'package:pilah_mobile/design/constants/text_style.dart';
 import 'package:pilah_mobile/features/dashboard/domain/entities/dashboard_reporting.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 class DashboardOperationalChart extends StatelessWidget {
   final List<OperationalTrendBucket> buckets;
@@ -125,7 +126,7 @@ class DashboardOperationalChart extends StatelessWidget {
                               width: barWidth,
                               color: AppColors.statPurple,
                               borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(4)),
+                                  top: Radius.circular(AppRadius.xs)),
                             )
                           ],
                         ))
@@ -238,7 +239,8 @@ class DashboardOperationalChart extends StatelessWidget {
               width: 16,
               height: line ? 3 : 12,
               decoration: BoxDecoration(
-                  color: color, borderRadius: BorderRadius.circular(3))),
+                  color: color,
+                  borderRadius: BorderRadius.circular(AppRadius.xs))),
           const SizedBox(width: 8),
           Text(label, style: AppTextStyle.small),
         ],

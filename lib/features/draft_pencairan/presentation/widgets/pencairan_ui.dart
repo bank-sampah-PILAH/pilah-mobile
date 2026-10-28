@@ -234,7 +234,7 @@ class PencairanPopupMenu<T> extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: entry.destruktif ? _merahMuda : _hijauMuda,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(
                     entry.icon,

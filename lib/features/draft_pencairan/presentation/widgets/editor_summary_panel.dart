@@ -5,6 +5,7 @@ import 'package:pilah_mobile/design/widgets/app_sheet_handle.dart';
 
 import '../states/draft_editor_state.dart';
 import 'draft_format.dart';
+import 'package:pilah_mobile/design/constants/radius.dart';
 
 /// The totals of a draft, pinned above the action buttons so they stay in view
 /// while the nasabah list scrolls and is edited. Closed it shows only what is
@@ -72,7 +73,8 @@ class _EditorSummaryPanelState extends State<EditorSummaryPanel> {
       key: const Key('ringkasan-panel'),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
