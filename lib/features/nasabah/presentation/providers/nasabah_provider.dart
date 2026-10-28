@@ -96,6 +96,8 @@ class NasabahNotifier extends Notifier<NasabahState> {
   bool? get isActiveTab => _isActiveTab;
   String get searchQuery => _searchQuery;
   NasabahUrutan get urutan => _urutan;
+  bool get hasActiveFilters =>
+      _searchQuery.isNotEmpty || _urutan != NasabahUrutan.nomor;
 
   /// Jumlah nasabah aktif menurut server, bukan sebanyak yang sudah dimuat.
   ///
@@ -275,6 +277,13 @@ class NasabahNotifier extends Notifier<NasabahState> {
     await loadNasabah();
   }
 
+  /// Memulihkan pencarian dan urutan saja; tab status tetap dipilih.
+  Future<void> resetFilters() async {
+    _searchQuery = '';
+    _urutan = NasabahUrutan.nomor;
+    await loadNasabah();
+  }
+
   /// Mengirim kata kunci ke server setelah pengurus berhenti mengetik.
   ///
   /// Pencarian harus dilakukan server karena menyaring di aplikasi hanya akan
@@ -287,6 +296,11 @@ class NasabahNotifier extends Notifier<NasabahState> {
     _isLoadingMore = false;
     _jedaCari?.cancel();
     _jedaCari = Timer(jedaPencarian, loadNasabah);
+    if (state is NasabahLoaded) {
+      _emitLoaded(isReloading: true);
+    } else {
+      state = NasabahLoading(isActiveTab: _isActiveTab);
+    }
   }
 
   /// Creates a nasabah. Returns `null` on success (list reloaded), otherwise the

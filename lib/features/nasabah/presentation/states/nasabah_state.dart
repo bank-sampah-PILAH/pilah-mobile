@@ -56,6 +56,8 @@ class NasabahLoaded extends NasabahState {
   });
 
   bool get isMenungguTab => isActiveTab == null;
+  bool get hasActiveFilters =>
+      searchQuery.isNotEmpty || urutan != NasabahUrutan.nomor;
 
   @override
   List<Object?> get props => [
