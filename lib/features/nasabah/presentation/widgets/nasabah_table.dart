@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pilah_mobile/design/widgets/app_button.dart';
 import 'package:pilah_mobile/design/constants/radius.dart';
 import 'package:pilah_mobile/core/bases/widgets/app_notification.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/custom_status_badge.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/design/constants/colors.dart';
@@ -82,10 +82,7 @@ class _Header extends ConsumerWidget {
     return AppPageHeader(
       title: 'Daftar Nasabah',
       subtitle: Text('${notifier.activeCount} nasabah aktif'),
-      search: CustomSearchField(
-        hintText: 'Cari nama nasabah...',
-        onChanged: notifier.searchNasabah,
-      ),
+      search: const NasabahSearchField(),
       actions: [
         AppButton(
           label: 'Tambah Nasabah',

@@ -10,7 +10,7 @@ import 'package:pilah_mobile/features/nasabah/presentation/states/nasabah_state.
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_filter_chips.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_order_controls.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_paged_list_view.dart';
-import 'package:pilah_mobile/core/bases/widgets/custom_search_field.dart';
+import 'package:pilah_mobile/features/nasabah/presentation/widgets/nasabah_search_field.dart';
 import 'package:pilah_mobile/core/bases/widgets/empty_view.dart';
 import 'package:pilah_mobile/core/bases/widgets/skeleton_list_item.dart';
 import 'package:pilah_mobile/features/nasabah/presentation/widgets/tambah_nasabah_bottom_sheet.dart';
@@ -130,12 +130,7 @@ class _NasabahPageBodyState extends ConsumerState<_NasabahPageBody> {
               const SizedBox(height: 16),
 
               // Search Bar
-              CustomSearchField(
-                hintText: 'Cari nama nasabah...',
-                onChanged: (value) {
-                  notifier.searchNasabah(value);
-                },
-              ),
+              const NasabahSearchField(),
               const SizedBox(height: 16),
 
               // Filter Chips
