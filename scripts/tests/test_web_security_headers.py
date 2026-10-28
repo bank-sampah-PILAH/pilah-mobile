@@ -75,3 +75,14 @@ class WebSecurityHeadersTest(unittest.TestCase):
             with self.subTest(path=path):
                 value = headers_of(self.base, path).get("Strict-Transport-Security", "")
                 self.assertRegex(value, r"^max-age=[1-9]\d*$")
+
+    def test_csp_shuts_plugins_base_tag_form_posts_and_framing(self):
+        for path in ("/", "/main.dart.js", "/missing.js"):
+            with self.subTest(path=path):
+                csp = policy(headers_of(self.base, path).get("Content-Security-Policy", ""))
+                self.assertEqual(csp.get("default-src"), ["'self'"])
+                self.assertEqual(csp.get("object-src"), ["'none'"])
+                self.assertEqual(csp.get("base-uri"), ["'self'"])
+                self.assertEqual(csp.get("form-action"), ["'self'"])
+                self.assertEqual(csp.get("frame-ancestors"), ["'none'"])
+
