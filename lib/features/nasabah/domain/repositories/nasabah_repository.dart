@@ -8,6 +8,7 @@ abstract class NasabahRepository {
     int? pageSize,
     String status,
     String? search,
+    String urutan = 'nomor',
   });
   Future<Either<NetworkException, HalamanNasabah>> getActiveNasabah();
   Future<Either<NetworkException, NasabahRingkasan>> getNasabahRingkasan(

@@ -18,6 +18,7 @@ class NasabahRepositoryImpl implements NasabahRepository {
     int? pageSize,
     String status = 'aktif',
     String? search,
+    String urutan = 'nomor',
   }) {
     return apiCall<HalamanNasabah>(
       func: remoteDataSource.getNasabah(
@@ -25,6 +26,7 @@ class NasabahRepositoryImpl implements NasabahRepository {
         pageSize: pageSize,
         status: status,
         search: search,
+        urutan: urutan,
       ),
       mapper: (result) => result as HalamanNasabah,
     );

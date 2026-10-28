@@ -13,12 +13,14 @@ class GetNasabahParams {
   final int? pageSize;
   final String status;
   final String? search;
+  final String urutan;
 
   const GetNasabahParams({
     this.page = 1,
     this.pageSize,
     this.status = 'aktif',
     this.search,
+    this.urutan = 'nomor',
   });
 }
 
@@ -38,6 +40,7 @@ class GetNasabahUseCase implements UseCase<HalamanNasabah, GetNasabahParams> {
       pageSize: params.pageSize,
       status: params.status,
       search: params.search,
+      urutan: params.urutan,
     );
   }
 }

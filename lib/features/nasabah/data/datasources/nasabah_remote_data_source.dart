@@ -11,6 +11,7 @@ abstract class NasabahRemoteDataSource {
     int? pageSize,
     String status,
     String? search,
+    String urutan = 'nomor',
   });
 
   /// Seluruh nasabah aktif dalam satu panggilan, untuk picker Transaksi Baru.
