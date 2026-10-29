@@ -6,6 +6,7 @@ import 'package:pilah_mobile/features/authentication/presentation/states/authent
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_exit.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 
 class OnboardingStepScaffold extends ConsumerWidget {
   const OnboardingStepScaffold({
@@ -18,7 +19,8 @@ class OnboardingStepScaffold extends ConsumerWidget {
     required this.formKey,
     required this.formFields,
     required this.footer,
-    this.desktopCard = false,
+    this.actions,
+    this.notice,
   });
 
   final String title;
@@ -29,7 +31,8 @@ class OnboardingStepScaffold extends ConsumerWidget {
   final GlobalKey<FormState> formKey;
   final List<Widget> formFields;
   final List<Widget> footer;
-  final bool desktopCard;
+  final Widget? actions;
+  final Widget? notice;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,8 +61,21 @@ class OnboardingStepScaffold extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: AppColors.surface,
-        body: desktopCard
-            ? OnboardingDesktopScrollView(child: content)
+        body: actions != null
+            ? OnboardingFlowLayout(
+                title: title,
+                subtitle: subtitle,
+                onExit: onExit,
+                progress: progress,
+                notice: notice,
+                actions: actions!,
+                child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: formFields,
+                    )),
+              )
             : SingleChildScrollView(child: content),
       ),
     );

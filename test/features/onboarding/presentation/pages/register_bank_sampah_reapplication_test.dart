@@ -4,7 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pilah_mobile/features/authentication/presentation/states/authentication_states.dart';
 import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_remote_data_source.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/register_bank_sampah_screen.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 
 import '../../../../support/onboarding_support.dart';
 import '../../../../support/auth_support.dart';
@@ -75,37 +75,79 @@ void main() {
       expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
     });
 
-    testWidgets('centers the complete flow in a login-width card on desktop', (
-      tester,
-    ) async {
-      _setViewport(tester, const Size(1440, 1200));
-      await _pumpScreen(tester);
+    for (final size in [
+      const Size(1440, 900),
+      const Size(768, 1024),
+      const Size(375, 812)
+    ]) {
+      testWidgets('adapts registration and reapplication at ${size.width}px',
+          (tester) async {
+        _setViewport(tester, size);
+        await _pumpScreen(tester);
 
-      final card = find.byKey(const ValueKey('onboarding-desktop-card'));
-      expect(tester.getSize(card).width, OnboardingDesktopCard.desktopWidth);
-      expect(tester.getRect(card).center.dx, 720);
-      expect(
-        tester.getSize(find.byType(OnboardingHeader)).width,
-        OnboardingDesktopCard.desktopWidth - 2,
-      );
-      expect(
-        tester.getSize(find.byType(OnboardingStepper)).width,
-        OnboardingDesktopCard.desktopWidth - 2,
-      );
+        final desktop = size.width >= 840;
+        expect(find.byKey(const ValueKey('onboarding-sidebar')),
+            desktop ? findsOneWidget : findsNothing);
+        final form = tester
+            .getRect(find.byKey(const ValueKey('onboarding-form-surface')));
+        expect(form.width, lessThanOrEqualTo(880));
+        expect(form.left, greaterThanOrEqualTo(0));
+        expect(form.right, lessThanOrEqualTo(size.width));
+        final pair = tester
+            .widget<OnboardingFieldPair>(find.byType(OnboardingFieldPair));
+        final details = tester.getRect(find.byWidget(pair.first));
+        final photo = tester.getRect(find.byWidget(pair.second));
+        if (size.width >= 600) {
+          expect(photo.left, greaterThan(details.right));
+        } else {
+          expect(photo.top, greaterThanOrEqualTo(details.bottom));
+        }
+        final actions =
+            tester.getRect(find.byKey(const ValueKey('onboarding-actions')));
+        expect(actions.bottom, size.height);
+        await tester.tap(find.text('Ajukan Pendaftaran'));
+        await tester.pump();
+        expect(find.text('Nama minimal 3 karakter'), findsOneWidget);
+        expect(find.text('Foto kegiatan wajib diunggah'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await _pumpScreen(tester, isRejectedReapplication: true);
+        expect(find.text('Pendaftaran Ditolak'), findsOneWidget);
+        expect(find.byType(OnboardingProgress), findsNothing);
+        expect(find.text('Ajukan Pendaftaran'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('preserves entered bank data when the window is resized',
+        (tester) async {
+      _setViewport(tester, const Size(1440, 900));
+      await _pumpScreen(tester);
+      await tester.enterText(
+          find.byType(TextFormField).first, 'Bank Sampah Demo');
+      tester.view.physicalSize = const Size(375, 812);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextFormField, 'Bank Sampah Demo'),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('keeps the existing full-width layout on narrow screens', (
-      tester,
-    ) async {
-      _setViewport(tester, const Size(390, 844));
+    testWidgets('reveals the first error after submitting from the bottom',
+        (tester) async {
+      _setViewport(tester, const Size(375, 812));
       await _pumpScreen(tester);
-
+      await tester.drag(find.byKey(const ValueKey('onboarding-content-scroll')),
+          const Offset(0, -800));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ajukan Pendaftaran'));
+      await tester.pumpAndSettle();
+      final error = tester.getRect(find.text('Nama minimal 3 karakter'));
+      expect(error.top, greaterThan(56));
       expect(
-        find.byKey(const ValueKey('onboarding-desktop-card')),
-        findsNothing,
-      );
-      expect(tester.getSize(find.byType(OnboardingHeader)).width, 390);
-      expect(tester.getSize(find.byType(OnboardingStepper)).width, 390);
+          error.bottom,
+          lessThan(tester
+              .getRect(find.byKey(const ValueKey('onboarding-actions')))
+              .top));
     });
 
     testWidgets('offers a way back to step one in both modes', (tester) async {

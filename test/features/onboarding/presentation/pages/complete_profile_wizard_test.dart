@@ -10,7 +10,7 @@ import 'package:pilah_mobile/features/onboarding/data/datasources/onboarding_rem
 import 'package:pilah_mobile/features/onboarding/domain/entities/onboarding_entities.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:pilah_mobile/features/onboarding/presentation/pages/complete_profile_screen.dart';
-import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_layout.dart';
+import 'package:pilah_mobile/features/onboarding/presentation/widgets/onboarding_flow_layout.dart';
 import 'package:pilah_mobile/services/di.dart';
 
 import '../../../../support/onboarding_support.dart';
@@ -140,25 +140,38 @@ void main() {
     di.registerSingleton<InviteTokenStore>(InviteTokenStore());
   });
 
-  testWidgets('centers profile completion in the desktop onboarding card',
-      (tester) async {
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1440, 1200);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final cubit = buildOnboardingContainer(_MockDataSource());
-    addTearDown(cubit.dispose);
+  for (final size in [
+    const Size(1440, 900),
+    const Size(768, 1024),
+    const Size(375, 812)
+  ]) {
+    testWidgets('adapts related profile fields at ${size.width}px',
+        (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final cubit = buildOnboardingContainer(_MockDataSource());
+      addTearDown(cubit.dispose);
 
-    await _pumpScreen(tester, onboarding: cubit);
+      await _pumpScreen(tester, onboarding: cubit);
 
-    expect(
-      tester
-          .getSize(find.byKey(const ValueKey('onboarding-desktop-card')))
-          .width,
-      OnboardingDesktopCard.desktopWidth,
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.byKey(const ValueKey('onboarding-sidebar')),
+          size.width >= 840 ? findsOneWidget : findsNothing);
+      final pair =
+          tester.widget<OnboardingFieldPair>(find.byType(OnboardingFieldPair));
+      final first = tester.getRect(find.byWidget(pair.first));
+      final second = tester.getRect(find.byWidget(pair.second));
+      if (size.width >= 600) {
+        expect(second.left, greaterThan(first.right));
+      } else {
+        expect(second.top, greaterThanOrEqualTo(first.bottom));
+      }
+      expect(tester.getRect(find.text('Simpan Profil & Lanjut')).bottom,
+          lessThan(size.height));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   group('returning to step one', () {
     testWidgets('refills the form from the banked draft', (tester) async {
